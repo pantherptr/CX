@@ -1,0 +1,488 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   VELORA DESIGN SYSTEM
+   A sophisticated neutral palette with a single confident
+   brand accent. Warm off-white surfaces, near-black ink,
+   soft hairline borders, and quiet, layered shadows.
+   ============================================================ */
+
+@theme {
+  /* Typography */
+  --font-sans: 'Satoshi', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Clash Display', 'Satoshi', ui-sans-serif, system-ui, sans-serif;
+
+  /* Neutrals — warm, quiet, expensive */
+  --color-bg: #fbfbf9;
+  --color-surface: #ffffff;
+  --color-panel: #f4f3ef;
+  --color-panel-2: #edece6;
+  --color-ink: #16161a;
+  --color-ink-soft: #33332f;
+  --color-muted: #6c6c66;
+  --color-faint: #9a9a92;
+  --color-line: #e8e7e1;
+  --color-line-strong: #dcdbd3;
+
+  /* Brand accent — Velora green (mobility / go) */
+  --color-accent: #0b7a5b;
+  --color-accent-600: #096a4f;
+  --color-accent-700: #075740;
+  --color-accent-050: #eef6f2;
+  --color-accent-100: #d7ece3;
+
+  /* Support signals */
+  --color-star: #e0a52a;
+  --color-danger: #c0402f;
+  --color-info: #2f5fc0;
+
+  /* Radii — large but controlled */
+  --radius-btn: 0.75rem;
+  --radius-input: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-xl2: 1.75rem;
+  --radius-pill: 999px;
+
+  /* Shadows — soft, layered, low opacity */
+  --shadow-hair: 0 1px 2px rgba(22, 22, 26, 0.05);
+  --shadow-soft: 0 1px 2px rgba(22, 22, 26, 0.04), 0 8px 24px -14px rgba(22, 22, 26, 0.16);
+  --shadow-card: 0 1px 3px rgba(22, 22, 26, 0.05), 0 12px 32px -20px rgba(22, 22, 26, 0.22);
+  --shadow-lift: 0 2px 6px rgba(22, 22, 26, 0.07), 0 26px 50px -24px rgba(22, 22, 26, 0.26);
+  --shadow-pop: 0 4px 12px rgba(22, 22, 26, 0.08), 0 24px 48px -20px rgba(22, 22, 26, 0.28);
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: #fff;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Refined scrollbar */
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: #d8d7cf;
+    border: 3px solid var(--color-bg);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #c4c3ba; }
+}
+
+@layer components {
+  /* ---------- Layout ---------- */
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .container-page { padding-inline: 2rem; }
+  }
+  @media (min-width: 1280px) {
+    .container-page { padding-inline: 2.5rem; }
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    line-height: 1;
+    white-space: nowrap;
+    border-radius: var(--radius-btn);
+    padding: 0.75rem 1.15rem;
+    transition: transform 0.25s var(--ease-out-expo), background-color 0.2s ease,
+      box-shadow 0.25s ease, color 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn:active { transform: translateY(1px) scale(0.99); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--color-ink);
+    color: #fff;
+    box-shadow: var(--shadow-soft);
+  }
+  .btn-primary:hover { background: #000; box-shadow: var(--shadow-card); }
+
+  .btn-accent {
+    background: var(--color-accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(11, 122, 91, 0.2), 0 10px 24px -12px rgba(11, 122, 91, 0.55);
+  }
+  .btn-accent:hover { background: var(--color-accent-600); }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+    box-shadow: var(--shadow-hair);
+  }
+  .btn-secondary:hover { border-color: #c9c8bf; background: #fcfcfb; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-ink);
+  }
+  .btn-ghost:hover { background: var(--color-panel); }
+
+  .btn-lg { padding: 0.95rem 1.5rem; font-size: 1rem; border-radius: 0.85rem; }
+  .btn-sm { padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 0.65rem; }
+  .btn-block { width: 100%; }
+
+  /* ---------- Surfaces ---------- */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+  .card-hover {
+    transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo),
+      border-color 0.3s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--color-line-strong);
+  }
+  .panel {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  /* ---------- Inputs ---------- */
+  .input {
+    width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-input);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .input::placeholder { color: var(--color-faint); }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-100);
+  }
+  .field-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  /* ---------- Chips / Badges ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface);
+    color: var(--color-ink-soft);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: #c6c5bc; background: #fcfcfb; }
+  .chip[data-active='true'] {
+    background: var(--color-ink);
+    color: #fff;
+    border-color: var(--color-ink);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 0.3rem 0.55rem;
+    border-radius: 0.55rem;
+    line-height: 1;
+  }
+  .badge-accent { background: var(--color-accent-050); color: var(--color-accent-700); }
+  .badge-ink { background: rgba(22,22,26,0.9); color: #fff; }
+  .badge-glass {
+    background: rgba(255,255,255,0.86);
+    color: var(--color-ink);
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-hair);
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .hairline { height: 1px; background: var(--color-line); }
+
+  .link-quiet {
+    position: relative;
+    color: var(--color-muted);
+    transition: color 0.2s ease;
+  }
+  .link-quiet:hover { color: var(--color-ink); }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  .grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 4px 4px;
+    pointer-events: none;
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-fade-up { animation: fade-up 0.7s var(--ease-out-expo) both; }
+  .animate-fade-in { animation: fade-in 0.6s ease both; }
+  .animate-scale-in { animation: scale-in 0.4s var(--ease-out-expo) both; }
+  .animate-page { animation: fade-in 0.45s ease both; }
+
+  /* Scroll-reveal: hidden until observed, then eases up into place */
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.75s var(--ease-out-expo), transform 0.75s var(--ease-out-expo);
+    will-change: opacity, transform;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* Images fade in as they decode, so nothing pops. Uses an animation
+     (not a transition) so it never competes with transform transitions. */
+  .imgfade { opacity: 0; }
+  .imgfade.loaded { animation: fade-in 0.8s var(--ease-out-expo) both; }
+
+  /* Gentle continuous float for hero accents */
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  .animate-float { animation: float-y 6s ease-in-out infinite; }
+  .animate-float-slow { animation: float-y 8s ease-in-out infinite; }
+
+  /* ---- Car loader ---- */
+  @keyframes car-bob {
+    0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+    25% { transform: translateY(-2.4px) rotate(0.3deg); }
+    50% { transform: translateY(0.6px) rotate(-0.2deg); }
+    75% { transform: translateY(-1.4px) rotate(0.4deg); }
+  }
+  @keyframes wheel-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes road-dash {
+    to { stroke-dashoffset: -48; }
+  }
+  @keyframes smoke-puff {
+    0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+    18% { opacity: 0.55; }
+    100% { opacity: 0; transform: translate(-26px, -16px) scale(2.4); }
+  }
+  @keyframes speed-line {
+    0% { opacity: 0; transform: translateX(6px); }
+    40% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateX(-30px); }
+  }
+  @keyframes loader-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(320%); }
+  }
+  .loader-car { animation: car-bob 0.7s ease-in-out infinite; transform-origin: center; }
+  .loader-wheel { animation: wheel-spin 0.55s linear infinite; transform-origin: center; transform-box: fill-box; }
+  .loader-road { stroke-dasharray: 22 26; animation: road-dash 0.5s linear infinite; }
+  .loader-smoke { animation: smoke-puff 1.15s ease-out infinite; transform-box: fill-box; }
+  .loader-speed { animation: speed-line 0.7s linear infinite; transform-box: fill-box; }
+
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: var(--color-panel-2);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ============================================================
+     SYSTEM SECTIONS
+     Shared texture, glow and signal primitives for the Velora
+     Intelligence / Ecosystem / Command Center bands. Same palette
+     as the rest of the site — the futurism comes from precision,
+     not from new colour.
+     ============================================================ */
+
+  /* Monospaced micro-labels: statuses, node names, terminal detail. */
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  /* Fine engineering grid — deliberately near-invisible. */
+  .fine-grid {
+    background-image:
+      linear-gradient(to right, rgba(22, 22, 26, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(22, 22, 26, 0.045) 1px, transparent 1px);
+    background-size: 46px 46px;
+  }
+  .dot-grid {
+    background-image: radial-gradient(rgba(22, 22, 26, 0.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* Soft accent bloom behind the core / focal elements. */
+  .glow-accent {
+    background: radial-gradient(closest-side, rgba(11, 122, 91, 0.16), transparent 78%);
+  }
+
+  /* Masks a texture so it fades out at the edges of its section. */
+  .mask-fade {
+    -webkit-mask-image: radial-gradient(75% 65% at 50% 45%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(75% 65% at 50% 45%, #000 35%, transparent 100%);
+  }
+
+  @keyframes core-breathe {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.045); opacity: 1; }
+  }
+  @keyframes ring-drift {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes flow-dash {
+    to { stroke-dashoffset: -140; }
+  }
+  @keyframes signal-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @keyframes scan-sweep {
+    0% { transform: translateY(-100%); opacity: 0; }
+    12% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { transform: translateY(1100%); opacity: 0; }
+  }
+  @keyframes caret-blink {
+    0%, 45% { opacity: 1; }
+    50%, 95% { opacity: 0; }
+  }
+  @keyframes particle-orbit {
+    from { transform: rotate(0deg) translateX(var(--r, 90px)) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(var(--r, 90px)) rotate(-360deg); }
+  }
+
+  .animate-core { animation: core-breathe 6.5s ease-in-out infinite; }
+  .animate-ring { animation: ring-drift 42s linear infinite; }
+  .animate-ring-rev { animation: ring-drift 64s linear infinite reverse; }
+  .animate-blink { animation: signal-blink 2.6s ease-in-out infinite; }
+  .animate-scan { animation: scan-sweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+  .animate-caret { animation: caret-blink 1.15s steps(1) infinite; }
+  .animate-orbit { animation: particle-orbit 18s linear infinite; }
+
+  /* Energy travelling along a connection line. Paused unless the branch
+     is live, so an idle section costs nothing to composite. */
+  .flow-line {
+    stroke-dasharray: 3 9;
+    animation: flow-dash 4.5s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .imgfade { opacity: 1 !important; }
+    .animate-core, .animate-ring, .animate-ring-rev, .animate-blink,
+    .animate-scan, .animate-caret, .animate-orbit, .flow-line {
+      animation: none !important;
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "velora-dev",
+      "runtimeExecutable": "/Users/feqy/.local/node/bin/node",
+      "runtimeArgs": [
+        "/Users/feqy/Downloads/velora/node_modules/vite/bin/vite.js",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
+    }
+  ]
+}
