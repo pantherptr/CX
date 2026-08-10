@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Logo } from './primitives';
-import { customer } from '../data/content';
+import { useAuth } from '../lib/auth';
 
 const links = [
   { to: '/browse', label: 'Browse Cars' },
@@ -18,6 +18,16 @@ export function Navbar() {
   const acctRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { session, profile, signOut } = useAuth();
+
+  const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Account';
+
+  const handleSignOut = async () => {
+    setAcctOpen(false);
+    setMenuOpen(false);
+    await signOut();
+    navigate('/');
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -83,42 +93,64 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <div ref={acctRef} className="relative hidden sm:block">
-            <button
-              onClick={() => setAcctOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-full border border-line-strong bg-surface py-1 pl-1 pr-3 shadow-hair transition-colors hover:border-[#c9c8bf]"
-              aria-haspopup="menu"
-              aria-expanded={acctOpen}
-            >
-              <img
-                src={customer.avatar}
-                alt=""
-                className="h-7 w-7 rounded-full object-cover"
-              />
-              <span className="text-[13.5px] font-medium text-ink">Sign in</span>
-              <Icon name="chevronDown" size={14} className="text-muted" />
-            </button>
-            {acctOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-[calc(100%+10px)] w-60 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop"
-              >
-                <div className="px-3 py-2.5">
-                  <p className="text-sm font-medium text-ink">Demo account</p>
-                  <p className="text-[13px] text-muted">Explore both sides of Velora</p>
-                </div>
-                <div className="hairline mx-2 mb-1" />
-                {acctLinks.map((a) => (
-                  <Link
-                    key={a.to}
-                    to={a.to}
-                    role="menuitem"
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink-soft transition-colors hover:bg-panel"
+            {session ? (
+              <>
+                <button
+                  onClick={() => setAcctOpen((o) => !o)}
+                  className="flex items-center gap-2 rounded-full border border-line-strong bg-surface py-1 pl-1 pr-3 shadow-hair transition-colors hover:border-[#c9c8bf]"
+                  aria-haspopup="menu"
+                  aria-expanded={acctOpen}
+                >
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name="user" size={14} />
+                    </span>
+                  )}
+                  <span className="max-w-[120px] truncate text-[13.5px] font-medium text-ink">
+                    {displayName}
+                  </span>
+                  <Icon name="chevronDown" size={14} className="text-muted" />
+                </button>
+                {acctOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-[calc(100%+10px)] w-60 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop"
                   >
-                    <Icon name={a.icon} size={17} className="text-muted" />
-                    {a.label}
-                  </Link>
-                ))}
-              </div>
+                    <div className="px-3 py-2.5">
+                      <p className="truncate text-sm font-medium text-ink">{displayName}</p>
+                      <p className="truncate text-[13px] text-muted">{session.user.email}</p>
+                    </div>
+                    <div className="hairline mx-2 mb-1" />
+                    {acctLinks.map((a) => (
+                      <Link
+                        key={a.to}
+                        to={a.to}
+                        role="menuitem"
+                        onClick={() => setAcctOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink-soft transition-colors hover:bg-panel"
+                      >
+                        <Icon name={a.icon} size={17} className="text-muted" />
+                        {a.label}
+                      </Link>
+                    ))}
+                    <div className="hairline mx-2 my-1" />
+                    <button
+                      onClick={handleSignOut}
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-danger transition-colors hover:bg-panel"
+                    >
+                      <Icon name="logout" size={17} />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Link to="/login" className="btn btn-secondary btn-sm">
+                Sign in
+              </Link>
             )}
           </div>
 
@@ -171,19 +203,39 @@ export function Navbar() {
               <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted">
                 Your account
               </p>
-              <ul className="flex flex-col gap-1">
-                {acctLinks.map((a) => (
-                  <li key={a.to}>
-                    <Link
-                      to={a.to}
-                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-ink-soft hover:bg-panel"
-                    >
-                      <Icon name={a.icon} size={19} className="text-muted" />
-                      {a.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {session ? (
+                <>
+                  <ul className="flex flex-col gap-1">
+                    {acctLinks.map((a) => (
+                      <li key={a.to}>
+                        <Link
+                          to={a.to}
+                          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-ink-soft hover:bg-panel"
+                        >
+                          <Icon name={a.icon} size={19} className="text-muted" />
+                          {a.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={handleSignOut}
+                    className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] text-danger hover:bg-panel"
+                  >
+                    <Icon name="logout" size={19} />
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2 px-1">
+                  <Link to="/login" className="btn btn-secondary btn-block">
+                    Sign in
+                  </Link>
+                  <Link to="/signup" className="btn btn-primary btn-block">
+                    Create an account
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="border-t border-line p-5">
               <button

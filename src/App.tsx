@@ -3,6 +3,7 @@ import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { SplashScreen } from './components/CarLoader';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Toaster } from './lib/store';
 
 import Home from './pages/Home';
@@ -12,6 +13,8 @@ import Booking from './pages/Booking';
 import ListCar from './pages/ListCar';
 import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import CustomerDashboard from './pages/CustomerDashboard';
 import HostDashboard from './pages/HostDashboard';
 import Messages from './pages/Messages';
@@ -82,12 +85,16 @@ export default function App() {
           <Route path="/list-your-car" element={<ListCar />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
         </Route>
 
-        <Route path="/dashboard" element={<CustomerDashboard />} />
-        <Route path="/host" element={<HostDashboard />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<CustomerDashboard />} />
+          <Route path="/host" element={<HostDashboard />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
