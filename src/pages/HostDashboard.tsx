@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import { DashboardShell, StatCard } from '../components/DashboardShell';
 import { Icon } from '../components/Icon';
 import { carById } from '../data/cars';
-import { hostUser, hostStats, hostBookings, earnings } from '../data/content';
+import { hostStats, hostBookings, earnings } from '../data/content';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
+import { useAuth } from '../lib/auth';
 
 function EarningsChart({ data }: { data: { month: string; value: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -59,13 +60,16 @@ function EarningsChart({ data }: { data: { month: string; value: number }[] }) {
 }
 
 export default function HostDashboard() {
+  const { profile, session } = useAuth();
+  const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
+
   return (
     <DashboardShell variant="host" active="Overview">
       <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[14px] text-muted">Good morning,</p>
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{hostUser.name} 👋</h1>
+            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
           </div>
           <Link to="/list-your-car" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Add a car</Link>
         </div>

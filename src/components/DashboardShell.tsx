@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
-import { customer, hostUser } from '../data/content';
 import { useAuth } from '../lib/auth';
 
 export interface NavItem {
@@ -66,10 +65,13 @@ export function DashboardShell({
   fullHeight?: boolean;
 }) {
   const nav = variant === 'customer' ? customerNav : hostNav;
-  const user = variant === 'customer' ? customer : hostUser;
   const [open, setOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, session, profile } = useAuth();
   const navigate = useNavigate();
+
+  const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
+  const displayEmail = session?.user.email ?? '';
+  const displayAvatar = profile?.avatar_url ?? null;
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -138,10 +140,16 @@ export function DashboardShell({
 
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
-          <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          {displayAvatar ? (
+            <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+              <Icon name="user" size={16} />
+            </span>
+          )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-medium text-ink">{user.fullName}</p>
-            <p className="truncate text-[12px] text-muted">{user.email}</p>
+            <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
+            <p className="truncate text-[12px] text-muted">{displayEmail}</p>
           </div>
           <button onClick={handleSignOut} className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel" aria-label="Sign out">
             <Icon name="logout" size={17} />
@@ -194,10 +202,16 @@ export function DashboardShell({
 
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
-          <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          {displayAvatar ? (
+            <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+              <Icon name="user" size={16} />
+            </span>
+          )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-medium text-ink">{user.fullName}</p>
-            <p className="truncate text-[12px] text-muted">{user.email}</p>
+            <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
+            <p className="truncate text-[12px] text-muted">{displayEmail}</p>
           </div>
         </div>
         <button onClick={handleSignOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14.5px] text-danger hover:bg-panel">
@@ -241,7 +255,13 @@ export function DashboardShell({
               <Icon name="bell" size={20} />
             </Link>
             <Link to="/settings">
-              <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+              {displayAvatar ? (
+                <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+              ) : (
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={16} />
+                </span>
+              )}
             </Link>
           </div>
         </header>

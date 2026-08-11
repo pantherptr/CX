@@ -198,3 +198,25 @@ export function useCars() {
 
   return { cars, error, loading: cars === null && !error };
 }
+
+/** Same as {@link useCars}, but for the homepage's curated top-rated set. */
+export function useFeaturedCars(limit = 8) {
+  const [cars, setCars] = useState<Car[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchFeaturedCars(limit)
+      .then((data) => {
+        if (!cancelled) setCars(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load cars.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [limit]);
+
+  return { cars, error, loading: cars === null && !error };
+}

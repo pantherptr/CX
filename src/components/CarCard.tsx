@@ -9,7 +9,7 @@ import { Img, useTilt } from './motion';
 import { CarQuickView } from './CarQuickView';
 
 function FavButton({ carId }: { carId: string }) {
-  const { isFavorite, toggleFavorite, toast } = useApp();
+  const { isFavorite, toggleFavorite } = useApp();
   const fav = isFavorite(carId);
   const [popping, setPopping] = useState(false);
   return (
@@ -18,10 +18,6 @@ function FavButton({ carId }: { carId: string }) {
         e.preventDefault();
         toggleFavorite(carId);
         setPopping(true);
-        toast({
-          title: fav ? 'Removed from saved' : 'Saved to your list',
-          icon: 'heart',
-        });
       }}
       onAnimationEnd={() => setPopping(false)}
       aria-label={fav ? 'Remove from saved' : 'Save car'}

@@ -4,18 +4,22 @@ import { Icon } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { carById } from '../data/cars';
 import { hosts } from '../data/hosts';
-import { customer, customerStats, trips, conversations } from '../data/content';
-import { cars } from '../data/cars';
+import { customerStats, trips, conversations } from '../data/content';
+import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
+import { useAuth } from '../lib/auth';
 
 export default function CustomerDashboard() {
   const { favorites } = useApp();
+  const { profile, session } = useAuth();
+  const { cars } = useCars();
   const upcoming = trips.find((t) => t.status === 'upcoming');
   const upcomingCar = upcoming ? carById(upcoming.carId) : undefined;
   const past = trips.filter((t) => t.status === 'completed');
-  const saved = cars.filter((c) => favorites.has(c.id)).slice(0, 4);
+  const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
+  const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
 
   return (
     <DashboardShell variant="customer" active="Overview">
@@ -24,7 +28,7 @@ export default function CustomerDashboard() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[14px] text-muted">Good morning,</p>
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{customer.name} 👋</h1>
+            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
           </div>
           <Link to="/browse" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Book a car</Link>
         </div>

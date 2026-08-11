@@ -144,13 +144,18 @@ export default function CarDetails() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => toast({ title: 'Link copied to clipboard', icon: 'check' })}
+              onClick={() => {
+                navigator.clipboard
+                  .writeText(window.location.href)
+                  .then(() => toast({ title: 'Link copied to clipboard', icon: 'check' }))
+                  .catch(() => toast({ title: 'Could not copy link', icon: 'info' }));
+              }}
               className="btn btn-secondary btn-sm"
             >
               <Icon name="arrowUpRight" size={16} /> Share
             </button>
             <button
-              onClick={() => { toggleFavorite(car.id); toast({ title: fav ? 'Removed from saved' : 'Saved to your list', icon: 'heart' }); }}
+              onClick={() => toggleFavorite(car.id)}
               className="btn btn-secondary btn-sm"
             >
               <Icon name="heart" size={16} fill={fav} className={fav ? 'text-[#e2384d]' : ''} /> {fav ? 'Saved' : 'Save'}

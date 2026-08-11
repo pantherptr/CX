@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
-import { customer } from '../data/content';
 import { useApp } from '../lib/store';
+import { useAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 
 const TABS: { id: string; label: string; icon: IconName }[] = [
   { id: 'personal', label: 'Personal information', icon: 'user' },
@@ -35,15 +36,80 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 export default function Settings() {
   const { toast } = useApp();
+  const { session, profile, refreshProfile } = useAuth();
   const { hash } = useLocation();
   const [tab, setTab] = useState('personal');
   const [toggles, setToggles] = useState({ trip: true, promo: false, host: true, sms: true, push: true });
   const flip = (k: keyof typeof toggles) => setToggles((t) => ({ ...t, [k]: !t[k] }));
 
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const id = hash.slice(1);
     if (TAB_IDS.has(id)) setTab(id);
   }, [hash]);
+
+  // Populate the editable fields once the real profile has loaded — it
+  // arrives a beat after the session does.
+  useEffect(() => {
+    if (!profile) return;
+    setFullName(profile.full_name ?? '');
+    setPhone(profile.phone ?? '');
+    setLocation(profile.location ?? '');
+  }, [profile]);
+
+  const savePersonalInfo = async () => {
+    if (!session) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: fullName, phone, location })
+      .eq('id', session.user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not save changes', desc: error.message, icon: 'info' });
+      return;
+    }
+    await refreshProfile();
+    toast({ title: 'Changes saved', icon: 'check' });
+  };
+
+  const handleAvatarPick = () => fileInputRef.current?.click();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !session) return;
+    setUploadingPhoto(true);
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${session.user.id}/avatar-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (uploadError) {
+      setUploadingPhoto(false);
+      toast({ title: 'Could not upload photo', desc: uploadError.message, icon: 'info' });
+      return;
+    }
+    const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: pub.publicUrl })
+      .eq('id', session.user.id);
+    setUploadingPhoto(false);
+    if (updateError) {
+      toast({ title: 'Could not save photo', desc: updateError.message, icon: 'info' });
+      return;
+    }
+    await refreshProfile();
+    toast({ title: 'Profile photo updated', icon: 'check' });
+  };
 
   return (
     <DashboardShell variant="customer" active="Settings">
@@ -73,19 +139,49 @@ export default function Settings() {
             {tab === 'personal' && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-4">
-                  <img src={customer.avatar} alt="" className="h-16 w-16 rounded-full object-cover" />
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name="user" size={26} />
+                    </span>
+                  )}
                   <div>
-                    <button className="btn btn-secondary btn-sm">Change photo</button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                    <button
+                      onClick={handleAvatarPick}
+                      disabled={uploadingPhoto}
+                      className="btn btn-secondary btn-sm disabled:opacity-60"
+                    >
+                      {uploadingPhoto ? 'Uploading…' : 'Change photo'}
+                    </button>
                     <p className="mt-1.5 text-[12.5px] text-muted">JPG or PNG, up to 5MB</p>
                   </div>
                 </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                  <Field label="First name"><input defaultValue="Alex" className="input" /></Field>
-                  <Field label="Last name"><input defaultValue="Rossi" className="input" /></Field>
-                  <Field label="Email" full><input defaultValue={customer.email} className="input" /></Field>
-                  <Field label="Phone"><input defaultValue="+39 340 000 0000" className="input" /></Field>
-                  <Field label="City"><input defaultValue="Milan" className="input" /></Field>
-                  <Field label="Address" full><input defaultValue="Via Brera 12, 20121 Milan" className="input" /></Field>
+                  <Field label="Full name" full>
+                    <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" />
+                  </Field>
+                  <Field label="Email" full>
+                    <input value={session?.user.email ?? ''} disabled className="input opacity-60" />
+                  </Field>
+                  <Field label="Phone">
+                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" />
+                  </Field>
+                  <Field label="Location">
+                    <input
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="City, country"
+                      className="input"
+                    />
+                  </Field>
                 </div>
               </div>
             )}
@@ -176,7 +272,13 @@ export default function Settings() {
 
             <div className="mt-8 flex items-center justify-end gap-3 border-t border-line pt-6">
               <button className="btn btn-ghost text-muted hover:text-ink">Cancel</button>
-              <button onClick={() => toast({ title: 'Changes saved', icon: 'check' })} className="btn btn-primary">Save changes</button>
+              <button
+                onClick={tab === 'personal' ? savePersonalInfo : () => toast({ title: 'Changes saved', icon: 'check' })}
+                disabled={saving}
+                className="btn btn-primary disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
             </div>
           </div>
         </div>

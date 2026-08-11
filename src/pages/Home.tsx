@@ -11,7 +11,7 @@ import { Ecosystem } from '../components/home/Ecosystem';
 import { CommandCenter } from '../components/home/CommandCenter';
 import { Timeline } from '../components/home/Timeline';
 import { Playground } from '../components/home/Playground';
-import { featuredCars } from '../data/cars';
+import { useFeaturedCars } from '../lib/data/cars';
 import { categories, testimonials } from '../data/content';
 import { unsplash, avatar } from '../lib/img';
 
@@ -34,6 +34,7 @@ const steps = [
 
 export default function Home() {
   const heroParallax = useParallax(0.08, 40);
+  const { cars: featuredCars, loading: featuredLoading } = useFeaturedCars(8);
 
   return (
     <div>
@@ -168,11 +169,21 @@ export default function Home() {
           }
         />
         <div className="mt-9 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {featuredCars.map((car, i) => (
-            <Reveal key={car.id} delay={(i % 4) * 70}>
-              <CarCard car={car} priority={i < 4} />
-            </Reveal>
-          ))}
+          {featuredLoading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card overflow-hidden">
+                  <div className="skeleton aspect-[4/3]" />
+                  <div className="space-y-2.5 p-4">
+                    <div className="skeleton h-4 w-3/5 rounded-md" />
+                    <div className="skeleton h-3 w-2/5 rounded-md" />
+                  </div>
+                </div>
+              ))
+            : (featuredCars ?? []).map((car, i) => (
+                <Reveal key={car.id} delay={(i % 4) * 70}>
+                  <CarCard car={car} priority={i < 4} />
+                </Reveal>
+              ))}
         </div>
       </section>
 
