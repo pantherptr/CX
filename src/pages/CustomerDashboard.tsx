@@ -1,25 +1,90 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardShell, StatCard } from '../components/DashboardShell';
 import { Icon } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
-import { carById } from '../data/cars';
-import { hosts } from '../data/hosts';
-import { customerStats, trips, conversations } from '../data/content';
+import { CarLoader } from '../components/CarLoader';
+import { conversations } from '../data/content';
 import { useCars } from '../lib/data/cars';
-import { unsplash } from '../lib/img';
+import { useMyBookings, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
+
+const TABS: { id: TripPhase; label: string }[] = [
+  { id: 'upcoming', label: 'Upcoming' },
+  { id: 'active', label: 'Active' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'cancelled', label: 'Cancelled' },
+];
+
+const phaseBadge: Record<TripPhase, string> = {
+  upcoming: 'badge-accent',
+  active: 'bg-accent text-white',
+  completed: 'bg-panel-2 text-ink-soft',
+  cancelled: 'bg-danger/10 text-danger',
+};
+
+const phaseLabel: Record<TripPhase, string> = {
+  upcoming: 'Confirmed',
+  active: 'Active',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+function TripRow({ booking }: { booking: Booking }) {
+  const phase = classifyBooking(booking);
+  return (
+    <Link to={`/trips/${booking.id}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
+      <img src={booking.car.image} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-ink">{booking.car.make} {booking.car.model}</p>
+        <p className="text-[13px] text-muted">
+          {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)} · {booking.pickupLocation || booking.car.location}
+        </p>
+        <p className="mt-0.5 text-[12px] text-faint">Booking {booking.reference}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-[14px] font-medium text-ink">{eur(booking.totalPrice)}</p>
+        <span className={`badge mt-1 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
+      </div>
+    </Link>
+  );
+}
 
 export default function CustomerDashboard() {
   const { favorites } = useApp();
   const { profile, session } = useAuth();
   const { cars } = useCars();
-  const upcoming = trips.find((t) => t.status === 'upcoming');
-  const upcomingCar = upcoming ? carById(upcoming.carId) : undefined;
-  const past = trips.filter((t) => t.status === 'completed');
+  const { bookings, loading: bookingsLoading } = useMyBookings(session?.user.id);
+  const [tab, setTab] = useState<TripPhase>('upcoming');
+
   const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
+
+  const classified = useMemo(
+    () => (bookings ?? []).map((b) => ({ booking: b, phase: classifyBooking(b) })),
+    [bookings],
+  );
+
+  const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
+  const completedCount = classified.filter((c) => c.phase === 'completed').length;
+  const totalSpent = classified
+    .filter((c) => c.phase !== 'cancelled')
+    .reduce((sum, c) => sum + c.booking.totalPrice, 0);
+
+  // The one trip worth surfacing above the fold: an active trip beats a
+  // future one, and among future ones the soonest wins.
+  const nextTrip = useMemo(() => {
+    const relevant = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active');
+    const active = relevant.find((c) => c.phase === 'active');
+    if (active) return active.booking;
+    return relevant.sort((a, b) => a.booking.startDate.localeCompare(b.booking.startDate))[0]?.booking;
+  }, [classified]);
+
+  const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
 
   return (
     <DashboardShell variant="customer" active="Overview">
@@ -35,36 +100,38 @@ export default function CustomerDashboard() {
 
         {/* Stats */}
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon="trips" label="Upcoming trips" value={String(customerStats.upcoming)} />
-          <StatCard icon="checkCircle" label="Completed trips" value={String(customerStats.completed)} />
+          <StatCard icon="trips" label="Upcoming trips" value={String(upcomingCount)} />
+          <StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} />
           <StatCard icon="heart" label="Saved cars" value={String(favorites.size)} />
-          <StatCard icon="wallet" label="Total spent" value={eur(customerStats.spent)} />
+          <StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} />
         </div>
 
-        {/* Upcoming trip */}
-        <div id="trips" className="scroll-mt-20" />
-        {upcoming && upcomingCar && (
+        {/* Next trip highlight */}
+        {nextTrip && (
           <section className="mt-8">
-            <h2 className="mb-4 font-display text-lg font-semibold text-ink">Your upcoming trip</h2>
+            <h2 className="mb-4 font-display text-lg font-semibold text-ink">Your next trip</h2>
             <div className="card overflow-hidden md:flex">
               <div className="relative md:w-2/5">
-                <img src={unsplash(upcomingCar.images[0], 700)} alt="" className="h-52 w-full object-cover md:h-full" />
-                <span className="absolute left-3 top-3 badge badge-glass"><Icon name="clock" size={12} className="text-accent" /> In 14 days</span>
+                <img src={nextTrip.car.image} alt="" className="h-52 w-full object-cover md:h-full" />
+                <span className="absolute left-3 top-3 badge badge-glass">
+                  <Icon name="clock" size={12} className="text-accent" />
+                  {classifyBooking(nextTrip) === 'active' ? 'In progress' : `From ${fmtDate(nextTrip.startDate)}`}
+                </span>
               </div>
               <div className="flex flex-1 flex-col justify-between p-6">
                 <div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-display text-xl font-semibold text-ink">{upcomingCar.make} {upcomingCar.model}</h3>
-                      <p className="text-[13.5px] text-muted">Booking {upcoming.reference}</p>
+                      <h3 className="font-display text-xl font-semibold text-ink">{nextTrip.car.make} {nextTrip.car.model}</h3>
+                      <p className="text-[13.5px] text-muted">Booking {nextTrip.reference}</p>
                     </div>
-                    <span className="badge badge-accent">Confirmed</span>
+                    <span className={`badge ${phaseBadge[classifyBooking(nextTrip)]}`}>{phaseLabel[classifyBooking(nextTrip)]}</span>
                   </div>
                   <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                     {[
-                      { l: 'Pick-up', v: upcoming.start, icon: 'calendar' as const },
-                      { l: 'Return', v: upcoming.end, icon: 'calendar' as const },
-                      { l: 'Location', v: upcoming.location, icon: 'pin' as const },
+                      { l: 'Pick-up', v: fmtDate(nextTrip.startDate), icon: 'calendar' as const },
+                      { l: 'Return', v: fmtDate(nextTrip.endDate), icon: 'calendar' as const },
+                      { l: 'Location', v: nextTrip.pickupLocation || nextTrip.car.location, icon: 'pin' as const },
                     ].map((x) => (
                       <div key={x.l}>
                         <p className="flex items-center gap-1.5 text-[12px] text-muted"><Icon name={x.icon} size={13} /> {x.l}</p>
@@ -74,13 +141,19 @@ export default function CustomerDashboard() {
                   </div>
                 </div>
                 <div className="mt-6 flex items-center gap-3 border-t border-line pt-5">
-                  <img src={hosts[upcomingCar.hostId].avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  {nextTrip.host.avatar ? (
+                    <img src={nextTrip.host.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name="user" size={16} />
+                    </span>
+                  )}
                   <div className="flex-1">
-                    <p className="text-[13.5px] font-medium text-ink">{hosts[upcomingCar.hostId].name}</p>
+                    <p className="text-[13.5px] font-medium text-ink">{nextTrip.host.name}</p>
                     <p className="text-[12.5px] text-muted">Your host</p>
                   </div>
                   <Link to="/messages" className="btn btn-secondary btn-sm"><Icon name="message" size={15} /> Message</Link>
-                  <Link to={`/cars/${upcomingCar.slug}`} className="btn btn-primary btn-sm">Details</Link>
+                  <Link to={`/trips/${nextTrip.id}`} className="btn btn-primary btn-sm">Details</Link>
                 </div>
               </div>
             </div>
@@ -88,29 +161,53 @@ export default function CustomerDashboard() {
         )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          {/* Recent trips */}
-          <section>
+          {/* My Trips */}
+          <section id="trips" className="scroll-mt-20">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold text-ink">Recent trips</h2>
-              <Link to="/dashboard" className="text-[13.5px] font-medium text-muted hover:text-ink">View all</Link>
+              <h2 className="font-display text-lg font-semibold text-ink">My Trips</h2>
             </div>
-            <div className="card divide-y divide-line">
-              {past.map((t) => {
-                const c = carById(t.carId)!;
+            <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
+              {TABS.map((t) => {
+                const count = classified.filter((c) => c.phase === t.id).length;
                 return (
-                  <Link key={t.id} to={`/cars/${c.slug}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
-                    <img src={unsplash(c.images[0], 200)} alt="" className="h-14 w-20 rounded-lg object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-ink">{c.make} {c.model}</p>
-                      <p className="text-[13px] text-muted">{t.start} · {t.location}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[14px] font-medium text-ink">{eur(t.total)}</p>
-                      <span className="inline-flex items-center gap-1 text-[12px] text-muted"><Icon name="check" size={12} className="text-accent" /> Completed</span>
-                    </div>
-                  </Link>
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`chip shrink-0 ${tab === t.id ? '!bg-ink !text-white !border-ink' : ''}`}
+                  >
+                    {t.label}
+                    {count > 0 && <span className="text-faint">· {count}</span>}
+                  </button>
                 );
               })}
+            </div>
+
+            <div className="card min-h-[120px] divide-y divide-line">
+              {bookingsLoading ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <CarLoader size={70} />
+                </div>
+              ) : tabBookings.length > 0 ? (
+                tabBookings.map((b) => <TripRow key={b.id} booking={b} />)
+              ) : (
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted">
+                    <Icon name="trips" size={20} />
+                  </span>
+                  <p className="mt-1 font-medium text-ink">
+                    {tab === 'upcoming' && 'No upcoming trips'}
+                    {tab === 'active' && 'No trips in progress'}
+                    {tab === 'completed' && 'No completed trips yet'}
+                    {tab === 'cancelled' && 'No cancelled trips'}
+                  </p>
+                  <p className="max-w-xs text-[13px] text-muted">
+                    {tab === 'upcoming' ? 'Your next journey starts here.' : 'Nothing to show in this tab yet.'}
+                  </p>
+                  {tab === 'upcoming' && (
+                    <Link to="/browse" className="btn btn-primary btn-sm mt-1">Browse cars</Link>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 

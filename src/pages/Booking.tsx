@@ -1,13 +1,15 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { carBySlug } from '../data/cars';
-import { hosts } from '../data/hosts';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
-import { genRef } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
+import { CarLoader } from '../components/CarLoader';
 import { useApp } from '../lib/store';
+import { useAuth } from '../lib/auth';
+import { fetchCarWithHost } from '../lib/data/cars';
+import { checkAvailability, createBooking, type Booking as BookingRecord } from '../lib/data/bookings';
+import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
 
 const STEPS = ['Trip details', 'Driver details', 'Payment', 'Confirmation'];
@@ -49,46 +51,164 @@ function Labeled({ label, children, full }: { label: string; children: ReactNode
   );
 }
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
 export default function Booking() {
   const { slug } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useApp();
-  const car = carBySlug(slug ?? '');
+  const { session, profile } = useAuth();
+
+  const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [step, setStep] = useState(0);
-  const [reference] = useState(genRef);
+  const [pickupDate, setPickupDate] = useState(params.get('start') ?? '');
+  const [returnDate, setReturnDate] = useState(params.get('end') ?? '');
+  const [pickupLoc, setPickupLoc] = useState(params.get('loc') ?? '');
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
 
-  const start = params.get('start') ?? '';
-  const end = params.get('end') ?? '';
-  const loc = params.get('loc') ?? car?.location ?? '';
-  const days = useMemo(() => (start && end ? daysBetween(start, end) : Number(params.get('days')) || 3), [start, end, params]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState<BookingRecord | null>(null);
 
-  if (!car) return <NotFound />;
-  const host = hosts[car.hostId];
-  const b = priceBreakdown(car, days);
+  useEffect(() => {
+    let cancelled = false;
+    fetchCarWithHost(slug ?? '')
+      .then((data) => {
+        if (cancelled) return;
+        setResult(data);
+        if (data && !pickupLoc) setPickupLoc(data.car.location);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load this car.');
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
-  const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  const days = useMemo(
+    () => (pickupDate && returnDate ? daysBetween(pickupDate, returnDate) : 0),
+    [pickupDate, returnDate],
+  );
+
+  // Validate the dates themselves whenever they change.
+  useEffect(() => {
+    if (!pickupDate || !returnDate) {
+      setDateError(null);
+      return;
+    }
+    if (pickupDate < todayISO()) {
+      setDateError('Pick-up date is in the past.');
+    } else if (returnDate <= pickupDate) {
+      setDateError('Return date must be after pick-up.');
+    } else {
+      setDateError(null);
+    }
+  }, [pickupDate, returnDate]);
+
+  // Re-check real availability against Supabase whenever valid dates change.
+  // This is the UX nicety — the actual guarantee is the exclusion
+  // constraint enforced at insert time (see migration 0003).
+  useEffect(() => {
+    if (!result || dateError || !pickupDate || !returnDate) {
+      setAvailability(null);
+      return;
+    }
+    let cancelled = false;
+    setAvailability('checking');
+    checkAvailability(result.car.id, pickupDate, returnDate)
+      .then((ok) => {
+        if (!cancelled) setAvailability(ok ? 'available' : 'unavailable');
+      })
+      .catch(() => {
+        if (!cancelled) setAvailability(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [result, pickupDate, returnDate, dateError]);
+
+  if (loadError) {
+    return (
+      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-danger">
+          <Icon name="info" size={26} />
+        </span>
+        <h1 className="font-display text-xl font-semibold text-ink">Couldn't load this car</h1>
+        <p className="max-w-sm text-[14px] text-muted">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (result === undefined) {
+    return (
+      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
+        <CarLoader size={90} />
+        <p className="text-[14px] text-muted">Loading…</p>
+      </div>
+    );
+  }
+
+  if (result === null) return <NotFound />;
+  const { car, host } = result;
+  const b = priceBreakdown(car, days || 1);
+
+  const canContinueStep0 = !dateError && pickupDate && returnDate && availability === 'available';
 
   const next = () => {
+    if (step === 0 && !canContinueStep0) return;
     if (step < STEPS.length - 1) {
-      if (step === 2) toast({ title: 'Payment authorised', desc: 'Your booking is confirmed.', icon: 'checkCircle' });
       setStep((s) => s + 1);
       window.scrollTo({ top: 0 });
     }
   };
   const back = () => (step > 0 ? setStep((s) => s - 1) : navigate(-1));
 
+  const confirmBooking = async () => {
+    if (!session) {
+      toast({ title: 'Sign in to book a car', icon: 'user' });
+      navigate('/login', { state: { from: { pathname: `/book/${slug}` } } });
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    const { booking, error } = await createBooking({
+      carId: car.id,
+      renterId: session.user.id,
+      startDate: pickupDate,
+      endDate: returnDate,
+      pickupLocation: pickupLoc || car.location,
+      protectionAddon: true,
+    });
+    setSubmitting(false);
+    if (error || !booking) {
+      setSubmitError(error ?? 'Something went wrong. Please try again.');
+      return;
+    }
+    setConfirmed(booking);
+    setStep(3);
+    window.scrollTo({ top: 0 });
+    toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
+  };
+
+  const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+
   /* ---------- Confirmation ---------- */
-  if (step === 3) {
+  if (step === 3 && confirmed) {
     return (
       <div className="container-page max-w-2xl py-14">
         <div className="animate-scale-in text-center">
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
             <Icon name="checkCircle" size={34} />
           </span>
-          <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">You’re all set.</h1>
+          <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">You're all set.</h1>
           <p className="mt-3 text-[15px] text-muted">
-            Your booking is confirmed. We’ve sent the details to your email and your host has been notified.
+            Your booking is confirmed. Your host has been notified.
           </p>
         </div>
 
@@ -96,17 +216,17 @@ export default function Booking() {
           <div className="flex items-center gap-4 border-b border-line p-5">
             <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-28 rounded-xl object-cover" />
             <div className="min-w-0">
-              <p className="text-[12px] font-medium uppercase tracking-wide text-accent">Booking {reference}</p>
+              <p className="text-[12px] font-medium uppercase tracking-wide text-accent">Booking {confirmed.reference}</p>
               <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-ink">{car.year} {car.make} {car.model}</h2>
               <p className="text-[13.5px] text-muted">Hosted by {host.name}</p>
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-y-5 p-5 sm:grid-cols-4">
             {[
-              { l: 'Pick-up', v: fmtDate(start), icon: 'calendar' as IconName },
-              { l: 'Return', v: fmtDate(end), icon: 'calendar' as IconName },
-              { l: 'Location', v: loc, icon: 'pin' as IconName },
-              { l: 'Total paid', v: eur(b.total), icon: 'card' as IconName },
+              { l: 'Pick-up', v: fmtDate(confirmed.startDate), icon: 'calendar' as IconName },
+              { l: 'Return', v: fmtDate(confirmed.endDate), icon: 'calendar' as IconName },
+              { l: 'Location', v: confirmed.pickupLocation || car.location, icon: 'pin' as IconName },
+              { l: 'Total paid', v: eur(confirmed.totalPrice), icon: 'card' as IconName },
             ].map((x) => (
               <div key={x.l}>
                 <dt className="flex items-center gap-1.5 text-[12px] text-muted"><Icon name={x.icon} size={14} /> {x.l}</dt>
@@ -125,7 +245,7 @@ export default function Booking() {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link to="/dashboard" className="btn btn-primary btn-lg flex-1">View booking <Icon name="arrowRight" size={17} /></Link>
+          <Link to="/dashboard#trips" className="btn btn-primary btn-lg flex-1">View my trips <Icon name="arrowRight" size={17} /></Link>
           <Link to="/browse" className="btn btn-secondary btn-lg flex-1">Browse more cars</Link>
         </div>
       </div>
@@ -145,18 +265,42 @@ export default function Booking() {
           {step === 0 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
-              <p className="mt-1.5 text-[14.5px] text-muted">Confirm where and when you’d like the car.</p>
+              <p className="mt-1.5 text-[14.5px] text-muted">Confirm where and when you'd like the car.</p>
               <div className="mt-6 card p-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Labeled label="Pick-up location" full>
                     <div className="relative">
                       <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                      <input defaultValue={loc} className="input !pl-11" />
+                      <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
                     </div>
                   </Labeled>
-                  <Labeled label="Pick-up date"><input type="date" defaultValue={start} className="input" /></Labeled>
-                  <Labeled label="Return date"><input type="date" defaultValue={end} className="input" /></Labeled>
+                  <Labeled label="Pick-up date">
+                    <input type="date" min={todayISO()} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input" />
+                  </Labeled>
+                  <Labeled label="Return date">
+                    <input type="date" min={pickupDate || todayISO()} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="input" />
+                  </Labeled>
                 </div>
+
+                {dateError && (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                    <Icon name="info" size={16} /> {dateError}
+                  </p>
+                )}
+                {!dateError && availability === 'checking' && (
+                  <p className="mt-4 text-[13.5px] text-muted">Checking availability…</p>
+                )}
+                {!dateError && availability === 'unavailable' && (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                    <Icon name="info" size={16} /> This car is already booked for part of those dates. Try a different range.
+                  </p>
+                )}
+                {!dateError && availability === 'available' && (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-[13.5px] text-accent-700">
+                    <Icon name="checkCircle" size={16} /> Available for your dates.
+                  </p>
+                )}
+
                 <div className="mt-5 rounded-xl bg-panel p-4">
                   <p className="flex items-center gap-2 text-[13.5px] font-medium text-ink"><Icon name="shield" size={16} className="text-accent" /> Premium protection included</p>
                   <p className="mt-1 text-[13px] text-muted">Every Velora trip comes with damage protection and 24/7 roadside assistance.</p>
@@ -171,14 +315,19 @@ export default function Booking() {
               <p className="mt-1.5 text-[14.5px] text-muted">We need a few details to verify the primary driver.</p>
               <div className="mt-6 card p-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Labeled label="First name"><input defaultValue="Alex" className="input" /></Labeled>
-                  <Labeled label="Last name"><input defaultValue="Rossi" className="input" /></Labeled>
-                  <Labeled label="Email" full><input type="email" defaultValue="alex.rossi@email.com" className="input" /></Labeled>
-                  <Labeled label="Phone"><input defaultValue="+39 340 000 0000" className="input" /></Labeled>
-                  <Labeled label="Date of birth"><input type="date" defaultValue="1992-05-14" className="input" /></Labeled>
+                  <Labeled label="Full name" full>
+                    <input defaultValue={profile?.full_name ?? ''} className="input" />
+                  </Labeled>
+                  <Labeled label="Email" full>
+                    <input type="email" defaultValue={session?.user.email ?? ''} className="input" />
+                  </Labeled>
+                  <Labeled label="Phone">
+                    <input defaultValue={profile?.phone ?? ''} className="input" />
+                  </Labeled>
+                  <Labeled label="Date of birth"><input type="date" className="input" /></Labeled>
                   <Labeled label="Driving licence number" full><input placeholder="e.g. RSSLXA92E14F205X" className="input" /></Labeled>
-                  <Labeled label="Licence country"><input defaultValue="Italy" className="input" /></Labeled>
-                  <Labeled label="Licence expiry"><input type="date" defaultValue="2029-05-14" className="input" /></Labeled>
+                  <Labeled label="Licence country"><input defaultValue={profile?.location ?? ''} className="input" /></Labeled>
+                  <Labeled label="Licence expiry"><input type="date" className="input" /></Labeled>
                 </div>
               </div>
             </section>
@@ -206,7 +355,7 @@ export default function Booking() {
                       </div>
                     </div>
                   </Labeled>
-                  <Labeled label="Name on card" full><input defaultValue="Alex Rossi" className="input" /></Labeled>
+                  <Labeled label="Name on card" full><input defaultValue={profile?.full_name ?? ''} className="input" /></Labeled>
                   <Labeled label="Expiry"><input defaultValue="08 / 28" className="input" /></Labeled>
                   <Labeled label="CVC"><input defaultValue="123" className="input" /></Labeled>
                   <Labeled label="Billing postcode"><input defaultValue="20121" className="input" /></Labeled>
@@ -216,6 +365,12 @@ export default function Booking() {
                   <input type="checkbox" defaultChecked className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]" />
                   Save this card for faster checkout next time.
                 </label>
+
+                {submitError && (
+                  <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                    <Icon name="info" size={16} /> {submitError}
+                  </p>
+                )}
               </div>
             </section>
           )}
@@ -224,10 +379,16 @@ export default function Booking() {
             <button onClick={back} className="btn btn-ghost text-muted hover:text-ink">
               <Icon name="chevronLeft" size={16} /> {step === 0 ? 'Cancel' : 'Back'}
             </button>
-            <button onClick={next} className="btn btn-primary btn-lg">
-              {step === 2 ? `Pay ${eur(b.total)}` : 'Continue'}
-              <Icon name="arrowRight" size={17} />
-            </button>
+            {step === 2 ? (
+              <button onClick={confirmBooking} disabled={submitting} className="btn btn-primary btn-lg disabled:opacity-60">
+                {submitting ? 'Confirming…' : `Pay ${eur(b.total)}`}
+                {!submitting && <Icon name="arrowRight" size={17} />}
+              </button>
+            ) : (
+              <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-primary btn-lg disabled:opacity-50">
+                Continue <Icon name="arrowRight" size={17} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -247,15 +408,15 @@ export default function Booking() {
             <div className="border-t border-line px-4 py-3.5">
               <div className="flex items-center justify-between text-[13.5px]">
                 <span className="flex items-center gap-1.5 text-muted"><Icon name="calendar" size={14} /> Dates</span>
-                <span className="font-medium text-ink">{fmtDate(start)} → {fmtDate(end)}</span>
+                <span className="font-medium text-ink">{fmtDate(pickupDate)} → {fmtDate(returnDate)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-[13.5px]">
                 <span className="flex items-center gap-1.5 text-muted"><Icon name="pin" size={14} /> Location</span>
-                <span className="truncate pl-2 font-medium text-ink">{loc}</span>
+                <span className="truncate pl-2 font-medium text-ink">{pickupLoc || car.location}</span>
               </div>
             </div>
             <dl className="space-y-2.5 border-t border-line px-4 py-4 text-[14px]">
-              <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
               <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
               <div className="hairline my-1" />

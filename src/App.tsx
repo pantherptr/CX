@@ -22,6 +22,7 @@ import HostDashboard from './pages/HostDashboard';
 import Messages from './pages/Messages';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
+import TripDetails from './pages/TripDetails';
 import NotFound from './pages/NotFound';
 
 function ScrollToTop() {
@@ -116,13 +117,19 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/browse" element={<Browse />} />
           <Route path="/cars/:slug" element={<CarDetails />} />
-          <Route path="/book/:slug" element={<Booking />} />
           <Route path="/list-your-car" element={<ListCar />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/help" element={<Help />} />
+
+          {/* Booking needs a real signed-in renter, but keeps the
+              marketing chrome (Navbar/Footer) rather than the dashboard
+              shell — nest ProtectedRoute inside MarketingLayout for it. */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/book/:slug" element={<Booking />} />
+          </Route>
         </Route>
 
         <Route element={<ProtectedRoute />}>
@@ -131,6 +138,7 @@ export default function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/trips/:id" element={<TripDetails />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
