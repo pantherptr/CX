@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { CarCard } from '../components/CarCard';
-import { CarLoader } from '../components/CarLoader';
 import { Icon } from '../components/Icon';
+import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
 
 const ALL_TYPES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -178,6 +178,22 @@ function FilterPanel({
   );
 }
 
+function CarCardSkeleton() {
+  return (
+    <div className="card overflow-hidden">
+      <div className="skeleton aspect-[4/3]" />
+      <div className="space-y-2.5 p-4">
+        <div className="skeleton h-4 w-3/5 rounded-md" />
+        <div className="skeleton h-3 w-2/5 rounded-md" />
+        <div className="mt-3 flex items-end justify-between border-t border-line pt-3.5">
+          <div className="skeleton h-3 w-16 rounded-md" />
+          <div className="skeleton h-4 w-14 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Browse() {
   const [params, setParams] = useSearchParams();
   const { cars, loading, error } = useCars();
@@ -229,6 +245,8 @@ export default function Browse() {
     filters.types.length + filters.brands.length + filters.fuels.length + filters.features.length +
     (filters.transmission !== 'any' ? 1 : 0) + (filters.seats ? 1 : 0) + (filters.rating ? 1 : 0) +
     (filters.priceMax !== emptyFilters.priceMax ? 1 : 0);
+
+  const { ref: countRef, value: animatedCount } = useCountUp<HTMLSpanElement>(results.length, { duration: 500 });
 
   return (
     <div className="container-page py-8">
@@ -296,15 +314,16 @@ export default function Browse() {
         <div className="min-w-0 flex-1">
           {!loading && !error && (
             <p className="mb-4 text-[14px] text-muted">
-              <span className="font-medium text-ink">{results.length}</span> cars available
+              <span ref={countRef} className="font-medium tabular-nums text-ink">{animatedCount}</span> cars available
               {city && <> in <span className="font-medium text-ink">{city}</span></>}
             </p>
           )}
 
           {loading ? (
-            <div className="flex flex-col items-center gap-3 py-24 text-center">
-              <CarLoader size={90} />
-              <p className="text-[14px] text-muted">Loading the fleet…</p>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CarCardSkeleton key={i} />
+              ))}
             </div>
           ) : error ? (
             <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
@@ -326,7 +345,9 @@ export default function Browse() {
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, i) => (
-                <CarCard key={car.id} car={car} priority={i < 6} />
+                <Reveal key={car.id} delay={(i % 6) * 60}>
+                  <CarCard car={car} priority={i < 6} />
+                </Reveal>
               ))}
             </div>
           )}

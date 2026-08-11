@@ -80,7 +80,7 @@ export default function HostDashboard() {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Earnings chart */}
-          <section className="card p-6" id="earnings">
+          <section className="card scroll-mt-20 p-6" id="earnings">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-display text-lg font-semibold text-ink">Earnings</h2>
@@ -102,7 +102,7 @@ export default function HostDashboard() {
           </section>
 
           {/* Upcoming reservations */}
-          <section className="card p-6" id="bookings">
+          <section className="card scroll-mt-20 p-6" id="bookings">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">Upcoming</h2>
               <span className="badge badge-accent">{hostStats.upcoming} reservations</span>
@@ -126,7 +126,7 @@ export default function HostDashboard() {
         </div>
 
         {/* Recent bookings table */}
-        <section className="mt-8 card overflow-hidden" id="cars">
+        <section className="mt-8 scroll-mt-20 card overflow-hidden" id="cars">
           <div className="flex items-center justify-between p-5">
             <h2 className="font-display text-lg font-semibold text-ink">Recent bookings</h2>
             <button className="btn btn-secondary btn-sm">Export <Icon name="arrowUpRight" size={15} /></button>

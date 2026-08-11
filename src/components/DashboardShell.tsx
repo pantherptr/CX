@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
 import { customer, hostUser } from '../data/content';
+import { useAuth } from '../lib/auth';
 
 export interface NavItem {
   label: string;
@@ -32,6 +33,27 @@ const hostNav: NavItem[] = [
   { label: 'Settings', to: '/settings', icon: 'settings' },
 ];
 
+// Mobile-only drawer content: on mobile, Home/Explore/Trips/Saved/Profile
+// already live in the bottom tab bar (see BottomNav.tsx), so the drawer
+// here only needs what that bar doesn't cover — host-specific sections
+// (for the host variant) plus the same secondary items the marketing
+// Navbar's hamburger shows.
+const hostOnlyMobileLinks: NavItem[] = [
+  { label: 'My Cars', to: '/host#cars', icon: 'cars' },
+  { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
+  { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },
+  { label: 'Earnings', to: '/host#earnings', icon: 'euro' },
+  { label: 'Reviews', to: '/host#reviews', icon: 'reviews' },
+];
+
+const secondaryMobileLinks: NavItem[] = [
+  { label: 'Messages', to: '/messages', icon: 'message', badge: 2 },
+  { label: 'Notifications', to: '/notifications', icon: 'bell' },
+  { label: 'Payments', to: '/settings#payments', icon: 'card' },
+  { label: 'Settings', to: '/settings', icon: 'settings' },
+  { label: 'Help & Support', to: '/help', icon: 'headset' },
+];
+
 export function DashboardShell({
   variant,
   active,
@@ -46,11 +68,19 @@ export function DashboardShell({
   const nav = variant === 'customer' ? customerNav : hostNav;
   const user = variant === 'customer' ? customer : hostUser;
   const [open, setOpen] = useState(false);
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => void (document.body.style.overflow = '');
   }, [open]);
+
+  const handleSignOut = async () => {
+    setOpen(false);
+    await signOut();
+    navigate('/');
+  };
 
   const SidebarInner = (
     <div className="flex h-full flex-col">
@@ -113,10 +143,67 @@ export function DashboardShell({
             <p className="truncate text-[13.5px] font-medium text-ink">{user.fullName}</p>
             <p className="truncate text-[12px] text-muted">{user.email}</p>
           </div>
-          <Link to="/" className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel" aria-label="Exit to site">
+          <button onClick={handleSignOut} className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel" aria-label="Sign out">
             <Icon name="logout" size={17} />
-          </Link>
+          </button>
         </div>
+      </div>
+    </div>
+  );
+
+  // Mobile drawer: Home/Explore/Trips/Saved/Profile already live in the
+  // bottom tab bar on mobile (BottomNav.tsx) — this only needs what that
+  // bar doesn't cover.
+  const mobileLinks = variant === 'host' ? [...hostOnlyMobileLinks, ...secondaryMobileLinks] : secondaryMobileLinks;
+  const MobileDrawerInner = (
+    <div className="flex h-full flex-col">
+      <div className="flex h-[68px] items-center justify-between px-5">
+        <Logo />
+        <button
+          onClick={() => setOpen(false)}
+          className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
+          aria-label="Close menu"
+        >
+          <Icon name="x" size={22} />
+        </button>
+      </div>
+      <div className="px-3">
+        <div className="hairline" />
+      </div>
+      <nav className="flex-1 overflow-y-auto p-3">
+        <ul className="flex flex-col gap-0.5">
+          {mobileLinks.map((n) => (
+            <li key={n.label}>
+              <NavLink
+                to={n.to}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+              >
+                <Icon name={n.icon} size={19} className="text-muted" />
+                <span className="flex-1">{n.label}</span>
+                {n.badge && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
+                    {n.badge}
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className="border-t border-line p-3">
+        <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+          <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13.5px] font-medium text-ink">{user.fullName}</p>
+            <p className="truncate text-[12px] text-muted">{user.email}</p>
+          </div>
+        </div>
+        <button onClick={handleSignOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14.5px] text-danger hover:bg-panel">
+          <Icon name="logout" size={19} />
+          Sign out
+        </button>
       </div>
     </div>
   );
@@ -133,7 +220,7 @@ export function DashboardShell({
         <div className="fixed inset-0 z-[70] lg:hidden">
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-0 h-full w-[80%] max-w-xs animate-[fade-up_0.3s_ease] bg-surface shadow-pop">
-            {SidebarInner}
+            {MobileDrawerInner}
           </div>
         </div>
       )}
@@ -150,11 +237,12 @@ export function DashboardShell({
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             <Link to="/browse" className="btn btn-secondary btn-sm hidden sm:inline-flex">Find a car</Link>
-            <button className="relative grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
+            <Link to="/notifications" className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
               <Icon name="bell" size={20} />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-accent ring-2 ring-bg" />
-            </button>
-            <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            </Link>
+            <Link to="/settings">
+              <img src={user.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            </Link>
           </div>
         </header>
 

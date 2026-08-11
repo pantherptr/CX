@@ -315,7 +315,14 @@
   .animate-fade-up { animation: fade-up 0.7s var(--ease-out-expo) both; }
   .animate-fade-in { animation: fade-in 0.6s ease both; }
   .animate-scale-in { animation: scale-in 0.4s var(--ease-out-expo) both; }
-  .animate-page { animation: fade-in 0.45s ease both; }
+
+  /* Route transition: quick fade + rise, driven by App.tsx remounting on
+     `key={location.pathname}` — no router-transition library needed. */
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-page { animation: page-in 0.4s var(--ease-out-expo) both; }
 
   /* Scroll-reveal: hidden until observed, then eases up into place */
   .reveal {
@@ -472,6 +479,58 @@
     animation: flow-dash 4.5s linear infinite;
   }
 
+  /* ============================================================
+     PREMIUM INTERACTION KIT
+     Safe-area insets, press/lift/zoom primitives and the small set
+     of cinematic keyframes used across the hero, car cards and
+     galleries. Deliberately built on plain GPU transforms rather
+     than a 3D/animation library — see src/components/motion.tsx.
+     ============================================================ */
+
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pl-safe { padding-left: env(safe-area-inset-left, 0px); }
+  .pr-safe { padding-right: env(safe-area-inset-right, 0px); }
+
+  /* Frosted surface for floating chrome (bottom nav, quick-view header). */
+  .glass {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  /* Tactile press feedback — the touch-friendly equivalent of the
+     mouse-follow tilt (see useTilt in motion.tsx), used on car cards
+     and other tappable surfaces on coarse-pointer devices. */
+  .pressable {
+    transition: transform 0.2s var(--ease-out-expo);
+  }
+  .pressable:active { transform: scale(0.97); }
+
+  @keyframes heart-pop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.4); }
+    55% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  .animate-heart-pop { animation: heart-pop 0.5s var(--ease-out-expo); }
+
+  /* Slow continuous zoom/drift for hero and gallery imagery. */
+  @keyframes ken-burns {
+    0% { transform: scale(1) translate3d(0, 0, 0); }
+    100% { transform: scale(1.09) translate3d(-1.2%, -1%, 0); }
+  }
+  .animate-ken-burns { animation: ken-burns 20s var(--ease-out-expo) infinite alternate; }
+
+  /* A single soft light pass sweeping across glossy imagery. */
+  @keyframes light-sweep {
+    0% { transform: translateX(-130%) skewX(-14deg); opacity: 0; }
+    10% { opacity: 0.5; }
+    24% { opacity: 0; }
+    100% { transform: translateX(230%) skewX(-14deg); opacity: 0; }
+  }
+  .animate-light-sweep { animation: light-sweep 7s ease-in-out infinite; }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
@@ -481,7 +540,8 @@
     .reveal { opacity: 1 !important; transform: none !important; }
     .imgfade { opacity: 1 !important; }
     .animate-core, .animate-ring, .animate-ring-rev, .animate-blink,
-    .animate-scan, .animate-caret, .animate-orbit, .flow-line {
+    .animate-scan, .animate-caret, .animate-orbit, .flow-line,
+    .animate-heart-pop, .animate-ken-burns, .animate-light-sweep, .animate-page {
       animation: none !important;
     }
   }

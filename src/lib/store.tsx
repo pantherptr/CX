@@ -80,7 +80,7 @@ export function useApp() {
 export function Toaster() {
   const { toasts, dismiss } = useApp();
   return (
-    <div className="fixed z-[100] bottom-5 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 w-[calc(100%-2rem)] max-w-sm sm:left-auto sm:right-6 sm:translate-x-0 sm:items-end">
+    <div className="fixed z-[100] bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 w-[calc(100%-2rem)] max-w-sm sm:left-auto sm:right-6 sm:bottom-6 sm:translate-x-0 sm:items-end">
       {toasts.map((t) => (
         <div
           key={t.id}

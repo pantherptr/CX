@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { customer } from '../data/content';
@@ -12,6 +13,8 @@ const TABS: { id: string; label: string; icon: IconName }[] = [
   { id: 'security', label: 'Security', icon: 'lock' },
   { id: 'preferences', label: 'Preferences', icon: 'settings' },
 ];
+
+const TAB_IDS = new Set(TABS.map((t) => t.id));
 
 function Field({ label, children, full }: { label: string; children: ReactNode; full?: boolean }) {
   return (
@@ -32,9 +35,15 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 export default function Settings() {
   const { toast } = useApp();
+  const { hash } = useLocation();
   const [tab, setTab] = useState('personal');
   const [toggles, setToggles] = useState({ trip: true, promo: false, host: true, sms: true, push: true });
   const flip = (k: keyof typeof toggles) => setToggles((t) => ({ ...t, [k]: !t[k] }));
+
+  useEffect(() => {
+    const id = hash.slice(1);
+    if (TAB_IDS.has(id)) setTab(id);
+  }, [hash]);
 
   return (
     <DashboardShell variant="customer" active="Settings">

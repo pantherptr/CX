@@ -38,6 +38,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Upcoming trip */}
+        <div id="trips" className="scroll-mt-20" />
         {upcoming && upcomingCar && (
           <section className="mt-8">
             <h2 className="mb-4 font-display text-lg font-semibold text-ink">Your upcoming trip</h2>
@@ -137,7 +138,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Saved cars */}
-        <section className="mt-8" id="saved">
+        <section className="mt-8 scroll-mt-20" id="saved">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold text-ink">Saved cars</h2>
             <Link to="/browse" className="text-[13.5px] font-medium text-muted hover:text-ink">Browse more</Link>

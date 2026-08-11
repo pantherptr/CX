@@ -6,7 +6,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { Modal, Stars } from '../components/primitives';
-import { CarLoader } from '../components/CarLoader';
+import { Reveal } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { HostCard } from '../components/HostCard';
 import { CarCard } from '../components/CarCard';
@@ -75,9 +75,24 @@ export default function CarDetails() {
 
   if (result === undefined) {
     return (
-      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
-        <CarLoader size={90} />
-        <p className="text-[14px] text-muted">Loading car details…</p>
+      <div className="container-page pt-5">
+        <div className="skeleton h-4 w-64 rounded-md" />
+        <div className="skeleton mt-4 h-9 w-96 max-w-full rounded-md" />
+        <div className="skeleton mt-3 h-4 w-52 rounded-md" />
+        <div className="mt-6 grid gap-2.5 sm:grid-cols-4 sm:grid-rows-2 sm:h-[460px]">
+          <div className="skeleton col-span-2 row-span-2 h-64 rounded-2xl sm:h-full" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton hidden h-full rounded-none sm:block" />
+          ))}
+        </div>
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px] lg:gap-14">
+          <div className="space-y-3">
+            <div className="skeleton h-24 rounded-2xl" />
+            <div className="skeleton h-40 rounded-2xl" />
+            <div className="skeleton h-40 rounded-2xl" />
+          </div>
+          <div className="skeleton hidden h-72 rounded-2xl lg:block" />
+        </div>
       </div>
     );
   }
@@ -224,6 +239,49 @@ export default function CarDetails() {
               </div>
             </section>
 
+            {/* Protection, cancellation & pickup */}
+            <section className="mt-8 border-t border-line pt-8">
+              <h2 className="font-display text-xl font-semibold text-ink">Good to know</h2>
+              <div className="mt-5 grid gap-5 sm:grid-cols-3">
+                <div className="flex gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent">
+                    <Icon name="shield" size={20} />
+                  </span>
+                  <div>
+                    <p className="font-medium text-ink">Trip protection</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                      A protection plan is included on every booking, priced at 18% of your rental
+                      cost and shown as its own line at checkout — never folded into the daily rate.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent">
+                    <Icon name="calendar" size={20} />
+                  </span>
+                  <div>
+                    <p className="font-medium text-ink">Cancellation policy</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                      Free cancellation up to 24 hours before pick-up. After that, the trip is
+                      confirmed with your host.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent">
+                    <Icon name="pin" size={20} />
+                  </span>
+                  <div>
+                    <p className="font-medium text-ink">Pick-up</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                      In {car.location}. The exact address is shared once your booking is
+                      confirmed{host.responseTime ? ` — ${host.name} typically responds ${host.responseTime}` : ''}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Host */}
             <section className="mt-8 border-t border-line pt-8">
               <h2 className="mb-5 font-display text-xl font-semibold text-ink">Meet your host</h2>
@@ -276,8 +334,10 @@ export default function CarDetails() {
           <section className="mt-16 border-t border-line pt-10">
             <h2 className="font-display text-2xl font-semibold text-ink">More {car.category.toLowerCase()} cars</h2>
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {similar.map((c) => (
-                <CarCard key={c.id} car={c} />
+              {similar.map((c, i) => (
+                <Reveal key={c.id} delay={i * 70}>
+                  <CarCard car={c} />
+                </Reveal>
               ))}
             </div>
           </section>
@@ -285,7 +345,7 @@ export default function CarDetails() {
       </div>
 
       {/* Sticky reserve (mobile) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[13px] text-muted">

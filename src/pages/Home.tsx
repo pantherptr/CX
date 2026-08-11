@@ -3,7 +3,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { CarCard } from '../components/CarCard';
 import { SectionHead } from '../components/primitives';
-import { Reveal, Img } from '../components/motion';
+import { Reveal, Img, useParallax } from '../components/motion';
 import { LiveVisitors } from '../components/LiveVisitors';
 import { IntelligenceMap } from '../components/home/IntelligenceMap';
 import { Pipeline } from '../components/home/Pipeline';
@@ -33,6 +33,8 @@ const steps = [
 ];
 
 export default function Home() {
+  const heroParallax = useParallax(0.08, 40);
+
   return (
     <div>
       {/* ---------------- HERO ---------------- */}
@@ -86,12 +88,19 @@ export default function Home() {
           </div>
 
           {/* Hero visual */}
-          <div className="relative animate-scale-in">
+          <div className="relative animate-scale-in" style={{ transform: `translateY(${heroParallax}px)` }}>
             <div className="relative overflow-hidden rounded-[1.75rem] border border-line shadow-lift">
-              <Img
-                src={unsplash('photo-1580273916550-e323be2ae537', 1100)}
-                alt="A premium car available on Velora"
-                className="aspect-[4/3] w-full object-cover lg:aspect-[5/6]"
+              <div className="animate-ken-burns h-full w-full">
+                <Img
+                  src={unsplash('photo-1580273916550-e323be2ae537', 1100)}
+                  alt="A premium car available on Velora"
+                  className="aspect-[4/3] w-full object-cover lg:aspect-[5/6]"
+                />
+              </div>
+              {/* A single soft light pass, once the entrance settles */}
+              <div
+                className="animate-light-sweep pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                style={{ animationDelay: '1.8s' }}
               />
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/40 to-transparent" />
             </div>

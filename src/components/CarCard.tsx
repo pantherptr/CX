@@ -1,27 +1,34 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Car } from '../data/types';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { Icon } from './Icon';
-import { Img } from './motion';
+import { Img, useTilt } from './motion';
+import { CarQuickView } from './CarQuickView';
 
 function FavButton({ carId }: { carId: string }) {
   const { isFavorite, toggleFavorite, toast } = useApp();
   const fav = isFavorite(carId);
+  const [popping, setPopping] = useState(false);
   return (
     <button
       onClick={(e) => {
         e.preventDefault();
         toggleFavorite(carId);
+        setPopping(true);
         toast({
           title: fav ? 'Removed from saved' : 'Saved to your list',
           icon: 'heart',
         });
       }}
+      onAnimationEnd={() => setPopping(false)}
       aria-label={fav ? 'Remove from saved' : 'Save car'}
       aria-pressed={fav}
-      className="grid h-9 w-9 place-items-center rounded-full bg-white/90 backdrop-blur shadow-hair transition-all duration-200 hover:scale-110 active:scale-95"
+      className={`pressable grid h-9 w-9 place-items-center rounded-full bg-white/90 backdrop-blur shadow-hair transition-transform duration-200 hover:scale-110 ${
+        popping ? 'animate-heart-pop' : ''
+      }`}
     >
       <Icon
         name="heart"
@@ -43,11 +50,14 @@ export function CarCard({
   layout?: 'grid' | 'horizontal';
   priority?: boolean;
 }) {
+  const { ref: tiltRef, style: tiltStyle } = useTilt<HTMLAnchorElement>({ max: 5, lift: 1.012 });
+  const [quickView, setQuickView] = useState(false);
+
   if (layout === 'horizontal') {
     return (
       <Link
         to={`/cars/${car.slug}`}
-        className="card card-hover group flex overflow-hidden"
+        className="card card-hover pressable group flex overflow-hidden"
       >
         <div className="relative w-36 shrink-0 overflow-hidden sm:w-44">
           <img
@@ -82,59 +92,79 @@ export function CarCard({
   }
 
   return (
-    <Link to={`/cars/${car.slug}`} className="group block">
-      <article className="card card-hover overflow-hidden">
-        <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
-          <Img
-            src={unsplash(car.images[0], 700)}
-            alt={`${car.year} ${car.make} ${car.model}`}
-            loading={priority ? 'eager' : 'lazy'}
-            className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
-          />
-          <div className="absolute left-3 top-3 flex gap-2">
-            {car.instantBook && (
-              <span className="badge badge-glass">
-                <Icon name="instant" size={12} className="text-accent" /> Instant book
-              </span>
-            )}
-          </div>
-          <div className="absolute right-3 top-3">
-            <FavButton carId={car.id} />
-          </div>
-        </div>
+    <>
+      <Link
+        ref={tiltRef}
+        to={`/cars/${car.slug}`}
+        className="group block"
+        style={{ ...tiltStyle, transformStyle: 'preserve-3d' }}
+      >
+        <article className="card card-hover overflow-hidden">
+          <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
+            <Img
+              src={unsplash(car.images[0], 700)}
+              alt={`${car.year} ${car.make} ${car.model}`}
+              loading={priority ? 'eager' : 'lazy'}
+              className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
+            />
+            <div className="absolute left-3 top-3 flex gap-2">
+              {car.instantBook && (
+                <span className="badge badge-glass">
+                  <Icon name="instant" size={12} className="text-accent" /> Instant book
+                </span>
+              )}
+            </div>
+            <div className="absolute right-3 top-3">
+              <FavButton carId={car.id} />
+            </div>
 
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="truncate font-medium text-[15px] text-ink">
-                {car.make} {car.model}
-              </h3>
-              <p className="mt-0.5 text-[13px] text-muted">
-                {car.trim ? `${car.trim} · ` : ''}
-                {car.year}
+            {/* Quick view — hover-revealed on desktop, always faintly present on touch. */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setQuickView(true);
+              }}
+              className="glass pressable absolute bottom-3 left-1/2 flex -translate-x-1/2 translate-y-1 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
+            >
+              <Icon name="grid" size={13} /> Quick view
+            </button>
+          </div>
+
+          <div className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-medium text-[15px] text-ink">
+                  {car.make} {car.model}
+                </h3>
+                <p className="mt-0.5 text-[13px] text-muted">
+                  {car.trim ? `${car.trim} · ` : ''}
+                  {car.year}
+                </p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-ink">
+                <Icon name="star" size={13} className="text-star" />
+                {car.rating.toFixed(2)}
+              </span>
+            </div>
+
+            <p className="mt-2.5 flex items-center gap-1 text-[13px] text-muted">
+              <Icon name="pin" size={13} /> {car.location}
+            </p>
+
+            <div className="mt-3.5 flex items-end justify-between border-t border-line pt-3.5">
+              <p className="text-[13px] text-muted">
+                {car.trips} trips
+              </p>
+              <p className="text-ink">
+                <span className="text-[17px] font-semibold">{eur(car.pricePerDay)}</span>
+                <span className="text-[13px] text-muted"> / day</span>
               </p>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-ink">
-              <Icon name="star" size={13} className="text-star" />
-              {car.rating.toFixed(2)}
-            </span>
           </div>
+        </article>
+      </Link>
 
-          <p className="mt-2.5 flex items-center gap-1 text-[13px] text-muted">
-            <Icon name="pin" size={13} /> {car.location}
-          </p>
-
-          <div className="mt-3.5 flex items-end justify-between border-t border-line pt-3.5">
-            <p className="text-[13px] text-muted">
-              {car.trips} trips
-            </p>
-            <p className="text-ink">
-              <span className="text-[17px] font-semibold">{eur(car.pricePerDay)}</span>
-              <span className="text-[13px] text-muted"> / day</span>
-            </p>
-          </div>
-        </div>
-      </article>
-    </Link>
+      <CarQuickView car={quickView ? car : null} open={quickView} onClose={() => setQuickView(false)} />
+    </>
   );
 }

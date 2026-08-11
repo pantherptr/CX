@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { SplashScreen } from './components/CarLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
 
 import Home from './pages/Home';
@@ -15,17 +16,50 @@ import HowItWorks from './pages/HowItWorks';
 import About from './pages/About';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Help from './pages/Help';
 import CustomerDashboard from './pages/CustomerDashboard';
 import HostDashboard from './pages/HostDashboard';
 import Messages from './pages/Messages';
+import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-  }, [pathname]);
+    if (!hash) {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      return;
+    }
+
+    // The target element (e.g. #trips, #saved) often belongs to a
+    // route behind ProtectedRoute's async auth check, so it can mount
+    // several frames after this effect fires. Poll briefly rather than
+    // assuming one frame is enough — some hashes (e.g. /settings#payments)
+    // select a tab rather than naming a real element, so give up and land
+    // at the top if nothing shows up.
+    let cancelled = false;
+    let attempts = 0;
+    const tryScroll = () => {
+      if (cancelled) return;
+      const target = document.getElementById(hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 30) {
+        window.requestAnimationFrame(tryScroll);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      }
+    };
+    tryScroll();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, hash]);
   return null;
 }
 
@@ -71,11 +105,12 @@ function useSplash(minMs = 1500) {
 export default function App() {
   const location = useLocation();
   const splash = useSplash();
+  const bottomNavVisible = useBottomNavVisible();
   return (
     <>
       {splash.visible && <SplashScreen hiding={splash.hiding} />}
       <ScrollToTop />
-      <div key={location.pathname} className="animate-page">
+      <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
       <Routes location={location}>
         <Route element={<MarketingLayout />}>
           <Route path="/" element={<Home />} />
@@ -87,18 +122,21 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/help" element={<Help />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<CustomerDashboard />} />
           <Route path="/host" element={<HostDashboard />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
       </Routes>
       </div>
+      <BottomNav />
       <Toaster />
     </>
   );

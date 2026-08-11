@@ -54,11 +54,22 @@ export function Navbar() {
     return () => void (document.body.style.overflow = '');
   }, [menuOpen]);
 
-  const acctLinks = [
+  // Primary destinations — on mobile these are covered by the bottom tab
+  // bar (BottomNav), so only the desktop dropdown shows them.
+  const primaryLinks = [
     { to: '/dashboard', label: 'Customer dashboard', icon: 'grid' as const },
     { to: '/host', label: 'Host dashboard', icon: 'chart' as const },
+  ];
+
+  // Secondary destinations — shown in both the desktop dropdown and the
+  // mobile drawer, matching the split the design calls for.
+  const secondaryLinks = [
     { to: '/messages', label: 'Messages', icon: 'message' as const },
+    { to: '/notifications', label: 'Notifications', icon: 'bell' as const },
+    { to: '/settings#payments', label: 'Payments', icon: 'card' as const },
     { to: '/settings', label: 'Settings', icon: 'settings' as const },
+    { to: '/help', label: 'Help & Support', icon: 'headset' as const },
+    { to: '/list-your-car', label: 'Become a host', icon: 'key' as const },
   ];
 
   return (
@@ -123,7 +134,20 @@ export function Navbar() {
                       <p className="truncate text-[13px] text-muted">{session.user.email}</p>
                     </div>
                     <div className="hairline mx-2 mb-1" />
-                    {acctLinks.map((a) => (
+                    {primaryLinks.map((a) => (
+                      <Link
+                        key={a.to}
+                        to={a.to}
+                        role="menuitem"
+                        onClick={() => setAcctOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink-soft transition-colors hover:bg-panel"
+                      >
+                        <Icon name={a.icon} size={17} className="text-muted" />
+                        {a.label}
+                      </Link>
+                    ))}
+                    <div className="hairline mx-2 my-1" />
+                    {secondaryLinks.map((a) => (
                       <Link
                         key={a.to}
                         to={a.to}
@@ -206,7 +230,7 @@ export function Navbar() {
               {session ? (
                 <>
                   <ul className="flex flex-col gap-1">
-                    {acctLinks.map((a) => (
+                    {secondaryLinks.map((a) => (
                       <li key={a.to}>
                         <Link
                           to={a.to}
