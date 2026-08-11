@@ -1,13 +1,13 @@
 import { useMemo, useState, useEffect, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { cars } from '../data/cars';
+import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { CarCard } from '../components/CarCard';
+import { CarLoader } from '../components/CarLoader';
 import { Icon } from '../components/Icon';
 import { eur } from '../lib/format';
 
 const ALL_TYPES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
-const ALL_BRANDS = [...new Set(cars.map((c) => c.make))].sort();
 const ALL_FUEL = ['Petrol', 'Diesel', 'Electric', 'Hybrid'];
 const ALL_FEATURES = ['Apple CarPlay', 'Heated seats', 'Adaptive cruise control', 'Panoramic roof', 'Premium sound', 'Navigation'];
 const SORTS = [
@@ -72,7 +72,17 @@ function Check({ label, checked, onChange, note }: { label: string; checked: boo
   );
 }
 
-function FilterPanel({ f, set, reset }: { f: Filters; set: (fn: (p: Filters) => Filters) => void; reset: () => void }) {
+function FilterPanel({
+  f,
+  set,
+  reset,
+  brands,
+}: {
+  f: Filters;
+  set: (fn: (p: Filters) => Filters) => void;
+  reset: () => void;
+  brands: string[];
+}) {
   return (
     <div>
       <FilterGroup title="Price per day">
@@ -103,7 +113,7 @@ function FilterPanel({ f, set, reset }: { f: Filters; set: (fn: (p: Filters) => 
 
       <FilterGroup title="Brand">
         <div className="max-h-52 overflow-y-auto pr-1">
-          {ALL_BRANDS.map((b) => (
+          {brands.map((b) => (
             <Check key={b} label={b} checked={f.brands.includes(b)} onChange={() => set((p) => ({ ...p, brands: toggle(p.brands, b) }))} />
           ))}
         </div>
@@ -170,6 +180,7 @@ function FilterPanel({ f, set, reset }: { f: Filters; set: (fn: (p: Filters) => 
 
 export default function Browse() {
   const [params, setParams] = useSearchParams();
+  const { cars, loading, error } = useCars();
   const [filters, setFilters] = useState<Filters>(() => ({
     ...emptyFilters,
     types: params.get('type') && ALL_TYPES.includes(params.get('type')!) ? [params.get('type')!] : [],
@@ -184,8 +195,10 @@ export default function Browse() {
     return () => void (document.body.style.overflow = '');
   }, [drawer]);
 
+  const brands = useMemo(() => [...new Set((cars ?? []).map((c) => c.make))].sort(), [cars]);
+
   const results = useMemo(() => {
-    let out = cars.filter((c: Car) => {
+    let out = (cars ?? []).filter((c: Car) => {
       if (c.pricePerDay > filters.priceMax) return false;
       if (filters.types.length && !filters.types.includes(c.category)) return false;
       if (filters.brands.length && !filters.brands.includes(c.make)) return false;
@@ -204,7 +217,7 @@ export default function Browse() {
       case 'trips': out = [...out].sort((a, b) => b.trips - a.trips); break;
     }
     return out;
-  }, [filters, sort, city]);
+  }, [cars, filters, sort, city]);
 
   const reset = () => {
     setFilters(emptyFilters);
@@ -275,18 +288,33 @@ export default function Browse() {
               <h2 className="font-medium text-ink">Filters</h2>
               {activeCount > 0 && <span className="badge badge-accent">{activeCount} active</span>}
             </div>
-            <FilterPanel f={filters} set={setFilters} reset={reset} />
+            <FilterPanel f={filters} set={setFilters} reset={reset} brands={brands} />
           </div>
         </aside>
 
         {/* Results */}
         <div className="min-w-0 flex-1">
-          <p className="mb-4 text-[14px] text-muted">
-            <span className="font-medium text-ink">{results.length}</span> cars available
-            {city && <> in <span className="font-medium text-ink">{city}</span></>}
-          </p>
+          {!loading && !error && (
+            <p className="mb-4 text-[14px] text-muted">
+              <span className="font-medium text-ink">{results.length}</span> cars available
+              {city && <> in <span className="font-medium text-ink">{city}</span></>}
+            </p>
+          )}
 
-          {results.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center gap-3 py-24 text-center">
+              <CarLoader size={90} />
+              <p className="text-[14px] text-muted">Loading the fleet…</p>
+            </div>
+          ) : error ? (
+            <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-danger">
+                <Icon name="info" size={26} />
+              </span>
+              <h3 className="mt-2 font-display text-xl font-semibold text-ink">Couldn't load cars</h3>
+              <p className="max-w-sm text-[14px] text-muted">{error}</p>
+            </div>
+          ) : results.length === 0 ? (
             <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
               <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-muted">
                 <Icon name="search" size={26} />
@@ -317,7 +345,7 @@ export default function Browse() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-2">
-              <FilterPanel f={filters} set={setFilters} reset={reset} />
+              <FilterPanel f={filters} set={setFilters} reset={reset} brands={brands} />
             </div>
             <div className="border-t border-line p-4">
               <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">

@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { carBySlug } from '../data/cars';
-import { hosts } from '../data/hosts';
+import { fetchCarWithHost, fetchSimilarCars } from '../lib/data/cars';
+import type { Car, Host } from '../data/types';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { Modal, Stars } from '../components/primitives';
+import { CarLoader } from '../components/CarLoader';
 import { BookingCard } from '../components/BookingCard';
 import { HostCard } from '../components/HostCard';
 import { CarCard } from '../components/CarCard';
-import { cars } from '../data/cars';
 import { useApp } from '../lib/store';
 import NotFound from './NotFound';
 
@@ -26,14 +26,66 @@ const featureIcon: Record<string, IconName> = {
 
 export default function CarDetails() {
   const { slug } = useParams();
-  const car = carBySlug(slug ?? '');
   const { isFavorite, toggleFavorite, toast } = useApp();
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
+  const [similar, setSimilar] = useState<Car[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  if (!car) return <NotFound />;
-  const host = hosts[car.hostId];
+  useEffect(() => {
+    let cancelled = false;
+    setResult(undefined);
+    setSimilar([]);
+    setLoadError(null);
+
+    fetchCarWithHost(slug ?? '')
+      .then((data) => {
+        if (cancelled) return;
+        setResult(data);
+        if (data) {
+          fetchSimilarCars(data.car.category, data.car.id)
+            .then((cars) => {
+              if (!cancelled) setSimilar(cars);
+            })
+            .catch(() => {
+              /* Similar cars are a nice-to-have — a failure here shouldn't block the page. */
+            });
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load this car.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loadError) {
+    return (
+      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-danger">
+          <Icon name="info" size={26} />
+        </span>
+        <h1 className="font-display text-xl font-semibold text-ink">Couldn't load this car</h1>
+        <p className="max-w-sm text-[14px] text-muted">{loadError}</p>
+      </div>
+    );
+  }
+
+  if (result === undefined) {
+    return (
+      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
+        <CarLoader size={90} />
+        <p className="text-[14px] text-muted">Loading car details…</p>
+      </div>
+    );
+  }
+
+  if (result === null) return <NotFound />;
+
+  const { car, host } = result;
   const fav = isFavorite(car.id);
-  const similar = cars.filter((c) => c.category === car.category && c.id !== car.id).slice(0, 3);
   const gallery = car.images;
 
   const specs: { icon: IconName; label: string; value: string }[] = [
@@ -69,7 +121,7 @@ export default function CarDetails() {
             <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[14px] text-muted">
               <span className="inline-flex items-center gap-1 font-medium text-ink">
                 <Icon name="star" size={15} className="text-star" /> {car.rating.toFixed(2)}
-                <span className="font-normal text-muted">({car.reviews.length * 9} reviews)</span>
+                <span className="font-normal text-muted">({car.reviews.length} reviews)</span>
               </span>
               <span className="inline-flex items-center gap-1"><Icon name="route" size={15} /> {car.trips} trips</span>
               <span className="inline-flex items-center gap-1"><Icon name="pin" size={15} /> {car.location}</span>
@@ -184,7 +236,7 @@ export default function CarDetails() {
                 <h2 className="font-display text-xl font-semibold text-ink">Reviews</h2>
                 <span className="inline-flex items-center gap-1.5 text-[15px] font-medium text-ink">
                   <Icon name="star" size={16} className="text-star" /> {car.rating.toFixed(2)}
-                  <span className="font-normal text-muted">· {car.reviews.length * 9} reviews</span>
+                  <span className="font-normal text-muted">· {car.reviews.length} reviews</span>
                 </span>
               </div>
               <div className="mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2">
@@ -206,7 +258,7 @@ export default function CarDetails() {
                 onClick={() => toast({ title: 'Showing all reviews', icon: 'reviews' })}
                 className="btn btn-secondary mt-7"
               >
-                Show all {car.reviews.length * 9} reviews
+                Show all {car.reviews.length} reviews
               </button>
             </section>
           </div>
