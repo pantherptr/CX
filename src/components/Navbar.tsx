@@ -40,8 +40,8 @@ function PublicNavbar() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 bg-accent-bright transition-shadow duration-300 ${
-          scrolled ? 'shadow-[0_4px_20px_-8px_rgba(0,0,0,0.35)]' : ''
+        className={`sticky top-0 z-50 border-b bg-surface/95 backdrop-blur-xl transition-shadow duration-300 ${
+          scrolled ? 'border-line shadow-[0_1px_0_rgba(22,22,26,0.04)]' : 'border-transparent'
         }`}
       >
         <nav className="container-page flex h-[68px] items-center justify-between gap-4">
@@ -54,7 +54,7 @@ function PublicNavbar() {
                     to={l.to}
                     className={({ isActive }) =>
                       `group relative rounded-lg px-3 py-2 text-[14.5px] font-medium transition-colors ${
-                        isActive ? 'text-ink' : 'text-ink/70 hover:text-ink'
+                        isActive ? 'text-ink' : 'text-muted hover:text-ink'
                       }`
                     }
                   >
@@ -62,7 +62,7 @@ function PublicNavbar() {
                       <>
                         {l.label}
                         <span
-                          className={`absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-ink transition-all duration-300 ${
+                          className={`absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-accent transition-all duration-300 ${
                             isActive
                               ? 'scale-x-100 opacity-100'
                               : 'scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-40'
@@ -76,17 +76,20 @@ function PublicNavbar() {
             </ul>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link to="/login" className="btn btn-secondary btn-sm hidden sm:inline-flex">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="hidden text-[14.5px] font-medium text-ink-soft transition-colors hover:text-ink sm:inline-flex"
+            >
               Sign in
             </Link>
-            <Link to="/signup" className="btn btn-primary btn-sm hidden sm:inline-flex">
+            <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
               Create account
             </Link>
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-black/10 lg:hidden"
+              className="grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-panel lg:hidden"
               aria-label="Open menu"
             >
               <Icon name="menu" size={22} />
