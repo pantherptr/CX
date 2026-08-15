@@ -1,45 +1,32 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
+import { useAuth } from '../lib/auth';
 
-/* ------------------------------- Logo ------------------------------- */
+/* ------------------------------- Logo -------------------------------
+ * Renders the official CX logo asset (public/velora-logo.png) exactly as
+ * provided — no CSS/SVG recreation, no color or proportion changes.
+ * `mono`/`className` are kept for call-site compatibility; sizing is
+ * responsive via the height classes below, width follows automatically
+ * so the source image's proportions are never distorted. */
 export function Logo({
-  mono = false,
+  mono: _mono = false,
   className = '',
 }: {
   mono?: boolean;
   className?: string;
 }) {
+  // Authenticated users can't land on "/" (PublicOnlyRoute bounces them
+  // straight back), so the logo should point at the dashboard directly
+  // rather than round-trip through a redirect.
+  const { session } = useAuth();
   return (
-    <Link
-      to="/"
-      className={`group inline-flex items-center gap-2.5 ${className}`}
-      aria-label="Velora home"
-    >
-      <span
-        className={`grid h-8 w-8 place-items-center rounded-[10px] transition-transform duration-300 group-hover:-rotate-6 ${
-          mono ? 'bg-white text-ink' : 'bg-accent text-white'
-        }`}
-      >
-        <svg width="19" height="19" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <path
-            d="M8 21l3.4-9.5A2 2 0 0 1 13.3 10h5.4a2 2 0 0 1 1.9 1.5L24 21"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="16" cy="16.5" r="2.2" fill="currentColor" />
-        </svg>
-      </span>
-      <span
-        className={`font-display text-[1.35rem] font-semibold tracking-[-0.01em] ${
-          mono ? 'text-white' : 'text-ink'
-        }`}
-        style={{ letterSpacing: '0.02em' }}
-      >
-        VELORA
-      </span>
+    <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
+      <img
+        src="/velora-logo.png"
+        alt="CX"
+        className="h-9 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10"
+      />
     </Link>
   );
 }

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ============================================================
-   VELORA DESIGN SYSTEM
+   CX DESIGN SYSTEM
    A sophisticated neutral palette with a single confident
    brand accent. Warm off-white surfaces, near-black ink,
    soft hairline borders, and quiet, layered shadows.
@@ -24,12 +24,29 @@
   --color-line: #e8e7e1;
   --color-line-strong: #dcdbd3;
 
-  /* Brand accent — Velora green (mobility / go) */
-  --color-accent: #0b7a5b;
-  --color-accent-600: #096a4f;
-  --color-accent-700: #075740;
-  --color-accent-050: #eef6f2;
-  --color-accent-100: #d7ece3;
+  /* Brand accent — sampled from the real CX logo (peaks ~#00CC42–#00D447).
+     Split in two: `--color-accent` is deepened just enough to hold AA
+     contrast on white for text/icons/focus rings; `--color-accent-bright`
+     is the true, undiluted logo green, reserved for glows, dark-surface
+     fills and active-state highlights where it doesn't have to double as
+     body text. Using the raw bright value everywhere reads as "generic
+     green SaaS" and fails contrast in several existing text usages. */
+  --color-accent: #008536;
+  --color-accent-600: #00762c;
+  --color-accent-700: #005e23;
+  --color-accent-bright: #00d447;
+  --color-accent-050: #e8faec;
+  --color-accent-100: #c9f2d5;
+
+  /* Noir — the deep-black end of the brand, used for premium dark
+     sections (hero, later: host analytics, promo bands). Not a pure
+     `#000`: carries the faintest green undertone so it pairs with the
+     bright accent rather than fighting it. */
+  --color-noir: #0a0d0b;
+  --color-noir-2: #12160f;
+  --color-line-noir: #1d231c;
+  --color-on-noir: #f5f6f2;
+  --color-on-noir-muted: #9aa39a;
 
   /* Support signals */
   --color-star: #e0a52a;
@@ -145,9 +162,18 @@
   .btn-accent {
     background: var(--color-accent);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(11, 122, 91, 0.2), 0 10px 24px -12px rgba(11, 122, 91, 0.55);
+    box-shadow: 0 1px 2px rgba(0, 133, 54, 0.2), 0 10px 24px -12px rgba(0, 133, 54, 0.55);
   }
   .btn-accent:hover { background: var(--color-accent-600); }
+
+  /* Solid fill in the true bright logo green, for CTAs on dark/noir
+     surfaces where the deeper `--color-accent` would read muddy. */
+  .btn-accent-bright {
+    background: var(--color-accent-bright);
+    color: var(--color-noir);
+    box-shadow: 0 1px 2px rgba(0, 212, 71, 0.25), 0 10px 28px -10px rgba(0, 212, 71, 0.5);
+  }
+  .btn-accent-bright:hover { background: #00e850; }
 
   .btn-secondary {
     background: var(--color-surface);
@@ -322,7 +348,13 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .animate-page { animation: page-in 0.4s var(--ease-out-expo) both; }
+  /* `backwards` (not `both`) — the end keyframe (opacity:1, translateY(0))
+     is visually identical to the element's default un-animated state, but
+     `both` would leave a permanent `transform: matrix(1,0,0,1,0,0)` on
+     this ancestor after the animation finishes. Any non-`none` transform
+     creates a containing block for `position: fixed` descendants, which
+     silently breaks every full-screen modal on the page. */
+  .animate-page { animation: page-in 0.4s var(--ease-out-expo) backwards; }
 
   /* Scroll-reveal: hidden until observed, then eases up into place */
   .reveal {
@@ -398,7 +430,7 @@
 
   /* ============================================================
      SYSTEM SECTIONS
-     Shared texture, glow and signal primitives for the Velora
+     Shared texture, glow and signal primitives for the CX
      Intelligence / Ecosystem / Command Center bands. Same palette
      as the rest of the site — the futurism comes from precision,
      not from new colour.
@@ -426,7 +458,14 @@
 
   /* Soft accent bloom behind the core / focal elements. */
   .glow-accent {
-    background: radial-gradient(closest-side, rgba(11, 122, 91, 0.16), transparent 78%);
+    background: radial-gradient(closest-side, rgba(0, 133, 54, 0.16), transparent 78%);
+  }
+
+  /* Brighter bloom for noir/dark surfaces — the true logo green at low
+     opacity, meant to be seen against near-black rather than the light
+     panel background `.glow-accent` is tuned for. */
+  .glow-accent-bright {
+    background: radial-gradient(closest-side, rgba(0, 212, 71, 0.35), transparent 72%);
   }
 
   /* Masks a texture so it fades out at the edges of its section. */

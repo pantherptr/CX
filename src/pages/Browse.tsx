@@ -6,6 +6,7 @@ import { CarCard } from '../components/CarCard';
 import { Icon } from '../components/Icon';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
+import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 
 const ALL_TYPES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
 const ALL_FUEL = ['Petrol', 'Diesel', 'Electric', 'Hybrid'];
@@ -19,23 +20,27 @@ const SORTS = [
 ];
 
 interface Filters {
+  priceMin: number;
   priceMax: number;
   types: string[];
   brands: string[];
   transmission: string;
   fuels: string[];
   seats: number;
+  bags: number;
   features: string[];
   rating: number;
 }
 
 const emptyFilters: Filters = {
+  priceMin: 30,
   priceMax: 800,
   types: [],
   brands: [],
   transmission: 'any',
   fuels: [],
   seats: 0,
+  bags: 0,
   features: [],
   rating: 0,
 };
@@ -77,28 +82,75 @@ function FilterPanel({
   set,
   reset,
   brands,
+  pickupDate,
+  returnDate,
+  setPickupDate,
+  setReturnDate,
 }: {
   f: Filters;
   set: (fn: (p: Filters) => Filters) => void;
   reset: () => void;
   brands: string[];
+  pickupDate: string;
+  returnDate: string;
+  setPickupDate: (v: string) => void;
+  setReturnDate: (v: string) => void;
 }) {
   return (
     <div>
+      <FilterGroup title="Dates">
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Pick-up</span>
+            <input
+              type="date"
+              value={pickupDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setPickupDate(e.target.value)}
+              className="input mt-1 !py-2 !text-[13px]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Return</span>
+            <input
+              type="date"
+              value={returnDate}
+              min={pickupDate || new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setReturnDate(e.target.value)}
+              className="input mt-1 !py-2 !text-[13px]"
+            />
+          </label>
+        </div>
+      </FilterGroup>
+
       <FilterGroup title="Price per day">
         <div className="flex items-center justify-between text-[14px] text-ink">
-          <span className="text-muted">Up to</span>
-          <span className="font-semibold">{eur(f.priceMax)}</span>
+          <span className="font-semibold">{eur(f.priceMin)}</span>
+          <span className="text-muted">to</span>
+          <span className="font-semibold">{eur(f.priceMax)}{f.priceMax >= 800 ? '+' : ''}</span>
         </div>
-        <input
-          type="range"
-          min={30}
-          max={800}
-          step={10}
-          value={f.priceMax}
-          onChange={(e) => set((p) => ({ ...p, priceMax: +e.target.value }))}
-          className="mt-3 w-full accent-[var(--color-accent)]"
-        />
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="range"
+            min={30}
+            max={800}
+            step={10}
+            value={f.priceMin}
+            onChange={(e) => set((p) => ({ ...p, priceMin: Math.min(+e.target.value, p.priceMax) }))}
+            className="w-full accent-[var(--color-accent)]"
+            aria-label="Minimum price per day"
+          />
+          <input
+            type="range"
+            min={30}
+            max={800}
+            step={10}
+            value={f.priceMax}
+            onChange={(e) => set((p) => ({ ...p, priceMax: Math.max(+e.target.value, p.priceMin) }))}
+            className="w-full accent-[var(--color-accent)]"
+            aria-label="Maximum price per day"
+          />
+        </div>
         <div className="mt-1 flex justify-between text-[12px] text-faint">
           <span>€30</span>
           <span>€800+</span>
@@ -155,6 +207,21 @@ function FilterPanel({
         </div>
       </FilterGroup>
 
+      <FilterGroup title="Luggage">
+        <div className="flex gap-2">
+          {[0, 1, 2, 3, 4].map((b) => (
+            <button
+              key={b}
+              onClick={() => set((p) => ({ ...p, bags: b }))}
+              data-active={f.bags === b}
+              className="chip flex-1 justify-center"
+            >
+              {b === 0 ? 'Any' : `${b}+`}
+            </button>
+          ))}
+        </div>
+      </FilterGroup>
+
       <FilterGroup title="Features">
         {ALL_FEATURES.map((t) => (
           <Check key={t} label={t} checked={f.features.includes(t)} onChange={() => set((p) => ({ ...p, features: toggle(p.features, t) }))} />
@@ -202,28 +269,53 @@ export default function Browse() {
     types: params.get('type') && ALL_TYPES.includes(params.get('type')!) ? [params.get('type')!] : [],
   }));
   const [city, setCity] = useState(params.get('city') ?? '');
+  const [pickupDate, setPickupDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
   const [sort, setSort] = useState('recommended');
   const [sortOpen, setSortOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
 
   useEffect(() => {
     document.body.style.overflow = drawer ? 'hidden' : '';
     return () => void (document.body.style.overflow = '');
   }, [drawer]);
 
+  // Fetched once per car list (real, date-only exposure via migration
+  // 0009's security-definer functions — bookings' own RLS hides everything
+  // else from a browsing customer). Small catalogue, one bulk round trip.
+  useEffect(() => {
+    if (!cars || cars.length === 0) return;
+    let cancelled = false;
+    fetchBookedRangesBulk(cars.map((c) => c.id))
+      .then((map) => {
+        if (!cancelled) setBookedByCar(map);
+      })
+      .catch(() => {
+        /* availability filtering is a nicety — fail open, show all cars */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cars]);
+
   const brands = useMemo(() => [...new Set((cars ?? []).map((c) => c.make))].sort(), [cars]);
+
+  const hasDateFilter = Boolean(pickupDate && returnDate && returnDate > pickupDate);
 
   const results = useMemo(() => {
     let out = (cars ?? []).filter((c: Car) => {
-      if (c.pricePerDay > filters.priceMax) return false;
+      if (c.pricePerDay < filters.priceMin || c.pricePerDay > filters.priceMax) return false;
       if (filters.types.length && !filters.types.includes(c.category)) return false;
       if (filters.brands.length && !filters.brands.includes(c.make)) return false;
       if (filters.transmission !== 'any' && c.transmission !== filters.transmission) return false;
       if (filters.fuels.length && !filters.fuels.includes(c.fuel)) return false;
       if (filters.seats && c.seats < filters.seats) return false;
+      if (filters.bags && c.luggage < filters.bags) return false;
       if (filters.rating && c.rating < filters.rating) return false;
       if (filters.features.length && !filters.features.every((ft) => c.features.includes(ft))) return false;
       if (city && c.city.toLowerCase() !== city.toLowerCase()) return false;
+      if (hasDateFilter && rangesOverlap(pickupDate, returnDate, bookedByCar.get(c.id) ?? [])) return false;
       return true;
     });
     switch (sort) {
@@ -233,18 +325,21 @@ export default function Browse() {
       case 'trips': out = [...out].sort((a, b) => b.trips - a.trips); break;
     }
     return out;
-  }, [cars, filters, sort, city]);
+  }, [cars, filters, sort, city, hasDateFilter, pickupDate, returnDate, bookedByCar]);
 
   const reset = () => {
     setFilters(emptyFilters);
     setCity('');
+    setPickupDate('');
+    setReturnDate('');
     setParams({});
   };
 
   const activeCount =
     filters.types.length + filters.brands.length + filters.fuels.length + filters.features.length +
-    (filters.transmission !== 'any' ? 1 : 0) + (filters.seats ? 1 : 0) + (filters.rating ? 1 : 0) +
-    (filters.priceMax !== emptyFilters.priceMax ? 1 : 0);
+    (filters.transmission !== 'any' ? 1 : 0) + (filters.seats ? 1 : 0) + (filters.bags ? 1 : 0) + (filters.rating ? 1 : 0) +
+    (filters.priceMax !== emptyFilters.priceMax || filters.priceMin !== emptyFilters.priceMin ? 1 : 0) +
+    (hasDateFilter ? 1 : 0);
 
   const { ref: countRef, value: animatedCount } = useCountUp<HTMLSpanElement>(results.length, { duration: 500 });
 
@@ -306,7 +401,16 @@ export default function Browse() {
               <h2 className="font-medium text-ink">Filters</h2>
               {activeCount > 0 && <span className="badge badge-accent">{activeCount} active</span>}
             </div>
-            <FilterPanel f={filters} set={setFilters} reset={reset} brands={brands} />
+            <FilterPanel
+              f={filters}
+              set={setFilters}
+              reset={reset}
+              brands={brands}
+              pickupDate={pickupDate}
+              returnDate={returnDate}
+              setPickupDate={setPickupDate}
+              setReturnDate={setReturnDate}
+            />
           </div>
         </aside>
 
@@ -346,7 +450,7 @@ export default function Browse() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, i) => (
                 <Reveal key={car.id} delay={(i % 6) * 60}>
-                  <CarCard car={car} priority={i < 6} />
+                  <CarCard car={car} priority={i < 6} available={hasDateFilter} />
                 </Reveal>
               ))}
             </div>
@@ -366,7 +470,16 @@ export default function Browse() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-2">
-              <FilterPanel f={filters} set={setFilters} reset={reset} brands={brands} />
+              <FilterPanel
+              f={filters}
+              set={setFilters}
+              reset={reset}
+              brands={brands}
+              pickupDate={pickupDate}
+              returnDate={returnDate}
+              setPickupDate={setPickupDate}
+              setReturnDate={setReturnDate}
+            />
             </div>
             <div className="border-t border-line p-4">
               <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">

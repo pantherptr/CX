@@ -28,7 +28,7 @@ export default function About() {
             The premium way to move across Europe.
           </h1>
           <p className="mt-5 text-[16.5px] leading-relaxed text-muted text-pretty">
-            Velora began in Milan with a simple idea: renting a car should feel as premium as the cars themselves.
+            CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves.
             Today we connect tens of thousands of drivers with trusted local hosts in seven cities — and we’re just getting started.
           </p>
         </div>
@@ -88,7 +88,7 @@ export default function About() {
       <section className="container-page mt-24">
         <div className="flex flex-col items-center gap-6 rounded-[1.75rem] bg-ink px-6 py-16 text-center text-white">
           <h2 className="font-display text-3xl font-semibold text-balance sm:text-4xl">Join the journey.</h2>
-          <p className="max-w-md text-[15px] text-white/70">Whether you’re driving or hosting, there’s a place for you at Velora.</p>
+          <p className="max-w-md text-[15px] text-white/70">Whether you’re driving or hosting, there’s a place for you at CX.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/browse" className="btn btn-accent btn-lg">Find a car <Icon name="arrowRight" size={17} /></Link>
             <Link to="/list-your-car" className="btn btn-lg bg-white/10 text-white hover:bg-white/15">List your car</Link>

@@ -1,14 +1,47 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Host } from '../data/types';
 import { Icon } from './Icon';
 import { useApp } from '../lib/store';
+import { useAuth } from '../lib/auth';
+import { findOrCreateConversation } from '../lib/data/messages';
 
-export function HostCard({ host }: { host: Host }) {
+export function HostCard({ host, carId }: { host: Host; carId: string }) {
   const { toast } = useApp();
+  const { session } = useAuth();
+  const navigate = useNavigate();
+  const [messaging, setMessaging] = useState(false);
+
+  const contactHost = async () => {
+    if (!session) {
+      navigate('/login', { state: { from: { pathname: window.location.pathname } } });
+      return;
+    }
+    setMessaging(true);
+    try {
+      const conversationId = await findOrCreateConversation(carId, session.user.id, host.id);
+      navigate(`/messages?c=${conversationId}`);
+    } catch (err) {
+      toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
+    } finally {
+      setMessaging(false);
+    }
+  };
+
   return (
     <div className="card p-6">
       <div className="flex items-center gap-4">
         <div className="relative">
-          <img src={host.avatar} alt={host.name} className="h-16 w-16 rounded-full object-cover" />
+          {/* A host who signed up through the app has no avatar until they
+              upload one — rendering src="" would fire a real browser
+              request for the whole page again. */}
+          {host.avatar ? (
+            <img src={host.avatar} alt={host.name} className="h-16 w-16 rounded-full object-cover" />
+          ) : (
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
+              <Icon name="user" size={26} />
+            </span>
+          )}
           {host.verified && (
             <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-surface bg-accent text-white">
               <Icon name="check" size={13} strokeWidth={3} />
@@ -43,10 +76,11 @@ export function HostCard({ host }: { host: Host }) {
       <p className="mt-3 text-[14px] leading-relaxed text-ink-soft text-pretty">{host.bio}</p>
 
       <button
-        onClick={() => toast({ title: `Message sent to ${host.name.split(' ')[0]}`, icon: 'message' })}
-        className="btn btn-secondary btn-block mt-5"
+        onClick={contactHost}
+        disabled={messaging}
+        className="btn btn-secondary btn-block mt-5 disabled:opacity-60"
       >
-        <Icon name="message" size={16} /> Contact {host.name.split(' ')[0]}
+        <Icon name="message" size={16} /> {messaging ? 'Opening…' : `Contact ${host.name.split(' ')[0]}`}
       </button>
     </div>
   );

@@ -2,7 +2,6 @@ import type {
   Category,
   Testimonial,
   Trip,
-  HostBooking,
   Conversation,
 } from './types';
 import { avatar } from '../lib/img';
@@ -24,7 +23,7 @@ export const testimonials: Testimonial[] = [
     location: 'Milan, Italy',
     avatar: avatar(20),
     rating: 5,
-    body: 'Booked a Porsche for a weekend in the Dolomites and it was flawless from start to finish. The car was pristine and the host met me right at my hotel. Velora has completely replaced rental counters for me.',
+    body: 'Booked a Porsche for a weekend in the Dolomites and it was flawless from start to finish. The car was pristine and the host met me right at my hotel. CX has completely replaced rental counters for me.',
   },
   {
     id: 't2',
@@ -32,7 +31,7 @@ export const testimonials: Testimonial[] = [
     location: 'Paris, France',
     avatar: avatar(13),
     rating: 5,
-    body: 'I list two cars on Velora and the extra income covers both leases. The app makes managing bookings and payouts genuinely effortless — I barely think about it.',
+    body: 'I list two cars on CX and the extra income covers both leases. The app makes managing bookings and payouts genuinely effortless — I barely think about it.',
   },
   {
     id: 't3',
@@ -77,34 +76,6 @@ export const customerStats = {
   saved: 4,
   spent: 4820,
 };
-
-export const hostStats = {
-  totalEarnings: 41280,
-  thisMonth: 3940,
-  activeCars: 4,
-  upcoming: 6,
-  rating: 4.96,
-};
-
-export const hostBookings: HostBooking[] = [
-  { id: 'hb1', guest: 'Elena Rossi', guestAvatar: avatar(5), carId: 'car-1', start: '24 Aug', end: '27 Aug', status: 'confirmed', payout: 392 },
-  { id: 'hb2', guest: 'Thomas Klein', guestAvatar: avatar(15), carId: 'car-3', start: '25 Aug', end: '29 Aug', status: 'confirmed', payout: 612 },
-  { id: 'hb3', guest: 'Chloé Martin', guestAvatar: avatar(25), carId: 'car-15', start: '30 Aug', end: '02 Sep', status: 'pending', payout: 284 },
-  { id: 'hb4', guest: 'Marco Bianchi', guestAvatar: avatar(35), carId: 'car-10', start: '01 Sep', end: '04 Sep', status: 'confirmed', payout: 2022 },
-  { id: 'hb5', guest: 'Anna Schmidt', guestAvatar: avatar(41), carId: 'car-1', start: '06 Sep', end: '08 Sep', status: 'pending', payout: 261 },
-];
-
-// Monthly earnings for the host chart (Jan–Aug).
-export const earnings = [
-  { month: 'Jan', value: 2810 },
-  { month: 'Feb', value: 3120 },
-  { month: 'Mar', value: 2960 },
-  { month: 'Apr', value: 3680 },
-  { month: 'May', value: 4210 },
-  { month: 'Jun', value: 5030 },
-  { month: 'Jul', value: 4640 },
-  { month: 'Aug', value: 3940 },
-];
 
 export const conversations: Conversation[] = [
   {

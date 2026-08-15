@@ -52,6 +52,7 @@ export interface Car {
   fuel: Fuel;
   seats: number;
   doors: number;
+  luggage: number;
   mileage: string;
   drive: string;
   images: string[];
@@ -59,6 +60,8 @@ export interface Car {
   description: string;
   hostId: string;
   reviews: Review[];
+  /** Only populated for real Supabase-backed cars (host's own listings) — the mock seed data doesn't carry a lifecycle status. */
+  status?: 'draft' | 'published';
 }
 
 export interface Category {
@@ -87,17 +90,6 @@ export interface Trip {
   location: string;
   total: number;
   reference: string;
-}
-
-export interface HostBooking {
-  id: string;
-  guest: string;
-  guestAvatar: string;
-  carId: string;
-  start: string;
-  end: string;
-  status: 'confirmed' | 'pending' | 'completed';
-  payout: number;
 }
 
 export interface ChatMessage {

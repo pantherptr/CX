@@ -4,15 +4,25 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
+import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { CarLoader } from '../components/CarLoader';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { fetchCarWithHost } from '../lib/data/cars';
-import { checkAvailability, createBooking, type Booking as BookingRecord } from '../lib/data/bookings';
+import {
+  checkAvailability,
+  createBooking,
+  useExtrasCatalog,
+  type Booking as BookingRecord,
+  type FareTier,
+} from '../lib/data/bookings';
+import { findOrCreateConversation } from '../lib/data/messages';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
 
-const STEPS = ['Trip details', 'Driver details', 'Payment', 'Confirmation'];
+const STEPS = ['Trip details', 'Extras', 'Driver details', 'Payment', 'Confirmation'];
+const CONFIRMATION_STEP = STEPS.length - 1;
+const FLEX_SURCHARGE_RATE = 0.1;
 
 function Stepper({ step }: { step: number }) {
   return (
@@ -25,7 +35,7 @@ function Stepper({ step }: { step: number }) {
             <div className="flex items-center gap-2.5">
               <span
                 className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold transition-all ${
-                  done ? 'bg-accent text-white' : active ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
+                  done ? 'bg-accent-bright text-noir' : active ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
                 }`}
               >
                 {done ? <Icon name="check" size={15} strokeWidth={3} /> : i + 1}
@@ -33,7 +43,7 @@ function Stepper({ step }: { step: number }) {
               <span className={`hidden text-[13.5px] font-medium sm:block ${active || done ? 'text-ink' : 'text-faint'}`}>{s}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <span className={`mx-3 h-px flex-1 ${done ? 'bg-accent' : 'bg-line'}`} />
+              <span className={`mx-3 h-px flex-1 ${done ? 'bg-accent-bright' : 'bg-line'}`} />
             )}
           </li>
         );
@@ -69,10 +79,14 @@ export default function Booking() {
   const [pickupLoc, setPickupLoc] = useState(params.get('loc') ?? '');
   const [dateError, setDateError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
+  const [fareTier, setFareTier] = useState<FareTier>('standard');
+  const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
+  const { extras: extrasCatalog } = useExtrasCatalog();
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<BookingRecord | null>(null);
+  const [messaging, setMessaging] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +171,22 @@ export default function Booking() {
   if (result === null) return <NotFound />;
   const { car, host } = result;
   const b = priceBreakdown(car, days || 1);
+  const activeDays = days || 1;
+  const selectedExtraItems = (extrasCatalog ?? []).filter((e) => selectedExtras.has(e.id));
+  const extrasTotal = selectedExtraItems.reduce(
+    (sum, e) => sum + (e.priceModel === 'per_day' ? e.price * activeDays : e.price),
+    0,
+  );
+  const flexSurcharge = fareTier === 'flexible' ? Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE) * activeDays : 0;
+  const grandTotal = b.total + extrasTotal + flexSurcharge;
+
+  const toggleExtra = (id: string) =>
+    setSelectedExtras((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const canContinueStep0 = !dateError && pickupDate && returnDate && availability === 'available';
 
@@ -169,6 +199,18 @@ export default function Booking() {
   };
   const back = () => (step > 0 ? setStep((s) => s - 1) : navigate(-1));
 
+  const handleMessageHost = async () => {
+    if (!session) return;
+    setMessaging(true);
+    try {
+      const conversationId = await findOrCreateConversation(car.id, session.user.id, host.id);
+      navigate(`/messages?c=${conversationId}`);
+    } catch (err) {
+      toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
+      setMessaging(false);
+    }
+  };
+
   const confirmBooking = async () => {
     if (!session) {
       toast({ title: 'Sign in to book a car', icon: 'user' });
@@ -177,13 +219,15 @@ export default function Booking() {
     }
     setSubmitting(true);
     setSubmitError(null);
-    const { booking, error } = await createBooking({
+    const { booking, error, extrasError } = await createBooking({
       carId: car.id,
       renterId: session.user.id,
       startDate: pickupDate,
       endDate: returnDate,
       pickupLocation: pickupLoc || car.location,
       protectionAddon: true,
+      fareTier,
+      extraIds: Array.from(selectedExtras),
     });
     setSubmitting(false);
     if (error || !booking) {
@@ -191,19 +235,23 @@ export default function Booking() {
       return;
     }
     setConfirmed(booking);
-    setStep(3);
+    setStep(CONFIRMATION_STEP);
     window.scrollTo({ top: 0 });
-    toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
+    if (extrasError) {
+      toast({ title: 'Booking confirmed', desc: "But we couldn't add your extras — contact support.", icon: 'info' });
+    } else {
+      toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
+    }
   };
 
   const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
   /* ---------- Confirmation ---------- */
-  if (step === 3 && confirmed) {
+  if (step === CONFIRMATION_STEP && confirmed) {
     return (
       <div className="container-page max-w-2xl py-14">
         <div className="animate-scale-in text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-bright/15 text-accent-bright">
             <Icon name="checkCircle" size={34} />
           </span>
           <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">You're all set.</h1>
@@ -234,19 +282,31 @@ export default function Booking() {
               </div>
             ))}
           </dl>
+          {(confirmed.fareTier === 'flexible' || confirmed.extras.length > 0) && (
+            <div className="flex flex-wrap gap-2 border-t border-line px-5 py-4">
+              {confirmed.fareTier === 'flexible' && (
+                <span className="badge badge-accent"><Icon name="shield" size={12} /> Flexible cancellation</span>
+              )}
+              {confirmed.extras.map((ex) => (
+                <span key={ex.id} className="badge bg-panel-2 text-ink-soft">{ex.name}</span>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-3 border-t border-line bg-panel/50 p-5">
             <img src={host.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
             <div className="flex-1">
               <p className="text-[14px] font-medium text-ink">{host.name}</p>
               <p className="text-[13px] text-muted">Responds {host.responseTime}</p>
             </div>
-            <Link to="/messages" className="btn btn-secondary btn-sm"><Icon name="message" size={15} /> Message</Link>
+            <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
+              <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
+            </button>
           </div>
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link to="/dashboard#trips" className="btn btn-primary btn-lg flex-1">View my trips <Icon name="arrowRight" size={17} /></Link>
-          <Link to="/browse" className="btn btn-secondary btn-lg flex-1">Browse more cars</Link>
+          <Link to="/dashboard#trips" className="btn btn-accent-bright btn-lg flex-1">View My Trip <Icon name="arrowRight" size={17} /></Link>
+          <Link to="/browse" className="btn btn-secondary btn-lg flex-1">Explore More Cars</Link>
         </div>
       </div>
     );
@@ -267,19 +327,26 @@ export default function Booking() {
               <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
               <p className="mt-1.5 text-[14.5px] text-muted">Confirm where and when you'd like the car.</p>
               <div className="mt-6 card p-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Labeled label="Pick-up location" full>
-                    <div className="relative">
-                      <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                      <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
-                    </div>
-                  </Labeled>
-                  <Labeled label="Pick-up date">
-                    <input type="date" min={todayISO()} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="input" />
-                  </Labeled>
-                  <Labeled label="Return date">
-                    <input type="date" min={pickupDate || todayISO()} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className="input" />
-                  </Labeled>
+                <Labeled label="Pick-up location">
+                  <div className="relative">
+                    <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                    <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
+                  </div>
+                </Labeled>
+
+                <div className="mt-5 border-t border-line pt-5">
+                  <span className="field-label">Dates</span>
+                  <div className="mt-2">
+                    <AvailabilityCalendar
+                      carId={car.id}
+                      startDate={pickupDate || null}
+                      endDate={returnDate || null}
+                      onSelect={(start, end) => {
+                        setPickupDate(start);
+                        setReturnDate(end);
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {dateError && (
@@ -303,13 +370,77 @@ export default function Booking() {
 
                 <div className="mt-5 rounded-xl bg-panel p-4">
                   <p className="flex items-center gap-2 text-[13.5px] font-medium text-ink"><Icon name="shield" size={16} className="text-accent" /> Premium protection included</p>
-                  <p className="mt-1 text-[13px] text-muted">Every Velora trip comes with damage protection and 24/7 roadside assistance.</p>
+                  <p className="mt-1 text-[13px] text-muted">Every CX trip comes with damage protection and 24/7 roadside assistance.</p>
                 </div>
+              </div>
+
+              <h2 className="mt-8 font-display text-lg font-semibold text-ink">Choose your fare</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    { tier: 'standard' as FareTier, title: 'Best price', desc: 'Free cancellation up to 24 hours before pick-up.', extra: null },
+                    {
+                      tier: 'flexible' as FareTier,
+                      title: 'Stay flexible',
+                      desc: 'Free cancellation any time before pick-up.',
+                      extra: `+${eur(Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE))}/day`,
+                    },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.tier}
+                    onClick={() => setFareTier(opt.tier)}
+                    className={`rounded-xl border p-4 text-left transition-colors ${
+                      fareTier === opt.tier ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-ink">{opt.title}</span>
+                      {opt.extra && <span className="text-[12.5px] font-medium text-muted">{opt.extra}</span>}
+                    </div>
+                    <p className="mt-1 text-[13px] text-muted">{opt.desc}</p>
+                  </button>
+                ))}
               </div>
             </section>
           )}
 
           {step === 1 && (
+            <section className="animate-fade-up">
+              <h1 className="font-display text-2xl font-semibold text-ink">Extras</h1>
+              <p className="mt-1.5 text-[14.5px] text-muted">Optional add-ons for this trip — skip if you don't need them.</p>
+              <div className="mt-6 space-y-3">
+                {(extrasCatalog ?? []).map((extra) => {
+                  const checked = selectedExtras.has(extra.id);
+                  return (
+                    <label
+                      key={extra.id}
+                      className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors ${
+                        checked ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'
+                      }`}
+                    >
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface text-ink-soft">
+                        <Icon name={extra.icon as IconName} size={20} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium text-ink">{extra.name}</span>
+                        <span className="block text-[13px] text-muted">{extra.description}</span>
+                      </span>
+                      <span className="shrink-0 text-[13.5px] font-medium text-ink">
+                        {eur(extra.price)}{extra.priceModel === 'per_day' ? '/day' : ''}
+                      </span>
+                      <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.id)} className="h-4 w-4 shrink-0 accent-[var(--color-accent)]" />
+                    </label>
+                  );
+                })}
+                {extrasCatalog && extrasCatalog.length === 0 && (
+                  <p className="text-[13.5px] text-muted">No extras available for this trip.</p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {step === 2 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Driver details</h1>
               <p className="mt-1.5 text-[14.5px] text-muted">We need a few details to verify the primary driver.</p>
@@ -333,7 +464,7 @@ export default function Booking() {
             </section>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Payment</h1>
               <p className="mt-1.5 flex items-center gap-1.5 text-[14.5px] text-muted"><Icon name="lock" size={15} className="text-accent" /> Encrypted &amp; secure. This is a demo — no real payment is taken.</p>
@@ -379,13 +510,13 @@ export default function Booking() {
             <button onClick={back} className="btn btn-ghost text-muted hover:text-ink">
               <Icon name="chevronLeft" size={16} /> {step === 0 ? 'Cancel' : 'Back'}
             </button>
-            {step === 2 ? (
-              <button onClick={confirmBooking} disabled={submitting} className="btn btn-primary btn-lg disabled:opacity-60">
-                {submitting ? 'Confirming…' : `Pay ${eur(b.total)}`}
+            {step === 3 ? (
+              <button onClick={confirmBooking} disabled={submitting} className="btn btn-accent-bright btn-lg disabled:opacity-60">
+                {submitting ? 'Confirming…' : `Pay ${eur(grandTotal)}`}
                 {!submitting && <Icon name="arrowRight" size={17} />}
               </button>
             ) : (
-              <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-primary btn-lg disabled:opacity-50">
+              <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-accent-bright btn-lg disabled:opacity-50">
                 Continue <Icon name="arrowRight" size={17} />
               </button>
             )}
@@ -419,11 +550,21 @@ export default function Booking() {
               <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
               <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
+              {fareTier === 'flexible' && (
+                <div className="flex justify-between"><dt className="text-muted">Flexible cancellation</dt><dd className="text-ink">{eur(flexSurcharge)}</dd></div>
+              )}
+              {selectedExtraItems.map((ex) => (
+                <div key={ex.id} className="flex justify-between">
+                  <dt className="text-muted">{ex.name}</dt>
+                  <dd className="text-ink">{eur(ex.priceModel === 'per_day' ? ex.price * activeDays : ex.price)}</dd>
+                </div>
+              ))}
               <div className="hairline my-1" />
-              <div className="flex justify-between text-[15px] font-semibold text-ink"><dt>Total</dt><dd>{eur(b.total)}</dd></div>
+              <div className="flex justify-between text-[15px] font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
             </dl>
             <div className="flex items-center gap-2 border-t border-line bg-panel/50 px-4 py-3 text-[12.5px] text-muted">
-              <Icon name="shield" size={14} className="text-accent" /> Free cancellation up to 24h before pick-up
+              <Icon name="shield" size={14} className="text-accent" />
+              {fareTier === 'flexible' ? 'Free cancellation any time before pick-up' : 'Free cancellation up to 24h before pick-up'}
             </div>
           </div>
         </aside>

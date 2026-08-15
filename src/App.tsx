@@ -4,8 +4,11 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { SplashScreen } from './components/CarLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PublicOnlyRoute } from './components/PublicOnlyRoute';
+import { HostRoute } from './components/HostRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
+import { useAuth } from './lib/auth';
 
 import Home from './pages/Home';
 import Browse from './pages/Browse';
@@ -65,19 +68,25 @@ function ScrollToTop() {
 }
 
 function MarketingLayout() {
+  // The full marketing footer (product/company/support/legal columns,
+  // socials, newsletter tone) belongs to the public site — an
+  // authenticated session on a sidebar-less page (Browse, car details,
+  // help, booking, list-a-car) should feel like the same private app as
+  // the dashboard, which never renders this footer at all.
+  const { session } = useAuth();
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />
+      {!session && <Footer />}
     </div>
   );
 }
 
 function useSplash(minMs = 1500) {
-  const [visible, setVisible] = useState(() => !sessionStorage.getItem('velora-splashed'));
+  const [visible, setVisible] = useState(() => !sessionStorage.getItem('cx-splashed'));
   const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
@@ -88,7 +97,7 @@ function useSplash(minMs = 1500) {
       const wait = Math.max(0, minMs - (performance.now() - start));
       window.setTimeout(() => {
         setHiding(true);
-        sessionStorage.setItem('velora-splashed', '1');
+        sessionStorage.setItem('cx-splashed', '1');
         window.setTimeout(() => setVisible(false), 520);
       }, wait);
     };
@@ -114,31 +123,40 @@ export default function App() {
       <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
       <Routes location={location}>
         <Route element={<MarketingLayout />}>
-          <Route path="/" element={<Home />} />
+          {/* Home, login and signup only make sense while signed out — an
+              authenticated session bounces straight to the dashboard,
+              whether arriving by direct URL, link, or browser back/forward. */}
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Route>
           <Route path="/browse" element={<Browse />} />
           <Route path="/cars/:slug" element={<CarDetails />} />
-          <Route path="/list-your-car" element={<ListCar />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           <Route path="/help" element={<Help />} />
 
-          {/* Booking needs a real signed-in renter, but keeps the
-              marketing chrome (Navbar/Footer) rather than the dashboard
-              shell — nest ProtectedRoute inside MarketingLayout for it. */}
+          {/* Booking and List Your Car need a real signed-in user, but
+              keep the marketing chrome (Navbar/Footer) rather than the
+              dashboard shell — nest ProtectedRoute inside MarketingLayout
+              for them. */}
           <Route element={<ProtectedRoute />}>
             <Route path="/book/:slug" element={<Booking />} />
+            <Route path="/list-your-car" element={<ListCar />} />
           </Route>
         </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<CustomerDashboard />} />
-          <Route path="/host" element={<HostDashboard />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/trips/:id" element={<TripDetails />} />
+
+          <Route element={<HostRoute />}>
+            <Route path="/host" element={<HostDashboard />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<NotFound />} />

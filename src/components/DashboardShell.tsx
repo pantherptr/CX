@@ -1,36 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
+import { useCountUp } from './motion';
+import { useUnreadMessageCount } from '../lib/data/messages';
+import { customerNav, hostNav, type NavItem } from '../lib/nav';
 
-export interface NavItem {
-  label: string;
-  to: string;
-  icon: IconName;
-  badge?: number;
+export function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
 }
-
-const customerNav: NavItem[] = [
-  { label: 'Overview', to: '/dashboard', icon: 'grid' },
-  { label: 'My Trips', to: '/dashboard#trips', icon: 'trips' },
-  { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },
-  { label: 'Messages', to: '/messages', icon: 'message', badge: 2 },
-  { label: 'Profile', to: '/settings', icon: 'user' },
-  { label: 'Payments', to: '/settings#payments', icon: 'card' },
-  { label: 'Settings', to: '/settings', icon: 'settings' },
-];
-
-const hostNav: NavItem[] = [
-  { label: 'Overview', to: '/host', icon: 'grid' },
-  { label: 'My Cars', to: '/host#cars', icon: 'cars' },
-  { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
-  { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },
-  { label: 'Earnings', to: '/host#earnings', icon: 'euro' },
-  { label: 'Messages', to: '/messages', icon: 'message', badge: 2 },
-  { label: 'Reviews', to: '/host#reviews', icon: 'reviews' },
-  { label: 'Settings', to: '/settings', icon: 'settings' },
-];
 
 // Mobile-only drawer content: on mobile, Home/Explore/Trips/Saved/Profile
 // already live in the bottom tab bar (see BottomNav.tsx), so the drawer
@@ -45,8 +27,8 @@ const hostOnlyMobileLinks: NavItem[] = [
   { label: 'Reviews', to: '/host#reviews', icon: 'reviews' },
 ];
 
-const secondaryMobileLinks: NavItem[] = [
-  { label: 'Messages', to: '/messages', icon: 'message', badge: 2 },
+const secondaryMobileLinks = (unreadCount: number): NavItem[] => [
+  { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
   { label: 'Notifications', to: '/notifications', icon: 'bell' },
   { label: 'Payments', to: '/settings#payments', icon: 'card' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
@@ -64,10 +46,11 @@ export function DashboardShell({
   children: ReactNode;
   fullHeight?: boolean;
 }) {
-  const nav = variant === 'customer' ? customerNav : hostNav;
   const [open, setOpen] = useState(false);
   const { signOut, session, profile } = useAuth();
-  const navigate = useNavigate();
+  const isHost = !!profile?.is_host;
+  const unreadCount = useUnreadMessageCount(session?.user.id);
+  const nav = variant === 'customer' ? customerNav(unreadCount) : hostNav(unreadCount);
 
   const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
   const displayEmail = session?.user.email ?? '';
@@ -81,7 +64,13 @@ export function DashboardShell({
   const handleSignOut = async () => {
     setOpen(false);
     await signOut();
-    navigate('/');
+    // A hard navigation, not `navigate('/')`: clearing the session here
+    // races ProtectedRoute's own redirect-to-/login (it's watching the
+    // same session and fires the instant it goes null), and that effect
+    // can commit after this call and win, stranding the user on /login
+    // instead of the public homepage. A full reload sidesteps the race
+    // and guarantees no stale authenticated state lingers in memory.
+    window.location.assign('/');
   };
 
   const SidebarInner = (
@@ -121,6 +110,30 @@ export function DashboardShell({
           })}
         </ul>
 
+        {isHost && (
+          <div className="mt-4 px-1">
+            <div className="flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
+              <Link
+                to="/dashboard"
+                className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                  variant === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
+                }`}
+              >
+                Driving
+              </Link>
+              <Link
+                to="/host"
+                className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                  variant === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
+                }`}
+              >
+                Hosting
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {!(isHost && variant === 'customer') && (
         <div className="mt-4 px-1">
           <div className="rounded-2xl border border-line bg-panel/60 p-4">
             <p className="text-[13px] font-medium text-ink">
@@ -136,6 +149,7 @@ export function DashboardShell({
             </Link>
           </div>
         </div>
+        )}
       </nav>
 
       <div className="border-t border-line p-3">
@@ -162,7 +176,7 @@ export function DashboardShell({
   // Mobile drawer: Home/Explore/Trips/Saved/Profile already live in the
   // bottom tab bar on mobile (BottomNav.tsx) — this only needs what that
   // bar doesn't cover.
-  const mobileLinks = variant === 'host' ? [...hostOnlyMobileLinks, ...secondaryMobileLinks] : secondaryMobileLinks;
+  const mobileLinks = variant === 'host' ? [...hostOnlyMobileLinks, ...secondaryMobileLinks(unreadCount)] : secondaryMobileLinks(unreadCount);
   const MobileDrawerInner = (
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center justify-between px-5">
@@ -278,13 +292,20 @@ export function StatCard({
   value,
   trend,
   accent,
+  countTo,
+  format,
 }: {
   icon: IconName;
   label: string;
   value: string;
   trend?: string;
   accent?: boolean;
+  /** When set, animates the displayed number up from 0 instead of showing `value` statically. */
+  countTo?: number;
+  format?: (n: number) => string;
 }) {
+  const { ref: countRef, value: animated } = useCountUp<HTMLParagraphElement>(countTo ?? 0, { duration: 900 });
+  const display = countTo !== undefined ? (format ? format(animated) : String(animated)) : value;
   return (
     <div className={`card p-5 ${accent ? '!bg-ink text-white !border-ink' : ''}`}>
       <div className="flex items-center justify-between">
@@ -297,8 +318,19 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className={`mt-4 font-display text-2xl font-semibold ${accent ? 'text-white' : 'text-ink'}`}>{value}</p>
+      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-4 font-display text-2xl font-semibold ${accent ? 'text-white' : 'text-ink'}`}>{display}</p>
       <p className={`mt-0.5 text-[13px] ${accent ? 'text-white/60' : 'text-muted'}`}>{label}</p>
+    </div>
+  );
+}
+
+/** Loading placeholder matching StatCard's dimensions, no flash-of-zero while data loads. */
+export function StatCardSkeleton() {
+  return (
+    <div className="card p-5">
+      <div className="skeleton h-10 w-10 rounded-xl" />
+      <div className="skeleton mt-4 h-7 w-16 rounded-lg" />
+      <div className="skeleton mt-2 h-4 w-24 rounded-lg" />
     </div>
   );
 }

@@ -41,10 +41,15 @@ export function CarCard({
   car,
   layout = 'grid',
   priority,
+  available,
 }: {
   car: Car;
   layout?: 'grid' | 'horizontal';
   priority?: boolean;
+  /** Only ever passed when the caller has actually checked real dates
+   *  against real bookings (e.g. Browse's date filter) — never a
+   *  fabricated status. Omitted entirely when no dates are in play. */
+  available?: boolean;
 }) {
   const { ref: tiltRef, style: tiltStyle } = useTilt<HTMLAnchorElement>({ max: 5, lift: 1.012 });
   const [quickView, setQuickView] = useState(false);
@@ -95,7 +100,7 @@ export function CarCard({
         className="group block"
         style={{ ...tiltStyle, transformStyle: 'preserve-3d' }}
       >
-        <article className="card card-hover overflow-hidden">
+        <article className="card card-hover overflow-hidden transition-colors duration-300 group-hover:border-accent-bright/25">
           <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
             <Img
               src={unsplash(car.images[0], 700)}
@@ -106,7 +111,17 @@ export function CarCard({
             <div className="absolute left-3 top-3 flex gap-2">
               {car.instantBook && (
                 <span className="badge badge-glass">
-                  <Icon name="instant" size={12} className="text-accent" /> Instant book
+                  <Icon name="instant" size={12} className="text-accent-bright" /> Instant book
+                </span>
+              )}
+              {car.rating >= 4.9 && (
+                <span className="badge badge-glass">
+                  <Icon name="star" size={12} className="text-star" /> Top rated
+                </span>
+              )}
+              {available && (
+                <span className="badge badge-glass text-accent-700">
+                  <Icon name="checkCircle" size={12} className="text-accent-bright" /> Available
                 </span>
               )}
             </div>
@@ -146,6 +161,15 @@ export function CarCard({
             <p className="mt-2.5 flex items-center gap-1 text-[13px] text-muted">
               <Icon name="pin" size={13} /> {car.location}
             </p>
+
+            <div className="mt-2.5 flex items-center gap-3 text-[12.5px] text-muted">
+              <span className="flex items-center gap-1">
+                <Icon name="seat" size={13} /> {car.seats} seats
+              </span>
+              <span className="flex items-center gap-1">
+                <Icon name="gear" size={13} /> {car.transmission}
+              </span>
+            </div>
 
             <div className="mt-3.5 flex items-end justify-between border-t border-line pt-3.5">
               <p className="text-[13px] text-muted">

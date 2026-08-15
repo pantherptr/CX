@@ -5,6 +5,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { useMyBookings, classifyBooking, renterTier } from '../lib/data/bookings';
 
 const TABS: { id: string; label: string; icon: IconName }[] = [
   { id: 'personal', label: 'Personal information', icon: 'user' },
@@ -37,6 +38,8 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 export default function Settings() {
   const { toast } = useApp();
   const { session, profile, refreshProfile } = useAuth();
+  const { bookings } = useMyBookings(session?.user.id);
+  const tier = renterTier((bookings ?? []).filter((b) => classifyBooking(b) === 'completed').length);
   const { hash } = useLocation();
   const [tab, setTab] = useState('personal');
   const [toggles, setToggles] = useState({ trip: true, promo: false, host: true, sms: true, push: true });
@@ -139,7 +142,9 @@ export default function Settings() {
             {tab === 'personal' && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-4">
-                  {profile?.avatar_url ? (
+                  {uploadingPhoto ? (
+                    <div className="skeleton h-16 w-16 rounded-full" />
+                  ) : profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover" />
                   ) : (
                     <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
@@ -154,13 +159,16 @@ export default function Settings() {
                       className="hidden"
                       onChange={handleAvatarChange}
                     />
-                    <button
-                      onClick={handleAvatarPick}
-                      disabled={uploadingPhoto}
-                      className="btn btn-secondary btn-sm disabled:opacity-60"
-                    >
-                      {uploadingPhoto ? 'Uploading…' : 'Change photo'}
-                    </button>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={handleAvatarPick}
+                        disabled={uploadingPhoto}
+                        className="btn btn-secondary btn-sm disabled:opacity-60"
+                      >
+                        {uploadingPhoto ? 'Uploading…' : 'Change photo'}
+                      </button>
+                      {tier && <span className="badge badge-accent">{tier}</span>}
+                    </div>
                     <p className="mt-1.5 text-[12.5px] text-muted">JPG or PNG, up to 5MB</p>
                   </div>
                 </div>
@@ -206,7 +214,7 @@ export default function Settings() {
                 {[
                   { k: 'trip' as const, t: 'Trip updates', d: 'Booking confirmations, reminders and changes.' },
                   { k: 'host' as const, t: 'Messages from hosts', d: 'Get notified when a host replies to you.' },
-                  { k: 'promo' as const, t: 'Promotions & offers', d: 'Occasional deals and Velora news.' },
+                  { k: 'promo' as const, t: 'Promotions & offers', d: 'Occasional deals and CX news.' },
                   { k: 'sms' as const, t: 'SMS notifications', d: 'Time-sensitive alerts by text message.' },
                   { k: 'push' as const, t: 'Push notifications', d: 'Real-time alerts on your devices.' },
                 ].map((r) => (

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { DashboardShell, StatCard } from '../components/DashboardShell';
+import { Link, useNavigate } from 'react-router-dom';
+import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { CarLoader } from '../components/CarLoader';
-import { conversations } from '../data/content';
+import { Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
-import { useMyBookings, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
+import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
+import { useConversations, findOrCreateConversation } from '../lib/data/messages';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -37,8 +38,8 @@ const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'n
 function TripRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   return (
-    <Link to={`/trips/${booking.id}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
-      <img src={booking.car.image} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover" />
+    <Link to={`/trips/${booking.id}`} className="group flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
+      <img src={booking.car.image} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover transition-transform duration-500 group-hover:scale-105" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-ink">{booking.car.make} {booking.car.model}</p>
         <p className="text-[13px] text-muted">
@@ -50,16 +51,20 @@ function TripRow({ booking }: { booking: Booking }) {
         <p className="text-[14px] font-medium text-ink">{eur(booking.totalPrice)}</p>
         <span className={`badge mt-1 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
       </div>
+      <Icon name="chevronRight" size={16} className="shrink-0 text-faint transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-muted" />
     </Link>
   );
 }
 
 export default function CustomerDashboard() {
-  const { favorites } = useApp();
+  const navigate = useNavigate();
+  const { favorites, toast } = useApp();
   const { profile, session } = useAuth();
   const { cars } = useCars();
   const { bookings, loading: bookingsLoading } = useMyBookings(session?.user.id);
+  const { conversations, loading: conversationsLoading } = useConversations(session?.user.id);
   const [tab, setTab] = useState<TripPhase>('upcoming');
+  const [messaging, setMessaging] = useState(false);
 
   const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
@@ -71,6 +76,7 @@ export default function CustomerDashboard() {
 
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const completedCount = classified.filter((c) => c.phase === 'completed').length;
+  const tier = renterTier(completedCount);
   const totalSpent = classified
     .filter((c) => c.phase !== 'cancelled')
     .reduce((sum, c) => sum + c.booking.totalPrice, 0);
@@ -86,28 +92,57 @@ export default function CustomerDashboard() {
 
   const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
 
+  const handleMessageHost = async () => {
+    if (!session || !nextTrip) return;
+    setMessaging(true);
+    try {
+      const conversationId = await findOrCreateConversation(nextTrip.car.id, session.user.id, nextTrip.host.id);
+      navigate(`/messages?c=${conversationId}`);
+    } catch (err) {
+      toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
+      setMessaging(false);
+    }
+  };
+
   return (
     <DashboardShell variant="customer" active="Overview">
       <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
         {/* Greeting */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[14px] text-muted">Good morning,</p>
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
+            <p className="text-[14px] text-muted">{greeting()},</p>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
+              {tier && <span className="badge badge-accent">{tier}</span>}
+            </div>
           </div>
           <Link to="/browse" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Book a car</Link>
         </div>
 
         {/* Stats */}
         <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon="trips" label="Upcoming trips" value={String(upcomingCount)} />
-          <StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} />
-          <StatCard icon="heart" label="Saved cars" value={String(favorites.size)} />
-          <StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} />
+          {bookingsLoading ? (
+            <>
+              <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <Reveal delay={0}><StatCard icon="trips" label="Upcoming trips" value={String(upcomingCount)} countTo={upcomingCount} /></Reveal>
+              <Reveal delay={60}><StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} countTo={completedCount} /></Reveal>
+              <Reveal delay={120}><StatCard icon="heart" label="Saved cars" value={String(favorites.size)} countTo={favorites.size} /></Reveal>
+              <Reveal delay={180}><StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} countTo={totalSpent} format={eur} /></Reveal>
+            </>
+          )}
         </div>
 
         {/* Next trip highlight */}
-        {nextTrip && (
+        {bookingsLoading ? (
+          <section className="mt-8">
+            <div className="skeleton mb-4 h-6 w-36 rounded-lg" />
+            <div className="skeleton card h-52 md:h-64" />
+          </section>
+        ) : nextTrip && (
+          <Reveal>
           <section className="mt-8">
             <h2 className="mb-4 font-display text-lg font-semibold text-ink">Your next trip</h2>
             <div className="card overflow-hidden md:flex">
@@ -152,12 +187,15 @@ export default function CustomerDashboard() {
                     <p className="text-[13.5px] font-medium text-ink">{nextTrip.host.name}</p>
                     <p className="text-[12.5px] text-muted">Your host</p>
                   </div>
-                  <Link to="/messages" className="btn btn-secondary btn-sm"><Icon name="message" size={15} /> Message</Link>
+                  <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
+                    <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
+                  </button>
                   <Link to={`/trips/${nextTrip.id}`} className="btn btn-primary btn-sm">Details</Link>
                 </div>
               </div>
             </div>
           </section>
+          </Reveal>
         )}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
@@ -182,7 +220,7 @@ export default function CustomerDashboard() {
               })}
             </div>
 
-            <div className="card min-h-[120px] divide-y divide-line">
+            <div key={tab} className="card min-h-[120px] divide-y divide-line animate-fade-in">
               {bookingsLoading ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
                   <CarLoader size={70} />
@@ -217,23 +255,36 @@ export default function CustomerDashboard() {
               <h2 className="font-display text-lg font-semibold text-ink">Messages</h2>
               <Link to="/messages" className="text-[13.5px] font-medium text-muted hover:text-ink">Open</Link>
             </div>
-            <div className="card divide-y divide-line">
-              {conversations.slice(0, 4).map((c) => (
-                <Link key={c.id} to="/messages" className="flex items-center gap-3 p-4 transition-colors hover:bg-panel/40">
-                  <div className="relative">
-                    <img src={c.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
-                    {c.online && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-accent ring-2 ring-surface" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="truncate text-[14px] font-medium text-ink">{c.name}</p>
-                      <span className="text-[11.5px] text-faint">{c.lastTime}</span>
+            <div className="card min-h-[120px] divide-y divide-line">
+              {conversationsLoading ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <CarLoader size={60} />
+                </div>
+              ) : conversations && conversations.length > 0 ? (
+                conversations.slice(0, 4).map((c) => (
+                  <Link key={c.id} to={`/messages?c=${c.id}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-panel/40">
+                    {c.other.avatar ? (
+                      <img src={c.other.avatar} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                        <Icon name="user" size={16} />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="truncate text-[14px] font-medium text-ink">{c.other.name}</p>
+                      </div>
+                      <p className="truncate text-[13px] text-muted">{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
                     </div>
-                    <p className="truncate text-[13px] text-muted">{c.messages[c.messages.length - 1].body}</p>
-                  </div>
-                  {c.unread > 0 && <span className="grid h-5 w-5 place-items-center rounded-full bg-accent text-[11px] font-semibold text-white">{c.unread}</span>}
-                </Link>
-              ))}
+                    {c.unreadCount > 0 && <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-[11px] font-semibold text-white">{c.unreadCount}</span>}
+                  </Link>
+                ))
+              ) : (
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="message" size={20} /></span>
+                  <p className="mt-1 font-medium text-ink">No conversations yet</p>
+                </div>
+              )}
             </div>
           </section>
         </div>

@@ -10,7 +10,7 @@ export type IconName =
   | 'phone' | 'camera' | 'upload' | 'card' | 'lock' | 'sparkles' | 'headset'
   | 'compass' | 'trending' | 'euro' | 'reviews' | 'send' | 'paperclip'
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
-  | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified';
+  | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag';
 
 const P: Record<IconName, ReactElement> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></>,
@@ -80,6 +80,7 @@ const P: Record<IconName, ReactElement> = {
   apple: <path d="M16 13c0 3 2 4 2 4s-1.5 3-3.5 3c-1 0-1.5-.6-2.5-.6s-1.6.6-2.6.6C7 20 5 16 5 12.5 5 9 7 8 9 8c1 0 1.8.7 2.5.7S13 8 14.5 8c1 0 2.4.5 3 1.7-2.5 1.3-1.5 3.3-1.5 3.3ZM14 5c-.3 1.6-1.7 2.6-3 2.5-.2-1.4 1-2.9 3-2.5Z" />,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8v.01" /></>,
   verified: <><path d="m12 2 2.4 1.8 3-.2 1 2.8 2.6 1.5-1 2.8 1 2.8-2.6 1.5-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 16.3l1-2.8-1-2.8 2.6-1.5 1-2.8 3 .2L12 2Z" /><path d="m8.5 12 2.5 2.5L15.5 10" /></>,
+  bag: <><rect x="4" y="8" width="16" height="12" rx="2" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /><path d="M4 13h16" /></>,
 };
 
 interface IconProps {

@@ -36,7 +36,7 @@ export default function Login() {
         </div>
         <div className="card p-7 sm:p-8">
           <h1 className="text-center font-display text-2xl font-semibold text-ink">Welcome back</h1>
-          <p className="mt-1.5 text-center text-[14px] text-muted">Sign in to your Velora account</p>
+          <p className="mt-1.5 text-center text-[14px] text-muted">Sign in to your CX account</p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
             <div>
@@ -77,7 +77,7 @@ export default function Login() {
           </form>
         </div>
         <p className="mt-5 text-center text-[14px] text-muted">
-          New to Velora?{' '}
+          New to CX?{' '}
           <Link to="/signup" className="font-medium text-ink underline underline-offset-2">
             Create an account
           </Link>

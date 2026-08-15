@@ -1,30 +1,72 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { SectionHead } from '../components/primitives';
 
-const faqs = [
+const CATEGORIES = [
+  'Before you book',
+  'Booking & changes',
+  'Pickup',
+  'During your trip',
+  'Returning & billing',
+  'Account & hosting',
+] as const;
+
+type Category = (typeof CATEGORIES)[number];
+
+const faqs: { q: string; a: string; category: Category }[] = [
   {
+    category: 'Before you book',
     q: 'How does booking a car work?',
     a: 'Search by city and dates, choose a car, and either reserve instantly or send a request to the host. You\'ll see the full price — including service fee and protection — before you confirm anything.',
   },
   {
-    q: 'What\'s the cancellation policy?',
-    a: 'Every booking on Velora includes free cancellation up to 24 hours before your trip starts. Cancel from your trip details page and any payment is released back to you automatically.',
-  },
-  {
+    category: 'Before you book',
     q: 'Is my trip insured?',
     a: 'Every booking includes a protection plan, priced as a percentage of your rental cost and shown as a separate line item at checkout — never hidden in the daily rate.',
   },
   {
+    category: 'Before you book',
+    q: 'What extras can I add to my trip?',
+    a: 'At checkout you can add an additional driver or a child seat, each priced per day and shown as its own line in your total — nothing bundled in without you choosing it.',
+  },
+  {
+    category: 'Before you book',
+    q: 'What\'s the difference between "Best price" and "Stay flexible"?',
+    a: '"Best price" is the default fare with free cancellation up to 24 hours before pick-up. "Stay flexible" costs a small per-day surcharge but lets you cancel any time right up until pick-up.',
+  },
+  {
+    category: 'Booking & changes',
+    q: 'What\'s the cancellation policy?',
+    a: 'Standard bookings include free cancellation up to 24 hours before your trip starts. Bookings on the flexible fare can cancel any time before pick-up. Cancel from your trip details page and any payment is released back to you automatically.',
+  },
+  {
+    category: 'Booking & changes',
+    q: 'Can I change my trip dates after booking?',
+    a: 'Yes — from Trip Details, use "Modify dates" any time before your trip starts. We re-check the car\'s availability for your new dates and recalculate the price before anything is confirmed.',
+  },
+  {
+    category: 'Pickup',
+    q: 'How do I coordinate pickup with my host?',
+    a: 'Your Trip Details page shows the pickup location with a direct link to Maps, plus your host\'s typical response time. Message them directly from there to confirm exact timing.',
+  },
+  {
+    category: 'During your trip',
+    q: 'How do I contact my host or a renter?',
+    a: 'Every booking opens a conversation in Messages, so you can coordinate pickup, ask questions, or share details without leaving CX.',
+  },
+  {
+    category: 'Returning & billing',
+    q: 'What happens when I return the car?',
+    a: 'Once your return date passes, the trip automatically moves to Completed in My Trips — no action needed. Your itemised receipt (rental, fees, protection, any extras) stays available on Trip Details.',
+  },
+  {
+    category: 'Account & hosting',
     q: 'How do I become a host?',
     a: 'Tap "List your car" from the menu, walk through the guided listing flow (vehicle details, photos, pricing, availability) and publish. Your car becomes visible to renters immediately.',
   },
   {
-    q: 'How do I contact my host or a renter?',
-    a: 'Every booking opens a conversation in Messages, so you can coordinate pickup, ask questions, or share details without leaving Velora.',
-  },
-  {
+    category: 'Account & hosting',
     q: 'How and when do hosts get paid?',
     a: 'Payouts are tied to each completed trip. Hosts can review earnings and payout history from the Host Dashboard.',
   },
@@ -59,6 +101,12 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Help() {
+  const [category, setCategory] = useState<Category | 'All'>('All');
+  const visible = useMemo(
+    () => (category === 'All' ? faqs : faqs.filter((f) => f.category === category)),
+    [category],
+  );
+
   return (
     <div>
       <section className="container-page pt-14">
@@ -68,7 +116,7 @@ export default function Help() {
             How can we help?
           </h1>
           <p className="mt-5 text-[16px] leading-relaxed text-muted text-pretty">
-            Answers to the most common questions about booking, hosting, payments and trips.
+            Answers organised by where you are in your trip — before booking, during, and after.
           </p>
         </div>
       </section>
@@ -76,9 +124,19 @@ export default function Help() {
       <section className="container-page mt-16">
         <div className="mx-auto max-w-2xl card p-6 sm:p-8">
           <SectionHead title="Frequently asked questions" />
-          <div className="mt-4">
-            {faqs.map((f) => (
-              <FaqItem key={f.q} {...f} />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => setCategory('All')} data-active={category === 'All'} className="chip">
+              All
+            </button>
+            {CATEGORIES.map((c) => (
+              <button key={c} onClick={() => setCategory(c)} data-active={category === c} className="chip">
+                {c}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2">
+            {visible.map((f) => (
+              <FaqItem key={f.q} q={f.q} a={f.a} />
             ))}
           </div>
         </div>

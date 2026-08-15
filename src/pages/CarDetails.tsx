@@ -106,6 +106,7 @@ export default function CarDetails() {
   const specs: { icon: IconName; label: string; value: string }[] = [
     { icon: 'seat', label: 'Seats', value: `${car.seats} seats` },
     { icon: 'door', label: 'Doors', value: `${car.doors} doors` },
+    { icon: 'bag', label: 'Luggage', value: `${car.luggage} ${car.luggage === 1 ? 'bag' : 'bags'}` },
     { icon: 'gear', label: 'Transmission', value: car.transmission },
     { icon: 'gas', label: 'Fuel', value: car.fuel },
     { icon: 'gauge', label: 'Mileage', value: car.mileage },
@@ -195,6 +196,7 @@ export default function CarDetails() {
             <div className="flex flex-wrap gap-2.5">
               {[
                 { icon: 'seat' as IconName, v: `${car.seats} seats` },
+                { icon: 'bag' as IconName, v: `${car.luggage} ${car.luggage === 1 ? 'bag' : 'bags'}` },
                 { icon: 'gear' as IconName, v: car.transmission },
                 { icon: 'gas' as IconName, v: car.fuel },
                 { icon: 'compass' as IconName, v: car.drive },
@@ -290,7 +292,7 @@ export default function CarDetails() {
             {/* Host */}
             <section className="mt-8 border-t border-line pt-8">
               <h2 className="mb-5 font-display text-xl font-semibold text-ink">Meet your host</h2>
-              <HostCard host={host} />
+              <HostCard host={host} carId={car.id} />
             </section>
 
             {/* Reviews */}
@@ -360,7 +362,7 @@ export default function CarDetails() {
               <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(2)} · {car.trips} trips
             </span>
           </div>
-          <a href="#reserve-sheet" onClick={(e) => { e.preventDefault(); setLightbox(-1); }} className="btn btn-primary flex-1 max-w-[55%]">
+          <a href="#reserve-sheet" onClick={(e) => { e.preventDefault(); setLightbox(-1); }} className="btn btn-accent-bright flex-1 max-w-[55%]">
             {car.instantBook ? 'Reserve' : 'Request'} <Icon name="arrowRight" size={16} />
           </a>
         </div>

@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
+import { customerNav, hostNav } from '../lib/nav';
+import { useUnreadMessageCount } from '../lib/data/messages';
 
 const links = [
   { to: '/browse', label: 'Browse Cars' },
@@ -11,23 +13,13 @@ const links = [
   { to: '/about', label: 'About' },
 ];
 
-export function Navbar() {
+/** Marketing header — logged-out visitors only. Full nav, sign in / create
+ *  account. Never rendered for an authenticated session (see `AppNavbar`). */
+function PublicNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [acctOpen, setAcctOpen] = useState(false);
-  const acctRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { session, profile, signOut } = useAuth();
-
-  const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Account';
-
-  const handleSignOut = async () => {
-    setAcctOpen(false);
-    setMenuOpen(false);
-    await signOut();
-    navigate('/');
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -38,164 +30,74 @@ export function Navbar() {
 
   useEffect(() => {
     setMenuOpen(false);
-    setAcctOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (acctRef.current && !acctRef.current.contains(e.target as Node)) setAcctOpen(false);
-    };
-    document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => void (document.body.style.overflow = '');
   }, [menuOpen]);
 
-  // Primary destinations — on mobile these are covered by the bottom tab
-  // bar (BottomNav), so only the desktop dropdown shows them.
-  const primaryLinks = [
-    { to: '/dashboard', label: 'Customer dashboard', icon: 'grid' as const },
-    { to: '/host', label: 'Host dashboard', icon: 'chart' as const },
-  ];
-
-  // Secondary destinations — shown in both the desktop dropdown and the
-  // mobile drawer, matching the split the design calls for.
-  const secondaryLinks = [
-    { to: '/messages', label: 'Messages', icon: 'message' as const },
-    { to: '/notifications', label: 'Notifications', icon: 'bell' as const },
-    { to: '/settings#payments', label: 'Payments', icon: 'card' as const },
-    { to: '/settings', label: 'Settings', icon: 'settings' as const },
-    { to: '/help', label: 'Help & Support', icon: 'headset' as const },
-    { to: '/list-your-car', label: 'Become a host', icon: 'key' as const },
-  ];
-
   return (
     <>
-    <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'border-b border-line bg-bg/85 backdrop-blur-xl'
-          : 'border-b border-transparent bg-bg/60 backdrop-blur-md'
-      }`}
-    >
-      <nav className="container-page flex h-[68px] items-center justify-between gap-4">
-        <div className="flex items-center gap-8">
-          <Logo />
-          <ul className="hidden items-center gap-1 lg:flex">
-            {links.map((l) => (
-              <li key={l.to}>
-                <NavLink
-                  to={l.to}
-                  className={({ isActive }) =>
-                    `rounded-lg px-3 py-2 text-[14.5px] font-medium transition-colors ${
-                      isActive ? 'text-ink' : 'text-muted hover:text-ink'
-                    }`
-                  }
-                >
-                  {l.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div ref={acctRef} className="relative hidden sm:block">
-            {session ? (
-              <>
-                <button
-                  onClick={() => setAcctOpen((o) => !o)}
-                  className="flex items-center gap-2 rounded-full border border-line-strong bg-surface py-1 pl-1 pr-3 shadow-hair transition-colors hover:border-[#c9c8bf]"
-                  aria-haspopup="menu"
-                  aria-expanded={acctOpen}
-                >
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
-                  ) : (
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-accent-050 text-accent">
-                      <Icon name="user" size={14} />
-                    </span>
-                  )}
-                  <span className="max-w-[120px] truncate text-[13.5px] font-medium text-ink">
-                    {displayName}
-                  </span>
-                  <Icon name="chevronDown" size={14} className="text-muted" />
-                </button>
-                {acctOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-[calc(100%+10px)] w-60 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop"
+      <header
+        className={`sticky top-0 z-50 bg-accent-bright transition-shadow duration-300 ${
+          scrolled ? 'shadow-[0_4px_20px_-8px_rgba(0,0,0,0.35)]' : ''
+        }`}
+      >
+        <nav className="container-page flex h-[68px] items-center justify-between gap-4">
+          <div className="flex items-center gap-8">
+            <Logo />
+            <ul className="hidden items-center gap-1 lg:flex">
+              {links.map((l) => (
+                <li key={l.to}>
+                  <NavLink
+                    to={l.to}
+                    className={({ isActive }) =>
+                      `group relative rounded-lg px-3 py-2 text-[14.5px] font-medium transition-colors ${
+                        isActive ? 'text-ink' : 'text-ink/70 hover:text-ink'
+                      }`
+                    }
                   >
-                    <div className="px-3 py-2.5">
-                      <p className="truncate text-sm font-medium text-ink">{displayName}</p>
-                      <p className="truncate text-[13px] text-muted">{session.user.email}</p>
-                    </div>
-                    <div className="hairline mx-2 mb-1" />
-                    {primaryLinks.map((a) => (
-                      <Link
-                        key={a.to}
-                        to={a.to}
-                        role="menuitem"
-                        onClick={() => setAcctOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink-soft transition-colors hover:bg-panel"
-                      >
-                        <Icon name={a.icon} size={17} className="text-muted" />
-                        {a.label}
-                      </Link>
-                    ))}
-                    <div className="hairline mx-2 my-1" />
-                    {secondaryLinks.map((a) => (
-                      <Link
-                        key={a.to}
-                        to={a.to}
-                        role="menuitem"
-                        onClick={() => setAcctOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] text-ink-soft transition-colors hover:bg-panel"
-                      >
-                        <Icon name={a.icon} size={17} className="text-muted" />
-                        {a.label}
-                      </Link>
-                    ))}
-                    <div className="hairline mx-2 my-1" />
-                    <button
-                      onClick={handleSignOut}
-                      role="menuitem"
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14px] text-danger transition-colors hover:bg-panel"
-                    >
-                      <Icon name="logout" size={17} />
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Link to="/login" className="btn btn-secondary btn-sm">
-                Sign in
-              </Link>
-            )}
+                    {({ isActive }) => (
+                      <>
+                        {l.label}
+                        <span
+                          className={`absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-ink transition-all duration-300 ${
+                            isActive
+                              ? 'scale-x-100 opacity-100'
+                              : 'scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-40'
+                          }`}
+                        />
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <Link to="/list-your-car" className="btn btn-primary btn-sm hidden sm:inline-flex">
-            List Your Car
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/login" className="btn btn-secondary btn-sm hidden sm:inline-flex">
+              Sign in
+            </Link>
+            <Link to="/signup" className="btn btn-primary btn-sm hidden sm:inline-flex">
+              Create account
+            </Link>
 
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-panel lg:hidden"
-            aria-label="Open menu"
-          >
-            <Icon name="menu" size={22} />
-          </button>
-        </div>
-      </nav>
-    </header>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-black/10 lg:hidden"
+              aria-label="Open menu"
+            >
+              <Icon name="menu" size={22} />
+            </button>
+          </div>
+        </nav>
+      </header>
 
-    {/* Mobile drawer — rendered OUTSIDE <header> so the header's
-        backdrop-filter doesn't trap this fixed element in a 68px box. */}
-    {menuOpen && (
+      {/* Mobile drawer — rendered OUTSIDE <header> so the header's
+          backdrop-filter doesn't trap this fixed element in a 68px box. */}
+      {menuOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden">
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-sm animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-bg shadow-pop">
@@ -224,47 +126,19 @@ export function Navbar() {
                 ))}
               </ul>
               <div className="hairline my-5" />
-              <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                Your account
-              </p>
-              {session ? (
-                <>
-                  <ul className="flex flex-col gap-1">
-                    {secondaryLinks.map((a) => (
-                      <li key={a.to}>
-                        <Link
-                          to={a.to}
-                          className="flex items-center gap-3 rounded-xl px-3 py-3 text-[15px] text-ink-soft hover:bg-panel"
-                        >
-                          <Icon name={a.icon} size={19} className="text-muted" />
-                          {a.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={handleSignOut}
-                    className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] text-danger hover:bg-panel"
-                  >
-                    <Icon name="logout" size={19} />
-                    Sign out
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col gap-2 px-1">
-                  <Link to="/login" className="btn btn-secondary btn-block">
-                    Sign in
-                  </Link>
-                  <Link to="/signup" className="btn btn-primary btn-block">
-                    Create an account
-                  </Link>
-                </div>
-              )}
+              <div className="flex flex-col gap-2 px-1">
+                <Link to="/login" className="btn btn-secondary btn-block">
+                  Sign in
+                </Link>
+                <Link to="/signup" className="btn btn-primary btn-block">
+                  Create an account
+                </Link>
+              </div>
             </div>
             <div className="border-t border-line p-5">
               <button
                 onClick={() => navigate('/list-your-car')}
-                className="btn btn-primary btn-block btn-lg"
+                className="btn btn-accent-bright btn-block btn-lg"
               >
                 List Your Car
               </button>
@@ -274,4 +148,193 @@ export function Navbar() {
       )}
     </>
   );
+}
+
+/** App header — authenticated sessions only. No marketing links, no "Sign
+ *  in": logo, search, notifications, profile, and a menu drawer carrying
+ *  the same driver/host nav as the dashboard sidebar (`src/lib/nav.ts`).
+ *  This is what makes the product feel like a private platform rather
+ *  than "the homepage with a logged-in user" on pages that have no
+ *  sidebar of their own (Browse, car details, help, booking, list-a-car). */
+function AppNavbar() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mode, setMode] = useState<'customer' | 'host'>('customer');
+  const [query, setQuery] = useState('');
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { session, profile, signOut } = useAuth();
+  const isHost = !!profile?.is_host;
+  const unreadCount = useUnreadMessageCount(session?.user.id);
+  const nav = mode === 'host' && isHost ? hostNav(unreadCount) : customerNav(unreadCount);
+
+  const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
+  const displayAvatar = profile?.avatar_url ?? null;
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+    return () => void (document.body.style.overflow = '');
+  }, [drawerOpen]);
+
+  const handleSignOut = async () => {
+    setDrawerOpen(false);
+    await signOut();
+    // Hard navigation — see DashboardShell's handleSignOut for why a plain
+    // navigate('/') here races ProtectedRoute's own redirect and can lose.
+    window.location.assign('/');
+  };
+
+  const submitSearch = (e: FormEvent) => {
+    e.preventDefault();
+    navigate(query.trim() ? `/browse?city=${encodeURIComponent(query.trim())}` : '/browse');
+  };
+
+  return (
+    <>
+      <header className="sticky top-0 z-50 flex h-[64px] items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur-xl sm:px-6">
+        <Logo />
+        <form onSubmit={submitSearch} className="relative ml-2 hidden max-w-sm flex-1 sm:block">
+          <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search cars, cities…"
+            className="input !py-2.5 !pl-10 bg-panel/60"
+          />
+        </form>
+        <div className="ml-auto flex items-center gap-1.5">
+          <Link
+            to="/browse"
+            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel sm:hidden"
+            aria-label="Browse cars"
+          >
+            <Icon name="search" size={19} />
+          </Link>
+          <Link
+            to="/notifications"
+            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
+            aria-label="Notifications"
+          >
+            <Icon name="bell" size={19} />
+          </Link>
+          <Link to="/settings" aria-label="Profile">
+            {displayAvatar ? (
+              <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                <Icon name="user" size={16} />
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
+            aria-label="Open menu"
+          >
+            <Icon name="menu" size={20} />
+          </button>
+        </div>
+      </header>
+
+      {drawerOpen && (
+        <div className="fixed inset-0 z-[70]">
+          <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-xs animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-surface shadow-pop">
+            <div className="flex h-[64px] items-center justify-between border-b border-line px-5">
+              <Logo />
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
+                aria-label="Close menu"
+              >
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-3">
+              {isHost && (
+                <div className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
+                  <button
+                    onClick={() => setMode('customer')}
+                    className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                      mode === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
+                    }`}
+                  >
+                    Driver
+                  </button>
+                  <button
+                    onClick={() => setMode('host')}
+                    className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                      mode === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
+                    }`}
+                  >
+                    Host
+                  </button>
+                </div>
+              )}
+              <ul className="flex flex-col gap-0.5">
+                {nav.map((n) => (
+                  <li key={n.label}>
+                    <NavLink
+                      to={n.to}
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+                    >
+                      <Icon name={n.icon} size={19} className="text-muted" />
+                      <span className="flex-1">{n.label}</span>
+                      {n.badge && (
+                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
+                          {n.badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+              <div className="hairline my-3" />
+              <Link
+                to="/help"
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+              >
+                <Icon name="headset" size={19} className="text-muted" />
+                Help &amp; Support
+              </Link>
+            </nav>
+
+            <div className="border-t border-line p-3">
+              <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+                ) : (
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                    <Icon name="user" size={16} />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
+                  <p className="truncate text-[12px] text-muted">{session?.user.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14.5px] text-danger hover:bg-panel"
+              >
+                <Icon name="logout" size={19} />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function Navbar() {
+  const { session } = useAuth();
+  return session ? <AppNavbar /> : <PublicNavbar />;
 }

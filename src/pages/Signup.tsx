@@ -65,7 +65,7 @@ export default function Signup() {
         </div>
         <div className="card p-7 sm:p-8">
           <h1 className="text-center font-display text-2xl font-semibold text-ink">Create your account</h1>
-          <p className="mt-1.5 text-center text-[14px] text-muted">Rent or list a car on Velora</p>
+          <p className="mt-1.5 text-center text-[14px] text-muted">Rent or list a car on CX</p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
             <div>

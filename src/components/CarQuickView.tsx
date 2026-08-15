@@ -19,6 +19,7 @@ export function CarQuickView({
 
   const specs: { icon: IconName; v: string }[] = [
     { icon: 'seat', v: `${car.seats} seats` },
+    { icon: 'bag', v: `${car.luggage} ${car.luggage === 1 ? 'bag' : 'bags'}` },
     { icon: 'gear', v: car.transmission },
     { icon: 'gas', v: car.fuel },
     { icon: 'compass', v: car.drive },

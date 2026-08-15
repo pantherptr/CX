@@ -11,7 +11,7 @@ const steps: { n: string; title: string; desc: string; icon: IconName; points: s
 ];
 
 const faqs = [
-  { q: 'What do I need to rent a car?', a: 'A valid driving licence, a payment method and a verified Velora account. Most cars require drivers to be at least 21 with two years of driving experience.' },
+  { q: 'What do I need to rent a car?', a: 'A valid driving licence, a payment method and a verified CX account. Most cars require drivers to be at least 21 with two years of driving experience.' },
   { q: 'Is insurance included?', a: 'Yes. Every trip includes damage protection and 24/7 roadside assistance as standard, with the option to upgrade for extra peace of mind.' },
   { q: 'Can I cancel my booking?', a: 'Absolutely. You can cancel free of charge up to 24 hours before your trip starts, directly from your dashboard.' },
   { q: 'How does pick-up work?', a: 'You’ll arrange handover with your host — many offer delivery to your hotel or the airport. Details appear in your trip once booked.' },

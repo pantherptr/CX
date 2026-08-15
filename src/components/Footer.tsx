@@ -98,7 +98,7 @@ export function Footer() {
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[13px] text-muted">
-            © {new Date().getFullYear()} Velora Mobility S.r.l. — Milan, Italy. All rights reserved.
+            © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
           </p>
           <div className="flex items-center gap-5 text-[13px] text-muted">
             <span className="inline-flex items-center gap-1.5">
