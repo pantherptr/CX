@@ -10,7 +10,8 @@ export type IconName =
   | 'phone' | 'camera' | 'upload' | 'card' | 'lock' | 'sparkles' | 'headset'
   | 'compass' | 'trending' | 'euro' | 'reviews' | 'send' | 'paperclip'
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
-  | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag';
+  | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
+  | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff';
 
 const P: Record<IconName, ReactElement> = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></>,
@@ -81,6 +82,12 @@ const P: Record<IconName, ReactElement> = {
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8v.01" /></>,
   verified: <><path d="m12 2 2.4 1.8 3-.2 1 2.8 2.6 1.5-1 2.8 1 2.8-2.6 1.5-1 2.8-3-.2L12 22l-2.4-1.8-3 .2-1-2.8L3 16.3l1-2.8-1-2.8 2.6-1.5 1-2.8 3 .2L12 2Z" /><path d="m8.5 12 2.5 2.5L15.5 10" /></>,
   bag: <><rect x="4" y="8" width="16" height="12" rx="2" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /><path d="M4 13h16" /></>,
+  trophy: <><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" /><path d="M7 5H4a3 3 0 0 0 3 5M17 5h3a3 3 0 0 1-3 5" /><path d="M12 14v3m-3 3h6M9 20h6" /></>,
+  gift: <><rect x="4" y="9" width="16" height="11" rx="1.5" /><path d="M4 13h16M12 9v11" /><path d="M12 9c-1.5 0-4-1-4-3a2.2 2.2 0 0 1 4 0 2.2 2.2 0 0 1 4 0c0 2-2.5 3-4 3Z" /></>,
+  pause: <><rect x="6" y="5" width="4" height="14" rx="1.2" /><rect x="14" y="5" width="4" height="14" rx="1.2" /></>,
+  play: <path d="M7 5v14l12-7Z" />,
+  volume: <><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 6a8.5 8.5 0 0 1 0 12" /></>,
+  volumeOff: <><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="m16 9 5 6M21 9l-5 6" /></>,
 };
 
 interface IconProps {
@@ -92,7 +99,7 @@ interface IconProps {
   fill?: boolean;
 }
 
-const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple'];
+const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause'];
 
 export function Icon({ name, size = 20, className, style, strokeWidth = 1.6, fill }: IconProps) {
   const isFilled = fill ?? FILLED.includes(name);

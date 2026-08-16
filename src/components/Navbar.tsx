@@ -46,7 +46,7 @@ function PublicNavbar() {
       >
         <nav className="container-page flex h-[68px] items-center justify-between gap-4">
           <div className="flex items-center gap-8">
-            <Logo />
+            <Logo variant="auto" />
             <ul className="hidden items-center gap-1 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
@@ -105,7 +105,7 @@ function PublicNavbar() {
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-sm animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-bg shadow-pop">
             <div className="flex items-center justify-between border-b border-line px-5 h-[68px]">
-              <Logo />
+              <Logo variant="symbol" />
               <button
                 onClick={() => setMenuOpen(false)}
                 className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
@@ -198,7 +198,7 @@ function AppNavbar() {
   return (
     <>
       <header className="sticky top-0 z-50 flex h-[64px] items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur-xl sm:px-6">
-        <Logo />
+        <Logo variant="symbol" />
         <form onSubmit={submitSearch} className="relative ml-2 hidden max-w-sm flex-1 sm:block">
           <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -247,7 +247,7 @@ function AppNavbar() {
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
           <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-xs animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-surface shadow-pop">
             <div className="flex h-[64px] items-center justify-between border-b border-line px-5">
-              <Logo />
+              <Logo variant="symbol" />
               <button
                 onClick={() => setDrawerOpen(false)}
                 className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"

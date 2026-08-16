@@ -4,29 +4,46 @@ import { Icon } from './Icon';
 import { useAuth } from '../lib/auth';
 
 /* ------------------------------- Logo -------------------------------
- * Renders the official CX logo asset (public/velora-logo.png) exactly as
- * provided — no CSS/SVG recreation, no color or proportion changes.
- * `mono`/`className` are kept for call-site compatibility; sizing is
- * responsive via the height classes below, width follows automatically
- * so the source image's proportions are never distorted. */
+ * Renders one of the three official CX logo lockups exactly as provided
+ * (trimmed of surrounding transparent margin and resized — never
+ * recolored, redistorted, or redrawn):
+ *   - full     — symbol + wordmark. Primary brand mark: homepage,
+ *                desktop headers, auth pages, footer, splash screens.
+ *   - symbol   — the mark alone. Compact contexts: mobile headers/nav,
+ *                dashboard sidebar, favicon.
+ *   - wordmark — text only. Secondary/lighter brand moments where the
+ *                full lockup would feel heavy.
+ *   - auto     — full lockup at `sm:` and up, symbol below it. Used by
+ *                the one header that has to double as both. */
+const LOGO_SRC = {
+  full: '/cx-logo-full.png',
+  symbol: '/cx-logo-symbol.png',
+  wordmark: '/cx-logo-wordmark.png',
+} as const;
+
 export function Logo({
-  mono: _mono = false,
+  variant = 'full',
   className = '',
 }: {
-  mono?: boolean;
+  variant?: 'full' | 'symbol' | 'wordmark' | 'auto';
   className?: string;
 }) {
   // Authenticated users can't land on "/" (PublicOnlyRoute bounces them
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
+  const imgClass =
+    'h-9 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10';
   return (
     <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
-      <img
-        src="/velora-logo.png"
-        alt="CX"
-        className="h-9 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10"
-      />
+      {variant === 'auto' ? (
+        <>
+          <img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${imgClass}`} />
+          <img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${imgClass}`} />
+        </>
+      ) : (
+        <img src={LOGO_SRC[variant]} alt="CX" className={imgClass} />
+      )}
     </Link>
   );
 }

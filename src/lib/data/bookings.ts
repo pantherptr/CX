@@ -71,6 +71,8 @@ export interface Booking {
   endDate: string;
   status: 'upcoming' | 'completed' | 'cancelled';
   totalPrice: number;
+  discountAmount: number;
+  rewardId: string | null;
   protectionAddon: boolean;
   pickupLocation: string | null;
   fareTier: FareTier;
@@ -126,6 +128,8 @@ interface BookingRow {
   end_date: string;
   status: Booking['status'];
   total_price: number;
+  discount_amount: number;
+  reward_id: string | null;
   protection_addon: boolean;
   pickup_location: string | null;
   fare_tier: FareTier;
@@ -157,7 +161,7 @@ interface BookingRow {
 }
 
 const BOOKING_SELECT = `
-  id, reference, start_date, end_date, status, total_price, protection_addon, pickup_location, fare_tier, agreement_accepted_at, created_at,
+  id, reference, start_date, end_date, status, total_price, discount_amount, reward_id, protection_addon, pickup_location, fare_tier, agreement_accepted_at, created_at,
   car:cars!bookings_car_id_fkey (id, slug, make, model, trim, year, location, price_per_day, car_images(url, position)),
   host:profiles!bookings_host_id_fkey (id, full_name, avatar_url, response_time),
   renter:profiles!bookings_renter_id_fkey (id, full_name, avatar_url),
@@ -174,6 +178,8 @@ function mapBooking(row: BookingRow): Booking {
     endDate: row.end_date,
     status: row.status,
     totalPrice: Number(row.total_price),
+    discountAmount: Number(row.discount_amount),
+    rewardId: row.reward_id,
     protectionAddon: row.protection_addon,
     pickupLocation: row.pickup_location,
     fareTier: row.fare_tier,
@@ -390,6 +396,11 @@ export interface CreateBookingInput {
   protectionAddon?: boolean;
   fareTier?: FareTier;
   extraIds?: string[];
+  /** A `game_rewards` id the renter chose to apply — the trigger that
+   *  computes `total_price` validates it belongs to them, is available
+   *  and unexpired, and flips it to `used` atomically; nothing about the
+   *  discount is trusted from here. */
+  rewardId?: string;
 }
 
 const OVERLAP_MESSAGE =
@@ -410,6 +421,7 @@ export async function createBooking(
       pickup_location: input.pickupLocation,
       protection_addon: input.protectionAddon ?? true,
       fare_tier: input.fareTier ?? 'standard',
+      reward_id: input.rewardId ?? null,
     })
     .select(BOOKING_SELECT)
     .single();

@@ -570,6 +570,17 @@
   }
   .animate-light-sweep { animation: light-sweep 7s ease-in-out infinite; }
 
+  /* Drive Challenge game-over beat — a quick horizontal rattle on the
+     "CRASH" flash, distinct from heart-pop's scale bounce. */
+  @keyframes crash-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+  }
+  .animate-crash-shake { animation: crash-shake 0.35s var(--ease-out-expo); }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.001ms !important;
@@ -580,7 +591,8 @@
     .imgfade { opacity: 1 !important; }
     .animate-core, .animate-ring, .animate-ring-rev, .animate-blink,
     .animate-scan, .animate-caret, .animate-orbit, .flow-line,
-    .animate-heart-pop, .animate-ken-burns, .animate-light-sweep, .animate-page {
+    .animate-heart-pop, .animate-ken-burns, .animate-light-sweep, .animate-page,
+    .animate-crash-shake {
       animation: none !important;
     }
   }

@@ -76,7 +76,7 @@ export function DashboardShell({
   const SidebarInner = (
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center px-5">
-        <Logo />
+        <Logo variant="symbol" />
       </div>
       <div className="px-3">
         <div className="hairline" />
@@ -180,7 +180,7 @@ export function DashboardShell({
   const MobileDrawerInner = (
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center justify-between px-5">
-        <Logo />
+        <Logo variant="symbol" />
         <button
           onClick={() => setOpen(false)}
           className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"

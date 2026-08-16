@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon } from '../components/Icon';
@@ -8,6 +8,8 @@ import { Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
+import { useMyRewards, rewardStatus, claimGameReward, takePendingClaim, type Reward, type RewardStatus } from '../lib/data/rewards';
+import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -34,6 +36,41 @@ const phaseLabel: Record<TripPhase, string> = {
 };
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+const REWARD_TABS: { id: RewardStatus; label: string }[] = [
+  { id: 'available', label: 'Available' },
+  { id: 'used', label: 'Used' },
+  { id: 'expired', label: 'Expired' },
+];
+
+const rewardBadge: Record<RewardStatus, string> = {
+  available: 'badge-accent',
+  used: 'bg-panel-2 text-ink-soft',
+  expired: 'bg-danger/10 text-danger',
+};
+
+function RewardRow({ reward }: { reward: Reward }) {
+  const status = rewardStatus(reward);
+  return (
+    <div className="flex items-center gap-4 p-4">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+        <Icon name="gift" size={19} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-ink">{reward.discountPercentage}% OFF your next booking</p>
+        <p className="font-mono text-[13px] text-muted">{reward.couponCode}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-[12.5px] text-muted">
+          {status === 'used' && reward.usedAt
+            ? `Used ${fmtDate(reward.usedAt)}`
+            : `Expires ${fmtDate(reward.expiresAt)}`}
+        </p>
+        <span className={`badge mt-1 ${rewardBadge[status]}`}>{status[0].toUpperCase() + status.slice(1)}</span>
+      </div>
+    </div>
+  );
+}
 
 function TripRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
@@ -63,8 +100,29 @@ export default function CustomerDashboard() {
   const { cars } = useCars();
   const { bookings, loading: bookingsLoading } = useMyBookings(session?.user.id);
   const { conversations, loading: conversationsLoading } = useConversations(session?.user.id);
+  const { rewards, loading: rewardsLoading } = useMyRewards(session?.user.id);
   const [tab, setTab] = useState<TripPhase>('upcoming');
+  const [rewardTab, setRewardTab] = useState<RewardStatus>('available');
   const [messaging, setMessaging] = useState(false);
+
+  // A CX Drive Challenge run played while signed out stays claimable —
+  // DriveChallengeLauncher stashes its session id before sending the
+  // player to /signup (see stashPendingClaim in lib/data/rewards.ts).
+  // This is where it actually gets redeemed, since a fresh sign-up
+  // always lands on the dashboard.
+  useEffect(() => {
+    if (!session) return;
+    const pending = takePendingClaim();
+    if (!pending) return;
+    claimGameReward(pending).then(({ reward, error }) => {
+      if (reward) {
+        toast({ title: 'Reward added to your account', desc: `${reward.discountPercentage}% OFF — ${reward.couponCode}`, icon: 'gift' });
+      } else if (error) {
+        toast({ title: "Couldn't claim your Drive Challenge reward", desc: error, icon: 'info' });
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
 
   const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
@@ -307,6 +365,64 @@ export default function CustomerDashboard() {
               <Link to="/browse" className="btn btn-primary btn-sm mt-2">Browse cars</Link>
             </div>
           )}
+        </section>
+
+        {/* Rewards */}
+        <section className="mt-8 scroll-mt-20" id="rewards">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="font-display text-lg font-semibold text-ink">Rewards</h2>
+            <DriveChallengeLauncher className="btn btn-secondary btn-sm self-start">
+              <img
+                src="/cx-drive-challenge-icon.png"
+                alt=""
+                className="h-4 w-4 rounded object-cover"
+                style={{ objectPosition: '50% 10%' }}
+              />
+              Play the Challenge
+            </DriveChallengeLauncher>
+          </div>
+          <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
+            {REWARD_TABS.map((t) => {
+              const count = (rewards ?? []).filter((r) => rewardStatus(r) === t.id).length;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setRewardTab(t.id)}
+                  className={`chip shrink-0 ${rewardTab === t.id ? '!bg-ink !text-white !border-ink' : ''}`}
+                >
+                  {t.label}
+                  {count > 0 && <span className="text-faint">· {count}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div key={rewardTab} className="card min-h-[120px] divide-y divide-line animate-fade-in">
+            {rewardsLoading ? (
+              <div className="flex flex-col items-center gap-2 py-10 text-center">
+                <CarLoader size={70} />
+              </div>
+            ) : (rewards ?? []).filter((r) => rewardStatus(r) === rewardTab).length > 0 ? (
+              (rewards ?? [])
+                .filter((r) => rewardStatus(r) === rewardTab)
+                .map((r) => <RewardRow key={r.id} reward={r} />)
+            ) : (
+              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted">
+                  <Icon name="gift" size={20} />
+                </span>
+                <p className="mt-1 font-medium text-ink">
+                  {rewardTab === 'available' && 'No rewards yet'}
+                  {rewardTab === 'used' && 'No used rewards'}
+                  {rewardTab === 'expired' && 'No expired rewards'}
+                </p>
+                <p className="max-w-xs text-[13px] text-muted">
+                  {rewardTab === 'available'
+                    ? 'Play the CX Drive Challenge above to earn a real discount.'
+                    : 'Nothing to show in this tab yet.'}
+                </p>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </DashboardShell>

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
+import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 interface Item {
   label: string;
@@ -11,10 +12,13 @@ interface Item {
   match: (pathname: string, hash: string) => boolean;
 }
 
+// The center slot opens the Drive Challenge modal rather than navigating —
+// `to` is unused for it (rendered specially below) and `match` always
+// false, since there's no route for a modal to be "on".
 const items: Item[] = [
   { label: 'Home', to: '/dashboard', icon: 'grid', match: (p, h) => p === '/dashboard' && h === '' },
   { label: 'Explore', to: '/browse', icon: 'search', match: (p) => p === '/browse' },
-  { label: 'Trips', to: '/dashboard#trips', icon: 'trips', match: (p, h) => p === '/dashboard' && h === '#trips' },
+  { label: 'Drive', to: '', icon: 'car', match: () => false },
   { label: 'Saved', to: '/dashboard#saved', icon: 'heart', match: (p, h) => p === '/dashboard' && h === '#saved' },
   { label: 'Profile', to: '/settings', icon: 'user', match: (p) => p === '/settings' },
 ];
@@ -60,11 +64,30 @@ export function BottomNav() {
         />
         {items.map((it, i) => {
           const active = i === activeIndex;
+
+          if (it.label === 'Drive') {
+            return (
+              <DriveChallengeLauncher
+                key={it.label}
+                className="group flex flex-col items-center justify-center gap-1 py-2"
+              >
+                <img
+                  src="/cx-drive-challenge-icon.png"
+                  alt="CX Drive Challenge"
+                  className="h-11 w-auto object-contain transition-all duration-200 group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(0,212,71,0.45)] group-active:scale-95 group-active:drop-shadow-[0_0_8px_rgba(0,212,71,0.45)]"
+                />
+                <span className="text-[10.5px] font-bold uppercase tracking-wide text-accent">
+                  {it.label}
+                </span>
+              </DriveChallengeLauncher>
+            );
+          }
+
           return (
             <Link
               key={it.label}
               to={it.to}
-              className="pressable flex flex-col items-center gap-1 py-2.5"
+              className="pressable flex flex-col items-center justify-center gap-1 py-2.5"
               aria-current={active ? 'page' : undefined}
             >
               <Icon

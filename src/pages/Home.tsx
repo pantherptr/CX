@@ -6,6 +6,7 @@ import { CarCard } from '../components/CarCard';
 import { SectionHead } from '../components/primitives';
 import { Reveal, Img, useParallax } from '../components/motion';
 import { useFeaturedCars, useCars } from '../lib/data/cars';
+import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
@@ -247,6 +248,33 @@ export default function Home() {
                 </Reveal>
               ))}
         </div>
+      </section>
+
+      {/* ---------------- DRIVE CHALLENGE TEASER ---------------- */}
+      <section className="container-page mt-16 sm:mt-20">
+        <Reveal>
+          <div className="flex flex-col items-center gap-5 rounded-3xl border border-line bg-panel/60 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
+            <div className="flex items-center gap-4">
+              <span className="hidden h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-accent-bright/15 text-accent sm:grid">
+                <img
+                  src="/cx-drive-challenge-icon.png"
+                  alt=""
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: '50% 10%' }}
+                />
+              </span>
+              <div>
+                <h2 className="font-display text-xl font-semibold text-ink sm:text-2xl">Think you can drive?</h2>
+                <p className="mt-1 text-[14.5px] text-muted">
+                  Beat the CX Drive Challenge and unlock a reward for your next trip.
+                </p>
+              </div>
+            </div>
+            <DriveChallengeLauncher className="btn btn-accent-bright btn-lg shrink-0">
+              Play the Challenge <Icon name="arrowRight" size={17} />
+            </DriveChallengeLauncher>
+          </div>
+        </Reveal>
       </section>
 
       {/* ---------------- WHY CX ---------------- */}

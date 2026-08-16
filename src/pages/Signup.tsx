@@ -37,7 +37,7 @@ export default function Signup() {
       <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
         <div className="w-full max-w-sm text-center">
           <div className="mb-8 flex justify-center">
-            <Logo />
+            <Logo variant="wordmark" />
           </div>
           <div className="card p-8">
             <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent-050 text-accent">

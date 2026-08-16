@@ -17,6 +17,7 @@ import {
   type FareTier,
 } from '../lib/data/bookings';
 import { findOrCreateConversation } from '../lib/data/messages';
+import { useAvailableReward } from '../lib/data/rewards';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
 
@@ -82,6 +83,8 @@ export default function Booking() {
   const [fareTier, setFareTier] = useState<FareTier>('standard');
   const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
   const { extras: extrasCatalog } = useExtrasCatalog();
+  const availableReward = useAvailableReward(session?.user.id);
+  const [applyReward, setApplyReward] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -178,7 +181,13 @@ export default function Booking() {
     0,
   );
   const flexSurcharge = fareTier === 'flexible' ? Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE) * activeDays : 0;
-  const grandTotal = b.total + extrasTotal + flexSurcharge;
+  const preDiscountTotal = b.total + extrasTotal + flexSurcharge;
+  // Preview only — what actually gets charged and shown on the
+  // confirmation screen comes back from the real inserted row
+  // (confirmed.discountAmount), computed server-side by prepare_booking.
+  const discountPreview =
+    applyReward && availableReward ? Math.round((preDiscountTotal * availableReward.discountPercentage) / 100) : 0;
+  const grandTotal = preDiscountTotal - discountPreview;
 
   const toggleExtra = (id: string) =>
     setSelectedExtras((prev) => {
@@ -228,6 +237,7 @@ export default function Booking() {
       protectionAddon: true,
       fareTier,
       extraIds: Array.from(selectedExtras),
+      rewardId: applyReward && availableReward ? availableReward.id : undefined,
     });
     setSubmitting(false);
     if (error || !booking) {
@@ -290,6 +300,12 @@ export default function Booking() {
               {confirmed.extras.map((ex) => (
                 <span key={ex.id} className="badge bg-panel-2 text-ink-soft">{ex.name}</span>
               ))}
+            </div>
+          )}
+          {confirmed.discountAmount > 0 && (
+            <div className="flex items-center gap-2 border-t border-line bg-accent-050 px-5 py-3 text-[13.5px] text-accent-700">
+              <Icon name="gift" size={16} />
+              Reward applied: −{eur(confirmed.discountAmount)}
             </div>
           )}
           <div className="flex items-center gap-3 border-t border-line bg-panel/50 p-5">
@@ -546,6 +562,26 @@ export default function Booking() {
                 <span className="truncate pl-2 font-medium text-ink">{pickupLoc || car.location}</span>
               </div>
             </div>
+
+            {availableReward && (
+              <label className="flex cursor-pointer items-center gap-3 border-t border-line px-4 py-3.5">
+                <input
+                  type="checkbox"
+                  checked={applyReward}
+                  onChange={(e) => setApplyReward(e.target.checked)}
+                  className="h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+                />
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="gift" size={15} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13.5px] font-medium text-ink">Apply reward</span>
+                  <span className="block truncate font-mono text-[12px] text-muted">{availableReward.couponCode}</span>
+                </span>
+                <span className="badge badge-accent shrink-0">{availableReward.discountPercentage}% OFF</span>
+              </label>
+            )}
+
             <dl className="space-y-2.5 border-t border-line px-4 py-4 text-[14px]">
               <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
@@ -559,6 +595,12 @@ export default function Booking() {
                   <dd className="text-ink">{eur(ex.priceModel === 'per_day' ? ex.price * activeDays : ex.price)}</dd>
                 </div>
               ))}
+              {discountPreview > 0 && (
+                <div className="flex justify-between text-accent">
+                  <dt>Discount ({availableReward?.discountPercentage}% OFF)</dt>
+                  <dd>−{eur(discountPreview)}</dd>
+                </div>
+              )}
               <div className="hairline my-1" />
               <div className="flex justify-between text-[15px] font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
             </dl>

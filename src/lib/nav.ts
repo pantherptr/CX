@@ -17,6 +17,7 @@ export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },
   { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
   { label: 'Payments', to: '/settings#payments', icon: 'card' },
+  { label: 'Rewards', to: '/dashboard#rewards', icon: 'gift' },
   { label: 'Profile', to: '/settings', icon: 'user' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
 ];
