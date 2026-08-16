@@ -50,15 +50,14 @@ export function BottomNav() {
 
   return (
     <nav
-      className="glass-noir fixed inset-x-0 bottom-0 z-50 border-t border-line-noir pb-safe lg:hidden"
+      className="glass fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
       aria-label="Primary"
     >
       <div className="relative grid grid-cols-5">
-        {/* Sliding active glow — a soft green bloom behind whichever tab is
-            current, in place of a hard indicator line. Tracks position with
-            the same spring-ish ease used across the rest of the app. */}
+        {/* Sliding active indicator — a small solid pill rather than a
+            glow bloom, so it reads as a clean app tab bar, not a game HUD. */}
         <span
-          className="glow-accent-bright pointer-events-none absolute top-0 h-16 w-16 -translate-x-1/2 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className="pointer-events-none absolute top-1.5 h-1 w-6 -translate-x-1/2 rounded-full bg-accent transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{
             left: activeIndex >= 0 ? `${(activeIndex + 0.5) * (100 / items.length)}%` : '-100%',
             opacity: activeIndex >= 0 ? 1 : 0,
@@ -77,9 +76,9 @@ export function BottomNav() {
                   src="/cx-drive-challenge-icon.png"
                   alt="CX Drive Challenge"
                   className="h-11 w-auto object-contain transition-transform duration-200 ease-out group-hover:scale-105 group-active:scale-95"
-                  style={{ filter: 'drop-shadow(0 0 9px rgba(0,212,71,0.5))' }}
+                  style={{ filter: 'drop-shadow(0 3px 8px rgba(22,22,26,0.22))' }}
                 />
-                <span className="text-[10.5px] font-bold uppercase tracking-wide text-accent-bright">
+                <span className="text-[10.5px] font-bold uppercase tracking-wide text-accent">
                   {it.label}
                 </span>
               </DriveChallengeLauncher>
@@ -97,14 +96,13 @@ export function BottomNav() {
                 name={it.icon}
                 size={23}
                 className={`transition-all duration-300 ease-out ${
-                  active ? 'scale-110 text-accent-bright' : 'text-white/55'
+                  active ? 'scale-110 text-accent' : 'text-ink-soft'
                 }`}
-                style={active ? { filter: 'drop-shadow(0 0 5px rgba(0,212,71,0.65))' } : undefined}
                 strokeWidth={active ? 2.1 : 1.75}
               />
               <span
                 className={`text-[10.5px] font-semibold tracking-wide transition-colors duration-300 ${
-                  active ? 'text-accent-bright' : 'text-white/45'
+                  active ? 'text-accent' : 'text-ink-soft'
                 }`}
               >
                 {it.label}
