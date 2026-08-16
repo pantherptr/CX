@@ -170,7 +170,7 @@ export default function CustomerDashboard() {
           <div>
             <p className="text-[14px] text-muted">{greeting()},</p>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
+              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName}</h1>
               {tier && <span className="badge badge-accent">{tier}</span>}
             </div>
           </div>

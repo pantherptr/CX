@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth';
 import { useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
+import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 export function greeting(): string {
   const h = new Date().getHours();
@@ -87,6 +88,25 @@ export function DashboardShell({
         </p>
         <ul className="flex flex-col gap-0.5">
           {nav.map((n) => {
+            if (n.isDrive) {
+              return (
+                <li key={n.label}>
+                  <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-[14.5px] font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
+                    <span
+                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ background: 'radial-gradient(120px 40px at 0% 50%, rgba(0,212,71,0.22), transparent 75%)' }}
+                    />
+                    <img
+                      src="/cx-drive-challenge-icon.png"
+                      alt=""
+                      className="relative h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:scale-110"
+                      style={{ objectPosition: '50% 8%' }}
+                    />
+                    <span className="relative flex-1 text-left tracking-wide">{n.label.toUpperCase()}</span>
+                  </DriveChallengeLauncher>
+                </li>
+              );
+            }
             const isActive = n.label === active;
             return (
               <li key={n.label}>
@@ -180,7 +200,7 @@ export function DashboardShell({
   const MobileDrawerInner = (
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center justify-between px-5">
-        <Logo variant="symbol" />
+        <Logo variant="wordmark" />
         <button
           onClick={() => setOpen(false)}
           className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"

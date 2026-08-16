@@ -156,7 +156,7 @@ export default function HostDashboard() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[14px] text-muted">{greeting()},</p>
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName} 👋</h1>
+            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName}</h1>
           </div>
           <Link to="/list-your-car" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Add a car</Link>
         </div>

@@ -30,6 +30,46 @@ type Phase = 'intro' | 'countdown' | 'playing' | 'paused' | 'ended' | 'claimed';
 const BEST_KEY = 'cx-drive-best-score';
 const CRASH_FLASH_MS = 420;
 
+const CONFETTI_COLORS = ['#00d447', '#ffffff', '#e0a52a', '#7dffb0'];
+
+/** One-shot confetti burst — mounted only while `active`, so it never
+ *  costs anything on the screens that don't call for it. Purely
+ *  decorative: no state, no timers, each piece just plays its CSS fall
+ *  animation once and settles at opacity 0. */
+function ConfettiBurst({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0 overflow-visible">
+      {Array.from({ length: 26 }).map((_, i) => {
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.5;
+        const duration = 1.6 + Math.random() * 0.9;
+        const drift = (Math.random() - 0.5) * 140;
+        const spin = 180 + Math.random() * 360;
+        const size = 5 + Math.random() * 5;
+        const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        return (
+          <span
+            key={i}
+            className="drive-confetti-piece absolute top-0 rounded-[2px]"
+            style={{
+              left: `${left}%`,
+              width: size,
+              height: size * 0.42,
+              background: color,
+              animationDelay: `${delay}s`,
+              animationDuration: `${duration}s`,
+              // @ts-expect-error -- custom properties consumed by the keyframe
+              '--drift': `${drift}px`,
+              '--spin': `${spin}deg`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function DriveChallengeLauncher({
   className,
   children,
@@ -56,6 +96,10 @@ export function DriveChallengeLauncher({
   const [claimError, setClaimError] = useState<string | null>(null);
   const [reward, setReward] = useState<Reward | null>(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
+  // Captured at the instant a run ends, before `bestScore` itself may get
+  // overwritten below — the results screen needs "what you had to beat",
+  // which `bestScore` alone can't answer once a new record replaces it.
+  const [priorBest, setPriorBest] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [bestScore, setBestScore] = useState(() => {
     try {
@@ -145,6 +189,7 @@ export function DriveChallengeLauncher({
     // trivially clears a bestScore of 0, which isn't worth celebrating.
     const newRecord = bestScore > 0 && r.score > bestScore;
     setIsNewRecord(newRecord);
+    setPriorBest(bestScore);
     if (newRecord) {
       setBestScore(r.score);
       try {
@@ -174,6 +219,9 @@ export function DriveChallengeLauncher({
     result && tiers
       ? tiers.filter((t) => t.pointsRequired > result.score).sort((a, b) => a.pointsRequired - b.pointsRequired)[0]
       : null;
+  // The lowest reward-qualifying score — reused as the leaderboard's
+  // "Top 1%" cutoff, so both screens agree on what "elite" means.
+  const eliteThreshold = tiers && tiers.length ? Math.min(...tiers.map((t) => t.pointsRequired)) : undefined;
 
   const claim = async () => {
     if (!gameSession) return;
@@ -249,12 +297,32 @@ export function DriveChallengeLauncher({
             {phase === 'intro' && (
               <div className="w-full max-w-sm text-center">
                 {showLeaderboard ? (
-                  <Leaderboard enabled={config?.leaderboardEnabled ?? false} currentUserId={authSession?.user.id} />
+                  <Leaderboard
+                    enabled={config?.leaderboardEnabled ?? false}
+                    currentUserId={authSession?.user.id}
+                    eliteThreshold={eliteThreshold}
+                  />
                 ) : (
                   <>
                     <div className="animate-fade-up">
                       <span className="relative mx-auto grid h-36 w-36 place-items-center">
-                        <span className="glow-accent-bright absolute inset-0 animate-scale-in rounded-full opacity-80" />
+                        <span className="drive-hero-pulse glow-accent-bright absolute inset-0 rounded-full opacity-80" />
+                        <Icon
+                          name="sparkles"
+                          size={14}
+                          className="animate-float absolute -left-1 top-3 text-accent-bright/70"
+                        />
+                        <Icon
+                          name="sparkles"
+                          size={10}
+                          className="animate-float-slow absolute -right-2 top-10 text-accent-bright/50"
+                        />
+                        <Icon
+                          name="sparkles"
+                          size={11}
+                          className="animate-float absolute -right-1 bottom-4 text-accent-bright/60"
+                          style={{ animationDelay: '1.2s' }}
+                        />
                         <img
                           src="/cx-drive-challenge-hero.png"
                           alt="CX Drive Challenge"
@@ -291,17 +359,22 @@ export function DriveChallengeLauncher({
                         </li>
                       ))}
                     </ul>
-                    <button
-                      onClick={start}
-                      disabled={starting || !gameSession}
-                      className="btn btn-accent-bright btn-lg btn-block mt-7 disabled:opacity-60"
-                    >
-                      {starting ? 'Starting…' : 'Start Driving'} <Icon name="arrowRight" size={17} />
-                    </button>
+                    <div className="relative mt-7">
+                      {!starting && gameSession && (
+                        <span className="drive-play-pulse pointer-events-none absolute inset-0 rounded-[0.85rem] bg-accent-bright/50" />
+                      )}
+                      <button
+                        onClick={start}
+                        disabled={starting || !gameSession}
+                        className="btn btn-accent-bright btn-lg btn-block relative disabled:opacity-60"
+                      >
+                        {starting ? 'Starting…' : 'Start Driving'} <Icon name="arrowRight" size={17} />
+                      </button>
+                    </div>
                     {bestScore > 0 && (
-                      <p className="mt-3 text-[12px] text-white/40">
-                        Personal best: {bestScore.toLocaleString()}
-                      </p>
+                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-star/30 bg-star/10 px-3 py-1.5 text-[12px] font-semibold text-star">
+                        <Icon name="trophy" size={13} fill /> Personal best {bestScore.toLocaleString()}
+                      </span>
                     )}
                   </>
                 )}
@@ -334,7 +407,7 @@ export function DriveChallengeLauncher({
                     </div>
                   }
                 >
-                  <DriveChallengeGame active={phase === 'playing'} onFinish={handleFinish} play={play} />
+                  <DriveChallengeGame active={phase === 'playing'} onFinish={handleFinish} play={play} bestScore={bestScore} />
                 </Suspense>
 
                 {phase === 'countdown' && (
@@ -371,23 +444,39 @@ export function DriveChallengeLauncher({
             )}
 
             {phase === 'ended' && showCrash && (
-              <div className="animate-crash-shake text-center">
-                <p className="font-display text-5xl font-bold uppercase tracking-wide text-danger">Crash</p>
+              <div className="relative flex items-center justify-center">
+                <span
+                  className="drive-crash-flash pointer-events-none absolute -inset-x-24 -inset-y-24 rounded-full"
+                  style={{ background: 'radial-gradient(closest-side, rgba(224,64,47,0.5), transparent 70%)' }}
+                />
+                <div className="animate-crash-shake text-center">
+                  <p
+                    className="font-display text-5xl font-bold uppercase tracking-wide text-danger"
+                    style={{ textShadow: '0 0 30px rgba(224,64,47,0.65)' }}
+                  >
+                    Crash
+                  </p>
+                </div>
               </div>
             )}
 
             {phase === 'ended' && !showCrash && result && (
-              <div className="w-full max-w-sm animate-scale-in text-center">
-                <span className="relative mx-auto grid h-48 w-48 place-items-center">
+              <div className="drive-results-vignette relative w-full max-w-sm animate-scale-in text-center">
+                <ConfettiBurst active={isNewRecord || !!qualifyingTier} />
+                <span className="relative mx-auto grid h-40 w-40 place-items-center">
                   <span className="glow-accent-bright absolute inset-0 animate-scale-in rounded-full opacity-70" />
                   <img
                     src="/gameover-game.png"
                     alt="Game over"
-                    className="relative h-48 w-auto animate-fade-up object-contain drop-shadow-[0_0_24px_rgba(0,212,71,0.35)]"
+                    className="relative h-40 w-auto animate-fade-up object-contain drop-shadow-[0_0_24px_rgba(0,212,71,0.35)]"
                   />
                 </span>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">Game Over</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-white">Nice drive.</h2>
+                <p
+                  className="mt-3 font-display text-4xl font-black uppercase tracking-wide text-white"
+                  style={{ textShadow: '0 0 30px rgba(0,212,71,0.35)' }}
+                >
+                  Game Over
+                </p>
                 <p className="mt-2 text-[15px] text-white/60">
                   You scored <span className="font-semibold text-white">{result.score.toLocaleString()}</span> points.
                 </p>
@@ -409,6 +498,25 @@ export function DriveChallengeLauncher({
                     )}
                   </div>
                 )}
+
+                {/* Personal-best comparison — what you had to beat, not just
+                    the post-run max, so a non-record run still shows the gap. */}
+                <p className="mt-3 text-[13px] text-white/45">
+                  {isNewRecord ? (
+                    <>
+                      Previous best was{' '}
+                      <span className="font-semibold text-white/70">{priorBest.toLocaleString()}</span> —
+                      beaten by <span className="font-semibold text-accent-bright">+{(result.score - priorBest).toLocaleString()}</span>
+                    </>
+                  ) : bestScore > result.score ? (
+                    <>
+                      <span className="font-semibold text-white/70">{(bestScore - result.score).toLocaleString()}</span> short of your best of{' '}
+                      {bestScore.toLocaleString()}
+                    </>
+                  ) : (
+                    'Your first run on the board.'
+                  )}
+                </p>
 
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
@@ -473,14 +581,15 @@ export function DriveChallengeLauncher({
                   </p>
                 )}
 
-                <div className="mt-6 flex gap-3">
-                  <button onClick={launch} className="btn btn-secondary flex-1 !border-white/15 !bg-white/5 !text-white">
-                    Play Again
-                  </button>
-                  <button onClick={close} className="btn btn-ghost flex-1 text-white/60 hover:!bg-white/10 hover:text-white">
-                    Back to CX
+                <div className="relative mt-6">
+                  <span className="drive-play-pulse pointer-events-none absolute inset-0 rounded-[0.85rem] bg-accent-bright/45" />
+                  <button onClick={launch} className="btn btn-accent-bright btn-lg btn-block relative">
+                    <Icon name="play" size={17} /> Play Again
                   </button>
                 </div>
+                <button onClick={close} className="btn btn-ghost btn-block mt-2.5 text-white/55 hover:!bg-white/10 hover:text-white">
+                  Exit to CX
+                </button>
               </div>
             )}
 

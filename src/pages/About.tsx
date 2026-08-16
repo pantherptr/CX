@@ -44,10 +44,13 @@ export default function About() {
             { v: '40,000+', l: 'Trips completed' },
             { v: '12,400+', l: 'Cars listed' },
             { v: '7', l: 'European cities' },
-            { v: '4.9★', l: 'Average rating' },
+            { v: '4.9', l: 'Average rating', star: true },
           ].map((s) => (
             <div key={s.l} className="card p-6 text-center">
-              <p className="font-display text-3xl font-semibold text-ink sm:text-4xl">{s.v}</p>
+              <p className="flex items-center justify-center gap-1.5 font-display text-3xl font-semibold text-ink sm:text-4xl">
+                {s.v}
+                {s.star && <Icon name="star" size={24} className="text-star" fill />}
+              </p>
               <p className="mt-1 text-[13.5px] text-muted">{s.l}</p>
             </div>
           ))}

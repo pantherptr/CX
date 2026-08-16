@@ -56,7 +56,7 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
     <div
       className={`w-full ${
         variant === 'hero'
-          ? 'rounded-[1.4rem] border border-line bg-surface p-2 shadow-lift'
+          ? 'rounded-[1.75rem] border border-line bg-surface p-2.5 shadow-pop'
           : 'rounded-2xl border border-line bg-surface p-1.5 shadow-soft'
       }`}
     >

@@ -5,6 +5,7 @@ import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
+import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 const links = [
   { to: '/browse', label: 'Browse Cars' },
@@ -20,6 +21,11 @@ function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  // PublicNavbar only ever renders for a logged-out session (see `Navbar`
+  // below), but the auth-button slot still branches on it directly rather
+  // than assuming — correct if that routing rule ever changes, free
+  // otherwise.
+  const { session, profile } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -44,16 +50,16 @@ function PublicNavbar() {
           scrolled ? 'border-line shadow-[0_1px_0_rgba(22,22,26,0.04)]' : 'border-transparent'
         }`}
       >
-        <nav className="container-page flex h-[68px] items-center justify-between gap-4">
-          <div className="flex items-center gap-8">
+        <nav className="container-page flex h-16 items-center justify-between gap-4">
+          <div className="flex items-center gap-10">
             <Logo variant="auto" />
-            <ul className="hidden items-center gap-1 lg:flex">
+            <ul className="hidden items-center gap-0.5 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
                   <NavLink
                     to={l.to}
                     className={({ isActive }) =>
-                      `group relative rounded-lg px-3 py-2 text-[14.5px] font-medium transition-colors ${
+                      `group relative rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors ${
                         isActive ? 'text-ink' : 'text-muted hover:text-ink'
                       }`
                     }
@@ -62,7 +68,7 @@ function PublicNavbar() {
                       <>
                         {l.label}
                         <span
-                          className={`absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-accent transition-all duration-300 ${
+                          className={`absolute inset-x-3.5 -bottom-0.5 h-px rounded-full bg-accent transition-all duration-300 ${
                             isActive
                               ? 'scale-x-100 opacity-100'
                               : 'scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-40'
@@ -74,18 +80,54 @@ function PublicNavbar() {
                 </li>
               ))}
             </ul>
+            <DriveChallengeLauncher className="group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-[13.5px] font-semibold text-accent-700 transition-colors lg:inline-flex">
+              <span
+                className="pointer-events-none absolute inset-0 -z-10 rounded-lg opacity-0 blur-[10px] transition-opacity duration-300 group-hover:opacity-100"
+                style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
+              />
+              <img
+                src="/cx-drive-challenge-icon.png"
+                alt=""
+                className="h-6 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
+                style={{ objectPosition: '50% 8%' }}
+              />
+              <span className="tracking-wide">DRIVE</span>
+            </DriveChallengeLauncher>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="hidden text-[14.5px] font-medium text-ink-soft transition-colors hover:text-ink sm:inline-flex"
-            >
-              Sign in
-            </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
               Create account
             </Link>
+
+            {session ? (
+              <Link
+                to="/dashboard"
+                aria-label="Your account"
+                className="pressable grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-line-strong bg-panel text-ink-soft transition-colors hover:border-ink"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Icon name="user" size={16} />
+                )}
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="pressable hidden text-[13.5px] font-medium text-ink-soft transition-colors hover:text-ink min-[420px]:inline-flex"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/login"
+                  className="pressable inline-flex h-9 items-center rounded-full border border-line-strong bg-surface px-4 text-[13.5px] font-semibold text-ink shadow-hair transition-colors duration-200 hover:border-ink hover:bg-panel"
+                >
+                  Sign in
+                </Link>
+              </>
+            )}
 
             <button
               onClick={() => setMenuOpen(true)}
@@ -105,7 +147,7 @@ function PublicNavbar() {
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-sm animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-bg shadow-pop">
             <div className="flex items-center justify-between border-b border-line px-5 h-[68px]">
-              <Logo variant="symbol" />
+              <Logo variant="wordmark" />
               <button
                 onClick={() => setMenuOpen(false)}
                 className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
@@ -127,6 +169,20 @@ function PublicNavbar() {
                     </NavLink>
                   </li>
                 ))}
+                <li onClick={() => setMenuOpen(false)}>
+                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl bg-accent-bright/10 px-3 py-3 text-[17px] font-bold text-accent-700">
+                    <span className="flex items-center gap-3">
+                      <img
+                        src="/cx-drive-challenge-icon.png"
+                        alt=""
+                        className="h-8 w-auto object-contain"
+                        style={{ objectPosition: '50% 8%' }}
+                      />
+                      <span className="tracking-wide">DRIVE</span>
+                    </span>
+                    <Icon name="chevronRight" size={18} className="text-accent-bright/60" />
+                  </DriveChallengeLauncher>
+                </li>
               </ul>
               <div className="hairline my-5" />
               <div className="flex flex-col gap-2 px-1">
@@ -247,7 +303,7 @@ function AppNavbar() {
           <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
           <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-xs animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-surface shadow-pop">
             <div className="flex h-[64px] items-center justify-between border-b border-line px-5">
-              <Logo variant="symbol" />
+              <Logo variant="wordmark" />
               <button
                 onClick={() => setDrawerOpen(false)}
                 className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
@@ -279,23 +335,44 @@ function AppNavbar() {
                 </div>
               )}
               <ul className="flex flex-col gap-0.5">
-                {nav.map((n) => (
-                  <li key={n.label}>
-                    <NavLink
-                      to={n.to}
-                      onClick={() => setDrawerOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
-                    >
-                      <Icon name={n.icon} size={19} className="text-muted" />
-                      <span className="flex-1">{n.label}</span>
-                      {n.badge && (
-                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
-                          {n.badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  </li>
-                ))}
+                {nav.map((n) => {
+                  if (n.isDrive) {
+                    return (
+                      <li key={n.label} onClick={() => setDrawerOpen(false)}>
+                        <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-[14.5px] font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
+                          <span
+                            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                            style={{ background: 'radial-gradient(120px 40px at 0% 50%, rgba(0,212,71,0.22), transparent 75%)' }}
+                          />
+                          <img
+                            src="/cx-drive-challenge-icon.png"
+                            alt=""
+                            className="relative h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:scale-110"
+                            style={{ objectPosition: '50% 8%' }}
+                          />
+                          <span className="relative flex-1 text-left tracking-wide">{n.label.toUpperCase()}</span>
+                        </DriveChallengeLauncher>
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={n.label}>
+                      <NavLink
+                        to={n.to}
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+                      >
+                        <Icon name={n.icon} size={19} className="text-muted" />
+                        <span className="flex-1">{n.label}</span>
+                        {n.badge && (
+                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
+                            {n.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
               </ul>
               <div className="hairline my-3" />
               <Link

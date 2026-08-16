@@ -468,6 +468,71 @@
     background: radial-gradient(closest-side, rgba(0, 212, 71, 0.35), transparent 72%);
   }
 
+  /* Drive Challenge HUD — a brief celebratory ring the instant the live
+     score clears the player's personal best mid-run. */
+  @keyframes drive-record-glow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.55), 0 0 18px rgba(0, 212, 71, 0.35); }
+    50% { box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.9), 0 0 28px rgba(0, 212, 71, 0.6); }
+  }
+  .drive-hud-record {
+    animation: drive-record-glow 1.6s ease-in-out infinite;
+  }
+
+  /* One-shot flash behind the "Crash" beat and a quiet vignette behind
+     the results reveal right after — both purely decorative, timed to
+     screens the game already shows rather than adding new ones. */
+  @keyframes drive-crash-flash {
+    0% { opacity: 0; transform: scale(0.7); }
+    28% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0; transform: scale(1.35); }
+  }
+  .drive-crash-flash {
+    animation: drive-crash-flash 0.55s var(--ease-out-expo);
+  }
+  .drive-results-vignette::before {
+    content: '';
+    position: absolute;
+    inset: -3rem -1.5rem;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgba(0, 212, 71, 0.08), transparent 72%);
+    pointer-events: none;
+  }
+
+  /* Continuous glow pulse behind the intro "Start Driving" button — the
+     "large animated PLAY button" the Drive Challenge start screen asks for. */
+  @keyframes drive-play-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 0.15; transform: scale(1.08); }
+  }
+  .drive-play-pulse {
+    filter: blur(14px);
+    animation: drive-play-pulse 1.8s ease-in-out infinite;
+  }
+
+  /* Ambient glow ring behind the hero mark on the Drive intro screen. */
+  @keyframes drive-hero-pulse {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
+  .drive-hero-pulse {
+    animation: drive-hero-pulse 3s ease-in-out infinite;
+  }
+
+  /* Confetti burst for a new record / reward unlock on the Game Over
+     screen — small rectangles falling and tumbling from just above the
+     card, each with its own random horizontal drift and timing set
+     inline per-piece rather than via more keyframes. */
+  @keyframes drive-confetti-fall {
+    0% { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; }
+    12% { opacity: 1; }
+    100% { transform: translateY(340px) translateX(var(--drift, 0px)) rotate(var(--spin, 260deg)); opacity: 0; }
+  }
+  .drive-confetti-piece {
+    animation-name: drive-confetti-fall;
+    animation-timing-function: ease-in;
+    animation-iteration-count: 1;
+  }
+
   /* Masks a texture so it fades out at the edges of its section. */
   .mask-fade {
     -webkit-mask-image: radial-gradient(75% 65% at 50% 45%, #000 35%, transparent 100%);
@@ -531,11 +596,21 @@
   .pl-safe { padding-left: env(safe-area-inset-left, 0px); }
   .pr-safe { padding-right: env(safe-area-inset-right, 0px); }
 
-  /* Frosted surface for floating chrome (bottom nav, quick-view header). */
+  /* Frosted surface for floating chrome (quick-view header). */
   .glass {
     background: rgba(255, 255, 255, 0.78);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  /* Dark frosted surface — the mobile bottom nav's own chrome. Deliberately
+     near-black rather than the light `.glass` so its white/green icon
+     language (see BottomNav) always has the contrast it needs regardless
+     of what's scrolling underneath. */
+  .glass-noir {
+    background: rgba(10, 13, 11, 0.86);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
   }
 
   /* Tactile press feedback — the touch-friendly equivalent of the
