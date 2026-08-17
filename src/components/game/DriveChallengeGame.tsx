@@ -182,7 +182,18 @@ export default function DriveChallengeGame({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
+    // `window.resize` alone misses two real cases: the container's own
+    // flex layout settling right after mount (before any window event
+    // fires), and iOS Safari's address bar show/hide, which resizes the
+    // *visual* viewport without always firing a plain `resize` event —
+    // the canvas would otherwise keep the stale pre-toolbar-change size
+    // until the next unrelated resize. Both are covered on top of the
+    // window listener below.
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
     window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', resize);
+    window.visualViewport?.addEventListener('resize', resize);
 
     // The one real image asset — the official CX mark, badged onto the
     // player car's grille. Loaded once; `drawImage` on an undecoded
@@ -1030,7 +1041,10 @@ export default function DriveChallengeGame({
 
     return () => {
       cancelAnimationFrame(raf);
+      ro.disconnect();
       window.removeEventListener('resize', resize);
+      window.removeEventListener('orientationchange', resize);
+      window.visualViewport?.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKey);
       canvas.removeEventListener('pointerdown', onPointer);
     };
@@ -1040,7 +1054,7 @@ export default function DriveChallengeGame({
     <div className="relative h-full w-full touch-none select-none overscroll-none">
       <canvas ref={canvasRef} className="h-full w-full" />
 
-      <div className="pointer-events-none absolute left-4 top-4 flex gap-2">
+      <div className="pointer-events-none absolute left-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
         <div
           ref={scoreChipRef}
           className="drive-hud-chip rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur"
@@ -1066,7 +1080,7 @@ export default function DriveChallengeGame({
         </div>
       </div>
 
-      <div className="pointer-events-none absolute right-4 top-4 flex gap-2">
+      <div className="pointer-events-none absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
         <div className="rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 text-right shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-bright/80">Speed</p>
           <p ref={speedElRef} className="font-display text-xl font-bold tabular-nums text-white">
@@ -1089,7 +1103,12 @@ export default function DriveChallengeGame({
           <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-2xl text-white/20 sm:hidden">
             &rsaquo;
           </span>
-          <p className="pointer-events-none absolute inset-x-0 bottom-6 text-center text-[12.5px] font-medium text-white/45">
+          {/* Cleared to sit above the launcher's floating pause/mute/close
+              cluster (bottom-right, ~64px tall including its own padding)
+              rather than the plain 1.5rem used when nothing else shares
+              this edge — this HUD doesn't know that cluster's exact
+              markup, so it just reserves generous, safe-area-aware room. */}
+          <p className="pointer-events-none absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] text-center text-[12.5px] font-medium text-white/45">
             <span className="hidden sm:inline">Steer with ← → or A / D</span>
             <span className="sm:hidden">Tap left or right to steer</span>
           </p>

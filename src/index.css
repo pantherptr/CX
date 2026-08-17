@@ -378,38 +378,30 @@
   .animate-float { animation: float-y 6s ease-in-out infinite; }
   .animate-float-slow { animation: float-y 8s ease-in-out infinite; }
 
-  /* ---- Car loader ---- */
-  @keyframes car-bob {
-    0%, 100% { transform: translateY(0) rotate(-0.4deg); }
-    25% { transform: translateY(-2.4px) rotate(0.3deg); }
-    50% { transform: translateY(0.6px) rotate(-0.2deg); }
-    75% { transform: translateY(-1.4px) rotate(0.4deg); }
-  }
+  /* ---- Supercar loader ---- */
   @keyframes wheel-spin {
     to { transform: rotate(360deg); }
-  }
-  @keyframes road-dash {
-    to { stroke-dashoffset: -48; }
-  }
-  @keyframes smoke-puff {
-    0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
-    18% { opacity: 0.55; }
-    100% { opacity: 0; transform: translate(-26px, -16px) scale(2.4); }
-  }
-  @keyframes speed-line {
-    0% { opacity: 0; transform: translateX(6px); }
-    40% { opacity: 0.9; }
-    100% { opacity: 0; transform: translateX(-30px); }
   }
   @keyframes loader-bar {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(320%); }
   }
-  .loader-car { animation: car-bob 0.7s ease-in-out infinite; transform-origin: center; }
-  .loader-wheel { animation: wheel-spin 0.55s linear infinite; transform-origin: center; transform-box: fill-box; }
-  .loader-road { stroke-dasharray: 22 26; animation: road-dash 0.5s linear infinite; }
-  .loader-smoke { animation: smoke-puff 1.15s ease-out infinite; transform-box: fill-box; }
-  .loader-speed { animation: speed-line 0.7s linear infinite; transform-box: fill-box; }
+  /* A single glint travels across the paint, then pauses — reads as one
+     considered reflection pass rather than a constant shimmer. */
+  @keyframes loader-sheen {
+    0% { transform: translateX(0); opacity: 0; }
+    8% { opacity: 0.5; }
+    28% { opacity: 0.5; }
+    40% { opacity: 0; }
+    100% { transform: translateX(232px); opacity: 0; }
+  }
+  @keyframes loader-glow-pulse {
+    0%, 100% { opacity: 0.16; transform: scale(1); }
+    50% { opacity: 0.32; transform: scale(1.05); }
+  }
+  .loader-wheel { animation: wheel-spin 0.6s linear infinite; transform-origin: center; transform-box: fill-box; }
+  .loader-sheen { animation: loader-sheen 2.8s ease-in-out infinite; }
+  .loader-glow { animation: loader-glow-pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 
   .skeleton {
     position: relative;

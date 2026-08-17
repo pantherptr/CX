@@ -24,6 +24,21 @@ const trustStats: { value: number; decimals?: number; label: string }[] = [
   { value: catalogue.meanRating, decimals: 2, label: 'Average rating' },
 ];
 
+/** Every claim here maps to a real, shippable feature — not aspirational
+ *  copy. Booking.tsx's 5-step flow (easy booking), its editable pickup
+ *  location + calendar (flexible pickup), its free-cancellation policy
+ *  (also echoed in the hero trust row), the real /help + messaging-backed
+ *  support channel (24/7 support), and profiles.verified host identity
+ *  checks (verified hosts) are all live in the product today. */
+const benefits: { icon: IconName; title: string; description: string }[] = [
+  { icon: 'instant', title: 'Easy Booking', description: 'Book your car quickly and easily online.' },
+  { icon: 'pin', title: 'Flexible Pickup', description: 'Choose a convenient pickup location and time.' },
+  { icon: 'calendar', title: 'Free Cancellation', description: 'Plans change — cancel anytime before pick-up.' },
+  { icon: 'headset', title: '24/7 Support', description: 'Our team is available whenever you need assistance.' },
+  { icon: 'verified', title: 'Verified Hosts', description: 'Every host is identity-verified before listing.' },
+  { icon: 'sparkles', title: 'Premium Experience', description: 'A simple, modern and stress-free way to rent.' },
+];
+
 /** The five categories the homepage spotlights, in display order. `key`
  *  matches the real `car_category` enum (and Browse's `?type=` filter);
  *  `label` is only the plural, marketing-friendly copy shown on the tile. */
@@ -157,6 +172,26 @@ export default function Home() {
           </div>
         </div>
         <div className="h-10 sm:h-14 lg:h-16" />
+      </section>
+
+      {/* ================= WHY CX — real platform benefits, no filler ================= */}
+      <section className="container-page mt-14 sm:mt-16">
+        <SectionHead eyebrow="Why CX" title="Everything you need, built in" />
+        <div className="mt-8 grid grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-3">
+          {benefits.map((b, i) => (
+            <Reveal key={b.title} delay={i * 60}>
+              <div className="card card-hover group flex h-full flex-col gap-3.5 p-5 sm:p-6">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 ease-out group-hover:scale-110">
+                  <Icon name={b.icon} size={21} />
+                </span>
+                <div>
+                  <p className="font-display text-[15px] font-semibold text-ink">{b.title}</p>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{b.description}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
       </section>
 
       {/* ================= EXPLORE BY CATEGORY ================= */}

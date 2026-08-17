@@ -255,45 +255,77 @@ export function DriveChallengeLauncher({
 
       {open &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex flex-col bg-noir">
-          <div className="flex h-16 shrink-0 items-center justify-between px-4 sm:px-6">
-            <span className="flex items-center gap-2 text-[13.5px] font-semibold text-white">
-              <img
-                src="/cx-drive-challenge-icon.png"
-                alt=""
-                className="h-7 w-7 rounded-lg object-cover"
-                style={{ objectPosition: '50% 12%' }}
-              />
-              CX Drive Challenge
-            </span>
-            <div className="flex items-center gap-1">
-              {(phase === 'playing' || phase === 'paused') && (
+          <div className="fixed inset-x-0 top-0 z-[100] flex h-[100dvh] flex-col overflow-hidden overscroll-none bg-noir">
+          {/* Chrome bar only for the menu-like screens (intro/results/reward) —
+              during actual gameplay it's replaced by a floating control
+              cluster over the canvas (below) so the game itself, not just
+              the modal, gets the full viewport with no letterboxing bar. */}
+          {!gameMounted && (
+            <div className="flex h-16 shrink-0 items-center justify-between px-4 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+              <span className="flex items-center gap-2 text-[13.5px] font-semibold text-white">
+                <img
+                  src="/cx-drive-challenge-icon.png"
+                  alt=""
+                  className="h-7 w-7 rounded-lg object-cover"
+                  style={{ objectPosition: '50% 12%' }}
+                />
+                CX Drive Challenge
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={toggleMute}
+                  aria-label={muted ? 'Unmute' : 'Mute'}
+                  className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Icon name={muted ? 'volumeOff' : 'volume'} size={18} />
+                </button>
+                <button
+                  onClick={close}
+                  aria-label="Close"
+                  className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Icon name="x" size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {gameMounted && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-end p-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+              <div className="pointer-events-auto flex items-center gap-2">
                 <button
                   onClick={togglePause}
                   aria-label={phase === 'paused' ? 'Resume' : 'Pause'}
-                  className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
                 >
-                  <Icon name={phase === 'paused' ? 'play' : 'pause'} size={18} />
+                  <Icon name={phase === 'paused' ? 'play' : 'pause'} size={17} />
                 </button>
-              )}
-              <button
-                onClick={toggleMute}
-                aria-label={muted ? 'Unmute' : 'Mute'}
-                className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Icon name={muted ? 'volumeOff' : 'volume'} size={18} />
-              </button>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Icon name="x" size={20} />
-              </button>
+                <button
+                  onClick={toggleMute}
+                  aria-label={muted ? 'Unmute' : 'Mute'}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+                >
+                  <Icon name={muted ? 'volumeOff' : 'volume'} size={17} />
+                </button>
+                <button
+                  onClick={close}
+                  aria-label="Close"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white/85 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+                >
+                  <Icon name="x" size={18} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 pb-8">
+          <div
+            className={
+              gameMounted
+                ? 'relative w-full flex-1 overflow-hidden'
+                : 'flex flex-1 items-center justify-center overflow-y-auto px-4'
+            }
+            style={gameMounted ? undefined : { paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+          >
             {phase === 'intro' && (
               <div className="w-full max-w-sm text-center">
                 {showLeaderboard ? (
@@ -391,7 +423,7 @@ export function DriveChallengeLauncher({
             )}
 
             {gameMounted && (
-              <div className="relative h-full max-h-[720px] w-full max-w-[420px]">
+              <div className="relative h-full w-full">
                 <Suspense
                   fallback={
                     <div className="flex h-full flex-col items-center justify-center gap-3">
