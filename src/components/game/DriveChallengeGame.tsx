@@ -75,6 +75,43 @@ type EntityKind = 'car' | 'truck' | 'cone' | 'moving' | 'token' | 'shield' | 'mu
  */
 type TrafficBehavior = 'slow' | 'normal' | 'fast' | 'changer' | 'aggressive';
 
+/**
+ * Which way a vehicle travels *on screen*, fixed at spawn and never
+ * reassigned. Every lane here belongs to one carriageway, so this is the
+ * screen-relative reading of a shared direction of travel:
+ *
+ *   'approaching' — slower than the player, so it falls back toward them
+ *   'receding'    — faster than the player, so it pulls away up the frame
+ *
+ * This exists because `relSpeed` crossing 1.0 is what flips a vehicle's
+ * on-screen direction, and the AI writes to `relSpeed` from several
+ * places (car following, wall escapes, aggressive re-rolls). Previously
+ * any of those could shove a receding vehicle below 1.0 mid-life, so
+ * cars visibly reversed, stalled, or lurched sideways. `travel` pins each
+ * vehicle to one side of that boundary and `TRAVEL_BAND` clamps every
+ * single write, which makes a direction flip structurally impossible
+ * rather than something each call site has to remember not to do.
+ */
+type TravelDirection = 'approaching' | 'receding';
+
+/** Hard `relSpeed` limits per direction. Neither band touches 1.0, so no
+ *  clamped write can ever put a vehicle on the wrong side of it. */
+const TRAVEL_BAND: Record<TravelDirection, [number, number]> = {
+  // The lower bound is deliberately not 0: a vehicle at exactly 0 is
+  // motionless on the road and reads as parked, which is what "cars
+  // randomly stop" looked like. 0.06 keeps every vehicle visibly driving
+  // even when it has braked as hard as it is allowed to.
+  approaching: [0.06, 0.9],
+  receding: [1.06, 1.6],
+};
+
+/** Frame-rate-independent smoothing factor. `x += (target - x) * k * dt`
+ *  changes its time constant with frame rate; this keeps the approach
+ *  rate identical whether the device runs at 30, 60 or 120fps. */
+function approach(rate: number, dt: number) {
+  return 1 - Math.exp(-rate * dt);
+}
+
 /** Body shape drawn inside the (unchanged) hitbox — variety is purely a
  *  render concern, so silhouettes never alter collision or difficulty. */
 type Silhouette = 'sedan' | 'coupe' | 'suv' | 'sport';
@@ -122,6 +159,8 @@ interface Entity {
 
   // ---- traffic AI (undefined on cones / tokens / power-ups) ----
   behavior?: TrafficBehavior;
+  /** Assigned once at spawn, never reassigned. See `TravelDirection`. */
+  travel?: TravelDirection;
   /** Current forward speed fraction; eased toward `targetRelSpeed` so
    *  vehicles accelerate and brake rather than snapping. */
   relSpeed?: number;
@@ -391,6 +430,46 @@ export default function DriveChallengeGame({
     window.addEventListener('keydown', onKey);
     canvas.addEventListener('pointerdown', onPointer);
 
+    // ------------------- vehicle lifecycle / pooling -------------------
+    // Entities are recycled rather than reallocated, and the survivor list
+    // is double-buffered instead of rebuilt each frame. `release` is the
+    // single exit point, so a vehicle can never be left half-dead in the
+    // world: it is either in `entities` or in `pool`, never both.
+    const pool: Entity[] = [];
+    let scratch: Entity[] = [];
+
+    const acquire = (): Entity => {
+      const e = pool.pop();
+      if (!e) return { kind: 'car', lane: 0, y: 0, w: 0, h: 0 };
+      // Every field is reset explicitly — a stale `toLane` or `escapeUntil`
+      // leaking into a recycled vehicle is exactly how "stuck" cars appear.
+      e.color = undefined;
+      e.silhouette = undefined;
+      e.grazed = undefined;
+      e.behavior = undefined;
+      e.travel = undefined;
+      e.relSpeed = undefined;
+      e.targetRelSpeed = undefined;
+      e.fromLane = undefined;
+      e.toLane = undefined;
+      e.signalUntil = undefined;
+      e.changeUntil = undefined;
+      e.nextDecisionAt = undefined;
+      e.escapeUntil = undefined;
+      return e;
+    };
+
+    const release = (e: Entity) => {
+      if (pool.length < MAX_ENTITIES * 2) pool.push(e);
+    };
+
+    /** Clamps any speed write into the vehicle's own direction band, so
+     *  no call site can flip its on-screen travel direction. */
+    const clampRel = (e: Entity, v: number) => {
+      const [lo, hi] = TRAVEL_BAND[e.travel ?? 'approaching'];
+      return Math.min(hi, Math.max(lo, v));
+    };
+
     // ---------------------- traffic spawn safety ----------------------
     // Every one of these is a *fairness* rule, not a difficulty knob: the
     // run is meant to get hard because reacting gets hard, never because
@@ -456,18 +535,17 @@ export default function DriveChallengeGame({
       if (wouldWallOff(lane, y)) return false;
 
       const isVehicle = kind === 'car' || kind === 'truck' || kind === 'moving';
-      const e: Entity = {
-        kind,
-        lane,
-        y,
-        w: size.w,
-        h: size.h,
-        color: isVehicle ? TRAFFIC_PALETTE[Math.floor(Math.random() * TRAFFIC_PALETTE.length)] : undefined,
-        silhouette:
-          kind === 'car' || kind === 'moving'
-            ? SILHOUETTES[Math.floor(Math.random() * SILHOUETTES.length)]
-            : undefined,
-      };
+      const e = acquire();
+      e.kind = kind;
+      e.lane = lane;
+      e.y = y;
+      e.w = size.w;
+      e.h = size.h;
+      e.color = isVehicle ? TRAFFIC_PALETTE[Math.floor(Math.random() * TRAFFIC_PALETTE.length)] : undefined;
+      e.silhouette =
+        kind === 'car' || kind === 'moving'
+          ? SILHOUETTES[Math.floor(Math.random() * SILHOUETTES.length)]
+          : undefined;
 
       if (isVehicle) {
         // `moving` is the kind the obstacle pool uses for "this one will
@@ -478,8 +556,12 @@ export default function DriveChallengeGame({
         const [lo, hi] = BEHAVIOR_SPEED[behavior];
         const rel = lo + Math.random() * (hi - lo);
         e.behavior = behavior;
-        e.relSpeed = rel;
-        e.targetRelSpeed = rel;
+        // Direction is derived from the behavior's own band and fixed for
+        // the vehicle's whole life — the single source of truth that every
+        // later speed write is clamped against.
+        e.travel = lo > 1 ? 'receding' : 'approaching';
+        e.relSpeed = clampRel(e, rel);
+        e.targetRelSpeed = e.relSpeed;
         e.nextDecisionAt = t + 0.6 + Math.random() * 1.4;
       }
 
@@ -570,6 +652,7 @@ export default function DriveChallengeGame({
       // its pace. This is what produces natural convoys and spacing
       // instead of cars ghosting through each other.
       const myLane = e.toLane ?? Math.round(e.lane);
+      let wantsEvade = false;
       let lead: Entity | null = null;
       for (const o of entities) {
         if (o === e || !isBlocking(o)) continue;
@@ -591,37 +674,43 @@ export default function DriveChallengeGame({
         // from kept re-triggering) starved its lane-change decisions.
         e.escapeUntil = undefined;
         const [lo, hi] = BEHAVIOR_SPEED[e.behavior ?? 'normal'];
-        e.targetRelSpeed = lo + Math.random() * (hi - lo);
+        e.targetRelSpeed = clampRel(e, lo + Math.random() * (hi - lo));
       }
       if (lead) {
         const gap = e.y - lead.y - (e.h + lead.h) * 0.5;
         const leadRel = lead.relSpeed ?? 0; // a cone has no forward speed
+        // Only ever brake *within* this vehicle's own band. A receding
+        // vehicle cannot be slowed past 1.06, so catching slower traffic
+        // can no longer whip it around into reversing on screen — it just
+        // eases off and closes more gently, which is what it looks like
+        // from the driver's seat anyway.
         if (!escaping && leadRel < e.relSpeed && gap < 140) {
           const urgency = Math.min(1, Math.max(0, 1 - gap / 140));
-          e.targetRelSpeed = Math.max(0.02, e.relSpeed + (leadRel - e.relSpeed) * (0.45 + urgency * 0.55));
+          e.targetRelSpeed = clampRel(e, e.relSpeed + (leadRel - e.relSpeed) * (0.45 + urgency * 0.55));
           // Inside braking distance the eased approach below is too slow
           // to stop a visible overlap, so pace is matched outright — at
           // this range the speeds are already close enough not to pop.
-          if (gap < 42) e.relSpeed = Math.max(0.02, leadRel);
+          if (gap < 42) e.relSpeed = clampRel(e, leadRel);
         }
-        // Already touching. Matching pace locks the pair together for
-        // good, so the follower is pushed strictly below the leader's
-        // speed until the gap physically reopens. This runs even mid
-        // break-away — an escape must never drive through anything.
-        //
-        // The floor is negative on purpose: a cone sits at an effective
-        // relSpeed of 0, so a follower clamped at 0.02 could never drop
-        // back faster than one and stayed welded to it for the rest of
-        // the run. A slightly negative value just reads as the vehicle
-        // braking hard, and is what actually guarantees separation.
-        if (gap < 4) {
-          e.relSpeed = Math.max(-0.15, leadRel - 0.28);
-          e.targetRelSpeed = Math.max(-0.15, Math.min(e.targetRelSpeed, leadRel - 0.12));
+        // Already touching. Matching pace exactly freezes the gap where
+        // it is, which is enough to stop it deepening. It deliberately
+        // does *not* reverse the follower (the old behaviour, and the
+        // direct cause of cars appearing to drive backwards) — a vehicle
+        // that physically cannot fall back further instead swerves, via
+        // the real animated lane change requested below.
+        // A cone cannot be out-braked — it sits at an effective speed of 0,
+        // below what any vehicle is allowed to slow to — so closing on one
+        // is resolved by pulling around it well before contact rather than
+        // by queueing behind it. Moving leads only need the contact check.
+        if (gap < (lead.kind === 'cone' ? 46 : 4)) {
+          e.relSpeed = clampRel(e, leadRel);
+          e.targetRelSpeed = clampRel(e, leadRel);
+          wantsEvade = true;
         }
       }
 
-      // Smooth acceleration / braking rather than instant speed snaps.
-      e.relSpeed += (e.targetRelSpeed - e.relSpeed) * Math.min(1, dt * 1.6);
+      // Smooth acceleration / braking, frame-rate independent.
+      e.relSpeed = clampRel(e, e.relSpeed + (e.targetRelSpeed - e.relSpeed) * approach(1.6, dt));
 
       // --- mid-change: interpolate, then settle ---
       if (e.toLane !== undefined && e.fromLane !== undefined && e.signalUntil !== undefined && e.changeUntil !== undefined) {
@@ -646,17 +735,37 @@ export default function DriveChallengeGame({
         return;
       }
 
+      const closing = speed * (1 - e.relSpeed);
+
+      // Evasion. A vehicle nose-to-tail with something it cannot out-brake
+      // (most often a cone, which sits at an effective speed of 0) used to
+      // be forced backwards to separate. Now it pulls around instead,
+      // using the same signalled, interpolated change as any other merge —
+      // a real animation, never a snap — and only into a lane the normal
+      // fairness checks already allow. If nothing is safe it simply holds
+      // station behind the obstruction, which is stable and readable.
+      if (wantsEvade && e.toLane === undefined) {
+        const base = Math.round(e.lane);
+        for (const dir of [-1, 1]) {
+          const target = base + dir;
+          if (!canChangeInto(e, target, closing)) continue;
+          e.fromLane = base;
+          e.toLane = target;
+          e.signalUntil = elapsed + SIGNAL_TIME;
+          e.changeUntil = e.signalUntil + CHANGE_TIME;
+          return;
+        }
+      }
+
       if (e.nextDecisionAt === undefined || elapsed < e.nextDecisionAt) return;
       // (decision tick continues below)
       e.nextDecisionAt = elapsed + 0.7 + Math.random() * 1.3;
-
-      const closing = speed * (1 - e.relSpeed);
 
       // Aggressive traffic also varies its pace, so it can surge or back
       // off unpredictably (within its own behavior band — never beyond).
       if (e.behavior === 'aggressive' && !inEscape && Math.random() < 0.45) {
         const [lo, hi] = BEHAVIOR_SPEED.aggressive;
-        e.targetRelSpeed = lo + Math.random() * (hi - lo);
+        e.targetRelSpeed = clampRel(e, lo + Math.random() * (hi - lo));
       }
 
       const mayChange =
@@ -706,12 +815,21 @@ export default function DriveChallengeGame({
       // Moving it aside while it is still off-screen costs nothing
       // visually and removes the blind rear-end entirely.
       for (const o of entities) {
-        if (o.relSpeed === undefined || o.relSpeed <= 1) continue;
+        if (o.travel !== 'receding') continue;
         if (o.y < height + 10) continue; // already on screen — leave it alone
+        if (o.toLane !== undefined) continue; // already moving out
         if (Math.round(o.lane) !== playerLane) continue;
         const alt = [playerLane - 1, playerLane + 1].filter((l) => l >= 0 && l < LANES);
         const free = alt.find((l) => laneFreeAt(l, o.y, o.h, 40));
-        if (free !== undefined) o.lane = free;
+        if (free === undefined) continue;
+        // A proper signalled, interpolated change — never a snap. This
+        // used to assign `o.lane` directly, which is a teleport even when
+        // it happens off-screen, and left the vehicle's visual state
+        // inconsistent with its lane-change bookkeeping.
+        o.fromLane = Math.round(o.lane);
+        o.toLane = free;
+        o.signalUntil = t + SIGNAL_TIME;
+        o.changeUntil = o.signalUntil + CHANGE_TIME;
       }
 
       for (const a of entities) {
@@ -763,13 +881,18 @@ export default function DriveChallengeGame({
         const blocked = entities.some(
           (o) => o !== mover && isBlocking(o) && Math.round(o.lane) === lane && o.y < mover.y && mover.y - o.y < 190,
         );
-        if (blocked) {
-          mover.targetRelSpeed = 0.02;
-          mover.relSpeed = Math.min(mover.relSpeed ?? 0, 0.1);
-        } else {
-          mover.targetRelSpeed = 1.45;
-          mover.relSpeed = Math.max(mover.relSpeed ?? 0, 1.05);
-        }
+        // Both options stay inside the vehicle's own direction band, so a
+        // wall escape can shift its pace but never reverse it. Previously
+        // this wrote 0.02 / 1.45 unconditionally, which is precisely how a
+        // receding vehicle got slammed into travelling backwards.
+        const [bandLo, bandHi] = TRAVEL_BAND[mover.travel ?? 'approaching'];
+        mover.targetRelSpeed = clampRel(mover, blocked ? bandLo : bandHi);
+        mover.relSpeed = clampRel(
+          mover,
+          blocked
+            ? Math.min(mover.relSpeed ?? bandLo, bandLo + (bandHi - bandLo) * 0.15)
+            : Math.max(mover.relSpeed ?? bandHi, bandLo + (bandHi - bandLo) * 0.85),
+        );
         // Deliberately NOT rewriting `behavior` — doing so used to convert
         // lane-changers into 'fast' permanently, silently removing merging
         // traffic from the rest of the run. `escapeUntil` instead protects
@@ -809,9 +932,20 @@ export default function DriveChallengeGame({
           } else if (roll < 0.04) {
             const p = Math.random();
             const kind: EntityKind = p < 0.34 ? 'shield' : p < 0.67 ? 'multiplier' : 'boost';
-            entities.push({ kind, lane: Math.floor(Math.random() * LANES), y: -40, w: 30, h: 30 });
+            // Pickups go through the same acquire/release lifecycle as
+            // traffic — every entity in the world has one owner and one
+            // exit path, with no object literals slipping past the pool.
+            const pu = acquire();
+            pu.kind = kind;
+            pu.lane = Math.floor(Math.random() * LANES);
+            pu.y = -40; pu.w = 30; pu.h = 30;
+            entities.push(pu);
           } else if (roll < 0.3) {
-            entities.push({ kind: 'token', lane: Math.floor(Math.random() * LANES), y: -40, w: 34, h: 34 });
+            const tk = acquire();
+            tk.kind = 'token';
+            tk.lane = Math.floor(Math.random() * LANES);
+            tk.y = -40; tk.w = 34; tk.h = 34;
+            entities.push(tk);
           } else {
             const kind = pickObstacleKind(elapsed);
             if (kind === 'cone') {
@@ -853,13 +987,13 @@ export default function DriveChallengeGame({
         }
 
         const target = laneX(playerLane);
-        currentLaneX += (target - currentLaneX) * Math.min(1, dt * 12);
+        currentLaneX += (target - currentLaneX) * approach(12, dt);
 
         // Cosmetic: lean the car into the turn, proportional to how far
         // it still has to travel to the target lane, then settle.
         const laneW = width / LANES;
         const leanTarget = Math.min(0.24, Math.max(-0.24, ((target - currentLaneX) / laneW) * 0.55));
-        carTilt += (leanTarget - carTilt) * Math.min(1, dt * 9);
+        carTilt += (leanTarget - carTilt) * approach(9, dt);
 
         // Cosmetic: a couple of tire-smoke puffs the instant a lane
         // change actually starts — compared against last frame's lane,
@@ -897,16 +1031,23 @@ export default function DriveChallengeGame({
 
         const px = laneX(playerLane);
         const py = playerY();
-        const next: Entity[] = [];
+        // Double-buffered survivor list — `next` is reused between frames
+        // rather than reallocated, and every removal below goes through
+        // `release` so nothing is dropped without returning to the pool.
+        const next = scratch;
+        next.length = 0;
         for (const e of entities) {
           driveTraffic(e, dt, speed);
           // A vehicle's own forward speed subtracts from the road's, so
           // relSpeed < 1 drifts back toward the player and > 1 pulls away
           // up the frame. Props (cones/tokens/power-ups) have no relSpeed
-          // and therefore still scroll at exactly the road speed.
+          // and therefore still scroll at exactly the road speed. Movement
+          // is pure `dt` maths, so a dropped frame changes nothing but the
+          // step size.
           e.y += speed * (1 - (e.relSpeed ?? 0)) * dt;
-          // Culled at both ends now that traffic can leave via the top.
-          if (e.y > height + 60 || e.y < -160) continue;
+          // Exit bounds — culled at both ends, since receding traffic
+          // leaves via the top and everything else via the bottom.
+          if (e.y > height + 60 || e.y < -160) { release(e); continue; }
 
           const ex = laneX(e.lane);
           const hit = Math.abs(e.y - py) < e.h * 0.5 + 18 && Math.abs(ex - px) < e.w * 0.5 + 20;
@@ -926,6 +1067,7 @@ export default function DriveChallengeGame({
               } else {
                 playRef.current('collect');
               }
+              release(e);
               continue;
             }
             if (e.kind === 'shield') {
@@ -933,6 +1075,7 @@ export default function DriveChallengeGame({
               pickupFx.push({ x: ex, y: e.y, bornAt: elapsed });
               spawnBurst(ex, e.y, 8, { spread: Math.PI * 2, speed: 90, size: 2.6, color: '#7dffb0', life: 0.45 });
               playRef.current('powerup');
+              release(e);
               continue;
             }
             if (e.kind === 'multiplier') {
@@ -944,6 +1087,7 @@ export default function DriveChallengeGame({
               playRef.current('powerup');
               pulseCombo();
               applyComboTier(combo);
+              release(e);
               continue;
             }
             if (e.kind === 'boost') {
@@ -951,6 +1095,7 @@ export default function DriveChallengeGame({
               pickupFx.push({ x: ex, y: e.y, bornAt: elapsed });
               spawnBurst(ex, e.y, 8, { spread: Math.PI * 2, speed: 90, size: 2.6, color: '#7dffb0', life: 0.45 });
               playRef.current('powerup');
+              release(e);
               continue;
             }
             // A real obstacle.
@@ -958,6 +1103,7 @@ export default function DriveChallengeGame({
               shielded = false;
               saveFlashUntil = elapsed + 0.25;
               spawnBurst(ex, e.y, 10, { spread: Math.PI * 2, speed: 130, size: 3, color: '#00d447', life: 0.4 });
+              release(e);
               continue; // discarded, run continues
             }
             if (!crashing) {
@@ -999,6 +1145,10 @@ export default function DriveChallengeGame({
           }
           next.push(e);
         }
+        // Swap the two buffers rather than keeping the freshly built list
+        // and discarding the old one — the old array becomes next frame's
+        // scratch, so steady-state gameplay allocates no arrays at all.
+        scratch = entities;
         entities = next;
 
         if (scoreElRef.current) scoreElRef.current.textContent = String(Math.floor(score));
