@@ -28,19 +28,44 @@ const DriveChallengeGame = lazy(() => import('./DriveChallengeGame'));
 type Phase = 'intro' | 'countdown' | 'playing' | 'paused' | 'ended' | 'claimed';
 
 const BEST_KEY = 'cx-drive-best-score';
+const VEHICLE_KEY = 'cx-drive-vehicle';
 const CRASH_FLASH_MS = 420;
 
 const CONFETTI_COLORS = ['#00d447', '#ffffff', '#e0a52a', '#7dffb0'];
 
+interface VehicleVariant {
+  id: string;
+  label: string;
+  /** Player-car paint color passed straight through to
+   *  `DriveChallengeGame`'s `bodyColor` prop — the one real hook this
+   *  garage has into actual gameplay today. */
+  bodyColor: string;
+  /** Locked variants render as a clearly-marked preview only — no fake
+   *  unlock flow, no purchase, just "not yet available" so the garage
+   *  has somewhere to grow into once more variants are ready. */
+  locked?: boolean;
+}
+
+const DEFAULT_VEHICLE_ID = 'green';
+
+const VEHICLE_VARIANTS: VehicleVariant[] = [
+  { id: 'green', label: 'CX Green', bodyColor: '#bdeecb' },
+  { id: 'white', label: 'CX White', bodyColor: '#f2f4ee' },
+  { id: 'black', label: 'CX Black', bodyColor: '#2b2f2c', locked: true },
+  { id: 'special', label: 'Special Edition', bodyColor: '#c9d8f5', locked: true },
+];
+
 /** One-shot confetti burst — mounted only while `active`, so it never
  *  costs anything on the screens that don't call for it. Purely
  *  decorative: no state, no timers, each piece just plays its CSS fall
- *  animation once and settles at opacity 0. */
-function ConfettiBurst({ active }: { active: boolean }) {
+ *  animation once and settles at opacity 0. `intense` (Top 1%) gets
+ *  meaningfully more pieces than a plain personal-best burst, so the
+ *  rarer moment visibly reads as the bigger one. */
+function ConfettiBurst({ active, intense = false }: { active: boolean; intense?: boolean }) {
   if (!active) return null;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0 overflow-visible">
-      {Array.from({ length: 26 }).map((_, i) => {
+      {Array.from({ length: intense ? 42 : 26 }).map((_, i) => {
         const left = Math.random() * 100;
         const delay = Math.random() * 0.5;
         const duration = 1.6 + Math.random() * 0.9;
@@ -66,6 +91,67 @@ function ConfettiBurst({ active }: { active: boolean }) {
           />
         );
       })}
+    </div>
+  );
+}
+
+/** The Garage — a simple, static vehicle picker reachable from the intro
+ *  screen. Two liveries are genuinely selectable today (no purchase, no
+ *  fake unlock flow); the other two are visibly locked as "coming soon"
+ *  so the panel already has somewhere to grow into once more variants
+ *  exist. The selection persists to localStorage and feeds
+ *  `DriveChallengeGame`'s `bodyColor` prop directly, so picking a
+ *  vehicle here has a real, visible effect in the next run. */
+function GaragePanel({ selectedId, onSelect }: { selectedId: string; onSelect: (id: string) => void }) {
+  const selected = VEHICLE_VARIANTS.find((v) => v.id === selectedId) ?? VEHICLE_VARIANTS[0];
+  return (
+    <div className="animate-fade-up">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-bright">CX Garage</p>
+      <h2 className="mt-2 font-display text-2xl font-semibold text-white">Your vehicle</h2>
+      <div className="relative mx-auto mt-5 grid h-32 w-32 place-items-center">
+        <span className="glow-accent-bright absolute inset-0 rounded-full opacity-70" />
+        <span
+          className="relative h-20 w-28 rounded-[1.4rem]"
+          style={{ background: selected.bodyColor, boxShadow: '0 0 0 1px rgba(255,255,255,0.15), 0 8px 24px rgba(0,0,0,0.4)' }}
+        />
+        <Icon name="car" size={34} className="absolute text-noir/70" />
+      </div>
+      <p className="mt-3 text-[14px] font-semibold text-white">{selected.label}</p>
+      <p className="mt-1 text-[12.5px] text-white/45">Selected for your next run</p>
+      <div className="mt-5 grid grid-cols-2 gap-2.5">
+        {VEHICLE_VARIANTS.map((v) => {
+          const active = v.id === selectedId;
+          return (
+            <button
+              key={v.id}
+              onClick={() => onSelect(v.id)}
+              disabled={v.locked}
+              className={`relative flex flex-col items-center gap-2 rounded-xl border px-3 py-3 transition-colors ${
+                active
+                  ? 'border-accent-bright/50 bg-accent-bright/10'
+                  : v.locked
+                    ? 'cursor-not-allowed border-white/10 bg-white/[0.02] opacity-55'
+                    : 'border-white/10 bg-white/[0.04] hover:border-white/25'
+              }`}
+            >
+              <span className="h-8 w-12 rounded-lg" style={{ background: v.bodyColor }} />
+              <span className="text-[11.5px] font-medium text-white/80">{v.label}</span>
+              {v.locked ? (
+                <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-black/50 text-white/60">
+                  <Icon name="lock" size={11} />
+                </span>
+              ) : (
+                active && (
+                  <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent-bright text-noir">
+                    <Icon name="check" size={11} />
+                  </span>
+                )
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-4 text-[12px] text-white/35">More liveries are on the way — locked vehicles will unlock here.</p>
     </div>
   );
 }
@@ -100,12 +186,22 @@ export function DriveChallengeLauncher({
   // overwritten below — the results screen needs "what you had to beat",
   // which `bestScore` alone can't answer once a new record replaces it.
   const [priorBest, setPriorBest] = useState(0);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  // The intro screen's secondary content — leaderboard or garage — is a
+  // toggle, same pattern either way; generalized to a three-way view
+  // instead of a second boolean so the two panels can't both be true.
+  const [introView, setIntroView] = useState<'menu' | 'leaderboard' | 'garage'>('menu');
   const [bestScore, setBestScore] = useState(() => {
     try {
       return Number(localStorage.getItem(BEST_KEY)) || 0;
     } catch {
       return 0;
+    }
+  });
+  const [vehicleId, setVehicleId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(VEHICLE_KEY) || DEFAULT_VEHICLE_ID;
+    } catch {
+      return DEFAULT_VEHICLE_ID;
     }
   });
 
@@ -162,11 +258,24 @@ export function DriveChallengeLauncher({
     setClaimError(null);
     setReward(null);
     setIsNewRecord(false);
-    setShowLeaderboard(false);
+    setIntroView('menu');
     void beginSession();
   };
 
   const close = () => setOpen(false);
+
+  const selectVehicle = (id: string) => {
+    const variant = VEHICLE_VARIANTS.find((v) => v.id === id);
+    if (!variant || variant.locked) return;
+    setVehicleId(id);
+    try {
+      localStorage.setItem(VEHICLE_KEY, id);
+    } catch {
+      // Storage unavailable — the pick just won't persist across visits.
+    }
+  };
+
+  const selectedVehicle = VEHICLE_VARIANTS.find((v) => v.id === vehicleId) ?? VEHICLE_VARIANTS[0];
 
   const start = () => {
     if (!gameSession) return;
@@ -328,12 +437,15 @@ export function DriveChallengeLauncher({
           >
             {phase === 'intro' && (
               <div className="w-full max-w-sm text-center">
-                {showLeaderboard ? (
+                {introView === 'leaderboard' ? (
                   <Leaderboard
                     enabled={config?.leaderboardEnabled ?? false}
                     currentUserId={authSession?.user.id}
                     eliteThreshold={eliteThreshold}
+                    highlightSelf={isNewRecord || !!qualifyingTier}
                   />
+                ) : introView === 'garage' ? (
+                  <GaragePanel selectedId={vehicleId} onSelect={selectVehicle} />
                 ) : (
                   <>
                     <div className="animate-fade-up">
@@ -410,15 +522,24 @@ export function DriveChallengeLauncher({
                     )}
                   </>
                 )}
-                {config?.leaderboardEnabled && (
+                <div className="mt-5 flex items-center justify-center gap-4">
+                  {config?.leaderboardEnabled && (
+                    <button
+                      onClick={() => setIntroView((v) => (v === 'leaderboard' ? 'menu' : 'leaderboard'))}
+                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
+                    >
+                      <Icon name="trophy" size={14} />
+                      {introView === 'leaderboard' ? 'Back' : 'Leaderboard'}
+                    </button>
+                  )}
                   <button
-                    onClick={() => setShowLeaderboard((v) => !v)}
-                    className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
+                    onClick={() => setIntroView((v) => (v === 'garage' ? 'menu' : 'garage'))}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
                   >
-                    <Icon name="trophy" size={14} />
-                    {showLeaderboard ? 'Back' : 'This week’s leaderboard'}
+                    <Icon name="car" size={14} />
+                    {introView === 'garage' ? 'Back' : 'Garage'}
                   </button>
-                )}
+                </div>
               </div>
             )}
 
@@ -439,7 +560,13 @@ export function DriveChallengeLauncher({
                     </div>
                   }
                 >
-                  <DriveChallengeGame active={phase === 'playing'} onFinish={handleFinish} play={play} bestScore={bestScore} />
+                  <DriveChallengeGame
+                    active={phase === 'playing'}
+                    onFinish={handleFinish}
+                    play={play}
+                    bestScore={bestScore}
+                    bodyColor={selectedVehicle.bodyColor}
+                  />
                 </Suspense>
 
                 {phase === 'countdown' && (
@@ -492,42 +619,59 @@ export function DriveChallengeLauncher({
               </div>
             )}
 
-            {phase === 'ended' && !showCrash && result && (
+            {phase === 'ended' && !showCrash && result && (() => {
+              const isTopOne = !!qualifyingTier;
+              return (
               <div className="drive-results-vignette relative w-full max-w-sm animate-scale-in text-center">
-                <ConfettiBurst active={isNewRecord || !!qualifyingTier} />
+                <ConfettiBurst active={isNewRecord || isTopOne} intense={isTopOne} />
                 <span className="relative mx-auto grid h-40 w-40 place-items-center">
-                  <span className="glow-accent-bright absolute inset-0 animate-scale-in rounded-full opacity-70" />
+                  <span
+                    className={`absolute inset-0 animate-scale-in rounded-full opacity-70 ${
+                      isTopOne ? 'drive-star-pulse glow-star' : 'glow-accent-bright'
+                    }`}
+                  />
                   <img
                     src="/gameover-game.png"
                     alt="Game over"
                     className="relative h-40 w-auto animate-fade-up object-contain drop-shadow-[0_0_24px_rgba(0,212,71,0.35)]"
                   />
                 </span>
+
+                {/* The headline itself carries the achievement — Top 1%
+                    outranks a personal best, which outranks a plain
+                    Game Over — rather than burying it in a small pill
+                    below a generic title. */}
+                {(isTopOne || isNewRecord) && (
+                  <p
+                    className={`animate-fade-up text-[11px] font-bold uppercase tracking-[0.24em] ${isTopOne ? 'text-star' : 'text-accent-bright'}`}
+                  >
+                    {isTopOne ? '★ Rare Achievement' : 'Personal Best'}
+                  </p>
+                )}
                 <p
-                  className="mt-3 font-display text-4xl font-black uppercase tracking-wide text-white"
-                  style={{ textShadow: '0 0 30px rgba(0,212,71,0.35)' }}
+                  className={`mt-1 font-display text-4xl font-black uppercase tracking-wide ${isTopOne ? 'text-star' : 'text-white'}`}
+                  style={{
+                    textShadow: isTopOne
+                      ? '0 0 34px rgba(224,165,42,0.55)'
+                      : isNewRecord
+                        ? '0 0 30px rgba(0,212,71,0.45)'
+                        : '0 0 20px rgba(0,212,71,0.2)',
+                  }}
                 >
-                  Game Over
+                  {isTopOne ? 'Top 1%' : isNewRecord ? 'New Best' : 'Game Over'}
                 </p>
                 <p className="mt-2 text-[15px] text-white/60">
                   You scored <span className="font-semibold text-white">{result.score.toLocaleString()}</span> points.
                 </p>
 
-                {(isNewRecord || qualifyingTier) && (
-                  <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                    {isNewRecord && (
-                      <span className="animate-scale-in inline-flex items-center gap-1.5 rounded-full border border-accent-bright/30 bg-accent-bright/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-bright">
-                        <Icon name="trending" size={12} /> New Record
-                      </span>
-                    )}
-                    {qualifyingTier && (
-                      <span
-                        className="animate-scale-in inline-flex items-center gap-1.5 rounded-full border border-accent-bright/30 bg-accent-bright/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-bright"
-                        style={{ animationDelay: isNewRecord ? '90ms' : '0ms' }}
-                      >
-                        <Icon name="sparkles" size={12} /> Top 1%
-                      </span>
-                    )}
+                {/* A record set on the same run that also cleared Top 1%
+                    still gets a small secondary confirmation — it just
+                    doesn't compete with the headline for attention. */}
+                {isTopOne && isNewRecord && (
+                  <div className="mt-3 flex items-center justify-center">
+                    <span className="animate-scale-in inline-flex items-center gap-1.5 rounded-full border border-accent-bright/30 bg-accent-bright/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-bright">
+                      <Icon name="trending" size={12} /> New Record
+                    </span>
                   </div>
                 )}
 
@@ -578,30 +722,48 @@ export function DriveChallengeLauncher({
                 )}
 
                 {!scoreError && qualifyingTier && (
-                  <div className="mt-5 rounded-2xl border border-accent-bright/25 bg-accent-bright/10 px-5 py-5">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-bright">
+                  <div className="relative mt-5 overflow-hidden rounded-2xl border border-accent-bright/25 bg-accent-bright/10 px-5 py-6">
+                    <span className="glow-accent-bright pointer-events-none absolute inset-0 opacity-40" />
+                    <span className="relative mx-auto grid h-12 w-12 animate-scale-in place-items-center rounded-full bg-accent-bright text-noir">
+                      <Icon name="gift" size={22} />
+                    </span>
+                    <p
+                      className="relative mt-3 animate-fade-up text-[11px] font-bold uppercase tracking-[0.2em] text-accent-bright"
+                      style={{ animationDelay: '80ms' }}
+                    >
                       Reward Unlocked
                     </p>
-                    <p className="mt-1.5 font-display text-lg font-semibold text-white">
-                      {qualifyingTier.label} your next CX booking
+                    <p
+                      className="relative mt-1.5 animate-fade-up font-display text-2xl font-semibold text-white"
+                      style={{ animationDelay: '150ms' }}
+                    >
+                      {qualifyingTier.label}
                     </p>
-                    {authSession ? (
-                      <button
-                        onClick={claim}
-                        disabled={claiming}
-                        className="btn btn-accent-bright btn-block mt-4 disabled:opacity-60"
-                      >
-                        {claiming ? 'Claiming…' : 'Claim Reward'}
-                      </button>
-                    ) : (
-                      <>
-                        <p className="mt-3 text-[13px] text-white/55">Create an account to claim your reward.</p>
-                        <button onClick={claimAfterSignup} className="btn btn-accent-bright btn-block mt-3">
-                          Create account
+                    <p
+                      className="relative mt-1 animate-fade-up text-[13px] text-white/55"
+                      style={{ animationDelay: '150ms' }}
+                    >
+                      Applies to your next CX booking
+                    </p>
+                    <div className="relative mt-4 animate-fade-up" style={{ animationDelay: '230ms' }}>
+                      {authSession ? (
+                        <button
+                          onClick={claim}
+                          disabled={claiming}
+                          className="btn btn-accent-bright btn-block disabled:opacity-60"
+                        >
+                          {claiming ? 'Claiming…' : 'Claim Reward'}
                         </button>
-                      </>
-                    )}
-                    {claimError && <p className="mt-3 text-[13px] text-danger">{claimError}</p>}
+                      ) : (
+                        <>
+                          <p className="text-[13px] text-white/55">Create an account to claim your reward.</p>
+                          <button onClick={claimAfterSignup} className="btn btn-accent-bright btn-block mt-3">
+                            Create account
+                          </button>
+                        </>
+                      )}
+                      {claimError && <p className="mt-3 text-[13px] text-danger">{claimError}</p>}
+                    </div>
                   </div>
                 )}
 
@@ -623,7 +785,8 @@ export function DriveChallengeLauncher({
                   Exit to CX
                 </button>
               </div>
-            )}
+              );
+            })()}
 
             {phase === 'claimed' && reward && (
               <div className="w-full max-w-sm animate-scale-in text-center">

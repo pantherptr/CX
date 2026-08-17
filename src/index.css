@@ -460,6 +460,13 @@
     background: radial-gradient(closest-side, rgba(0, 212, 71, 0.35), transparent 72%);
   }
 
+  /* Gold counterpart to `.glow-accent-bright` — the Top 1% moment's one
+     deliberate departure from CX green, since it's meant to read as a
+     tier above every other in-game celebration. */
+  .glow-star {
+    background: radial-gradient(closest-side, rgba(224, 165, 42, 0.4), transparent 72%);
+  }
+
   /* Drive Challenge HUD — a brief celebratory ring the instant the live
      score clears the player's personal best mid-run. */
   @keyframes drive-record-glow {
@@ -509,6 +516,30 @@
   .drive-hero-pulse {
     animation: drive-hero-pulse 3s ease-in-out infinite;
   }
+
+  /* Combo HUD chip — escalates visually as the multiplier climbs, so
+     stacking combo reads as a build-up rather than a static number.
+     `-hot` kicks in mid-tier (3x–4x), `-max` is reserved for the ceiling
+     (5x) and pulses harder/faster. */
+  @keyframes drive-combo-hot {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.5), 0 0 14px rgba(0, 212, 71, 0.3); transform: scale(1); }
+    50% { box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.8), 0 0 22px rgba(0, 212, 71, 0.5); transform: scale(1.04); }
+  }
+  .drive-combo-hot { animation: drive-combo-hot 1s ease-in-out infinite; }
+  @keyframes drive-combo-max {
+    0%, 100% { box-shadow: 0 0 0 1.5px rgba(0, 212, 71, 0.75), 0 0 20px rgba(0, 212, 71, 0.5); transform: scale(1); }
+    50% { box-shadow: 0 0 0 1.5px rgba(0, 212, 71, 1), 0 0 32px rgba(0, 212, 71, 0.75); transform: scale(1.07); }
+  }
+  .drive-combo-max { animation: drive-combo-max 0.6s ease-in-out infinite; }
+
+  /* Gold pulse reserved for the rarest on-screen moment — clearing the
+     Top 1% reward tier — kept visually distinct from the green record/
+     combo glows above so it reads as a tier above them, not a repeat. */
+  @keyframes drive-star-pulse {
+    0%, 100% { opacity: 0.75; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  .drive-star-pulse { animation: drive-star-pulse 1.4s ease-in-out infinite; }
 
   /* Confetti burst for a new record / reward unlock on the Game Over
      screen — small rectangles falling and tumbling from just above the

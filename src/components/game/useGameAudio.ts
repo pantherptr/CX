@@ -19,6 +19,7 @@ export type GameSound =
   | 'go'
   | 'collect'
   | 'combo'
+  | 'nearmiss'
   | 'powerup'
   | 'crash'
   | 'gameover'
@@ -44,6 +45,9 @@ const TONES: Record<GameSound, Tone[]> = {
   go: [{ freq: 780, glide: 1040, duration: 0.16, type: 'triangle', gain: 0.08 }],
   collect: [{ freq: 660, glide: 880, duration: 0.09, type: 'sine', gain: 0.06 }],
   combo: [{ freq: 880, glide: 1180, duration: 0.12, type: 'triangle', gain: 0.07 }],
+  // Fast, high, very short — a "whoosh past" cue, deliberately higher-
+  // pitched and quieter than `collect` so it never reads as another pickup.
+  nearmiss: [{ freq: 1500, glide: 1120, duration: 0.055, type: 'sine', gain: 0.045 }],
   powerup: [{ freq: 520, glide: 1040, duration: 0.22, type: 'sawtooth', gain: 0.05 }],
   crash: [{ freq: 160, glide: 60, duration: 0.22, type: 'square', gain: 0.09 }],
   gameover: [{ freq: 300, glide: 120, duration: 0.35, type: 'sine', gain: 0.06 }],

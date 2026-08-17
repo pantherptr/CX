@@ -19,6 +19,7 @@ export function Leaderboard({
   enabled,
   currentUserId,
   eliteThreshold,
+  highlightSelf,
 }: {
   enabled: boolean;
   currentUserId?: string;
@@ -26,6 +27,12 @@ export function Leaderboard({
    *  small "Top 1%" badge. Same real threshold the reward panel itself
    *  uses, just surfaced here too; undefined simply hides the badge. */
   eliteThreshold?: number;
+  /** True right after the player's own run just set a new personal best
+   *  or landed a qualifying score — gives their row a brief pulse so a
+   *  fresh result is easy to spot without needing any new state of its
+   *  own (the caller already knows whether the run that just finished
+   *  was special). */
+  highlightSelf?: boolean;
 }) {
   const [period, setPeriod] = useState<LeaderboardPeriod>('week');
   const entries = useLeaderboard(period, enabled);
@@ -63,6 +70,10 @@ export function Leaderboard({
           const isMe = !!currentUserId && e.userId === currentUserId;
           const isElite = eliteThreshold !== undefined && e.score >= eliteThreshold;
           const isFirst = i === 0;
+          // Ranks 2–3 get a quiet tint of their own medal color — enough
+          // to read as "podium" at a glance without competing with #1's
+          // heavier gold treatment.
+          const isPodium = i === 1 || i === 2;
           return (
             <div
               key={i}
@@ -70,9 +81,16 @@ export function Leaderboard({
                 isFirst
                   ? 'border-star/50 bg-star/[0.09] px-3.5 py-3 shadow-[0_0_18px_rgba(224,165,42,0.18)]'
                   : isMe
-                    ? 'border-accent-bright/40 bg-accent-bright/[0.08] px-3.5 py-2.5'
-                    : 'border-white/10 bg-white/[0.04] px-3.5 py-2.5'
+                    ? `border-accent-bright/40 bg-accent-bright/[0.08] px-3.5 py-2.5 ${highlightSelf ? 'drive-hud-record' : ''}`
+                    : isPodium
+                      ? 'px-3.5 py-2.5'
+                      : 'border-white/10 bg-white/[0.04] px-3.5 py-2.5'
               }`}
+              style={
+                isPodium && !isMe && !isFirst
+                  ? { borderColor: `${MEDAL_COLOR[i]}40`, background: `${MEDAL_COLOR[i]}14` }
+                  : undefined
+              }
             >
               <span className="grid w-6 shrink-0 place-items-center">
                 {MEDAL_COLOR[i] ? (
@@ -90,11 +108,13 @@ export function Leaderboard({
                 <img
                   src={e.avatar}
                   alt=""
-                  className={`shrink-0 rounded-full object-cover ${isFirst ? 'h-9 w-9 ring-2 ring-star/60' : 'h-8 w-8'}`}
+                  className={`shrink-0 rounded-full object-cover ${isFirst ? 'h-9 w-9 ring-2 ring-star/60' : isPodium ? 'h-8 w-8 ring-1' : 'h-8 w-8'}`}
+                  style={isPodium && !isFirst ? { boxShadow: `0 0 0 1px ${MEDAL_COLOR[i]}88` } : undefined}
                 />
               ) : (
                 <span
                   className={`grid shrink-0 place-items-center rounded-full bg-white/10 text-white/60 ${isFirst ? 'h-9 w-9 ring-2 ring-star/60' : 'h-8 w-8'}`}
+                  style={isPodium && !isFirst ? { boxShadow: `0 0 0 1px ${MEDAL_COLOR[i]}88` } : undefined}
                 >
                   <Icon name="user" size={14} />
                 </span>
