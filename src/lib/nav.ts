@@ -20,6 +20,7 @@ export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/dashboard', icon: 'grid' },
   { label: 'Drive', to: '', icon: 'car', isDrive: true },
   { label: 'Browse Cars', to: '/browse', icon: 'search' },
+  { label: 'CX Shop', to: '/shop', icon: 'shoppingBag' },
   { label: 'My Trips', to: '/dashboard#trips', icon: 'trips' },
   { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },
   { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
@@ -33,6 +34,7 @@ export const customerNav = (unreadCount: number): NavItem[] => [
 export const hostNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/host', icon: 'grid' },
   { label: 'Drive', to: '', icon: 'car', isDrive: true },
+  { label: 'CX Shop', to: '/shop', icon: 'shoppingBag' },
   { label: 'My Cars', to: '/host#cars', icon: 'cars' },
   { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
   { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },

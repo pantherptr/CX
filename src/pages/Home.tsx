@@ -1,15 +1,22 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead } from '../components/primitives';
-import { Reveal, Img, useParallax, useCountUp } from '../components/motion';
-import { useFeaturedCars, useCars } from '../lib/data/cars';
+import { Reveal, Img, useCountUp } from '../components/motion';
+import { useCars } from '../lib/data/cars';
 import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
+import { getFeaturedProducts } from '../lib/data/shop';
 import type { CarCategory } from '../data/types';
+
+// Code-split — the hero's live WebGL scene (and Three.js with it) only
+// downloads for visitors who reach the homepage, not every route.
+const Hero3D = lazy(() => import('../components/Hero3D'));
+
+const shopFeatured = getFeaturedProducts(4);
 
 const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'shield', label: 'Verified hosts' },
@@ -63,8 +70,6 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
 }
 
 export default function Home() {
-  const heroParallax = useParallax(0.05, 24);
-  const { cars: featuredCars } = useFeaturedCars(4);
   const { cars: allCars } = useCars();
 
   // Real per-category stats (count, starting price, a real photo) computed
@@ -84,8 +89,6 @@ export default function Home() {
       };
     }).filter((t) => t.count > 0);
   }, [allCars]);
-
-  const heroCar = featuredCars?.[0];
 
   return (
     <div>
@@ -144,19 +147,13 @@ export default function Home() {
           {/* Edge-to-edge automotive visual — bleeds to the viewport's right
               edge rather than sitting boxed inside the page container, so
               the car reads as part of the page's structure, not a photo
-              dropped into a rounded card. */}
-          <div className="relative h-[320px] overflow-hidden sm:h-[440px] lg:h-auto lg:min-h-[600px] xl:min-h-[660px]">
-            {heroCar ? (
-              <Img
-                src={unsplash(heroCar.images[0], 1600, 1400)}
-                alt={`${heroCar.make} ${heroCar.model} — available on CX`}
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ transform: `translateY(${heroParallax}px) scale(1.06)` }}
-              />
-            ) : (
-              <div className="skeleton absolute inset-0" />
-            )}
-            {/* Blends the photo's left edge into the page rather than a hard
+              dropped into a rounded card. A live WebGL scene instead of a
+              photo: real-time, not a rendered clip. */}
+          <div className="relative h-[320px] overflow-hidden bg-noir sm:h-[440px] lg:h-auto lg:min-h-[600px] xl:min-h-[660px]">
+            <Suspense fallback={<div className="skeleton absolute inset-0" />}>
+              <Hero3D />
+            </Suspense>
+            {/* Blends the scene's left edge into the page rather than a hard
                 seam — reads as one continuous composition on wide screens. */}
             <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-28 bg-gradient-to-r from-bg to-transparent lg:block" />
           </div>
@@ -266,6 +263,41 @@ export default function Home() {
             <DriveChallengeLauncher className="btn btn-accent-bright btn-lg shrink-0">
               Play DRIVE <Icon name="arrowRight" size={17} />
             </DriveChallengeLauncher>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ================= SHOP — small teaser, never competes with cars ================= */}
+      <section className="container-page mt-16 sm:mt-20">
+        <Reveal>
+          <div className="rounded-2xl border border-line bg-panel/50 px-6 py-9 sm:px-10">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="eyebrow">The CX Shop</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
+                  More than a rental. It&apos;s a lifestyle.
+                </h2>
+              </div>
+              <Link to="/shop" className="btn btn-secondary shrink-0">
+                Explore CX Shop <Icon name="arrowRight" size={16} />
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {shopFeatured.map((p) => (
+                <Link key={p.id} to={`/shop/${p.slug}`} className="group block">
+                  <div className="aspect-square overflow-hidden rounded-xl bg-panel-2">
+                    <img
+                      src={unsplash(p.images[0], 300)}
+                      alt={p.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <p className="mt-1.5 truncate text-[12.5px] font-medium text-ink-soft">{p.name}</p>
+                  <p className="text-[12.5px] font-semibold text-ink">{eur(p.price)}</p>
+                </Link>
+              ))}
+            </div>
           </div>
         </Reveal>
       </section>

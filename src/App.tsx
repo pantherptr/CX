@@ -9,10 +9,13 @@ import { HostRoute } from './components/HostRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
+import { CartDrawer } from './components/shop/CartDrawer';
 
 import Home from './pages/Home';
 import Browse from './pages/Browse';
 import CarDetails from './pages/CarDetails';
+import Shop from './pages/Shop';
+import ProductDetails from './pages/ProductDetails';
 import Booking from './pages/Booking';
 import ListCar from './pages/ListCar';
 import HowItWorks from './pages/HowItWorks';
@@ -133,6 +136,8 @@ export default function App() {
           </Route>
           <Route path="/browse" element={<Browse />} />
           <Route path="/cars/:slug" element={<CarDetails />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/shop/:slug" element={<ProductDetails />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
@@ -163,6 +168,7 @@ export default function App() {
       </Routes>
       </div>
       <BottomNav />
+      <CartDrawer />
       <Toaster />
     </>
   );

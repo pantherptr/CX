@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from '../Icon';
 import type { GameSound } from './useGameAudio';
 
 /**
@@ -25,19 +26,20 @@ import type { GameSound } from './useGameAudio';
  * `dt` spike when play resumes (the wall-clock delta is computed every
  * frame regardless of whether simulation runs).
  *
- * GAMEPLAY NOTE (this pass): near-misses now feed score and combo (they
- * previously only spawned a cosmetic streak), and `spawnEveryAt` /
- * `pickObstacleKind` / the wave-spawn chance were tightened for a
- * smoother late-run difficulty ramp. Two numbers were deliberately left
- * alone despite the brief asking for "higher if appropriate" combo
- * tiers: `MAX_COMBO` (still 5x) and `speedAt`'s cap. Both the reward
- * tier thresholds and the server-side anti-cheat rate cap
- * (`max_score_per_second` in `game_config`) were tuned against the
- * existing 5x ceiling — raising it would shift the score economy behind
- * a check this file has no visibility into, so new scoring paths (near
- * misses) reuse that same ceiling rather than raising it further.
- * Everything else — the collision hit-test, shield/multiplier/boost
- * formulas, distance/score bookkeeping shape — is untouched.
+ * GAMEPLAY NOTE: traffic AI (per-vehicle speed/direction, lane-changing,
+ * object pooling) was tried and reverted after it produced unstable
+ * on-screen vehicle behavior — see git history if picking that back up.
+ * Traffic here is deliberately the simple, previous model: every
+ * obstacle scrolls at the shared road speed, and only the `moving` kind
+ * drifts sideways (toward `driftTarget`, at a fixed `drift` rate). This
+ * pass keeps the near-miss scoring/combo work (bonus fires on a close
+ * pass, feeds the same 5x combo ceiling and HUD glow tiers as tokens do)
+ * since that is scoring, not vehicle movement.
+ *
+ * IMPORTANT: every number that feeds scoring, rewards or difficulty
+ * (`speedAt`, `spawnEveryAt`, `pickObstacleKind`, the score/combo/shield
+ * formulas, the collision hit-test) is untouched — this file only draws
+ * frames differently and adds the near-miss bonus described above.
  *
  * `prefers-reduced-motion` is intentionally NOT used to slow or disable
  * the run itself — motion is the gameplay — but the purely decorative
@@ -49,6 +51,17 @@ const LANES = 3;
 const CAR_W = 52;
 const CAR_H = 82;
 const MAX_COMBO = 5;
+/** Hard speedometer ceiling — no car, no boost, no calculation is ever
+ *  allowed to display a number above this. Enforced at the single
+ *  point the HUD number is computed (`kmhFor` in the effect below),
+ *  not by trusting every value that feeds it to already be in range. */
+const ABSOLUTE_MAX_KMH = 425;
+/** Every run launches at this same reading regardless of car — only the
+ *  ceiling differs per car, never the starting line. */
+const START_KMH = 55;
+/** Named checkpoints the speedometer calls out the first time a run
+ *  crosses them — a slower car simply never reaches the later ones. */
+const SPEED_MILESTONES_KMH = [200, 250, 300, 350, 400, 425];
 const LEFT_KEYS = new Set(['ArrowLeft', 'a', 'A']);
 const RIGHT_KEYS = new Set(['ArrowRight', 'd', 'D']);
 
@@ -59,132 +72,25 @@ const TRAFFIC_PALETTE = ['#2f8fe0', '#f5b73a', '#a06be0', '#2fb894', '#e0568f', 
 
 type EntityKind = 'car' | 'truck' | 'cone' | 'moving' | 'token' | 'shield' | 'multiplier' | 'boost';
 
-/**
- * How a traffic vehicle drives. Only `car` / `truck` / `moving` entities
- * carry one — cones, tokens and power-ups stay road-fixed props with no
- * behavior at all (their `relSpeed` is left undefined, which the movement
- * step reads as 0 and therefore behaves exactly as it always has).
- *
- * `relSpeed` is a vehicle's own forward speed as a fraction of the
- * player's road speed, so the on-screen closing rate is
- * `speed * (1 - relSpeed)`:
- *   < 1  → the player is faster, the vehicle drifts back toward them
- *          (spawned ahead, off the top of the frame)
- *   > 1  → the vehicle is faster, it rises up the frame and overtakes
- *          (spawned behind, off the bottom of the frame)
- */
-type TrafficBehavior = 'slow' | 'normal' | 'fast' | 'changer' | 'aggressive';
-
-/**
- * Which way a vehicle travels *on screen*, fixed at spawn and never
- * reassigned. Every lane here belongs to one carriageway, so this is the
- * screen-relative reading of a shared direction of travel:
- *
- *   'approaching' — slower than the player, so it falls back toward them
- *   'receding'    — faster than the player, so it pulls away up the frame
- *
- * This exists because `relSpeed` crossing 1.0 is what flips a vehicle's
- * on-screen direction, and the AI writes to `relSpeed` from several
- * places (car following, wall escapes, aggressive re-rolls). Previously
- * any of those could shove a receding vehicle below 1.0 mid-life, so
- * cars visibly reversed, stalled, or lurched sideways. `travel` pins each
- * vehicle to one side of that boundary and `TRAVEL_BAND` clamps every
- * single write, which makes a direction flip structurally impossible
- * rather than something each call site has to remember not to do.
- */
-type TravelDirection = 'approaching' | 'receding';
-
-/** Hard `relSpeed` limits per direction. Neither band touches 1.0, so no
- *  clamped write can ever put a vehicle on the wrong side of it. */
-const TRAVEL_BAND: Record<TravelDirection, [number, number]> = {
-  // The lower bound is deliberately not 0: a vehicle at exactly 0 is
-  // motionless on the road and reads as parked, which is what "cars
-  // randomly stop" looked like. 0.06 keeps every vehicle visibly driving
-  // even when it has braked as hard as it is allowed to.
-  approaching: [0.06, 0.9],
-  receding: [1.06, 1.6],
-};
-
-/** Frame-rate-independent smoothing factor. `x += (target - x) * k * dt`
- *  changes its time constant with frame rate; this keeps the approach
- *  rate identical whether the device runs at 30, 60 or 120fps. */
-function approach(rate: number, dt: number) {
-  return 1 - Math.exp(-rate * dt);
-}
-
-/** Body shape drawn inside the (unchanged) hitbox — variety is purely a
- *  render concern, so silhouettes never alter collision or difficulty. */
-type Silhouette = 'sedan' | 'coupe' | 'suv' | 'sport';
-
-const SILHOUETTES: Silhouette[] = ['sedan', 'coupe', 'suv', 'sport'];
-
-/** Per-behavior `relSpeed` range (see `TrafficBehavior`). `fast` is the
- *  only band above 1.0 — i.e. the only one that overtakes from behind. */
-const BEHAVIOR_SPEED: Record<TrafficBehavior, [number, number]> = {
-  slow: [0.04, 0.22],
-  normal: [0.30, 0.48],
-  fast: [1.14, 1.34],
-  changer: [0.28, 0.46],
-  aggressive: [0.34, 0.60],
-};
-
-/** Seconds a vehicle telegraphs a lane change (blinker + a small lean
- *  toward the target lane) before the change itself actually starts, and
- *  how long the change then takes. Both are deliberately generous: the
- *  brief's "predictable and fair" requirement is enforced here, in time,
- *  as much as it is by the clearance checks in `wantsLaneChange`. */
-const SIGNAL_TIME = 0.55;
-const CHANGE_TIME = 0.85;
-
-/** Hard ceiling on live entities. Spawning simply no-ops above this, so
- *  traffic density can never run away on a very long run (or on a slow
- *  device where frames — and therefore culling — fall behind). */
-const MAX_ENTITIES = 26;
-
 interface Entity {
   kind: EntityKind;
-  /** Fractional while a lane change is interpolating; otherwise a whole
-   *  lane index. Traffic AI drives this, gameplay reads it via `laneX`. */
-  lane: number;
+  lane: number; // fractional — 'moving' obstacles drift this toward driftTarget
+  driftTarget: number;
+  drift: number; // 0 = static
   y: number;
   w: number;
   h: number;
   /** Assigned once at spawn for traffic — purely visual variety. */
   color?: string;
-  /** Assigned once at spawn for `car`/`moving` traffic. Visual only. */
-  silhouette?: Silhouette;
+  /** Assigned once at spawn for `car`/`moving` traffic — which of five
+   *  body silhouettes (sedan/coupe/SUV/hatch/performance) this vehicle
+   *  reads as, and for `truck` which cab style. Drawn entirely inside
+   *  the unchanged `w`/`h` hitbox footprint — purely visual variety,
+   *  never a gameplay effect. */
+  variant?: number;
   /** Set once a near-miss/collision resolves for this entity, so the
    *  graze effect (streak + score bonus) can only ever fire once. */
   grazed?: boolean;
-
-  // ---- traffic AI (undefined on cones / tokens / power-ups) ----
-  behavior?: TrafficBehavior;
-  /** Assigned once at spawn, never reassigned. See `TravelDirection`. */
-  travel?: TravelDirection;
-  /** Current forward speed fraction; eased toward `targetRelSpeed` so
-   *  vehicles accelerate and brake rather than snapping. */
-  relSpeed?: number;
-  targetRelSpeed?: number;
-  /** Lane-change state machine. All three are set together at the moment
-   *  a change is committed, and cleared together when it completes. */
-  fromLane?: number;
-  toLane?: number;
-  signalUntil?: number;
-  changeUntil?: number;
-  /** Next `elapsed` at which this vehicle re-evaluates what to do —
-   *  staggered per vehicle so the whole field never decides in lockstep. */
-  nextDecisionAt?: number;
-  /** While set and in the future, this vehicle is deliberately breaking
-   *  out of a forming three-lane wall (see `dissolveWalls`). Its speed is
-   *  protected from both the car-following brake and the aggressive
-   *  behavior's speed re-rolls until it expires. */
-  escapeUntil?: number;
-}
-
-/** True for anything the player can actually crash into — the set that
- *  spacing, wall-off and lane-clearance checks all reason about. */
-function isBlocking(e: Entity) {
-  return e.kind === 'car' || e.kind === 'truck' || e.kind === 'cone' || e.kind === 'moving';
 }
 
 /** A transient "NEAR MISS +N" moment — a ring pop plus rising label,
@@ -212,6 +118,11 @@ export interface DriveChallengeResult {
   score: number;
   distance: number;
   maxCombo: number;
+  /** Peak displayed km/h reached during the run — the same conversion
+   *  the Speed HUD chip uses (`speed * 0.75`), just tracked to a max
+   *  instead of shown live. Purely a results-screen stat, never fed
+   *  back into scoring. */
+  maxSpeed: number;
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -238,57 +149,31 @@ function shade(hex: string, percent: number): string {
 /** Continuous difficulty curve — a short easy window, then a steep
  *  climb to a hard cap. Reaching a reward-qualifying score means
  *  surviving deep into this curve, not just the opening seconds. */
-function speedAt(t: number) {
+/** `topSpeedMul`/`accelMul` are the Garage's per-car stat multipliers
+ *  (both default to 1, matching the CX GT baseline exactly). Starting
+ *  speed (220) is deliberately never scaled — every car launches at the
+ *  same pace, so "top speed" only raises the ceiling and "acceleration"
+ *  only changes how fast the run climbs toward it, exactly as the
+ *  Garage's stat descriptions promise. The curve's shape (the same
+ *  `Math.min(cap, base + ramp * rate)` climb) is untouched. */
+function speedAt(t: number, topSpeedMul = 1, accelMul = 1) {
   const ramp = Math.max(0, t - 3);
-  return Math.min(920, 220 + ramp * 22);
+  return Math.min(920 * topSpeedMul, 220 + ramp * 22 * accelMul);
 }
 
 function spawnEveryAt(t: number) {
-  return Math.max(0.16, 0.85 - t * 0.023);
+  return Math.max(0.2, 0.85 - t * 0.023);
 }
 
 /** Obstacle variety unlocks progressively rather than all at once — cars
  *  only for the first ~6s, trucks join, cone clusters after 12s,
- *  drifting "moving" traffic once the run is already demanding (30s+),
- *  and past a minute the pool leans harder into the two hardest kinds so
- *  a long run keeps getting tougher instead of plateauing. */
+ *  drifting "moving" traffic once the run is already demanding (30s+). */
 function pickObstacleKind(t: number): EntityKind {
   const pool: EntityKind[] = ['car'];
   if (t > 6) pool.push('car', 'truck');
   if (t > 12) pool.push('cone');
   if (t > 30) pool.push('moving', 'moving');
-  if (t > 50) pool.push('moving', 'truck');
   return pool[Math.floor(Math.random() * pool.length)];
-}
-
-/** Which driving behaviors are in play, and how common each is, at time
- *  `t`. Deliberately the same weighted-pool shape as `pickObstacleKind`
- *  above: early runs are slow/normal only, overtakers appear once the
- *  player has settled in, lane-changers later still, and genuinely
- *  unpredictable traffic only deep into a run. */
-function pickBehavior(t: number): TrafficBehavior {
-  const pool: TrafficBehavior[] = ['slow', 'slow', 'normal', 'normal'];
-  if (t > 14) pool.push('fast');
-  if (t > 24) pool.push('changer', 'normal');
-  if (t > 45) pool.push('aggressive', 'changer');
-  if (t > 70) pool.push('fast', 'aggressive');
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-/** Minimum vertical clearance enforced between two vehicles sharing a
- *  lane, in px. Tightens as the run progresses — this is what turns
- *  "more vehicles" into "less space between cars" without ever letting
- *  two of them overlap. */
-function minGapAt(t: number) {
-  return Math.max(62, 170 - t * 1.8);
-}
-
-/** How much room a lane-changer must leave the player before it may move
- *  into their lane. Scales with the closing speed so the player always
- *  gets roughly the same *time* to react regardless of how fast the run
- *  has become — the core "challenging but fair" guarantee. */
-function fairCutInGap(closingSpeed: number) {
-  return Math.max(150, Math.abs(closingSpeed) * 0.85);
 }
 
 export default function DriveChallengeGame({
@@ -297,6 +182,10 @@ export default function DriveChallengeGame({
   play,
   bestScore = 0,
   bodyColor = '#f2f4ee',
+  topSpeedMul = 1,
+  accelMul = 1,
+  handlingMul = 1,
+  topSpeedKmh = 280,
 }: {
   /** True only while the phase is 'playing' — false during the
    *  pre-countdown mount and while paused. Gates simulation, not
@@ -313,15 +202,39 @@ export default function DriveChallengeGame({
    *  Defaults to the original off-white paint so every existing caller
    *  that doesn't pass this looks exactly as before. */
   bodyColor?: string;
+  /** Garage stat multipliers for the selected car — small, bounded
+   *  scalers (roughly 0.9–1.15) around the CX GT baseline of 1 each, so
+   *  every car stays "fun and playable" per the Garage's own design.
+   *  `topSpeedMul` raises/lowers the speed ceiling, `accelMul` changes
+   *  how fast the run climbs toward it (both feed `speedAt` only — the
+   *  curve's shape and every difficulty/spawn function are untouched),
+   *  `handlingMul` scales lane-change and tilt responsiveness. */
+  topSpeedMul?: number;
+  accelMul?: number;
+  handlingMul?: number;
+  /** This car's realistic speedometer ceiling in km/h — the internal
+   *  `speed` unit above is rescaled to land exactly on this value at
+   *  the car's own top speed (see `SPEEDO_MAX_KMH` and `kmhFor` in the
+   *  effect below), so the number on screen is always a real,
+   *  physically-plausible reading and never the old arbitrary
+   *  `speed * 0.75` figure. Defaults to CX GT's own cap. */
+  topSpeedKmh?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scoreElRef = useRef<HTMLParagraphElement>(null);
   const scoreChipRef = useRef<HTMLDivElement>(null);
   const bestElRef = useRef<HTMLParagraphElement>(null);
-  const speedElRef = useRef<HTMLParagraphElement>(null);
+  const speedElRef = useRef<HTMLSpanElement>(null);
   const comboElRef = useRef<HTMLParagraphElement>(null);
   const comboChipRef = useRef<HTMLDivElement>(null);
-  const distanceElRef = useRef<HTMLParagraphElement>(null);
+  const comboTierElRef = useRef<HTMLParagraphElement>(null);
+  const distanceElRef = useRef<HTMLSpanElement>(null);
+  const milestoneElRef = useRef<HTMLDivElement>(null);
+  const objectivePanelElRef = useRef<HTMLDivElement>(null);
+  const objectiveLabelElRef = useRef<HTMLParagraphElement>(null);
+  const objectiveFillElRef = useRef<HTMLDivElement>(null);
+  const objectiveValueElRef = useRef<HTMLParagraphElement>(null);
+  const steerHintElRef = useRef<HTMLParagraphElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
   const onFinishRef = useRef(onFinish);
@@ -372,6 +285,11 @@ export default function DriveChallengeGame({
 
     const laneX = (lane: number) => (width / LANES) * (lane + 0.5);
     const playerY = () => height - 120;
+    // Purely a draw-size multiplier — entities feel closer/larger as they
+    // near the bottom of the frame and smaller as they spawn near the top.
+    // Never touches `e.w`/`e.h` themselves, so the hit-test above (which
+    // reads those fields directly) is completely unaffected.
+    const depthScale = (y: number) => 0.62 + Math.min(1, Math.max(0, y / height)) * 0.5;
 
     let playerLane = 1;
     let currentLaneX = laneX(playerLane);
@@ -381,9 +299,27 @@ export default function DriveChallengeGame({
     let particles: Particle[] = [];
     let elapsed = 0;
     let sinceSpawn = 0;
+    // Fairness — the one lane this spawn tick is guaranteed not to place
+    // an obstacle in, so a followable path always exists near the top of
+    // the screen rather than relying on per-tick randomness alone to
+    // avoid a 3-lane wall. Only rerolled when the top of the screen is
+    // completely clear (see the spawn tick below), so swapping which
+    // lane is "open" can never itself spring a surprise wall. Purely a
+    // spawn-time lane *choice* — the movement math for every entity
+    // (`e.y += speed * dt`, drift lerp, hit-test) is untouched.
+    let guaranteedOpenLane = Math.floor(Math.random() * LANES);
     let score = 0;
     let combo = 1;
     let maxCombo = 1;
+    let maxSpeedReached = 0;
+    // The speedometer's own smoothed reading — deliberately a separate
+    // value from the `speed` used for scroll rate/distance/thresholds
+    // below, which keeps changing exactly as before (untouched
+    // gameplay feel). This one eases toward its target each frame so a
+    // boost's instant jump doesn't make the digits snap, the way a real
+    // digital dash needle settles rather than teleporting.
+    let speedKmhSmoothed = START_KMH;
+    let speedMilestoneIdx = 0;
     let distanceUnits = 0;
     let dead = false;
     let shielded = false;
@@ -392,6 +328,18 @@ export default function DriveChallengeGame({
     let saveFlashUntil = -1;
     let boostFxTimer = 0;
     let recordBroken = false;
+    let approachingBestShown = false;
+    // Distance milestones — fixed early markers, then every +5km for a
+    // long run. `distanceKm` uses the same /5000 conversion as the HUD's
+    // own distance display, so a milestone fires exactly when the number
+    // shown to the player crosses it.
+    const MILESTONE_KM = [0.1, 0.5, 1, 2, 5];
+    let milestoneIdx = 0;
+    let nextMilestoneKm = MILESTONE_KM[0];
+    // The lower bound of the *current* objective range — 0 to start, then
+    // whatever the previous target was, so the HUD's Objective progress
+    // bar always shows "how far into this leg", not "how far into the run".
+    let prevMilestoneKm = 0;
     // A brief "impact hang" between the hit and the run actually ending —
     // gives the collision a beat to read instead of an instant hard cut.
     // Skipped entirely under reduced motion (crashElapsed exceeds the 0
@@ -402,21 +350,89 @@ export default function DriveChallengeGame({
     const IMPACT_DURATION = reducedMotion ? 0 : 0.32;
     // Short-lived collect "pop" rings — bounded array, each entry expires
     // and is filtered out well under a second after spawning.
-    let pickupFx: { x: number; y: number; bornAt: number }[] = [];
+    let pickupFx: { x: number; y: number; bornAt: number; bonus?: number }[] = [];
     let nearMissFx: NearMissFx[] = [];
     let last = performance.now();
 
-    /** Keeps the combo HUD chip's glow tier in sync with the live combo
-     *  value — called only when combo actually changes, not every frame. */
+    /** Cheap deterministic pseudo-random in [0,1) from an integer seed —
+     *  same trick the asphalt grain already used inline, pulled out so
+     *  the new roadside-variety and rain code can share it. Deterministic
+     *  (not `Math.random()`) so a given tree/lamp/raindrop slot always
+     *  looks the same from frame to frame instead of flickering. */
+    const hash1 = (n: number) => Math.abs(Math.sin(n * 12.9898) * 43758.5453) % 1;
+
+    /** Keeps the combo HUD chip's glow tier — and its plain-language tier
+     *  label — in sync with the live combo value. Called only when combo
+     *  actually changes, not every frame. Labels are cosmetic only; the
+     *  underlying combo number and score math are unaffected. */
+    const COMBO_TIER_LABELS = ['', 'NORMAL', 'GOOD DRIVING', 'NEAR MISS', 'DANGER', 'PERFECT'];
     const applyComboTier = (value: number) => {
       const el = comboChipRef.current;
-      if (!el) return;
-      el.classList.toggle('drive-combo-max', value >= MAX_COMBO);
-      el.classList.toggle('drive-combo-hot', value >= 3 && value < MAX_COMBO);
+      if (el) {
+        el.classList.toggle('drive-combo-max', value >= MAX_COMBO);
+        el.classList.toggle('drive-combo-hot', value >= 3 && value < MAX_COMBO);
+      }
+      if (comboTierElRef.current) comboTierElRef.current.textContent = COMBO_TIER_LABELS[value] ?? '';
     };
+
+    /** One-shot milestone toast (distance or speed) — imperative DOM
+     *  update (no React state) so it costs nothing per frame; retriggers
+     *  its own CSS animation on every call rather than relying on a
+     *  timer, so a fast subsequent milestone still restarts it cleanly.
+     *  `bonus` is optional — speed milestones are a pure callout with no
+     *  score attached, distance milestones award one. */
+    const showMilestone = (label: string, bonus?: number, big = false) => {
+      const el = milestoneElRef.current;
+      if (!el) return;
+      el.textContent = bonus ? `${label} · +${bonus}` : label;
+      el.classList.remove('drive-milestone-pop', 'drive-milestone-max');
+      void el.offsetWidth;
+      el.classList.add('drive-milestone-pop');
+      el.classList.toggle('drive-milestone-max', big);
+      playRef.current('record');
+    };
+
+    /** Brief completion glow on the persistent Objective panel the instant
+     *  a distance leg is cleared — a quieter, always-visible companion to
+     *  the `showMilestone` toast above rather than a replacement for it. */
+    const flashObjective = () => {
+      const el = objectivePanelElRef.current;
+      if (!el || reducedMotion) return;
+      el.classList.remove('drive-objective-complete');
+      void el.offsetWidth;
+      el.classList.add('drive-objective-complete');
+    };
+
+    /** Rescales the internal, unit-less `speed` (still driving scroll
+     *  rate/distance/every existing threshold exactly as before) into a
+     *  realistic km/h reading for THIS car: 220 (the shared, unscaled
+     *  starting value every car launches at) maps to `START_KMH`, and
+     *  this car's own asymptotic cap (`920 * topSpeedMul`) maps to its
+     *  `topSpeedKmh` — then hard-clamped to `ABSOLUTE_MAX_KMH` as a last
+     *  safety net so literally nothing can ever read above it. */
+    const carCapInternal = 920 * topSpeedMul;
+    const kmhFor = (s: number) => {
+      const t = Math.max(0, Math.min(1, (s - 220) / Math.max(1, carCapInternal - 220)));
+      const kmh = START_KMH + t * (topSpeedKmh - START_KMH);
+      return Math.min(ABSOLUTE_MAX_KMH, Math.round(kmh));
+    };
+
+    // The "STEER ← → OR A / D" hint fades out the first time the player
+    // actually steers, or after a short timeout regardless — whichever
+    // comes first — so it never permanently sits over the car. A single
+    // dismissed flag keeps repeat calls (every subsequent keypress) cheap
+    // no-ops rather than re-touching the DOM every frame.
+    let hintDismissed = false;
+    const dismissHint = () => {
+      if (hintDismissed) return;
+      hintDismissed = true;
+      steerHintElRef.current?.classList.add('opacity-0');
+    };
+    const hintTimer = window.setTimeout(dismissHint, 4200);
 
     const steer = (delta: number) => {
       if (!activeRef.current) return;
+      dismissHint();
       playerLane = Math.min(LANES - 1, Math.max(0, playerLane + delta));
     };
     const onKey = (e: KeyboardEvent) => {
@@ -430,161 +446,20 @@ export default function DriveChallengeGame({
     window.addEventListener('keydown', onKey);
     canvas.addEventListener('pointerdown', onPointer);
 
-    // ------------------- vehicle lifecycle / pooling -------------------
-    // Entities are recycled rather than reallocated, and the survivor list
-    // is double-buffered instead of rebuilt each frame. `release` is the
-    // single exit point, so a vehicle can never be left half-dead in the
-    // world: it is either in `entities` or in `pool`, never both.
-    const pool: Entity[] = [];
-    let scratch: Entity[] = [];
-
-    const acquire = (): Entity => {
-      const e = pool.pop();
-      if (!e) return { kind: 'car', lane: 0, y: 0, w: 0, h: 0 };
-      // Every field is reset explicitly — a stale `toLane` or `escapeUntil`
-      // leaking into a recycled vehicle is exactly how "stuck" cars appear.
-      e.color = undefined;
-      e.silhouette = undefined;
-      e.grazed = undefined;
-      e.behavior = undefined;
-      e.travel = undefined;
-      e.relSpeed = undefined;
-      e.targetRelSpeed = undefined;
-      e.fromLane = undefined;
-      e.toLane = undefined;
-      e.signalUntil = undefined;
-      e.changeUntil = undefined;
-      e.nextDecisionAt = undefined;
-      e.escapeUntil = undefined;
-      return e;
-    };
-
-    const release = (e: Entity) => {
-      if (pool.length < MAX_ENTITIES * 2) pool.push(e);
-    };
-
-    /** Clamps any speed write into the vehicle's own direction band, so
-     *  no call site can flip its on-screen travel direction. */
-    const clampRel = (e: Entity, v: number) => {
-      const [lo, hi] = TRAVEL_BAND[e.travel ?? 'approaching'];
-      return Math.min(hi, Math.max(lo, v));
-    };
-
-    // ---------------------- traffic spawn safety ----------------------
-    // Every one of these is a *fairness* rule, not a difficulty knob: the
-    // run is meant to get hard because reacting gets hard, never because
-    // something spawned somewhere the player could not have survived.
-
-    /** Is `lane` free of blocking traffic within `gap` px of `y`? Uses each
-     *  vehicle's own half-height so a long truck reserves more room than a
-     *  cone does. */
-    const laneFreeAt = (lane: number, y: number, h: number, gap: number) => {
-      for (const o of entities) {
-        if (!isBlocking(o)) continue;
-        // A vehicle mid-change occupies both lanes for the duration.
-        const occupies = o.toLane !== undefined
-          ? [Math.round(o.lane), o.toLane]
-          : [Math.round(o.lane)];
-        if (!occupies.includes(lane)) continue;
-        if (Math.abs(o.y - y) < (o.h + h) * 0.5 + gap) return false;
-      }
-      return true;
-    };
-
-    /** Would occupying `lane` at `y` leave the player no gap at all across
-     *  the full width of the road? A three-lane wall is unsurvivable by
-     *  definition, so it is refused outright — at spawn time and again
-     *  before any lane change is committed. */
-    const wouldWallOff = (lane: number, y: number, ignore?: Entity) => {
-      const blocked = new Set<number>([lane]);
-      for (const o of entities) {
-        if (o === ignore || !isBlocking(o)) continue;
-        if (Math.abs(o.y - y) > 100) continue;
-        blocked.add(Math.round(o.lane));
-        if (o.toLane !== undefined) blocked.add(o.toLane);
-      }
-      return blocked.size >= LANES;
-    };
-
-    /**
-     * Places one entity if — and only if — doing so is safe.
-     *
-     * `fromBehind` spawns below the frame for overtaking traffic. That
-     * case carries one extra hard rule: never behind the player in the
-     * player's own lane. A vehicle closing from off-screen behind is the
-     * one thing the player genuinely cannot see coming, so it is simply
-     * never allowed to start there.
-     *
-     * Returns whether it actually spawned, so callers can skip their
-     * follow-up spawns rather than force them through.
-     */
-    const spawnTraffic = (
-      lane: number,
-      kind: EntityKind,
-      t: number,
-      opts: { fromBehind?: boolean; behavior?: TrafficBehavior } = {},
-    ) => {
-      if (entities.length >= MAX_ENTITIES) return false;
+    const spawnObstacle = (lane: number, kind: EntityKind) => {
       const size = kind === 'truck' ? { w: 58, h: 80 } : kind === 'cone' ? { w: 28, h: 32 } : { w: 48, h: 60 };
-      const fromBehind = opts.fromBehind ?? false;
-      const y = fromBehind ? height + size.h : -size.h;
-
-      if (fromBehind && lane === playerLane) return false;
-      const gap = minGapAt(t);
-      if (!laneFreeAt(lane, y, size.h, gap)) return false;
-      if (wouldWallOff(lane, y)) return false;
-
-      const isVehicle = kind === 'car' || kind === 'truck' || kind === 'moving';
-      const e = acquire();
-      e.kind = kind;
-      e.lane = lane;
-      e.y = y;
-      e.w = size.w;
-      e.h = size.h;
-      e.color = isVehicle ? TRAFFIC_PALETTE[Math.floor(Math.random() * TRAFFIC_PALETTE.length)] : undefined;
-      e.silhouette =
-        kind === 'car' || kind === 'moving'
-          ? SILHOUETTES[Math.floor(Math.random() * SILHOUETTES.length)]
+      let driftTarget = kind === 'moving' ? Math.min(LANES - 1, Math.max(0, lane + (Math.random() < 0.5 ? -1 : 1))) : lane;
+      // A drifting obstacle must never end up sliding into the one lane
+      // this tick is guaranteeing stays clear — same fairness contract
+      // as the spawn lane itself, just applied to where it drifts *to*.
+      if (kind === 'moving' && driftTarget === guaranteedOpenLane) driftTarget = lane;
+      const color =
+        kind === 'car' || kind === 'truck' || kind === 'moving'
+          ? TRAFFIC_PALETTE[Math.floor(Math.random() * TRAFFIC_PALETTE.length)]
           : undefined;
-
-      if (isVehicle) {
-        // `moving` is the kind the obstacle pool uses for "this one will
-        // change lanes", so it always gets a lane-changing behavior; every
-        // other vehicle draws from the time-gated behavior pool.
-        const behavior: TrafficBehavior =
-          opts.behavior ?? (kind === 'moving' ? (t > 45 && Math.random() < 0.4 ? 'aggressive' : 'changer') : pickBehavior(t));
-        const [lo, hi] = BEHAVIOR_SPEED[behavior];
-        const rel = lo + Math.random() * (hi - lo);
-        e.behavior = behavior;
-        // Direction is derived from the behavior's own band and fixed for
-        // the vehicle's whole life — the single source of truth that every
-        // later speed write is clamped against.
-        e.travel = lo > 1 ? 'receding' : 'approaching';
-        e.relSpeed = clampRel(e, rel);
-        e.targetRelSpeed = e.relSpeed;
-        e.nextDecisionAt = t + 0.6 + Math.random() * 1.4;
-      }
-
-      entities.push(e);
-      return true;
-    };
-
-    /** Picks a lane that is currently safe to spawn into, preferring a
-     *  random order so traffic doesn't bias toward lane 0. Returns -1 when
-     *  the road is genuinely too busy — the caller then simply skips this
-     *  spawn tick, which is what keeps density self-limiting. */
-    const pickSpawnLane = (kind: EntityKind, t: number, fromBehind = false) => {
-      const h = kind === 'truck' ? 80 : kind === 'cone' ? 32 : 60;
-      const y = fromBehind ? height + h : -h;
-      const gap = minGapAt(t);
-      const lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
-      for (const lane of lanes) {
-        if (fromBehind && lane === playerLane) continue;
-        if (!laneFreeAt(lane, y, h, gap)) continue;
-        if (wouldWallOff(lane, y)) continue;
-        return lane;
-      }
-      return -1;
+      const variant =
+        kind === 'car' || kind === 'moving' ? Math.floor(Math.random() * 5) : kind === 'truck' ? Math.floor(Math.random() * 2) : undefined;
+      entities.push({ kind, lane, driftTarget, drift: kind === 'moving' ? 0.55 : 0, y: -50, w: size.w, h: size.h, color, variant });
     };
 
     const pulse = (el: HTMLElement | null) => {
@@ -623,289 +498,6 @@ export default function DriveChallengeGame({
       if (particles.length > 160) particles.splice(0, particles.length - 160);
     };
 
-    // ------------------------- traffic AI -------------------------
-
-    /** Decides whether `e` may begin a lane change to `target` right now.
-     *  Every rejection here is a fairness rule; none of them are random,
-     *  so a vehicle that *can* legally merge always will, and one that
-     *  can't simply waits and re-checks on its next decision tick. */
-    const canChangeInto = (e: Entity, target: number, closing: number) => {
-      if (target < 0 || target >= LANES) return false;
-      // Never cut into the player's lane without leaving reaction room.
-      if (target === playerLane && Math.abs(e.y - playerY()) < fairCutInGap(closing)) return false;
-      // Never merge onto another vehicle.
-      if (!laneFreeAt(target, e.y, e.h, 46)) return false;
-      // Never complete a three-lane wall.
-      if (wouldWallOff(target, e.y, e)) return false;
-      return true;
-    };
-
-    /** Advances one vehicle's speed easing and lane-change state machine.
-     *  Called only while simulating, once per vehicle per frame. */
-    const driveTraffic = (e: Entity, dt: number, speed: number) => {
-      if (e.relSpeed === undefined || e.targetRelSpeed === undefined) return;
-
-      // --- car following ---
-      // Vehicles now travel at differing speeds, so a faster one will
-      // otherwise drive straight through a slower one ahead of it in the
-      // same lane. Find the nearest vehicle ahead and, if closing, match
-      // its pace. This is what produces natural convoys and spacing
-      // instead of cars ghosting through each other.
-      const myLane = e.toLane ?? Math.round(e.lane);
-      let wantsEvade = false;
-      let lead: Entity | null = null;
-      for (const o of entities) {
-        if (o === e || !isBlocking(o)) continue;
-        const oLane = Math.round(o.lane);
-        if (oLane !== myLane && o.toLane !== myLane) continue;
-        if (o.y >= e.y) continue; // must be ahead on the road (higher up the frame)
-        if (!lead || o.y > lead.y) lead = o;
-      }
-      // Car-following is bypassed only for an *accelerating* break-away,
-      // where braking would undo the escape. A decelerating one is left
-      // under normal following rules: braking further can only increase
-      // the gap, so suppressing it there just caused overlaps.
-      const inEscape = e.escapeUntil !== undefined && elapsed < e.escapeUntil;
-      const escaping = inEscape && e.targetRelSpeed > e.relSpeed;
-      if (e.escapeUntil !== undefined && !inEscape) {
-        // Escape over — hand the vehicle back to its own behavior band.
-        // Without this it kept the extreme break-away speed permanently,
-        // which both looked wrong and (because the band it was rescued
-        // from kept re-triggering) starved its lane-change decisions.
-        e.escapeUntil = undefined;
-        const [lo, hi] = BEHAVIOR_SPEED[e.behavior ?? 'normal'];
-        e.targetRelSpeed = clampRel(e, lo + Math.random() * (hi - lo));
-      }
-      if (lead) {
-        const gap = e.y - lead.y - (e.h + lead.h) * 0.5;
-        const leadRel = lead.relSpeed ?? 0; // a cone has no forward speed
-        // Only ever brake *within* this vehicle's own band. A receding
-        // vehicle cannot be slowed past 1.06, so catching slower traffic
-        // can no longer whip it around into reversing on screen — it just
-        // eases off and closes more gently, which is what it looks like
-        // from the driver's seat anyway.
-        if (!escaping && leadRel < e.relSpeed && gap < 140) {
-          const urgency = Math.min(1, Math.max(0, 1 - gap / 140));
-          e.targetRelSpeed = clampRel(e, e.relSpeed + (leadRel - e.relSpeed) * (0.45 + urgency * 0.55));
-          // Inside braking distance the eased approach below is too slow
-          // to stop a visible overlap, so pace is matched outright — at
-          // this range the speeds are already close enough not to pop.
-          if (gap < 42) e.relSpeed = clampRel(e, leadRel);
-        }
-        // Already touching. Matching pace exactly freezes the gap where
-        // it is, which is enough to stop it deepening. It deliberately
-        // does *not* reverse the follower (the old behaviour, and the
-        // direct cause of cars appearing to drive backwards) — a vehicle
-        // that physically cannot fall back further instead swerves, via
-        // the real animated lane change requested below.
-        // A cone cannot be out-braked — it sits at an effective speed of 0,
-        // below what any vehicle is allowed to slow to — so closing on one
-        // is resolved by pulling around it well before contact rather than
-        // by queueing behind it. Moving leads only need the contact check.
-        if (gap < (lead.kind === 'cone' ? 46 : 4)) {
-          e.relSpeed = clampRel(e, leadRel);
-          e.targetRelSpeed = clampRel(e, leadRel);
-          wantsEvade = true;
-        }
-      }
-
-      // Smooth acceleration / braking, frame-rate independent.
-      e.relSpeed = clampRel(e, e.relSpeed + (e.targetRelSpeed - e.relSpeed) * approach(1.6, dt));
-
-      // --- mid-change: interpolate, then settle ---
-      if (e.toLane !== undefined && e.fromLane !== undefined && e.signalUntil !== undefined && e.changeUntil !== undefined) {
-        if (elapsed >= e.changeUntil) {
-          e.lane = e.toLane;
-          e.fromLane = undefined;
-          e.toLane = undefined;
-          e.signalUntil = undefined;
-          e.changeUntil = undefined;
-          e.nextDecisionAt = elapsed + 1.4 + Math.random() * 2.2;
-        } else if (elapsed >= e.signalUntil) {
-          const p = (elapsed - e.signalUntil) / (e.changeUntil - e.signalUntil);
-          const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-          e.lane = e.fromLane + (e.toLane - e.fromLane) * eased;
-        } else {
-          // Signalling: lean a fraction of a lane toward the target so the
-          // intent is legible from the car's *movement*, not just its
-          // blinker — the brief's "signal through movement" requirement.
-          const p = 1 - (e.signalUntil - elapsed) / SIGNAL_TIME;
-          e.lane = e.fromLane + Math.sign(e.toLane - e.fromLane) * Math.sin(p * Math.PI) * 0.16;
-        }
-        return;
-      }
-
-      const closing = speed * (1 - e.relSpeed);
-
-      // Evasion. A vehicle nose-to-tail with something it cannot out-brake
-      // (most often a cone, which sits at an effective speed of 0) used to
-      // be forced backwards to separate. Now it pulls around instead,
-      // using the same signalled, interpolated change as any other merge —
-      // a real animation, never a snap — and only into a lane the normal
-      // fairness checks already allow. If nothing is safe it simply holds
-      // station behind the obstruction, which is stable and readable.
-      if (wantsEvade && e.toLane === undefined) {
-        const base = Math.round(e.lane);
-        for (const dir of [-1, 1]) {
-          const target = base + dir;
-          if (!canChangeInto(e, target, closing)) continue;
-          e.fromLane = base;
-          e.toLane = target;
-          e.signalUntil = elapsed + SIGNAL_TIME;
-          e.changeUntil = e.signalUntil + CHANGE_TIME;
-          return;
-        }
-      }
-
-      if (e.nextDecisionAt === undefined || elapsed < e.nextDecisionAt) return;
-      // (decision tick continues below)
-      e.nextDecisionAt = elapsed + 0.7 + Math.random() * 1.3;
-
-      // Aggressive traffic also varies its pace, so it can surge or back
-      // off unpredictably (within its own behavior band — never beyond).
-      if (e.behavior === 'aggressive' && !inEscape && Math.random() < 0.45) {
-        const [lo, hi] = BEHAVIOR_SPEED.aggressive;
-        e.targetRelSpeed = clampRel(e, lo + Math.random() * (hi - lo));
-      }
-
-      const mayChange =
-        e.behavior === 'changer' ? 0.55 : e.behavior === 'aggressive' ? 0.4 : 0;
-      if (Math.random() > mayChange) return;
-
-      const base = Math.round(e.lane);
-      // Try the preferred direction first, then the other one, so a
-      // blocked vehicle still merges when the opposite side is clear.
-      const first = Math.random() < 0.5 ? -1 : 1;
-      for (const dir of [first, -first]) {
-        const target = base + dir;
-        if (!canChangeInto(e, target, closing)) continue;
-        e.fromLane = base;
-        e.toLane = target;
-        e.signalUntil = elapsed + SIGNAL_TIME;
-        e.changeUntil = e.signalUntil + CHANGE_TIME;
-        return;
-      }
-    };
-
-    /**
-     * The one guarantee `wouldWallOff` alone can't make.
-     *
-     * That check runs when a vehicle is *placed* or *starts a merge*, but
-     * traffic now travels at differing speeds, so three vehicles that were
-     * each individually legal can still converge into a three-lane wall
-     * further down the road. Left alone that's an unavoidable crash — the
-     * exact "difficult because of bad spawning" failure the brief rules
-     * out.
-     *
-     * So the corridor between the horizon and the player is swept a few
-     * times a second, and the moment a band goes fully blocked one of its
-     * vehicles is told to accelerate away. On screen that reads as a car
-     * simply pulling ahead; mechanically it re-opens a lane well before
-     * the band ever reaches the player.
-     */
-    let nextWallCheck = 0;
-    const dissolveWalls = (t: number) => {
-      if (t < nextWallCheck) return;
-      nextWallCheck = t + 0.1;
-      const py = playerY();
-
-      // An overtaker sitting off-screen below the player, in the player's
-      // own lane, is the one hazard that can never be seen coming — it is
-      // refused at spawn, but the player can still change lanes into one.
-      // Moving it aside while it is still off-screen costs nothing
-      // visually and removes the blind rear-end entirely.
-      for (const o of entities) {
-        if (o.travel !== 'receding') continue;
-        if (o.y < height + 10) continue; // already on screen — leave it alone
-        if (o.toLane !== undefined) continue; // already moving out
-        if (Math.round(o.lane) !== playerLane) continue;
-        const alt = [playerLane - 1, playerLane + 1].filter((l) => l >= 0 && l < LANES);
-        const free = alt.find((l) => laneFreeAt(l, o.y, o.h, 40));
-        if (free === undefined) continue;
-        // A proper signalled, interpolated change — never a snap. This
-        // used to assign `o.lane` directly, which is a teleport even when
-        // it happens off-screen, and left the vehicle's visual state
-        // inconsistent with its lane-change bookkeeping.
-        o.fromLane = Math.round(o.lane);
-        o.toLane = free;
-        o.signalUntil = t + SIGNAL_TIME;
-        o.changeUntil = o.signalUntil + CHANGE_TIME;
-      }
-
-      for (const a of entities) {
-        // Only bands still ahead of the player can still be escaped.
-        if (!isBlocking(a) || a.y > py - 40 || a.y < -100) continue;
-
-        // A tight band — roughly one car length. A wider window flagged
-        // ordinary staggered traffic (which the player can still thread
-        // diagonally) as impassable, so this fired almost every sweep and
-        // kept half the field locked at break-away speed.
-        const group: Entity[] = [];
-        const lanes = new Set<number>();
-        for (const o of entities) {
-          if (!isBlocking(o) || Math.abs(o.y - a.y) > 48) continue;
-          group.push(o);
-          lanes.add(Math.round(o.lane));
-          if (o.toLane !== undefined) lanes.add(o.toLane);
-        }
-        if (lanes.size < LANES) continue;
-
-        // Cones can't move, so only a real vehicle can break the wall.
-        // Prefer one that isn't already mid-merge; fall back to a merging
-        // one (aborting its merge) rather than giving up on the band.
-        // A vehicle already breaking away is mid-solution — re-tagging it
-        // every sweep is what previously pinned traffic at escape speed
-        // and starved its decision timer, so those are skipped outright.
-        // If the whole group is already escaping, the band is resolving
-        // on its own and needs nothing further.
-        const candidates = group.filter(
-          (o) => o.relSpeed !== undefined && !(o.escapeUntil !== undefined && t < o.escapeUntil),
-        );
-        const mover =
-          candidates.find((o) => o.toLane === undefined) ?? candidates[0];
-        if (!mover) continue;
-
-        mover.fromLane = undefined;
-        mover.toLane = undefined;
-        mover.signalUntil = undefined;
-        mover.changeUntil = undefined;
-
-        // The escape has to be one car-following will not immediately undo.
-        // Accelerating away only works with clear road ahead — otherwise
-        // the follow logic brakes it straight back into the wall, which is
-        // exactly the deadlock this used to create. With traffic ahead,
-        // dropping back is always available and just as effective: the
-        // vehicle falls out of the band, reopening a lane above it, and
-        // becomes a single avoidable obstacle rather than part of a wall.
-        const lane = Math.round(mover.lane);
-        const blocked = entities.some(
-          (o) => o !== mover && isBlocking(o) && Math.round(o.lane) === lane && o.y < mover.y && mover.y - o.y < 190,
-        );
-        // Both options stay inside the vehicle's own direction band, so a
-        // wall escape can shift its pace but never reverse it. Previously
-        // this wrote 0.02 / 1.45 unconditionally, which is precisely how a
-        // receding vehicle got slammed into travelling backwards.
-        const [bandLo, bandHi] = TRAVEL_BAND[mover.travel ?? 'approaching'];
-        mover.targetRelSpeed = clampRel(mover, blocked ? bandLo : bandHi);
-        mover.relSpeed = clampRel(
-          mover,
-          blocked
-            ? Math.min(mover.relSpeed ?? bandLo, bandLo + (bandHi - bandLo) * 0.15)
-            : Math.max(mover.relSpeed ?? bandHi, bandLo + (bandHi - bandLo) * 0.85),
-        );
-        // Deliberately NOT rewriting `behavior` — doing so used to convert
-        // lane-changers into 'fast' permanently, silently removing merging
-        // traffic from the rest of the run. `escapeUntil` instead protects
-        // the new speed from being re-randomised on the next decision tick.
-        mover.escapeUntil = t + 1.6;
-        // `nextDecisionAt` is deliberately left alone — pushing it here
-        // meant a vehicle rescued repeatedly never reached its own
-        // decision tick, and so never changed lanes for the whole run.
-        // Keep sweeping: with several bands in flight at once, fixing only
-        // the first still left later ones to reach the player intact.
-      }
-    };
-
     function loop(now: number) {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
@@ -916,84 +508,66 @@ export default function DriveChallengeGame({
       }
 
       const simulating = activeRef.current && !dead && !crashing;
-      let speed = speedAt(elapsed);
+      let speed = speedAt(elapsed, topSpeedMul, accelMul);
 
       if (simulating) {
         elapsed += dt;
-        speed = speedAt(elapsed) * (elapsed < boostUntil ? 1.35 : 1);
+        speed = speedAt(elapsed, topSpeedMul, accelMul) * (elapsed < boostUntil ? 1.35 : 1);
         sinceSpawn += dt;
 
         if (elapsed > 1.1 && sinceSpawn > spawnEveryAt(elapsed)) {
           sinceSpawn = 0;
+
+          // Only ever reroll which lane is "guaranteed open" while the
+          // top of the screen has nothing living in it — so the swap
+          // itself can never create a surprise wall (the newly-open lane
+          // was already clear, and the newly-closed one has a full
+          // screen's travel time before it matters).
+          if (!entities.some((e) => e.y < 30)) {
+            guaranteedOpenLane = Math.floor(Math.random() * LANES);
+          }
+
           const roll = Math.random();
-          if (entities.length >= MAX_ENTITIES) {
-            // Road is already at capacity — skip this tick entirely rather
-            // than letting pickups slip past the cap that traffic respects.
-          } else if (roll < 0.04) {
+          if (roll < 0.04) {
             const p = Math.random();
             const kind: EntityKind = p < 0.34 ? 'shield' : p < 0.67 ? 'multiplier' : 'boost';
-            // Pickups go through the same acquire/release lifecycle as
-            // traffic — every entity in the world has one owner and one
-            // exit path, with no object literals slipping past the pool.
-            const pu = acquire();
-            pu.kind = kind;
-            pu.lane = Math.floor(Math.random() * LANES);
-            pu.y = -40; pu.w = 30; pu.h = 30;
-            entities.push(pu);
+            entities.push({ kind, lane: Math.floor(Math.random() * LANES), driftTarget: 0, drift: 0, y: -40, w: 30, h: 30 });
           } else if (roll < 0.3) {
-            const tk = acquire();
-            tk.kind = 'token';
-            tk.lane = Math.floor(Math.random() * LANES);
-            tk.y = -40; tk.w = 34; tk.h = 34;
-            entities.push(tk);
+            entities.push({ kind: 'token', lane: Math.floor(Math.random() * LANES), driftTarget: 0, drift: 0, y: -40, w: 34, h: 34 });
           } else {
             const kind = pickObstacleKind(elapsed);
+            // Every obstacle placement below draws only from lanes other
+            // than `guaranteedOpenLane` — that lane is this tick's
+            // reserved, always-followable escape path.
+            const blockable = [0, 1, 2].filter((l) => l !== guaranteedOpenLane);
             if (kind === 'cone') {
-              // Needle-thread pair: two of the three lanes get a cone,
-              // leaving exactly one gap — tests precise lane holding
-              // rather than a reactive dodge.
-              const lanes = [0, 1, 2];
-              const a = lanes.splice(Math.floor(Math.random() * lanes.length), 1)[0];
-              const b = lanes[Math.floor(Math.random() * lanes.length)];
-              spawnTraffic(a, 'cone', elapsed);
-              spawnTraffic(b, 'cone', elapsed);
+              // Needle-thread pair: the two non-open lanes get a cone,
+              // leaving the guaranteed lane as the one real gap — tests
+              // precise lane holding rather than a reactive dodge.
+              spawnObstacle(blockable[0], 'cone');
+              spawnObstacle(blockable[1], 'cone');
             } else {
-              // `moving` is the obstacle pool's "this one changes lanes"
-              // kind, so it keeps the lane-changer behavior `spawnTraffic`
-              // assigns it rather than drawing from the general pool —
-              // otherwise it could come out 'slow' and never merge at all,
-              // silently removing the hardest traffic type from late runs.
-              // Everything else draws from the pool, and overtakers come up
-              // from behind instead of drifting back.
-              const behavior = kind === 'moving' ? undefined : pickBehavior(elapsed);
-              const fromBehind = behavior === 'fast';
-              const firstLane = pickSpawnLane(kind, elapsed, fromBehind);
-              if (firstLane >= 0) {
-                const placed = spawnTraffic(firstLane, kind, elapsed, { fromBehind, behavior });
-                const waveChance = elapsed > 14 ? Math.min(0.7, (elapsed - 14) * 0.02) : 0;
-                if (placed && !fromBehind && Math.random() < waveChance) {
-                  // A second, distinct lane — `pickSpawnLane` re-runs every
-                  // clearance check against the vehicle just placed, so a
-                  // wave can tighten the road without ever sealing it off.
-                  const secondKind = pickObstacleKind(elapsed);
-                  const secondLane = pickSpawnLane(secondKind, elapsed);
-                  if (secondLane >= 0 && secondLane !== firstLane) {
-                    spawnTraffic(secondLane, secondKind, elapsed);
-                  }
-                }
+              const firstLane = blockable[Math.floor(Math.random() * blockable.length)];
+              spawnObstacle(firstLane, kind);
+              const waveChance = elapsed > 14 ? Math.min(0.6, (elapsed - 14) * 0.018) : 0;
+              if (Math.random() < waveChance) {
+                // The only remaining non-open lane — still guaranteed
+                // distinct from both `firstLane` and the open lane.
+                const secondLane = blockable.find((l) => l !== firstLane);
+                if (secondLane !== undefined) spawnObstacle(secondLane, pickObstacleKind(elapsed));
               }
             }
           }
         }
 
         const target = laneX(playerLane);
-        currentLaneX += (target - currentLaneX) * approach(12, dt);
+        currentLaneX += (target - currentLaneX) * Math.min(1, dt * 12 * handlingMul);
 
         // Cosmetic: lean the car into the turn, proportional to how far
         // it still has to travel to the target lane, then settle.
         const laneW = width / LANES;
         const leanTarget = Math.min(0.24, Math.max(-0.24, ((target - currentLaneX) / laneW) * 0.55));
-        carTilt += (leanTarget - carTilt) * approach(9, dt);
+        carTilt += (leanTarget - carTilt) * Math.min(1, dt * 9 * handlingMul);
 
         // Cosmetic: a couple of tire-smoke puffs the instant a lane
         // change actually starts — compared against last frame's lane,
@@ -1027,27 +601,40 @@ export default function DriveChallengeGame({
         score += dt * (18 + elapsed * 1.3) * combo * (boosted ? 1.5 : 1);
         distanceUnits += speed * dt;
 
-        dissolveWalls(elapsed);
+        const distanceKm = distanceUnits / 5000;
+        if (distanceKm >= nextMilestoneKm) {
+          const bonus = Math.round(120 + nextMilestoneKm * 40);
+          score += bonus;
+          const label = nextMilestoneKm >= 1 ? `${nextMilestoneKm} KM` : `${Math.round(nextMilestoneKm * 1000)} M`;
+          showMilestone(label, bonus);
+          flashObjective();
+          prevMilestoneKm = nextMilestoneKm;
+          milestoneIdx++;
+          nextMilestoneKm = milestoneIdx < MILESTONE_KM.length ? MILESTONE_KM[milestoneIdx] : nextMilestoneKm + 5;
+        }
+
+        // Objective panel — persistent progress toward the *current* leg
+        // (prevMilestoneKm → nextMilestoneKm), updated every simulating
+        // frame via the same imperative-DOM pattern as the rest of the
+        // HUD. Purely a display of values already computed above.
+        const objSpan = Math.max(0.0001, nextMilestoneKm - prevMilestoneKm);
+        const objProgress = Math.max(0, Math.min(1, (distanceKm - prevMilestoneKm) / objSpan));
+        if (objectiveFillElRef.current) objectiveFillElRef.current.style.width = `${(objProgress * 100).toFixed(1)}%`;
+        if (objectiveValueElRef.current) {
+          objectiveValueElRef.current.textContent = `${distanceKm.toFixed(2)} / ${nextMilestoneKm.toFixed(2)} KM`;
+        }
+        if (objectiveLabelElRef.current) {
+          objectiveLabelElRef.current.textContent =
+            nextMilestoneKm >= 1 ? `Drive ${nextMilestoneKm} km` : `Drive ${Math.round(nextMilestoneKm * 1000)} m`;
+        }
 
         const px = laneX(playerLane);
         const py = playerY();
-        // Double-buffered survivor list — `next` is reused between frames
-        // rather than reallocated, and every removal below goes through
-        // `release` so nothing is dropped without returning to the pool.
-        const next = scratch;
-        next.length = 0;
+        const next: Entity[] = [];
         for (const e of entities) {
-          driveTraffic(e, dt, speed);
-          // A vehicle's own forward speed subtracts from the road's, so
-          // relSpeed < 1 drifts back toward the player and > 1 pulls away
-          // up the frame. Props (cones/tokens/power-ups) have no relSpeed
-          // and therefore still scroll at exactly the road speed. Movement
-          // is pure `dt` maths, so a dropped frame changes nothing but the
-          // step size.
-          e.y += speed * (1 - (e.relSpeed ?? 0)) * dt;
-          // Exit bounds — culled at both ends, since receding traffic
-          // leaves via the top and everything else via the bottom.
-          if (e.y > height + 60 || e.y < -160) { release(e); continue; }
+          if (e.drift > 0) e.lane += (e.driftTarget - e.lane) * Math.min(1, dt * e.drift);
+          e.y += speed * dt;
+          if (e.y > height + 50) continue;
 
           const ex = laneX(e.lane);
           const hit = Math.abs(e.y - py) < e.h * 0.5 + 18 && Math.abs(ex - px) < e.w * 0.5 + 20;
@@ -1055,9 +642,10 @@ export default function DriveChallengeGame({
             if (e.kind === 'token') {
               const prev = combo;
               combo = Math.min(MAX_COMBO, combo + 1);
-              score += 40 * combo;
+              const tokenBonus = 40 * combo;
+              score += tokenBonus;
               maxCombo = Math.max(maxCombo, combo);
-              pickupFx.push({ x: ex, y: e.y, bornAt: elapsed });
+              pickupFx.push({ x: ex, y: e.y, bornAt: elapsed, bonus: tokenBonus });
               spawnBurst(ex, e.y, 6, { spread: Math.PI * 2, speed: 80, size: 2.4, color: '#7dffb0', life: 0.4 });
               pulseScore();
               if (combo > prev) {
@@ -1067,7 +655,6 @@ export default function DriveChallengeGame({
               } else {
                 playRef.current('collect');
               }
-              release(e);
               continue;
             }
             if (e.kind === 'shield') {
@@ -1075,7 +662,6 @@ export default function DriveChallengeGame({
               pickupFx.push({ x: ex, y: e.y, bornAt: elapsed });
               spawnBurst(ex, e.y, 8, { spread: Math.PI * 2, speed: 90, size: 2.6, color: '#7dffb0', life: 0.45 });
               playRef.current('powerup');
-              release(e);
               continue;
             }
             if (e.kind === 'multiplier') {
@@ -1087,7 +673,6 @@ export default function DriveChallengeGame({
               playRef.current('powerup');
               pulseCombo();
               applyComboTier(combo);
-              release(e);
               continue;
             }
             if (e.kind === 'boost') {
@@ -1095,7 +680,6 @@ export default function DriveChallengeGame({
               pickupFx.push({ x: ex, y: e.y, bornAt: elapsed });
               spawnBurst(ex, e.y, 8, { spread: Math.PI * 2, speed: 90, size: 2.6, color: '#7dffb0', life: 0.45 });
               playRef.current('powerup');
-              release(e);
               continue;
             }
             // A real obstacle.
@@ -1103,7 +687,6 @@ export default function DriveChallengeGame({
               shielded = false;
               saveFlashUntil = elapsed + 0.25;
               spawnBurst(ex, e.y, 10, { spread: Math.PI * 2, speed: 130, size: 3, color: '#00d447', life: 0.4 });
-              release(e);
               continue; // discarded, run continues
             }
             if (!crashing) {
@@ -1145,21 +728,41 @@ export default function DriveChallengeGame({
           }
           next.push(e);
         }
-        // Swap the two buffers rather than keeping the freshly built list
-        // and discarding the old one — the old array becomes next frame's
-        // scratch, so steady-state gameplay allocates no arrays at all.
-        scratch = entities;
         entities = next;
 
+        // Ease the shown number toward its target rather than snapping —
+        // the "real instrument" feel item 3 asks for, and it's what
+        // keeps a boost's instant internal jump from reading as a jump
+        // on the dash even though the actual scroll speed does jump.
+        const targetKmh = kmhFor(speed);
+        speedKmhSmoothed += (targetKmh - speedKmhSmoothed) * Math.min(1, dt * 4);
+        const displaySpeed = Math.min(ABSOLUTE_MAX_KMH, Math.round(speedKmhSmoothed));
+        maxSpeedReached = Math.max(maxSpeedReached, displaySpeed);
+        if (speedMilestoneIdx < SPEED_MILESTONES_KMH.length && displaySpeed >= SPEED_MILESTONES_KMH[speedMilestoneIdx]) {
+          const hit = SPEED_MILESTONES_KMH[speedMilestoneIdx];
+          speedMilestoneIdx++;
+          if (hit >= ABSOLUTE_MAX_KMH) {
+            showMilestone(`MAX SPEED · ${ABSOLUTE_MAX_KMH} KM/H`, undefined, true);
+          } else {
+            showMilestone(`${hit} KM/H · HIGH SPEED`);
+          }
+        }
         if (scoreElRef.current) scoreElRef.current.textContent = String(Math.floor(score));
-        if (speedElRef.current) speedElRef.current.textContent = String(Math.round(speed * 0.75));
+        if (speedElRef.current) speedElRef.current.textContent = String(displaySpeed);
         if (comboElRef.current) comboElRef.current.textContent = `×${combo}`;
         if (distanceElRef.current) distanceElRef.current.textContent = (distanceUnits / 5000).toFixed(1);
         if (!recordBroken && bestScore > 0 && score > bestScore) {
           recordBroken = true;
           if (bestElRef.current) bestElRef.current.textContent = 'New best!';
+          scoreChipRef.current?.classList.remove('drive-hud-approaching');
           scoreChipRef.current?.classList.add('drive-hud-record');
           pulseScore();
+        } else if (!recordBroken && !approachingBestShown && bestScore > 0 && score >= bestScore * 0.85) {
+          // Not beaten yet, but close — a quieter cue than the full "New
+          // best!" celebration, shown once per run rather than every frame.
+          approachingBestShown = true;
+          if (bestElRef.current) bestElRef.current.textContent = 'Personal best ahead';
+          scoreChipRef.current?.classList.add('drive-hud-approaching');
         }
       }
 
@@ -1214,40 +817,52 @@ export default function DriveChallengeGame({
       ctx.scale(punch, punch);
       ctx.translate(-width / 2 + jx, -height / 2 + jy);
 
-      // ---- bright daylight coastal environment (sky, sun, clouds, verges) ----
-      // A cheerful blue-to-mint sky wash instead of the old near-black fill —
-      // this single gradient is what makes the whole scene read as "daylight"
-      // even though the camera never shows a literal horizon line.
+      // ---- premium evening/night highway environment (sky, stars, verges) ----
+      // A deep indigo-to-noir sky with a low, warm dusk band at the horizon —
+      // this single gradient is what makes the whole scene read as "premium
+      // night drive" even though the camera never shows a literal horizon line.
       const sky = ctx.createLinearGradient(0, 0, 0, height);
-      sky.addColorStop(0, '#8fd6f2');
-      sky.addColorStop(0.09, '#bfe8ee');
-      sky.addColorStop(0.16, '#dff3e6');
-      sky.addColorStop(0.5, '#5c6b78');
-      sky.addColorStop(1, '#454f59');
+      sky.addColorStop(0, '#080b12');
+      sky.addColorStop(0.07, '#0d1420');
+      sky.addColorStop(0.13, '#182233');
+      sky.addColorStop(0.17, '#2c2a3a');
+      sky.addColorStop(0.2, '#241c22');
+      sky.addColorStop(0.5, '#1a1d22');
+      sky.addColorStop(1, '#121417');
       ctx.fillStyle = sky;
       ctx.fillRect(-4, -4, width + 8, height + 8);
 
-      // Warm sun glow, upper corner.
-      const sunX = width * 0.76;
-      const sunGlow = ctx.createRadialGradient(sunX, height * 0.03, 2, sunX, height * 0.03, width * 0.42);
-      sunGlow.addColorStop(0, 'rgba(255,248,214,0.95)');
-      sunGlow.addColorStop(1, 'rgba(255,248,214,0)');
-      ctx.fillStyle = sunGlow;
-      ctx.fillRect(0, 0, width, height * 0.3);
+      // A quiet CX-green wash low in the sky — brand presence in the
+      // atmosphere itself, not just the HUD/car, kept subtle enough it
+      // reads as "city glow on the horizon" rather than a green sky.
+      const brandGlow = ctx.createRadialGradient(width * 0.28, height * 0.19, 2, width * 0.28, height * 0.19, width * 0.55);
+      brandGlow.addColorStop(0, 'rgba(0,212,71,0.16)');
+      brandGlow.addColorStop(1, 'rgba(0,212,71,0)');
+      ctx.fillStyle = brandGlow;
+      ctx.fillRect(0, 0, width, height * 0.26);
 
-      // A couple of soft clouds drifting through the sky band — drift now
-      // has a distance-linked component on top of the ambient baseline,
-      // so the sky visibly speeds up along with everything else.
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      for (let i = 0; i < 3; i++) {
-        const drift = reducedMotion ? 0 : elapsed * 5 + distanceUnits * 0.006;
-        const cx = ((drift + i * 150 + 40) % (width + 160)) - 80;
-        const cy = height * (0.035 + i * 0.028);
-        for (const [dx, dy, r] of [[0, 0, 15], [16, 3, 11], [-14, 4, 10]] as const) {
-          ctx.beginPath();
-          ctx.ellipse(cx + dx, cy + dy, r, r * 0.62, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
+      // Warm dusk glow, upper corner — a low sun/streetlamp-district haze
+      // rather than a bright daytime sun.
+      const sunX = width * 0.76;
+      const sunGlow = ctx.createRadialGradient(sunX, height * 0.05, 2, sunX, height * 0.05, width * 0.36);
+      sunGlow.addColorStop(0, 'rgba(255,196,130,0.28)');
+      sunGlow.addColorStop(1, 'rgba(255,196,130,0)');
+      ctx.fillStyle = sunGlow;
+      ctx.fillRect(0, 0, width, height * 0.24);
+
+      // Stars — fixed slots (deterministic hash, not re-randomized per
+      // frame) so they read as a static field rather than static noise;
+      // a slow per-star twinkle is the only thing that changes frame to
+      // frame, skipped under reduced motion in favor of a fixed brightness.
+      // Confined to the upper sky band, above the skyline.
+      for (let i = 0; i < 34; i++) {
+        const sx = hash1(i * 3.1 + 1) * width;
+        const sy = hash1(i * 7.7 + 2) * height * 0.13;
+        const tw = reducedMotion ? 0.55 : 0.35 + 0.4 * (0.5 + 0.5 * Math.sin(elapsed * (0.6 + hash1(i) * 0.8) + i));
+        ctx.fillStyle = `rgba(255,255,255,${tw.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 0.6 + hash1(i * 1.7) * 0.9, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       // City skyline — a cheap, distant parallax layer (scrolls slower
@@ -1260,31 +875,44 @@ export default function DriveChallengeGame({
         const bh = height * (0.05 + ((i * 37) % 5) * 0.014);
         const bx = ((i * 92 - skylineOffset) % (width + 200)) - 100;
         const by = height * 0.145 - bh;
-        const tone = i % 2 === 0 ? '#8b9aa6' : '#a3b0ba';
+        // Dark building silhouettes against the night sky — the lit
+        // windows (below) are what carries all the detail now, the same
+        // way a real night skyline reads as near-black shapes punctuated
+        // by light rather than lit concrete.
+        const tone = i % 2 === 0 ? '#161c26' : '#1c222d';
         ctx.fillStyle = tone;
         ctx.beginPath();
         roundRect(ctx, bx, by, bw, bh, 2);
         ctx.fill();
-        // A few lit windows — every other one tinted CX green, faint.
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        // Lit windows — every so many tinted CX green, the rest a warm
+        // interior white, both bright against the near-black tower.
         for (let wy = by + 6; wy < by + bh - 5; wy += 9) {
           for (let wx = bx + 5; wx < bx + bw - 5; wx += 9) {
-            ctx.fillStyle = (wx + wy) % 27 < 9 ? 'rgba(0,212,71,0.35)' : 'rgba(255,255,255,0.4)';
+            const lit = hash1(wx * 0.31 + wy * 0.7 + i * 5.1) > 0.22;
+            if (!lit) continue;
+            ctx.fillStyle = (wx + wy) % 27 < 9 ? 'rgba(0,212,71,0.65)' : 'rgba(255,222,168,0.8)';
             ctx.fillRect(wx, wy, 2.6, 3.4);
           }
         }
       }
 
-      // Grass/coastal verges — fills the trapezoid from the canvas edge out
-      // to the guardrail, so the shoulders read as ground rather than void.
+      // Grass verges — fills the trapezoid from the canvas edge out to the
+      // sidewalk, so the shoulders read as ground rather than void. Night-
+      // toned (deep moonlit green) rather than the old bright daylight fill.
       const railInset = 10;
       const railTopInset = width * 0.09;
+      // A dedicated sidewalk band sits between the grass and the guardrail —
+      // its own trapezoid, converging the same way, so the roadside reads
+      // as a real street cross-section (grass → sidewalk → barrier → road)
+      // instead of grass running straight up to the rail.
+      const sidewalkBottomInset = railInset + 26;
+      const sidewalkTopInset = railTopInset + width * 0.016;
       const drawVerge = (side: -1 | 1) => {
-        const bx = side === -1 ? railInset : width - railInset;
-        const tx = side === -1 ? railTopInset : width - railTopInset;
+        const bx = side === -1 ? sidewalkBottomInset : width - sidewalkBottomInset;
+        const tx = side === -1 ? sidewalkTopInset : width - sidewalkTopInset;
         const grad = ctx.createLinearGradient(0, height * 0.14, 0, height);
-        grad.addColorStop(0, '#7fd0ae');
-        grad.addColorStop(1, '#3f9c5f');
+        grad.addColorStop(0, '#1f3a2c');
+        grad.addColorStop(1, '#12261c');
         ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(side === -1 ? 0 : width, height * 0.1);
@@ -1293,8 +921,9 @@ export default function DriveChallengeGame({
         ctx.lineTo(side === -1 ? 0 : width, height);
         ctx.closePath();
         ctx.fill();
-        // mow-stripe texture
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        // mow-stripe texture — quieter than the daylight version, just
+        // enough to read as tended grass rather than a flat fill.
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
         ctx.lineWidth = 10;
         for (let y = height * 0.15; y < height; y += 34) {
           const t = y / height;
@@ -1307,6 +936,153 @@ export default function DriveChallengeGame({
       };
       drawVerge(-1);
       drawVerge(1);
+
+      // Sidewalk — pale concrete strip between the grass and the guardrail,
+      // with scrolling tile-seam lines (same distanceUnits-offset trick as
+      // the asphalt grain) so it visibly moves with the world instead of
+      // reading as a static painted border.
+      const drawSidewalk = (side: -1 | 1) => {
+        const bx0 = side === -1 ? sidewalkBottomInset : width - sidewalkBottomInset;
+        const bx1 = side === -1 ? railInset : width - railInset;
+        const tx0 = side === -1 ? sidewalkTopInset : width - sidewalkTopInset;
+        const tx1 = side === -1 ? railTopInset : width - railTopInset;
+        const grad = ctx.createLinearGradient(0, height * 0.1, 0, height);
+        grad.addColorStop(0, '#3a3f45');
+        grad.addColorStop(1, '#54595f');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(tx0, height * 0.1);
+        ctx.lineTo(tx1, height * 0.1);
+        ctx.lineTo(bx1, height);
+        ctx.lineTo(bx0, height);
+        ctx.closePath();
+        ctx.fill();
+
+        const seamSpacing = 46;
+        const seamOffset = distanceUnits * 0.6;
+        for (let y = -((seamOffset % seamSpacing)); y < height; y += seamSpacing) {
+          const t = Math.max(0, Math.min(1, y / height));
+          const x0 = tx0 + (bx0 - tx0) * t;
+          const x1 = tx1 + (bx1 - tx1) * t;
+          ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x0, y);
+          ctx.lineTo(x1, y);
+          ctx.stroke();
+        }
+      };
+      drawSidewalk(-1);
+      drawSidewalk(1);
+
+      // Asphalt carriageway — a dedicated fill between where the rails
+      // will land, so the road itself reads as pavement rather than a
+      // continuation of the sky wash bleeding through underneath it.
+      // Purely a background layer: lane positions used by gameplay are
+      // untouched (they're computed from `laneX`, not from this shape).
+      const roadGrad = ctx.createLinearGradient(0, height * 0.1, 0, height);
+      roadGrad.addColorStop(0, '#2b3038');
+      roadGrad.addColorStop(0.55, '#20242a');
+      roadGrad.addColorStop(1, '#131518');
+      ctx.fillStyle = roadGrad;
+      ctx.beginPath();
+      ctx.moveTo(railTopInset + 5, height * 0.1);
+      ctx.lineTo(width - railTopInset - 5, height * 0.1);
+      ctx.lineTo(width - railInset - 13, height);
+      ctx.lineTo(railInset + 13, height);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wet-asphalt reflection — a soft band of "sky light" sliding slowly
+      // side to side, as if the damp road surface is catching the ambient
+      // glow above it. Slow, continuous drift (not tied to distance) reads
+      // as a real reflection shifting with a moving light source rather
+      // than road texture scrolling past.
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(railTopInset + 5, height * 0.1);
+      ctx.lineTo(width - railTopInset - 5, height * 0.1);
+      ctx.lineTo(width - railInset - 13, height);
+      ctx.lineTo(railInset + 13, height);
+      ctx.closePath();
+      ctx.clip();
+      const reflectDrift = reducedMotion ? 0.5 : 0.5 + Math.sin(elapsed * 0.17) * 0.5;
+      const reflectX = width * (0.15 + reflectDrift * 0.7);
+      const sheen = ctx.createLinearGradient(reflectX - width * 0.3, height * 0.1, reflectX + width * 0.3, height);
+      sheen.addColorStop(0, 'rgba(180,200,255,0)');
+      sheen.addColorStop(0.5, 'rgba(180,200,255,0.06)');
+      sheen.addColorStop(1, 'rgba(180,200,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(0, height * 0.1, width, height * 0.9);
+      // A second, quieter warm sheen from the dusk glow overhead — two
+      // overlapping reflections read as "wet", one alone reads as "shiny".
+      const sheen2 = ctx.createLinearGradient(0, height * 0.1, width, height);
+      sheen2.addColorStop(0.6, 'rgba(255,210,160,0)');
+      sheen2.addColorStop(0.72, 'rgba(255,210,160,0.035)');
+      sheen2.addColorStop(0.84, 'rgba(255,210,160,0)');
+      ctx.fillStyle = sheen2;
+      ctx.fillRect(0, height * 0.1, width, height * 0.9);
+      ctx.restore();
+
+      // Asphalt grain — a handful of short, faint streaks scrolling with
+      // the road (same distanceUnits-offset trick as the guardrail studs
+      // below), deterministic per slot rather than re-randomized every
+      // frame so it reads as texture, not flicker. Cheap: ~14 tiny
+      // strokes, no per-pixel work.
+      const grainSpacing = 90;
+      const grainOffset = distanceUnits * 0.6;
+      let grainSeed = Math.round(grainOffset / grainSpacing);
+      for (let gy = -((grainOffset % grainSpacing)); gy < height; gy += grainSpacing, grainSeed++) {
+        const t = Math.max(0, Math.min(1, gy / height));
+        const spanX0 = railTopInset + (railInset + 13 - railTopInset) * t;
+        const spanX1 = width - railTopInset - (railInset + 13 - railTopInset) * t;
+        for (let k = 0; k < 2; k++) {
+          const rnd = hash1(grainSeed * 2 + k);
+          const gx = spanX0 + rnd * (spanX1 - spanX0);
+          ctx.strokeStyle = k === 0 ? 'rgba(255,255,255,0.045)' : 'rgba(0,0,0,0.16)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(gx, gy);
+          ctx.lineTo(gx, gy + 7 + t * 7);
+          ctx.stroke();
+        }
+      }
+
+      // Larger, sparser dark asphalt patches — resurfacing seams/wear
+      // marks, coarser spacing than the grain streaks above so they read
+      // as patches rather than more of the same texture.
+      const patchSpacing = 340;
+      const patchOffset = distanceUnits * 0.6;
+      let patchSeed = Math.round(patchOffset / patchSpacing);
+      for (let py = -((patchOffset % patchSpacing)); py < height; py += patchSpacing, patchSeed++) {
+        const t = Math.max(0, Math.min(1, py / height));
+        const spanX0 = railTopInset + (railInset + 13 - railTopInset) * t;
+        const spanX1 = width - railTopInset - (railInset + 13 - railTopInset) * t;
+        const px = spanX0 + hash1(patchSeed * 3.3) * (spanX1 - spanX0);
+        const pw = (26 + hash1(patchSeed * 5.1) * 30) * (0.5 + t * 0.7);
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+        ctx.beginPath();
+        ctx.ellipse(px, py, pw, pw * 0.32, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Solid road-edge markings, just inside each rail — a faint glow so
+      // they read crisply against the dark night asphalt rather than just
+      // relying on raw contrast.
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,255,255,0.5)';
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+      ctx.lineWidth = 2.5;
+      for (const side of [-1, 1] as const) {
+        const bx = side === -1 ? railInset + 13 : width - railInset - 13;
+        const tx = side === -1 ? railTopInset + 5 : width - railTopInset - 5;
+        ctx.beginPath();
+        ctx.moveTo(tx, height * 0.1);
+        ctx.lineTo(bx, height);
+        ctx.stroke();
+      }
+      ctx.restore();
 
       // Guardrails — bright brushed-metal trapezoids that converge toward
       // the top of the frame, the cheapest reliable "depth" cue without
@@ -1344,8 +1120,13 @@ export default function DriveChallengeGame({
       drawRail(-1);
       drawRail(1);
 
-      // Lane dividers — classic bright road-marking white.
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      // Lane dividers — classic bright road-marking white, with a soft
+      // glow so each lane is unmistakable at a glance against the dark
+      // asphalt (the one visual requirement this whole pass leads with).
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,255,255,0.55)';
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = 'rgba(255,255,255,0.92)';
       ctx.lineWidth = 3;
       ctx.setLineDash([18, 22]);
       ctx.lineDashOffset = -((distanceUnits * 0.6) % 40);
@@ -1357,6 +1138,7 @@ export default function DriveChallengeGame({
         ctx.stroke();
       }
       ctx.setLineDash([]);
+      ctx.restore();
 
       // Roadside props — street lamps (pole + arm + glowing head) drifting
       // past outside the rails, plus a CX-branded sign every third pole on
@@ -1367,47 +1149,132 @@ export default function DriveChallengeGame({
       const poleSpacing = 260;
       const poleOffset = distanceUnits * 0.6;
       let poleIndex = Math.round(poleOffset / poleSpacing);
+      // Two canopy tones so the treeline doesn't read as one shade copy-
+      // pasted down the road — picked per-tree via the same deterministic
+      // hash everything else here uses.
+      const CANOPY_TONES: [string, string][] = [
+        ['#8fd99f', '#2f6f47'],
+        ['#7ccf9a', '#276140'],
+      ];
       for (let y = -((poleOffset % poleSpacing)); y < height; y += poleSpacing, poleIndex++) {
+        // Roadside objects grow as they near the bottom of the frame,
+        // same depth-scale idea as the entities — the clearest "they're
+        // approaching" cue this fixed-position scroll trick can offer.
+        const ds = depthScale(Math.max(0, y));
         for (const side of [-1, 1] as const) {
+          const slot = poleIndex * 2 + (side === -1 ? 0 : 1);
           const x = side === -1 ? railInset - 5 : width - railInset + 5;
+
+          // Every other pole is a tree instead of a lamp, alternating
+          // which side gets which so the roadside doesn't read as a
+          // mechanical repeat of one prop.
+          const isTree = (poleIndex + (side === -1 ? 0 : 1)) % 2 === 0;
+          if (isTree) {
+            // Size and position vary per tree (deterministic hash, not
+            // re-rolled per frame) so the treeline reads as planted
+            // rather than a single stamped asset repeated down the road.
+            const sizeT = hash1(slot * 3.7 + 1.1);
+            const canopyR = (10 + sizeT * 9) * ds;
+            const xJitter = (hash1(slot * 5.3 + 2.4) - 0.5) * 9 * ds;
+            const tx = x + xJitter;
+            const trunkH = (13 + hash1(slot * 4.1) * 7) * ds;
+            const [c0, c1] = CANOPY_TONES[Math.floor(hash1(slot * 6.6) * CANOPY_TONES.length)];
+            ctx.fillStyle = '#4a3320';
+            ctx.fillRect(tx - 1.4 * ds, y, 2.8 * ds, trunkH);
+            const canopyY = y - canopyR * 0.4;
+            const canopyGrad = ctx.createRadialGradient(tx - canopyR * 0.3, canopyY - canopyR * 0.3, 1, tx, canopyY, canopyR);
+            canopyGrad.addColorStop(0, c0);
+            canopyGrad.addColorStop(1, c1);
+            ctx.fillStyle = canopyGrad;
+            for (const [dx, dy, r] of [[0, 0, 1], [-0.5, 0.3, 0.72], [0.55, 0.25, 0.68]] as const) {
+              ctx.beginPath();
+              ctx.arc(tx + dx * canopyR, canopyY + dy * canopyR, canopyR * r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            continue;
+          }
+
+          // A small fraction of lamp slots become a low striped barrier
+          // segment instead — "road barriers where appropriate" without
+          // crowding out the lamps that do the actual lighting work.
+          const isBarrier = hash1(slot * 9.3 + 0.5) < 0.14;
+          if (isBarrier) {
+            const bw = 16 * ds;
+            const bh = 7 * ds;
+            ctx.save();
+            roundRect(ctx, x - bw / 2, y - bh / 2, bw, bh, 2 * ds);
+            ctx.clip();
+            ctx.fillStyle = '#e0a52a';
+            ctx.fillRect(x - bw / 2, y - bh / 2, bw, bh);
+            ctx.fillStyle = '#1a1c1e';
+            for (let sx = -bw / 2 - bh; sx < bw / 2; sx += bh * 0.9) {
+              ctx.beginPath();
+              ctx.moveTo(x + sx, y - bh / 2);
+              ctx.lineTo(x + sx + bh * 0.45, y - bh / 2);
+              ctx.lineTo(x + sx + bh * 0.45 + bh, y + bh / 2);
+              ctx.lineTo(x + sx + bh, y + bh / 2);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.restore();
+            continue;
+          }
+
           // Shaft.
-          ctx.fillStyle = 'rgba(255,255,255,0.55)';
-          ctx.fillRect(x - 1, y, 2, 26);
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.fillRect(x - 1, y, 2 * ds, 26 * ds);
           // Short arm curling toward the road, then a glowing lamp head —
           // reads as an actual street light rather than a bare dot.
-          ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+          ctx.lineWidth = 1.6 * ds;
           ctx.beginPath();
           ctx.moveTo(x, y);
-          ctx.lineTo(x + side * 7, y - 3);
+          ctx.lineTo(x + side * 7 * ds, y - 3 * ds);
           ctx.stroke();
-          const lampGlow = ctx.createRadialGradient(x + side * 8, y - 3, 0, x + side * 8, y - 3, 9);
-          lampGlow.addColorStop(0, 'rgba(255,250,220,0.55)');
-          lampGlow.addColorStop(1, 'rgba(255,250,220,0)');
+          const headX = x + side * 8 * ds;
+          const headY = y - 3 * ds;
+          const lampGlow = ctx.createRadialGradient(headX, headY, 0, headX, headY, 10 * ds);
+          lampGlow.addColorStop(0, 'rgba(255,238,190,0.65)');
+          lampGlow.addColorStop(1, 'rgba(255,238,190,0)');
           ctx.fillStyle = lampGlow;
           ctx.beginPath();
-          ctx.arc(x + side * 8, y - 3, 9, 0, Math.PI * 2);
+          ctx.arc(headX, headY, 10 * ds, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = '#fff8e0';
           ctx.beginPath();
-          ctx.arc(x + side * 8, y - 3, 2, 0, Math.PI * 2);
+          ctx.arc(headX, headY, 2 * ds, 0, Math.PI * 2);
           ctx.fill();
+
+          // Warm light pool on the asphalt beneath the lamp — the "street
+          // lighting reflected on the road" cue, flattened and low-opacity
+          // so it reads as a soft glow underfoot, not a solid shape.
+          const poolX = x + side * 20 * ds;
+          const poolY = y + 10 * ds;
+          const poolGlow = ctx.createRadialGradient(poolX, poolY, 0, poolX, poolY, 24 * ds);
+          poolGlow.addColorStop(0, 'rgba(255,220,160,0.14)');
+          poolGlow.addColorStop(1, 'rgba(255,220,160,0)');
+          ctx.save();
+          ctx.fillStyle = poolGlow;
+          ctx.beginPath();
+          ctx.ellipse(poolX, poolY, 24 * ds, 8 * ds, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
 
           // A CX road sign on every third pole, alternating sides so it
           // doesn't read as a mirrored repeat of the lamp above it.
           if (poleIndex % 3 === 0 && side === (poleIndex % 6 === 0 ? -1 : 1)) {
-            const signY = y + 34;
+            const signY = y + 34 * ds;
             ctx.fillStyle = '#00893f';
-            roundRect(ctx, x - 13, signY, 26, 15, 3);
+            roundRect(ctx, x - 13 * ds, signY, 26 * ds, 15 * ds, 3 * ds);
             ctx.fill();
             ctx.strokeStyle = 'rgba(255,255,255,0.4)';
             ctx.lineWidth = 1;
-            roundRect(ctx, x - 13, signY, 26, 15, 3);
+            roundRect(ctx, x - 13 * ds, signY, 26 * ds, 15 * ds, 3 * ds);
             ctx.stroke();
             ctx.textAlign = 'center';
-            ctx.font = "700 9px system-ui, -apple-system, 'Segoe UI', sans-serif";
+            ctx.font = `700 ${9 * ds}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
             ctx.fillStyle = '#fff';
-            ctx.fillText('CX', x, signY + 11);
+            ctx.fillText('CX', x, signY + 11 * ds);
           }
         }
       }
@@ -1428,6 +1295,32 @@ export default function DriveChallengeGame({
           ctx.lineTo(lx, ly);
           ctx.stroke();
         }
+      }
+
+      // Rain — a sparse field of falling streaks behind the traffic layer,
+      // subtle enough that lane markings and vehicles stay fully readable.
+      // Fixed slot count, each slot's x/phase from the same deterministic
+      // hash as the rest of the environment, so there's no persistent
+      // particle array to allocate or age — just a per-frame position
+      // computed from `elapsed` (which already freezes on pause, same as
+      // every other background element here). Skipped under reduced
+      // motion, same convention as every other purely decorative touch.
+      if (!reducedMotion) {
+        const RAIN_COUNT = 40;
+        const rainFall = elapsed * 900;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(200,215,255,0.14)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < RAIN_COUNT; i++) {
+          const rx = hash1(i * 2.13 + 5) * width;
+          const dropSpeed = 700 + hash1(i * 3.71) * 500;
+          const ry = ((rainFall * (dropSpeed / 900) + hash1(i * 1.37) * (height + 40)) % (height + 40)) - 20;
+          ctx.beginPath();
+          ctx.moveTo(rx, ry);
+          ctx.lineTo(rx - 4, ry + 16);
+          ctx.stroke();
+        }
+        ctx.restore();
       }
 
       // ---- entities ----
@@ -1486,13 +1379,15 @@ export default function DriveChallengeGame({
             ctx.fill();
           }
         } else if (e.kind === 'cone') {
+          const ds = depthScale(e.y);
+          const cw = e.w * ds, ch = e.h * ds;
           ctx.save();
           ctx.fillStyle = 'rgba(0,0,0,0.28)';
           ctx.beginPath();
-          ctx.ellipse(x, e.y + e.h / 2 - 2, e.w * 0.42, 4, 0, 0, Math.PI * 2);
+          ctx.ellipse(x, e.y + ch / 2 - 2, cw * 0.42, 4 * ds, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
-          const coneGrad = ctx.createLinearGradient(x - e.w / 2, 0, x + e.w / 2, 0);
+          const coneGrad = ctx.createLinearGradient(x - cw / 2, 0, x + cw / 2, 0);
           coneGrad.addColorStop(0, '#c4532f');
           coneGrad.addColorStop(0.5, '#ef7143');
           coneGrad.addColorStop(1, '#b8492a');
@@ -1500,118 +1395,158 @@ export default function DriveChallengeGame({
           ctx.strokeStyle = 'rgba(0,0,0,0.35)';
           ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.moveTo(x, e.y - e.h / 2);
-          ctx.lineTo(x + e.w / 2, e.y + e.h / 2);
-          ctx.lineTo(x - e.w / 2, e.y + e.h / 2);
+          ctx.moveTo(x, e.y - ch / 2);
+          ctx.lineTo(x + cw / 2, e.y + ch / 2);
+          ctx.lineTo(x - cw / 2, e.y + ch / 2);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
           ctx.fillStyle = 'rgba(245,246,242,0.85)';
-          ctx.fillRect(x - e.w / 2 + 3, e.y + e.h * 0.08, e.w - 6, e.h * 0.14);
+          ctx.fillRect(x - cw / 2 + 3 * ds, e.y + ch * 0.08, cw - 6 * ds, ch * 0.14);
         } else {
-          // 'car' / 'truck' / 'moving' traffic.
+          // 'car' / 'truck' / 'moving' traffic — five purely-visual body
+          // silhouettes (sedan/coupe/SUV/hatch/performance for cars, two
+          // cab styles for trucks) drawn at a depth-scaled size, always
+          // centered inside the entity's real, unscaled hitbox — variety
+          // and perspective never touch collision.
           const base = e.color ?? '#3b82c4';
+          const ds = depthScale(e.y);
+          const sil = e.kind === 'truck' ? -1 : ((e.variant ?? 0) % 5);
+          // SUVs/performance read a touch wider than the lane-safe hitbox;
+          // hatch/coupe a touch narrower — kept small (±7%) so it never
+          // looks like it's fouling a neighboring lane.
+          const wMul = e.kind === 'truck' ? 1 : sil === 2 ? 1.07 : sil === 4 ? 1.05 : sil === 1 ? 0.94 : 1;
+          const cw = e.w * ds * wMul, ch = e.h * ds;
+
           ctx.save();
-          ctx.fillStyle = 'rgba(0,0,0,0.32)';
+          const shGrad = ctx.createRadialGradient(x, e.y + ch * 0.42, 1, x, e.y + ch * 0.42, cw * 0.7);
+          shGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+          shGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = shGrad;
           ctx.beginPath();
-          ctx.ellipse(x, e.y + e.h / 2 - 2, e.w * 0.46, 5, 0, 0, Math.PI * 2);
+          ctx.ellipse(x, e.y + ch * 0.42, cw * 0.5, ch * 0.16, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
 
-          // Body radius carries a lot of the silhouette read: a boxy SUV
-          // and a low sports car are the same hitbox, drawn differently.
-          const sil = e.silhouette ?? 'sedan';
-          const radius = e.kind === 'truck' ? 7 : sil === 'suv' ? 5 : sil === 'sport' ? 13 : sil === 'coupe' ? 11 : 9;
+          // Wet-road reflection smear — a soft, elongated streak of the
+          // vehicle's own color underneath it, the cheap "mirrored on wet
+          // asphalt" cue without literally drawing a flipped car.
+          ctx.save();
+          ctx.globalAlpha = 0.16;
+          const reflGrad = ctx.createLinearGradient(x, e.y + ch * 0.35, x, e.y + ch * 1.5);
+          reflGrad.addColorStop(0, base);
+          reflGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = reflGrad;
+          ctx.beginPath();
+          ctx.ellipse(x, e.y + ch * 0.75, cw * 0.32, ch * 0.55, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
 
-          const bodyGrad = ctx.createLinearGradient(x - e.w / 2, e.y - e.h / 2, x + e.w / 2, e.y + e.h / 2);
+          // Body radius/taper varies a little by silhouette — SUVs read
+          // boxier, hatch/performance taper more toward the nose.
+          const radius = sil === 2 ? 6 : sil === 3 || sil === 4 ? 11 : 9;
+          const bodyGrad = ctx.createLinearGradient(x - cw / 2, e.y - ch / 2, x + cw / 2, e.y + ch / 2);
           bodyGrad.addColorStop(0, shade(base, 16));
           bodyGrad.addColorStop(0.5, base);
           bodyGrad.addColorStop(1, shade(base, -20));
           ctx.fillStyle = bodyGrad;
-          roundRect(ctx, x - e.w / 2, e.y - e.h / 2, e.w, e.h, radius);
+          roundRect(ctx, x - cw / 2, e.y - ch / 2, cw, ch, radius);
           ctx.fill();
           ctx.strokeStyle = 'rgba(0,0,0,0.4)';
           ctx.lineWidth = 1.2;
-          roundRect(ctx, x - e.w / 2, e.y - e.h / 2, e.w, e.h, radius);
+          roundRect(ctx, x - cw / 2, e.y - ch / 2, cw, ch, radius);
           ctx.stroke();
 
-          // Glass band — position/width per silhouette (top edge is the
-          // side facing the player, since traffic scrolls downward).
-          ctx.fillStyle = 'rgba(10,13,11,0.55)';
-          if (e.kind === 'truck') {
-            roundRect(ctx, x - e.w * 0.36, e.y - e.h * 0.34, e.w * 0.72, e.h * 0.24, 4);
-          } else if (sil === 'coupe') {
-            roundRect(ctx, x - e.w * 0.3, e.y - e.h * 0.26, e.w * 0.6, e.h * 0.17, 5);
-          } else if (sil === 'suv') {
-            roundRect(ctx, x - e.w * 0.38, e.y - e.h * 0.36, e.w * 0.76, e.h * 0.29, 3);
-          } else if (sil === 'sport') {
-            roundRect(ctx, x - e.w * 0.27, e.y - e.h * 0.2, e.w * 0.54, e.h * 0.15, 5);
-          } else {
-            roundRect(ctx, x - e.w * 0.36, e.y - e.h * 0.34, e.w * 0.72, e.h * 0.24, 4);
+          // Wheels — four small tire/rim pairs peeking past the body
+          // edges, front and rear, same corner logic as the player car.
+          for (const [wx, wy] of [
+            [-cw * 0.5, -ch * 0.26], [cw * 0.5, -ch * 0.26],
+            [-cw * 0.5, ch * 0.3], [cw * 0.5, ch * 0.3],
+          ] as const) {
+            ctx.fillStyle = '#111';
+            roundRect(ctx, x + wx - 2.4 * ds, e.y + wy - 6.5 * ds, 4.8 * ds, 13 * ds, 2 * ds);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(170,174,168,0.7)';
+            roundRect(ctx, x + wx - 1.2 * ds, e.y + wy - 3.8 * ds, 2.4 * ds, 7.6 * ds, 1.2 * ds);
+            ctx.fill();
           }
-          ctx.fill();
 
-          // Tail lights.
+          // Windshield glass — shape/position is the main silhouette read
+          // (top edge faces the player, since traffic scrolls downward):
+          // 0 sedan — tall, centered, upright; 1 coupe — low and pushed
+          // rearward; 2 SUV — wide with roof rails; 3 hatch — short nose,
+          // large rear glass; 4 performance — low, wide, aggressive rake.
+          ctx.fillStyle = 'rgba(10,13,11,0.58)';
+          if (sil === 1) {
+            roundRect(ctx, x - cw * 0.3, e.y - ch * 0.22, cw * 0.6, ch * 0.16, 4);
+            ctx.fill();
+          } else if (sil === 2) {
+            roundRect(ctx, x - cw * 0.34, e.y - ch * 0.32, cw * 0.68, ch * 0.42, 5);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(245,246,242,0.4)';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(x - cw * 0.28, e.y - ch * 0.34);
+            ctx.lineTo(x - cw * 0.28, e.y + ch * 0.06);
+            ctx.moveTo(x + cw * 0.28, e.y - ch * 0.34);
+            ctx.lineTo(x + cw * 0.28, e.y + ch * 0.06);
+            ctx.stroke();
+          } else if (sil === 3) {
+            roundRect(ctx, x - cw * 0.33, e.y - ch * 0.18, cw * 0.66, ch * 0.36, 5);
+            ctx.fill();
+          } else if (sil === 4) {
+            ctx.beginPath();
+            ctx.moveTo(x - cw * 0.28, e.y - ch * 0.14);
+            ctx.lineTo(x - cw * 0.22, e.y - ch * 0.3);
+            ctx.lineTo(x + cw * 0.22, e.y - ch * 0.3);
+            ctx.lineTo(x + cw * 0.28, e.y - ch * 0.14);
+            ctx.closePath();
+            ctx.fill();
+            // Center hood stripe — the "performance" accent.
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            ctx.fillRect(x - cw * 0.05, e.y - ch * 0.48, cw * 0.1, ch * 0.34);
+          } else {
+            roundRect(ctx, x - cw * 0.36, e.y - ch * 0.34, cw * 0.72, ch * 0.24, 4);
+            ctx.fill();
+          }
           ctx.fillStyle = 'rgba(255,120,120,0.85)';
-          ctx.fillRect(x - e.w * 0.4, e.y - e.h / 2 + 3, e.w * 0.16, 3);
-          ctx.fillRect(x + e.w * 0.24, e.y - e.h / 2 + 3, e.w * 0.16, 3);
+          ctx.fillRect(x - cw * 0.4, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
+          ctx.fillRect(x + cw * 0.24, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
 
           if (e.kind === 'truck') {
+            if (e.variant === 1) {
+              // Van cab — a single wide windshield band up front instead
+              // of the box-truck's cargo slats.
+              ctx.fillStyle = 'rgba(10,13,11,0.5)';
+              roundRect(ctx, x - cw * 0.32, e.y - ch * 0.32, cw * 0.64, ch * 0.16, 4);
+              ctx.fill();
+            }
             ctx.strokeStyle = 'rgba(245,246,242,0.3)';
             ctx.lineWidth = 1;
             for (const dy of [0.05, 0.2, 0.35]) {
               ctx.beginPath();
-              ctx.moveTo(x - e.w / 2 + 4, e.y - e.h / 2 + e.h * (0.5 + dy));
-              ctx.lineTo(x + e.w / 2 - 4, e.y - e.h / 2 + e.h * (0.5 + dy));
+              ctx.moveTo(x - cw / 2 + 4, e.y - ch / 2 + ch * (0.5 + dy));
+              ctx.lineTo(x + cw / 2 - 4, e.y - ch / 2 + ch * (0.5 + dy));
               ctx.stroke();
             }
-          } else if (sil === 'suv') {
-            // Roof rails.
-            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-            ctx.lineWidth = 1.4;
-            for (const sx of [-0.3, 0.3]) {
-              ctx.beginPath();
-              ctx.moveTo(x + e.w * sx, e.y - e.h * 0.38);
-              ctx.lineTo(x + e.w * sx, e.y + e.h * 0.06);
-              ctx.stroke();
-            }
-          } else if (sil === 'sport') {
-            // Rear wing across the trailing edge + a centre racing stripe.
-            ctx.fillStyle = shade(base, -34);
-            roundRect(ctx, x - e.w * 0.42, e.y + e.h * 0.3, e.w * 0.84, 4.5, 2);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.22)';
-            ctx.fillRect(x - e.w * 0.05, e.y - e.h * 0.44, e.w * 0.1, e.h * 0.66);
-          } else if (sil === 'coupe') {
-            // A single shoulder crease down the flank.
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(x - e.w * 0.4, e.y - e.h * 0.06);
-            ctx.lineTo(x + e.w * 0.4, e.y - e.h * 0.06);
-            ctx.stroke();
           }
-
-          // Turn signal — blinks on the side a vehicle is about to move
-          // toward, from the moment it commits until the change finishes.
-          // Paired with the small lean `driveTraffic` applies during the
-          // same window, this is what makes a merge readable in advance.
-          if (e.toLane !== undefined && e.fromLane !== undefined) {
-            const dir = Math.sign(e.toLane - e.fromLane);
-            const on = Math.floor(elapsed * 6) % 2 === 0;
-            if (dir !== 0 && on) {
-              const bx = x + dir * e.w * 0.42;
-              ctx.save();
-              ctx.shadowColor = 'rgba(255,176,46,0.9)';
-              ctx.shadowBlur = 8;
-              ctx.fillStyle = '#ffb02e';
+          if (sil === 3 || sil === 4) {
+            // Small rear spoiler hint on hatch/performance builds.
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(x - cw * 0.32, e.y + ch * 0.42, cw * 0.64, 2.4 * ds);
+          }
+          if (e.kind === 'moving') {
+            // Small chevron pointing the way it's drifting — readability
+            // for a hazard whose lane isn't fixed.
+            const dir = e.driftTarget > e.lane ? 1 : e.driftTarget < e.lane ? -1 : 0;
+            if (dir !== 0) {
+              ctx.fillStyle = 'rgba(255,255,255,0.75)';
               ctx.beginPath();
-              ctx.arc(bx, e.y - e.h * 0.34, 3.2, 0, Math.PI * 2);
+              ctx.moveTo(x + dir * cw * 0.05, e.y);
+              ctx.lineTo(x - dir * cw * 0.18, e.y - 6 * ds);
+              ctx.lineTo(x - dir * cw * 0.18, e.y + 6 * ds);
+              ctx.closePath();
               ctx.fill();
-              ctx.beginPath();
-              ctx.arc(bx, e.y + e.h * 0.34, 3.2, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.restore();
             }
           }
         }
@@ -1630,6 +1565,18 @@ export default function DriveChallengeGame({
         ctx.arc(fx.x, fx.y, 8 + p * 26, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
+
+        if (fx.bonus) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 1 - p * 1.3);
+          ctx.textAlign = 'center';
+          ctx.font = "700 11px system-ui, -apple-system, 'Segoe UI', sans-serif";
+          ctx.fillStyle = '#0a0d0b';
+          ctx.fillText(`+${fx.bonus}`, fx.x + 0.6, fx.y - p * 18 + 0.6);
+          ctx.fillStyle = '#eaffef';
+          ctx.fillText(`+${fx.bonus}`, fx.x, fx.y - p * 18);
+          ctx.restore();
+        }
       }
 
       // "NEAR MISS +N" — a quick ring plus a rising, fading label. The
@@ -1711,21 +1658,47 @@ export default function DriveChallengeGame({
       ctx.translate(px, py);
       ctx.rotate(carTilt);
 
+      const speedT = Math.min(1, Math.max(0, (speed - 220) / 700));
+
+      // Suspension — a small continuous vertical bob (quicker and a touch
+      // taller at higher speed) applied only to this car's own draw calls
+      // via a local translate. Never touches `px`/`py`/`carTilt` — those
+      // stay exactly what steering/collision already compute.
+      const susBob = reducedMotion ? 0 : Math.sin(elapsed * 6.2) * (0.5 + speedT * 1.6);
+      // Squat — shadow tightens/darkens slightly as the body leans into a
+      // lane change, reading as weight transfer rather than a flat cutout.
+      const susSquat = Math.min(1, Math.abs(carTilt) * 2.6);
+      ctx.translate(0, susBob);
+
       // Contact shadow.
       ctx.save();
       const shadowGrad = ctx.createRadialGradient(0, CAR_H * 0.4, 2, 0, CAR_H * 0.4, CAR_W * 0.8);
-      shadowGrad.addColorStop(0, 'rgba(0,0,0,0.45)');
+      shadowGrad.addColorStop(0, `rgba(0,0,0,${(0.45 + susSquat * 0.1).toFixed(3)})`);
       shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = shadowGrad;
       ctx.beginPath();
-      ctx.ellipse(0, CAR_H * 0.4, CAR_W * 0.62, CAR_H * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, CAR_H * 0.4, CAR_W * 0.62 * (1 - susSquat * 0.12), CAR_H * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Wet-road reflection smear — the player's own paint color bleeding
+      // faintly into the asphalt behind it, same technique as traffic's
+      // reflection below but a touch stronger since this is the car the
+      // player is meant to be looking at.
+      ctx.save();
+      ctx.globalAlpha = 0.2;
+      const playerReflGrad = ctx.createLinearGradient(0, CAR_H * 0.32, 0, CAR_H * 1.35);
+      playerReflGrad.addColorStop(0, bodyColor);
+      playerReflGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = playerReflGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, CAR_H * 0.72, CAR_W * 0.36, CAR_H * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
       // Ambient under-glow — scales with speed (the car visibly "heats
       // up" as it accelerates through the run, not just during boost),
       // brightest of all under an actual boost.
-      const speedT = Math.min(1, Math.max(0, (speed - 220) / 700));
       ctx.save();
       const underGrad = ctx.createRadialGradient(0, CAR_H * 0.44, 1, 0, CAR_H * 0.44, CAR_W * 0.7);
       underGrad.addColorStop(0, boostedNow ? 'rgba(0,212,71,0.55)' : `rgba(0,212,71,${(0.1 + speedT * 0.16).toFixed(3)})`);
@@ -1752,6 +1725,22 @@ export default function DriveChallengeGame({
       }
 
       const paintColor = carState === 'crash' ? '#e0402f' : carState === 'shield' ? '#00d447' : bodyColor;
+
+      // Wheel-arch shading — four soft dark blobs under where the body
+      // will be drawn, at roughly the same corners the wheel ellipses
+      // land at below, so the paint reads as flared over them rather
+      // than the tires just floating beside a flat slab.
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      for (const [ax, ay] of [
+        [-CAR_W * 0.52, -CAR_H * 0.24], [CAR_W * 0.52, -CAR_H * 0.24],
+        [-CAR_W * 0.52, CAR_H * 0.3], [CAR_W * 0.52, CAR_H * 0.3],
+      ] as const) {
+        ctx.beginPath();
+        ctx.ellipse(ax, ay, 9, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
 
       // Body — a hood shape narrower at the top (front), flaring toward
       // the bottom, so it reads as the front 3/4 of the car even in this
@@ -1846,7 +1835,8 @@ export default function DriveChallengeGame({
         ctx.restore();
       }
 
-      // Headlights — twin, glowing, and a touch brighter at speed.
+      // Headlights — slim LED blades rather than rounded boxes, glowing
+      // and a touch brighter at speed.
       const hlY = -CAR_H * 0.06;
       const hlColor = carState === 'crash' ? '#ffb199' : '#eaffef';
       for (const side of [-1, 1]) {
@@ -1855,10 +1845,22 @@ export default function DriveChallengeGame({
         ctx.shadowColor = 'rgba(255,255,255,0.9)';
         ctx.shadowBlur = 11 + speedT * 7;
         ctx.fillStyle = hlColor;
-        roundRect(ctx, hx - 6, hlY - 4, 12, 8, 3);
+        roundRect(ctx, hx - 7, hlY - 3, 14, 4.5, 2.2);
+        ctx.fill();
+        // A tighter, brighter inner core reads as an LED strip rather
+        // than a single flat block.
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = '#ffffff';
+        roundRect(ctx, hx - 5.5, hlY - 2, 11, 2, 1);
         ctx.fill();
         ctx.restore();
       }
+
+      // Front splitter — a dark accent bar right at the nose, under the
+      // headlights, giving the front end a finished, performance-car edge.
+      ctx.fillStyle = 'rgba(10,13,11,0.55)';
+      roundRect(ctx, -CAR_W * 0.32, -CAR_H * 0.5 + 1, CAR_W * 0.64, 3, 1.5);
+      ctx.fill();
 
       // Front pinstripe — the CX green trim line.
       ctx.strokeStyle = 'rgba(0,212,71,0.85)';
@@ -1868,12 +1870,28 @@ export default function DriveChallengeGame({
       ctx.lineTo(CAR_W * 0.3, CAR_H * 0.46);
       ctx.stroke();
 
-      // Tires peeking out at the sides.
-      ctx.fillStyle = '#111';
-      roundRect(ctx, -CAR_W * 0.58, -CAR_H * 0.02, 8, 20, 3);
+      // Taillights — a slim always-on bar at the rear (the wide end,
+      // closest to camera in this chase view), dim in normal driving,
+      // full brake-red on impact via the glow pass below.
+      ctx.fillStyle = carState === 'crash' ? '#ff5540' : 'rgba(224,64,47,0.55)';
+      roundRect(ctx, -CAR_W * 0.34, CAR_H * 0.5 - 5, CAR_W * 0.2, 3.4, 1.5);
       ctx.fill();
-      roundRect(ctx, CAR_W * 0.58 - 8, -CAR_H * 0.02, 8, 20, 3);
+      roundRect(ctx, CAR_W * 0.14, CAR_H * 0.5 - 5, CAR_W * 0.2, 3.4, 1.5);
       ctx.fill();
+
+      // Wheels — four real tire/rim ellipses at the corners (matching the
+      // arch shading drawn under the body) instead of two flat side bars.
+      for (const [wx, wy] of [
+        [-CAR_W * 0.53, -CAR_H * 0.24], [CAR_W * 0.53, -CAR_H * 0.24],
+        [-CAR_W * 0.53, CAR_H * 0.3], [CAR_W * 0.53, CAR_H * 0.3],
+      ] as const) {
+        ctx.fillStyle = '#111';
+        roundRect(ctx, wx - 4, wy - 10, 8, 20, 3.5);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(180,184,178,0.85)';
+        roundRect(ctx, wx - 2.1, wy - 6, 4.2, 12, 2);
+        ctx.fill();
+      }
 
       // Brake-light glow when crashing.
       if (carState === 'crash') {
@@ -1893,6 +1911,21 @@ export default function DriveChallengeGame({
 
       ctx.restore(); // camera punch/shake transform
 
+      // Cinematic corner vignette — screen-space, applied after the
+      // camera transform restores so it never shifts with the punch/
+      // shake, just a quiet frame that reads as "shot on a camera" rather
+      // than a flat top-down render.
+      ctx.save();
+      const vignette = ctx.createRadialGradient(
+        width / 2, height * 0.44, height * 0.35,
+        width / 2, height * 0.5, height * 0.82,
+      );
+      vignette.addColorStop(0, 'rgba(0,0,0,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.32)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
       if (!dead) {
         raf = requestAnimationFrame(loop);
       } else {
@@ -1900,6 +1933,7 @@ export default function DriveChallengeGame({
           score: Math.floor(score),
           distance: Math.round((distanceUnits / 5000) * 10) / 10,
           maxCombo,
+          maxSpeed: maxSpeedReached,
         });
       }
     }
@@ -1909,6 +1943,7 @@ export default function DriveChallengeGame({
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(hintTimer);
       ro.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('orientationchange', resize);
@@ -1916,50 +1951,83 @@ export default function DriveChallengeGame({
       window.removeEventListener('keydown', onKey);
       canvas.removeEventListener('pointerdown', onPointer);
     };
-  }, [bestScore, bodyColor]);
+  }, [bestScore, bodyColor, topSpeedMul, accelMul, handlingMul, topSpeedKmh]);
 
   return (
     <div className="relative h-full w-full touch-none select-none overscroll-none">
       <canvas ref={canvasRef} className="h-full w-full" />
 
       <div className="pointer-events-none absolute left-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
-        <div
-          ref={scoreChipRef}
-          className="drive-hud-chip rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur"
-        >
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-bright/80">Score</p>
-          <p ref={scoreElRef} className="font-display text-xl font-bold tabular-nums text-white">
+        <div ref={scoreChipRef} className="drive-hud-chip rounded-2xl px-3.5 py-2 backdrop-blur-xl">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Score</p>
+          <p ref={scoreElRef} className="font-display text-2xl font-bold leading-none tabular-nums text-white">
             0
           </p>
           {bestScore > 0 && (
-            <p ref={bestElRef} className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-accent-bright/75">
+            <p ref={bestElRef} className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-accent-bright/70">
               Best {bestScore.toLocaleString()}
             </p>
           )}
         </div>
-        <div
-          ref={comboChipRef}
-          className="rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur"
-        >
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-bright/80">Combo</p>
-          <p ref={comboElRef} className="font-display text-xl font-bold tabular-nums text-accent-bright">
+        <div ref={comboChipRef} className="drive-hud-chip rounded-2xl px-3.5 py-2 backdrop-blur-xl">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Combo</p>
+          <p ref={comboElRef} className="font-display text-2xl font-bold leading-none tabular-nums text-accent-bright">
             &times;1
+          </p>
+          <p ref={comboTierElRef} className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">
+            Normal
           </p>
         </div>
       </div>
 
-      <div className="pointer-events-none absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
-        <div className="rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 text-right shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-bright/80">Speed</p>
-          <p ref={speedElRef} className="font-display text-xl font-bold tabular-nums text-white">
-            0<span className="ml-0.5 text-[11px] font-medium text-white/45">km/h</span>
-          </p>
+      <div
+        ref={milestoneElRef}
+        className="drive-milestone pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] mx-auto w-fit rounded-full border border-accent-bright/30 bg-black/60 px-4 py-1.5 text-[12.5px] font-bold uppercase tracking-wide text-accent-bright opacity-0 backdrop-blur-xl"
+      />
+
+      {/* Objective — persistent progress toward the current distance leg,
+          sitting below the milestone toast so a pop-in callout never
+          collides with it. Values are pushed in imperatively from the
+          loop, same pattern as every other HUD number on this screen. */}
+      <div
+        ref={objectivePanelElRef}
+        className="drive-hud-chip pointer-events-none absolute left-1/2 top-[max(7.25rem,calc(env(safe-area-inset-top)+6.5rem))] w-[12.5rem] -translate-x-1/2 rounded-2xl px-3.5 py-2 backdrop-blur-xl"
+      >
+        <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">
+          <Icon name="star" size={10} fill className="text-accent-bright" /> Objective
+        </p>
+        <p ref={objectiveLabelElRef} className="mt-0.5 truncate text-[12px] font-semibold text-white">
+          Drive 100 m
+        </p>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <div
+            ref={objectiveFillElRef}
+            className="h-full rounded-full bg-accent-bright transition-[width] duration-300 ease-out"
+            style={{ width: '0%' }}
+          />
         </div>
-        <div className="rounded-2xl border border-accent-bright/40 bg-black/60 px-3.5 py-2 text-right shadow-[0_0_16px_rgba(0,212,71,0.25)] backdrop-blur">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-accent-bright/80">Distance</p>
-          <p ref={distanceElRef} className="font-display text-xl font-bold tabular-nums text-white">
-            0.0<span className="ml-0.5 text-[11px] font-medium text-white/45">km</span>
+        <p
+          ref={objectiveValueElRef}
+          className="mt-1 text-right text-[9.5px] font-semibold uppercase tracking-wide text-white/40 tabular-nums"
+        >
+          0.00 / 0.10 KM
+        </p>
+      </div>
+
+      <div className="pointer-events-none absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
+        <div className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Speed</p>
+          <p className="font-display text-2xl font-bold leading-none tabular-nums text-white">
+            <span ref={speedElRef}>0</span>
           </p>
+          <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">km/h</p>
+        </div>
+        <div className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Distance</p>
+          <p className="font-display text-2xl font-bold leading-none tabular-nums text-white">
+            <span ref={distanceElRef}>0.0</span>
+          </p>
+          <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">km</p>
         </div>
       </div>
 
@@ -1976,7 +2044,13 @@ export default function DriveChallengeGame({
               rather than the plain 1.5rem used when nothing else shares
               this edge — this HUD doesn't know that cluster's exact
               markup, so it just reserves generous, safe-area-aware room. */}
-          <p className="pointer-events-none absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] text-center text-[12.5px] font-medium text-white/45">
+          {/* Auto-fades the first time the player steers (or after a short
+              timeout regardless — see `dismissHint` above) so it never
+              permanently sits over the car once the controls are learned. */}
+          <p
+            ref={steerHintElRef}
+            className="pointer-events-none absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] text-center text-[12.5px] font-medium text-white/45 transition-opacity duration-700 ease-out"
+          >
             <span className="hidden sm:inline">Steer with ← → or A / D</span>
             <span className="sm:hidden">Tap left or right to steer</span>
           </p>

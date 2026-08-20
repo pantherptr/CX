@@ -28,6 +28,22 @@ export type GameSound =
 
 const MUTE_KEY = 'cx-drive-sound-muted';
 
+/** The official CX gameplay track — a real audio file, not synthesized
+ *  like the SFX above. One `<audio>` element is created lazily on first
+ *  use and reused for the lifetime of this hook instance (never a new
+ *  `Audio()` per phase change), so "loop seamlessly" and "don't create
+ *  multiple instances" both fall out of the same object. */
+const MUSIC_SRC = '/audio/cx-drive.mp3';
+/** Game-home / countdown level — "almost inaudible", per spec. */
+const MUSIC_VOLUME_LOW = 0.08;
+/** Gameplay level once GO fires. */
+const MUSIC_VOLUME_GAMEPLAY = 0.45;
+/** How long the GO-moment fade-in takes — "very quickly and smoothly". */
+const MUSIC_FADE_IN_MS = 280;
+/** How long the drop back to low level takes when returning to the
+ *  intro/retry screen — quick but not an abrupt cut. */
+const MUSIC_FADE_DOWN_MS = 220;
+
 interface Tone {
   freq: number;
   glide?: number;
@@ -62,6 +78,13 @@ const TONES: Record<GameSound, Tone[]> = {
 
 export function useGameAudio() {
   const ctxRef = useRef<AudioContext | null>(null);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+  const musicFadeRafRef = useRef<number | null>(null);
+  /** The volume music should sit at once any in-flight fade completes —
+   *  read by `toggleMute` so unmuting restores the *current phase's*
+   *  level (low on the intro/countdown screen, gameplay level mid-run)
+   *  rather than always snapping back to one fixed number. */
+  const musicTargetVolumeRef = useRef(MUSIC_VOLUME_LOW);
   const [muted, setMuted] = useState(() => {
     try {
       return localStorage.getItem(MUTE_KEY) === '1';
@@ -74,8 +97,97 @@ export function useGameAudio() {
     return () => {
       ctxRef.current?.close().catch(() => {});
       ctxRef.current = null;
+      if (musicFadeRafRef.current !== null) cancelAnimationFrame(musicFadeRafRef.current);
+      musicRef.current?.pause();
+      musicRef.current = null;
     };
   }, []);
+
+  /** Lazily creates the one `<audio>` element this hook instance will
+   *  ever use for music, reused across every phase change and every
+   *  retry — never a fresh `Audio()` per call. */
+  const getMusicEl = useCallback(() => {
+    let el = musicRef.current;
+    if (!el) {
+      el = new Audio(MUSIC_SRC);
+      el.loop = true;
+      el.preload = 'auto';
+      musicRef.current = el;
+    }
+    return el;
+  }, []);
+
+  const cancelMusicFade = useCallback(() => {
+    if (musicFadeRafRef.current !== null) {
+      cancelAnimationFrame(musicFadeRafRef.current);
+      musicFadeRafRef.current = null;
+    }
+  }, []);
+
+  /** Smoothly ramps the music element's volume to `target` over
+   *  `durationMs`, via `requestAnimationFrame` — `HTMLMediaElement.volume`
+   *  has no native ramp API, unlike the Web Audio gain nodes the SFX
+   *  above use. Any fade already in flight is cancelled first so rapid
+   *  phase changes (e.g. an instant retry) can't leave two fades
+   *  fighting over the same element. */
+  const fadeMusicTo = useCallback(
+    (target: number, durationMs: number) => {
+      const el = musicRef.current;
+      if (!el) return;
+      cancelMusicFade();
+      const start = el.volume;
+      const startTime = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - startTime) / durationMs);
+        el.volume = start + (target - start) * t;
+        musicFadeRafRef.current = t < 1 ? requestAnimationFrame(step) : null;
+      };
+      musicFadeRafRef.current = requestAnimationFrame(step);
+    },
+    [cancelMusicFade],
+  );
+
+  /** GAME HOME + COUNTDOWN — starts the track (if not already running)
+   *  at the "almost inaudible" level, or eases an already-playing track
+   *  back down to it. Covers both the very first launch and a RETRY
+   *  (which re-enters the intro screen via the same `launch()` call). */
+  const duckMusic = useCallback(() => {
+    musicTargetVolumeRef.current = MUSIC_VOLUME_LOW;
+    if (muted) return;
+    const el = getMusicEl();
+    if (el.paused) {
+      cancelMusicFade();
+      el.volume = MUSIC_VOLUME_LOW;
+      el.currentTime = 0;
+      el.play().catch(() => {});
+    } else {
+      fadeMusicTo(MUSIC_VOLUME_LOW, MUSIC_FADE_DOWN_MS);
+    }
+  }, [muted, getMusicEl, cancelMusicFade, fadeMusicTo]);
+
+  /** The exact GO moment: stop, rewind to 0:00, and start the track fresh
+   *  from the beginning at gameplay volume — with a very quick, smooth
+   *  fade-in rather than an instant jump. This is the ONLY place the
+   *  track's position is ever reset; lane changes, pickups, pause, etc.
+   *  never touch it, so the loop plays on uninterrupted through normal
+   *  gameplay. */
+  const startGameplayMusic = useCallback(() => {
+    musicTargetVolumeRef.current = MUSIC_VOLUME_GAMEPLAY;
+    const el = getMusicEl();
+    cancelMusicFade();
+    el.pause();
+    el.currentTime = 0;
+    el.volume = muted ? 0 : MUSIC_VOLUME_LOW;
+    el.play().catch(() => {});
+    if (!muted) fadeMusicTo(MUSIC_VOLUME_GAMEPLAY, MUSIC_FADE_IN_MS);
+  }, [muted, getMusicEl, cancelMusicFade, fadeMusicTo]);
+
+  /** Called when the Drive Challenge modal closes — the music has no
+   *  reason to keep playing once the player has left the game. */
+  const pauseMusic = useCallback(() => {
+    cancelMusicFade();
+    musicRef.current?.pause();
+  }, [cancelMusicFade]);
 
   const play = useCallback(
     (sound: GameSound) => {
@@ -115,9 +227,17 @@ export function useGameAudio() {
       } catch {
         // Storage unavailable — the preference just won't persist.
       }
+      // Music snaps to/from silence immediately (a fade here would be
+      // audible and pointless) — it always returns to whatever level the
+      // current phase (game home vs. gameplay) last set as the target.
+      const el = musicRef.current;
+      if (el) {
+        cancelMusicFade();
+        el.volume = next ? 0 : musicTargetVolumeRef.current;
+      }
       return next;
     });
-  }, []);
+  }, [cancelMusicFade]);
 
-  return { play, muted, toggleMute };
+  return { play, muted, toggleMute, duckMusic, startGameplayMusic, pauseMusic };
 }

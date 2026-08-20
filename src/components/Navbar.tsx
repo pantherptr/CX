@@ -5,14 +5,37 @@ import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
+import { useShop } from '../lib/shopStore';
 import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 const links = [
   { to: '/browse', label: 'Browse Cars' },
+  { to: '/shop', label: 'CX Shop' },
   { to: '/list-your-car', label: 'List Your Car' },
   { to: '/how-it-works', label: 'How It Works' },
   { to: '/about', label: 'About' },
 ];
+
+/** Cart icon + badge — shared markup between the public and app headers
+ *  so both read as the same shopping affordance rather than two
+ *  different icons happening to open the same drawer. */
+function CartButton({ className = '' }: { className?: string }) {
+  const { cartCount, openCart } = useShop();
+  return (
+    <button
+      onClick={openCart}
+      aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}
+      className={`pressable relative grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-panel ${className}`}
+    >
+      <Icon name="cart" size={19} />
+      {cartCount > 0 && (
+        <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-white">
+          {cartCount > 9 ? '9+' : cartCount}
+        </span>
+      )}
+    </button>
+  );
+}
 
 /** Marketing header — logged-out visitors only. Full nav, sign in / create
  *  account. Never rendered for an authenticated session (see `AppNavbar`). */
@@ -96,6 +119,7 @@ function PublicNavbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <CartButton />
             <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
               Create account
             </Link>
@@ -272,6 +296,7 @@ function AppNavbar() {
           >
             <Icon name="search" size={19} />
           </Link>
+          <CartButton />
           <Link
             to="/notifications"
             className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"

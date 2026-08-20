@@ -306,6 +306,12 @@
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
 
+  /* Hides the scrollbar on a horizontally-scrolling row (e.g. the Shop's
+     mobile filter chips) without hiding overflow itself — the row still
+     scrolls, it just doesn't show a bar while doing it. */
+  .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
   .grain::before {
     content: '';
     position: absolute;
@@ -467,6 +473,21 @@
     background: radial-gradient(closest-side, rgba(224, 165, 42, 0.4), transparent 72%);
   }
 
+  /* Drive Challenge HUD chip — the shared glass treatment behind Score/
+     Combo/Speed/Distance. A soft dark gradient (not flat black) plus a
+     thin CX-green hairline and an inset top highlight is what reads as
+     "glass" rather than just a translucent box; the outer drop shadow
+     keeps it legible over bright sky/road regardless of what's scrolling
+     behind it. */
+  .drive-hud-chip {
+    background: linear-gradient(165deg, rgba(28, 34, 28, 0.55), rgba(8, 11, 9, 0.42));
+    border: 1px solid rgba(0, 212, 71, 0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 10px 24px rgba(0, 0, 0, 0.32),
+      0 0 0 1px rgba(0, 0, 0, 0.18);
+  }
+
   /* Drive Challenge HUD — a brief celebratory ring the instant the live
      score clears the player's personal best mid-run. */
   @keyframes drive-record-glow {
@@ -475,6 +496,128 @@
   }
   .drive-hud-record {
     animation: drive-record-glow 1.6s ease-in-out infinite;
+  }
+
+  /* Quieter cousin of the record glow — shown once a live run closes in
+     on the player's personal best but hasn't beaten it yet. Slower,
+     dimmer pulse so it reads as "getting close" rather than "you did it". */
+  @keyframes drive-approaching-glow {
+    0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(224,165,42,0.35), 0 0 14px rgba(224,165,42,0.2); }
+    50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px rgba(224,165,42,0.6), 0 0 20px rgba(224,165,42,0.35); }
+  }
+  .drive-hud-approaching {
+    animation: drive-approaching-glow 2.2s ease-in-out infinite;
+  }
+
+  /* Objective panel — a one-shot glow the instant a distance leg completes,
+     layered on top of the same `.drive-hud-chip` glass rather than
+     replacing it, so the panel still reads as part of the HUD family. */
+  @keyframes drive-objective-complete {
+    0% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,212,71,0.22); transform: scale(1); }
+    32% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.32), 0 0 0 1.5px rgba(0,212,71,0.95), 0 0 26px rgba(0,212,71,0.55); transform: scale(1.045); }
+    100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 24px rgba(0,0,0,0.32), 0 0 0 1px rgba(0,212,71,0.22); transform: scale(1); }
+  }
+  .drive-objective-complete {
+    animation: drive-objective-complete 0.65s var(--ease-out-expo);
+  }
+
+  /* Garage showroom — the car preview stage. An ambient green wash plus
+     a darker floor band reads as "sitting under showroom lighting"
+     without any image assets; a few drifting dots stand in for dust
+     catching the light. All cheap, all pure CSS. */
+  .drive-showroom {
+    background:
+      radial-gradient(120% 90% at 50% 12%, rgba(0, 212, 71, 0.16), transparent 62%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.4));
+  }
+  .drive-showroom::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 42%;
+    background: linear-gradient(180deg, rgba(0, 212, 71, 0.06), transparent);
+    pointer-events: none;
+  }
+  @keyframes drive-showroom-particle {
+    0% { transform: translateY(8px); opacity: 0; }
+    45% { opacity: 0.55; }
+    100% { transform: translateY(-48px); opacity: 0; }
+  }
+  .drive-showroom-particle {
+    position: absolute;
+    bottom: 12%;
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(0, 212, 71, 0.75);
+    animation: drive-showroom-particle 3.8s ease-in-out infinite;
+  }
+
+  /* Idle turntable — a slow rock, not a full spin, so the "3D-like"
+     read comes from gentle weight-shift rather than a literal rotation
+     that would fight the car's flat top-down art style. */
+  @keyframes drive-car-idle {
+    0%, 100% { transform: rotate(-2.5deg) translateY(0); }
+    50% { transform: rotate(2.5deg) translateY(-3px); }
+  }
+  .drive-car-idle {
+    animation: drive-car-idle 5s ease-in-out infinite;
+    transform-origin: 50% 88%;
+  }
+  @keyframes drive-showroom-floor-pulse {
+    0%, 100% { opacity: 0.55; transform: translateX(-50%) scaleX(1); }
+    50% { opacity: 0.35; transform: translateX(-50%) scaleX(0.86); }
+  }
+  .drive-showroom-floor {
+    background: radial-gradient(closest-side, rgba(0, 0, 0, 0.65), transparent 75%);
+    animation: drive-showroom-floor-pulse 5s ease-in-out infinite;
+    filter: blur(2px);
+  }
+  @keyframes drive-car-enter {
+    0% { opacity: 0; transform: scale(0.86) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .drive-car-enter { animation: drive-car-enter 0.4s var(--ease-out-expo); }
+
+  /* Stat bars grow in rather than appearing at full width instantly —
+     reads as the configurator "measuring" the car each time a new one
+     is previewed. */
+  @keyframes drive-stat-fill {
+    0% { width: 0% !important; }
+  }
+  .drive-stat-fill { animation: drive-stat-fill 0.5s var(--ease-out-expo); }
+
+  .drive-car-card-active {
+    box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.5), 0 0 20px rgba(0, 212, 71, 0.25);
+  }
+
+  /* Distance-milestone toast — appears, holds, fades, entirely via one
+     animation so the trigger side (imperative DOM update) never needs
+     its own timer to hide it again. */
+  @keyframes drive-milestone-pop {
+    0% { opacity: 0; transform: translateY(-6px) scale(0.92); }
+    12% { opacity: 1; transform: translateY(0) scale(1); }
+    82% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  }
+  .drive-milestone-pop {
+    animation: drive-milestone-pop 2.1s var(--ease-out-expo);
+  }
+
+  /* The one-time "MAX SPEED" moment — same toast, held slightly longer
+     with a gold pulse layered on top so it reads as a tier above the
+     routine speed callouts, matching the Top 1% gold treatment used
+     elsewhere rather than inventing a third accent color. */
+  @keyframes drive-milestone-max-glow {
+    0%, 100% { text-shadow: 0 0 16px rgba(224, 165, 42, 0.55); }
+    50% { text-shadow: 0 0 26px rgba(224, 165, 42, 0.85); }
+  }
+  .drive-milestone-max {
+    color: #e0a52a;
+    border-color: rgba(224, 165, 42, 0.4) !important;
+    animation:
+      drive-milestone-pop 2.6s var(--ease-out-expo),
+      drive-milestone-max-glow 0.7s ease-in-out infinite;
   }
 
   /* One-shot flash behind the "Crash" beat and a quiet vignette behind

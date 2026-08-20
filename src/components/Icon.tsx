@@ -4,11 +4,12 @@ import {
   ArrowRight, ArrowUpRight, Menu, X, Check, CheckCircle2, ShieldCheck, Users,
   Armchair, DoorOpen, Gauge, Fuel, Cog, Zap, Sun, Flame, Gem, Mountain, Leaf,
   Car, KeyRound, Wallet, LayoutGrid, Luggage, MessageSquare, Bell, Settings,
-  User, LogOut, Plus, SlidersHorizontal, ArrowUpDown, Clock, Phone, Camera,
+  User, LogOut, Plus, Minus, SlidersHorizontal, ArrowUpDown, Clock, Phone, Camera,
   Upload, CreditCard, Lock, Sparkles, Headset, Compass, TrendingUp, Euro,
   MessageSquareText, Send, Paperclip, BarChart3, CarFront, Route, Globe,
   Snowflake, Music, Apple, Info, BadgeCheck, Briefcase, Trophy, Gift, Pause,
-  Play, Volume2, VolumeX, type LucideIcon,
+  Play, Volume2, VolumeX, ShoppingBag, ShoppingCart, Truck, Package, Tag,
+  type LucideIcon,
 } from 'lucide-react';
 
 export type IconName =
@@ -22,7 +23,8 @@ export type IconName =
   | 'compass' | 'trending' | 'euro' | 'reviews' | 'send' | 'paperclip'
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
   | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
-  | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff';
+  | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff'
+  | 'minus' | 'shoppingBag' | 'cart' | 'truck' | 'package' | 'tag';
 
 /**
  * Every icon in the product renders through the same Lucide set — one
@@ -47,7 +49,8 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   paperclip: Paperclip, chart: BarChart3, cars: CarFront, route: Route, globe: Globe,
   instant: Zap, snowflake: Snowflake, music: Music, apple: Apple, info: Info,
   verified: BadgeCheck, bag: Briefcase, trophy: Trophy, gift: Gift, pause: Pause,
-  play: Play, volume: Volume2, volumeOff: VolumeX,
+  play: Play, volume: Volume2, volumeOff: VolumeX, minus: Minus,
+  shoppingBag: ShoppingBag, cart: ShoppingCart, truck: Truck, package: Package, tag: Tag,
 };
 
 const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause'];
