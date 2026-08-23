@@ -24,7 +24,7 @@ function CompareToggle({ carId }: { carId: string }) {
       }}
       aria-label={active ? 'Remove from compare' : 'Add to compare'}
       aria-pressed={active}
-      className={`pressable absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium shadow-hair transition-all duration-300 ${
+      className={`pressable absolute bottom-3 left-3 flex min-h-9 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-medium shadow-hair transition-all duration-300 ${
         active
           ? 'bg-ink text-white opacity-100'
           : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0'

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { ConfiguratorLauncher } from '../components/Configurator';
 import { fetchCarWithHost, fetchSimilarCars } from '../lib/data/cars';
 import type { Car, Host } from '../data/types';
 import { unsplash } from '../lib/img';
@@ -27,6 +28,11 @@ const featureIcon: Record<string, IconName> = {
 
 export default function CarDetails() {
   const { slug } = useParams();
+  // A shared build link (`?build=1&view=N`) reopens the configurator on
+  // the exact frame the sender was looking at.
+  const [searchParams] = useSearchParams();
+  const autoOpenBuild = searchParams.get('build') === '1';
+  const sharedView = Number(searchParams.get('view')) || 0;
   const { isFavorite, toggleFavorite, toast } = useApp();
   const { isComparing, toggleCompare } = useCompare();
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -146,7 +152,15 @@ export default function CarDetails() {
               <span className="inline-flex items-center gap-1"><Icon name="pin" size={15} /> {car.location}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <ConfiguratorLauncher
+              car={car}
+              autoOpen={autoOpenBuild}
+              initialView={sharedView}
+              className="btn btn-accent-bright btn-sm"
+            >
+              <Icon name="sparkles" size={16} /> Build Your CX
+            </ConfiguratorLauncher>
             <button
               onClick={() => {
                 navigator.clipboard

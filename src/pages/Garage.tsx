@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
@@ -12,6 +12,7 @@ import { useCompare } from '../lib/compareStore';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, type Booking } from '../lib/data/bookings';
 import { useMyRewards } from '../lib/data/rewards';
+import { getSavedBuilds, removeBuild } from '../lib/data/carConfig';
 import { daysBetween } from '../components/BookingCard';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
@@ -145,6 +146,21 @@ export default function Garage() {
 
   const carsById = useMemo(() => new Map((allCars ?? []).map((c) => [c.id, c])), [allCars]);
   const favoriteCars = useMemo(() => (allCars ?? []).filter((c) => favorites.has(c.id)), [allCars, favorites]);
+
+  // Saved configurator builds — localStorage-backed today (see
+  // carConfig.ts); each is joined back to the real car record so a build
+  // for a delisted car simply drops out rather than rendering a ghost.
+  const [builds, setBuilds] = useState(() => getSavedBuilds());
+  const builtCars = useMemo(
+    () =>
+      builds
+        .map((build) => {
+          const car = (allCars ?? []).find((c) => c.id === build.carId);
+          return car ? { car, build } : null;
+        })
+        .filter((x): x is { car: Car; build: (typeof builds)[number] } => x !== null),
+    [builds, allCars],
+  );
   const bookedCarIds = useMemo(() => new Set((bookings ?? []).map((b) => b.car.id)), [bookings]);
 
   const sortedBookings = useMemo(
@@ -154,7 +170,7 @@ export default function Garage() {
   const recentlyDriven = sortedBookings.slice(0, 4);
 
   const loading = carsLoading || bookingsLoading || rewardsLoading;
-  const hasAnyData = favoriteCars.length > 0 || (bookings ?? []).length > 0;
+  const hasAnyData = favoriteCars.length > 0 || (bookings ?? []).length > 0 || builtCars.length > 0;
 
   // ---- Drive stats — every metric guarded, nothing shown without real data behind it.
   const stats = useMemo(() => {
@@ -330,6 +346,51 @@ export default function Garage() {
               <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {favoriteCars.map((car) => (
                   <CarCard key={car.id} car={car} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ================= MY BUILDS ================= */}
+          {builtCars.length > 0 && (
+            <section>
+              <SectionHead eyebrow="CX Configurator" title="My Builds" />
+              <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {builtCars.map(({ car, build }) => (
+                  <div key={car.id} className="card overflow-hidden">
+                    <Link to={`/cars/${car.slug}?build=1&view=${build.view}`} className="block">
+                      <div className="aspect-[4/3] overflow-hidden bg-panel-2">
+                        <img
+                          src={unsplash(car.images[Math.min(build.view, car.images.length - 1)] ?? car.images[0], 500)}
+                          alt={`${car.make} ${car.model}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    </Link>
+                    <div className="p-4">
+                      <p className="font-medium text-ink">
+                        {car.make} {car.model}
+                      </p>
+                      <p className="mt-0.5 text-[12.5px] text-muted">
+                        Saved {new Date(build.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </p>
+                      <div className="mt-3 flex gap-2">
+                        <Link
+                          to={`/cars/${car.slug}?build=1&view=${build.view}`}
+                          className="btn btn-secondary btn-sm flex-1"
+                        >
+                          Open build
+                        </Link>
+                        <button
+                          onClick={() => setBuilds(removeBuild(car.id))}
+                          aria-label="Remove build"
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line text-muted hover:border-ink hover:text-ink"
+                        >
+                          <Icon name="x" size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
