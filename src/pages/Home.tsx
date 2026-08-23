@@ -1,9 +1,11 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
+import { CarCard } from '../components/CarCard';
+import { ConciergeLauncher } from '../components/Concierge';
 import { useCars } from '../lib/data/cars';
 import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
 import { unsplash } from '../lib/img';
@@ -12,11 +14,53 @@ import { catalogue } from '../lib/catalogue';
 import { getFeaturedProducts } from '../lib/data/shop';
 import type { CarCategory } from '../data/types';
 
-// Code-split — the hero's live WebGL scene (and Three.js with it) only
-// downloads for visitors who reach the homepage, not every route.
-const Hero3D = lazy(() => import('../components/Hero3D'));
-
 const shopFeatured = getFeaturedProducts(4);
+
+/** The hero's photo — two matte-black supercars (McLaren 600LT, Mercedes-AMG
+ *  GTR) at a Mediterranean marina, real automotive editorial photography by
+ *  Flavien, free to use under the Unsplash License:
+ *  https://unsplash.com/photos/matte-black-sports-cars-in-monaco-GJuXN4uyB2U
+ *  `object-position` is tuned per breakpoint (see the <img> below) rather
+ *  than shipping a second cropped file — the same technique the brief asks
+ *  for ("use object-fit / object-position correctly") without a duplicate
+ *  asset to keep in sync. */
+const HERO_PHOTO = 'photo-1617814086906-d847a8bc6fca';
+
+/** On a narrow, tall viewport `object-fit: cover` alone can't help — with
+ *  nearly the whole (short, wide) source height forced into view to fill
+ *  the width, the car (which only occupies the source's lower half) ends
+ *  up a sliver at the bottom. This is the real "dedicated mobile crop"
+ *  the brief asks for: not a CSS position tweak, a genuinely different,
+ *  server-side, focal-point-zoomed crop of the same source photo — same
+ *  asset, no second file to keep in sync, but actually framed for a
+ *  portrait screen. */
+const HERO_PHOTO_MOBILE = `https://images.unsplash.com/${HERO_PHOTO}?auto=format&fit=crop&crop=focalpoint&fp-x=0.22&fp-y=0.48&fp-z=1.0&q=80&w=800&h=1800`;
+
+/** The hero photo, fading in once decoded (same `.imgfade`/`.loaded`
+ *  technique `Img` uses) — kept as its own small `<picture>` here rather
+ *  than extending the shared `Img` component for the one place on the
+ *  site that needs a breakpoint-swapped source. */
+function HeroPhoto() {
+  const ref = useRef<HTMLImageElement>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (ref.current?.complete) setLoaded(true);
+  }, []);
+
+  return (
+    <picture>
+      <source media="(max-width: 767px)" srcSet={HERO_PHOTO_MOBILE} />
+      <img
+        ref={ref}
+        src={unsplash(HERO_PHOTO, 2400)}
+        alt="A CX supercar at a Mediterranean marina, ready to drive"
+        onLoad={() => setLoaded(true)}
+        className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center sm:object-[30%_55%] lg:object-[38%_50%] xl:object-[42%_48%]`}
+      />
+    </picture>
+  );
+}
 
 const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'shield', label: 'Verified hosts' },
@@ -37,13 +81,16 @@ const trustStats: { value: number; decimals?: number; label: string }[] = [
  *  (also echoed in the hero trust row), the real /help + messaging-backed
  *  support channel (24/7 support), and profiles.verified host identity
  *  checks (verified hosts) are all live in the product today. */
-const benefits: { icon: IconName; title: string; description: string }[] = [
-  { icon: 'instant', title: 'Easy Booking', description: 'Book your car quickly and easily online.' },
-  { icon: 'pin', title: 'Flexible Pickup', description: 'Choose a convenient pickup location and time.' },
-  { icon: 'calendar', title: 'Free Cancellation', description: 'Plans change — cancel anytime before pick-up.' },
-  { icon: 'headset', title: '24/7 Support', description: 'Our team is available whenever you need assistance.' },
-  { icon: 'verified', title: 'Verified Hosts', description: 'Every host is identity-verified before listing.' },
-  { icon: 'sparkles', title: 'Premium Experience', description: 'A simple, modern and stress-free way to rent.' },
+/** The four pillars of the "Why CX" section — each maps to a real,
+ *  shippable capability: car listings are reviewed before publish,
+ *  profiles carry identity-verified host status, Booking.tsx offers a
+ *  free-cancellation fare tier, and the /help + messaging channel backs
+ *  the support claim. No aspirational copy. */
+const whyCx: { icon: IconName; title: string; description: string }[] = [
+  { icon: 'verified', title: 'Verified Cars', description: 'Every vehicle is carefully reviewed and verified before being listed.' },
+  { icon: 'shield', title: 'Trusted Hosts', description: 'Connect with verified hosts and transparent rental information.' },
+  { icon: 'calendar', title: 'Flexible Rentals', description: 'Flexible booking options and free cancellation where available.' },
+  { icon: 'headset', title: '24/7 Support', description: "We're here whenever you need us — before, during and after your journey." },
 ];
 
 /** The five categories the homepage spotlights, in display order. `key`
@@ -90,15 +137,38 @@ export default function Home() {
     }).filter((t) => t.count > 0);
   }, [allCars]);
 
+  // Top-rated cars, real data — the fleet rail right after the hero.
+  const fleetCars = useMemo(() => {
+    if (!allCars) return null;
+    return [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 8);
+  }, [allCars]);
+
   return (
     <div>
-      {/* ================= HERO — the car is the architecture ================= */}
-      <section className="relative overflow-hidden bg-bg">
-        <div className="grid lg:grid-cols-[minmax(0,43%)_1fr] lg:items-stretch">
-          {/* Content */}
-          <div className="relative z-10 flex flex-col justify-center px-5 py-14 sm:py-16 md:px-8 lg:px-10 lg:py-24 xl:px-12">
+      {/* ================= HERO — real photography, edge to edge ================= */}
+      <section className="relative isolate min-h-[100svh] overflow-hidden bg-noir sm:min-h-[92svh]">
+        <HeroPhoto />
+
+        {/* Grounding gradient — dark at the very top (headline) and the
+            very bottom (search bar), clear through the middle where the
+            car itself reads best. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/75" />
+        {/* A second, tighter scrim directly behind the headline column
+            only — the wide gradient above is deliberately gentle so the
+            car isn't muddied, this is what actually guarantees contrast. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/10 to-transparent" />
+        {/* The one CX-branded touch on the photo itself — a quiet green
+            wash, not a filter over the whole image. */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-80 mix-blend-screen"
+          style={{ background: 'radial-gradient(55% 45% at 12% 8%, rgba(0,212,71,0.16), transparent 70%)' }}
+        />
+
+        <div className="relative z-10 flex min-h-[100svh] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
+          {/* -------- Headline column -------- */}
+          <div className="max-w-xl">
             <Reveal>
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[12px] font-medium text-ink-soft">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
@@ -108,86 +178,194 @@ export default function Home() {
             </Reveal>
 
             <Reveal delay={80}>
-              <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.02em] text-ink text-balance sm:text-6xl xl:text-[4.25rem]">
-                Your next car
+              <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
+                <span className="text-white" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+                  Your next car
+                </span>
                 <br />
-                <span className="text-accent">is waiting.</span>
+                <span className="text-accent-bright" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+                  is waiting.
+                </span>
               </h1>
             </Reveal>
 
             <Reveal delay={140}>
-              <p className="mt-5 max-w-sm text-[17px] leading-relaxed text-muted text-pretty">
+              <p className="mt-5 max-w-md text-[17px] leading-relaxed text-white/85 text-pretty sm:text-[18.5px]">
                 Premium cars. Verified hosts. Ready for the road.
               </p>
             </Reveal>
 
-            <Reveal delay={190}>
+            <Reveal delay={200}>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link to="/browse" className="btn btn-accent-bright btn-lg">
+                  Explore Cars <Icon name="arrowRight" size={17} />
+                </Link>
+                <Link
+                  to="/list-your-car"
+                  className="btn btn-lg border border-white/25 bg-white/[0.08] text-white backdrop-blur-md hover:border-white/40 hover:bg-white/15"
+                >
+                  List Your Car
+                </Link>
+              </div>
+            </Reveal>
+
+            <Reveal delay={260}>
               <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5">
                 {trustRow.map((t) => (
-                  <span key={t.label} className="inline-flex items-center gap-2 text-[13.5px] font-medium text-ink-soft">
-                    <Icon name={t.icon} size={16} className="text-accent" />
+                  <span key={t.label} className="inline-flex items-center gap-2 text-[13px] font-medium text-white/75">
+                    <Icon name={t.icon} size={15} className="text-accent-bright/90" />
                     {t.label}
                   </span>
                 ))}
               </div>
             </Reveal>
-
-            <Reveal delay={240}>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Link to="/browse" className="btn btn-accent-bright btn-lg">
-                  Explore Cars <Icon name="arrowRight" size={17} />
-                </Link>
-                <Link to="/list-your-car" className="btn btn-secondary btn-lg">
-                  List Your Car
-                </Link>
-              </div>
-            </Reveal>
           </div>
 
-          {/* Edge-to-edge automotive visual — bleeds to the viewport's right
-              edge rather than sitting boxed inside the page container, so
-              the car reads as part of the page's structure, not a photo
-              dropped into a rounded card. A live WebGL scene instead of a
-              photo: real-time, not a rendered clip. */}
-          <div className="relative h-[320px] overflow-hidden bg-noir sm:h-[440px] lg:h-auto lg:min-h-[600px] xl:min-h-[660px]">
-            <Suspense fallback={<div className="skeleton absolute inset-0" />}>
-              <Hero3D />
-            </Suspense>
-            {/* Blends the scene's left edge into the page rather than a hard
-                seam — reads as one continuous composition on wide screens. */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-28 bg-gradient-to-r from-bg to-transparent lg:block" />
-          </div>
+          {/* -------- Search — the hero's own dark-glass bar, not a
+              separate light-page section -------- */}
+          <Reveal delay={340}>
+            <div className="mx-auto w-full max-w-4xl">
+              <SearchBar dark />
+            </div>
+          </Reveal>
         </div>
-
-        {/* Integrated search — cut into the seam of the hero photo instead
-            of floating in its own separate section below it. */}
-        <div className="relative z-10 px-5 md:px-8 xl:px-10">
-          <div className="mx-auto -mt-9 max-w-6xl sm:-mt-11 lg:-mt-16">
-            <Reveal delay={300}>
-              <SearchBar variant="hero" />
-            </Reveal>
-          </div>
-        </div>
-        <div className="h-10 sm:h-14 lg:h-16" />
       </section>
 
-      {/* ================= WHY CX — real platform benefits, no filler ================= */}
-      <section className="container-page mt-14 sm:mt-16">
-        <SectionHead eyebrow="Why CX" title="Everything you need, built in" />
-        <div className="mt-8 grid grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-3">
-          {benefits.map((b, i) => (
-            <Reveal key={b.title} delay={i * 60}>
-              <div className="card card-hover group flex h-full flex-col gap-3.5 p-5 sm:p-6">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent/10 text-accent transition-transform duration-300 ease-out group-hover:scale-110">
-                  <Icon name={b.icon} size={21} />
-                </span>
-                <div>
-                  <p className="font-display text-[15px] font-semibold text-ink">{b.title}</p>
-                  <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{b.description}</p>
+      {/* ================= FLEET — the rental experience starts right here ================= */}
+      <section className="mt-14 sm:mt-16">
+        <div className="container-page">
+          <SectionHead
+            eyebrow="Explore the CX Fleet"
+            title="Choose the car that fits your journey."
+            action={
+              <Link
+                to="/browse"
+                className="inline-flex items-center gap-1.5 text-[14.5px] font-medium text-accent transition-colors hover:text-accent-600"
+              >
+                View all cars <Icon name="arrowRight" size={15} />
+              </Link>
+            }
+          />
+        </div>
+        <div className="scrollbar-none mt-8 flex gap-4 overflow-x-auto px-5 pb-2 sm:px-8 xl:container-page xl:px-0">
+          {(fleetCars ?? Array.from({ length: 4 })).map((car, i) =>
+            car ? (
+              <Reveal key={car.id} delay={i * 60} className="w-[78vw] shrink-0 sm:w-[320px]">
+                <CarCard car={car} priority={i < 2} />
+              </Reveal>
+            ) : (
+              <div key={i} className="card w-[78vw] shrink-0 overflow-hidden sm:w-[320px]">
+                <div className="skeleton aspect-[4/3]" />
+                <div className="space-y-2 p-4">
+                  <div className="skeleton h-4 w-3/5 rounded-md" />
+                  <div className="skeleton h-3 w-2/5 rounded-md" />
                 </div>
               </div>
-            </Reveal>
-          ))}
+            ),
+          )}
+        </div>
+      </section>
+
+      {/* ================= CONCIERGE — find your CX ================= */}
+      <section className="container-page mt-16 sm:mt-20">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[1.75rem] bg-noir px-6 py-12 sm:px-12 sm:py-16">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-80"
+              style={{ background: 'radial-gradient(60% 60% at 85% 15%, rgba(0,212,71,0.18), transparent 62%)' }}
+            />
+            <div className="relative max-w-xl">
+              <p className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-accent-bright">
+                <Icon name="sparkles" size={14} /> CX Concierge
+              </p>
+              <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-4xl">
+                Find your CX
+              </h2>
+              <p className="mt-3 text-[15.5px] leading-relaxed text-on-noir-muted sm:text-[17px]">
+                Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
+              </p>
+              <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-7">
+                Start <Icon name="arrowRight" size={17} />
+              </ConciergeLauncher>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ================= WHY CX — premium automotive storytelling ================= */}
+      <section className="container-page mt-16 sm:mt-24">
+        <div className="relative overflow-hidden rounded-[2rem] bg-noir">
+          {/* Subtle CX-green glow, upper-right */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-80"
+            style={{ background: 'radial-gradient(45% 45% at 88% 12%, rgba(0,212,71,0.16), transparent 62%)' }}
+          />
+
+          <div className="relative grid lg:grid-cols-2 lg:items-stretch">
+            {/* -------- Automotive image (reuses the optimized hero photo) -------- */}
+            <div className="relative order-1 min-h-[260px] overflow-hidden sm:min-h-[340px] lg:order-none lg:min-h-full">
+              <Img
+                src={unsplash(HERO_PHOTO, 1400)}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover object-[40%_55%]"
+              />
+              {/* Blend the image into the dark panel on the seam side */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/70 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-noir" />
+            </div>
+
+            {/* -------- Benefits + trust -------- */}
+            <div className="order-2 px-6 py-10 sm:px-10 sm:py-14 lg:order-none lg:px-12">
+              <Reveal>
+                <p className="eyebrow text-accent-bright">Why CX</p>
+                <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-[2.75rem] sm:leading-[1.05]">
+                  Drive with confidence.
+                </h2>
+                <p className="mt-3 max-w-md text-[15.5px] leading-relaxed text-on-noir-muted sm:text-[17px]">
+                  Premium cars. Trusted hosts. A better way to rent.
+                </p>
+              </Reveal>
+
+              <div className="mt-8 grid gap-x-6 gap-y-7 sm:grid-cols-2">
+                {whyCx.map((b, i) => (
+                  <Reveal key={b.title} delay={120 + i * 80}>
+                    <div className="group flex flex-col gap-3">
+                      <span className="grid h-11 w-11 place-items-center rounded-xl border border-accent-bright/25 bg-accent-bright/10 text-accent-bright transition-transform duration-300 ease-out group-hover:scale-110">
+                        <Icon name={b.icon} size={20} />
+                      </span>
+                      <div>
+                        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-on-noir">{b.title}</p>
+                        <p className="mt-1.5 text-[13.5px] leading-relaxed text-on-noir-muted">{b.description}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+
+              {/* Trust row */}
+              <Reveal delay={460}>
+                <div className="mt-9 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-white/10 pt-6">
+                  {['Verified vehicles', 'Secure booking', 'Transparent pricing', 'Dedicated support'].map((t) => (
+                    <span key={t} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-on-noir-muted">
+                      <Icon name="check" size={14} className="text-accent-bright" /> {t}
+                    </span>
+                  ))}
+                </div>
+              </Reveal>
+            </div>
+          </div>
+
+          {/* -------- CTA band -------- */}
+          <Reveal>
+            <div className="relative flex flex-col items-start justify-between gap-5 border-t border-white/10 px-6 py-8 sm:flex-row sm:items-center sm:px-10 lg:px-12">
+              <div>
+                <p className="font-display text-xl font-semibold text-on-noir sm:text-2xl">Ready to drive?</p>
+                <p className="mt-1 text-[14px] text-on-noir-muted">Find your next car and start your journey.</p>
+              </div>
+              <Link to="/browse" className="btn btn-accent-bright btn-lg shrink-0">
+                Explore Cars <Icon name="arrowRight" size={17} />
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 

@@ -10,10 +10,13 @@ import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
 import { CartDrawer } from './components/shop/CartDrawer';
+import { CompareTray } from './components/CompareTray';
 
 import Home from './pages/Home';
 import Browse from './pages/Browse';
 import CarDetails from './pages/CarDetails';
+import Compare from './pages/Compare';
+import Garage from './pages/Garage';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
 import Booking from './pages/Booking';
@@ -136,6 +139,11 @@ export default function App() {
           </Route>
           <Route path="/browse" element={<Browse />} />
           <Route path="/cars/:slug" element={<CarDetails />} />
+          <Route path="/compare" element={<Compare />} />
+          {/* Not wrapped in ProtectedRoute — the page itself shows a
+              sign-in teaser for a signed-out visitor rather than a hard
+              redirect, per its own spec. */}
+          <Route path="/garage" element={<Garage />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/shop/:slug" element={<ProductDetails />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
@@ -169,6 +177,7 @@ export default function App() {
       </div>
       <BottomNav />
       <CartDrawer />
+      <CompareTray />
       <Toaster />
     </>
   );

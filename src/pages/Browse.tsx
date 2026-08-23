@@ -4,6 +4,7 @@ import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { CarCard } from '../components/CarCard';
 import { Icon } from '../components/Icon';
+import { ConciergeLauncher } from '../components/Concierge';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -15,6 +16,7 @@ const SORTS = [
   { id: 'recommended', label: 'Recommended' },
   { id: 'price-asc', label: 'Price: low to high' },
   { id: 'price-desc', label: 'Price: high to low' },
+  { id: 'newest', label: 'Newest' },
   { id: 'rating', label: 'Top rated' },
   { id: 'trips', label: 'Most booked' },
 ];
@@ -321,6 +323,7 @@ export default function Browse() {
     switch (sort) {
       case 'price-asc': out = [...out].sort((a, b) => a.pricePerDay - b.pricePerDay); break;
       case 'price-desc': out = [...out].sort((a, b) => b.pricePerDay - a.pricePerDay); break;
+      case 'newest': out = [...out].sort((a, b) => b.year - a.year); break;
       case 'rating': out = [...out].sort((a, b) => b.rating - a.rating); break;
       case 'trips': out = [...out].sort((a, b) => b.trips - a.trips); break;
     }
@@ -345,6 +348,19 @@ export default function Browse() {
 
   return (
     <div className="container-page py-8">
+      {/* Concierge entry — elegant, doesn't compete with the search bar below */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-line bg-noir px-5 py-4">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-bright">
+            <Icon name="sparkles" size={13} /> CX Concierge
+          </p>
+          <p className="mt-1 text-[14.5px] font-medium text-on-noir">Not sure which car? Tell us how you want to drive.</p>
+        </div>
+        <ConciergeLauncher className="btn btn-accent-bright shrink-0">
+          Find Your CX <Icon name="arrowRight" size={16} />
+        </ConciergeLauncher>
+      </div>
+
       {/* Top bar */}
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Browse cars</h1>

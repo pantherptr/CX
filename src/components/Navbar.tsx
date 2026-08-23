@@ -9,10 +9,10 @@ import { useShop } from '../lib/shopStore';
 import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 const links = [
-  { to: '/browse', label: 'Browse Cars' },
+  { to: '/browse', label: 'Cars' },
+  { to: '/how-it-works', label: 'How It Works' },
   { to: '/shop', label: 'CX Shop' },
   { to: '/list-your-car', label: 'List Your Car' },
-  { to: '/how-it-works', label: 'How It Works' },
   { to: '/about', label: 'About' },
 ];
 
@@ -66,14 +66,27 @@ function PublicNavbar() {
     return () => void (document.body.style.overflow = '');
   }, [menuOpen]);
 
+  // Only the homepage has a hero worth floating a transparent bar over —
+  // every other public page keeps the normal solid, in-flow header. The
+  // instant the visitor scrolls even 8px, it snaps to the same solid/glass
+  // treatment those pages already use, so there's exactly one "scrolled"
+  // look across the whole site, not two to keep in sync.
+  const transparent = pathname === '/' && !scrolled;
+
   return (
     <>
       <header
-        className={`sticky top-0 z-50 border-b bg-surface/95 backdrop-blur-xl transition-shadow duration-300 ${
-          scrolled ? 'border-line shadow-[0_1px_0_rgba(22,22,26,0.04)]' : 'border-transparent'
+        className={`z-50 border-b backdrop-blur-xl transition-all duration-300 ${
+          transparent
+            ? 'fixed inset-x-0 top-0 border-transparent bg-transparent'
+            : `sticky top-0 ${scrolled ? 'border-line bg-surface/90 shadow-[0_1px_0_rgba(22,22,26,0.04)]' : 'border-transparent bg-surface/70'}`
         }`}
       >
-        <nav className="container-page flex h-16 items-center justify-between gap-4">
+        <nav
+          className={`container-page flex items-center justify-between gap-4 transition-[height] duration-300 ${
+            scrolled ? 'h-14' : 'h-16'
+          }`}
+        >
           <div className="flex items-center gap-10">
             <Logo variant="auto" />
             <ul className="hidden items-center gap-0.5 lg:flex">
@@ -83,7 +96,13 @@ function PublicNavbar() {
                     to={l.to}
                     className={({ isActive }) =>
                       `group relative rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors ${
-                        isActive ? 'text-ink' : 'text-muted hover:text-ink'
+                        transparent
+                          ? isActive
+                            ? 'text-white'
+                            : 'text-white/75 hover:text-white'
+                          : isActive
+                            ? 'text-ink'
+                            : 'text-muted hover:text-ink'
                       }`
                     }
                   >
@@ -91,7 +110,7 @@ function PublicNavbar() {
                       <>
                         {l.label}
                         <span
-                          className={`absolute inset-x-3.5 -bottom-0.5 h-px rounded-full bg-accent transition-all duration-300 ${
+                          className={`absolute inset-x-3.5 -bottom-0.5 h-px rounded-full bg-accent-bright transition-all duration-300 ${
                             isActive
                               ? 'scale-x-100 opacity-100'
                               : 'scale-x-0 opacity-0 group-hover:scale-x-50 group-hover:opacity-40'
@@ -103,7 +122,11 @@ function PublicNavbar() {
                 </li>
               ))}
             </ul>
-            <DriveChallengeLauncher className="group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-[13.5px] font-semibold text-accent-700 transition-colors lg:inline-flex">
+            <DriveChallengeLauncher
+              className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-[13.5px] font-semibold transition-colors lg:inline-flex ${
+                transparent ? 'text-accent-bright' : 'text-accent-700'
+              }`}
+            >
               <span
                 className="pointer-events-none absolute inset-0 -z-10 rounded-lg opacity-0 blur-[10px] transition-opacity duration-300 group-hover:opacity-100"
                 style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
@@ -119,7 +142,7 @@ function PublicNavbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <CartButton />
+            <CartButton className={transparent ? '!text-white hover:!bg-white/10' : ''} />
             <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
               Create account
             </Link>
@@ -128,7 +151,11 @@ function PublicNavbar() {
               <Link
                 to="/dashboard"
                 aria-label="Your account"
-                className="pressable grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-line-strong bg-panel text-ink-soft transition-colors hover:border-ink"
+                className={`pressable grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border transition-colors ${
+                  transparent
+                    ? 'border-white/25 bg-white/10 text-white hover:border-white/50'
+                    : 'border-line-strong bg-panel text-ink-soft hover:border-ink'
+                }`}
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
@@ -140,13 +167,19 @@ function PublicNavbar() {
               <>
                 <Link
                   to="/login"
-                  className="pressable hidden text-[13.5px] font-medium text-ink-soft transition-colors hover:text-ink min-[420px]:inline-flex"
+                  className={`pressable hidden text-[13.5px] font-medium transition-colors min-[420px]:inline-flex ${
+                    transparent ? 'text-white/80 hover:text-white' : 'text-ink-soft hover:text-ink'
+                  }`}
                 >
                   Log in
                 </Link>
                 <Link
                   to="/login"
-                  className="pressable inline-flex h-9 items-center rounded-full border border-line-strong bg-surface px-4 text-[13.5px] font-semibold text-ink shadow-hair transition-colors duration-200 hover:border-ink hover:bg-panel"
+                  className={`pressable inline-flex h-9 items-center rounded-full border px-4 text-[13.5px] font-semibold transition-colors duration-200 ${
+                    transparent
+                      ? 'border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/15'
+                      : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'
+                  }`}
                 >
                   Sign in
                 </Link>
@@ -155,7 +188,9 @@ function PublicNavbar() {
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="grid h-10 w-10 place-items-center rounded-xl text-ink transition-colors hover:bg-panel lg:hidden"
+              className={`grid h-10 w-10 place-items-center rounded-xl transition-colors lg:hidden ${
+                transparent ? 'text-white hover:bg-white/10' : 'text-ink hover:bg-panel'
+              }`}
               aria-label="Open menu"
             >
               <Icon name="menu" size={22} />

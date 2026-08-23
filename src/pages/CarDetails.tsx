@@ -11,6 +11,7 @@ import { BookingCard } from '../components/BookingCard';
 import { HostCard } from '../components/HostCard';
 import { CarCard } from '../components/CarCard';
 import { useApp } from '../lib/store';
+import { useCompare } from '../lib/compareStore';
 import NotFound from './NotFound';
 
 const featureIcon: Record<string, IconName> = {
@@ -27,6 +28,7 @@ const featureIcon: Record<string, IconName> = {
 export default function CarDetails() {
   const { slug } = useParams();
   const { isFavorite, toggleFavorite, toast } = useApp();
+  const { isComparing, toggleCompare } = useCompare();
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
   const [similar, setSimilar] = useState<Car[]>([]);
@@ -101,6 +103,7 @@ export default function CarDetails() {
 
   const { car, host } = result;
   const fav = isFavorite(car.id);
+  const comparing = isComparing(car.id);
   const gallery = car.images;
 
   const specs: { icon: IconName; label: string; value: string }[] = [
@@ -160,6 +163,13 @@ export default function CarDetails() {
               className="btn btn-secondary btn-sm"
             >
               <Icon name="heart" size={16} fill={fav} className={fav ? 'text-[#e2384d]' : ''} /> {fav ? 'Saved' : 'Save'}
+            </button>
+            <button
+              onClick={() => toggleCompare(car.id)}
+              aria-pressed={comparing}
+              className={`btn btn-sm ${comparing ? '!border-ink !bg-ink !text-white' : 'btn-secondary'}`}
+            >
+              <Icon name="compare" size={16} /> {comparing ? 'Comparing' : 'Compare'}
             </button>
           </div>
         </div>

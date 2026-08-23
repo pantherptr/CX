@@ -357,7 +357,8 @@ export default function Booking() {
         <Icon name="chevronLeft" size={16} /> Back
       </button>
 
-      <div className="mb-8 max-w-2xl"><Stepper step={step} /></div>
+      <p className="eyebrow">Build Your Drive</p>
+      <div className="mb-8 mt-1 max-w-2xl"><Stepper step={step} /></div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
         <div className="min-w-0">
@@ -556,7 +557,7 @@ export default function Booking() {
               </button>
             ) : (
               <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-accent-bright btn-lg disabled:opacity-50">
-                Continue <Icon name="arrowRight" size={17} />
+                Continue to Book <Icon name="arrowRight" size={17} />
               </button>
             )}
           </div>
@@ -565,6 +566,7 @@ export default function Booking() {
         {/* Summary */}
         <aside>
           <div className="sticky top-[84px] card overflow-hidden">
+            <p className="px-4 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">Your CX Drive</p>
             <div className="flex gap-3.5 p-4">
               <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
               <div className="min-w-0">

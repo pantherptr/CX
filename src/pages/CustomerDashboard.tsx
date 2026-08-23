@@ -174,7 +174,10 @@ export default function CustomerDashboard() {
               {tier && <span className="badge badge-accent">{tier}</span>}
             </div>
           </div>
-          <Link to="/browse" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Book a car</Link>
+          <div className="flex items-center gap-2">
+            <Link to="/garage" className="btn btn-secondary btn-sm"><Icon name="key" size={16} /> CX Garage</Link>
+            <Link to="/browse" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Book a car</Link>
+          </div>
         </div>
 
         {/* Stats */}

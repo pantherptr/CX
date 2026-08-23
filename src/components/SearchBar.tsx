@@ -11,7 +11,16 @@ function today(offset = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }) {
+export function SearchBar({
+  variant = 'hero',
+  dark = false,
+}: {
+  variant?: 'hero' | 'compact';
+  /** The hero's own dark-glass treatment — sitting directly on a photo
+   *  instead of the page's off-white surface, so every field needs its
+   *  own light-on-dark palette rather than the site-wide default. */
+  dark?: boolean;
+}) {
   const navigate = useNavigate();
   const [location, setLocation] = useState('Milan');
   const [pickup, setPickup] = useState(today(3));
@@ -35,11 +44,17 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
     children: ReactNode;
   }) => (
     <div className="group flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-muted transition-colors group-focus-within:bg-accent-050 group-focus-within:text-accent">
+      <span
+        className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors ${
+          dark
+            ? 'bg-white/10 text-white/70 group-focus-within:bg-accent-bright/20 group-focus-within:text-accent-bright'
+            : 'bg-panel text-muted group-focus-within:bg-accent-050 group-focus-within:text-accent'
+        }`}
+      >
         <Icon name={icon} size={17} />
       </span>
       <label className="min-w-0 flex-1">
-        <span className="block text-[11px] font-semibold uppercase tracking-wide text-muted">
+        <span className={`block text-[11px] font-semibold uppercase tracking-wide ${dark ? 'text-white/50' : 'text-muted'}`}>
           {label}
         </span>
         {children}
@@ -47,24 +62,30 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
     </div>
   );
 
-  const selectCls =
-    'w-full appearance-none bg-transparent text-[15px] font-medium text-ink outline-none cursor-pointer -ml-0.5';
-  const dateCls =
-    'w-full bg-transparent text-[15px] font-medium text-ink outline-none cursor-pointer';
+  const selectCls = `w-full appearance-none bg-transparent text-[15px] font-medium outline-none cursor-pointer -ml-0.5 ${
+    dark ? 'text-white [color-scheme:dark]' : 'text-ink'
+  }`;
+  const dateCls = `w-full bg-transparent text-[15px] font-medium outline-none cursor-pointer ${
+    dark ? 'text-white [color-scheme:dark]' : 'text-ink'
+  }`;
 
   return (
     <div
       className={`w-full ${
-        variant === 'hero'
-          ? 'rounded-[1.75rem] border border-line bg-surface p-2.5 shadow-pop'
-          : 'rounded-2xl border border-line bg-surface p-1.5 shadow-soft'
+        dark
+          ? 'rounded-[1.75rem] border border-white/15 bg-black/45 p-2.5 shadow-2xl backdrop-blur-2xl'
+          : variant === 'hero'
+            ? 'rounded-[1.75rem] border border-line bg-surface p-2.5 shadow-pop'
+            : 'rounded-2xl border border-line bg-surface p-1.5 shadow-soft'
       }`}
     >
-      <div className="flex flex-col divide-y divide-line md:flex-row md:divide-x md:divide-y-0">
-        <Field label="Location" icon="pin">
+      <div className={`flex flex-col divide-y md:flex-row md:divide-x md:divide-y-0 ${dark ? 'divide-white/10' : 'divide-line'}`}>
+        <Field label="Where" icon="pin">
           <select value={location} onChange={(e) => setLocation(e.target.value)} className={selectCls}>
             {cities.map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c} className="text-ink">
+                {c}
+              </option>
             ))}
           </select>
         </Field>
@@ -80,7 +101,9 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
         <Field label="Car type" icon="car">
           <select value={type} onChange={(e) => setType(e.target.value)} className={selectCls}>
             {types.map((t) => (
-              <option key={t}>{t}</option>
+              <option key={t} className="text-ink">
+                {t}
+              </option>
             ))}
           </select>
         </Field>
@@ -88,10 +111,10 @@ export function SearchBar({ variant = 'hero' }: { variant?: 'hero' | 'compact' }
         <div className="flex items-center p-2 md:pl-2">
           <button
             onClick={submit}
-            className="btn btn-accent btn-block h-full min-h-[52px] gap-2 md:w-auto md:px-6"
+            className={`btn btn-block h-full min-h-[52px] gap-2 md:w-auto md:px-6 ${dark ? 'btn-accent-bright' : 'btn-accent'}`}
           >
             <Icon name="search" size={18} strokeWidth={2} />
-            <span className="md:hidden lg:inline">Search</span>
+            <span className="md:hidden lg:inline">Search Cars</span>
           </button>
         </div>
       </div>

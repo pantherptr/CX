@@ -4,9 +4,36 @@ import type { Car } from '../data/types';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
+import { useCompare } from '../lib/compareStore';
 import { Icon } from './Icon';
 import { Img, useTilt } from './motion';
 import { CarQuickView } from './CarQuickView';
+
+/** Mirrors the "Quick view" pill's hover-reveal behaviour exactly — stays
+ *  quiet until the card is noticed, but stays fully visible (not just on
+ *  hover) once the car is actually in the comparison set, so the state
+ *  itself is the persistent signal, not the hover. */
+function CompareToggle({ carId }: { carId: string }) {
+  const { isComparing, toggleCompare } = useCompare();
+  const active = isComparing(carId);
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        toggleCompare(carId);
+      }}
+      aria-label={active ? 'Remove from compare' : 'Add to compare'}
+      aria-pressed={active}
+      className={`pressable absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium shadow-hair transition-all duration-300 ${
+        active
+          ? 'bg-ink text-white opacity-100'
+          : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0'
+      }`}
+    >
+      <Icon name={active ? 'check' : 'compare'} size={13} /> {active ? 'Comparing' : 'Compare'}
+    </button>
+  );
+}
 
 function FavButton({ carId }: { carId: string }) {
   const { isFavorite, toggleFavorite } = useApp();
@@ -128,6 +155,7 @@ export function CarCard({
             <div className="absolute right-3 top-3">
               <FavButton carId={car.id} />
             </div>
+            <CompareToggle carId={car.id} />
 
             {/* Quick view — hover-revealed on desktop, always faintly present on touch. */}
             <button
