@@ -35,14 +35,14 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
-          <p className="truncate text-[14.5px] font-medium text-ink">{c.other.name}</p>
-          {c.lastMessage && <span className="shrink-0 text-[11.5px] text-faint">{fmtTime(c.lastMessage.createdAt)}</span>}
+          <p className="truncate text-body font-medium text-ink">{c.other.name}</p>
+          {c.lastMessage && <span className="shrink-0 text-label text-faint">{fmtTime(c.lastMessage.createdAt)}</span>}
         </div>
-        {c.car && <p className="truncate text-[12px] text-accent">{c.car.make} {c.car.model}</p>}
-        <p className="truncate text-[13px] text-muted">{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
+        {c.car && <p className="truncate text-caption text-accent">{c.car.make} {c.car.model}</p>}
+        <p className="truncate text-detail text-muted">{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
       </div>
       {c.unreadCount > 0 && (
-        <span className="grid h-5 w-5 shrink-0 place-items-center self-start rounded-full bg-accent text-[11px] font-semibold text-white">
+        <span className="grid h-5 w-5 shrink-0 place-items-center self-start rounded-full bg-accent text-label font-semibold text-white">
           {c.unreadCount}
         </span>
       )}
@@ -122,7 +122,7 @@ export default function Messages() {
               <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="message" size={20} /></span>
                 <p className="mt-1 font-medium text-ink">No conversations yet</p>
-                <p className="max-w-xs text-[13px] text-muted">Message a host from any car to start a conversation.</p>
+                <p className="max-w-xs text-detail text-muted">Message a host from any car to start a conversation.</p>
                 <Link to="/browse" className="btn btn-primary btn-sm mt-2">Browse cars</Link>
               </div>
             )}
@@ -150,7 +150,7 @@ export default function Messages() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-ink">{active.other.name}</p>
-                  {active.car && <p className="truncate text-[12.5px] text-muted">{active.car.make} {active.car.model}</p>}
+                  {active.car && <p className="truncate text-caption text-muted">{active.car.make} {active.car.model}</p>}
                 </div>
                 {active.car && (
                   <Link to={`/cars/${active.car.slug}`} className="btn btn-secondary btn-sm shrink-0">
@@ -167,7 +167,7 @@ export default function Messages() {
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <p className="text-[13.5px] text-muted">Say hello — this is the start of your conversation.</p>
+                    <p className="text-detail text-muted">Say hello — this is the start of your conversation.</p>
                   </div>
                 ) : (
                   messages.map((m, i) => {
@@ -177,14 +177,14 @@ export default function Messages() {
                       <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                         <div className="max-w-[78%] sm:max-w-[65%]">
                           <div
-                            className={`rounded-2xl px-4 py-2.5 text-[14.5px] leading-snug ${
+                            className={`rounded-2xl px-4 py-2.5 text-body leading-snug ${
                               mine ? 'bg-ink text-white rounded-br-md' : 'bg-surface text-ink border border-line rounded-bl-md'
                             }`}
                           >
                             {m.body}
                           </div>
                           {showTail && (
-                            <p className={`mt-1 flex items-center gap-1 text-[11px] text-faint ${mine ? 'justify-end' : ''}`}>
+                            <p className={`mt-1 flex items-center gap-1 text-label text-faint ${mine ? 'justify-end' : ''}`}>
                               {fmtTime(m.createdAt)}
                               {mine && <Icon name="check" size={13} className={m.readAt ? 'text-accent' : 'text-faint'} />}
                             </p>
@@ -204,7 +204,7 @@ export default function Messages() {
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !sending && send()}
                     placeholder="Write a message…"
-                    className="min-w-0 flex-1 bg-transparent px-2 text-[14.5px] text-ink outline-none placeholder:text-faint"
+                    className="min-w-0 flex-1 bg-transparent px-2 text-body text-ink outline-none placeholder:text-faint"
                   />
                   <button onClick={send} disabled={!text.trim() || sending} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white transition-opacity disabled:opacity-40" aria-label="Send">
                     <Icon name="send" size={17} />

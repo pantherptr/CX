@@ -83,7 +83,7 @@ export function DashboardShell({
         <div className="hairline" />
       </div>
       <nav className="flex-1 overflow-y-auto p-3">
-        <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+        <p className="px-3 py-2 text-label font-semibold uppercase tracking-wide text-faint">
           {variant === 'customer' ? 'Traveller' : 'Hosting'}
         </p>
         <ul className="flex flex-col gap-0.5">
@@ -91,7 +91,7 @@ export function DashboardShell({
             if (n.isDrive) {
               return (
                 <li key={n.label}>
-                  <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-[14.5px] font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
+                  <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-body font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
                     <span
                       className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                       style={{ background: 'radial-gradient(120px 40px at 0% 50%, rgba(0,212,71,0.22), transparent 75%)' }}
@@ -113,14 +113,14 @@ export function DashboardShell({
                 <NavLink
                   to={n.to}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium transition-colors ${
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium transition-colors ${
                     isActive ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                   }`}
                 >
                   <Icon name={n.icon} size={19} className={isActive ? 'text-white' : 'text-muted'} />
                   <span className="flex-1">{n.label}</span>
                   {n.badge && (
-                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px] font-semibold ${isActive ? 'bg-white/20 text-white' : 'bg-accent text-white'}`}>
+                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-label font-semibold ${isActive ? 'bg-white/20 text-white' : 'bg-accent text-white'}`}>
                       {n.badge}
                     </span>
                   )}
@@ -135,7 +135,7 @@ export function DashboardShell({
             <div className="flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
               <Link
                 to="/dashboard"
-                className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
                   variant === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                 }`}
               >
@@ -143,7 +143,7 @@ export function DashboardShell({
               </Link>
               <Link
                 to="/host"
-                className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
                   variant === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                 }`}
               >
@@ -156,10 +156,10 @@ export function DashboardShell({
         {!(isHost && variant === 'customer') && (
         <div className="mt-4 px-1">
           <div className="rounded-2xl border border-line bg-panel/60 p-4">
-            <p className="text-[13px] font-medium text-ink">
+            <p className="text-detail font-medium text-ink">
               {variant === 'customer' ? 'Earn with your car' : 'Grow your fleet'}
             </p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+            <p className="mt-1 text-caption leading-relaxed text-muted">
               {variant === 'customer'
                 ? 'List a car and start earning on the days you’re not driving.'
                 : 'Add another vehicle and increase your monthly income.'}
@@ -182,8 +182,8 @@ export function DashboardShell({
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
-            <p className="truncate text-[12px] text-muted">{displayEmail}</p>
+            <p className="truncate text-detail font-medium text-ink">{displayName}</p>
+            <p className="truncate text-caption text-muted">{displayEmail}</p>
           </div>
           <button onClick={handleSignOut} className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel" aria-label="Sign out">
             <Icon name="logout" size={17} />
@@ -219,12 +219,12 @@ export function DashboardShell({
               <NavLink
                 to={n.to}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
               >
                 <Icon name={n.icon} size={19} className="text-muted" />
                 <span className="flex-1">{n.label}</span>
                 {n.badge && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
                     {n.badge}
                   </span>
                 )}
@@ -244,11 +244,11 @@ export function DashboardShell({
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
-            <p className="truncate text-[12px] text-muted">{displayEmail}</p>
+            <p className="truncate text-detail font-medium text-ink">{displayName}</p>
+            <p className="truncate text-caption text-muted">{displayEmail}</p>
           </div>
         </div>
-        <button onClick={handleSignOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14.5px] text-danger hover:bg-panel">
+        <button onClick={handleSignOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel">
           <Icon name="logout" size={19} />
           Sign out
         </button>
@@ -333,13 +333,13 @@ export function StatCard({
           <Icon name={icon} size={20} />
         </span>
         {trend && (
-          <span className={`inline-flex items-center gap-1 text-[12.5px] font-medium ${accent ? 'text-accent-100' : 'text-accent'}`}>
+          <span className={`inline-flex items-center gap-1 text-caption font-medium ${accent ? 'text-accent-100' : 'text-accent'}`}>
             <Icon name="trending" size={14} /> {trend}
           </span>
         )}
       </div>
       <p ref={countTo !== undefined ? countRef : undefined} className={`mt-4 font-display text-2xl font-semibold ${accent ? 'text-white' : 'text-ink'}`}>{display}</p>
-      <p className={`mt-0.5 text-[13px] ${accent ? 'text-white/60' : 'text-muted'}`}>{label}</p>
+      <p className={`mt-0.5 text-detail ${accent ? 'text-white/60' : 'text-muted'}`}>{label}</p>
     </div>
   );
 }

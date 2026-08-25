@@ -83,7 +83,7 @@ function StatTile({ icon, value, label }: { icon: IconName; value: string | numb
       <p ref={numeric !== undefined ? ref : undefined} className="mt-2 font-display text-2xl font-semibold text-white tabular-nums">
         {numeric !== undefined ? animated : value}
       </p>
-      <p className="mt-0.5 text-[12.5px] text-white/60">{label}</p>
+      <p className="mt-0.5 text-caption text-white/60">{label}</p>
     </div>
   );
 }
@@ -98,11 +98,11 @@ function DriveHistoryRow({ booking, isLast }: { booking: Booking; isLast: boolea
         <Icon name="car" size={15} />
       </span>
       <Link to={`/cars/${booking.car.slug}`} className="group min-w-0 flex-1">
-        <p className="font-display text-[15px] font-semibold text-ink group-hover:text-accent-700">
+        <p className="font-display text-copy font-semibold text-ink group-hover:text-accent-700">
           {booking.car.make} {booking.car.model}
         </p>
-        <p className="mt-0.5 text-[13px] text-muted">{fmtMonthYear(booking.startDate)}</p>
-        <p className="mt-1 text-[13px] text-ink-soft">
+        <p className="mt-0.5 text-detail text-muted">{fmtMonthYear(booking.startDate)}</p>
+        <p className="mt-1 text-detail text-ink-soft">
           {route} · {days} {days === 1 ? 'day' : 'days'}
         </p>
       </Link>
@@ -121,10 +121,10 @@ function GarageCarCard({ booking }: { booking: Booking }) {
         <p className="font-medium text-ink">
           {booking.car.make} {booking.car.model}
         </p>
-        <p className="mt-0.5 text-[13px] text-muted">
+        <p className="mt-0.5 text-detail text-muted">
           {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)}
         </p>
-        <p className="mt-1 flex items-center gap-1 text-[13px] text-ink-soft">
+        <p className="mt-1 flex items-center gap-1 text-detail text-ink-soft">
           <Icon name="pin" size={12} /> {booking.pickupLocation || booking.car.location}
         </p>
         <Link to={`/cars/${booking.car.slug}`} className="btn btn-secondary btn-sm btn-block mt-3">
@@ -253,7 +253,7 @@ export default function Garage() {
             <h1 className="mt-6 font-display text-3xl font-semibold text-on-noir sm:text-5xl">Your personal CX Garage</h1>
           </Reveal>
           <Reveal delay={140}>
-            <p className="mt-3 max-w-md text-[15.5px] leading-relaxed text-on-noir-muted">
+            <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted">
               Sign in to save cars, track your drives and build your collection.
             </p>
           </Reveal>
@@ -287,7 +287,7 @@ export default function Garage() {
             <h1 className="mt-2 font-display text-4xl font-semibold text-on-noir sm:text-6xl">My CX Garage</h1>
           </Reveal>
           <Reveal delay={140}>
-            <p className="mt-3 max-w-md text-[16px] leading-relaxed text-on-noir-muted sm:text-[18px]">
+            <p className="mt-3 max-w-md text-lead leading-relaxed text-on-noir-muted sm:text-feature">
               Your cars. Your drives. Your CX.
             </p>
           </Reveal>
@@ -314,7 +314,7 @@ export default function Garage() {
             <Icon name="car" size={26} />
           </span>
           <h2 className="mt-5 font-display text-2xl font-semibold text-ink">Your Garage is empty</h2>
-          <p className="mx-auto mt-2 max-w-sm text-[14.5px] text-muted">Start building your CX Garage — save cars you love and book your first drive.</p>
+          <p className="mx-auto mt-2 max-w-sm text-body text-muted">Start building your CX Garage — save cars you love and book your first drive.</p>
           <Link to="/browse" className="btn btn-accent-bright btn-lg mt-6">
             Explore Cars <Icon name="arrowRight" size={17} />
           </Link>
@@ -371,7 +371,7 @@ export default function Garage() {
                       <p className="font-medium text-ink">
                         {car.make} {car.model}
                       </p>
-                      <p className="mt-0.5 text-[12.5px] text-muted">
+                      <p className="mt-0.5 text-caption text-muted">
                         Saved {new Date(build.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </p>
                       <div className="mt-3 flex gap-2">
@@ -428,28 +428,28 @@ export default function Garage() {
                   <SectionHead title="Your Drive Stats" />
                   <dl className="mt-6 grid grid-cols-2 gap-3">
                     <div className="card p-4">
-                      <dt className="text-[12px] text-muted">Total rentals</dt>
+                      <dt className="text-caption text-muted">Total rentals</dt>
                       <dd className="mt-1 font-display text-xl font-semibold text-ink">{stats.totalRentals}</dd>
                     </div>
                     <div className="card p-4">
-                      <dt className="text-[12px] text-muted">Total rental days</dt>
+                      <dt className="text-caption text-muted">Total rental days</dt>
                       <dd className="mt-1 font-display text-xl font-semibold text-ink">{stats.totalDays}</dd>
                     </div>
                     {stats.favoriteCategory && (
                       <div className="card p-4">
-                        <dt className="text-[12px] text-muted">Favourite category</dt>
+                        <dt className="text-caption text-muted">Favourite category</dt>
                         <dd className="mt-1 font-display text-xl font-semibold text-ink">{stats.favoriteCategory}</dd>
                       </div>
                     )}
                     {stats.topBrand && (
                       <div className="card p-4">
-                        <dt className="text-[12px] text-muted">Most rented brand</dt>
+                        <dt className="text-caption text-muted">Most rented brand</dt>
                         <dd className="mt-1 font-display text-xl font-semibold text-ink">{stats.topBrand}</dd>
                       </div>
                     )}
                     {stats.topLocation && (
                       <div className="card col-span-2 p-4">
-                        <dt className="text-[12px] text-muted">Most visited location</dt>
+                        <dt className="text-caption text-muted">Most visited location</dt>
                         <dd className="mt-1 font-display text-xl font-semibold text-ink">{stats.topLocation}</dd>
                       </div>
                     )}
@@ -472,7 +472,7 @@ export default function Garage() {
                       <span className={`grid h-10 w-10 place-items-center rounded-full ${b.unlocked ? 'bg-accent-bright/15 text-accent-700' : 'bg-panel-2 text-faint'}`}>
                         <Icon name={b.unlocked ? b.icon : 'lock'} size={17} />
                       </span>
-                      <p className="text-[11.5px] font-semibold uppercase tracking-wide text-ink">{b.label}</p>
+                      <p className="text-label font-semibold uppercase tracking-wide text-ink">{b.label}</p>
                     </div>
                   ))}
                 </div>
@@ -496,20 +496,20 @@ export default function Garage() {
                   <h3 className="font-display text-2xl font-semibold text-ink">
                     {carOfTheWeek.make} {carOfTheWeek.model}
                   </h3>
-                  <p className="mt-2 text-[14.5px] leading-relaxed text-muted line-clamp-3">{carOfTheWeek.description}</p>
+                  <p className="mt-2 text-body leading-relaxed text-muted line-clamp-3">{carOfTheWeek.description}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {[
                       { icon: 'seat' as IconName, v: `${carOfTheWeek.seats} seats` },
                       { icon: 'gear' as IconName, v: carOfTheWeek.transmission },
                       { icon: 'gas' as IconName, v: carOfTheWeek.fuel },
                     ].map((s) => (
-                      <span key={s.v} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[13px] text-ink-soft">
+                      <span key={s.v} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-detail text-ink-soft">
                         <Icon name={s.icon} size={14} className="text-muted" /> {s.v}
                       </span>
                     ))}
                   </div>
-                  <p className="mt-4 text-[18px] font-semibold text-ink">
-                    {eur(carOfTheWeek.pricePerDay)} <span className="text-[13px] font-normal text-muted">/ day</span>
+                  <p className="mt-4 text-feature font-semibold text-ink">
+                    {eur(carOfTheWeek.pricePerDay)} <span className="text-detail font-normal text-muted">/ day</span>
                   </p>
                   <Link to={`/cars/${carOfTheWeek.slug}`} className="btn btn-accent-bright btn-lg mt-5 w-fit">
                     Discover Car <Icon name="arrowRight" size={17} />
@@ -541,11 +541,11 @@ export default function Garage() {
               style={{ background: 'radial-gradient(55% 55% at 85% 20%, rgba(0,212,71,0.16), transparent 62%)' }}
             />
             <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-accent-bright">
+              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">
                 <Icon name="sparkles" size={14} /> CX Concierge
               </p>
               <h2 className="mt-3 font-display text-2xl font-semibold text-on-noir sm:text-3xl">Find my next CX</h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-on-noir-muted">
+              <p className="mt-2 text-copy leading-relaxed text-on-noir-muted">
                 Tell us how you want to drive — we'll match you to the right car from your fleet, personalised to your Garage.
               </p>
               <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-6">

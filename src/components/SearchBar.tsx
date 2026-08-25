@@ -54,7 +54,7 @@ export function SearchBar({
         <Icon name={icon} size={17} />
       </span>
       <label className="min-w-0 flex-1">
-        <span className={`block text-[11px] font-semibold uppercase tracking-wide ${dark ? 'text-white/50' : 'text-muted'}`}>
+        <span className={`block text-label font-semibold uppercase tracking-wide ${dark ? 'text-white/50' : 'text-muted'}`}>
           {label}
         </span>
         {children}
@@ -62,10 +62,10 @@ export function SearchBar({
     </div>
   );
 
-  const selectCls = `w-full appearance-none bg-transparent text-[15px] font-medium outline-none cursor-pointer -ml-0.5 ${
+  const selectCls = `w-full appearance-none bg-transparent text-copy font-medium outline-none cursor-pointer -ml-0.5 ${
     dark ? 'text-white [color-scheme:dark]' : 'text-ink'
   }`;
-  const dateCls = `w-full bg-transparent text-[15px] font-medium outline-none cursor-pointer ${
+  const dateCls = `w-full bg-transparent text-copy font-medium outline-none cursor-pointer ${
     dark ? 'text-white [color-scheme:dark]' : 'text-ink'
   }`;
 

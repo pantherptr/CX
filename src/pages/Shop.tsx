@@ -81,18 +81,18 @@ export default function Shop() {
         />
         <div className="container-page relative py-16 text-center sm:py-24">
           <Reveal>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-accent-bright">CX Automotive Experience</p>
+            <p className="text-caption font-semibold uppercase tracking-[0.24em] text-accent-bright">CX Automotive Experience</p>
           </Reveal>
           <Reveal delay={80}>
             <h1 className="mt-4 font-display text-4xl font-semibold text-on-noir sm:text-6xl">CX Shop</h1>
           </Reveal>
           <Reveal delay={140}>
-            <p className="mx-auto mt-4 max-w-lg text-[16px] leading-relaxed text-on-noir-muted sm:text-[18px]">
+            <p className="mx-auto mt-4 max-w-lg text-lead leading-relaxed text-on-noir-muted sm:text-feature">
               Everything for your drive.
             </p>
           </Reveal>
           <Reveal delay={190}>
-            <p className="mx-auto mt-2 max-w-md text-[14px] text-on-noir-muted/80">
+            <p className="mx-auto mt-2 max-w-md text-body text-on-noir-muted/80">
               Upgrade your drive with CX essentials.
             </p>
           </Reveal>
@@ -119,7 +119,7 @@ export default function Shop() {
                     <Icon name={t.icon} size={17} />
                   </span>
                   <h3 className="mt-3 font-display text-xl font-semibold text-white">{t.label}</h3>
-                  <p className="mt-1 text-[13px] text-white/70">{t.desc}</p>
+                  <p className="mt-1 text-detail text-white/70">{t.desc}</p>
                 </div>
               </button>
             </Reveal>
@@ -156,10 +156,10 @@ export default function Shop() {
                 <div className="flex flex-col justify-center p-6 sm:p-9">
                   <p className="eyebrow">Save when you drive prepared</p>
                   <h2 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">{bundle.name}</h2>
-                  <p className="mt-2 text-[14.5px] text-muted">{bundle.tagline}</p>
+                  <p className="mt-2 text-body text-muted">{bundle.tagline}</p>
                   <ul className="mt-4 flex flex-col gap-1.5">
                     {bundleProducts.map((p) => (
-                      <li key={p.id} className="flex items-center gap-2 text-[13.5px] text-ink-soft">
+                      <li key={p.id} className="flex items-center gap-2 text-detail text-ink-soft">
                         <Icon name="check" size={14} className="text-accent" /> {p.name}
                       </li>
                     ))}
@@ -167,7 +167,7 @@ export default function Shop() {
                   <div className="mt-5 flex flex-wrap items-end gap-3">
                     <p className="text-ink">
                       <span className="text-2xl font-semibold">{eur(bundle.price)}</span>
-                      <span className="ml-2 text-[14px] text-faint line-through">{eur(bundleIndividualTotal(bundle))}</span>
+                      <span className="ml-2 text-body text-faint line-through">{eur(bundleIndividualTotal(bundle))}</span>
                     </p>
                     <span className="badge badge-accent">Save {eur(bundleSavings)}</span>
                   </div>
@@ -199,7 +199,7 @@ export default function Shop() {
                     <button
                       key={s.id}
                       onClick={() => { setSort(s.id); setSortOpen(false); }}
-                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
                     >
                       {s.label}
                       {sort === s.id && <Icon name="check" size={16} className="text-accent" />}
@@ -220,7 +220,7 @@ export default function Shop() {
         </div>
 
         {products.length === 0 ? (
-          <p className="mt-10 text-center text-[14px] text-muted">No products match this filter yet.</p>
+          <p className="mt-10 text-center text-body text-muted">No products match this filter yet.</p>
         ) : (
           <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((p, i) => (

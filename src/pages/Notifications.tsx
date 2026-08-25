@@ -13,7 +13,7 @@ export default function Notifications() {
     <DashboardShell variant="customer" active="Notifications">
       <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
         <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Notifications</h1>
-        <p className="mt-1 text-[14px] text-muted">
+        <p className="mt-1 text-body text-muted">
           Booking updates, messages and account activity will show up here.
         </p>
 
@@ -22,7 +22,7 @@ export default function Notifications() {
             <Icon name="bell" size={26} />
           </span>
           <h2 className="mt-2 font-display text-xl font-semibold text-ink">You're all caught up</h2>
-          <p className="max-w-sm text-[14px] text-muted">
+          <p className="max-w-sm text-body text-muted">
             No notifications yet. Book a trip or list a car and we'll let you know the moment
             something needs your attention.
           </p>

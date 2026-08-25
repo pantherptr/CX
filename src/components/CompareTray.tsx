@@ -46,10 +46,10 @@ export function CompareTray() {
           })}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium text-ink">
+          <p className="text-detail font-medium text-ink">
             {ids.length} car{ids.length > 1 ? 's' : ''} to compare
           </p>
-          <button onClick={clearCompare} className="text-[12px] text-muted transition-colors hover:text-ink">
+          <button onClick={clearCompare} className="text-caption text-muted transition-colors hover:text-ink">
             Clear all
           </button>
         </div>

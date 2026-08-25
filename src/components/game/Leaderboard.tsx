@@ -41,7 +41,7 @@ export function Leaderboard({
 
   return (
     <div className="w-full max-w-sm">
-      <p className="flex items-center justify-center gap-2 text-center text-[12px] font-semibold uppercase tracking-wide text-white/60">
+      <p className="flex items-center justify-center gap-2 text-center text-caption font-semibold uppercase tracking-wide text-white/60">
         <img src="/cx-drive-challenge-icon.png" alt="" className="h-5 w-5 rounded object-cover" style={{ objectPosition: '50% 12%' }} />
         <Icon name="trophy" size={14} /> CX Drivers
       </p>
@@ -50,7 +50,7 @@ export function Leaderboard({
           <button
             key={t.id}
             onClick={() => setPeriod(t.id)}
-            className={`flex-1 rounded-lg py-1.5 text-[12.5px] font-medium transition-colors ${
+            className={`flex-1 rounded-lg py-1.5 text-caption font-medium transition-colors ${
               period === t.id ? 'bg-white text-noir' : 'text-white/55 hover:text-white'
             }`}
           >
@@ -64,7 +64,7 @@ export function Leaderboard({
             <div key={i} className="skeleton h-12 rounded-xl" />
           ))}
         {entries?.length === 0 && (
-          <p className="py-6 text-center text-[13px] text-white/45">No runs yet — be the first.</p>
+          <p className="py-6 text-center text-detail text-white/45">No runs yet — be the first.</p>
         )}
         {entries?.map((e, i) => {
           const isMe = !!currentUserId && e.userId === currentUserId;
@@ -101,7 +101,7 @@ export function Leaderboard({
                     style={{ color: MEDAL_COLOR[i], filter: `drop-shadow(0 0 5px ${MEDAL_COLOR[i]}88)` }}
                   />
                 ) : (
-                  <span className="text-[12.5px] font-semibold text-white/45">#{i + 1}</span>
+                  <span className="text-caption font-semibold text-white/45">#{i + 1}</span>
                 )}
               </span>
               {e.avatar ? (
@@ -120,16 +120,16 @@ export function Leaderboard({
                 </span>
               )}
               <span className="min-w-0 flex-1">
-                <span className={`block truncate text-[13.5px] font-medium ${isMe ? 'text-accent-bright' : 'text-white'}`}>
+                <span className={`block truncate text-detail font-medium ${isMe ? 'text-accent-bright' : 'text-white'}`}>
                   {isMe ? 'You' : e.name}
                 </span>
                 {isElite && (
-                  <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-accent-bright/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-accent-bright">
+                  <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-accent-bright/15 px-1.5 py-0.5 text-nano font-bold uppercase tracking-wide text-accent-bright">
                     <Icon name="sparkles" size={9} /> Top 1%
                   </span>
                 )}
               </span>
-              <span className={`shrink-0 font-semibold tabular-nums text-accent-bright ${isFirst ? 'text-[15px]' : 'text-[13.5px]'}`}>
+              <span className={`shrink-0 font-semibold tabular-nums text-accent-bright ${isFirst ? 'text-copy' : 'text-detail'}`}>
                 {e.score.toLocaleString()}
               </span>
             </div>

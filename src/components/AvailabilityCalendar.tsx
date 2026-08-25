@@ -123,7 +123,7 @@ export function AvailabilityCalendar({
         >
           <Icon name="chevronLeft" size={18} />
         </button>
-        <p className="font-display text-[15px] font-semibold text-ink">
+        <p className="font-display text-copy font-semibold text-ink">
           {MONTH_NAMES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
         </p>
         <button
@@ -138,7 +138,7 @@ export function AvailabilityCalendar({
 
       <div className="mt-3 grid grid-cols-7 gap-y-1">
         {WEEKDAYS.map((w) => (
-          <span key={w} className="py-1 text-center text-[11px] font-semibold uppercase tracking-wide text-faint">
+          <span key={w} className="py-1 text-center text-label font-semibold uppercase tracking-wide text-faint">
             {w}
           </span>
         ))}
@@ -164,7 +164,7 @@ export function AvailabilityCalendar({
                 disabled={disabled}
                 aria-label={iso}
                 aria-pressed={isStart || isEnd}
-                className={`relative z-10 mx-auto grid h-9 w-9 place-items-center rounded-full text-[13.5px] font-medium transition-all duration-150 ${
+                className={`relative z-10 mx-auto grid h-9 w-9 place-items-center rounded-full text-detail font-medium transition-all duration-150 ${
                   isStart || isEnd
                     ? 'bg-accent-bright text-noir shadow-hair'
                     : !inMonth
@@ -183,12 +183,12 @@ export function AvailabilityCalendar({
         })}
       </div>
 
-      <div className="mt-4 flex items-center gap-4 text-[12.5px] text-muted">
+      <div className="mt-4 flex items-center gap-4 text-caption text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-accent-bright" /> Selected
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full border border-line-strong text-center text-[9px] leading-[10px] text-faint">–</span>
+          <span className="h-2.5 w-2.5 rounded-full border border-line-strong text-center text-nano leading-[10px] text-faint">–</span>
           Booked
         </span>
         {loading && <span className="ml-auto animate-pulse">Checking availability…</span>}

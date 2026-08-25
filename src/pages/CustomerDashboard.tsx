@@ -58,10 +58,10 @@ function RewardRow({ reward }: { reward: Reward }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="font-medium text-ink">{reward.discountPercentage}% OFF your next booking</p>
-        <p className="font-mono text-[13px] text-muted">{reward.couponCode}</p>
+        <p className="font-mono text-detail text-muted">{reward.couponCode}</p>
       </div>
       <div className="text-right">
-        <p className="text-[12.5px] text-muted">
+        <p className="text-caption text-muted">
           {status === 'used' && reward.usedAt
             ? `Used ${fmtDate(reward.usedAt)}`
             : `Expires ${fmtDate(reward.expiresAt)}`}
@@ -79,13 +79,13 @@ function TripRow({ booking }: { booking: Booking }) {
       <img src={booking.car.image} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover transition-transform duration-500 group-hover:scale-105" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-ink">{booking.car.make} {booking.car.model}</p>
-        <p className="text-[13px] text-muted">
+        <p className="text-detail text-muted">
           {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)} · {booking.pickupLocation || booking.car.location}
         </p>
-        <p className="mt-0.5 text-[12px] text-faint">Booking {booking.reference}</p>
+        <p className="mt-0.5 text-caption text-faint">Booking {booking.reference}</p>
       </div>
       <div className="text-right">
-        <p className="text-[14px] font-medium text-ink">{eur(booking.totalPrice)}</p>
+        <p className="text-body font-medium text-ink">{eur(booking.totalPrice)}</p>
         <span className={`badge mt-1 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
       </div>
       <Icon name="chevronRight" size={16} className="shrink-0 text-faint transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-muted" />
@@ -168,7 +168,7 @@ export default function CustomerDashboard() {
         {/* Greeting */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[14px] text-muted">{greeting()},</p>
+            <p className="text-body text-muted">{greeting()},</p>
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName}</h1>
               {tier && <span className="badge badge-accent">{tier}</span>}
@@ -219,7 +219,7 @@ export default function CustomerDashboard() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-display text-xl font-semibold text-ink">{nextTrip.car.make} {nextTrip.car.model}</h3>
-                      <p className="text-[13.5px] text-muted">Booking {nextTrip.reference}</p>
+                      <p className="text-detail text-muted">Booking {nextTrip.reference}</p>
                     </div>
                     <span className={`badge ${phaseBadge[classifyBooking(nextTrip)]}`}>{phaseLabel[classifyBooking(nextTrip)]}</span>
                   </div>
@@ -230,8 +230,8 @@ export default function CustomerDashboard() {
                       { l: 'Location', v: nextTrip.pickupLocation || nextTrip.car.location, icon: 'pin' as const },
                     ].map((x) => (
                       <div key={x.l}>
-                        <p className="flex items-center gap-1.5 text-[12px] text-muted"><Icon name={x.icon} size={13} /> {x.l}</p>
-                        <p className="mt-0.5 text-[14px] font-medium text-ink">{x.v}</p>
+                        <p className="flex items-center gap-1.5 text-caption text-muted"><Icon name={x.icon} size={13} /> {x.l}</p>
+                        <p className="mt-0.5 text-body font-medium text-ink">{x.v}</p>
                       </div>
                     ))}
                   </div>
@@ -245,8 +245,8 @@ export default function CustomerDashboard() {
                     </span>
                   )}
                   <div className="flex-1">
-                    <p className="text-[13.5px] font-medium text-ink">{nextTrip.host.name}</p>
-                    <p className="text-[12.5px] text-muted">Your host</p>
+                    <p className="text-detail font-medium text-ink">{nextTrip.host.name}</p>
+                    <p className="text-caption text-muted">Your host</p>
                   </div>
                   <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
                     <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
@@ -299,7 +299,7 @@ export default function CustomerDashboard() {
                     {tab === 'completed' && 'No completed trips yet'}
                     {tab === 'cancelled' && 'No cancelled trips'}
                   </p>
-                  <p className="max-w-xs text-[13px] text-muted">
+                  <p className="max-w-xs text-detail text-muted">
                     {tab === 'upcoming' ? 'Your next journey starts here.' : 'Nothing to show in this tab yet.'}
                   </p>
                   {tab === 'upcoming' && (
@@ -314,7 +314,7 @@ export default function CustomerDashboard() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">Messages</h2>
-              <Link to="/messages" className="text-[13.5px] font-medium text-muted hover:text-ink">Open</Link>
+              <Link to="/messages" className="text-detail font-medium text-muted hover:text-ink">Open</Link>
             </div>
             <div className="card min-h-[120px] divide-y divide-line">
               {conversationsLoading ? (
@@ -333,11 +333,11 @@ export default function CustomerDashboard() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <p className="truncate text-[14px] font-medium text-ink">{c.other.name}</p>
+                        <p className="truncate text-body font-medium text-ink">{c.other.name}</p>
                       </div>
-                      <p className="truncate text-[13px] text-muted">{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
+                      <p className="truncate text-detail text-muted">{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
                     </div>
-                    {c.unreadCount > 0 && <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-[11px] font-semibold text-white">{c.unreadCount}</span>}
+                    {c.unreadCount > 0 && <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent text-label font-semibold text-white">{c.unreadCount}</span>}
                   </Link>
                 ))
               ) : (
@@ -354,7 +354,7 @@ export default function CustomerDashboard() {
         <section className="mt-8 scroll-mt-20" id="saved">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold text-ink">Saved cars</h2>
-            <Link to="/browse" className="text-[13.5px] font-medium text-muted hover:text-ink">Browse more</Link>
+            <Link to="/browse" className="text-detail font-medium text-muted hover:text-ink">Browse more</Link>
           </div>
           {saved.length > 0 ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -364,7 +364,7 @@ export default function CustomerDashboard() {
             <div className="card flex flex-col items-center gap-2 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="heart" size={22} /></span>
               <p className="mt-1 font-medium text-ink">No saved cars yet</p>
-              <p className="max-w-xs text-[13.5px] text-muted">Tap the heart on any car to save it here for later.</p>
+              <p className="max-w-xs text-detail text-muted">Tap the heart on any car to save it here for later.</p>
               <Link to="/browse" className="btn btn-primary btn-sm mt-2">Browse cars</Link>
             </div>
           )}
@@ -418,7 +418,7 @@ export default function CustomerDashboard() {
                   {rewardTab === 'used' && 'No used rewards'}
                   {rewardTab === 'expired' && 'No expired rewards'}
                 </p>
-                <p className="max-w-xs text-[13px] text-muted">
+                <p className="max-w-xs text-detail text-muted">
                   {rewardTab === 'available'
                     ? 'Play the CX Drive Challenge above to earn a real discount.'
                     : 'Nothing to show in this tab yet.'}

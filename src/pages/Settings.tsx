@@ -118,7 +118,7 @@ export default function Settings() {
     <DashboardShell variant="customer" active="Settings">
       <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
         <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Settings</h1>
-        <p className="mt-1 text-[14px] text-muted">Manage your account, preferences and payment details.</p>
+        <p className="mt-1 text-body text-muted">Manage your account, preferences and payment details.</p>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
           {/* Sub-nav */}
@@ -127,7 +127,7 @@ export default function Settings() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[14px] font-medium transition-colors ${
+                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-body font-medium transition-colors ${
                   tab === t.id ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                 }`}
               >
@@ -169,7 +169,7 @@ export default function Settings() {
                       </button>
                       {tier && <span className="badge badge-accent">{tier}</span>}
                     </div>
-                    <p className="mt-1.5 text-[12.5px] text-muted">JPG or PNG, up to 5MB</p>
+                    <p className="mt-1.5 text-caption text-muted">JPG or PNG, up to 5MB</p>
                   </div>
                 </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -196,7 +196,7 @@ export default function Settings() {
 
             {tab === 'driver' && (
               <div className="animate-fade-in">
-                <div className="mb-5 flex items-center gap-2.5 rounded-xl bg-accent-050 p-3.5 text-[13.5px] text-accent-700">
+                <div className="mb-5 flex items-center gap-2.5 rounded-xl bg-accent-050 p-3.5 text-detail text-accent-700">
                   <Icon name="verified" size={18} className="shrink-0" /> Your driving licence is verified.
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -220,8 +220,8 @@ export default function Settings() {
                 ].map((r) => (
                   <div key={r.k} className="flex items-center justify-between py-4 first:pt-0">
                     <div className="pr-4">
-                      <p className="text-[14.5px] font-medium text-ink">{r.t}</p>
-                      <p className="text-[13px] text-muted">{r.d}</p>
+                      <p className="text-body font-medium text-ink">{r.t}</p>
+                      <p className="text-detail text-muted">{r.d}</p>
                     </div>
                     <Toggle on={toggles[r.k]} onClick={() => flip(r.k)} />
                   </div>
@@ -237,10 +237,10 @@ export default function Settings() {
                     { brand: 'Mastercard', last: '5588', exp: '11/26', primary: false },
                   ].map((card) => (
                     <div key={card.last} className="flex items-center gap-4 rounded-xl border border-line p-4">
-                      <span className="grid h-10 w-14 place-items-center rounded-lg bg-ink text-[11px] font-semibold uppercase text-white">{card.brand.slice(0, 4)}</span>
+                      <span className="grid h-10 w-14 place-items-center rounded-lg bg-ink text-label font-semibold uppercase text-white">{card.brand.slice(0, 4)}</span>
                       <div className="flex-1">
-                        <p className="text-[14px] font-medium text-ink">•••• {card.last}</p>
-                        <p className="text-[12.5px] text-muted">Expires {card.exp}</p>
+                        <p className="text-body font-medium text-ink">•••• {card.last}</p>
+                        <p className="text-caption text-muted">Expires {card.exp}</p>
                       </div>
                       {card.primary && <span className="badge badge-accent">Default</span>}
                       <button className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel"><Icon name="x" size={16} /></button>
@@ -261,8 +261,8 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-line p-4">
                   <div>
-                    <p className="text-[14.5px] font-medium text-ink">Two-factor authentication</p>
-                    <p className="text-[13px] text-muted">Add an extra layer of security to your account.</p>
+                    <p className="text-body font-medium text-ink">Two-factor authentication</p>
+                    <p className="text-detail text-muted">Add an extra layer of security to your account.</p>
                   </div>
                   <Toggle on={toggles.push} onClick={() => flip('push')} />
                 </div>

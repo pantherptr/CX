@@ -54,7 +54,7 @@ function Tile({
     return (
       <div className="relative overflow-hidden rounded-xl border border-line">
         <img src={signedUrl} alt={label} className="aspect-square w-full object-cover" />
-        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-2 pb-1.5 pt-4 text-[11px] font-medium text-white">{label}</span>
+        <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-2 pb-1.5 pt-4 text-label font-medium text-white">{label}</span>
         <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-accent text-white">
           <Icon name="check" size={11} strokeWidth={3} />
         </span>
@@ -69,7 +69,7 @@ function Tile({
       }`}
     >
       <Icon name="camera" size={18} className="text-muted" />
-      <span className="px-1.5 text-[11px] font-medium text-muted">{uploading ? 'Uploading…' : label}</span>
+      <span className="px-1.5 text-label font-medium text-muted">{uploading ? 'Uploading…' : label}</span>
       <input type="file" accept="image/*" className="hidden" onChange={handleChange} disabled={disabled || uploading} />
     </label>
   );
@@ -110,7 +110,7 @@ export function InspectionGrid({
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-line py-8 text-center">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="camera" size={20} /></span>
-        <p className="max-w-xs text-[13px] text-muted">{lockedMessage}</p>
+        <p className="max-w-xs text-detail text-muted">{lockedMessage}</p>
       </div>
     );
   }

@@ -78,7 +78,7 @@ export function BottomNav() {
                   className="h-11 w-auto object-contain transition-transform duration-200 ease-out group-hover:scale-105 group-active:scale-95"
                   style={{ filter: 'drop-shadow(0 3px 8px rgba(22,22,26,0.22))' }}
                 />
-                <span className="text-[10.5px] font-bold uppercase tracking-wide text-accent">
+                <span className="text-micro font-bold uppercase tracking-wide text-accent">
                   {it.label}
                 </span>
               </DriveChallengeLauncher>
@@ -101,7 +101,7 @@ export function BottomNav() {
                 strokeWidth={active ? 2.1 : 1.75}
               />
               <span
-                className={`text-[10.5px] font-semibold tracking-wide transition-colors duration-300 ${
+                className={`text-micro font-semibold tracking-wide transition-colors duration-300 ${
                   active ? 'text-accent' : 'text-ink-soft'
                 }`}
               >

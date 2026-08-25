@@ -37,7 +37,7 @@ export function LiveVisitors({
   );
 
   const label = (
-    <span className={`text-[13px] ${labelCls}`}>
+    <span className={`text-detail ${labelCls}`}>
       <span key={count} className={`inline-block animate-scale-in font-semibold tabular-nums ${valueCls}`}>
         {formatted}
       </span>{' '}

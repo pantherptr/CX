@@ -80,8 +80,8 @@ function OptionCard({
       }`}
     >
       <span className={active ? 'text-accent-bright' : 'text-white/60'}>{icon}</span>
-      <span className="text-[14.5px] font-semibold">{label}</span>
-      {sub && <span className="text-[12px] text-white/50">{sub}</span>}
+      <span className="text-body font-semibold">{label}</span>
+      {sub && <span className="text-caption text-white/50">{sub}</span>}
     </button>
   );
 }
@@ -193,7 +193,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
       {/* Chrome */}
       <div className="relative flex h-16 shrink-0 items-center justify-between px-4 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <span className="flex items-center gap-2 text-[13.5px] font-semibold uppercase tracking-[0.14em] text-white">
+        <span className="flex items-center gap-2 text-detail font-semibold uppercase tracking-[0.14em] text-white">
           <Icon name="sparkles" size={16} className="text-accent-bright" /> CX Concierge
         </span>
         <button
@@ -215,12 +215,12 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
           {thinking ? (
             <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
               <CarLoader size={90} />
-              <p className="animate-fade-in text-[15px] font-medium text-white/70">Finding your CX…</p>
+              <p className="animate-fade-in text-copy font-medium text-white/70">Finding your CX…</p>
             </div>
           ) : step !== 'results' ? (
             <div key={step} className="animate-fade-up">
               {hasPersonalData && step === 'drive' && (
-                <p className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[12px] text-white/60">
+                <p className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-caption text-white/60">
                   <Icon name="user" size={13} className="text-accent-bright" /> Personalised from your CX history
                 </p>
               )}
@@ -308,7 +308,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                     ))}
                   </div>
                   <div className="mt-5 rounded-2xl border border-white/12 bg-white/[0.04] p-4">
-                    <label className="block text-[12px] font-semibold uppercase tracking-wide text-white/50">
+                    <label className="block text-caption font-semibold uppercase tracking-wide text-white/50">
                       Or set an exact daily maximum
                     </label>
                     <div className="mt-2 flex items-center gap-3">
@@ -327,10 +327,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                               budget: e.target.value ? null : p.budget,
                             }))
                           }
-                          className="w-full rounded-xl border border-white/15 bg-black/30 py-2.5 pl-8 pr-3 text-[15px] text-white outline-none [color-scheme:dark] focus:border-accent-bright/50"
+                          className="w-full rounded-xl border border-white/15 bg-black/30 py-2.5 pl-8 pr-3 text-copy text-white outline-none [color-scheme:dark] focus:border-accent-bright/50"
                         />
                       </div>
-                      <span className="text-[13px] text-white/45">/ day</span>
+                      <span className="text-detail text-white/45">/ day</span>
                     </div>
                   </div>
                   <StepFooter onBack={back} onNext={() => advance('budget')} nextLabel="Continue" />
@@ -377,13 +377,13 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
               ) : top ? (
                 <>
                   <div className="flex items-center justify-between">
-                    <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-accent-bright">Your CX Match</p>
-                    <button onClick={startOver} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/60 hover:text-white">
+                    <p className="text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">Your CX Match</p>
+                    <button onClick={startOver} className="inline-flex items-center gap-1.5 text-detail font-medium text-white/60 hover:text-white">
                       <Icon name="sort" size={14} /> Start over
                     </button>
                   </div>
                   {relaxed && (
-                    <p className="mt-2 text-[13px] text-white/55">Options expanded — showing the closest matches across the fleet.</p>
+                    <p className="mt-2 text-detail text-white/55">Options expanded — showing the closest matches across the fleet.</p>
                   )}
 
                   {/* Hero match */}
@@ -392,7 +392,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                   {/* Alternatives */}
                   {alternates.length > 0 && (
                     <>
-                      <p className="mt-10 text-[12px] font-semibold uppercase tracking-[0.2em] text-white/50">More Options</p>
+                      <p className="mt-10 text-caption font-semibold uppercase tracking-[0.2em] text-white/50">More Options</p>
                       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {alternates.map((s) => (
                           <AltCard key={s.car.id} scored={s} onRent={rentNow} onClose={onClose} onCompare={toggleCompare} />
@@ -408,7 +408,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                     <Icon name="search" size={26} />
                   </span>
                   <h2 className="font-display text-2xl font-semibold text-white">We couldn't find the perfect match</h2>
-                  <p className="max-w-sm text-[14.5px] text-white/60">Let's widen the search — we'll relax your budget and location to find the closest cars in the CX fleet.</p>
+                  <p className="max-w-sm text-body text-white/60">Let's widen the search — we'll relax your budget and location to find the closest cars in the CX fleet.</p>
                   <button onClick={() => setRelaxed(true)} className="btn btn-accent-bright btn-lg">
                     Expand My Options <Icon name="arrowRight" size={17} />
                   </button>
@@ -426,9 +426,9 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 function QuestionHead({ n, title, hint }: { n: number; title: string; hint?: string }) {
   return (
     <div>
-      <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-white/45">Question {n} of 5</p>
+      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-white/45">Question {n} of 5</p>
       <h2 className="mt-2 font-display text-2xl font-semibold text-white sm:text-3xl">{title}</h2>
-      {hint && <p className="mt-1 text-[13.5px] text-white/50">{hint}</p>}
+      {hint && <p className="mt-1 text-detail text-white/50">{hint}</p>}
     </div>
   );
 }
@@ -446,12 +446,12 @@ function StepFooter({
 }) {
   return (
     <div className="mt-8 flex items-center justify-between">
-      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-[14px] font-medium text-white/60 hover:text-white">
+      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-body font-medium text-white/60 hover:text-white">
         <Icon name="chevronLeft" size={16} /> Back
       </button>
       <button
         onClick={onNext}
-        className={subtle ? 'text-[14px] font-medium text-white/60 hover:text-white' : 'btn btn-accent-bright'}
+        className={subtle ? 'text-body font-medium text-white/60 hover:text-white' : 'btn btn-accent-bright'}
       >
         {nextLabel} {!subtle && <Icon name="arrowRight" size={16} />}
       </button>
@@ -483,26 +483,26 @@ function TopMatch({
       <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
         <img src={unsplash(car.images[0], 1400)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-        <span className="absolute right-4 top-4 rounded-full border border-accent-bright/40 bg-black/50 px-3 py-1.5 text-[13px] font-bold text-accent-bright backdrop-blur-md">
+        <span className="absolute right-4 top-4 rounded-full border border-accent-bright/40 bg-black/50 px-3 py-1.5 text-detail font-bold text-accent-bright backdrop-blur-md">
           {match}% MATCH
         </span>
         <div className="absolute bottom-4 left-5 right-5">
           <h3 className="font-display text-2xl font-semibold text-white sm:text-3xl">
             {car.make} {car.model}
           </h3>
-          <p className="text-[14px] text-white/70">
+          <p className="text-body text-white/70">
             {car.trim ? `${car.trim} · ` : ''}
             {car.year} · {car.category}
           </p>
         </div>
       </div>
       <div className="p-5 sm:p-6">
-        <p className="text-[14.5px] leading-relaxed text-white/75">{summary(car, prefs)}</p>
+        <p className="text-body leading-relaxed text-white/75">{summary(car, prefs)}</p>
 
         {scored.reasons.length > 0 && (
           <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {scored.reasons.map((r) => (
-              <li key={r} className="flex items-center gap-2 text-[13.5px] text-white/80">
+              <li key={r} className="flex items-center gap-2 text-detail text-white/80">
                 <Icon name="checkCircle" size={16} className="shrink-0 text-accent-bright" /> {r}
               </li>
             ))}
@@ -512,7 +512,7 @@ function TopMatch({
         <div className="mt-5 flex items-end justify-between">
           <p className="text-white">
             <span className="font-display text-2xl font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-[13px] text-white/60"> / day</span>
+            <span className="text-detail text-white/60"> / day</span>
           </p>
         </div>
 
@@ -531,13 +531,13 @@ function TopMatch({
         <div className="mt-3 flex items-center gap-2">
           <button
             onClick={() => favToggle(car.id)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-[13.5px] font-medium text-white/80 hover:border-white/30"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 hover:border-white/30"
           >
             <Icon name="heart" size={15} fill={fav} className={fav ? 'text-[#e2384d]' : ''} /> {fav ? 'Saved' : 'Save to Garage'}
           </button>
           <button
             onClick={() => onCompare(car.id)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-[13.5px] font-medium text-white/80 hover:border-white/30"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 hover:border-white/30"
           >
             <Icon name="compare" size={15} /> Compare
           </button>
@@ -563,7 +563,7 @@ function AltCard({
     <div className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04]">
       <div className="relative aspect-[16/10] overflow-hidden">
         <img src={unsplash(car.images[0], 700)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
-        <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-[11.5px] font-bold text-accent-bright backdrop-blur-md">
+        <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-label font-bold text-accent-bright backdrop-blur-md">
           {match}%
         </span>
       </div>
@@ -571,12 +571,12 @@ function AltCard({
         <p className="font-medium text-white">
           {car.make} {car.model}
         </p>
-        <p className="mt-0.5 text-[12.5px] text-white/55">
+        <p className="mt-0.5 text-caption text-white/55">
           {car.seats} seats · {car.transmission} · {car.fuel}
         </p>
         <p className="mt-2 text-white">
-          <span className="text-[16px] font-semibold">{eur(car.pricePerDay)}</span>
-          <span className="text-[12px] text-white/55"> / day</span>
+          <span className="text-lead font-semibold">{eur(car.pricePerDay)}</span>
+          <span className="text-caption text-white/55"> / day</span>
         </p>
         <div className="mt-3 flex items-center gap-2">
           <button onClick={() => onRent(car.slug)} className="btn btn-accent-bright btn-sm flex-1">

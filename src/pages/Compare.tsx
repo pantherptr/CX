@@ -65,7 +65,7 @@ export default function Compare() {
         <div>
           <p className="eyebrow">CX Compare</p>
           <h1 className="mt-1 font-display text-2xl font-semibold text-ink sm:text-3xl">Compare cars</h1>
-          <p className="mt-1.5 max-w-md text-[14.5px] text-muted">
+          <p className="mt-1.5 max-w-md text-body text-muted">
             Side by side, so the right car is obvious — not a guess.
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function Compare() {
             <Icon name="compare" size={26} />
           </span>
           <h2 className="mt-2 font-display text-xl font-semibold text-ink">Nothing to compare yet</h2>
-          <p className="max-w-sm text-[14px] text-muted">
+          <p className="max-w-sm text-body text-muted">
             Tap "Compare" on any car in Browse to add it here — you can compare up to 4 at once.
           </p>
           <Link to="/browse" className="btn btn-primary mt-2">Browse cars</Link>
@@ -112,10 +112,10 @@ export default function Compare() {
                   <div className="aspect-[4/3] overflow-hidden rounded-xl bg-panel-2">
                     <img src={unsplash(car.images[0], 400)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
                   </div>
-                  <p className="mt-3 truncate font-display text-[15px] font-semibold text-ink">
+                  <p className="mt-3 truncate font-display text-copy font-semibold text-ink">
                     {car.make} {car.model}
                   </p>
-                  <p className="text-[12.5px] text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
+                  <p className="text-caption text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
                 </Link>
                 <Link to={`/book/${car.slug}`} className="btn btn-accent-bright btn-sm btn-block mt-3">
                   Rent this car
@@ -128,7 +128,7 @@ export default function Compare() {
               const winner = bestId(row);
               return (
                 <Fragment key={row.label}>
-                  <div className="flex items-center gap-2 bg-panel/60 px-4 py-3.5 text-[13px] font-medium text-ink-soft">
+                  <div className="flex items-center gap-2 bg-panel/60 px-4 py-3.5 text-detail font-medium text-ink-soft">
                     <Icon name={row.icon} size={15} className="shrink-0 text-muted" /> {row.label}
                   </div>
                   {selected.map((car) => {
@@ -136,7 +136,7 @@ export default function Compare() {
                     return (
                       <div
                         key={car.id}
-                        className={`flex items-center gap-1.5 px-4 py-3.5 text-[13.5px] ${
+                        className={`flex items-center gap-1.5 px-4 py-3.5 text-detail ${
                           isWinner ? 'bg-accent-050 font-semibold text-accent-700' : 'bg-surface text-ink'
                         }`}
                       >
@@ -150,18 +150,18 @@ export default function Compare() {
             })}
 
             {/* Features row */}
-            <div className="flex items-start gap-2 bg-panel/60 px-4 py-3.5 text-[13px] font-medium text-ink-soft">
+            <div className="flex items-start gap-2 bg-panel/60 px-4 py-3.5 text-detail font-medium text-ink-soft">
               <Icon name="sparkles" size={15} className="mt-0.5 shrink-0 text-muted" /> Features
             </div>
             {selected.map((car) => (
               <div key={`features-${car.id}`} className="bg-surface px-4 py-3.5">
                 <ul className="space-y-1.5">
                   {car.features.slice(0, 6).map((f) => (
-                    <li key={f} className="flex items-start gap-1.5 text-[12.5px] text-ink-soft">
+                    <li key={f} className="flex items-start gap-1.5 text-caption text-ink-soft">
                       <Icon name="check" size={13} className="mt-0.5 shrink-0 text-accent" /> {f}
                     </li>
                   ))}
-                  {car.features.length === 0 && <li className="text-[12.5px] text-faint">—</li>}
+                  {car.features.length === 0 && <li className="text-caption text-faint">—</li>}
                 </ul>
               </div>
             ))}

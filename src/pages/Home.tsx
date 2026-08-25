@@ -111,7 +111,7 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
       <p ref={ref} className="font-display text-4xl font-semibold tabular-nums text-ink sm:text-5xl">
         {decimals ? animated.toFixed(decimals) : animated}
       </p>
-      <p className="mt-1.5 text-[13.5px] text-muted">{label}</p>
+      <p className="mt-1.5 text-detail text-muted">{label}</p>
     </div>
   );
 }
@@ -168,7 +168,7 @@ export default function Home() {
           {/* -------- Headline column -------- */}
           <div className="max-w-xl">
             <Reveal>
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
@@ -190,7 +190,7 @@ export default function Home() {
             </Reveal>
 
             <Reveal delay={140}>
-              <p className="mt-5 max-w-md text-[17px] leading-relaxed text-white/85 text-pretty sm:text-[18.5px]">
+              <p className="mt-5 max-w-md text-lead leading-relaxed text-white/85 text-pretty sm:text-feature">
                 Premium cars. Verified hosts. Ready for the road.
               </p>
             </Reveal>
@@ -212,7 +212,7 @@ export default function Home() {
             <Reveal delay={260}>
               <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5">
                 {trustRow.map((t) => (
-                  <span key={t.label} className="inline-flex items-center gap-2 text-[13px] font-medium text-white/75">
+                  <span key={t.label} className="inline-flex items-center gap-2 text-detail font-medium text-white/75">
                     <Icon name={t.icon} size={15} className="text-accent-bright/90" />
                     {t.label}
                   </span>
@@ -240,7 +240,7 @@ export default function Home() {
             action={
               <Link
                 to="/browse"
-                className="inline-flex items-center gap-1.5 text-[14.5px] font-medium text-accent transition-colors hover:text-accent-600"
+                className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
               >
                 View all cars <Icon name="arrowRight" size={15} />
               </Link>
@@ -275,13 +275,13 @@ export default function Home() {
               style={{ background: 'radial-gradient(60% 60% at 85% 15%, rgba(0,212,71,0.18), transparent 62%)' }}
             />
             <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.2em] text-accent-bright">
+              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">
                 <Icon name="sparkles" size={14} /> CX Concierge
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-4xl">
                 Find your CX
               </h2>
-              <p className="mt-3 text-[15.5px] leading-relaxed text-on-noir-muted sm:text-[17px]">
+              <p className="mt-3 text-copy leading-relaxed text-on-noir-muted sm:text-lead">
                 Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
               </p>
               <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-7">
@@ -320,7 +320,7 @@ export default function Home() {
                 <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-[2.75rem] sm:leading-[1.05]">
                   Drive with confidence.
                 </h2>
-                <p className="mt-3 max-w-md text-[15.5px] leading-relaxed text-on-noir-muted sm:text-[17px]">
+                <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted sm:text-lead">
                   Premium cars. Trusted hosts. A better way to rent.
                 </p>
               </Reveal>
@@ -333,8 +333,8 @@ export default function Home() {
                         <Icon name={b.icon} size={20} />
                       </span>
                       <div>
-                        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-on-noir">{b.title}</p>
-                        <p className="mt-1.5 text-[13.5px] leading-relaxed text-on-noir-muted">{b.description}</p>
+                        <p className="text-label font-semibold uppercase tracking-[0.12em] text-on-noir">{b.title}</p>
+                        <p className="mt-1.5 text-detail leading-relaxed text-on-noir-muted">{b.description}</p>
                       </div>
                     </div>
                   </Reveal>
@@ -345,7 +345,7 @@ export default function Home() {
               <Reveal delay={460}>
                 <div className="mt-9 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-white/10 pt-6">
                   {['Verified vehicles', 'Secure booking', 'Transparent pricing', 'Dedicated support'].map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-on-noir-muted">
+                    <span key={t} className="inline-flex items-center gap-1.5 text-caption font-medium text-on-noir-muted">
                       <Icon name="check" size={14} className="text-accent-bright" /> {t}
                     </span>
                   ))}
@@ -359,7 +359,7 @@ export default function Home() {
             <div className="relative flex flex-col items-start justify-between gap-5 border-t border-white/10 px-6 py-8 sm:flex-row sm:items-center sm:px-10 lg:px-12">
               <div>
                 <p className="font-display text-xl font-semibold text-on-noir sm:text-2xl">Ready to drive?</p>
-                <p className="mt-1 text-[14px] text-on-noir-muted">Find your next car and start your journey.</p>
+                <p className="mt-1 text-body text-on-noir-muted">Find your next car and start your journey.</p>
               </div>
               <Link to="/browse" className="btn btn-accent-bright btn-lg shrink-0">
                 Explore Cars <Icon name="arrowRight" size={17} />
@@ -376,7 +376,7 @@ export default function Home() {
           action={
             <Link
               to="/browse"
-              className="inline-flex items-center gap-1.5 text-[14.5px] font-medium text-accent transition-colors hover:text-accent-600"
+              className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
             >
               View all cars <Icon name="arrowRight" size={15} />
             </Link>
@@ -397,9 +397,9 @@ export default function Home() {
                     )}
                   </div>
                   <div className="p-3.5">
-                    <p className="font-display text-[15px] font-semibold text-ink">{tile.label}</p>
+                    <p className="font-display text-copy font-semibold text-ink">{tile.label}</p>
                     {tile.fromPrice !== undefined && (
-                      <p className="mt-0.5 text-[13px] text-muted">From {eur(tile.fromPrice)}/day</p>
+                      <p className="mt-0.5 text-detail text-muted">From {eur(tile.fromPrice)}/day</p>
                     )}
                   </div>
                 </Link>
@@ -433,7 +433,7 @@ export default function Home() {
                 <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
                   Play DRIVE. Beat the score. Unlock your reward.
                 </h2>
-                <p className="mt-2 max-w-md text-[14.5px] leading-relaxed text-muted">
+                <p className="mt-2 max-w-md text-body leading-relaxed text-muted">
                   A fast, addictive driving challenge built right into CX — score high enough and earn a real discount on your next booking.
                 </p>
               </div>
@@ -471,8 +471,8 @@ export default function Home() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
-                  <p className="mt-1.5 truncate text-[12.5px] font-medium text-ink-soft">{p.name}</p>
-                  <p className="text-[12.5px] font-semibold text-ink">{eur(p.price)}</p>
+                  <p className="mt-1.5 truncate text-caption font-medium text-ink-soft">{p.name}</p>
+                  <p className="text-caption font-semibold text-ink">{eur(p.price)}</p>
                 </Link>
               ))}
             </div>
@@ -496,7 +496,7 @@ export default function Home() {
             <h2 className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl">
               Ready for your next journey?
             </h2>
-            <p className="max-w-md text-[15.5px] leading-relaxed text-muted">
+            <p className="max-w-md text-copy leading-relaxed text-muted">
               Join thousands of drivers already booking premium cars across Europe with CX.
             </p>
             <Link to="/browse" className="btn btn-accent-bright btn-lg">

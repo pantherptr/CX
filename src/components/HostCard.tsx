@@ -53,7 +53,7 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
             <h3 className="font-display text-lg font-semibold text-ink">{host.name}</h3>
             {host.isSuperhost && <span className="badge badge-accent">Superhost</span>}
           </div>
-          <p className="text-[13.5px] text-muted">Host since {host.joined}</p>
+          <p className="text-detail text-muted">Host since {host.joined}</p>
         </div>
       </div>
 
@@ -64,16 +64,16 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
           { v: `${host.responseRate}%`, l: 'Response', icon: 'message' as const },
         ].map((s) => (
           <div key={s.l} className="px-2 py-3 text-center">
-            <p className="text-[17px] font-semibold text-ink">{s.v}</p>
-            <p className="text-[12px] text-muted">{s.l}</p>
+            <p className="text-lead font-semibold text-ink">{s.v}</p>
+            <p className="text-caption text-muted">{s.l}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-4 flex items-center gap-1.5 text-[13.5px] text-muted">
+      <p className="mt-4 flex items-center gap-1.5 text-detail text-muted">
         <Icon name="clock" size={15} className="text-accent" /> Typically responds {host.responseTime}
       </p>
-      <p className="mt-3 text-[14px] leading-relaxed text-ink-soft text-pretty">{host.bio}</p>
+      <p className="mt-3 text-body leading-relaxed text-ink-soft text-pretty">{host.bio}</p>
 
       <button
         onClick={contactHost}

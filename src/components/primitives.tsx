@@ -157,7 +157,7 @@ export function SectionHead({
         <h2 className="font-display text-[1.75rem] font-semibold leading-[1.1] text-ink sm:text-4xl text-balance">
           {title}
         </h2>
-        {desc && <p className="mt-3 text-[15px] leading-relaxed text-muted text-pretty">{desc}</p>}
+        {desc && <p className="mt-3 text-copy leading-relaxed text-muted text-pretty">{desc}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>

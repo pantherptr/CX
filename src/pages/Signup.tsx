@@ -44,7 +44,7 @@ export default function Signup() {
               <Icon name="checkCircle" size={22} />
             </span>
             <h1 className="mt-4 font-display text-xl font-semibold text-ink">Check your email</h1>
-            <p className="mt-2 text-[14.5px] leading-relaxed text-muted">
+            <p className="mt-2 text-body leading-relaxed text-muted">
               We sent a confirmation link to <span className="font-medium text-ink-soft">{email}</span>.
               Click it to activate your account, then sign in.
             </p>
@@ -65,7 +65,7 @@ export default function Signup() {
         </div>
         <div className="card p-7 sm:p-8">
           <h1 className="text-center font-display text-2xl font-semibold text-ink">Create your account</h1>
-          <p className="mt-1.5 text-center text-[14px] text-muted">Rent or list a car on CX</p>
+          <p className="mt-1.5 text-center text-body text-muted">Rent or list a car on CX</p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
             <div>
@@ -111,7 +111,7 @@ export default function Signup() {
               />
             </div>
             {error && (
-              <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-[13.5px] text-danger">{error}</p>
+              <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
             )}
             <button type="submit" disabled={submitting} className="btn btn-primary btn-block btn-lg">
               {submitting ? 'Creating account…' : 'Create account'}
@@ -119,7 +119,7 @@ export default function Signup() {
             </button>
           </form>
         </div>
-        <p className="mt-5 text-center text-[14px] text-muted">
+        <p className="mt-5 text-center text-body text-muted">
           Already have an account?{' '}
           <Link to="/login" className="font-medium text-ink underline underline-offset-2">
             Sign in

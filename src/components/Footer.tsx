@@ -67,10 +67,10 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-[1.5fr_repeat(4,1fr)] lg:gap-10">
           <div className="max-w-xs">
             <Logo variant="wordmark" />
-            <p className="mt-5 text-[14px] leading-relaxed text-on-noir-muted text-pretty">
+            <p className="mt-5 text-body leading-relaxed text-on-noir-muted text-pretty">
               The premium marketplace for car rental across Europe.
             </p>
-            <p className="mt-4 font-display text-[15px] font-semibold text-on-noir">
+            <p className="mt-4 font-display text-copy font-semibold text-on-noir">
               Rent. Drive. Experience.
             </p>
             <div className="mt-6 flex gap-2.5">
@@ -89,7 +89,7 @@ export function Footer() {
 
           {columns.map((col) => (
             <nav key={col.title} aria-label={col.title}>
-              <h4 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-bright">{col.title}</h4>
+              <h4 className="text-label font-semibold uppercase tracking-[0.16em] text-accent-bright">{col.title}</h4>
               <ul className="mt-4 flex flex-col gap-1">
                 {col.links.map((l) => (
                   <li key={l.label}>
@@ -97,7 +97,7 @@ export function Footer() {
                         without visually loosening the list. */}
                     <Link
                       to={l.to}
-                      className="inline-block py-1.5 text-[14px] text-on-noir-muted transition-colors hover:text-on-noir"
+                      className="inline-block py-1.5 text-body text-on-noir-muted transition-colors hover:text-on-noir"
                     >
                       {l.label}
                     </Link>
@@ -110,7 +110,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col gap-5 border-t border-white/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
           <LiveVisitors tone="dark" />
-          <div className="flex items-center gap-5 text-[13px] text-on-noir-muted">
+          <div className="flex items-center gap-5 text-detail text-on-noir-muted">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="globe" size={15} /> English (EU)
             </span>
@@ -120,7 +120,7 @@ export function Footer() {
           </div>
         </div>
 
-        <p className="mt-6 text-[13px] text-on-noir-muted/70">
+        <p className="mt-6 text-detail text-on-noir-muted/70">
           © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
         </p>
       </div>

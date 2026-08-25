@@ -32,7 +32,7 @@ export default function ProductDetails() {
 
   return (
     <div className="container-page py-8">
-      <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-1.5 text-[14px] text-muted transition-colors hover:text-ink">
+      <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-1.5 text-body text-muted transition-colors hover:text-ink">
         <Icon name="chevronLeft" size={16} /> Back
       </button>
 
@@ -83,17 +83,17 @@ export default function ProductDetails() {
               {product.category === 'essentials' ? 'CX Essentials' : product.category === 'lifestyle' ? 'CX Lifestyle' : 'CX Limited'}
             </p>
             <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">{product.name}</h1>
-            <p className="mt-2 text-[15px] text-muted">{product.tagline}</p>
+            <p className="mt-2 text-copy text-muted">{product.tagline}</p>
 
             <div className="mt-4 flex items-center gap-3">
               <Stars value={product.rating} size={15} />
-              <span className="text-[13.5px] text-muted">
+              <span className="text-detail text-muted">
                 {product.rating.toFixed(1)} ({product.reviewCount} reviews)
               </span>
             </div>
 
             {product.limited?.note && (
-              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-star/25 bg-star/10 px-4 py-3 text-[13.5px] font-medium text-star">
+              <div className="mt-4 flex items-center gap-2 rounded-2xl border border-star/25 bg-star/10 px-4 py-3 text-detail font-medium text-star">
                 <Icon name="sparkles" size={16} />
                 {product.limited.note}
                 {product.limited.stockLeft !== undefined && ` — ${product.limited.stockLeft} left`}
@@ -103,11 +103,11 @@ export default function ProductDetails() {
             <p className="mt-6 text-ink">
               <span className="text-[28px] font-semibold">{eur(product.price)}</span>
               {product.compareAtPrice && (
-                <span className="ml-2 text-[16px] text-faint line-through">{eur(product.compareAtPrice)}</span>
+                <span className="ml-2 text-lead text-faint line-through">{eur(product.compareAtPrice)}</span>
               )}
             </p>
 
-            <p className="mt-4 max-w-lg text-[14.5px] leading-relaxed text-ink-soft text-pretty">{product.description}</p>
+            <p className="mt-4 max-w-lg text-body leading-relaxed text-ink-soft text-pretty">{product.description}</p>
 
             {product.variants && product.variants.length > 0 && (
               <div className="mt-6">
@@ -138,7 +138,7 @@ export default function ProductDetails() {
                   >
                     <Icon name="minus" size={15} />
                   </button>
-                  <span className="w-8 text-center text-[15px] font-medium tabular-nums text-ink">{quantity}</span>
+                  <span className="w-8 text-center text-copy font-medium tabular-nums text-ink">{quantity}</span>
                   <button
                     onClick={() => setQuantity((q) => q + 1)}
                     className="grid h-11 w-11 place-items-center text-ink-soft hover:text-ink"
@@ -167,17 +167,17 @@ export default function ProductDetails() {
               </button>
             </div>
 
-            <div className="mt-6 flex items-center gap-2.5 rounded-2xl bg-panel px-4 py-3 text-[13px] text-ink-soft">
+            <div className="mt-6 flex items-center gap-2.5 rounded-2xl bg-panel px-4 py-3 text-detail text-ink-soft">
               <Icon name="truck" size={16} className="text-muted" />
               Free shipping on orders over {eur(50)} · Ships in 2–4 business days
             </div>
 
             {product.specs && product.specs.length > 0 && (
               <div className="mt-8 border-t border-line pt-6">
-                <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink">Specifications</h2>
+                <h2 className="text-detail font-semibold uppercase tracking-wide text-ink">Specifications</h2>
                 <dl className="mt-3 flex flex-col gap-2.5">
                   {product.specs.map((s) => (
-                    <div key={s.label} className="flex items-center justify-between text-[14px]">
+                    <div key={s.label} className="flex items-center justify-between text-body">
                       <dt className="text-muted">{s.label}</dt>
                       <dd className="font-medium text-ink">{s.value}</dd>
                     </div>
@@ -204,7 +204,7 @@ export default function ProductDetails() {
       )}
 
       <div className="mt-10 text-center">
-        <Link to="/shop" className="text-[13.5px] font-medium text-muted hover:text-ink">
+        <Link to="/shop" className="text-detail font-medium text-muted hover:text-ink">
           ← Back to CX Shop
         </Link>
       </div>

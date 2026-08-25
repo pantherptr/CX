@@ -39,7 +39,7 @@ export function CartDrawer() {
         <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-line px-5">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink">
             <Icon name="cart" size={19} /> Your cart
-            {cartCount > 0 && <span className="text-[13px] font-normal text-muted">({cartCount})</span>}
+            {cartCount > 0 && <span className="text-detail font-normal text-muted">({cartCount})</span>}
           </h2>
           <button onClick={closeCart} className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel" aria-label="Close cart">
             <Icon name="x" size={20} />
@@ -51,8 +51,8 @@ export function CartDrawer() {
             <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-muted">
               <Icon name="cart" size={24} />
             </span>
-            <p className="text-[14.5px] font-medium text-ink">Your cart is empty</p>
-            <p className="text-[13px] text-muted">Add CX essentials to get your drive ready.</p>
+            <p className="text-body font-medium text-ink">Your cart is empty</p>
+            <p className="text-detail text-muted">Add CX essentials to get your drive ready.</p>
             <Link to="/shop" onClick={closeCart} className="btn btn-primary btn-sm mt-2">
               Explore CX Shop
             </Link>
@@ -70,9 +70,9 @@ export function CartDrawer() {
                       style={{ height: 72, width: 72 }}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-medium text-ink">{line.name}</p>
-                      {line.variantLabel && <p className="text-[12px] text-muted">{line.variantLabel}</p>}
-                      <p className="mt-0.5 text-[13.5px] font-semibold text-ink">{eur(line.price)}</p>
+                      <p className="truncate text-body font-medium text-ink">{line.name}</p>
+                      {line.variantLabel && <p className="text-caption text-muted">{line.variantLabel}</p>}
+                      <p className="mt-0.5 text-detail font-semibold text-ink">{eur(line.price)}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex items-center rounded-full border border-line">
                           <button
@@ -82,7 +82,7 @@ export function CartDrawer() {
                           >
                             <Icon name="minus" size={13} />
                           </button>
-                          <span className="w-6 text-center text-[12.5px] font-medium tabular-nums text-ink">{line.quantity}</span>
+                          <span className="w-6 text-center text-caption font-medium tabular-nums text-ink">{line.quantity}</span>
                           <button
                             onClick={() => setQuantity(line.productId, line.variantId, line.quantity + 1)}
                             className="grid h-7 w-7 place-items-center text-ink-soft hover:text-ink"
@@ -93,7 +93,7 @@ export function CartDrawer() {
                         </div>
                         <button
                           onClick={() => removeFromCart(line.productId, line.variantId)}
-                          className="text-[12.5px] font-medium text-muted underline-offset-2 hover:text-danger hover:underline"
+                          className="text-caption font-medium text-muted underline-offset-2 hover:text-danger hover:underline"
                         >
                           Remove
                         </button>
@@ -105,7 +105,7 @@ export function CartDrawer() {
             </div>
 
             <div className="shrink-0 border-t border-line p-5">
-              <div className="flex flex-col gap-1.5 text-[13.5px]">
+              <div className="flex flex-col gap-1.5 text-detail">
                 <div className="flex items-center justify-between text-ink-soft">
                   <span>Subtotal</span>
                   <span className="font-medium text-ink">{eur2(cartSubtotal)}</span>
@@ -115,11 +115,11 @@ export function CartDrawer() {
                   <span className="font-medium text-ink">{shipping === 0 ? 'Free' : eur2(shipping)}</span>
                 </div>
                 {shipping > 0 && (
-                  <p className="text-[12px] text-muted">
+                  <p className="text-caption text-muted">
                     Add {eur(FREE_SHIPPING_THRESHOLD - cartSubtotal)} more for free shipping.
                   </p>
                 )}
-                <div className="mt-1.5 flex items-center justify-between border-t border-line pt-2.5 text-[15px]">
+                <div className="mt-1.5 flex items-center justify-between border-t border-line pt-2.5 text-copy">
                   <span className="font-semibold text-ink">Total</span>
                   <span className="font-semibold text-ink">{eur2(total)}</span>
                 </div>
@@ -127,7 +127,7 @@ export function CartDrawer() {
               <button className="btn btn-accent-bright btn-lg btn-block mt-4">
                 Checkout <Icon name="arrowRight" size={17} />
               </button>
-              <Link to="/shop" onClick={closeCart} className="mt-2.5 block text-center text-[13px] font-medium text-muted hover:text-ink">
+              <Link to="/shop" onClick={closeCart} className="mt-2.5 block text-center text-detail font-medium text-muted hover:text-ink">
                 Continue shopping
               </Link>
             </div>

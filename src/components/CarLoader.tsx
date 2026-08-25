@@ -153,7 +153,7 @@ export function SplashScreen({ hiding }: { hiding: boolean }) {
           style={{ animation: 'loader-bar 1.1s var(--ease-out-expo) infinite' }}
         />
       </div>
-      <p className="mt-4 text-[13px] text-muted animate-fade-in" style={{ animationDelay: '360ms' }}>
+      <p className="mt-4 text-detail text-muted animate-fade-in" style={{ animationDelay: '360ms' }}>
         Warming up the engine…
       </p>
     </div>

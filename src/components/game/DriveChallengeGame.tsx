@@ -1959,22 +1959,22 @@ export default function DriveChallengeGame({
 
       <div className="pointer-events-none absolute left-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
         <div ref={scoreChipRef} className="drive-hud-chip rounded-2xl px-3.5 py-2 backdrop-blur-xl">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Score</p>
+          <p className="text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">Score</p>
           <p ref={scoreElRef} className="font-display text-2xl font-bold leading-none tabular-nums text-white">
             0
           </p>
           {bestScore > 0 && (
-            <p ref={bestElRef} className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-accent-bright/70">
+            <p ref={bestElRef} className="mt-1 text-nano font-semibold uppercase tracking-wide text-accent-bright/70">
               Best {bestScore.toLocaleString()}
             </p>
           )}
         </div>
         <div ref={comboChipRef} className="drive-hud-chip rounded-2xl px-3.5 py-2 backdrop-blur-xl">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Combo</p>
+          <p className="text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">Combo</p>
           <p ref={comboElRef} className="font-display text-2xl font-bold leading-none tabular-nums text-accent-bright">
             &times;1
           </p>
-          <p ref={comboTierElRef} className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">
+          <p ref={comboTierElRef} className="mt-1 text-nano font-semibold uppercase tracking-wide text-white/40">
             Normal
           </p>
         </div>
@@ -1982,7 +1982,7 @@ export default function DriveChallengeGame({
 
       <div
         ref={milestoneElRef}
-        className="drive-milestone pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] mx-auto w-fit rounded-full border border-accent-bright/30 bg-black/60 px-4 py-1.5 text-[12.5px] font-bold uppercase tracking-wide text-accent-bright opacity-0 backdrop-blur-xl"
+        className="drive-milestone pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] mx-auto w-fit rounded-full border border-accent-bright/30 bg-black/60 px-4 py-1.5 text-caption font-bold uppercase tracking-wide text-accent-bright opacity-0 backdrop-blur-xl"
       />
 
       {/* Objective — persistent progress toward the current distance leg,
@@ -1993,10 +1993,10 @@ export default function DriveChallengeGame({
         ref={objectivePanelElRef}
         className="drive-hud-chip pointer-events-none absolute left-1/2 top-[max(7.25rem,calc(env(safe-area-inset-top)+6.5rem))] w-[12.5rem] -translate-x-1/2 rounded-2xl px-3.5 py-2 backdrop-blur-xl"
       >
-        <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">
+        <p className="flex items-center gap-1 text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">
           <Icon name="star" size={10} fill className="text-accent-bright" /> Objective
         </p>
-        <p ref={objectiveLabelElRef} className="mt-0.5 truncate text-[12px] font-semibold text-white">
+        <p ref={objectiveLabelElRef} className="mt-0.5 truncate text-caption font-semibold text-white">
           Drive 100 m
         </p>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
@@ -2008,7 +2008,7 @@ export default function DriveChallengeGame({
         </div>
         <p
           ref={objectiveValueElRef}
-          className="mt-1 text-right text-[9.5px] font-semibold uppercase tracking-wide text-white/40 tabular-nums"
+          className="mt-1 text-right text-nano font-semibold uppercase tracking-wide text-white/40 tabular-nums"
         >
           0.00 / 0.10 KM
         </p>
@@ -2016,18 +2016,18 @@ export default function DriveChallengeGame({
 
       <div className="pointer-events-none absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
         <div className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Speed</p>
+          <p className="text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">Speed</p>
           <p className="font-display text-2xl font-bold leading-none tabular-nums text-white">
             <span ref={speedElRef}>0</span>
           </p>
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">km/h</p>
+          <p className="mt-1 text-nano font-semibold uppercase tracking-wide text-white/40">km/h</p>
         </div>
         <div className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-accent-bright/75">Distance</p>
+          <p className="text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">Distance</p>
           <p className="font-display text-2xl font-bold leading-none tabular-nums text-white">
             <span ref={distanceElRef}>0.0</span>
           </p>
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-white/40">km</p>
+          <p className="mt-1 text-nano font-semibold uppercase tracking-wide text-white/40">km</p>
         </div>
       </div>
 
@@ -2049,7 +2049,7 @@ export default function DriveChallengeGame({
               permanently sits over the car once the controls are learned. */}
           <p
             ref={steerHintElRef}
-            className="pointer-events-none absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] text-center text-[12.5px] font-medium text-white/45 transition-opacity duration-700 ease-out"
+            className="pointer-events-none absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] text-center text-caption font-medium text-white/45 transition-opacity duration-700 ease-out"
           >
             <span className="hidden sm:inline">Steer with ← → or A / D</span>
             <span className="sm:hidden">Tap left or right to steer</span>

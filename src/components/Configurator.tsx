@@ -85,9 +85,9 @@ function ConfigSection({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">{title}</p>
+      <p className="text-label font-semibold uppercase tracking-[0.16em] text-white/45">{title}</p>
       {options.length === 0 ? (
-        <p className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-[13px] leading-relaxed text-white/50">
+        <p className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-detail leading-relaxed text-white/50">
           Not published for this vehicle — CX delivers it in its listed specification.
         </p>
       ) : (
@@ -98,7 +98,7 @@ function ConfigSection({
               onClick={() => onSelect(o.id)}
               aria-pressed={selected === o.id}
               title={o.label}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] transition-colors ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-detail transition-colors ${
                 selected === o.id
                   ? 'border-accent-bright/60 bg-accent-bright/10 text-white'
                   : 'border-white/12 bg-white/[0.04] text-white/75 hover:border-white/30'
@@ -286,8 +286,8 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-bright">Build your CX</p>
-          <p className="truncate text-[14.5px] font-semibold uppercase tracking-wide text-white">
+          <p className="text-label font-semibold uppercase tracking-[0.18em] text-accent-bright">Build your CX</p>
+          <p className="truncate text-body font-semibold uppercase tracking-wide text-white">
             {car.make} {car.model}
             {car.trim ? ` ${car.trim}` : ''}
           </p>
@@ -333,14 +333,14 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
             ))}
 
             {gallery.length > 1 && (
-              <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[12px] text-white/40">
+              <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-caption text-white/40">
                 Drag to rotate · scroll or pinch to zoom
               </p>
             )}
             {zoom > 1 && (
               <button
                 onClick={() => setZoom(1)}
-                className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-[12px] text-white/80 backdrop-blur-md"
+                className="absolute right-3 top-3 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-caption text-white/80 backdrop-blur-md"
               >
                 Reset zoom
               </button>
@@ -377,7 +377,7 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
             <ConfigSection title="Interior" options={options.interior} selected={interiorId} onSelect={setInteriorId} />
 
             {!hasAnyConfigOptions(options) && (
-              <p className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-[12.5px] leading-relaxed text-white/45">
+              <p className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-3 text-caption leading-relaxed text-white/45">
                 <Icon name="info" size={15} className="mt-0.5 shrink-0" />
                 This vehicle is rented exactly as listed. Your saved build records the framing you liked, not a change to the car.
               </p>
@@ -385,10 +385,10 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
 
             {appointments.length > 0 && (
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">This vehicle&apos;s appointments</p>
+                <p className="text-label font-semibold uppercase tracking-[0.16em] text-white/45">This vehicle&apos;s appointments</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {appointments.map((a) => (
-                    <span key={a} className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/75">
+                    <span key={a} className="rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-caption text-white/75">
                       {a}
                     </span>
                   ))}
@@ -398,14 +398,14 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
 
             {/* Specs — verified fields only */}
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">Specification</p>
+              <p className="text-label font-semibold uppercase tracking-[0.16em] text-white/45">Specification</p>
               <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
                 {realSpecs(car).map((s) => (
                   <div key={s.label} className="flex items-center gap-2.5">
                     <Icon name={s.icon} size={16} className="shrink-0 text-white/40" />
                     <div className="min-w-0">
-                      <dt className="text-[11px] text-white/45">{s.label}</dt>
-                      <dd className="truncate text-[13.5px] font-medium text-white">{s.value}</dd>
+                      <dt className="text-label text-white/45">{s.label}</dt>
+                      <dd className="truncate text-detail font-medium text-white">{s.value}</dd>
                     </div>
                   </div>
                 ))}
@@ -414,17 +414,17 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
 
             {/* Summary */}
             <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-bright">Your CX</p>
+              <p className="text-label font-semibold uppercase tracking-[0.16em] text-accent-bright">Your CX</p>
               <p className="mt-2 font-display text-lg font-semibold text-white">
                 {car.make} {car.model}
               </p>
-              <p className="mt-0.5 text-[13px] text-white/55">
+              <p className="mt-0.5 text-detail text-white/55">
                 {car.trim ? `${car.trim} · ` : ''}
                 {car.year} · {car.category}
               </p>
               <p className="mt-3 text-white">
                 <span className="font-display text-2xl font-semibold">{eur(car.pricePerDay)}</span>
-                <span className="text-[13px] text-white/55"> / day</span>
+                <span className="text-detail text-white/55"> / day</span>
               </p>
             </div>
 
@@ -435,7 +435,7 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
               </button>
               <button
                 onClick={handleSave}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-3 text-[14px] font-medium text-white/85 transition-colors hover:border-white/30"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-3 text-body font-medium text-white/85 transition-colors hover:border-white/30"
               >
                 <Icon name={saved ? 'check' : 'heart'} size={16} className={saved ? 'text-accent-bright' : ''} />
                 {saved ? 'Saved to Garage' : 'Save to Garage'}
@@ -443,13 +443,13 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
               <div className="flex gap-3">
                 <button
                   onClick={handleShare}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 text-[13.5px] font-medium text-white/80 transition-colors hover:border-white/30"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 transition-colors hover:border-white/30"
                 >
                   <Icon name="arrowUpRight" size={15} /> Share
                 </button>
                 <button
                   onClick={handleCard}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 text-[13.5px] font-medium text-white/80 transition-colors hover:border-white/30"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 transition-colors hover:border-white/30"
                 >
                   <Icon name="camera" size={15} /> CX Card
                 </button>

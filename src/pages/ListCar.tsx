@@ -53,7 +53,7 @@ function Labeled({ label, children, full, hint }: { label: string; children: Rea
     <label className={full ? 'sm:col-span-2' : ''}>
       <span className="field-label">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-[12px] text-faint">{hint}</span>}
+      {hint && <span className="mt-1 block text-caption text-faint">{hint}</span>}
     </label>
   );
 }
@@ -220,7 +220,7 @@ export default function ListCar() {
           <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">
             {isPublished ? 'Your listing is live.' : 'Draft saved.'}
           </h1>
-          <p className="mt-3 text-[15px] text-muted">
+          <p className="mt-3 text-copy text-muted">
             {isPublished
               ? `Your ${created.year} ${created.make} ${created.model} is now visible to renters across Europe. You’ll be notified the moment a booking comes in.`
               : `Your ${created.year} ${created.make} ${created.model} is saved to your fleet. It won’t appear on the marketplace until you publish it.`}
@@ -234,10 +234,10 @@ export default function ListCar() {
               <h2 className="min-w-0 truncate font-medium text-ink">{created.make} {created.model}</h2>
               <span className="shrink-0 text-ink">
                 <span className="font-semibold">{eur(created.pricePerDay)}</span>
-                <span className="text-[13px] text-muted"> / day</span>
+                <span className="text-detail text-muted"> / day</span>
               </span>
             </div>
-            <p className="mt-1 text-[13px] text-muted">
+            <p className="mt-1 text-detail text-muted">
               {created.year} · {created.category} · {created.location}
             </p>
           </div>
@@ -262,7 +262,7 @@ export default function ListCar() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-2 flex items-center justify-between">
           <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">List your car</h1>
-          <span className="text-[13.5px] text-muted">Step {step + 1} of {STEPS.length}</span>
+          <span className="text-detail text-muted">Step {step + 1} of {STEPS.length}</span>
         </div>
 
         {/* Progress */}
@@ -278,7 +278,7 @@ export default function ListCar() {
               <button
                 key={s.title}
                 onClick={() => i <= step && setStep(i)}
-                className={`flex items-center gap-1.5 text-[13px] font-medium ${i <= step ? 'text-ink' : 'text-faint'}`}
+                className={`flex items-center gap-1.5 text-detail font-medium ${i <= step ? 'text-ink' : 'text-faint'}`}
               >
                 <Icon name={s.icon} size={15} /> {s.title}
               </button>
@@ -291,7 +291,7 @@ export default function ListCar() {
           {step === 0 && (
             <div className="animate-fade-up">
               <h2 className="font-display text-xl font-semibold text-ink">Tell us about your car</h2>
-              <p className="mt-1 text-[14px] text-muted">The basics renters look for first.</p>
+              <p className="mt-1 text-body text-muted">The basics renters look for first.</p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <Labeled label="Make">
@@ -350,7 +350,7 @@ export default function ListCar() {
 
               <div className="mt-8 border-t border-line pt-6">
                 <h3 className="font-display text-lg font-semibold text-ink">Where &amp; what it’s like</h3>
-                <p className="mt-1 text-[14px] text-muted">This is what renters see on your listing page.</p>
+                <p className="mt-1 text-body text-muted">This is what renters see on your listing page.</p>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <Labeled label="City">
@@ -398,14 +398,14 @@ export default function ListCar() {
                     className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
                   />
                   <span>
-                    <span className="block text-[14.5px] font-medium text-ink">Allow instant booking</span>
-                    <span className="block text-[13px] text-muted">Renters can book without waiting for you to approve each request.</span>
+                    <span className="block text-body font-medium text-ink">Allow instant booking</span>
+                    <span className="block text-detail text-muted">Renters can book without waiting for you to approve each request.</span>
                   </span>
                 </label>
               </div>
 
               {!canContinue && (
-                <p className="mt-5 flex items-center gap-2 text-[13.5px] text-muted">
+                <p className="mt-5 flex items-center gap-2 text-detail text-muted">
                   <Icon name="info" size={15} /> Fill in make, model, year, city and pick-up area to continue.
                 </p>
               )}
@@ -416,7 +416,7 @@ export default function ListCar() {
           {step === 1 && (
             <div className="animate-fade-up">
               <h2 className="font-display text-xl font-semibold text-ink">Add photos</h2>
-              <p className="mt-1 text-[14px] text-muted">Listings with 6+ quality photos get booked twice as often. The first is your cover.</p>
+              <p className="mt-1 text-body text-muted">Listings with 6+ quality photos get booked twice as often. The first is your cover.</p>
 
               <input
                 ref={fileInput}
@@ -442,12 +442,12 @@ export default function ListCar() {
                 <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent shadow-hair">
                   <Icon name="upload" size={22} />
                 </span>
-                <p className="mt-3 text-[14.5px] font-medium text-ink">Drag &amp; drop photos here</p>
-                <p className="text-[13px] text-muted">or click to browse — images up to 5MB, {MAX_PHOTOS} max</p>
+                <p className="mt-3 text-body font-medium text-ink">Drag &amp; drop photos here</p>
+                <p className="text-detail text-muted">or click to browse — images up to 5MB, {MAX_PHOTOS} max</p>
               </div>
 
               {photoError && (
-                <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                   <Icon name="info" size={16} /> {photoError}
                 </p>
               )}
@@ -480,7 +480,7 @@ export default function ListCar() {
               )}
 
               {photos.length === 0 && (
-                <p className="mt-4 flex items-center gap-2 text-[13.5px] text-muted">
+                <p className="mt-4 flex items-center gap-2 text-detail text-muted">
                   <Icon name="info" size={15} /> At least one photo is required.
                 </p>
               )}
@@ -491,10 +491,10 @@ export default function ListCar() {
           {step === 2 && (
             <div className="animate-fade-up">
               <h2 className="font-display text-xl font-semibold text-ink">Set your price</h2>
-              <p className="mt-1 text-[14px] text-muted">You can change this any time from your host dashboard.</p>
+              <p className="mt-1 text-body text-muted">You can change this any time from your host dashboard.</p>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-noir p-6 text-on-noir">
                 <div>
-                  <p className="text-[13px] text-on-noir-muted">Daily price</p>
+                  <p className="text-detail text-on-noir-muted">Daily price</p>
                   <div className="mt-1 flex items-center gap-2">
                     <button
                       onClick={() => setPrice((p) => Math.max(5, p - 5))}
@@ -514,11 +514,11 @@ export default function ListCar() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[13px] text-on-noir-muted">Earnings on a 3-day trip</p>
+                  <p className="text-detail text-on-noir-muted">Earnings on a 3-day trip</p>
                   <p className="mt-1 font-display text-2xl font-semibold text-accent-bright">{eur(price * 3)}</p>
                 </div>
               </div>
-              <p className="mt-4 flex items-start gap-2 text-[13.5px] text-muted">
+              <p className="mt-4 flex items-start gap-2 text-detail text-muted">
                 <Icon name="info" size={15} className="mt-px shrink-0" />
                 Renters also pay a service fee and protection on top of your daily rate — you receive the rate you set.
               </p>
@@ -529,7 +529,7 @@ export default function ListCar() {
           {step === 3 && (
             <div className="animate-fade-up">
               <h2 className="font-display text-xl font-semibold text-ink">Review your listing</h2>
-              <p className="mt-1 text-[14px] text-muted">Here’s how renters will see your car.</p>
+              <p className="mt-1 text-body text-muted">Here’s how renters will see your car.</p>
 
               <div className="mt-6 overflow-hidden rounded-2xl border border-line">
                 <div className="relative aspect-[16/9] bg-panel-2">
@@ -544,27 +544,27 @@ export default function ListCar() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate font-medium text-ink">{form.make} {form.model}</h3>
-                      <p className="text-[13px] text-muted">
+                      <p className="text-detail text-muted">
                         {form.trim ? `${form.trim} · ` : ''}{form.year} · {form.category}
                       </p>
-                      <p className="mt-1 flex items-center gap-1 text-[13px] text-muted">
+                      <p className="mt-1 flex items-center gap-1 text-detail text-muted">
                         <Icon name="pin" size={13} /> {form.location}
                       </p>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-ink">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-detail font-medium text-ink">
                       <Icon name="star" size={13} className="text-star" /> New
                     </span>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-                    <div className="flex flex-wrap gap-4 text-[13px] text-muted">
+                    <div className="flex flex-wrap gap-4 text-detail text-muted">
                       <span className="inline-flex items-center gap-1"><Icon name="seat" size={14} /> {form.seats}</span>
                       <span className="inline-flex items-center gap-1"><Icon name="bag" size={14} /> {form.luggage}</span>
                       <span className="inline-flex items-center gap-1"><Icon name="gear" size={14} /> {form.transmission}</span>
                       <span className="inline-flex items-center gap-1"><Icon name="gas" size={14} /> {form.fuel}</span>
                     </div>
                     <span className="text-ink">
-                      <span className="text-[17px] font-semibold">{eur(price)}</span>
-                      <span className="text-[13px] text-muted"> / day</span>
+                      <span className="text-lead font-semibold">{eur(price)}</span>
+                      <span className="text-detail text-muted"> / day</span>
                     </span>
                   </div>
                   {features.length > 0 && (
@@ -578,12 +578,12 @@ export default function ListCar() {
               </div>
 
               {submitError && (
-                <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                   <Icon name="info" size={16} /> {submitError}
                 </p>
               )}
 
-              <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-accent-050 p-4 text-[13.5px] text-accent-700">
+              <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-accent-050 p-4 text-detail text-accent-700">
                 <Icon name="checkCircle" size={17} className="mt-px shrink-0" />
                 Publishing makes your car bookable immediately. Save it as a draft if you’d rather finish later.
               </div>

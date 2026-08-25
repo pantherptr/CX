@@ -93,7 +93,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
       >
         <div className="min-h-0 overflow-hidden">
-          <p className="pb-4 text-[14.5px] leading-relaxed text-muted text-pretty">{a}</p>
+          <p className="pb-4 text-body leading-relaxed text-muted text-pretty">{a}</p>
         </div>
       </div>
     </div>
@@ -115,7 +115,7 @@ export default function Help() {
           <h1 className="font-display text-4xl font-semibold leading-[1.04] text-ink text-balance sm:text-5xl">
             How can we help?
           </h1>
-          <p className="mt-5 text-[16px] leading-relaxed text-muted text-pretty">
+          <p className="mt-5 text-lead leading-relaxed text-muted text-pretty">
             Answers organised by where you are in your trip — before booking, during, and after.
           </p>
         </div>
@@ -148,7 +148,7 @@ export default function Help() {
             <Icon name="headset" size={22} />
           </span>
           <h2 className="mt-5 font-display text-2xl font-semibold">Still need help?</h2>
-          <p className="mx-auto mt-2 max-w-sm text-[14.5px] leading-relaxed text-white/70">
+          <p className="mx-auto mt-2 max-w-sm text-body leading-relaxed text-white/70">
             Start a conversation and we'll pick it up from there — same place you talk to hosts and
             renters, so nothing gets lost.
           </p>

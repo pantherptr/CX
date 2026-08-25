@@ -55,7 +55,7 @@ function ChecklistRow({ done, label, right }: { done: boolean; label: string; ri
         >
           {done && <Icon name="check" size={12} strokeWidth={3} />}
         </span>
-        <span className={`truncate text-[14px] ${done ? 'text-ink' : 'text-ink-soft'}`}>{label}</span>
+        <span className={`truncate text-body ${done ? 'text-ink' : 'text-ink-soft'}`}>{label}</span>
       </div>
       {right}
     </div>
@@ -66,13 +66,13 @@ function TimelineStep({ label, done, current }: { label: string; done: boolean; 
   return (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
       <span
-        className={`grid h-8 w-8 place-items-center rounded-full text-[12px] font-semibold ${
+        className={`grid h-8 w-8 place-items-center rounded-full text-caption font-semibold ${
           done ? 'bg-accent text-white' : current ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
         }`}
       >
         {done ? <Icon name="check" size={14} strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
       </span>
-      <span className={`text-[11.5px] font-medium uppercase tracking-wide ${done || current ? 'text-ink' : 'text-faint'}`}>{label}</span>
+      <span className={`text-label font-medium uppercase tracking-wide ${done || current ? 'text-ink' : 'text-faint'}`}>{label}</span>
     </div>
   );
 }
@@ -142,7 +142,7 @@ export default function TripDetails() {
             <Icon name="info" size={26} />
           </span>
           <h1 className="font-display text-xl font-semibold text-ink">Couldn't load this trip</h1>
-          <p className="max-w-sm text-[14px] text-muted">{loadError}</p>
+          <p className="max-w-sm text-body text-muted">{loadError}</p>
         </div>
       </DashboardShell>
     );
@@ -153,7 +153,7 @@ export default function TripDetails() {
       <DashboardShell variant="customer" active="My Trips">
         <div className="flex flex-col items-center gap-3 py-24 text-center">
           <CarLoader size={90} />
-          <p className="text-[14px] text-muted">Loading trip…</p>
+          <p className="text-body text-muted">Loading trip…</p>
         </div>
       </DashboardShell>
     );
@@ -167,7 +167,7 @@ export default function TripDetails() {
             <Icon name="search" size={26} />
           </span>
           <h1 className="font-display text-xl font-semibold text-ink">Trip not found</h1>
-          <p className="max-w-sm text-[14px] text-muted">
+          <p className="max-w-sm text-body text-muted">
             This trip doesn't exist, or doesn't belong to your account.
           </p>
           <Link to="/dashboard#trips" className="btn btn-primary mt-2">Back to My Trips</Link>
@@ -307,7 +307,7 @@ export default function TripDetails() {
   return (
     <DashboardShell variant="customer" active="My Trips">
       <div className="mx-auto max-w-3xl p-4 sm:p-6 lg:p-8">
-        <Link to="/dashboard#trips" className="mb-5 inline-flex items-center gap-1.5 text-[14px] text-muted hover:text-ink">
+        <Link to="/dashboard#trips" className="mb-5 inline-flex items-center gap-1.5 text-body text-muted hover:text-ink">
           <Icon name="chevronLeft" size={16} /> My Trips
         </Link>
 
@@ -318,13 +318,13 @@ export default function TripDetails() {
             <h1 className="mt-2 font-display text-2xl font-semibold text-ink sm:text-3xl">
               {booking.car.year} {booking.car.make} {booking.car.model}
             </h1>
-            <p className="mt-1 text-[13.5px] text-muted">Booking {booking.reference}</p>
+            <p className="mt-1 text-detail text-muted">Booking {booking.reference}</p>
           </div>
         </div>
 
         {phase === 'upcoming' && (
           <div className="mt-5 rounded-2xl bg-ink px-5 py-4 text-white">
-            <p className="text-[14.5px] font-medium">
+            <p className="text-body font-medium">
               Your trip starts in {daysUntil(booking.startDate)} {daysUntil(booking.startDate) === 1 ? 'day' : 'days'}
             </p>
           </div>
@@ -346,7 +346,7 @@ export default function TripDetails() {
                 label="Verify identity"
                 right={
                   selfieSubmitted ? (
-                    <span className="shrink-0 text-[12.5px] text-muted">{verificationStatusLabel}</span>
+                    <span className="shrink-0 text-caption text-muted">{verificationStatusLabel}</span>
                   ) : (
                     <label className="btn btn-secondary btn-sm shrink-0 cursor-pointer">
                       {uploadingSelfie ? 'Uploading…' : 'Upload'}
@@ -360,7 +360,7 @@ export default function TripDetails() {
                 label="Upload driving licence"
                 right={
                   licenceSubmitted ? (
-                    <span className="shrink-0 text-[12.5px] text-muted">{verificationStatusLabel}</span>
+                    <span className="shrink-0 text-caption text-muted">{verificationStatusLabel}</span>
                   ) : (
                     <label className="btn btn-secondary btn-sm shrink-0 cursor-pointer">
                       {uploadingLicence ? 'Uploading…' : 'Upload'}
@@ -374,13 +374,13 @@ export default function TripDetails() {
                 label="Review rental agreement"
                 right={
                   agreementAccepted ? (
-                    <span className="shrink-0 text-[12.5px] text-muted">Signed</span>
+                    <span className="shrink-0 text-caption text-muted">Signed</span>
                   ) : (
                     <button onClick={() => setAgreementOpen(true)} className="btn btn-secondary btn-sm shrink-0">Review</button>
                   )
                 }
               />
-              <ChecklistRow done label="Pickup instructions" right={<span className="shrink-0 text-[12.5px] text-muted">See below</span>} />
+              <ChecklistRow done label="Pickup instructions" right={<span className="shrink-0 text-caption text-muted">See below</span>} />
               <ChecklistRow done={readyForPickup} label="Ready for pickup" />
             </div>
           </section>
@@ -413,8 +413,8 @@ export default function TripDetails() {
                 <Icon name={s.icon} size={18} />
               </span>
               <div className="min-w-0">
-                <p className="text-[12px] text-muted">{s.label}</p>
-                <p className="truncate text-[14px] font-medium text-ink">{s.value}</p>
+                <p className="text-caption text-muted">{s.label}</p>
+                <p className="truncate text-body font-medium text-ink">{s.value}</p>
               </div>
             </div>
           ))}
@@ -426,7 +426,7 @@ export default function TripDetails() {
         <section className="mt-8 border-t border-line pt-6">
           <h2 className="font-display text-lg font-semibold text-ink">Pick-up location</h2>
           <div className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-line p-4">
-            <p className="text-[14px] text-ink-soft">{booking.pickupLocation || booking.car.location}</p>
+            <p className="text-body text-ink-soft">{booking.pickupLocation || booking.car.location}</p>
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm shrink-0">
               Open Maps <Icon name="arrowUpRight" size={14} />
             </a>
@@ -439,9 +439,9 @@ export default function TripDetails() {
           <Reveal>
           <section className="mt-8 border-t border-line pt-6">
             <h2 className="font-display text-lg font-semibold text-ink">Vehicle inspection</h2>
-            <p className="mt-1 text-[13px] text-muted">Photograph the car before pick-up and after return — a real before/after record for this trip.</p>
+            <p className="mt-1 text-detail text-muted">Photograph the car before pick-up and after return — a real before/after record for this trip.</p>
 
-            <h3 className="mt-5 text-[13px] font-semibold uppercase tracking-wide text-muted">Before pick-up</h3>
+            <h3 className="mt-5 text-detail font-semibold uppercase tracking-wide text-muted">Before pick-up</h3>
             <div className="mt-2.5">
               <InspectionGrid
                 bookingId={booking.id}
@@ -452,7 +452,7 @@ export default function TripDetails() {
               />
             </div>
 
-            <h3 className="mt-6 text-[13px] font-semibold uppercase tracking-wide text-muted">After return</h3>
+            <h3 className="mt-6 text-detail font-semibold uppercase tracking-wide text-muted">After return</h3>
             <div className="mt-2.5">
               <InspectionGrid
                 bookingId={booking.id}
@@ -481,8 +481,8 @@ export default function TripDetails() {
               </span>
             )}
             <div className="flex-1">
-              <p className="text-[14px] font-medium text-ink">{booking.host.name}</p>
-              {booking.host.responseTime && <p className="text-[13px] text-muted">Responds {booking.host.responseTime}</p>}
+              <p className="text-body font-medium text-ink">{booking.host.name}</p>
+              {booking.host.responseTime && <p className="text-detail text-muted">Responds {booking.host.responseTime}</p>}
             </div>
             <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
               <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
@@ -495,7 +495,7 @@ export default function TripDetails() {
         <Reveal>
         <section className="mt-8 border-t border-line pt-6">
           <h2 className="font-display text-lg font-semibold text-ink">Payment details</h2>
-          <dl className="mt-3 space-y-2.5 rounded-xl border border-line p-4 text-[14px]">
+          <dl className="mt-3 space-y-2.5 rounded-xl border border-line p-4 text-body">
             <div className="flex justify-between"><dt className="text-muted">{days} {days === 1 ? 'day' : 'days'} rental</dt><dd className="text-ink">{eur(base)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(service)}</dd></div>
             <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(protection)}</dd></div>
@@ -506,7 +506,7 @@ export default function TripDetails() {
               <div key={ex.id} className="flex justify-between"><dt className="text-muted">{ex.name}</dt><dd className="text-ink">{eur(ex.unitPrice * ex.quantity)}</dd></div>
             ))}
             <div className="hairline my-1" />
-            <div className="flex justify-between text-[15px] font-semibold text-ink"><dt>Total</dt><dd>{eur(booking.totalPrice)}</dd></div>
+            <div className="flex justify-between text-copy font-semibold text-ink"><dt>Total</dt><dd>{eur(booking.totalPrice)}</dd></div>
           </dl>
           {(booking.fareTier === 'flexible' || booking.extras.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -525,7 +525,7 @@ export default function TripDetails() {
         <Reveal>
         <section className="mt-8 border-t border-line pt-6">
           <h2 className="font-display text-lg font-semibold text-ink">Insurance &amp; cancellation</h2>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
+          <p className="mt-2 text-detail leading-relaxed text-muted">
             This trip includes damage protection and 24/7 roadside assistance.{' '}
             {booking.fareTier === 'flexible'
               ? 'Your flexible fare includes free cancellation any time before pick-up.'
@@ -541,7 +541,7 @@ export default function TripDetails() {
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">Trip dates</h2>
               {!modifying && (
-                <button onClick={openModify} className="text-[13.5px] font-medium text-accent hover:underline">
+                <button onClick={openModify} className="text-detail font-medium text-accent hover:underline">
                   Modify dates
                 </button>
               )}
@@ -558,19 +558,19 @@ export default function TripDetails() {
                     <input type="date" min={modStart || todayISO()} value={modEnd} onChange={(e) => setModEnd(e.target.value)} className="input" />
                   </label>
                 </div>
-                {modAvailability === 'checking' && <p className="mt-3 text-[13.5px] text-muted">Checking availability…</p>}
+                {modAvailability === 'checking' && <p className="mt-3 text-detail text-muted">Checking availability…</p>}
                 {modAvailability === 'unavailable' && (
-                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                     <Icon name="info" size={16} /> This car is already booked for part of those dates.
                   </p>
                 )}
                 {modAvailability === 'available' && (
-                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-[13.5px] text-accent-700">
+                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-detail text-accent-700">
                     <Icon name="checkCircle" size={16} /> Available — price will be recalculated for the new dates.
                   </p>
                 )}
                 {modError && (
-                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                  <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                     <Icon name="info" size={16} /> {modError}
                   </p>
                 )}
@@ -599,7 +599,7 @@ export default function TripDetails() {
               {cancelling ? 'Cancelling…' : 'Cancel trip'}
             </button>
           ) : phase === 'upcoming' || phase === 'active' ? (
-            <p className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-center text-[13px] text-muted">
+            <p className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-center text-detail text-muted">
               Cancellation window has passed — contact your host or support.
             </p>
           ) : null}
@@ -610,7 +610,7 @@ export default function TripDetails() {
       <Modal open={agreementOpen} onClose={() => setAgreementOpen(false)} className="max-w-lg" labelledBy="agreement-title">
         <div className="p-6">
           <h2 id="agreement-title" className="font-display text-xl font-semibold text-ink">Rental agreement</h2>
-          <div className="mt-4 max-h-72 space-y-3 overflow-y-auto rounded-xl border border-line p-4 text-[13.5px] leading-relaxed text-ink-soft">
+          <div className="mt-4 max-h-72 space-y-3 overflow-y-auto rounded-xl border border-line p-4 text-detail leading-relaxed text-ink-soft">
             <p>By accepting, you confirm you'll use {booking.car.make} {booking.car.model} only as licensed and insured, return it by {new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} in the condition it was received, and report any damage to your host immediately.</p>
             <p>This trip includes damage protection and 24/7 roadside assistance, as shown in your payment breakdown.{' '}
               {booking.fareTier === 'flexible'

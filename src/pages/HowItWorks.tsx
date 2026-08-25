@@ -24,7 +24,7 @@ export default function HowItWorks() {
       <div className="mx-auto max-w-2xl text-center">
         <p className="eyebrow mb-3">How it works</p>
         <h1 className="font-display text-4xl font-semibold leading-[1.05] text-ink text-balance sm:text-5xl">Renting a car, reimagined.</h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-muted text-pretty">From first search to final drop-off, every step is designed to be simple, transparent and completely trustworthy.</p>
+        <p className="mt-4 text-lead leading-relaxed text-muted text-pretty">From first search to final drop-off, every step is designed to be simple, transparent and completely trustworthy.</p>
         <div className="mt-7 flex justify-center gap-3">
           <Link to="/browse" className="btn btn-primary btn-lg">Find a car <Icon name="arrowRight" size={17} /></Link>
           <Link to="/list-your-car" className="btn btn-secondary btn-lg">Become a host</Link>
@@ -40,10 +40,10 @@ export default function HowItWorks() {
                 <span className="font-display text-4xl font-semibold text-panel-2">{s.n}</span>
               </div>
               <h2 className="mt-5 font-display text-2xl font-semibold text-ink">{s.title}</h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted">{s.desc}</p>
+              <p className="mt-2 text-copy leading-relaxed text-muted">{s.desc}</p>
               <ul className="mt-5 space-y-2.5">
                 {s.points.map((p) => (
-                  <li key={p} className="flex items-center gap-2.5 text-[14.5px] text-ink-soft">
+                  <li key={p} className="flex items-center gap-2.5 text-body text-ink-soft">
                     <span className="grid h-5 w-5 place-items-center rounded-full bg-accent-050 text-accent"><Icon name="check" size={12} strokeWidth={3} /></span>{p}
                   </li>
                 ))}
@@ -63,10 +63,10 @@ export default function HowItWorks() {
           {faqs.map((f, i) => (
             <div key={f.q}>
               <button onClick={() => setOpen(open === i ? -1 : i)} className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left">
-                <span className="text-[15.5px] font-medium text-ink">{f.q}</span>
+                <span className="text-copy font-medium text-ink">{f.q}</span>
                 <Icon name="chevronDown" size={20} className={`shrink-0 text-muted transition-transform ${open === i ? 'rotate-180' : ''}`} />
               </button>
-              {open === i && <p className="animate-fade-in px-6 pb-5 text-[14.5px] leading-relaxed text-muted">{f.a}</p>}
+              {open === i && <p className="animate-fade-in px-6 pb-5 text-body leading-relaxed text-muted">{f.a}</p>}
             </div>
           ))}
         </div>

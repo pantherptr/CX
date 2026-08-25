@@ -154,7 +154,7 @@ export function Toaster() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium leading-snug">{t.title}</p>
-            {t.desc && <p className="text-[13px] text-white/65 mt-0.5 leading-snug">{t.desc}</p>}
+            {t.desc && <p className="text-detail text-white/65 mt-0.5 leading-snug">{t.desc}</p>}
           </div>
           <button
             onClick={() => dismiss(t.id)}

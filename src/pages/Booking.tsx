@@ -42,13 +42,13 @@ function Stepper({ step }: { step: number }) {
           <li key={s} className="flex flex-1 items-center last:flex-none">
             <div className="flex items-center gap-2.5">
               <span
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-semibold transition-all ${
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-detail font-semibold transition-all ${
                   done ? 'bg-accent-bright text-noir' : active ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
                 }`}
               >
                 {done ? <Icon name="check" size={15} strokeWidth={3} /> : i + 1}
               </span>
-              <span className={`hidden text-[13.5px] font-medium sm:block ${active || done ? 'text-ink' : 'text-faint'}`}>{s}</span>
+              <span className={`hidden text-detail font-medium sm:block ${active || done ? 'text-ink' : 'text-faint'}`}>{s}</span>
             </div>
             {i < STEPS.length - 1 && (
               <span className={`mx-3 h-px flex-1 ${done ? 'bg-accent-bright' : 'bg-line'}`} />
@@ -164,7 +164,7 @@ export default function Booking() {
           <Icon name="info" size={26} />
         </span>
         <h1 className="font-display text-xl font-semibold text-ink">Couldn't load this car</h1>
-        <p className="max-w-sm text-[14px] text-muted">{loadError}</p>
+        <p className="max-w-sm text-body text-muted">{loadError}</p>
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function Booking() {
     return (
       <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
         <CarLoader size={90} />
-        <p className="text-[14px] text-muted">Loading…</p>
+        <p className="text-body text-muted">Loading…</p>
       </div>
     );
   }
@@ -272,7 +272,7 @@ export default function Booking() {
             <Icon name="checkCircle" size={34} />
           </span>
           <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">You're all set.</h1>
-          <p className="mt-3 text-[15px] text-muted">
+          <p className="mt-3 text-copy text-muted">
             Your booking is confirmed. Your host has been notified.
           </p>
         </div>
@@ -281,9 +281,9 @@ export default function Booking() {
           <div className="flex items-center gap-4 border-b border-line p-5">
             <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-28 rounded-xl object-cover" />
             <div className="min-w-0">
-              <p className="text-[12px] font-medium uppercase tracking-wide text-accent">Booking {confirmed.reference}</p>
+              <p className="text-caption font-medium uppercase tracking-wide text-accent">Booking {confirmed.reference}</p>
               <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-ink">{car.year} {car.make} {car.model}</h2>
-              <p className="text-[13.5px] text-muted">Hosted by {host.name}</p>
+              <p className="text-detail text-muted">Hosted by {host.name}</p>
             </div>
           </div>
           <dl className="grid grid-cols-2 gap-y-5 p-5 sm:grid-cols-4">
@@ -294,8 +294,8 @@ export default function Booking() {
               { l: 'Total paid', v: eur(confirmed.totalPrice), icon: 'card' as IconName },
             ].map((x) => (
               <div key={x.l}>
-                <dt className="flex items-center gap-1.5 text-[12px] text-muted"><Icon name={x.icon} size={14} /> {x.l}</dt>
-                <dd className="mt-1 text-[14.5px] font-medium text-ink">{x.v}</dd>
+                <dt className="flex items-center gap-1.5 text-caption text-muted"><Icon name={x.icon} size={14} /> {x.l}</dt>
+                <dd className="mt-1 text-body font-medium text-ink">{x.v}</dd>
               </div>
             ))}
           </dl>
@@ -310,7 +310,7 @@ export default function Booking() {
             </div>
           )}
           {confirmed.discountAmount > 0 && (
-            <div className="flex items-center gap-2 border-t border-line bg-accent-050 px-5 py-3 text-[13.5px] text-accent-700">
+            <div className="flex items-center gap-2 border-t border-line bg-accent-050 px-5 py-3 text-detail text-accent-700">
               <Icon name="gift" size={16} />
               Reward applied: −{eur(confirmed.discountAmount)}
             </div>
@@ -318,8 +318,8 @@ export default function Booking() {
           <div className="flex items-center gap-3 border-t border-line bg-panel/50 p-5">
             <img src={host.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
             <div className="flex-1">
-              <p className="text-[14px] font-medium text-ink">{host.name}</p>
-              <p className="text-[13px] text-muted">Responds {host.responseTime}</p>
+              <p className="text-body font-medium text-ink">{host.name}</p>
+              <p className="text-detail text-muted">Responds {host.responseTime}</p>
             </div>
             <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
               <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
@@ -332,7 +332,7 @@ export default function Booking() {
             booking, never a step in the way of one. */}
         <div className="mt-9">
           <p className="eyebrow text-center sm:text-left">Make your drive better</p>
-          <p className="mt-1 text-center text-[14.5px] text-muted sm:text-left">
+          <p className="mt-1 text-center text-body text-muted sm:text-left">
             Add CX essentials to your experience — totally optional.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -353,7 +353,7 @@ export default function Booking() {
 
   return (
     <div className="container-page py-8">
-      <button onClick={back} className="mb-6 inline-flex items-center gap-1.5 text-[14px] text-muted transition-colors hover:text-ink">
+      <button onClick={back} className="mb-6 inline-flex items-center gap-1.5 text-body text-muted transition-colors hover:text-ink">
         <Icon name="chevronLeft" size={16} /> Back
       </button>
 
@@ -365,7 +365,7 @@ export default function Booking() {
           {step === 0 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
-              <p className="mt-1.5 text-[14.5px] text-muted">Confirm where and when you'd like the car.</p>
+              <p className="mt-1.5 text-body text-muted">Confirm where and when you'd like the car.</p>
               <div className="mt-6 card p-6">
                 <Labeled label="Pick-up location">
                   <div className="relative">
@@ -390,27 +390,27 @@ export default function Booking() {
                 </div>
 
                 {dateError && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                     <Icon name="info" size={16} /> {dateError}
                   </p>
                 )}
                 {!dateError && availability === 'checking' && (
-                  <p className="mt-4 text-[13.5px] text-muted">Checking availability…</p>
+                  <p className="mt-4 text-detail text-muted">Checking availability…</p>
                 )}
                 {!dateError && availability === 'unavailable' && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                     <Icon name="info" size={16} /> This car is already booked for part of those dates. Try a different range.
                   </p>
                 )}
                 {!dateError && availability === 'available' && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-[13.5px] text-accent-700">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-detail text-accent-700">
                     <Icon name="checkCircle" size={16} /> Available for your dates.
                   </p>
                 )}
 
                 <div className="mt-5 rounded-xl bg-panel p-4">
-                  <p className="flex items-center gap-2 text-[13.5px] font-medium text-ink"><Icon name="shield" size={16} className="text-accent" /> Premium protection included</p>
-                  <p className="mt-1 text-[13px] text-muted">Every CX trip comes with damage protection and 24/7 roadside assistance.</p>
+                  <p className="flex items-center gap-2 text-detail font-medium text-ink"><Icon name="shield" size={16} className="text-accent" /> Premium protection included</p>
+                  <p className="mt-1 text-detail text-muted">Every CX trip comes with damage protection and 24/7 roadside assistance.</p>
                 </div>
               </div>
 
@@ -436,9 +436,9 @@ export default function Booking() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-ink">{opt.title}</span>
-                      {opt.extra && <span className="text-[12.5px] font-medium text-muted">{opt.extra}</span>}
+                      {opt.extra && <span className="text-caption font-medium text-muted">{opt.extra}</span>}
                     </div>
-                    <p className="mt-1 text-[13px] text-muted">{opt.desc}</p>
+                    <p className="mt-1 text-detail text-muted">{opt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -448,7 +448,7 @@ export default function Booking() {
           {step === 1 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Extras</h1>
-              <p className="mt-1.5 text-[14.5px] text-muted">Optional add-ons for this trip — skip if you don't need them.</p>
+              <p className="mt-1.5 text-body text-muted">Optional add-ons for this trip — skip if you don't need them.</p>
               <div className="mt-6 space-y-3">
                 {(extrasCatalog ?? []).map((extra) => {
                   const checked = selectedExtras.has(extra.id);
@@ -464,9 +464,9 @@ export default function Booking() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium text-ink">{extra.name}</span>
-                        <span className="block text-[13px] text-muted">{extra.description}</span>
+                        <span className="block text-detail text-muted">{extra.description}</span>
                       </span>
-                      <span className="shrink-0 text-[13.5px] font-medium text-ink">
+                      <span className="shrink-0 text-detail font-medium text-ink">
                         {eur(extra.price)}{extra.priceModel === 'per_day' ? '/day' : ''}
                       </span>
                       <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.id)} className="h-4 w-4 shrink-0 accent-[var(--color-accent)]" />
@@ -474,7 +474,7 @@ export default function Booking() {
                   );
                 })}
                 {extrasCatalog && extrasCatalog.length === 0 && (
-                  <p className="text-[13.5px] text-muted">No extras available for this trip.</p>
+                  <p className="text-detail text-muted">No extras available for this trip.</p>
                 )}
               </div>
             </section>
@@ -483,7 +483,7 @@ export default function Booking() {
           {step === 2 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Driver details</h1>
-              <p className="mt-1.5 text-[14.5px] text-muted">We need a few details to verify the primary driver.</p>
+              <p className="mt-1.5 text-body text-muted">We need a few details to verify the primary driver.</p>
               <div className="mt-6 card p-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Labeled label="Full name" full>
@@ -507,7 +507,7 @@ export default function Booking() {
           {step === 3 && (
             <section className="animate-fade-up">
               <h1 className="font-display text-2xl font-semibold text-ink">Payment</h1>
-              <p className="mt-1.5 flex items-center gap-1.5 text-[14.5px] text-muted"><Icon name="lock" size={15} className="text-accent" /> Encrypted &amp; secure. This is a demo — no real payment is taken.</p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-body text-muted"><Icon name="lock" size={15} className="text-accent" /> Encrypted &amp; secure. This is a demo — no real payment is taken.</p>
               <div className="mt-6 card p-6">
                 <div className="mb-5 flex gap-2">
                   {['card', 'apple'].map((m) => (
@@ -532,13 +532,13 @@ export default function Booking() {
                   <Labeled label="Billing postcode"><input defaultValue="20121" className="input" /></Labeled>
                   <Labeled label="Country"><input defaultValue="Italy" className="input" /></Labeled>
                 </div>
-                <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-[13.5px] text-muted">
+                <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-detail text-muted">
                   <input type="checkbox" defaultChecked className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]" />
                   Save this card for faster checkout next time.
                 </label>
 
                 {submitError && (
-                  <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">
+                  <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
                     <Icon name="info" size={16} /> {submitError}
                   </p>
                 )}
@@ -566,23 +566,23 @@ export default function Booking() {
         {/* Summary */}
         <aside>
           <div className="sticky top-[84px] card overflow-hidden">
-            <p className="px-4 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted">Your CX Drive</p>
+            <p className="px-4 pt-4 text-label font-semibold uppercase tracking-wide text-muted">Your CX Drive</p>
             <div className="flex gap-3.5 p-4">
               <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
               <div className="min-w-0">
                 <h3 className="truncate font-medium text-ink">{car.make} {car.model}</h3>
-                <p className="text-[13px] text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
-                <span className="mt-1 inline-flex items-center gap-1 text-[12.5px] text-muted">
+                <p className="text-detail text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
+                <span className="mt-1 inline-flex items-center gap-1 text-caption text-muted">
                   <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(2)} · {car.trips} trips
                 </span>
               </div>
             </div>
             <div className="border-t border-line px-4 py-3.5">
-              <div className="flex items-center justify-between text-[13.5px]">
+              <div className="flex items-center justify-between text-detail">
                 <span className="flex items-center gap-1.5 text-muted"><Icon name="calendar" size={14} /> Dates</span>
                 <span className="font-medium text-ink">{fmtDate(pickupDate)} → {fmtDate(returnDate)}</span>
               </div>
-              <div className="mt-2 flex items-center justify-between text-[13.5px]">
+              <div className="mt-2 flex items-center justify-between text-detail">
                 <span className="flex items-center gap-1.5 text-muted"><Icon name="pin" size={14} /> Location</span>
                 <span className="truncate pl-2 font-medium text-ink">{pickupLoc || car.location}</span>
               </div>
@@ -600,14 +600,14 @@ export default function Booking() {
                   <Icon name="gift" size={15} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[13.5px] font-medium text-ink">Apply reward</span>
-                  <span className="block truncate font-mono text-[12px] text-muted">{availableReward.couponCode}</span>
+                  <span className="block text-detail font-medium text-ink">Apply reward</span>
+                  <span className="block truncate font-mono text-caption text-muted">{availableReward.couponCode}</span>
                 </span>
                 <span className="badge badge-accent shrink-0">{availableReward.discountPercentage}% OFF</span>
               </label>
             )}
 
-            <dl className="space-y-2.5 border-t border-line px-4 py-4 text-[14px]">
+            <dl className="space-y-2.5 border-t border-line px-4 py-4 text-body">
               <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
               <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
@@ -627,9 +627,9 @@ export default function Booking() {
                 </div>
               )}
               <div className="hairline my-1" />
-              <div className="flex justify-between text-[15px] font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
+              <div className="flex justify-between text-copy font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
             </dl>
-            <div className="flex items-center gap-2 border-t border-line bg-panel/50 px-4 py-3 text-[12.5px] text-muted">
+            <div className="flex items-center gap-2 border-t border-line bg-panel/50 px-4 py-3 text-caption text-muted">
               <Icon name="shield" size={14} className="text-accent" />
               {fareTier === 'flexible' ? 'Free cancellation any time before pick-up' : 'Free cancellation up to 24h before pick-up'}
             </div>

@@ -49,29 +49,29 @@ export function CarQuickView({
             <h2 id="quick-view-title" className="font-display text-xl font-semibold text-ink">
               {car.year} {car.make} {car.model}
             </h2>
-            <p className="mt-0.5 flex items-center gap-1 text-[13.5px] text-muted">
+            <p className="mt-0.5 flex items-center gap-1 text-detail text-muted">
               <Icon name="pin" size={13} /> {car.location}
             </p>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 text-[14px] font-medium text-ink">
+          <span className="inline-flex shrink-0 items-center gap-1 text-body font-medium text-ink">
             <Icon name="star" size={14} className="text-star" /> {car.rating.toFixed(2)}
           </span>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {specs.map((s) => (
-            <span key={s.v} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-[12.5px] font-medium text-ink-soft">
+            <span key={s.v} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-caption font-medium text-ink-soft">
               <Icon name={s.icon} size={14} className="text-muted" /> {s.v}
             </span>
           ))}
         </div>
 
-        <p className="mt-4 line-clamp-2 text-[14px] leading-relaxed text-muted text-pretty">{car.description}</p>
+        <p className="mt-4 line-clamp-2 text-body leading-relaxed text-muted text-pretty">{car.description}</p>
 
         <div className="mt-5 flex items-center justify-between border-t border-line pt-5">
           <p className="text-ink">
             <span className="text-xl font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-[13px] text-muted"> / day</span>
+            <span className="text-detail text-muted"> / day</span>
           </p>
           <Link to={`/cars/${car.slug}`} onClick={onClose} className="btn btn-primary">
             View full details <Icon name="arrowRight" size={16} />

@@ -27,7 +27,7 @@ export default function About() {
           <h1 className="font-display text-4xl font-semibold leading-[1.04] text-ink text-balance sm:text-[3.4rem]">
             The premium way to move across Europe.
           </h1>
-          <p className="mt-5 text-[16.5px] leading-relaxed text-muted text-pretty">
+          <p className="mt-5 text-lead leading-relaxed text-muted text-pretty">
             CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves.
             Today we connect tens of thousands of drivers with trusted local hosts in seven cities — and we’re just getting started.
           </p>
@@ -51,7 +51,7 @@ export default function About() {
                 {s.v}
                 {s.star && <Icon name="star" size={24} className="text-star" fill />}
               </p>
-              <p className="mt-1 text-[13.5px] text-muted">{s.l}</p>
+              <p className="mt-1 text-detail text-muted">{s.l}</p>
             </div>
           ))}
         </div>
@@ -65,7 +65,7 @@ export default function About() {
             <div key={v.title} className="card p-6">
               <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-050 text-accent"><Icon name={v.icon} size={22} /></span>
               <h3 className="mt-4 font-medium text-ink">{v.title}</h3>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{v.desc}</p>
+              <p className="mt-1.5 text-detail leading-relaxed text-muted">{v.desc}</p>
             </div>
           ))}
         </div>
@@ -80,7 +80,7 @@ export default function About() {
               <img src={avatar(t.n)} alt={t.name} className="aspect-square w-full object-cover" />
               <div className="p-4">
                 <p className="font-medium text-ink">{t.name}</p>
-                <p className="text-[13px] text-muted">{t.role}</p>
+                <p className="text-detail text-muted">{t.role}</p>
               </div>
             </div>
           ))}
@@ -91,7 +91,7 @@ export default function About() {
       <section className="container-page mt-24">
         <div className="flex flex-col items-center gap-6 rounded-[1.75rem] bg-ink px-6 py-16 text-center text-white">
           <h2 className="font-display text-3xl font-semibold text-balance sm:text-4xl">Join the journey.</h2>
-          <p className="max-w-md text-[15px] text-white/70">Whether you’re driving or hosting, there’s a place for you at CX.</p>
+          <p className="max-w-md text-copy text-white/70">Whether you’re driving or hosting, there’s a place for you at CX.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/browse" className="btn btn-accent btn-lg">Find a car <Icon name="arrowRight" size={17} /></Link>
             <Link to="/list-your-car" className="btn btn-lg bg-white/10 text-white hover:bg-white/15">List your car</Link>

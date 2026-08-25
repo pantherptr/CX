@@ -36,7 +36,7 @@ export default function Login() {
         </div>
         <div className="card p-7 sm:p-8">
           <h1 className="text-center font-display text-2xl font-semibold text-ink">Welcome back</h1>
-          <p className="mt-1.5 text-center text-[14px] text-muted">Sign in to your CX account</p>
+          <p className="mt-1.5 text-center text-body text-muted">Sign in to your CX account</p>
 
           <form onSubmit={onSubmit} className="mt-7 space-y-4">
             <div>
@@ -68,7 +68,7 @@ export default function Login() {
               />
             </div>
             {error && (
-              <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-[13.5px] text-danger">{error}</p>
+              <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
             )}
             <button type="submit" disabled={submitting} className="btn btn-primary btn-block btn-lg">
               {submitting ? 'Signing in…' : 'Sign in'}
@@ -76,7 +76,7 @@ export default function Login() {
             </button>
           </form>
         </div>
-        <p className="mt-5 text-center text-[14px] text-muted">
+        <p className="mt-5 text-center text-body text-muted">
           New to CX?{' '}
           <Link to="/signup" className="font-medium text-ink underline underline-offset-2">
             Create an account

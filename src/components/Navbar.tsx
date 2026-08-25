@@ -29,7 +29,7 @@ function CartButton({ className = '' }: { className?: string }) {
     >
       <Icon name="cart" size={19} />
       {cartCount > 0 && (
-        <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] font-semibold leading-none text-white">
+        <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-micro font-semibold leading-none text-white">
           {cartCount > 9 ? '9+' : cartCount}
         </span>
       )}
@@ -95,7 +95,7 @@ function PublicNavbar() {
                   <NavLink
                     to={l.to}
                     className={({ isActive }) =>
-                      `group relative rounded-lg px-3.5 py-2 text-[13.5px] font-medium transition-colors ${
+                      `group relative rounded-lg px-3.5 py-2 text-detail font-medium transition-colors ${
                         transparent
                           ? isActive
                             ? 'text-white'
@@ -123,7 +123,7 @@ function PublicNavbar() {
               ))}
             </ul>
             <DriveChallengeLauncher
-              className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-[13.5px] font-semibold transition-colors lg:inline-flex ${
+              className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-detail font-semibold transition-colors lg:inline-flex ${
                 transparent ? 'text-accent-bright' : 'text-accent-700'
               }`}
             >
@@ -167,7 +167,7 @@ function PublicNavbar() {
               <>
                 <Link
                   to="/login"
-                  className={`pressable hidden text-[13.5px] font-medium transition-colors min-[420px]:inline-flex ${
+                  className={`pressable hidden text-detail font-medium transition-colors min-[420px]:inline-flex ${
                     transparent ? 'text-white/80 hover:text-white' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
@@ -175,7 +175,7 @@ function PublicNavbar() {
                 </Link>
                 <Link
                   to="/login"
-                  className={`pressable inline-flex h-9 items-center rounded-full border px-4 text-[13.5px] font-semibold transition-colors duration-200 ${
+                  className={`pressable inline-flex h-9 items-center rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
                     transparent
                       ? 'border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/15'
                       : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'
@@ -221,7 +221,7 @@ function PublicNavbar() {
                   <li key={l.to}>
                     <NavLink
                       to={l.to}
-                      className="flex items-center justify-between rounded-xl px-3 py-3 text-[17px] font-medium text-ink hover:bg-panel"
+                      className="flex items-center justify-between rounded-xl px-3 py-3 text-lead font-medium text-ink hover:bg-panel"
                     >
                       {l.label}
                       <Icon name="chevronRight" size={18} className="text-faint" />
@@ -229,7 +229,7 @@ function PublicNavbar() {
                   </li>
                 ))}
                 <li onClick={() => setMenuOpen(false)}>
-                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl bg-accent-bright/10 px-3 py-3 text-[17px] font-bold text-accent-700">
+                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl bg-accent-bright/10 px-3 py-3 text-lead font-bold text-accent-700">
                     <span className="flex items-center gap-3">
                       <img
                         src="/cx-drive-challenge-icon.png"
@@ -378,7 +378,7 @@ function AppNavbar() {
                 <div className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
                   <button
                     onClick={() => setMode('customer')}
-                    className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
                       mode === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                     }`}
                   >
@@ -386,7 +386,7 @@ function AppNavbar() {
                   </button>
                   <button
                     onClick={() => setMode('host')}
-                    className={`flex-1 rounded-lg py-2 text-center text-[13px] font-medium transition-colors ${
+                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
                       mode === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
                     }`}
                   >
@@ -399,7 +399,7 @@ function AppNavbar() {
                   if (n.isDrive) {
                     return (
                       <li key={n.label} onClick={() => setDrawerOpen(false)}>
-                        <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-[14.5px] font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
+                        <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-body font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
                           <span
                             className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                             style={{ background: 'radial-gradient(120px 40px at 0% 50%, rgba(0,212,71,0.22), transparent 75%)' }}
@@ -420,12 +420,12 @@ function AppNavbar() {
                       <NavLink
                         to={n.to}
                         onClick={() => setDrawerOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
                       >
                         <Icon name={n.icon} size={19} className="text-muted" />
                         <span className="flex-1">{n.label}</span>
                         {n.badge && (
-                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">
+                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
                             {n.badge}
                           </span>
                         )}
@@ -438,7 +438,7 @@ function AppNavbar() {
               <Link
                 to="/help"
                 onClick={() => setDrawerOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium text-ink-soft transition-colors hover:bg-panel"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
               >
                 <Icon name="headset" size={19} className="text-muted" />
                 Help &amp; Support
@@ -455,13 +455,13 @@ function AppNavbar() {
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-medium text-ink">{displayName}</p>
-                  <p className="truncate text-[12px] text-muted">{session?.user.email}</p>
+                  <p className="truncate text-detail font-medium text-ink">{displayName}</p>
+                  <p className="truncate text-caption text-muted">{session?.user.email}</p>
                 </div>
               </div>
               <button
                 onClick={handleSignOut}
-                className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[14.5px] text-danger hover:bg-panel"
+                className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel"
               >
                 <Icon name="logout" size={19} />
                 Sign out

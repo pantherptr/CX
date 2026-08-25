@@ -69,6 +69,22 @@
 
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Type scale — the named steps this UI actually uses. Before these
+     existed the codebase carried 21 distinct arbitrary sizes, including
+     half-pixel values (13.5px, 14.5px…) that no system would specify;
+     those are now collapsed onto this ramp. Deliberately NOT named
+     xs/sm/base/lg/xl so they sit alongside Tailwind's own scale instead
+     of silently overriding it. Prefer `text-body` over `text-[14px]`. */
+  --text-nano: 0.5625rem;    /* 9px  — in-game HUD chip label only */
+  --text-micro: 0.625rem;    /* 10px — badge / HUD label */
+  --text-label: 0.6875rem;   /* 11px — eyebrow, uppercase label */
+  --text-caption: 0.75rem;   /* 12px — caption, meta */
+  --text-detail: 0.8125rem;  /* 13px — dense secondary text */
+  --text-body: 0.875rem;     /* 14px — default body */
+  --text-copy: 0.9375rem;    /* 15px — comfortable body */
+  --text-lead: 1rem;         /* 16px — lead paragraph */
+  --text-feature: 1.125rem;  /* 18px — section lead */
 }
 
 @layer base {
@@ -105,6 +121,18 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* The deep `--color-accent` above holds AA on light surfaces but nearly
+     disappears on the noir sections (hero, Concierge, Configurator, the
+     Drive modal). Anything focused inside a dark surface gets the bright
+     logo green instead, so keyboard focus stays visible everywhere
+     rather than only on the light half of the product. */
+  .bg-noir :focus-visible,
+  .bg-noir:focus-visible,
+  [data-surface='noir'] :focus-visible {
+    outline-color: var(--color-accent-bright);
+  }
+
 
   /* Refined scrollbar */
   ::-webkit-scrollbar { width: 11px; height: 11px; }

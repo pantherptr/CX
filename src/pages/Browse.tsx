@@ -54,7 +54,7 @@ function toggle<T>(arr: T[], v: T): T[] {
 function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="border-t border-line py-5 first:border-t-0 first:pt-0">
-      <h3 className="mb-3.5 text-[13px] font-semibold uppercase tracking-wide text-ink">{title}</h3>
+      <h3 className="mb-3.5 text-detail font-semibold uppercase tracking-wide text-ink">{title}</h3>
       {children}
     </div>
   );
@@ -71,9 +71,9 @@ function Check({ label, checked, onChange, note }: { label: string; checked: boo
         >
           {checked && <Icon name="check" size={12} strokeWidth={3} />}
         </span>
-        <span className="text-[14px] text-ink-soft">{label}</span>
+        <span className="text-body text-ink-soft">{label}</span>
       </span>
-      {note && <span className="text-[12.5px] text-faint">{note}</span>}
+      {note && <span className="text-caption text-faint">{note}</span>}
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
     </label>
   );
@@ -103,30 +103,30 @@ function FilterPanel({
       <FilterGroup title="Dates">
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Pick-up</span>
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">Pick-up</span>
             <input
               type="date"
               value={pickupDate}
               min={new Date().toISOString().slice(0, 10)}
               onChange={(e) => setPickupDate(e.target.value)}
-              className="input mt-1 !py-2 !text-[13px]"
+              className="input mt-1 !py-2 !text-detail"
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Return</span>
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">Return</span>
             <input
               type="date"
               value={returnDate}
               min={pickupDate || new Date().toISOString().slice(0, 10)}
               onChange={(e) => setReturnDate(e.target.value)}
-              className="input mt-1 !py-2 !text-[13px]"
+              className="input mt-1 !py-2 !text-detail"
             />
           </label>
         </div>
       </FilterGroup>
 
       <FilterGroup title="Price per day">
-        <div className="flex items-center justify-between text-[14px] text-ink">
+        <div className="flex items-center justify-between text-body text-ink">
           <span className="font-semibold">{eur(f.priceMin)}</span>
           <span className="text-muted">to</span>
           <span className="font-semibold">{eur(f.priceMax)}{f.priceMax >= 800 ? '+' : ''}</span>
@@ -153,7 +153,7 @@ function FilterPanel({
             aria-label="Maximum price per day"
           />
         </div>
-        <div className="mt-1 flex justify-between text-[12px] text-faint">
+        <div className="mt-1 flex justify-between text-caption text-faint">
           <span>€30</span>
           <span>€800+</span>
         </div>
@@ -240,7 +240,7 @@ function FilterPanel({
         </div>
       </FilterGroup>
 
-      <button onClick={reset} className="mt-5 w-full text-[14px] font-medium text-muted transition-colors hover:text-ink">
+      <button onClick={reset} className="mt-5 w-full text-body font-medium text-muted transition-colors hover:text-ink">
         Clear all filters
       </button>
     </div>
@@ -351,10 +351,10 @@ export default function Browse() {
       {/* Concierge entry — elegant, doesn't compete with the search bar below */}
       <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-line bg-noir px-5 py-4">
         <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-bright">
+          <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.18em] text-accent-bright">
             <Icon name="sparkles" size={13} /> CX Concierge
           </p>
-          <p className="mt-1 text-[14.5px] font-medium text-on-noir">Not sure which car? Tell us how you want to drive.</p>
+          <p className="mt-1 text-body font-medium text-on-noir">Not sure which car? Tell us how you want to drive.</p>
         </div>
         <ConciergeLauncher className="btn btn-accent-bright shrink-0">
           Find Your CX <Icon name="arrowRight" size={16} />
@@ -378,7 +378,7 @@ export default function Browse() {
             <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
               <Icon name="sliders" size={17} /> Filters
               {activeCount > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-semibold text-white">{activeCount}</span>
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">{activeCount}</span>
               )}
             </button>
             <div className="relative">
@@ -395,7 +395,7 @@ export default function Browse() {
                       <button
                         key={s.id}
                         onClick={() => { setSort(s.id); setSortOpen(false); }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
                       >
                         {s.label}
                         {sort === s.id && <Icon name="check" size={16} className="text-accent" />}
@@ -433,7 +433,7 @@ export default function Browse() {
         {/* Results */}
         <div className="min-w-0 flex-1">
           {!loading && !error && (
-            <p className="mb-4 text-[14px] text-muted">
+            <p className="mb-4 text-body text-muted">
               <span ref={countRef} className="font-medium tabular-nums text-ink">{animatedCount}</span> cars available
               {city && <> in <span className="font-medium text-ink">{city}</span></>}
             </p>
@@ -451,7 +451,7 @@ export default function Browse() {
                 <Icon name="info" size={26} />
               </span>
               <h3 className="mt-2 font-display text-xl font-semibold text-ink">Couldn't load cars</h3>
-              <p className="max-w-sm text-[14px] text-muted">{error}</p>
+              <p className="max-w-sm text-body text-muted">{error}</p>
             </div>
           ) : results.length === 0 ? (
             <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
@@ -459,7 +459,7 @@ export default function Browse() {
                 <Icon name="search" size={26} />
               </span>
               <h3 className="mt-2 font-display text-xl font-semibold text-ink">No cars match your filters</h3>
-              <p className="max-w-sm text-[14px] text-muted">Try widening your price range or clearing a few filters to see more of the fleet.</p>
+              <p className="max-w-sm text-body text-muted">Try widening your price range or clearing a few filters to see more of the fleet.</p>
               <button onClick={reset} className="btn btn-primary mt-2">Clear all filters</button>
             </div>
           ) : (

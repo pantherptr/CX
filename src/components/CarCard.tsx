@@ -24,7 +24,7 @@ function CompareToggle({ carId }: { carId: string }) {
       }}
       aria-label={active ? 'Remove from compare' : 'Add to compare'}
       aria-pressed={active}
-      className={`pressable absolute bottom-3 left-3 flex min-h-9 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-medium shadow-hair transition-all duration-300 ${
+      className={`pressable absolute bottom-3 left-3 flex min-h-9 items-center gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium shadow-hair transition-all duration-300 ${
         active
           ? 'bg-ink text-white opacity-100'
           : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0'
@@ -101,18 +101,18 @@ export function CarCard({
               <h3 className="truncate font-medium text-ink">
                 {car.make} {car.model}
               </h3>
-              <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-ink">
+              <span className="inline-flex shrink-0 items-center gap-1 text-detail font-medium text-ink">
                 <Icon name="star" size={13} className="text-star" />
                 {car.rating.toFixed(2)}
               </span>
             </div>
-            <p className="mt-0.5 flex items-center gap-1 text-[13px] text-muted">
+            <p className="mt-0.5 flex items-center gap-1 text-detail text-muted">
               <Icon name="pin" size={12} /> {car.city}
             </p>
           </div>
           <p className="text-ink">
             <span className="font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-[13px] text-muted"> / day</span>
+            <span className="text-detail text-muted"> / day</span>
           </p>
         </div>
       </Link>
@@ -163,7 +163,7 @@ export function CarCard({
                 e.preventDefault();
                 setQuickView(true);
               }}
-              className="glass pressable absolute bottom-3 left-1/2 flex -translate-x-1/2 translate-y-1 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
+              className="glass pressable absolute bottom-3 left-1/2 flex -translate-x-1/2 translate-y-1 items-center gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
             >
               <Icon name="grid" size={13} /> Quick view
             </button>
@@ -172,25 +172,25 @@ export function CarCard({
           <div className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate font-medium text-[15px] text-ink">
+                <h3 className="truncate font-medium text-copy text-ink">
                   {car.make} {car.model}
                 </h3>
-                <p className="mt-0.5 text-[13px] text-muted">
+                <p className="mt-0.5 text-detail text-muted">
                   {car.trim ? `${car.trim} · ` : ''}
                   {car.year}
                 </p>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-ink">
+              <span className="inline-flex shrink-0 items-center gap-1 text-detail font-medium text-ink">
                 <Icon name="star" size={13} className="text-star" />
                 {car.rating.toFixed(2)}
               </span>
             </div>
 
-            <p className="mt-2.5 flex items-center gap-1 text-[13px] text-muted">
+            <p className="mt-2.5 flex items-center gap-1 text-detail text-muted">
               <Icon name="pin" size={13} /> {car.location}
             </p>
 
-            <div className="mt-2.5 flex items-center gap-3 text-[12.5px] text-muted">
+            <div className="mt-2.5 flex items-center gap-3 text-caption text-muted">
               <span className="flex items-center gap-1">
                 <Icon name="seat" size={13} /> {car.seats} seats
               </span>
@@ -200,12 +200,12 @@ export function CarCard({
             </div>
 
             <div className="mt-3.5 flex items-end justify-between border-t border-line pt-3.5">
-              <p className="text-[13px] text-muted">
+              <p className="text-detail text-muted">
                 {car.trips} trips
               </p>
               <p className="text-ink">
-                <span className="text-[17px] font-semibold">{eur(car.pricePerDay)}</span>
-                <span className="text-[13px] text-muted"> / day</span>
+                <span className="text-lead font-semibold">{eur(car.pricePerDay)}</span>
+                <span className="text-detail text-muted"> / day</span>
               </p>
             </div>
           </div>

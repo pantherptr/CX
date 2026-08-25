@@ -76,7 +76,7 @@ export default function CarDetails() {
           <Icon name="info" size={26} />
         </span>
         <h1 className="font-display text-xl font-semibold text-ink">Couldn't load this car</h1>
-        <p className="max-w-sm text-[14px] text-muted">{loadError}</p>
+        <p className="max-w-sm text-body text-muted">{loadError}</p>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function CarDetails() {
     <div className="pb-24 lg:pb-0">
       <div className="container-page pt-5">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-[13px] text-muted">
+        <nav className="flex items-center gap-1.5 text-detail text-muted">
           <Link to="/" className="hover:text-ink">Home</Link>
           <Icon name="chevronRight" size={13} />
           <Link to="/browse" className="hover:text-ink">Browse</Link>
@@ -143,7 +143,7 @@ export default function CarDetails() {
             <h1 className="font-display text-[1.8rem] font-semibold leading-tight text-ink sm:text-4xl">
               {car.year} {car.make} {car.model}{car.trim ? ` ${car.trim}` : ''}
             </h1>
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[14px] text-muted">
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-body text-muted">
               <span className="inline-flex items-center gap-1 font-medium text-ink">
                 <Icon name="star" size={15} className="text-star" /> {car.rating.toFixed(2)}
                 <span className="font-normal text-muted">({car.reviews.length} reviews)</span>
@@ -205,7 +205,7 @@ export default function CarDetails() {
             >
               <img src={unsplash(img, 600)} alt="" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
               {i === 3 && (
-                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[13px] font-medium text-ink shadow-hair backdrop-blur">
+                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-detail font-medium text-ink shadow-hair backdrop-blur">
                   <Icon name="grid" size={14} /> All photos
                 </span>
               )}
@@ -225,7 +225,7 @@ export default function CarDetails() {
                 { icon: 'gas' as IconName, v: car.fuel },
                 { icon: 'compass' as IconName, v: car.drive },
               ].map((s) => (
-                <span key={s.v} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink-soft">
+                <span key={s.v} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-detail font-medium text-ink-soft">
                   <Icon name={s.icon} size={16} className="text-muted" /> {s.v}
                 </span>
               ))}
@@ -234,7 +234,7 @@ export default function CarDetails() {
             {/* About */}
             <section className="mt-8 border-t border-line pt-8">
               <h2 className="font-display text-xl font-semibold text-ink">About this car</h2>
-              <p className="mt-3 text-[15px] leading-relaxed text-ink-soft text-pretty">{car.description}</p>
+              <p className="mt-3 text-copy leading-relaxed text-ink-soft text-pretty">{car.description}</p>
             </section>
 
             {/* Specifications */}
@@ -247,8 +247,8 @@ export default function CarDetails() {
                       <Icon name={s.icon} size={20} />
                     </span>
                     <div>
-                      <p className="text-[12px] text-muted">{s.label}</p>
-                      <p className="text-[14.5px] font-medium text-ink">{s.value}</p>
+                      <p className="text-caption text-muted">{s.label}</p>
+                      <p className="text-body font-medium text-ink">{s.value}</p>
                     </div>
                   </div>
                 ))}
@@ -260,7 +260,7 @@ export default function CarDetails() {
               <h2 className="font-display text-xl font-semibold text-ink">Features</h2>
               <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-2">
                 {car.features.map((f) => (
-                  <div key={f} className="flex items-center gap-3 text-[14.5px] text-ink-soft">
+                  <div key={f} className="flex items-center gap-3 text-body text-ink-soft">
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent-050 text-accent">
                       <Icon name={featureIcon[f] ?? 'checkCircle'} size={17} />
                     </span>
@@ -280,7 +280,7 @@ export default function CarDetails() {
                   </span>
                   <div>
                     <p className="font-medium text-ink">Trip protection</p>
-                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                    <p className="mt-1 text-detail leading-relaxed text-muted">
                       A protection plan is included on every booking, priced at 18% of your rental
                       cost and shown as its own line at checkout — never folded into the daily rate.
                     </p>
@@ -292,7 +292,7 @@ export default function CarDetails() {
                   </span>
                   <div>
                     <p className="font-medium text-ink">Cancellation policy</p>
-                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                    <p className="mt-1 text-detail leading-relaxed text-muted">
                       Free cancellation up to 24 hours before pick-up. After that, the trip is
                       confirmed with your host.
                     </p>
@@ -304,7 +304,7 @@ export default function CarDetails() {
                   </span>
                   <div>
                     <p className="font-medium text-ink">Pick-up</p>
-                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
+                    <p className="mt-1 text-detail leading-relaxed text-muted">
                       In {car.location}. The exact address is shared once your booking is
                       confirmed{host.responseTime ? ` — ${host.name} typically responds ${host.responseTime}` : ''}.
                     </p>
@@ -323,7 +323,7 @@ export default function CarDetails() {
             <section className="mt-8 border-t border-line pt-8">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-xl font-semibold text-ink">Reviews</h2>
-                <span className="inline-flex items-center gap-1.5 text-[15px] font-medium text-ink">
+                <span className="inline-flex items-center gap-1.5 text-copy font-medium text-ink">
                   <Icon name="star" size={16} className="text-star" /> {car.rating.toFixed(2)}
                   <span className="font-normal text-muted">· {car.reviews.length} reviews</span>
                 </span>
@@ -335,11 +335,11 @@ export default function CarDetails() {
                       <img src={r.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
                       <div>
                         <p className="font-medium text-ink">{r.author}</p>
-                        <p className="text-[12.5px] text-muted">{r.location} · {r.date}</p>
+                        <p className="text-caption text-muted">{r.location} · {r.date}</p>
                       </div>
                     </div>
                     <div className="mt-3"><Stars value={r.rating} /></div>
-                    <p className="mt-2 text-[14px] leading-relaxed text-ink-soft text-pretty">{r.body}</p>
+                    <p className="mt-2 text-body leading-relaxed text-ink-soft text-pretty">{r.body}</p>
                   </div>
                 ))}
               </div>
@@ -379,10 +379,10 @@ export default function CarDetails() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[13px] text-muted">
+            <p className="text-detail text-muted">
               <span className="text-lg font-semibold text-ink">{eur(car.pricePerDay)}</span> / day
             </p>
-            <span className="inline-flex items-center gap-1 text-[12.5px] text-muted">
+            <span className="inline-flex items-center gap-1 text-caption text-muted">
               <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(2)} · {car.trips} trips
             </span>
           </div>
@@ -406,7 +406,7 @@ export default function CarDetails() {
         {lightbox !== null && lightbox >= 0 && (
           <div className="bg-ink">
             <div className="flex items-center justify-between px-4 py-3 text-white/80">
-              <span className="text-[13px]">{(lightbox % gallery.length) + 1} / {gallery.length}</span>
+              <span className="text-detail">{(lightbox % gallery.length) + 1} / {gallery.length}</span>
               <button onClick={() => setLightbox(null)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/10"><Icon name="x" size={20} /></button>
             </div>
             <div className="relative">

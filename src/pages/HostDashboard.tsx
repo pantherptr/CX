@@ -93,8 +93,8 @@ function EarningsChart({ data }: { data: { month: string; value: number }[] }) {
       </svg>
       {hover !== null && (
         <div className="pointer-events-none absolute rounded-lg bg-ink px-2.5 py-1.5 text-white shadow-pop" style={{ left: `${(x(hover) / W) * 100}%`, top: `${(y(data[hover].value) / H) * 100}%`, transform: 'translate(-50%, -130%)' }}>
-          <p className="whitespace-nowrap text-[12px] font-semibold">{eur(data[hover].value)}</p>
-          <p className="text-[10.5px] text-white/60">{data[hover].month}</p>
+          <p className="whitespace-nowrap text-caption font-semibold">{eur(data[hover].value)}</p>
+          <p className="text-micro text-white/60">{data[hover].month}</p>
         </div>
       )}
     </div>
@@ -113,10 +113,10 @@ function HostBookingRow({ booking }: { booking: Booking }) {
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-medium text-ink">{booking.renter.name}</p>
-        <p className="truncate text-[12.5px] text-muted">{booking.car.make} {booking.car.model} · {fmtDate(booking.startDate)}–{fmtDate(booking.endDate)}</p>
+        <p className="truncate text-detail font-medium text-ink">{booking.renter.name}</p>
+        <p className="truncate text-caption text-muted">{booking.car.make} {booking.car.model} · {fmtDate(booking.startDate)}–{fmtDate(booking.endDate)}</p>
       </div>
-      <p className="shrink-0 text-[13.5px] font-medium text-ink">{eur(booking.totalPrice)}</p>
+      <p className="shrink-0 text-detail font-medium text-ink">{eur(booking.totalPrice)}</p>
       <span className={`badge shrink-0 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
     </div>
   );
@@ -155,7 +155,7 @@ export default function HostDashboard() {
       <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[14px] text-muted">{greeting()},</p>
+            <p className="text-body text-muted">{greeting()},</p>
             <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName}</h1>
           </div>
           <Link to="/list-your-car" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Add a car</Link>
@@ -183,7 +183,7 @@ export default function HostDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-display text-lg font-semibold text-ink">Earnings</h2>
-                <p className="text-[13px] text-muted">Last 6 months</p>
+                <p className="text-detail text-muted">Last 6 months</p>
               </div>
             </div>
             <div className="mt-5">
@@ -199,7 +199,7 @@ export default function HostDashboard() {
               <div className="mt-5 flex flex-col items-center gap-2 rounded-xl border border-line py-10 text-center">
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="euro" size={20} /></span>
                 <p className="font-medium text-ink">No earnings yet</p>
-                <p className="max-w-xs text-[13px] text-muted">Bookings on your cars will show up here once they come in.</p>
+                <p className="max-w-xs text-detail text-muted">Bookings on your cars will show up here once they come in.</p>
               </div>
             )}
           </section></Reveal>
@@ -225,7 +225,7 @@ export default function HostDashboard() {
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="trips" size={20} /></span>
                 <p className="font-medium text-ink">No upcoming reservations</p>
-                <p className="max-w-xs text-[13px] text-muted">New bookings on your cars will appear here.</p>
+                <p className="max-w-xs text-detail text-muted">New bookings on your cars will appear here.</p>
               </div>
             )}
           </section></Reveal>
@@ -285,8 +285,8 @@ export default function HostDashboard() {
                       </span>
                     </div>
                     <div className="p-4">
-                      <p className="truncate text-[14px] font-medium text-ink">{c.make} {c.model}</p>
-                      <div className="mt-1 flex items-center justify-between text-[13px]">
+                      <p className="truncate text-body font-medium text-ink">{c.make} {c.model}</p>
+                      <div className="mt-1 flex items-center justify-between text-detail">
                         <span className="inline-flex items-center gap-1 text-muted">
                           <Icon name="star" size={12} className="text-star" /> {c.reviews.length ? c.rating.toFixed(2) : 'New'}
                         </span>
@@ -306,7 +306,7 @@ export default function HostDashboard() {
             <div className="card flex flex-col items-center gap-2 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="cars" size={22} /></span>
               <p className="mt-1 font-medium text-ink">Your fleet starts here</p>
-              <p className="max-w-xs text-[13.5px] text-muted">Add your first car and start earning on the days you're not driving it.</p>
+              <p className="max-w-xs text-detail text-muted">Add your first car and start earning on the days you're not driving it.</p>
               <Link to="/list-your-car" className="btn btn-primary btn-sm mt-2"><Icon name="plus" size={16} /> Add Your First Car</Link>
             </div>
           )}
@@ -321,19 +321,19 @@ export default function HostDashboard() {
             <div className="card flex items-center gap-6 p-6">
               <div className="text-center">
                 <p className="font-display text-3xl font-semibold text-ink">{avgRating!.toFixed(2)}</p>
-                <p className="mt-1 flex items-center justify-center gap-1 text-[12.5px] text-muted"><Icon name="star" size={13} className="text-star" /> Average rating</p>
+                <p className="mt-1 flex items-center justify-center gap-1 text-caption text-muted"><Icon name="star" size={13} className="text-star" /> Average rating</p>
               </div>
               <div className="h-12 w-px bg-line" />
               <div className="text-center">
                 <p className="font-display text-3xl font-semibold text-ink">{allReviews.length}</p>
-                <p className="mt-1 text-[12.5px] text-muted">Total reviews</p>
+                <p className="mt-1 text-caption text-muted">Total reviews</p>
               </div>
             </div>
           ) : (
             <div className="card flex flex-col items-center gap-2 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="reviews" size={22} /></span>
               <p className="mt-1 font-medium text-ink">No reviews yet</p>
-              <p className="max-w-xs text-[13.5px] text-muted">Reviews from completed trips will appear here.</p>
+              <p className="max-w-xs text-detail text-muted">Reviews from completed trips will appear here.</p>
             </div>
           )}
         </section>
@@ -355,8 +355,8 @@ export default function HostDashboard() {
                 .map((c) => (
                   <div key={c.booking.id} className="flex items-center justify-between gap-3 p-4">
                     <div className="min-w-0">
-                      <p className="truncate text-[13.5px] font-medium text-ink">{c.booking.car.make} {c.booking.car.model}</p>
-                      <p className="text-[12.5px] text-muted">{fmtDate(c.booking.startDate)} → {fmtDate(c.booking.endDate)}</p>
+                      <p className="truncate text-detail font-medium text-ink">{c.booking.car.make} {c.booking.car.model}</p>
+                      <p className="text-caption text-muted">{fmtDate(c.booking.startDate)} → {fmtDate(c.booking.endDate)}</p>
                     </div>
                     <span className={`badge shrink-0 ${phaseBadge[c.phase]}`}>{phaseLabel[c.phase]}</span>
                   </div>
@@ -366,7 +366,7 @@ export default function HostDashboard() {
             <div className="card flex flex-col items-center gap-2 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="calendar" size={22} /></span>
               <p className="mt-1 font-medium text-ink">No dates booked yet</p>
-              <p className="max-w-xs text-[13.5px] text-muted">Manually blocking dates is coming soon.</p>
+              <p className="max-w-xs text-detail text-muted">Manually blocking dates is coming soon.</p>
             </div>
           )}
         </section>

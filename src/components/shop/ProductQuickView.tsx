@@ -45,17 +45,17 @@ export function ProductQuickView({
             <h2 id="product-quick-view-title" className="font-display text-xl font-semibold text-ink">
               {product.name}
             </h2>
-            <p className="mt-0.5 text-[13.5px] text-muted">{product.tagline}</p>
+            <p className="mt-0.5 text-detail text-muted">{product.tagline}</p>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 text-[14px] font-medium text-ink">
+          <span className="inline-flex shrink-0 items-center gap-1 text-body font-medium text-ink">
             <Icon name="star" size={14} className="text-star" /> {product.rating.toFixed(1)}
           </span>
         </div>
 
-        <p className="mt-4 line-clamp-3 text-[14px] leading-relaxed text-muted text-pretty">{product.description}</p>
+        <p className="mt-4 line-clamp-3 text-body leading-relaxed text-muted text-pretty">{product.description}</p>
 
         {product.limited?.note && (
-          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-star/10 px-3 py-1.5 text-[12px] font-medium text-star">
+          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-star/10 px-3 py-1.5 text-caption font-medium text-star">
             <Icon name="sparkles" size={13} /> {product.limited.note}
           </p>
         )}
@@ -64,7 +64,7 @@ export function ProductQuickView({
           <p className="text-ink">
             <span className="text-xl font-semibold">{eur(product.price)}</span>
             {product.compareAtPrice && (
-              <span className="ml-1.5 text-[13.5px] text-faint line-through">{eur(product.compareAtPrice)}</span>
+              <span className="ml-1.5 text-detail text-faint line-through">{eur(product.compareAtPrice)}</span>
             )}
           </p>
           <div className="flex items-center gap-2">

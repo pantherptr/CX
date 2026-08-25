@@ -84,9 +84,9 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
       <div className="flex items-end justify-between">
         <div>
           <span className="text-[26px] font-semibold text-ink">{eur(car.pricePerDay)}</span>
-          <span className="text-[15px] text-muted"> / day</span>
+          <span className="text-copy text-muted"> / day</span>
         </div>
-        <span className="inline-flex items-center gap-1 text-[13.5px] font-medium text-ink">
+        <span className="inline-flex items-center gap-1 text-detail font-medium text-ink">
           <Icon name="star" size={14} className="text-star" />
           {car.rating.toFixed(2)}
           <span className="font-normal text-muted">· {car.trips} trips</span>
@@ -95,10 +95,10 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
 
       <div className="mt-4 overflow-hidden rounded-xl border border-line-strong">
         <label className="block border-b border-line px-3.5 py-2.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Pick-up location</span>
+          <span className="text-label font-semibold uppercase tracking-wide text-muted">Pick-up location</span>
           <div className="mt-0.5 flex items-center gap-2">
             <Icon name="pin" size={15} className="text-muted" />
-            <input value={loc} onChange={(e) => setLoc(e.target.value)} className="w-full bg-transparent text-[14.5px] font-medium text-ink outline-none" />
+            <input value={loc} onChange={(e) => setLoc(e.target.value)} className="w-full bg-transparent text-body font-medium text-ink outline-none" />
           </div>
         </label>
         <button
@@ -107,8 +107,8 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
           className="flex w-full items-center justify-between px-3.5 py-2.5 text-left transition-colors hover:bg-panel"
         >
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Dates</span>
-            <p className="mt-0.5 text-[14px] font-medium text-ink">
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">Dates</span>
+            <p className="mt-0.5 text-body font-medium text-ink">
               {fmtShort(pickup)} – {fmtShort(ret)}
             </p>
           </div>
@@ -134,7 +134,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         </Modal>
       )}
 
-      <dl className="mt-4 space-y-2.5 text-[14px]">
+      <dl className="mt-4 space-y-2.5 text-body">
         <div className="flex items-center justify-between">
           <dt className="text-muted underline decoration-line decoration-1 underline-offset-2">
             {eur(car.pricePerDay)} × {days} {days === 1 ? 'day' : 'days'}
@@ -150,7 +150,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
           <dd className="text-ink">{eur(b.protection)}</dd>
         </div>
         <div className="my-1 hairline" />
-        <div className="flex items-center justify-between text-[15px]">
+        <div className="flex items-center justify-between text-copy">
           <dt className="font-semibold text-ink">Total</dt>
           <dd className="font-semibold text-ink">{eur(b.total)}</dd>
         </div>
@@ -168,7 +168,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         <Icon name="message" size={16} /> {messaging ? 'Opening…' : 'Contact host'}
       </button>
 
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12.5px] text-muted">
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-caption text-muted">
         <Icon name="lock" size={13} /> You won’t be charged yet
       </p>
     </div>

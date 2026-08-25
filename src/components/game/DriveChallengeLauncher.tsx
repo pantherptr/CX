@@ -222,7 +222,7 @@ function CarGaragePanel({
 
   return (
     <div className="animate-fade-up w-full max-w-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-bright">CX Garage</p>
+      <p className="text-label font-semibold uppercase tracking-[0.24em] text-accent-bright">CX Garage</p>
       <h2 className="mt-2 font-display text-2xl font-semibold text-white">Choose your car</h2>
 
       {/* Showroom stage — ambient glow, drifting particles, a gentle
@@ -248,7 +248,7 @@ function CarGaragePanel({
           </div>
         </div>
         {!previewUnlocked && (
-          <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-wide text-white/70 backdrop-blur">
+          <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-nano font-bold uppercase tracking-wide text-white/70 backdrop-blur">
             <Icon name="lock" size={10} /> Locked
           </span>
         )}
@@ -260,12 +260,12 @@ function CarGaragePanel({
         ))}
       </div>
       <p className="mt-2 text-center font-display text-lg font-semibold text-white">{preview.name}</p>
-      <p className="text-center text-[12px] text-white/45">{preview.tagline}</p>
+      <p className="text-center text-caption text-white/45">{preview.tagline}</p>
 
       <div className="mt-4 space-y-2.5">
         {STAT_LABELS.map(({ key, label }) => (
           <div key={key}>
-            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-white/45">
+            <div className="flex items-center justify-between text-micro font-semibold uppercase tracking-wide text-white/45">
               <span>{label}</span>
               <span className="tabular-nums text-white/70">{preview.stats[key]}</span>
             </div>
@@ -281,7 +281,7 @@ function CarGaragePanel({
 
       <div className="relative mt-5">
         {isCurrent ? (
-          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-[0.85rem] border border-accent-bright/30 bg-accent-bright/10 py-3 text-[13px] font-bold uppercase tracking-wide text-accent-bright">
+          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-[0.85rem] border border-accent-bright/30 bg-accent-bright/10 py-3 text-detail font-bold uppercase tracking-wide text-accent-bright">
             <Icon name="check" size={14} /> Selected
           </span>
         ) : previewUnlocked ? (
@@ -290,10 +290,10 @@ function CarGaragePanel({
           </button>
         ) : (
           <div className="rounded-[0.85rem] border border-white/10 bg-white/[0.03] py-3 text-center">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-white/50">
+            <p className="text-caption font-semibold uppercase tracking-wide text-white/50">
               Unlock at {preview.unlockKm} km best distance
             </p>
-            <p className="mt-0.5 text-[11px] text-white/35">
+            <p className="mt-0.5 text-label text-white/35">
               {bestDistance.toFixed(1)} / {preview.unlockKm} km
             </p>
           </div>
@@ -316,7 +316,7 @@ function CarGaragePanel({
               } ${!unlocked ? 'opacity-80' : ''}`}
             >
               <span className="h-8 w-14 rounded-lg" style={{ background: c.bodyColor }} />
-              <span className="text-[11.5px] font-semibold text-white/85">{c.name}</span>
+              <span className="text-label font-semibold text-white/85">{c.name}</span>
               {active && unlocked && (
                 <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent-bright text-noir">
                   <Icon name="check" size={11} />
@@ -324,17 +324,17 @@ function CarGaragePanel({
               )}
               {!unlocked && (
                 <span className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-0.5 bg-black/70 py-1">
-                  <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-white/60">
+                  <span className="flex items-center gap-1 text-nano font-bold uppercase tracking-wide text-white/60">
                     <Icon name="lock" size={9} /> Locked
                   </span>
-                  <span className="text-[9px] font-semibold text-accent-bright/80">Unlock at {c.unlockKm} km</span>
+                  <span className="text-nano font-semibold text-accent-bright/80">Unlock at {c.unlockKm} km</span>
                 </span>
               )}
             </button>
           );
         })}
       </div>
-      <p className="mt-4 text-[11.5px] text-white/35">
+      <p className="mt-4 text-label text-white/35">
         Best distance {bestDistance.toFixed(1)} km — new cars unlock as you drive further.
       </p>
     </div>
@@ -663,7 +663,7 @@ export function DriveChallengeLauncher({
               the modal, gets the full viewport with no letterboxing bar. */}
           {!gameMounted && (
             <div className="flex h-16 shrink-0 items-center justify-between px-4 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-              <span className="flex items-center gap-2 text-[13.5px] font-semibold text-white">
+              <span className="flex items-center gap-2 text-detail font-semibold text-white">
                 <img
                   src="/cx-drive-challenge-icon.png"
                   alt=""
@@ -775,7 +775,7 @@ export function DriveChallengeLauncher({
                       </span>
                     </div>
                     <p
-                      className="mt-3 animate-fade-up text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-bright"
+                      className="mt-3 animate-fade-up text-label font-semibold uppercase tracking-[0.24em] text-accent-bright"
                       style={{ animationDelay: '160ms' }}
                     >
                       CX Drive Challenge
@@ -787,14 +787,14 @@ export function DriveChallengeLauncher({
                       Ready to drive?
                     </h2>
                     <p
-                      className="mt-2 animate-fade-up text-[14px] leading-relaxed text-white/55"
+                      className="mt-2 animate-fade-up text-body leading-relaxed text-white/55"
                       style={{ animationDelay: '340ms' }}
                     >
                       Dodge traffic, collect green tokens, and beat the clock. Score enough and you'll unlock
                       a real discount on your next CX booking.
                     </p>
                     <ul
-                      className="mt-5 animate-fade-up flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[12.5px] text-white/45"
+                      className="mt-5 animate-fade-up flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-caption text-white/45"
                       style={{ animationDelay: '420ms' }}
                     >
                       {(tiers ?? []).map((t) => (
@@ -816,7 +816,7 @@ export function DriveChallengeLauncher({
                       </button>
                     </div>
                     {bestScore > 0 && (
-                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-star/30 bg-star/10 px-3 py-1.5 text-[12px] font-semibold text-star">
+                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-star/30 bg-star/10 px-3 py-1.5 text-caption font-semibold text-star">
                         <Icon name="trophy" size={13} fill /> Personal best {bestScore.toLocaleString()}
                       </span>
                     )}
@@ -826,7 +826,7 @@ export function DriveChallengeLauncher({
                   {config?.leaderboardEnabled && (
                     <button
                       onClick={() => setIntroView((v) => (v === 'leaderboard' ? 'menu' : 'leaderboard'))}
-                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
+                      className="inline-flex items-center gap-1.5 text-detail font-medium text-white/50 transition-colors hover:text-white"
                     >
                       <Icon name="trophy" size={14} />
                       {introView === 'leaderboard' ? 'Back' : 'Leaderboard'}
@@ -834,7 +834,7 @@ export function DriveChallengeLauncher({
                   )}
                   <button
                     onClick={() => setIntroView((v) => (v === 'garage' ? 'menu' : 'garage'))}
-                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/50 transition-colors hover:text-white"
+                    className="inline-flex items-center gap-1.5 text-detail font-medium text-white/50 transition-colors hover:text-white"
                   >
                     <Icon name="car" size={14} />
                     {introView === 'garage' ? 'Back' : 'Garage'}
@@ -856,7 +856,7 @@ export function DriveChallengeLauncher({
                           className="relative h-28 w-auto animate-pulse object-contain"
                         />
                       </span>
-                      <p className="text-[12.5px] font-medium text-white/40">Loading the track…</p>
+                      <p className="text-caption font-medium text-white/40">Loading the track…</p>
                     </div>
                   }
                 >
@@ -953,7 +953,7 @@ export function DriveChallengeLauncher({
                     below a generic title. */}
                 {(isTopOne || isNewRecord) && (
                   <p
-                    className={`animate-fade-up text-[11px] font-bold uppercase tracking-[0.24em] ${isTopOne ? 'text-star' : 'text-accent-bright'}`}
+                    className={`animate-fade-up text-label font-bold uppercase tracking-[0.24em] ${isTopOne ? 'text-star' : 'text-accent-bright'}`}
                   >
                     {isTopOne ? '★ Rare Achievement' : 'Personal Best'}
                   </p>
@@ -970,7 +970,7 @@ export function DriveChallengeLauncher({
                 >
                   {isTopOne ? 'Top 1%' : isNewRecord ? 'New Best' : 'Game Over'}
                 </p>
-                <p className="mt-2 text-[15px] text-white/60">
+                <p className="mt-2 text-copy text-white/60">
                   You scored <span className="font-semibold text-white">{result.score.toLocaleString()}</span> points.
                 </p>
 
@@ -979,7 +979,7 @@ export function DriveChallengeLauncher({
                     doesn't compete with the headline for attention. */}
                 {isTopOne && isNewRecord && (
                   <div className="mt-3 flex items-center justify-center">
-                    <span className="animate-scale-in inline-flex items-center gap-1.5 rounded-full border border-accent-bright/30 bg-accent-bright/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-bright">
+                    <span className="animate-scale-in inline-flex items-center gap-1.5 rounded-full border border-accent-bright/30 bg-accent-bright/10 px-3 py-1 text-label font-bold uppercase tracking-wide text-accent-bright">
                       <Icon name="trending" size={12} /> New Record
                     </span>
                   </div>
@@ -987,7 +987,7 @@ export function DriveChallengeLauncher({
 
                 {/* Personal-best comparison — what you had to beat, not just
                     the post-run max, so a non-record run still shows the gap. */}
-                <p className="mt-3 text-[13px] text-white/45">
+                <p className="mt-3 text-detail text-white/45">
                   {isNewRecord ? (
                     <>
                       Previous best was{' '}
@@ -1006,39 +1006,39 @@ export function DriveChallengeLauncher({
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-xl border border-accent-bright/25 bg-accent-bright/[0.06] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-accent-bright/70">Final Score</p>
-                    <p className="mt-0.5 font-display text-[15px] font-semibold text-white">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-accent-bright/70">Final Score</p>
+                    <p className="mt-0.5 font-display text-copy font-semibold text-white">
                       {result.score.toLocaleString()}
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Best Score</p>
-                    <p className="mt-0.5 font-display text-[15px] font-semibold text-white">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-white/40">Best Score</p>
+                    <p className="mt-0.5 font-display text-copy font-semibold text-white">
                       {Math.max(bestScore, result.score).toLocaleString()}
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Distance</p>
-                    <p className="mt-0.5 font-display text-[15px] font-semibold text-white">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-white/40">Distance</p>
+                    <p className="mt-0.5 font-display text-copy font-semibold text-white">
                       {result.distance.toFixed(1)} km
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Max Speed</p>
-                    <p className="mt-0.5 font-display text-[15px] font-semibold text-white">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-white/40">Max Speed</p>
+                    <p className="mt-0.5 font-display text-copy font-semibold text-white">
                       {Math.max(bestSpeed, result.maxSpeed).toLocaleString()} km/h
                     </p>
                   </div>
                   <div className="col-span-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Combo</p>
-                    <p className="mt-0.5 font-display text-[15px] font-semibold text-accent-bright">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-white/40">Combo</p>
+                    <p className="mt-0.5 font-display text-copy font-semibold text-accent-bright">
                       &times;{Math.max(bestCombo, result.maxCombo)}
                     </p>
                   </div>
                 </div>
 
                 {scoreError && (
-                  <p className="mt-4 rounded-xl bg-white/5 px-3.5 py-2.5 text-[13px] text-white/50">
+                  <p className="mt-4 rounded-xl bg-white/5 px-3.5 py-2.5 text-detail text-white/50">
                     {scoreError}
                   </p>
                 )}
@@ -1050,7 +1050,7 @@ export function DriveChallengeLauncher({
                       <Icon name="gift" size={22} />
                     </span>
                     <p
-                      className="relative mt-3 animate-fade-up text-[11px] font-bold uppercase tracking-[0.2em] text-accent-bright"
+                      className="relative mt-3 animate-fade-up text-label font-bold uppercase tracking-[0.2em] text-accent-bright"
                       style={{ animationDelay: '80ms' }}
                     >
                       Reward Unlocked
@@ -1062,7 +1062,7 @@ export function DriveChallengeLauncher({
                       {qualifyingTier.label}
                     </p>
                     <p
-                      className="relative mt-1 animate-fade-up text-[13px] text-white/55"
+                      className="relative mt-1 animate-fade-up text-detail text-white/55"
                       style={{ animationDelay: '150ms' }}
                     >
                       Applies to your next CX booking
@@ -1078,19 +1078,19 @@ export function DriveChallengeLauncher({
                         </button>
                       ) : (
                         <>
-                          <p className="text-[13px] text-white/55">Create an account to claim your reward.</p>
+                          <p className="text-detail text-white/55">Create an account to claim your reward.</p>
                           <button onClick={claimAfterSignup} className="btn btn-accent-bright btn-block mt-3">
                             Create account
                           </button>
                         </>
                       )}
-                      {claimError && <p className="mt-3 text-[13px] text-danger">{claimError}</p>}
+                      {claimError && <p className="mt-3 text-detail text-danger">{claimError}</p>}
                     </div>
                   </div>
                 )}
 
                 {!scoreError && !qualifyingTier && (
-                  <p className="mt-4 text-[13.5px] text-white/50">
+                  <p className="mt-4 text-detail text-white/50">
                     {nextTier
                       ? `So close — score ${nextTier.pointsRequired.toLocaleString()}+ to unlock ${nextTier.label}.`
                       : 'Keep practicing — rewards unlock as your score climbs.'}
@@ -1155,7 +1155,7 @@ export function DriveChallengeLauncher({
                     style={{ animationDelay: '220ms' }}
                   />
                 </span>
-                <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-bright">
+                <p className="mt-4 text-label font-semibold uppercase tracking-[0.24em] text-accent-bright">
                   Reward Unlocked
                 </p>
                 <h2 className="mt-1 font-display text-2xl font-semibold text-white">Added to your account.</h2>
@@ -1163,8 +1163,8 @@ export function DriveChallengeLauncher({
                   <p className="font-display text-3xl font-semibold text-accent-bright">
                     {reward.discountPercentage}% OFF
                   </p>
-                  <p className="mt-2 font-mono text-[15px] tracking-wide text-white">{reward.couponCode}</p>
-                  <p className="mt-1.5 text-[12px] text-white/45">
+                  <p className="mt-2 font-mono text-copy tracking-wide text-white">{reward.couponCode}</p>
+                  <p className="mt-1.5 text-caption text-white/45">
                     Expires {new Date(reward.expiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
@@ -1174,7 +1174,7 @@ export function DriveChallengeLauncher({
                 <Link
                   to="/dashboard#rewards"
                   onClick={close}
-                  className="mt-3 inline-block text-[13px] font-medium text-white/50 hover:text-white"
+                  className="mt-3 inline-block text-detail font-medium text-white/50 hover:text-white"
                 >
                   View my rewards
                 </Link>
