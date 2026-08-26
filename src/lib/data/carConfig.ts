@@ -78,7 +78,7 @@ const BUILDS_KEY = 'cx-saved-builds';
 
 /**
  * Saved builds are localStorage-backed, matching the existing precedent
- * for client-only state in this codebase (`compareStore`, `shopStore`) —
+ * for client-only state in this codebase (see `compareStore`) —
  * there is no `saved_configurations` table yet. Migration 0014 adds one;
  * until it's applied, a build is per-browser and won't sync across
  * devices. That limitation is surfaced in the UI rather than hidden.

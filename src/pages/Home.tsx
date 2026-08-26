@@ -11,10 +11,8 @@ import { DriveChallengeLauncher } from '../components/game/DriveChallengeLaunche
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
-import { getFeaturedProducts } from '../lib/data/shop';
 import type { CarCategory } from '../data/types';
 
-const shopFeatured = getFeaturedProducts(4);
 
 /** Original CX editorial hero art: created specifically with generous
  * left-side copy space and a sunlit, optimistic automotive setting. */
@@ -425,40 +423,6 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= SHOP — small teaser, never competes with cars ================= */}
-      <section className="container-page section">
-        <Reveal>
-          <div className="rounded-2xl border border-line bg-panel/50 px-6 py-9 sm:px-10">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="eyebrow">The CX Shop</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
-                  More than a rental. It&apos;s a lifestyle.
-                </h2>
-              </div>
-              <Link to="/shop" className="btn btn-secondary shrink-0">
-                Explore CX Shop <Icon name="arrowRight" size={16} />
-              </Link>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {shopFeatured.map((p) => (
-                <Link key={p.id} to={`/shop/${p.slug}`} className="group block">
-                  <div className="aspect-square overflow-hidden rounded-xl bg-panel-2">
-                    <img
-                      src={unsplash(p.images[0], 300)}
-                      alt={p.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <p className="mt-1.5 truncate text-caption font-medium text-ink-soft">{p.name}</p>
-                  <p className="text-caption font-semibold text-ink">{eur(p.price)}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
 
       {/* ================= TRUST — short, measured, no cards ================= */}
       <section className="container-page section">

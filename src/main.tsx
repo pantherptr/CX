@@ -5,7 +5,6 @@ import './index.css'
 import App from './App.tsx'
 import { AppProvider } from './lib/store'
 import { AuthProvider } from './lib/auth'
-import { ShopProvider } from './lib/shopStore'
 import { CompareProvider } from './lib/compareStore'
 
 createRoot(document.getElementById('root')!).render(
@@ -13,11 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <AuthProvider>
         <AppProvider>
-          <ShopProvider>
-            <CompareProvider>
-              <App />
-            </CompareProvider>
-          </ShopProvider>
+          <CompareProvider>
+            <App />
+          </CompareProvider>
         </AppProvider>
       </AuthProvider>
     </BrowserRouter>

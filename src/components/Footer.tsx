@@ -24,7 +24,6 @@ const columns: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: 'Explore',
     links: [
-      { label: 'CX Shop', to: '/shop' },
       { label: 'About CX', to: '/about' },
       { label: 'List your car', to: '/list-your-car' },
     ],

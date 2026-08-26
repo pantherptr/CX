@@ -8,7 +8,7 @@ import {
   Upload, CreditCard, Lock, Sparkles, Headset, Compass, TrendingUp, Euro,
   MessageSquareText, Send, Paperclip, BarChart3, CarFront, Route, Globe,
   Snowflake, Music, Apple, Info, BadgeCheck, Briefcase, Trophy, Gift, Pause,
-  Play, Volume2, VolumeX, ShoppingBag, ShoppingCart, Truck, Package, Tag,
+  Play, Volume2, VolumeX, Truck, Package, Tag,
   GitCompare,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,7 +25,7 @@ export type IconName =
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
   | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
   | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff'
-  | 'minus' | 'shoppingBag' | 'cart' | 'truck' | 'package' | 'tag' | 'compare';
+  | 'minus' | 'truck' | 'package' | 'tag' | 'compare';
 
 /**
  * Every icon in the product renders through the same Lucide set — one
@@ -51,7 +51,7 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   instant: Zap, snowflake: Snowflake, music: Music, apple: Apple, info: Info,
   verified: BadgeCheck, bag: Briefcase, trophy: Trophy, gift: Gift, pause: Pause,
   play: Play, volume: Volume2, volumeOff: VolumeX, minus: Minus,
-  shoppingBag: ShoppingBag, cart: ShoppingCart, truck: Truck, package: Package, tag: Tag,
+  truck: Truck, package: Package, tag: Tag,
   compare: GitCompare,
 };
 

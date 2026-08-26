@@ -9,7 +9,6 @@ import { HostRoute } from './components/HostRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
-import { CartDrawer } from './components/shop/CartDrawer';
 import { CompareTray } from './components/CompareTray';
 
 // Eager — the three routes a first-time visitor actually lands on. Keeping
@@ -25,8 +24,6 @@ import NotFound from './pages/NotFound';
 // Split per route so each page's cost is paid only when it's opened.
 const Compare = lazy(() => import('./pages/Compare'));
 const Garage = lazy(() => import('./pages/Garage'));
-const Shop = lazy(() => import('./pages/Shop'));
-const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
@@ -163,8 +160,6 @@ export default function App() {
               sign-in teaser for a signed-out visitor rather than a hard
               redirect, per its own spec. */}
           <Route path="/garage" element={<Garage />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/shop/:slug" element={<ProductDetails />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
@@ -196,7 +191,6 @@ export default function App() {
       </Suspense>
       </div>
       <BottomNav />
-      <CartDrawer />
       <CompareTray />
       <Toaster />
     </>

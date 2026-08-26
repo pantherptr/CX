@@ -6,7 +6,7 @@ import { Icon } from './Icon';
 
 /**
  * The floating "you have cars staged for comparison" bar — mounted once
- * at the app root (see `App.tsx`, next to `CartDrawer`/`Toaster`) so it
+ * at the app root (see `App.tsx`, next to `Toaster`) so it
  * persists across navigation exactly like a real cart. Renders nothing
  * once the compare list is empty, so it costs nothing on every other page.
  */

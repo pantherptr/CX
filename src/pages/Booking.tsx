@@ -18,15 +18,8 @@ import {
 } from '../lib/data/bookings';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useAvailableReward } from '../lib/data/rewards';
-import { getProductById } from '../lib/data/shop';
-import { ProductCard } from '../components/shop/ProductCard';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
-
-/** The five essentials most worth having for the trip you just booked —
- *  named explicitly rather than derived, since "relevant to a booking"
- *  isn't a property the catalog can compute on its own. */
-const UPSELL_PRODUCT_IDS = ['p-phone-mount', 'p-usb-charger', 'p-air-freshener', 'p-charging-cable', 'p-cleaning-kit'];
 
 const STEPS = ['Trip details', 'Extras', 'Driver details', 'Payment', 'Confirmation'];
 const CONFIRMATION_STEP = STEPS.length - 1;
@@ -324,22 +317,6 @@ export default function Booking() {
             <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
               <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
             </button>
-          </div>
-        </div>
-
-        {/* Optional upsell — nothing here blocks or delays "View My Trip"
-            below it; it's purely an offer to add to an already-confirmed
-            booking, never a step in the way of one. */}
-        <div className="mt-9">
-          <p className="eyebrow text-center sm:text-left">Make your drive better</p>
-          <p className="mt-1 text-center text-body text-muted sm:text-left">
-            Add CX essentials to your experience — totally optional.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {UPSELL_PRODUCT_IDS.map((id) => {
-              const product = getProductById(id);
-              return product ? <ProductCard key={id} product={product} /> : null;
-            })}
           </div>
         </div>
 
