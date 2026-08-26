@@ -7,6 +7,7 @@ import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useShop } from '../lib/shopStore';
 import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
+import { ConciergeLauncher } from './Concierge';
 
 const links = [
   { to: '/browse', label: 'Cars' },
@@ -72,6 +73,7 @@ function PublicNavbar() {
   // treatment those pages already use, so there's exactly one "scrolled"
   // look across the whole site, not two to keep in sync.
   const transparent = pathname === '/' && !scrolled;
+  const homeLogo = pathname === '/' ? 'wordmark' : 'auto';
 
   return (
     <>
@@ -88,7 +90,7 @@ function PublicNavbar() {
           }`}
         >
           <div className="flex items-center gap-10">
-            <Logo variant="auto" />
+            <Logo variant={homeLogo} />
             <ul className="hidden items-center gap-0.5 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
@@ -98,8 +100,8 @@ function PublicNavbar() {
                       `group relative rounded-lg px-3.5 py-2 text-detail font-medium transition-colors ${
                         transparent
                           ? isActive
-                            ? 'text-white'
-                            : 'text-white/75 hover:text-white'
+                            ? 'text-ink'
+                            : 'text-ink-soft hover:text-ink'
                           : isActive
                             ? 'text-ink'
                             : 'text-muted hover:text-ink'
@@ -124,7 +126,7 @@ function PublicNavbar() {
             </ul>
             <DriveChallengeLauncher
               className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-detail font-semibold transition-colors lg:inline-flex ${
-                transparent ? 'text-accent-bright' : 'text-accent-700'
+                transparent ? 'text-accent-700' : 'text-accent-700'
               }`}
             >
               <span
@@ -142,7 +144,7 @@ function PublicNavbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <CartButton className={transparent ? '!text-white hover:!bg-white/10' : ''} />
+            <CartButton className={transparent ? 'bg-white/35 hover:!bg-white/65' : ''} />
             <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
               Create account
             </Link>
@@ -153,7 +155,7 @@ function PublicNavbar() {
                 aria-label="Your account"
                 className={`pressable grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border transition-colors ${
                   transparent
-                    ? 'border-white/25 bg-white/10 text-white hover:border-white/50'
+                    ? 'border-ink/15 bg-white/50 text-ink hover:border-ink/35'
                     : 'border-line-strong bg-panel text-ink-soft hover:border-ink'
                 }`}
               >
@@ -168,7 +170,7 @@ function PublicNavbar() {
                 <Link
                   to="/login"
                   className={`pressable hidden text-detail font-medium transition-colors min-[420px]:inline-flex ${
-                    transparent ? 'text-white/80 hover:text-white' : 'text-ink-soft hover:text-ink'
+                    transparent ? 'text-ink-soft hover:text-ink' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
                   Log in
@@ -177,7 +179,7 @@ function PublicNavbar() {
                   to="/login"
                   className={`pressable inline-flex h-9 items-center rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
                     transparent
-                      ? 'border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/15'
+                      ? 'border-ink/15 bg-white/55 text-ink backdrop-blur-md hover:border-ink/35 hover:bg-white/75'
                       : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'
                   }`}
                 >
@@ -189,7 +191,7 @@ function PublicNavbar() {
             <button
               onClick={() => setMenuOpen(true)}
               className={`grid h-10 w-10 place-items-center rounded-xl transition-colors lg:hidden ${
-                transparent ? 'text-white hover:bg-white/10' : 'text-ink hover:bg-panel'
+                transparent ? 'text-ink hover:bg-white/45' : 'text-ink hover:bg-panel'
               }`}
               aria-label="Open menu"
             >
@@ -203,33 +205,52 @@ function PublicNavbar() {
           backdrop-filter doesn't trap this fixed element in a 68px box. */}
       {menuOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-sm animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-bg shadow-pop">
-            <div className="flex items-center justify-between border-b border-line px-5 h-[68px]">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setMenuOpen(false)} />
+          <div className="absolute right-0 top-0 flex h-full w-[88%] max-w-sm animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col overflow-hidden bg-noir text-white shadow-pop">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-56 opacity-70" style={{ background: 'radial-gradient(70% 75% at 85% 0%, rgba(0,212,71,0.2), transparent 70%)' }} />
+            <div className="relative flex h-[68px] items-center justify-between border-b border-white/10 px-5">
               <Logo variant="wordmark" />
               <button
                 onClick={() => setMenuOpen(false)}
-                className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
+                className="grid h-10 w-10 place-items-center rounded-xl text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label="Close menu"
               >
                 <Icon name="x" size={22} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="relative flex-1 overflow-y-auto p-5">
+              <div className="mb-6 pr-4">
+                <p className="text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">CX Automotive Experience</p>
+                <p className="mt-2 font-display text-2xl font-semibold leading-tight text-white">Choose your next drive.</p>
+              </div>
+              <ConciergeLauncher className="group relative mb-5 flex w-full items-center justify-between overflow-hidden rounded-2xl border border-accent-bright/30 bg-accent-bright px-4 py-4 text-left text-noir shadow-[0_10px_30px_rgba(0,212,71,0.18)] transition-transform duration-200 active:scale-[0.98]">
+                <span>
+                  <span className="block text-caption font-bold uppercase tracking-[0.16em] text-noir/65">Find your CX</span>
+                  <span className="mt-1 block text-lead font-semibold">Tell us how you want to drive</span>
+                </span>
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-noir text-accent-bright transition-transform duration-300 group-hover:translate-x-0.5">
+                  <Icon name="arrowRight" size={18} />
+                </span>
+              </ConciergeLauncher>
+              <p className="mb-2 px-1 text-caption font-semibold uppercase tracking-[0.18em] text-white/40">Explore CX</p>
               <ul className="flex flex-col gap-1">
                 {links.map((l) => (
                   <li key={l.to}>
                     <NavLink
                       to={l.to}
-                      className="flex items-center justify-between rounded-xl px-3 py-3 text-lead font-medium text-ink hover:bg-panel"
+                      className={({ isActive }) =>
+                        `flex items-center justify-between rounded-xl px-3 py-3 text-lead font-medium transition-colors ${
+                          isActive ? 'bg-white/10 text-white' : 'text-white/78 hover:bg-white/[0.07] hover:text-white'
+                        }`
+                      }
                     >
                       {l.label}
-                      <Icon name="chevronRight" size={18} className="text-faint" />
+                      <Icon name="chevronRight" size={18} className="text-white/35" />
                     </NavLink>
                   </li>
                 ))}
                 <li onClick={() => setMenuOpen(false)}>
-                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl bg-accent-bright/10 px-3 py-3 text-lead font-bold text-accent-700">
+                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3 text-lead font-bold text-white transition-colors hover:bg-white/10">
                     <span className="flex items-center gap-3">
                       <img
                         src="/cx-drive-challenge-icon.png"
@@ -239,21 +260,21 @@ function PublicNavbar() {
                       />
                       <span className="tracking-wide">DRIVE</span>
                     </span>
-                    <Icon name="chevronRight" size={18} className="text-accent-bright/60" />
+                    <Icon name="chevronRight" size={18} className="text-accent-bright" />
                   </DriveChallengeLauncher>
                 </li>
               </ul>
-              <div className="hairline my-5" />
+              <div className="my-5 h-px bg-white/10" />
               <div className="flex flex-col gap-2 px-1">
-                <Link to="/login" className="btn btn-secondary btn-block">
+                <Link to="/login" className="btn btn-block border border-white/20 bg-white/[0.06] text-white hover:border-white/35 hover:bg-white/10">
                   Sign in
                 </Link>
-                <Link to="/signup" className="btn btn-primary btn-block">
+                <Link to="/signup" className="btn btn-accent-bright btn-block">
                   Create an account
                 </Link>
               </div>
             </div>
-            <div className="border-t border-line p-5">
+            <div className="relative border-t border-white/10 p-5">
               <button
                 onClick={() => navigate('/list-your-car')}
                 className="btn btn-accent-bright btn-block btn-lg"

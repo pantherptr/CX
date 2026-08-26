@@ -331,6 +331,19 @@
 }
 
 @layer utilities {
+  /* Section rhythm. The homepage previously carried four competing
+     spacings (mt-14/16, mt-16/20, mt-16/24, mt-20/24) which read as
+     arbitrary rather than composed. Two steps replace them: `.section`
+     for a genuine change of subject, `.section-tight` when a block is a
+     continuation of the one above it. Editorial layouts get their
+     rhythm from repetition, not from a new value per section. */
+  .section { margin-top: 4rem; }
+  .section-tight { margin-top: 2.5rem; }
+  @media (min-width: 640px) {
+    .section { margin-top: 6rem; }
+    .section-tight { margin-top: 3.5rem; }
+  }
+
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
 

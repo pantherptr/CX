@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { SplashScreen } from './components/CarLoader';
+import { SplashScreen, CarLoader } from './components/CarLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { HostRoute } from './components/HostRoute';
@@ -12,27 +12,34 @@ import { useAuth } from './lib/auth';
 import { CartDrawer } from './components/shop/CartDrawer';
 import { CompareTray } from './components/CompareTray';
 
+// Eager — the three routes a first-time visitor actually lands on. Keeping
+// these in the main chunk avoids a loading flash on the critical path.
 import Home from './pages/Home';
 import Browse from './pages/Browse';
 import CarDetails from './pages/CarDetails';
-import Compare from './pages/Compare';
-import Garage from './pages/Garage';
-import Shop from './pages/Shop';
-import ProductDetails from './pages/ProductDetails';
-import Booking from './pages/Booking';
-import ListCar from './pages/ListCar';
-import HowItWorks from './pages/HowItWorks';
-import About from './pages/About';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Help from './pages/Help';
-import CustomerDashboard from './pages/CustomerDashboard';
-import HostDashboard from './pages/HostDashboard';
-import Messages from './pages/Messages';
-import Notifications from './pages/Notifications';
-import Settings from './pages/Settings';
-import TripDetails from './pages/TripDetails';
 import NotFound from './pages/NotFound';
+
+// Lazy — everything else. Most of these are behind auth (Booking,
+// TripDetails, ListCar, the dashboards, Settings) so an anonymous visitor
+// was previously downloading ~3,500 lines of code they could never reach.
+// Split per route so each page's cost is paid only when it's opened.
+const Compare = lazy(() => import('./pages/Compare'));
+const Garage = lazy(() => import('./pages/Garage'));
+const Shop = lazy(() => import('./pages/Shop'));
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
+const Booking = lazy(() => import('./pages/Booking'));
+const ListCar = lazy(() => import('./pages/ListCar'));
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const About = lazy(() => import('./pages/About'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Help = lazy(() => import('./pages/Help'));
+const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
+const HostDashboard = lazy(() => import('./pages/HostDashboard'));
+const Messages = lazy(() => import('./pages/Messages'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Settings = lazy(() => import('./pages/Settings'));
+const TripDetails = lazy(() => import('./pages/TripDetails'));
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -127,6 +134,18 @@ export default function App() {
       {splash.visible && <SplashScreen hiding={splash.hiding} />}
       <ScrollToTop />
       <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
+      {/* One boundary for every lazy route below. The fallback is
+          deliberately quiet — a centred marque rather than a full-screen
+          splash — because these chunks resolve in a few hundred ms on a
+          warm connection and a heavy loader would read as slower than
+          the navigation actually is. */}
+      <Suspense
+        fallback={
+          <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Loading">
+            <CarLoader size={80} />
+          </div>
+        }
+      >
       <Routes location={location}>
         <Route element={<MarketingLayout />}>
           {/* Home, login and signup only make sense while signed out — an
@@ -174,6 +193,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       </div>
       <BottomNav />
       <CartDrawer />

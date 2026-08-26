@@ -16,25 +16,10 @@ import type { CarCategory } from '../data/types';
 
 const shopFeatured = getFeaturedProducts(4);
 
-/** The hero's photo — two matte-black supercars (McLaren 600LT, Mercedes-AMG
- *  GTR) at a Mediterranean marina, real automotive editorial photography by
- *  Flavien, free to use under the Unsplash License:
- *  https://unsplash.com/photos/matte-black-sports-cars-in-monaco-GJuXN4uyB2U
- *  `object-position` is tuned per breakpoint (see the <img> below) rather
- *  than shipping a second cropped file — the same technique the brief asks
- *  for ("use object-fit / object-position correctly") without a duplicate
- *  asset to keep in sync. */
-const HERO_PHOTO = 'photo-1617814086906-d847a8bc6fca';
-
-/** On a narrow, tall viewport `object-fit: cover` alone can't help — with
- *  nearly the whole (short, wide) source height forced into view to fill
- *  the width, the car (which only occupies the source's lower half) ends
- *  up a sliver at the bottom. This is the real "dedicated mobile crop"
- *  the brief asks for: not a CSS position tweak, a genuinely different,
- *  server-side, focal-point-zoomed crop of the same source photo — same
- *  asset, no second file to keep in sync, but actually framed for a
- *  portrait screen. */
-const HERO_PHOTO_MOBILE = `https://images.unsplash.com/${HERO_PHOTO}?auto=format&fit=crop&crop=focalpoint&fp-x=0.22&fp-y=0.48&fp-z=1.0&q=80&w=800&h=1800`;
+/** Original CX editorial hero art: created specifically with generous
+ * left-side copy space and a sunlit, optimistic automotive setting. */
+const HERO_IMAGE = '/cx-hero-mediterranean-v2.png';
+const HERO_IMAGE_MOBILE = '/cx-hero-mediterranean-mobile-v2.png';
 
 /** The hero photo, fading in once decoded (same `.imgfade`/`.loaded`
  *  technique `Img` uses) — kept as its own small `<picture>` here rather
@@ -50,13 +35,14 @@ function HeroPhoto() {
 
   return (
     <picture>
-      <source media="(max-width: 767px)" srcSet={HERO_PHOTO_MOBILE} />
+      <source media="(max-width: 767px)" srcSet={HERO_IMAGE_MOBILE} />
       <img
         ref={ref}
-        src={unsplash(HERO_PHOTO, 2400)}
-        alt="A CX supercar at a Mediterranean marina, ready to drive"
+        src={HERO_IMAGE}
+        alt="A premium CX car overlooking the Mediterranean coast"
         onLoad={() => setLoaded(true)}
-        className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center sm:object-[30%_55%] lg:object-[38%_50%] xl:object-[42%_48%]`}
+        fetchPriority="high"
+        className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center`}
       />
     </picture>
   );
@@ -146,29 +132,23 @@ export default function Home() {
   return (
     <div>
       {/* ================= HERO — real photography, edge to edge ================= */}
-      <section className="relative isolate min-h-[100svh] overflow-hidden bg-noir sm:min-h-[92svh]">
+      <section className="relative isolate min-h-[75rem] overflow-hidden bg-[#eaf2ef] sm:min-h-[92svh]">
         <HeroPhoto />
 
-        {/* Grounding gradient — dark at the very top (headline) and the
-            very bottom (search bar), clear through the middle where the
-            car itself reads best. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/10 to-black/75" />
-        {/* A second, tighter scrim directly behind the headline column
-            only — the wide gradient above is deliberately gentle so the
-            car isn't muddied, this is what actually guarantees contrast. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/55 via-black/10 to-transparent" />
-        {/* The one CX-branded touch on the photo itself — a quiet green
-            wash, not a filter over the whole image. */}
+        {/* A light editorial wash gives the copy a calm, premium reading
+            surface while keeping the blue sky, architecture and car vivid. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-[#0b2618]/30" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f8faf4]/[0.97] via-[#f8faf4]/75 to-transparent sm:via-[#f8faf4]/45" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-80 mix-blend-screen"
-          style={{ background: 'radial-gradient(55% 45% at 12% 8%, rgba(0,212,71,0.16), transparent 70%)' }}
+          className="pointer-events-none absolute inset-0 opacity-70"
+          style={{ background: 'radial-gradient(42% 42% at 16% 10%, rgba(0,212,71,0.10), transparent 70%)' }}
         />
 
-        <div className="relative z-10 flex min-h-[100svh] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
+        <div className="relative z-10 flex min-h-[75rem] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
           {/* -------- Headline column -------- */}
           <div className="max-w-xl">
             <Reveal>
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
@@ -179,18 +159,18 @@ export default function Home() {
 
             <Reveal delay={80}>
               <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
-                <span className="text-white" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+                <span className="text-ink">
                   Your next car
                 </span>
                 <br />
-                <span className="text-accent-bright" style={{ textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+                <span className="text-accent">
                   is waiting.
                 </span>
               </h1>
             </Reveal>
 
             <Reveal delay={140}>
-              <p className="mt-5 max-w-md text-lead leading-relaxed text-white/85 text-pretty sm:text-feature">
+              <p className="mt-5 max-w-md text-lead leading-relaxed text-ink-soft text-pretty sm:text-feature">
                 Premium cars. Verified hosts. Ready for the road.
               </p>
             </Reveal>
@@ -202,7 +182,7 @@ export default function Home() {
                 </Link>
                 <Link
                   to="/list-your-car"
-                  className="btn btn-lg border border-white/25 bg-white/[0.08] text-white backdrop-blur-md hover:border-white/40 hover:bg-white/15"
+                  className="btn btn-lg border border-ink/15 bg-white/55 text-ink shadow-hair backdrop-blur-md hover:border-ink/30 hover:bg-white/75"
                 >
                   List Your Car
                 </Link>
@@ -212,8 +192,8 @@ export default function Home() {
             <Reveal delay={260}>
               <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5">
                 {trustRow.map((t) => (
-                  <span key={t.label} className="inline-flex items-center gap-2 text-detail font-medium text-white/75">
-                    <Icon name={t.icon} size={15} className="text-accent-bright/90" />
+                  <span key={t.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
+                    <Icon name={t.icon} size={15} className="text-accent" />
                     {t.label}
                   </span>
                 ))}
@@ -225,14 +205,14 @@ export default function Home() {
               separate light-page section -------- */}
           <Reveal delay={340}>
             <div className="mx-auto w-full max-w-4xl">
-              <SearchBar dark />
+              <SearchBar />
             </div>
           </Reveal>
         </div>
       </section>
 
       {/* ================= FLEET — the rental experience starts right here ================= */}
-      <section className="mt-14 sm:mt-16">
+      <section className="section">
         <div className="container-page">
           <SectionHead
             eyebrow="Explore the CX Fleet"
@@ -267,21 +247,21 @@ export default function Home() {
       </section>
 
       {/* ================= CONCIERGE — find your CX ================= */}
-      <section className="container-page mt-16 sm:mt-20">
+      <section className="container-page section">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[1.75rem] bg-noir px-6 py-12 sm:px-12 sm:py-16">
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-accent/10 bg-[#eaf7ef] px-6 py-12 shadow-card sm:px-12 sm:py-16">
             <div
               className="pointer-events-none absolute inset-0 opacity-80"
-              style={{ background: 'radial-gradient(60% 60% at 85% 15%, rgba(0,212,71,0.18), transparent 62%)' }}
+              style={{ background: 'radial-gradient(45% 75% at 88% 12%, rgba(0,212,71,0.17), transparent 62%)' }}
             />
             <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">
-                <Icon name="sparkles" size={14} /> CX Concierge
+              <p className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
+                <img src="/cxsnake.PNG" alt="" className="h-5 w-5 object-contain" /> CX Concierge
               </p>
-              <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-4xl">
+              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
                 Find your CX
               </h2>
-              <p className="mt-3 text-copy leading-relaxed text-on-noir-muted sm:text-lead">
+              <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
                 Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
               </p>
               <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-7">
@@ -293,7 +273,7 @@ export default function Home() {
       </section>
 
       {/* ================= WHY CX — premium automotive storytelling ================= */}
-      <section className="container-page mt-16 sm:mt-24">
+      <section className="container-page section">
         <div className="relative overflow-hidden rounded-[2rem] bg-noir">
           {/* Subtle CX-green glow, upper-right */}
           <div
@@ -305,7 +285,7 @@ export default function Home() {
             {/* -------- Automotive image (reuses the optimized hero photo) -------- */}
             <div className="relative order-1 min-h-[260px] overflow-hidden sm:min-h-[340px] lg:order-none lg:min-h-full">
               <Img
-                src={unsplash(HERO_PHOTO, 1400)}
+                src={HERO_IMAGE}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover object-[40%_55%]"
               />
@@ -370,7 +350,7 @@ export default function Home() {
       </section>
 
       {/* ================= EXPLORE BY CATEGORY ================= */}
-      <section className="container-page mt-4 sm:mt-6">
+      <section className="container-page section-tight">
         <SectionHead
           title="Explore by category"
           action={
@@ -418,7 +398,7 @@ export default function Home() {
       </section>
 
       {/* ================= DRIVE — small, elegant, one clear CTA ================= */}
-      <section className="container-page mt-16 sm:mt-20">
+      <section className="container-page section">
         <Reveal>
           <div className="flex flex-col items-center gap-6 rounded-2xl border border-line bg-panel/50 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
             <div className="flex items-center gap-5">
@@ -446,7 +426,7 @@ export default function Home() {
       </section>
 
       {/* ================= SHOP — small teaser, never competes with cars ================= */}
-      <section className="container-page mt-16 sm:mt-20">
+      <section className="container-page section">
         <Reveal>
           <div className="rounded-2xl border border-line bg-panel/50 px-6 py-9 sm:px-10">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -481,7 +461,7 @@ export default function Home() {
       </section>
 
       {/* ================= TRUST — short, measured, no cards ================= */}
-      <section className="container-page mt-20 sm:mt-24">
+      <section className="container-page section">
         <div className="grid grid-cols-1 gap-8 border-y border-line py-10 sm:grid-cols-3 sm:gap-6 sm:py-12">
           {trustStats.map((s) => (
             <StatCounter key={s.label} {...s} />

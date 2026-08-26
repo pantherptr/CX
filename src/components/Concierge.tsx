@@ -73,15 +73,16 @@ function OptionCard({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all duration-200 ${
+      className={`group relative flex min-h-[8.75rem] flex-col items-start gap-2 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${
         active
-          ? 'border-accent-bright/60 bg-accent-bright/10 text-white'
-          : 'border-white/12 bg-white/[0.04] text-white/85 hover:border-white/30 hover:bg-white/[0.08]'
+          ? 'border-accent-bright/60 bg-accent-bright/[0.12] text-white shadow-[0_10px_28px_rgba(0,212,71,0.08)]'
+          : 'border-white/12 bg-white/[0.04] text-white/85 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.08]'
       }`}
     >
-      <span className={active ? 'text-accent-bright' : 'text-white/60'}>{icon}</span>
+      <span className={`grid h-9 w-9 place-items-center rounded-xl transition-colors ${active ? 'bg-accent-bright text-noir' : 'bg-white/[0.06] text-white/60 group-hover:text-white'}`}>{icon}</span>
       <span className="text-body font-semibold">{label}</span>
       {sub && <span className="text-caption text-white/50">{sub}</span>}
+      {active && <Icon name="check" size={15} className="absolute right-3 top-3 text-accent-bright" />}
     </button>
   );
 }
@@ -193,9 +194,14 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
       {/* Chrome */}
       <div className="relative flex h-16 shrink-0 items-center justify-between px-4 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <span className="flex items-center gap-2 text-detail font-semibold uppercase tracking-[0.14em] text-white">
-          <Icon name="sparkles" size={16} className="text-accent-bright" /> CX Concierge
+        <span>
+          <span className="flex items-center gap-2 text-detail font-semibold uppercase tracking-[0.14em] text-white">
+            <img src="/cxsnake.PNG" alt="" className="h-6 w-6 object-contain" /> CX Concierge
+          </span>
+          <span className="mt-0.5 block text-nano uppercase tracking-[0.18em] text-white/40">A tailored fleet selection</span>
         </span>
+        <div className="flex items-center gap-1.5">
+          {step !== 'results' && <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-label font-medium text-white/55 sm:inline">~1 min</span>}
         <button
           onClick={onClose}
           aria-label="Close"
@@ -203,6 +209,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
         >
           <Icon name="x" size={20} />
         </button>
+        </div>
       </div>
 
       {/* Progress */}
@@ -224,6 +231,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                   <Icon name="user" size={13} className="text-accent-bright" /> Personalised from your CX history
                 </p>
               )}
+              <DriveBrief prefs={prefs} />
 
               {/* Q1 — drive type */}
               {step === 'drive' && (
@@ -377,7 +385,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
               ) : top ? (
                 <>
                   <div className="flex items-center justify-between">
-                    <p className="text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">Your CX Match</p>
+                    <div>
+                      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">Your CX Match</p>
+                      <p className="mt-1 text-detail text-white/50">Selected from the current CX fleet</p>
+                    </div>
                     <button onClick={startOver} className="inline-flex items-center gap-1.5 text-detail font-medium text-white/60 hover:text-white">
                       <Icon name="sort" size={14} /> Start over
                     </button>
@@ -426,9 +437,41 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 function QuestionHead({ n, title, hint }: { n: number; title: string; hint?: string }) {
   return (
     <div>
-      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-white/45">Question {n} of 5</p>
+      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-white/45">Drive profile · {String(n).padStart(2, '0')} / 05</p>
       <h2 className="mt-2 font-display text-2xl font-semibold text-white sm:text-3xl">{title}</h2>
       {hint && <p className="mt-1 text-detail text-white/50">{hint}</p>}
+    </div>
+  );
+}
+
+/** A compact, factual recap of answers already given. It reinforces the
+ * concierge's guided feel without introducing another form or claiming any
+ * vehicle data that is not present in the fleet. */
+function DriveBrief({ prefs }: { prefs: Preferences }) {
+  const choices = [
+    prefs.driveType && DRIVE_TYPES.find((item) => item.id === prefs.driveType)?.label,
+    ...prefs.priorities.map((id) => PRIORITIES.find((item) => item.id === id)?.label),
+    prefs.passengers && `${prefs.passengers} people`,
+    prefs.maxPricePerDay ? `Up to €${prefs.maxPricePerDay}/day` : prefs.budget && BUDGET_BANDS.find((item) => item.id === prefs.budget)?.label,
+    prefs.city,
+  ].filter(Boolean) as string[];
+
+  if (!choices.length) {
+    return (
+      <p className="mb-5 text-detail leading-relaxed text-white/50">
+        A few precise choices are all we need to match you with real cars from the CX fleet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
+      <span className="mr-1 text-label font-semibold uppercase tracking-[0.15em] text-white/40">Your brief</span>
+      {choices.map((choice) => (
+        <span key={choice} className="rounded-full bg-white/[0.07] px-2.5 py-1 text-caption font-medium text-white/75">
+          {choice}
+        </span>
+      ))}
     </div>
   );
 }
