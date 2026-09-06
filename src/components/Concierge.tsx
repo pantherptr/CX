@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 import { CarLoader } from './CarLoader';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
 import { useCompare } from '../lib/compareStore';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings } from '../lib/data/bookings';
+import { fetchSupportAccountId, findOrCreateConversation } from '../lib/data/messages';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import {
@@ -27,6 +28,17 @@ import {
 } from '../lib/carMatch';
 import type { CarCategory } from '../data/types';
 
+/**
+ * CX Concierge — a white, premium identity. Every color below reuses the
+ * same light-theme tokens the rest of the product already builds on
+ * (CarDetails, Browse, the dashboards) rather than inventing a new
+ * palette: this is the same "exclusive, quiet, expensive" surface, not a
+ * separate look bolted onto one feature. `--color-accent` (not
+ * `accent-bright`) is what holds real AA contrast on white — accent-bright
+ * stays reserved for on-photo/on-dark spots, matching how index.css's own
+ * comments describe the split.
+ */
+
 const CITIES = ['Milan', 'Rome', 'Florence', 'Paris', 'Barcelona', 'Munich', 'Amsterdam'];
 
 const EMPTY_PREFS: Preferences = {
@@ -40,6 +52,43 @@ const EMPTY_PREFS: Preferences = {
 
 type Step = 'drive' | 'priority' | 'passengers' | 'budget' | 'location' | 'results';
 const STEP_ORDER: Step[] = ['drive', 'priority', 'passengers', 'budget', 'location', 'results'];
+const QUIZ_STEPS = STEP_ORDER.filter((s): s is Exclude<Step, 'results'> => s !== 'results');
+
+function questionFor(s: Exclude<Step, 'results'>): string {
+  switch (s) {
+    case 'drive':
+      return "What's the drive?";
+    case 'priority':
+      return 'What matters most to you?';
+    case 'passengers':
+      return 'How many people are riding?';
+    case 'budget':
+      return "What's your daily budget?";
+    case 'location':
+      return 'Where are you driving?';
+  }
+}
+
+/** The chat-history line for a step that's already been answered — always
+ *  derived from `prefs`, never stored separately, so going back and
+ *  changing an answer can never leave a stale line behind. */
+function answerFor(s: Exclude<Step, 'results'>, prefs: Preferences): string {
+  switch (s) {
+    case 'drive':
+      return DRIVE_TYPES.find((d) => d.id === prefs.driveType)?.label ?? '—';
+    case 'priority':
+      return prefs.priorities.length
+        ? prefs.priorities.map((id) => PRIORITIES.find((p) => p.id === id)?.label).filter(Boolean).join(', ')
+        : 'No particular priority';
+    case 'passengers':
+      return prefs.passengers ? `${prefs.passengers} people` : 'Not specified';
+    case 'budget':
+      if (prefs.maxPricePerDay) return `Up to €${prefs.maxPricePerDay} / day`;
+      return prefs.budget ? BUDGET_BANDS.find((b) => b.id === prefs.budget)?.label ?? 'Flexible' : 'Flexible';
+    case 'location':
+      return prefs.city ?? 'Any location';
+  }
+}
 
 /** The trigger button — pass whatever styling the placement wants via
  *  `className`, same shape as `DriveChallengeLauncher`, so the homepage,
@@ -57,7 +106,63 @@ export function ConciergeLauncher({ className, children }: { className?: string;
   );
 }
 
-function OptionCard({
+function ConciergeAvatar({ size = 30 }: { size?: number }) {
+  return (
+    <span
+      className="grid shrink-0 place-items-center rounded-full bg-accent-050 ring-1 ring-accent-100"
+      style={{ width: size, height: size }}
+    >
+      <img src="/cxsnake.PNG" alt="" className="h-[58%] w-[58%] object-contain" />
+    </span>
+  );
+}
+
+/** Left-aligned "assistant is speaking" message — the CX mark plus a
+ *  soft panel bubble, reused for every question, lead-in and empty state
+ *  so the whole flow reads as one conversation rather than a form. */
+function AssistantBubble({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+  return (
+    <div className="flex items-start gap-3 animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
+      <ConciergeAvatar />
+      <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-line bg-panel px-4 py-3 text-copy leading-relaxed text-ink-soft sm:max-w-[75%]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Right-aligned recap of the user's own answer — accent-tinted so the
+ *  transcript reads as a real back-and-forth, not just a log. */
+function UserBubble({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex justify-end animate-fade-up">
+      <div className="max-w-[80%] rounded-2xl rounded-tr-sm border border-accent-100 bg-accent-050 px-4 py-2.5 text-body font-medium text-ink sm:max-w-[70%]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** The "concierge is thinking" beat before results land — three dots
+ *  instead of a bare spinner, so the pause itself feels like part of the
+ *  conversation rather than a loading screen. */
+function TypingBubble() {
+  return (
+    <div className="flex items-center gap-3 animate-fade-up">
+      <ConciergeAvatar />
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-line bg-panel px-4 py-3.5">
+        {[0, 150, 300].map((d) => (
+          <span key={d} className="h-1.5 w-1.5 animate-typing-dot rounded-full bg-faint" style={{ animationDelay: `${d}ms` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A quick-reply chip — the chat-native replacement for the old option
+ *  cards. Compact, wraps naturally on mobile, and still carries the
+ *  icon + optional blurb that made each choice legible. */
+function QuickReply({
   active,
   icon,
   label,
@@ -73,24 +178,58 @@ function OptionCard({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex min-h-[8.75rem] flex-col items-start gap-2 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${
+      aria-pressed={active}
+      className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-all duration-200 ${
         active
-          ? 'border-accent-bright/60 bg-accent-bright/[0.12] text-white shadow-[0_10px_28px_rgba(0,212,71,0.08)]'
-          : 'border-white/12 bg-white/[0.04] text-white/85 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.08]'
+          ? 'border-accent bg-accent text-white shadow-[0_8px_20px_rgba(0,133,54,0.22)]'
+          : 'border-line bg-white text-ink-soft hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent-050/50'
       }`}
     >
-      <span className={`grid h-9 w-9 place-items-center rounded-xl transition-colors ${active ? 'bg-accent-bright text-noir' : 'bg-white/[0.06] text-white/60 group-hover:text-white'}`}>{icon}</span>
-      <span className="text-body font-semibold">{label}</span>
-      {sub && <span className="text-caption text-white/50">{sub}</span>}
-      {active && <Icon name="check" size={15} className="absolute right-3 top-3 text-accent-bright" />}
+      <span className={active ? 'text-white' : 'text-muted group-hover:text-accent-600'}>{icon}</span>
+      <span>{label}</span>
+      {sub && <span className={`hidden text-caption sm:inline ${active ? 'text-white/75' : 'text-faint'}`}>· {sub}</span>}
     </button>
+  );
+}
+
+/** A quiet text-link action alongside the chips — "Continue", "Skip",
+ *  "Any location" — distinct from a quick-reply because it doesn't
+ *  represent a choice, it moves the conversation forward. */
+function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick: () => void; icon?: IconName }) {
+  return (
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 text-body font-medium text-muted transition-colors hover:text-ink">
+      {children} {icon && <Icon name={icon} size={15} />}
+    </button>
+  );
+}
+
+function BackLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="mb-2.5 inline-flex items-center gap-1 text-detail font-medium text-faint transition-colors hover:text-muted">
+      <Icon name="chevronLeft" size={14} /> Back
+    </button>
+  );
+}
+
+function StepDots({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="relative flex shrink-0 items-center justify-center gap-1.5 pb-3.5">
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className={`h-1.5 rounded-full transition-all duration-300 ${
+            i < current ? 'w-1.5 bg-accent/45' : i === current ? 'w-5 bg-accent' : 'w-1.5 bg-line-strong'
+          }`}
+        />
+      ))}
+    </div>
   );
 }
 
 function ConciergeModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { favorites, toggleFavorite, isFavorite } = useApp();
+  const { favorites, toggleFavorite, isFavorite, toast } = useApp();
   const { toggleCompare } = useCompare();
   const { cars } = useCars();
   const { bookings } = useMyBookings(session?.user.id);
@@ -99,6 +238,8 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
   const [prefs, setPrefs] = useState<Preferences>(EMPTY_PREFS);
   const [thinking, setThinking] = useState(false);
   const [relaxed, setRelaxed] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -109,6 +250,13 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
       document.body.style.overflow = '';
     };
   }, [onClose]);
+
+  // Keep the transcript pinned to its latest message, the way a real chat
+  // does, every time a question is answered, results land, or the
+  // "thinking" beat starts.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [step, thinking]);
 
   // Real personalisation signals — only ever the user's own favorites and
   // rented categories, and only when logged in with data present.
@@ -173,76 +321,149 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
       priorities: prev.priorities.includes(p) ? prev.priorities.filter((x) => x !== p) : [...prev.priorities, p],
     }));
 
-  const stepIndex = STEP_ORDER.indexOf(step);
-  const progress = step === 'results' ? 1 : stepIndex / (STEP_ORDER.length - 1);
+  const quizIndex = QUIZ_STEPS.indexOf(step as (typeof QUIZ_STEPS)[number]);
+  // Once the concierge is "thinking" or has landed on results, every
+  // question counts as answered for transcript purposes — the boundary
+  // only sits mid-conversation while a question is still being asked.
+  const answeredCount = thinking || step === 'results' ? QUIZ_STEPS.length : quizIndex;
 
   const rentNow = (slug: string) => {
     onClose();
     navigate(`/book/${slug}`);
   };
 
+  /** Escalation to a real person — CX Concierge is a deterministic guide,
+   *  never a chatbot pretending to be human, so when someone actually
+   *  wants a human this hands them off for real: the same Owner/Owner
+   *  Assistant identity the rest of the messaging system already uses,
+   *  via a genuine conversation, not a canned reply. */
+  const talkToHuman = async () => {
+    if (!session) {
+      onClose();
+      navigate('/login');
+      return;
+    }
+    setEscalating(true);
+    try {
+      const ownerId = await fetchSupportAccountId();
+      if (!ownerId) {
+        toast({ title: 'Support is not available right now', icon: 'info' });
+        return;
+      }
+      const conversationId = await findOrCreateConversation(null, session.user.id, ownerId);
+      onClose();
+      navigate(`/messages?c=${conversationId}`);
+    } catch {
+      toast({ title: "Couldn't reach our team — please try again", icon: 'info' });
+    } finally {
+      setEscalating(false);
+    }
+  };
+
   const top = match?.results[0] ?? null;
   const alternates = match?.results.slice(1, 5) ?? [];
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-noir">
-      {/* Ambient CX wash */}
+    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-white">
+      {/* Ambient CX wash — a whisper of the brand green, not a glow;
+          "premium" here means restraint, not atmosphere. */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{ background: 'radial-gradient(60% 45% at 15% 5%, rgba(0,212,71,0.14), transparent 62%)' }}
+        className="pointer-events-none absolute inset-0 opacity-80"
+        style={{ background: 'radial-gradient(60% 45% at 15% 0%, rgba(0,133,54,0.06), transparent 62%)' }}
       />
 
       {/* Chrome */}
-      <div className="relative flex h-16 shrink-0 items-center justify-between px-4 sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <span>
-          <span className="flex items-center gap-2 text-detail font-semibold uppercase tracking-[0.14em] text-white">
-            <img src="/cxsnake.PNG" alt="" className="h-6 w-6 object-contain" /> CX Concierge
-          </span>
-          <span className="mt-0.5 block text-nano uppercase tracking-[0.18em] text-white/40">A tailored fleet selection</span>
-        </span>
+      <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-line bg-white/90 px-4 backdrop-blur-xl sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="flex items-center gap-2.5">
+          <ConciergeAvatar size={34} />
+          <div>
+            <p className="text-detail font-semibold uppercase tracking-[0.14em] leading-none text-ink">CX Concierge</p>
+            <p className="mt-1 text-micro uppercase leading-none tracking-[0.18em] text-faint">
+              {step === 'results' ? 'Your match is ready' : 'Guided car match'}
+            </p>
+          </div>
+        </div>
         <div className="flex items-center gap-1.5">
-          {step !== 'results' && <span className="hidden rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-label font-medium text-white/55 sm:inline">~1 min</span>}
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="grid h-10 w-10 place-items-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <Icon name="x" size={20} />
-        </button>
+          {session && (
+            <button
+              onClick={talkToHuman}
+              disabled={escalating}
+              className="hidden items-center gap-1.5 rounded-full border border-line px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:border-accent/40 hover:bg-accent-050/50 disabled:opacity-50 sm:inline-flex"
+            >
+              <Icon name="headset" size={15} className="text-accent-600" />
+              {escalating ? 'Connecting…' : 'Talk to a real person'}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="grid h-10 w-10 place-items-center rounded-xl text-muted transition-colors hover:bg-panel hover:text-ink"
+          >
+            <Icon name="x" size={20} />
+          </button>
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="relative h-0.5 w-full shrink-0 bg-white/10">
-        <div className="h-full bg-accent-bright transition-all duration-500" style={{ width: `${progress * 100}%` }} />
-      </div>
+      {step !== 'results' && <StepDots current={answeredCount} total={QUIZ_STEPS.length} />}
 
-      <div className="relative flex-1 overflow-y-auto px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6">
-        <div className="mx-auto w-full max-w-3xl">
-          {thinking ? (
-            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-              <CarLoader size={90} />
-              <p className="animate-fade-in text-copy font-medium text-white/70">Finding your CX…</p>
+      <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          {/* Welcome — always the first message, even once questions are
+              answered, so the transcript reads like a real conversation
+              from the top rather than resetting per step. */}
+          <AssistantBubble>
+            Hi, I&apos;m your CX Concierge. Answer a few quick questions and I&apos;ll match you with the right car from the fleet.
+            {hasPersonalData && (
+              <span className="mt-1.5 block text-muted">I&apos;ll also factor in your saved cars and rental history.</span>
+            )}
+          </AssistantBubble>
+
+          {/* Mobile-only escalation link — the header button above is
+              hidden below sm:, this is its equivalent, kept out of the
+              way of the quiz itself. */}
+          {session && (
+            <button
+              onClick={talkToHuman}
+              disabled={escalating}
+              className="inline-flex items-center gap-1.5 self-start pl-[42px] text-detail font-medium text-muted transition-colors hover:text-accent-600 disabled:opacity-50 sm:hidden"
+            >
+              <Icon name="headset" size={14} />
+              {escalating ? 'Connecting…' : 'Prefer a real person? Message our team'}
+            </button>
+          )}
+
+          {/* Already-answered questions, derived straight from `prefs` —
+              never a separate log, so a Back + re-answer can't leave a
+              stale line in the transcript. */}
+          {QUIZ_STEPS.slice(0, answeredCount).map((s, i) => (
+            <div key={s} className="flex flex-col gap-3">
+              <AssistantBubble delay={i * 40}>{questionFor(s)}</AssistantBubble>
+              <UserBubble>{answerFor(s, prefs)}</UserBubble>
             </div>
-          ) : step !== 'results' ? (
-            <div key={step} className="animate-fade-up">
-              {hasPersonalData && step === 'drive' && (
-                <p className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-caption text-white/60">
-                  <Icon name="user" size={13} className="text-accent-bright" /> Personalised from your CX history
-                </p>
-              )}
-              <DriveBrief prefs={prefs} />
+          ))}
 
-              {/* Q1 — drive type */}
-              {step === 'drive' && (
-                <>
-                  <QuestionHead n={1} title="What's the drive?" />
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {thinking && (
+            <div>
+              <TypingBubble />
+              <p className="ml-[42px] mt-2 text-detail text-faint">Matching you with the CX fleet…</p>
+            </div>
+          )}
+
+          {/* The current, still-unanswered question */}
+          {!thinking && step !== 'results' && (
+            <div key={step} className="flex flex-col gap-3">
+              <AssistantBubble>{questionFor(step)}</AssistantBubble>
+
+              <div className="pl-[42px]">
+                {quizIndex > 0 && <BackLink onClick={back} />}
+
+                {step === 'drive' && (
+                  <div className="flex flex-wrap gap-2">
                     {DRIVE_TYPES.map((d) => (
-                      <OptionCard
+                      <QuickReply
                         key={d.id}
                         active={prefs.driveType === d.id}
-                        icon={<Icon name={d.icon} size={22} />}
+                        icon={<Icon name={d.icon} size={17} />}
                         label={d.label}
                         sub={d.blurb}
                         onClick={() => {
@@ -252,253 +473,194 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                       />
                     ))}
                   </div>
-                </>
-              )}
+                )}
 
-              {/* Q2 — priorities (multi) */}
-              {step === 'priority' && (
-                <>
-                  <QuestionHead n={2} title="What matters most?" hint="Pick any that apply" />
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {PRIORITIES.map((p) => (
-                      <OptionCard
-                        key={p.id}
-                        active={prefs.priorities.includes(p.id as Priority)}
-                        icon={<Icon name={p.icon} size={22} />}
-                        label={p.label}
-                        onClick={() => togglePriority(p.id as Priority)}
-                      />
-                    ))}
-                  </div>
-                  <StepFooter onBack={back} onNext={() => advance('priority')} nextLabel="Continue" />
-                </>
-              )}
-
-              {/* Q3 — passengers */}
-              {step === 'passengers' && (
-                <>
-                  <QuestionHead n={3} title="How many people?" />
-                  <div className="mt-6 grid grid-cols-3 gap-3">
-                    {PASSENGER_BANDS.map((b) => (
-                      <OptionCard
-                        key={b.id}
-                        active={prefs.passengers === b.id}
-                        icon={<Icon name="users" size={22} />}
-                        label={b.label}
-                        onClick={() => {
-                          setPrefs((p) => ({ ...p, passengers: b.id as PassengerBand }));
-                          advance('passengers');
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <StepFooter onBack={back} onNext={() => advance('passengers')} nextLabel="Skip" subtle />
-                </>
-              )}
-
-              {/* Q4 — budget */}
-              {step === 'budget' && (
-                <>
-                  <QuestionHead n={4} title="What's your budget?" />
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {BUDGET_BANDS.map((b) => (
-                      <OptionCard
-                        key={b.id}
-                        active={prefs.budget === b.id}
-                        icon={<Icon name="wallet" size={22} />}
-                        label={b.label}
-                        sub={b.note}
-                        onClick={() => {
-                          setPrefs((p) => ({ ...p, budget: b.id as BudgetBand, maxPricePerDay: null }));
-                          advance('budget');
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-5 rounded-2xl border border-white/12 bg-white/[0.04] p-4">
-                    <label className="block text-caption font-semibold uppercase tracking-wide text-white/50">
-                      Or set an exact daily maximum
-                    </label>
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="relative flex-1">
-                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50">€</span>
-                        <input
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          placeholder="e.g. 250"
-                          value={prefs.maxPricePerDay ?? ''}
-                          onChange={(e) =>
-                            setPrefs((p) => ({
-                              ...p,
-                              maxPricePerDay: e.target.value ? Number(e.target.value) : null,
-                              budget: e.target.value ? null : p.budget,
-                            }))
-                          }
-                          className="w-full rounded-xl border border-white/15 bg-black/30 py-2.5 pl-8 pr-3 text-copy text-white outline-none [color-scheme:dark] focus:border-accent-bright/50"
+                {step === 'priority' && (
+                  <>
+                    <p className="mb-2.5 text-detail text-faint">Pick any that apply</p>
+                    <div className="flex flex-wrap gap-2">
+                      {PRIORITIES.map((p) => (
+                        <QuickReply
+                          key={p.id}
+                          active={prefs.priorities.includes(p.id as Priority)}
+                          icon={<Icon name={p.icon} size={17} />}
+                          label={p.label}
+                          onClick={() => togglePriority(p.id as Priority)}
                         />
-                      </div>
-                      <span className="text-detail text-white/45">/ day</span>
+                      ))}
                     </div>
-                  </div>
-                  <StepFooter onBack={back} onNext={() => advance('budget')} nextLabel="Continue" />
-                </>
-              )}
+                    <div className="mt-3">
+                      <ActionLink onClick={() => advance('priority')} icon="arrowRight">
+                        Continue
+                      </ActionLink>
+                    </div>
+                  </>
+                )}
 
-              {/* Q5 — location */}
-              {step === 'location' && (
-                <>
-                  <QuestionHead n={5} title="Where are you driving?" />
-                  <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {CITIES.map((c) => (
-                      <OptionCard
-                        key={c}
-                        active={prefs.city === c}
-                        icon={<Icon name="pin" size={22} />}
-                        label={c}
+                {step === 'passengers' && (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {PASSENGER_BANDS.map((b) => (
+                        <QuickReply
+                          key={b.id}
+                          active={prefs.passengers === b.id}
+                          icon={<Icon name="users" size={17} />}
+                          label={b.label}
+                          onClick={() => {
+                            setPrefs((p) => ({ ...p, passengers: b.id as PassengerBand }));
+                            advance('passengers');
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-3">
+                      <ActionLink onClick={() => advance('passengers')}>Skip</ActionLink>
+                    </div>
+                  </>
+                )}
+
+                {step === 'budget' && (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {BUDGET_BANDS.map((b) => (
+                        <QuickReply
+                          key={b.id}
+                          active={prefs.budget === b.id}
+                          icon={<Icon name="wallet" size={17} />}
+                          label={b.label}
+                          sub={b.note}
+                          onClick={() => {
+                            setPrefs((p) => ({ ...p, budget: b.id as BudgetBand, maxPricePerDay: null }));
+                            advance('budget');
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <p className="mb-2 mt-4 text-detail text-faint">Or tell me an exact daily maximum</p>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-white py-1.5 pl-4 pr-1.5 transition-colors focus-within:border-accent/50">
+                      <span className="text-faint">€</span>
+                      <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="250"
+                        value={prefs.maxPricePerDay ?? ''}
+                        onChange={(e) =>
+                          setPrefs((p) => ({
+                            ...p,
+                            maxPricePerDay: e.target.value ? Number(e.target.value) : null,
+                            budget: e.target.value ? null : p.budget,
+                          }))
+                        }
+                        onKeyDown={(e) => e.key === 'Enter' && advance('budget')}
+                        className="w-20 bg-transparent text-body text-ink outline-none"
+                      />
+                      <span className="text-caption text-faint">/ day</span>
+                      <button
+                        onClick={() => advance('budget')}
+                        aria-label="Confirm budget"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white transition-transform hover:scale-105"
+                      >
+                        <Icon name="arrowRight" size={15} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                    <div className="mt-3">
+                      <ActionLink onClick={() => advance('budget')}>Continue</ActionLink>
+                    </div>
+                  </>
+                )}
+
+                {step === 'location' && (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {CITIES.map((c) => (
+                        <QuickReply
+                          key={c}
+                          active={prefs.city === c}
+                          icon={<Icon name="pin" size={17} />}
+                          label={c}
+                          onClick={() => {
+                            setPrefs((p) => ({ ...p, city: c }));
+                            advance('location');
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-3">
+                      <ActionLink
                         onClick={() => {
-                          setPrefs((p) => ({ ...p, city: c }));
+                          setPrefs((p) => ({ ...p, city: null }));
                           advance('location');
                         }}
-                      />
-                    ))}
-                  </div>
-                  <StepFooter
-                    onBack={back}
-                    onNext={() => {
-                      setPrefs((p) => ({ ...p, city: null }));
-                      advance('location');
-                    }}
-                    nextLabel="Any location"
-                    subtle
-                  />
-                </>
-              )}
+                      >
+                        Any location
+                      </ActionLink>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          ) : (
-            /* ---------- RESULTS ---------- */
-            <div className="animate-fade-up pb-8">
+          )}
+
+          {/* ---------- RESULTS ---------- */}
+          {!thinking && step === 'results' && (
+            <div className="pb-8">
               {!cars ? (
-                <div className="flex min-h-[50vh] items-center justify-center">
+                <div className="flex min-h-[40dvh] items-center justify-center">
                   <CarLoader size={80} />
                 </div>
               ) : top ? (
                 <>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">Your CX Match</p>
-                      <p className="mt-1 text-detail text-white/50">Selected from the current CX fleet</p>
-                    </div>
-                    <button onClick={startOver} className="inline-flex items-center gap-1.5 text-detail font-medium text-white/60 hover:text-white">
-                      <Icon name="sort" size={14} /> Start over
+                  <div className="flex items-start justify-between gap-3">
+                    <AssistantBubble>
+                      Here&apos;s my top pick for you{relaxed ? ', with the search widened to find the closest match' : ''}:
+                    </AssistantBubble>
+                    <button
+                      onClick={startOver}
+                      className="mt-1 inline-flex shrink-0 items-center gap-1.5 text-detail font-medium text-muted transition-colors hover:text-ink"
+                    >
+                      <Icon name="sort" size={13} /> Start over
                     </button>
                   </div>
-                  {relaxed && (
-                    <p className="mt-2 text-detail text-white/55">Options expanded — showing the closest matches across the fleet.</p>
-                  )}
 
-                  {/* Hero match */}
-                  <TopMatch scored={top} prefs={prefs} onRent={rentNow} onClose={onClose} favToggle={toggleFavorite} isFav={isFavorite} onCompare={toggleCompare} />
+                  <div className="pl-[42px]">
+                    <TopMatch scored={top} prefs={prefs} onRent={rentNow} onClose={onClose} favToggle={toggleFavorite} isFav={isFavorite} onCompare={toggleCompare} />
+                  </div>
 
-                  {/* Alternatives */}
                   {alternates.length > 0 && (
-                    <>
-                      <p className="mt-10 text-caption font-semibold uppercase tracking-[0.2em] text-white/50">More Options</p>
-                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="mt-8 pl-[42px]">
+                      <AssistantBubble delay={80}>A few more options you might like:</AssistantBubble>
+                      <div className="mt-4 grid grid-cols-1 gap-4 pl-[42px] sm:grid-cols-2">
                         {alternates.map((s) => (
                           <AltCard key={s.car.id} scored={s} onRent={rentNow} onClose={onClose} onCompare={toggleCompare} />
                         ))}
                       </div>
-                    </>
+                    </div>
                   )}
                 </>
               ) : (
                 /* No match */
-                <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-white/60">
-                    <Icon name="search" size={26} />
-                  </span>
-                  <h2 className="font-display text-2xl font-semibold text-white">We couldn't find the perfect match</h2>
-                  <p className="max-w-sm text-body text-white/60">Let's widen the search — we'll relax your budget and location to find the closest cars in the CX fleet.</p>
-                  <button onClick={() => setRelaxed(true)} className="btn btn-accent-bright btn-lg">
-                    Expand My Options <Icon name="arrowRight" size={17} />
-                  </button>
+                <div className="flex flex-col gap-4">
+                  <AssistantBubble>
+                    I couldn&apos;t find a perfect match with those preferences. Want me to widen the search? I&apos;ll relax the budget and
+                    location to show the closest cars in the fleet.
+                  </AssistantBubble>
+                  <div className="pl-[42px]">
+                    <button onClick={() => setRelaxed(true)} className="btn btn-accent-bright btn-lg">
+                      Expand My Options <Icon name="arrowRight" size={17} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           )}
+
+          <div ref={bottomRef} />
         </div>
       </div>
     </div>,
     document.body,
-  );
-}
-
-function QuestionHead({ n, title, hint }: { n: number; title: string; hint?: string }) {
-  return (
-    <div>
-      <p className="text-caption font-semibold uppercase tracking-[0.2em] text-white/45">Drive profile · {String(n).padStart(2, '0')} / 05</p>
-      <h2 className="mt-2 font-display text-2xl font-semibold text-white sm:text-3xl">{title}</h2>
-      {hint && <p className="mt-1 text-detail text-white/50">{hint}</p>}
-    </div>
-  );
-}
-
-/** A compact, factual recap of answers already given. It reinforces the
- * concierge's guided feel without introducing another form or claiming any
- * vehicle data that is not present in the fleet. */
-function DriveBrief({ prefs }: { prefs: Preferences }) {
-  const choices = [
-    prefs.driveType && DRIVE_TYPES.find((item) => item.id === prefs.driveType)?.label,
-    ...prefs.priorities.map((id) => PRIORITIES.find((item) => item.id === id)?.label),
-    prefs.passengers && `${prefs.passengers} people`,
-    prefs.maxPricePerDay ? `Up to €${prefs.maxPricePerDay}/day` : prefs.budget && BUDGET_BANDS.find((item) => item.id === prefs.budget)?.label,
-    prefs.city,
-  ].filter(Boolean) as string[];
-
-  if (!choices.length) {
-    return (
-      <p className="mb-5 text-detail leading-relaxed text-white/50">
-        A few precise choices are all we need to match you with real cars from the CX fleet.
-      </p>
-    );
-  }
-
-  return (
-    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5">
-      <span className="mr-1 text-label font-semibold uppercase tracking-[0.15em] text-white/40">Your brief</span>
-      {choices.map((choice) => (
-        <span key={choice} className="rounded-full bg-white/[0.07] px-2.5 py-1 text-caption font-medium text-white/75">
-          {choice}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function StepFooter({
-  onBack,
-  onNext,
-  nextLabel,
-  subtle,
-}: {
-  onBack: () => void;
-  onNext: () => void;
-  nextLabel: string;
-  subtle?: boolean;
-}) {
-  return (
-    <div className="mt-8 flex items-center justify-between">
-      <button onClick={onBack} className="inline-flex items-center gap-1.5 text-body font-medium text-white/60 hover:text-white">
-        <Icon name="chevronLeft" size={16} /> Back
-      </button>
-      <button
-        onClick={onNext}
-        className={subtle ? 'text-body font-medium text-white/60 hover:text-white' : 'btn btn-accent-bright'}
-      >
-        {nextLabel} {!subtle && <Icon name="arrowRight" size={16} />}
-      </button>
-    </div>
   );
 }
 
@@ -522,7 +684,7 @@ function TopMatch({
   const { car, match } = scored;
   const fav = isFav(car.id);
   return (
-    <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-white/12 bg-white/[0.04]">
+    <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-line bg-white shadow-[0_10px_36px_-12px_rgba(22,22,26,0.14)]">
       <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
         <img src={unsplash(car.images[0], 1400)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
@@ -540,22 +702,22 @@ function TopMatch({
         </div>
       </div>
       <div className="p-5 sm:p-6">
-        <p className="text-body leading-relaxed text-white/75">{summary(car, prefs)}</p>
+        <p className="text-body leading-relaxed text-ink-soft">{summary(car, prefs)}</p>
 
         {scored.reasons.length > 0 && (
           <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {scored.reasons.map((r) => (
-              <li key={r} className="flex items-center gap-2 text-detail text-white/80">
-                <Icon name="checkCircle" size={16} className="shrink-0 text-accent-bright" /> {r}
+              <li key={r} className="flex items-center gap-2 text-detail text-ink-soft">
+                <Icon name="checkCircle" size={16} className="shrink-0 text-accent" /> {r}
               </li>
             ))}
           </ul>
         )}
 
         <div className="mt-5 flex items-end justify-between">
-          <p className="text-white">
+          <p className="text-ink">
             <span className="font-display text-2xl font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-detail text-white/60"> / day</span>
+            <span className="text-detail text-muted"> / day</span>
           </p>
         </div>
 
@@ -566,7 +728,7 @@ function TopMatch({
           <Link
             to={`/cars/${car.slug}`}
             onClick={onClose}
-            className="btn btn-lg flex-1 border border-white/20 bg-white/[0.06] text-white hover:border-white/35 hover:bg-white/10"
+            className="btn btn-lg flex-1 border border-line bg-white text-ink hover:border-line-strong hover:bg-panel"
           >
             View Details
           </Link>
@@ -574,13 +736,13 @@ function TopMatch({
         <div className="mt-3 flex items-center gap-2">
           <button
             onClick={() => favToggle(car.id)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 hover:border-white/30"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line py-2.5 text-detail font-medium text-ink-soft hover:border-line-strong hover:bg-panel"
           >
             <Icon name="heart" size={15} fill={fav} className={fav ? 'text-[#e2384d]' : ''} /> {fav ? 'Saved' : 'Save to Garage'}
           </button>
           <button
             onClick={() => onCompare(car.id)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/15 py-2.5 text-detail font-medium text-white/80 hover:border-white/30"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line py-2.5 text-detail font-medium text-ink-soft hover:border-line-strong hover:bg-panel"
           >
             <Icon name="compare" size={15} /> Compare
           </button>
@@ -603,7 +765,7 @@ function AltCard({
 }) {
   const { car, match } = scored;
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04]">
+    <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_6px_20px_-10px_rgba(22,22,26,0.12)]">
       <div className="relative aspect-[16/10] overflow-hidden">
         <img src={unsplash(car.images[0], 700)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
         <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-label font-bold text-accent-bright backdrop-blur-md">
@@ -611,15 +773,15 @@ function AltCard({
         </span>
       </div>
       <div className="p-4">
-        <p className="font-medium text-white">
+        <p className="font-medium text-ink">
           {car.make} {car.model}
         </p>
-        <p className="mt-0.5 text-caption text-white/55">
+        <p className="mt-0.5 text-caption text-muted">
           {car.seats} seats · {car.transmission} · {car.fuel}
         </p>
-        <p className="mt-2 text-white">
+        <p className="mt-2 text-ink">
           <span className="text-lead font-semibold">{eur(car.pricePerDay)}</span>
-          <span className="text-caption text-white/55"> / day</span>
+          <span className="text-caption text-muted"> / day</span>
         </p>
         <div className="mt-3 flex items-center gap-2">
           <button onClick={() => onRent(car.slug)} className="btn btn-accent-bright btn-sm flex-1">
@@ -628,14 +790,14 @@ function AltCard({
           <Link
             to={`/cars/${car.slug}`}
             onClick={onClose}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-white/75 hover:border-white/30"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft hover:border-line-strong hover:bg-panel"
             aria-label="View details"
           >
             <Icon name="arrowUpRight" size={16} />
           </Link>
           <button
             onClick={() => onCompare(car.id)}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-white/75 hover:border-white/30"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-line text-ink-soft hover:border-line-strong hover:bg-panel"
             aria-label="Compare"
           >
             <Icon name="compare" size={16} />

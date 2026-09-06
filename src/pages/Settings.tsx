@@ -2,10 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
+import { Modal } from '../components/primitives';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { useMyBookings, classifyBooking, renterTier } from '../lib/data/bookings';
+import { haptics } from '../lib/native';
+import { apiUrl } from '../lib/api';
 
 const TABS: { id: string; label: string; icon: IconName }[] = [
   { id: 'personal', label: 'Personal information', icon: 'user' },
@@ -37,7 +40,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
 
 export default function Settings() {
   const { toast } = useApp();
-  const { session, profile, refreshProfile } = useAuth();
+  const { session, profile, refreshProfile, signOut } = useAuth();
   const { bookings } = useMyBookings(session?.user.id);
   const tier = renterTier((bookings ?? []).filter((b) => classifyBooking(b) === 'completed').length);
   const { hash } = useLocation();
@@ -80,6 +83,43 @@ export default function Settings() {
     }
     await refreshProfile();
     toast({ title: 'Changes saved', icon: 'check' });
+  };
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Real deletion — see api/delete-account.ts. Required by Apple's App
+  // Store guidelines (5.1.1(v)) for any app with account creation; the
+  // endpoint cascades through the whole schema via
+  // `profiles.id references auth.users(id) on delete cascade`, and
+  // refuses to run at all while the account has an upcoming/active
+  // booking on either side (renter or host) so deleting your own account
+  // can never silently wipe out someone else's confirmed trip.
+  const handleDeleteAccount = async () => {
+    if (!session) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(apiUrl('/api/delete-account'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        haptics.error();
+        setDeleteError(data.error ?? "Couldn't delete your account — please try again.");
+        setDeleting(false);
+        return;
+      }
+      await signOut();
+      window.location.assign('/');
+    } catch {
+      haptics.error();
+      setDeleteError('Network error — please check your connection and try again.');
+      setDeleting(false);
+    }
   };
 
   const handleAvatarPick = () => fileInputRef.current?.click();
@@ -266,6 +306,25 @@ export default function Settings() {
                   </div>
                   <Toggle on={toggles.push} onClick={() => flip('push')} />
                 </div>
+
+                <div className="rounded-xl border border-danger/25 bg-danger/[0.03] p-4">
+                  <p className="text-body font-medium text-danger">Delete account</p>
+                  <p className="mt-1 text-detail text-muted">
+                    Permanently deletes your CX account and all associated data — bookings, messages, favorites,
+                    reviews and identity documents. This can&apos;t be undone.
+                  </p>
+                  <button
+                    onClick={() => {
+                      haptics.warning();
+                      setDeleteError(null);
+                      setDeleteConfirmText('');
+                      setDeleteOpen(true);
+                    }}
+                    className="btn btn-sm mt-3 border border-danger/40 text-danger hover:bg-danger/10"
+                  >
+                    <Icon name="info" size={15} /> Delete my account
+                  </button>
+                </div>
               </div>
             )}
 
@@ -291,6 +350,50 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <Modal open={deleteOpen} onClose={() => !deleting && setDeleteOpen(false)} labelledBy="delete-account-title">
+        <div className="p-6 sm:p-7">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-danger/10 text-danger">
+            <Icon name="info" size={20} />
+          </span>
+          <h2 id="delete-account-title" className="mt-4 font-display text-xl font-semibold text-ink">
+            Delete your account?
+          </h2>
+          <p className="mt-2 text-body leading-relaxed text-muted">
+            This permanently deletes your account and everything tied to it — bookings, messages, favorites,
+            reviews, and any identity documents you&apos;ve submitted. This cannot be undone.
+          </p>
+          <label className="mt-4 block">
+            <span className="field-label">Type DELETE to confirm</span>
+            <input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="input"
+              autoComplete="off"
+            />
+          </label>
+          {deleteError && (
+            <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{deleteError}</p>
+          )}
+          <div className="mt-6 flex flex-col gap-2.5 sm:flex-row-reverse">
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== 'DELETE' || deleting}
+              className="btn btn-block bg-danger text-white hover:bg-danger/90 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Permanently delete my account'}
+            </button>
+            <button
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+              className="btn btn-secondary btn-block"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </DashboardShell>
   );
 }

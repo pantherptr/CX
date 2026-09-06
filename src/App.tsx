@@ -6,10 +6,13 @@ import { SplashScreen, CarLoader } from './components/CarLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { HostRoute } from './components/HostRoute';
+import { AdminRoute } from './components/AdminRoute';
+import { OwnerRoute } from './components/OwnerRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
 import { CompareTray } from './components/CompareTray';
+import { MaintenanceGate } from './components/MaintenanceGate';
 
 // Eager — the three routes a first-time visitor actually lands on. Keeping
 // these in the main chunk avoids a loading flash on the critical path.
@@ -32,11 +35,14 @@ const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Help = lazy(() => import('./pages/Help'));
 const CustomerDashboard = lazy(() => import('./pages/CustomerDashboard'));
+const OwnerHome = lazy(() => import('./pages/OwnerHome'));
 const HostDashboard = lazy(() => import('./pages/HostDashboard'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Settings = lazy(() => import('./pages/Settings'));
 const TripDetails = lazy(() => import('./pages/TripDetails'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const OwnerDashboard = lazy(() => import('./pages/OwnerDashboard'));
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -77,6 +83,16 @@ function ScrollToTop() {
   return null;
 }
 
+/** `/dashboard` is every signed-in account's "home" — but the Owner
+ *  account doesn't rent cars, so the customer view (trips, saved cars,
+ *  book-a-car) has nothing real to show it. Swapping the whole page here,
+ *  rather than branching inside CustomerDashboard.tsx, keeps that already
+ *  large file untouched and the Owner's home entirely separate. */
+function DashboardHome() {
+  const { profile } = useAuth();
+  return profile?.is_owner ? <OwnerHome /> : <CustomerDashboard />;
+}
+
 function MarketingLayout() {
   // The full marketing footer (product/company/support/legal columns,
   // socials, newsletter tone) belongs to the public site — an
@@ -85,7 +101,7 @@ function MarketingLayout() {
   // the dashboard, which never renders this footer at all.
   const { session } = useAuth();
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Navbar />
       <main className="flex-1">
         <Outlet />
@@ -130,6 +146,7 @@ export default function App() {
     <>
       {splash.visible && <SplashScreen hiding={splash.hiding} />}
       <ScrollToTop />
+      <MaintenanceGate>
       <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
           deliberately quiet — a centred marque rather than a full-screen
@@ -138,7 +155,7 @@ export default function App() {
           the navigation actually is. */}
       <Suspense
         fallback={
-          <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Loading">
+          <div className="flex min-h-[60dvh] items-center justify-center" role="status" aria-label="Loading">
             <CarLoader size={80} />
           </div>
         }
@@ -175,7 +192,7 @@ export default function App() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<CustomerDashboard />} />
+          <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
@@ -184,6 +201,14 @@ export default function App() {
           <Route element={<HostRoute />}>
             <Route path="/host" element={<HostDashboard />} />
           </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+
+          <Route element={<OwnerRoute />}>
+            <Route path="/owner" element={<OwnerDashboard />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<NotFound />} />
@@ -191,6 +216,7 @@ export default function App() {
       </Suspense>
       </div>
       <BottomNav />
+      </MaintenanceGate>
       <CompareTray />
       <Toaster />
     </>

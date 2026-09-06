@@ -11,13 +11,15 @@ import { useAuth } from '../lib/auth';
 import { fetchCarWithHost } from '../lib/data/cars';
 import {
   checkAvailability,
-  createBooking,
   useExtrasCatalog,
   type Booking as BookingRecord,
   type FareTier,
 } from '../lib/data/bookings';
+import { createPaymentIntent, waitForBookingByPaymentIntent } from '../lib/data/payments';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useAvailableReward } from '../lib/data/rewards';
+import { haptics } from '../lib/native';
+import { PaymentStep } from '../components/PaymentStep';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
 
@@ -91,6 +93,14 @@ export default function Booking() {
   const [confirmed, setConfirmed] = useState<BookingRecord | null>(null);
   const [messaging, setMessaging] = useState(false);
 
+  // Real-payment state — see src/lib/data/payments.ts and
+  // src/components/PaymentStep.tsx. clientSecret/quotedAmount come back
+  // from api/create-payment-intent.ts, which prices the trip server-side
+  // (quote_booking()) before Stripe is ever involved.
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [quotedAmount, setQuotedAmount] = useState<number | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     fetchCarWithHost(slug ?? '')
@@ -150,6 +160,49 @@ export default function Booking() {
     };
   }, [result, pickupDate, returnDate, dateError]);
 
+  // Starts a real payment as soon as the renter reaches the Payment step
+  // (and re-starts it if they go back and change something that affects
+  // price) — see api/create-payment-intent.ts. The booking itself is
+  // NOT created here; it's created by the Stripe webhook once the charge
+  // actually succeeds, so this effect never touches the bookings table.
+  useEffect(() => {
+    if (!result || step !== 3 || !session) return;
+    if (dateError || !pickupDate || !returnDate) return;
+    let cancelled = false;
+    setClientSecret(null);
+    setQuotedAmount(null);
+    setSubmitError(null);
+    setPaymentLoading(true);
+    createPaymentIntent(
+      {
+        carId: result.car.id,
+        startDate: pickupDate,
+        endDate: returnDate,
+        pickupLocation: pickupLoc || result.car.location,
+        fareTier,
+        extraIds: Array.from(selectedExtras),
+        rewardId: applyReward && availableReward ? availableReward.id : undefined,
+      },
+      session.access_token,
+    )
+      .then((res) => {
+        if (cancelled) return;
+        setClientSecret(res.clientSecret);
+        setQuotedAmount(res.amount);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setSubmitError(err instanceof Error ? err.message : 'Could not start payment.');
+      })
+      .finally(() => {
+        if (!cancelled) setPaymentLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, step, session, pickupDate, returnDate, pickupLoc, fareTier, selectedExtras, applyReward, availableReward, dateError]);
+
   if (loadError) {
     return (
       <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
@@ -201,6 +254,14 @@ export default function Booking() {
 
   const next = () => {
     if (step === 0 && !canContinueStep0) return;
+    if (step === 2 && !session) {
+      // Payment needs a signed-in renter (their JWT is what scopes the
+      // price quote and, later, the charge) — check before showing that
+      // step rather than after they've filled in a card.
+      toast({ title: 'Sign in to book a car', icon: 'user' });
+      navigate('/login', { state: { from: { pathname: `/book/${slug}` } } });
+      return;
+    }
     if (step < STEPS.length - 1) {
       setStep((s) => s + 1);
       window.scrollTo({ top: 0 });
@@ -220,38 +281,32 @@ export default function Booking() {
     }
   };
 
-  const confirmBooking = async () => {
-    if (!session) {
-      toast({ title: 'Sign in to book a car', icon: 'user' });
-      navigate('/login', { state: { from: { pathname: `/book/${slug}` } } });
-      return;
-    }
+  // Called once Stripe confirms the charge actually succeeded (see
+  // PaymentStep / stripe.confirmPayment). The booking row itself is
+  // created by api/stripe-webhook.ts, not here — this just waits for it
+  // to show up and moves to the confirmation screen once it does.
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     setSubmitting(true);
     setSubmitError(null);
-    const { booking, error, extrasError } = await createBooking({
-      carId: car.id,
-      renterId: session.user.id,
-      startDate: pickupDate,
-      endDate: returnDate,
-      pickupLocation: pickupLoc || car.location,
-      protectionAddon: true,
-      fareTier,
-      extraIds: Array.from(selectedExtras),
-      rewardId: applyReward && availableReward ? availableReward.id : undefined,
-    });
+    const booking = await waitForBookingByPaymentIntent(paymentIntentId).catch(() => null);
     setSubmitting(false);
-    if (error || !booking) {
-      setSubmitError(error ?? 'Something went wrong. Please try again.');
+    if (!booking) {
+      // The charge went through even if the booking hasn't shown up yet
+      // (webhook delivery can lag a moment) — never tell the renter this
+      // failed. Send them somewhere it'll appear as soon as it lands.
+      toast({
+        title: 'Payment received',
+        desc: "We're finalising your booking — it'll appear in My Trips in a moment.",
+        icon: 'checkCircle',
+      });
+      navigate('/dashboard#trips');
       return;
     }
     setConfirmed(booking);
     setStep(CONFIRMATION_STEP);
     window.scrollTo({ top: 0 });
-    if (extrasError) {
-      toast({ title: 'Booking confirmed', desc: "But we couldn't add your extras — contact support.", icon: 'info' });
-    } else {
-      toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
-    }
+    haptics.success();
+    toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
   };
 
   const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
@@ -482,62 +537,29 @@ export default function Booking() {
           )}
 
           {step === 3 && (
-            <section className="animate-fade-up">
-              <h1 className="font-display text-2xl font-semibold text-ink">Payment</h1>
-              <p className="mt-1.5 flex items-center gap-1.5 text-body text-muted"><Icon name="lock" size={15} className="text-accent" /> Encrypted &amp; secure. This is a demo — no real payment is taken.</p>
-              <div className="mt-6 card p-6">
-                <div className="mb-5 flex gap-2">
-                  {['card', 'apple'].map((m) => (
-                    <span key={m} className={`chip capitalize ${m === 'card' ? '!bg-ink !text-white !border-ink' : ''}`}>
-                      <Icon name={m === 'card' ? 'card' : 'apple'} size={15} /> {m === 'card' ? 'Card' : 'Apple Pay'}
-                    </span>
-                  ))}
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Labeled label="Card number" full>
-                    <div className="relative">
-                      <input defaultValue="4242 4242 4242 4242" className="input !pr-24" />
-                      <div className="absolute right-3 top-1/2 flex -translate-y-1/2 gap-1">
-                        <span className="h-5 w-8 rounded bg-gradient-to-br from-[#eb001b] to-[#f79e1b] opacity-90" />
-                        <span className="h-5 w-8 rounded bg-[#1a1f71]" />
-                      </div>
-                    </div>
-                  </Labeled>
-                  <Labeled label="Name on card" full><input defaultValue={profile?.full_name ?? ''} className="input" /></Labeled>
-                  <Labeled label="Expiry"><input defaultValue="08 / 28" className="input" /></Labeled>
-                  <Labeled label="CVC"><input defaultValue="123" className="input" /></Labeled>
-                  <Labeled label="Billing postcode"><input defaultValue="20121" className="input" /></Labeled>
-                  <Labeled label="Country"><input defaultValue="Italy" className="input" /></Labeled>
-                </div>
-                <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-detail text-muted">
-                  <input type="checkbox" defaultChecked className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]" />
-                  Save this card for faster checkout next time.
-                </label>
-
-                {submitError && (
-                  <p className="mt-5 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
-                    <Icon name="info" size={16} /> {submitError}
-                  </p>
-                )}
-              </div>
-            </section>
+            <PaymentStep
+              clientSecret={clientSecret}
+              amount={quotedAmount ?? grandTotal}
+              loading={paymentLoading}
+              error={submitError}
+              submitting={submitting}
+              setSubmitting={setSubmitting}
+              onBack={back}
+              onPaid={handlePaymentSuccess}
+              onError={(message) => setSubmitError(message)}
+            />
           )}
 
-          <div className="mt-6 flex items-center justify-between">
-            <button onClick={back} className="btn btn-ghost text-muted hover:text-ink">
-              <Icon name="chevronLeft" size={16} /> {step === 0 ? 'Cancel' : 'Back'}
-            </button>
-            {step === 3 ? (
-              <button onClick={confirmBooking} disabled={submitting} className="btn btn-accent-bright btn-lg disabled:opacity-60">
-                {submitting ? 'Confirming…' : `Pay ${eur(grandTotal)}`}
-                {!submitting && <Icon name="arrowRight" size={17} />}
+          {step !== 3 && (
+            <div className="mt-6 flex items-center justify-between">
+              <button onClick={back} className="btn btn-ghost text-muted hover:text-ink">
+                <Icon name="chevronLeft" size={16} /> {step === 0 ? 'Cancel' : 'Back'}
               </button>
-            ) : (
               <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-accent-bright btn-lg disabled:opacity-50">
                 Continue to Book <Icon name="arrowRight" size={17} />
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Summary */}

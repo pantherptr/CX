@@ -283,6 +283,45 @@ export default function DriveChallengeGame({
     const logoImg = new Image();
     logoImg.src = '/cx-logo-symbol.png';
 
+    // The real CX Rent car, modeled in Blender and rendered from the same
+    // top-down chase angle this game already draws its hand-illustrated
+    // car from — one sprite per Garage catalog colour (see CAR_CATALOG in
+    // DriveChallengeLauncher.tsx), so switching cars still needs no more
+    // than picking the right pre-rendered image, not a second model.
+    // Loaded the same way as `logoImg` above: `drawImage` on an
+    // undecoded image is a no-op until `complete` flips true, so there's
+    // no loading-state branch needed at the call site.
+    const CAR_SPRITE_BY_COLOR: Record<string, string> = {
+      '#f2f4ee': '/sprites/cx-drive-car-gt.png',
+      '#00d447': '/sprites/cx-drive-car-sport.png',
+      '#2f6fe0': '/sprites/cx-drive-car-r.png',
+      '#1c1f1c': '/sprites/cx-drive-car-hyper.png',
+      '#c9d8f5': '/sprites/cx-drive-car-x.png',
+    };
+    const carSpriteImgs = new Map<string, HTMLImageElement>();
+    for (const src of new Set(Object.values(CAR_SPRITE_BY_COLOR))) {
+      const img = new Image();
+      img.src = src;
+      carSpriteImgs.set(src, img);
+    }
+    // Falls back to the GT sprite for any colour outside the current
+    // catalog rather than drawing nothing — matches how `bodyColor`
+    // itself already defaults to the GT hex when no prop is passed.
+    const carSprite =
+      carSpriteImgs.get(CAR_SPRITE_BY_COLOR[bodyColor] ?? CAR_SPRITE_BY_COLOR['#f2f4ee'])!;
+
+    // Roadside prop sprites — real Blender models (street_lamp.glb,
+    // guardrail.glb, road_sign.glb from the CX_DRIVE_ASSETS Road Pack),
+    // rendered from the side/perspective angle this game's roadside
+    // props already use (not the car's top-down framing). Same
+    // undecoded-image-is-a-no-op contract as `logoImg`/`carSprite` above.
+    const lampImg = new Image();
+    lampImg.src = '/sprites/cx-drive-prop-lamp.png';
+    const barrierImg = new Image();
+    barrierImg.src = '/sprites/cx-drive-prop-barrier.png';
+    const signImg = new Image();
+    signImg.src = '/sprites/cx-drive-prop-sign.png';
+
     const laneX = (lane: number) => (width / LANES) * (lane + 0.5);
     const playerY = () => height - 120;
     // Purely a draw-size multiplier — entities feel closer/larger as they
@@ -1194,55 +1233,45 @@ export default function DriveChallengeGame({
             continue;
           }
 
-          // A small fraction of lamp slots become a low striped barrier
-          // segment instead — "road barriers where appropriate" without
-          // crowding out the lamps that do the actual lighting work.
+          // A small fraction of lamp slots become a barrier segment
+          // instead — "road barriers where appropriate" without crowding
+          // out the lamps that do the actual lighting work. Now the real
+          // Blender guardrail (CX_DRIVE_ASSETS/Barriers/guardrail.glb)
+          // rendered to a sprite, replacing the old striped-panel shape.
           const isBarrier = hash1(slot * 9.3 + 0.5) < 0.14;
           if (isBarrier) {
-            const bw = 16 * ds;
-            const bh = 7 * ds;
-            ctx.save();
-            roundRect(ctx, x - bw / 2, y - bh / 2, bw, bh, 2 * ds);
-            ctx.clip();
-            ctx.fillStyle = '#e0a52a';
-            ctx.fillRect(x - bw / 2, y - bh / 2, bw, bh);
-            ctx.fillStyle = '#1a1c1e';
-            for (let sx = -bw / 2 - bh; sx < bw / 2; sx += bh * 0.9) {
-              ctx.beginPath();
-              ctx.moveTo(x + sx, y - bh / 2);
-              ctx.lineTo(x + sx + bh * 0.45, y - bh / 2);
-              ctx.lineTo(x + sx + bh * 0.45 + bh, y + bh / 2);
-              ctx.lineTo(x + sx + bh, y + bh / 2);
-              ctx.closePath();
-              ctx.fill();
+            if (barrierImg.complete && barrierImg.naturalWidth > 0) {
+              const bw = 30 * ds;
+              const bh = (bw * barrierImg.naturalHeight) / barrierImg.naturalWidth;
+              ctx.drawImage(barrierImg, x - bw / 2, y - bh / 2, bw, bh);
             }
-            ctx.restore();
             continue;
           }
 
-          // Shaft.
-          ctx.fillStyle = 'rgba(255,255,255,0.5)';
-          ctx.fillRect(x - 1, y, 2 * ds, 26 * ds);
-          // Short arm curling toward the road, then a glowing lamp head —
-          // reads as an actual street light rather than a bare dot.
-          ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-          ctx.lineWidth = 1.6 * ds;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + side * 7 * ds, y - 3 * ds);
-          ctx.stroke();
+          // Real Blender street lamp (CX_DRIVE_ASSETS/Lighting/street_lamp.glb)
+          // in place of the old drawn shaft/arm/head — mirrored per side so
+          // the arm always curls toward the road rather than away from it.
+          if (lampImg.complete && lampImg.naturalWidth > 0) {
+            const lh = 58 * ds;
+            const lw = (lh * lampImg.naturalWidth) / lampImg.naturalHeight;
+            const baseY = y + 24 * ds;
+            ctx.save();
+            ctx.translate(x, 0);
+            if (side === 1) ctx.scale(-1, 1);
+            ctx.drawImage(lampImg, -lw * 0.28, baseY - lh, lw, lh);
+            ctx.restore();
+          }
+          // The glow is still a pure light effect layered over the
+          // sprite's own baked-in lamp head, positioned to roughly match
+          // where that head sits in the rendered image.
           const headX = x + side * 8 * ds;
-          const headY = y - 3 * ds;
+          const headY = y - 22 * ds;
           const lampGlow = ctx.createRadialGradient(headX, headY, 0, headX, headY, 10 * ds);
           lampGlow.addColorStop(0, 'rgba(255,238,190,0.65)');
           lampGlow.addColorStop(1, 'rgba(255,238,190,0)');
           ctx.fillStyle = lampGlow;
           ctx.beginPath();
           ctx.arc(headX, headY, 10 * ds, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#fff8e0';
-          ctx.beginPath();
-          ctx.arc(headX, headY, 2 * ds, 0, Math.PI * 2);
           ctx.fill();
 
           // Warm light pool on the asphalt beneath the lamp — the "street
@@ -1264,13 +1293,15 @@ export default function DriveChallengeGame({
           // doesn't read as a mirrored repeat of the lamp above it.
           if (poleIndex % 3 === 0 && side === (poleIndex % 6 === 0 ? -1 : 1)) {
             const signY = y + 34 * ds;
-            ctx.fillStyle = '#00893f';
-            roundRect(ctx, x - 13 * ds, signY, 26 * ds, 15 * ds, 3 * ds);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-            ctx.lineWidth = 1;
-            roundRect(ctx, x - 13 * ds, signY, 26 * ds, 15 * ds, 3 * ds);
-            ctx.stroke();
+            // Real Blender CX road sign (CX_DRIVE_ASSETS/Signs/road_sign.glb)
+            // for the post + green board shape; the "CX" mark stays a crisp
+            // drawn text layer on top, same reasoning as the car's grille
+            // badge — legible brand text beats baking it into a tiny sprite.
+            if (signImg.complete && signImg.naturalWidth > 0) {
+              const sh = 26 * ds;
+              const sw = (sh * signImg.naturalWidth) / signImg.naturalHeight;
+              ctx.drawImage(signImg, x - sw / 2, signY - sh * 0.62, sw, sh);
+            }
             ctx.textAlign = 'center';
             ctx.font = `700 ${9 * ds}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
             ctx.fillStyle = '#fff';
@@ -1724,151 +1755,71 @@ export default function DriveChallengeGame({
         ctx.restore();
       }
 
-      const paintColor = carState === 'crash' ? '#e0402f' : carState === 'shield' ? '#00d447' : bodyColor;
-
-      // Wheel-arch shading — four soft dark blobs under where the body
-      // will be drawn, at roughly the same corners the wheel ellipses
-      // land at below, so the paint reads as flared over them rather
-      // than the tires just floating beside a flat slab.
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      for (const [ax, ay] of [
-        [-CAR_W * 0.52, -CAR_H * 0.24], [CAR_W * 0.52, -CAR_H * 0.24],
-        [-CAR_W * 0.52, CAR_H * 0.3], [CAR_W * 0.52, CAR_H * 0.3],
-      ] as const) {
-        ctx.beginPath();
-        ctx.ellipse(ax, ay, 9, 13, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      // Body — a hood shape narrower at the top (front), flaring toward
-      // the bottom, so it reads as the front 3/4 of the car even in this
-      // top-down chase view.
+      // The real Blender-modeled CX car, rendered top-down to match this
+      // exact chase angle — replaces the previous hand-drawn vector body,
+      // windshield, mirrors, grille and headlight shapes below in one
+      // `drawImage`. Wheels are baked into the sprite too (see the
+      // removed separate wheel-ellipse pass further down), rendered as
+      // real tire/rim geometry rather than two flat rounded rects.
+      //
+      // `drawImage` on an undecoded image is a no-op until `complete`
+      // flips true (same contract as `logoImg` above), so there's no
+      // loading-state branch needed — the very first frames simply skip
+      // drawing the car until the sprite has decoded, same as the logo
+      // badge always has.
       ctx.save();
       ctx.shadowColor = boostedNow ? 'rgba(0,212,71,0.6)' : 'rgba(0,0,0,0.45)';
       ctx.shadowBlur = boostedNow ? 30 : 18;
       ctx.shadowOffsetY = boostedNow ? 0 : 9;
-      const bodyGrad = ctx.createLinearGradient(-CAR_W / 2, -CAR_H / 2, CAR_W / 2, CAR_H / 2);
-      bodyGrad.addColorStop(0, shade(paintColor, 14));
-      bodyGrad.addColorStop(0.45, paintColor);
-      bodyGrad.addColorStop(0.56, shade(paintColor, -8));
-      bodyGrad.addColorStop(1, shade(paintColor, -20));
-      ctx.fillStyle = bodyGrad;
-      ctx.beginPath();
-      ctx.moveTo(-CAR_W * 0.36, -CAR_H / 2);
-      ctx.quadraticCurveTo(-CAR_W / 2, -CAR_H * 0.3, -CAR_W / 2, -CAR_H * 0.05);
-      ctx.quadraticCurveTo(-CAR_W / 2, CAR_H / 2 - 8, -CAR_W * 0.38, CAR_H / 2);
-      ctx.lineTo(CAR_W * 0.38, CAR_H / 2);
-      ctx.quadraticCurveTo(CAR_W / 2, CAR_H / 2 - 8, CAR_W / 2, -CAR_H * 0.05);
-      ctx.quadraticCurveTo(CAR_W / 2, -CAR_H * 0.3, CAR_W * 0.36, -CAR_H / 2);
-      ctx.closePath();
-      ctx.fill();
+      if (carSprite.complete && carSprite.naturalWidth > 0) {
+        ctx.drawImage(carSprite, -CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
+      }
       ctx.restore();
 
-      // Glossy diagonal highlight streak on the hood.
-      ctx.save();
-      ctx.globalAlpha = 0.32;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(-CAR_W * 0.18, -CAR_H * 0.42);
-      ctx.lineTo(-CAR_W * 0.03, -CAR_H * 0.42);
-      ctx.lineTo(-CAR_W * 0.11, CAR_H * 0.28);
-      ctx.lineTo(-CAR_W * 0.26, CAR_H * 0.28);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // A second, fainter streak on the opposite flank — one highlight
-      // reads as a sticker, two reads as curved, reflective paint.
-      ctx.save();
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(CAR_W * 0.22, -CAR_H * 0.3);
-      ctx.lineTo(CAR_W * 0.32, -CAR_H * 0.3);
-      ctx.lineTo(CAR_W * 0.24, CAR_H * 0.36);
-      ctx.lineTo(CAR_W * 0.14, CAR_H * 0.36);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-
-      // Windshield.
-      const glassGrad = ctx.createLinearGradient(0, -CAR_H * 0.5, 0, -CAR_H * 0.2);
-      glassGrad.addColorStop(0, '#0a0d0b');
-      glassGrad.addColorStop(1, '#1c231d');
-      ctx.fillStyle = glassGrad;
-      roundRect(ctx, -CAR_W * 0.3, -CAR_H * 0.5, CAR_W * 0.6, CAR_H * 0.28, 8);
-      ctx.fill();
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-CAR_W * 0.2, -CAR_H * 0.46);
-      ctx.lineTo(-CAR_W * 0.05, -CAR_H * 0.28);
-      ctx.stroke();
-      ctx.restore();
-
-      // Side mirrors.
-      ctx.fillStyle = shade(paintColor, -14);
-      for (const side of [-1, 1]) {
-        ctx.beginPath();
-        ctx.ellipse(side * CAR_W * 0.55, -CAR_H * 0.08, 4, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
+      // Crash/shield feedback — the vector version simply swapped its
+      // fill color; a photo-real sprite gets the same read via a
+      // 'source-atop' tint pass, which only paints over pixels the
+      // sprite itself already drew (its silhouette + shading show
+      // through), rather than a flat rectangle covering the car.
+      if (carState !== 'normal') {
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.globalAlpha = carState === 'crash' ? 0.55 : 0.4;
+        ctx.fillStyle = carState === 'crash' ? '#e0402f' : '#00d447';
+        ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
+        ctx.restore();
       }
 
-      // Grille — dark inset housing the real CX badge.
-      const grilleY = CAR_H * 0.02;
-      const grilleW = CAR_W * 0.46;
-      const grilleH = CAR_H * 0.2;
-      ctx.fillStyle = '#0a0d0b';
-      roundRect(ctx, -grilleW / 2, grilleY, grilleW, grilleH, 6);
-      ctx.fill();
+      // The real CX badge on the grille reads as a small dot at this
+      // sprite's resolution — the logo image is still worth compositing
+      // on top at game scale so it's crisp and unmistakably the real mark.
       if (logoImg.complete && logoImg.naturalWidth > 0) {
-        const lh = grilleH * 0.74;
+        const grilleY = CAR_H * 0.04;
+        const lh = CAR_H * 0.12;
         const lw = lh * (logoImg.naturalWidth / logoImg.naturalHeight);
         ctx.save();
         ctx.shadowColor = 'rgba(0,212,71,0.65)';
         ctx.shadowBlur = 5;
-        ctx.drawImage(logoImg, -lw / 2, grilleY + (grilleH - lh) / 2, lw, lh);
+        ctx.drawImage(logoImg, -lw / 2, grilleY, lw, lh);
         ctx.restore();
       }
 
-      // Headlights — slim LED blades rather than rounded boxes, glowing
-      // and a touch brighter at speed.
-      const hlY = -CAR_H * 0.06;
-      const hlColor = carState === 'crash' ? '#ffb199' : '#eaffef';
+      // Headlight glow — kept as a light-only effect layered over the
+      // sprite's own baked-in headlight shapes, brightening with speed
+      // exactly like the previous vector version did.
+      const hlY = -CAR_H * 0.42;
       for (const side of [-1, 1]) {
-        const hx = side * CAR_W * 0.34;
+        const hx = side * CAR_W * 0.28;
         ctx.save();
+        ctx.globalAlpha = 0.35 + speedT * 0.35;
         ctx.shadowColor = 'rgba(255,255,255,0.9)';
-        ctx.shadowBlur = 11 + speedT * 7;
-        ctx.fillStyle = hlColor;
-        roundRect(ctx, hx - 7, hlY - 3, 14, 4.5, 2.2);
-        ctx.fill();
-        // A tighter, brighter inner core reads as an LED strip rather
-        // than a single flat block.
-        ctx.shadowBlur = 4;
+        ctx.shadowBlur = 9 + speedT * 8;
         ctx.fillStyle = '#ffffff';
-        roundRect(ctx, hx - 5.5, hlY - 2, 11, 2, 1);
+        ctx.beginPath();
+        ctx.ellipse(hx, hlY, 4, 2.4, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
-
-      // Front splitter — a dark accent bar right at the nose, under the
-      // headlights, giving the front end a finished, performance-car edge.
-      ctx.fillStyle = 'rgba(10,13,11,0.55)';
-      roundRect(ctx, -CAR_W * 0.32, -CAR_H * 0.5 + 1, CAR_W * 0.64, 3, 1.5);
-      ctx.fill();
-
-      // Front pinstripe — the CX green trim line.
-      ctx.strokeStyle = 'rgba(0,212,71,0.85)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-CAR_W * 0.3, CAR_H * 0.46);
-      ctx.lineTo(CAR_W * 0.3, CAR_H * 0.46);
-      ctx.stroke();
 
       // Taillights — a slim always-on bar at the rear (the wide end,
       // closest to camera in this chase view), dim in normal driving,
@@ -1879,19 +1830,9 @@ export default function DriveChallengeGame({
       roundRect(ctx, CAR_W * 0.14, CAR_H * 0.5 - 5, CAR_W * 0.2, 3.4, 1.5);
       ctx.fill();
 
-      // Wheels — four real tire/rim ellipses at the corners (matching the
-      // arch shading drawn under the body) instead of two flat side bars.
-      for (const [wx, wy] of [
-        [-CAR_W * 0.53, -CAR_H * 0.24], [CAR_W * 0.53, -CAR_H * 0.24],
-        [-CAR_W * 0.53, CAR_H * 0.3], [CAR_W * 0.53, CAR_H * 0.3],
-      ] as const) {
-        ctx.fillStyle = '#111';
-        roundRect(ctx, wx - 4, wy - 10, 8, 20, 3.5);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(180,184,178,0.85)';
-        roundRect(ctx, wx - 2.1, wy - 6, 4.2, 12, 2);
-        ctx.fill();
-      }
+      // Wheels are baked into the sprite itself (real tire/rim geometry
+      // from the Blender model) — no separate wheel pass needed here
+      // anymore.
 
       // Brake-light glow when crashing.
       if (carState === 'crash') {

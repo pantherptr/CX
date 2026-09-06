@@ -1,5 +1,5 @@
 import { DashboardShell } from '../components/DashboardShell';
-import { Icon } from '../components/Icon';
+import { EmptyState } from '../components/primitives';
 
 /**
  * No notification-generating events exist yet (bookings, host messages,
@@ -17,15 +17,14 @@ export default function Notifications() {
           Booking updates, messages and account activity will show up here.
         </p>
 
-        <div className="animate-fade-up mt-8 flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-6 py-20 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-muted">
-            <Icon name="bell" size={26} />
-          </span>
-          <h2 className="mt-2 font-display text-xl font-semibold text-ink">You're all caught up</h2>
-          <p className="max-w-sm text-body text-muted">
-            No notifications yet. Book a trip or list a car and we'll let you know the moment
-            something needs your attention.
-          </p>
+        <div className="animate-fade-up mt-8 rounded-2xl border border-line bg-surface">
+          <EmptyState
+            size="lg"
+            icon="bell"
+            title="You're all caught up"
+            description="No notifications yet. Book a trip or list a car and we'll let you know the moment something needs your attention."
+            className="px-6 py-20"
+          />
         </div>
       </div>
     </DashboardShell>

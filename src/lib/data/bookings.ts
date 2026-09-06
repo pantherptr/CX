@@ -245,6 +245,24 @@ export async function fetchBookingById(id: string): Promise<Booking | null> {
   return mapBooking(data as unknown as BookingRow);
 }
 
+/**
+ * Looks up the booking created for a given Stripe PaymentIntent — used
+ * right after a real payment succeeds (see src/lib/data/payments.ts),
+ * since the booking itself is only inserted by the Stripe webhook
+ * (api/stripe-webhook.ts), not by the browser, so it may not exist the
+ * instant `stripe.confirmPayment` resolves on the client.
+ */
+export async function fetchBookingByPaymentIntentId(paymentIntentId: string): Promise<Booking | null> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(BOOKING_SELECT)
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return mapBooking(data as unknown as BookingRow);
+}
+
 interface ExtraRow {
   id: string;
   code: string;

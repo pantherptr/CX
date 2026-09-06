@@ -26,3 +26,10 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# Capacitor's `cap sync` recopies dist/ here on every build — same
+# generated-output status as dist/ itself, not source.
+ios/App/App/public
+
+# Scratch/cleanup staging area, not project source.
+_to_delete/

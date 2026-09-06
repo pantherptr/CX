@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { Logo } from '../components/primitives';
+import { Logo, GoogleSignInButton, AuthDivider } from '../components/primitives';
 import { useAuth } from '../lib/auth';
 
 export default function Signup() {
@@ -67,7 +67,12 @@ export default function Signup() {
           <h1 className="text-center font-display text-2xl font-semibold text-ink">Create your account</h1>
           <p className="mt-1.5 text-center text-body text-muted">Rent or list a car on CX</p>
 
-          <form onSubmit={onSubmit} className="mt-7 space-y-4">
+          <div className="mt-7">
+            <GoogleSignInButton label="Sign up with Google" />
+          </div>
+          <AuthDivider />
+
+          <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <label className="field-label" htmlFor="name">
                 Full name

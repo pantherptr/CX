@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { authStorage } from './secureStorage';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -20,4 +21,10 @@ if (!isSupabaseConfigured) {
 // Falls back to a placeholder so `createClient` never throws; every real
 // call site is gated behind `isSupabaseConfigured` so the placeholder is
 // never actually used to make a request.
-export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder');
+//
+// `authStorage` is only set on the native iOS build, where it points the
+// session at the Keychain instead of the default localStorage — see
+// src/lib/secureStorage.ts.
+export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder', {
+  auth: { storage: authStorage },
+});

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { unsplash } from '../img';
+import { apiUrl } from '../api';
 
 /**
  * Real messaging data-access layer. The conversations/
@@ -21,10 +22,24 @@ export interface ConversationCar {
   image: string;
 }
 
+/** The verified-badge tier a participant's own account carries — derived
+ *  from their real profile flags, same hierarchy as everywhere else in
+ *  the app (Owner > Admin > Host > Client). See VerifiedBadge in
+ *  primitives.tsx for how each renders. */
+export type ParticipantRole = 'owner' | 'admin' | 'host' | 'client';
+
 export interface ConversationParticipant {
   id: string;
   name: string;
   avatar: string;
+  role: ParticipantRole;
+}
+
+function roleFromFlags(flags: { is_owner: boolean; is_admin: boolean; is_host: boolean }): ParticipantRole {
+  if (flags.is_owner) return 'owner';
+  if (flags.is_admin) return 'admin';
+  if (flags.is_host) return 'host';
+  return 'client';
 }
 
 export interface Message {
@@ -34,6 +49,11 @@ export interface Message {
   body: string;
   createdAt: string;
   readAt: string | null;
+  /** Set only on the Owner's own messages, when they chose to send as the
+   *  Owner Assistant identity instead of their real one — see migration
+   *  0024_owner_messaging.sql. `null` for every other account's messages,
+   *  and for the Owner's own messages sent as themselves. */
+  senderRole: 'owner' | 'owner_assistant' | null;
 }
 
 export interface Conversation {
@@ -55,15 +75,18 @@ interface ConversationRow {
     model: string;
     car_images: { url: string; position: number }[];
   } | null;
-  participants: { user_id: string; profile: { id: string; full_name: string | null; avatar_url: string | null } }[];
-  messages: { id: string; body: string; sender_id: string; created_at: string; read_at: string | null }[];
+  participants: {
+    user_id: string;
+    profile: { id: string; full_name: string | null; avatar_url: string | null; is_owner: boolean; is_admin: boolean; is_host: boolean };
+  }[];
+  messages: { id: string; body: string; sender_id: string; created_at: string; read_at: string | null; sender_role: Message['senderRole'] }[];
 }
 
 const CONVERSATION_SELECT = `
   id, car_id, created_at,
   car:cars (id, slug, make, model, car_images(url, position)),
-  participants:conversation_participants (user_id, profile:profiles(id, full_name, avatar_url)),
-  messages (id, body, sender_id, created_at, read_at)
+  participants:conversation_participants (user_id, profile:profiles(id, full_name, avatar_url, is_owner, is_admin, is_host)),
+  messages (id, body, sender_id, created_at, read_at, sender_role)
 `;
 
 function mapMessage(conversationId: string, row: ConversationRow['messages'][number]): Message {
@@ -74,6 +97,7 @@ function mapMessage(conversationId: string, row: ConversationRow['messages'][num
     body: row.body,
     createdAt: row.created_at,
     readAt: row.read_at,
+    senderRole: row.sender_role ?? null,
   };
 }
 
@@ -91,6 +115,7 @@ function mapConversation(row: ConversationRow, myUserId: string): Conversation {
       id: otherParticipant?.id ?? '',
       name: otherParticipant?.full_name ?? 'CX user',
       avatar: otherParticipant?.avatar_url ?? '',
+      role: otherParticipant ? roleFromFlags(otherParticipant) : 'client',
     },
     lastMessage: last ? mapMessage(row.id, last) : null,
     unreadCount: row.messages.filter((m) => m.sender_id !== myUserId && !m.read_at).length,
@@ -151,7 +176,7 @@ export function useConversations(userId: string | undefined) {
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
   const { data, error } = await supabase
     .from('messages')
-    .select('id, body, sender_id, created_at, read_at')
+    .select('id, body, sender_id, created_at, read_at, sender_role')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -196,9 +221,43 @@ export function useConversation(conversationId: string | null) {
   return { messages, loading: messages === null };
 }
 
-export async function sendMessage(conversationId: string, senderId: string, body: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: senderId, body });
+/** `senderRole` is the Owner Control Center's identity switcher — 'owner'
+ *  or 'owner_assistant' to send under that badge, omitted/undefined for
+ *  everyone else's ordinary messages. Rejected server-side (migration
+ *  0024_owner_messaging.sql) for anyone whose account isn't actually the
+ *  Owner, regardless of what a client sends here. */
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  body: string,
+  senderRole?: 'owner' | 'owner_assistant',
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('messages')
+    .insert({ conversation_id: conversationId, sender_id: senderId, body, sender_role: senderRole ?? null });
+  if (!error) void notifyRecipients(conversationId, body);
   return { error: error?.message ?? null };
+}
+
+// Fire-and-forget push to the other participant(s) — see
+// api/notify-message.ts for why this needs a server call rather than a
+// direct client write (device_tokens has no read policy for other users'
+// rows). A failure here must never surface as a failed send; the message
+// itself is already committed by the time this runs.
+async function notifyRecipients(conversationId: string, body: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch(apiUrl('/api/notify-message'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ conversationId, preview: body }),
+    });
+  } catch (err) {
+    console.error('[messages] push notify failed', err);
+  }
 }
 
 export async function markConversationRead(conversationId: string, userId: string): Promise<void> {
@@ -212,13 +271,20 @@ export async function markConversationRead(conversationId: string, userId: strin
 
 /** Finds an existing conversation about this car shared by both users, or
  *  creates one. This is what every "Message host"/"Contact host" action
- *  calls — never a fake toast claiming a message was sent. */
-export async function findOrCreateConversation(carId: string, myUserId: string, otherUserId: string): Promise<string> {
-  const { data: mine, error: mineErr } = await supabase
+ *  calls — never a fake toast claiming a message was sent.
+ *
+ *  `carId: null` is the Owner Control Center's one exception — the Owner
+ *  contacting a host isn't ever about a specific listing, so this opens
+ *  (or reuses) a car-less conversation instead. `conversations.car_id` is
+ *  nullable for exactly this (migration 0001: `on delete set null`). */
+export async function findOrCreateConversation(carId: string | null, myUserId: string, otherUserId: string): Promise<string> {
+  const carFilter = supabase
     .from('conversation_participants')
     .select('conversation_id, conversations!inner(car_id)')
-    .eq('user_id', myUserId)
-    .eq('conversations.car_id', carId);
+    .eq('user_id', myUserId);
+  const { data: mine, error: mineErr } = await (carId === null
+    ? carFilter.is('conversations.car_id', null)
+    : carFilter.eq('conversations.car_id', carId));
   if (mineErr) throw mineErr;
 
   const myConversationIds = (mine ?? []).map((r) => r.conversation_id);
@@ -281,4 +347,47 @@ export function useUnreadMessageCount(userId: string | undefined) {
   }, [userId]);
 
   return count;
+}
+
+// ---------------------------------------------------------------------
+// Owner-only: message any account directly, without waiting to be
+// contacted first. Everyone else already reaches this same
+// findOrCreateConversation via a specific car's "Message host" — this is
+// the generic version, searching every profile by name rather than only
+// a car's host.
+// ---------------------------------------------------------------------
+
+export interface MessagingSearchResult {
+  id: string;
+  name: string;
+  avatar: string;
+  role: ParticipantRole;
+}
+
+/** The one real "Official Support" identity in this schema — the Owner
+ *  account, same one that can reply under the Owner Assistant badge (see
+ *  migration 0024_owner_messaging.sql). Used by CX Concierge's "Talk to a
+ *  real person" escalation, and anywhere else in the app that needs a
+ *  genuine human to hand a conversation to, rather than a fabricated
+ *  "Support" account that doesn't exist. */
+export async function fetchSupportAccountId(): Promise<string | null> {
+  const { data } = await supabase.from('profiles').select('id').eq('is_owner', true).maybeSingle();
+  return data?.id ?? null;
+}
+
+export async function searchUsersForMessaging(query: string): Promise<MessagingSearchResult[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url, is_owner, is_admin, is_host')
+    .ilike('full_name', `%${q}%`)
+    .limit(10);
+  if (error || !data) return [];
+  return data.map((p) => ({
+    id: p.id,
+    name: p.full_name || 'Unnamed user',
+    avatar: p.avatar_url ?? '',
+    role: roleFromFlags(p),
+  }));
 }

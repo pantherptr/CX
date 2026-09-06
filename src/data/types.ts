@@ -60,8 +60,10 @@ export interface Car {
   description: string;
   hostId: string;
   reviews: Review[];
-  /** Only populated for real Supabase-backed cars (host's own listings) — the mock seed data doesn't carry a lifecycle status. */
-  status?: 'draft' | 'published';
+  /** Only populated for real Supabase-backed cars (host's own listings) — the mock seed data doesn't carry a lifecycle status.
+   *  'suspended'/'removed' are Owner Control Center states (see supabase/migrations/0021_owner_control_center.sql); RLS already
+   *  hides both from anyone but the car's own host and the Owner, same as 'draft'. */
+  status?: 'draft' | 'published' | 'suspended' | 'removed';
 }
 
 export interface Category {

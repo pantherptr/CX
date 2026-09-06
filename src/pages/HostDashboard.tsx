@@ -1,9 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
+import { EmptyState } from '../components/primitives';
 import { useHostCars } from '../lib/data/cars';
-import { useHostBookings, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
+import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
+import { useUnreadMessageCount } from '../lib/data/messages';
+import { useVerification } from '../lib/data/verification';
+import { WEEKDAYS, MONTH_NAMES, toISO, startOfMonth, addMonths, buildMonthGrid } from '../lib/calendarGrid';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
@@ -101,6 +105,174 @@ function EarningsChart({ data }: { data: { month: string; value: number }[] }) {
   );
 }
 
+interface ActionItem {
+  id: string;
+  icon: IconName;
+  label: string;
+  sub: string;
+  to: string;
+}
+
+/**
+ * Real, actionable signals only — every item here maps to something the
+ * backend actually tracks. Deliberately absent are the spec's "Vehicle
+ * needs approval" and "New booking request": `car_status` is only
+ * `draft`/`published` (no review-queue state) and `booking_status` has no
+ * pending/awaiting-host-approval state — bookings confirm immediately.
+ * Inventing either would tell a host to expect a workflow this platform
+ * doesn't have.
+ */
+function buildActionItems({
+  draftCars,
+  soonPickups,
+  unreadCount,
+  verificationMissing,
+}: {
+  draftCars: { id: string; make: string; model: string }[];
+  soonPickups: Booking[];
+  unreadCount: number;
+  verificationMissing: boolean;
+}): ActionItem[] {
+  const items: ActionItem[] = [];
+
+  for (const c of draftCars) {
+    items.push({
+      id: `draft-${c.id}`,
+      icon: 'cars',
+      label: `${c.make} ${c.model} is still a draft`,
+      sub: 'Unpublished cars don’t earn — finish the listing from My Fleet.',
+      to: '/host#cars',
+    });
+  }
+
+  for (const b of soonPickups) {
+    items.push({
+      id: `pickup-${b.id}`,
+      icon: 'clock',
+      label: `Pickup coming up — ${b.car.make} ${b.car.model}`,
+      sub: `${b.renter.name} · ${new Date(b.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
+      to: '/host#bookings',
+    });
+  }
+
+  if (unreadCount > 0) {
+    items.push({
+      id: 'unread',
+      icon: 'message',
+      label: `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}`,
+      sub: 'Customers are waiting on a reply.',
+      to: '/messages',
+    });
+  }
+
+  if (verificationMissing) {
+    items.push({
+      id: 'verification',
+      icon: 'shield',
+      label: 'Identity verification needed',
+      sub: 'Verified hosts build more trust with renters.',
+      to: '/settings#security',
+    });
+  }
+
+  return items;
+}
+
+/** Read-only booked/available month grid for one vehicle — the host
+ *  equivalent of `AvailabilityCalendar`, backed by the same real
+ *  `useBookedRanges` data, but without the renter-facing click-to-select
+ *  range interaction (a host is reviewing availability, not booking). */
+function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: string }[] }) {
+  const [carId, setCarId] = useState(cars[0]?.id ?? null);
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
+  const { ranges, loading } = useBookedRanges(carId);
+
+  const grid = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+  const todayISO = toISO(new Date());
+  const activeCar = cars.find((c) => c.id === carId);
+
+  return (
+    <div>
+      {cars.length > 1 && (
+        <div className="mb-4 flex gap-1.5 overflow-x-auto no-scrollbar">
+          {cars.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setCarId(c.id)}
+              className={`chip shrink-0 ${carId === c.id ? '!bg-ink !text-white !border-ink' : ''}`}
+            >
+              {c.make} {c.model}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setViewMonth((m) => addMonths(m, -1))}
+          aria-label="Previous month"
+          className="grid h-9 w-9 place-items-center rounded-full text-ink transition-colors hover:bg-panel"
+        >
+          <Icon name="chevronLeft" size={18} />
+        </button>
+        <p className="font-display text-copy font-semibold text-ink">
+          {MONTH_NAMES[viewMonth.getMonth()]} {viewMonth.getFullYear()}
+          {activeCar && <span className="ml-1.5 font-sans text-detail font-normal text-muted">· {activeCar.make} {activeCar.model}</span>}
+        </p>
+        <button
+          type="button"
+          onClick={() => setViewMonth((m) => addMonths(m, 1))}
+          aria-label="Next month"
+          className="grid h-9 w-9 place-items-center rounded-full text-ink transition-colors hover:bg-panel"
+        >
+          <Icon name="chevronRight" size={18} />
+        </button>
+      </div>
+
+      <div className="relative mt-3 grid grid-cols-7 gap-y-1">
+        {loading && <div className="absolute inset-0 z-10 grid place-items-center bg-surface/60"><CarLoaderInline /></div>}
+        {WEEKDAYS.map((w) => (
+          <span key={w} className="py-1 text-center text-label font-semibold uppercase tracking-wide text-faint">{w}</span>
+        ))}
+        {grid.map((d, i) => {
+          const iso = toISO(d);
+          const inMonth = d.getMonth() === viewMonth.getMonth();
+          const isToday = iso === todayISO;
+          const booked = ranges ? rangesOverlap(iso, iso, ranges) : false;
+          return (
+            <div key={i} className="py-0.5">
+              <span
+                className={`mx-auto grid h-9 w-9 place-items-center rounded-full text-detail font-medium ${
+                  !inMonth
+                    ? 'text-transparent'
+                    : booked
+                      ? 'bg-ink text-white'
+                      : isToday
+                        ? 'border border-accent-bright text-ink'
+                        : 'text-ink-soft'
+                }`}
+              >
+                {d.getDate()}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex items-center gap-4 text-caption text-muted">
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ink" /> Booked</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border border-accent-bright" /> Today</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full border border-line-strong" /> Available</span>
+      </div>
+    </div>
+  );
+}
+
+function CarLoaderInline() {
+  return <span className="text-caption text-muted">Loading…</span>;
+}
+
 function HostBookingRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   return (
@@ -126,6 +298,8 @@ export default function HostDashboard() {
   const { profile, session } = useAuth();
   const { cars: hostCars, loading: carsLoading } = useHostCars(session?.user.id);
   const { bookings: hostBookings, loading: bookingsLoading } = useHostBookings(session?.user.id);
+  const unreadCount = useUnreadMessageCount(session?.user.id);
+  const { verification, loading: verificationLoading } = useVerification(session?.user.id);
   const [tab, setTab] = useState<TripPhase>('upcoming');
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
   const loading = carsLoading || bookingsLoading;
@@ -136,10 +310,18 @@ export default function HostDashboard() {
   );
 
   const totalEarnings = classified.filter((c) => c.phase === 'completed').reduce((sum, c) => sum + c.booking.totalPrice, 0);
+  const todayISOKey = toISO(new Date());
   const thisMonthKey = new Date().toISOString().slice(0, 7);
-  const thisMonthEarnings = classified
-    .filter((c) => c.phase !== 'cancelled' && c.booking.startDate.slice(0, 7) === thisMonthKey)
-    .reduce((sum, c) => sum + c.booking.totalPrice, 0);
+  const thisYearKey = String(new Date().getFullYear());
+  const weekAgoKey = toISO(new Date(Date.now() - 6 * 86_400_000));
+  const earningsInRange = (fromKey: string, toKey?: string) =>
+    classified
+      .filter((c) => c.phase !== 'cancelled' && c.booking.startDate >= fromKey && (!toKey || c.booking.startDate <= toKey))
+      .reduce((sum, c) => sum + c.booking.totalPrice, 0);
+  const todayEarnings = earningsInRange(todayISOKey, todayISOKey);
+  const weekEarnings = earningsInRange(weekAgoKey);
+  const thisMonthEarnings = earningsInRange(`${thisMonthKey}-01`);
+  const thisYearEarnings = earningsInRange(`${thisYearKey}-01-01`);
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const activeCarsCount = (hostCars ?? []).filter((c) => c.status === 'published').length;
   const allReviews = (hostCars ?? []).flatMap((c) => c.reviews);
@@ -149,6 +331,32 @@ export default function HostDashboard() {
   const hasEarningsData = series.some((d) => d.value > 0);
 
   const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
+
+  // Real revenue + booking count per vehicle, for the fleet cards below —
+  // grouped from the same bookings already fetched, not a separate query.
+  const carStats = useMemo(() => {
+    const map = new Map<string, { bookings: number; revenue: number }>();
+    for (const { booking, phase } of classified) {
+      if (phase === 'cancelled') continue;
+      const entry = map.get(booking.car.id) ?? { bookings: 0, revenue: 0 };
+      entry.bookings += 1;
+      entry.revenue += booking.totalPrice;
+      map.set(booking.car.id, entry);
+    }
+    return map;
+  }, [classified]);
+
+  const actionItems = useMemo(() => {
+    const soonCutoff = toISO(new Date(Date.now() + 2 * 86_400_000));
+    return buildActionItems({
+      draftCars: (hostCars ?? []).filter((c) => c.status === 'draft'),
+      soonPickups: classified
+        .filter((c) => c.phase === 'upcoming' && c.booking.startDate <= soonCutoff)
+        .map((c) => c.booking),
+      unreadCount,
+      verificationMissing: !verificationLoading && (!verification || verification.status === 'rejected'),
+    });
+  }, [hostCars, classified, unreadCount, verification, verificationLoading]);
 
   return (
     <DashboardShell variant="host" active="Overview">
@@ -177,6 +385,30 @@ export default function HostDashboard() {
           )}
         </div>
 
+        {/* Action Required — the host's real to-do list, built only from
+            signals this backend genuinely tracks (see buildActionItems). */}
+        {!loading && actionItems.length > 0 && (
+          <Reveal delay={200}>
+            <section className="mt-6">
+              <h2 className="mb-3 font-display text-lg font-semibold text-ink">Action Required</h2>
+              <div className="card divide-y divide-line overflow-hidden">
+                {actionItems.map((item) => (
+                  <Link key={item.id} to={item.to} className="flex items-center gap-3 p-4 transition-colors hover:bg-panel/40">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-star/15 text-star">
+                      <Icon name={item.icon} size={17} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-detail font-medium text-ink">{item.label}</p>
+                      <p className="truncate text-caption text-muted">{item.sub}</p>
+                    </div>
+                    <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </Reveal>
+        )}
+
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Earnings chart */}
           <Reveal><section className="card scroll-mt-20 p-6" id="earnings">
@@ -191,6 +423,21 @@ export default function HostDashboard() {
                 <span className="font-display text-3xl font-semibold text-ink">{eur(series.reduce((a, b) => a + b.value, 0))}</span>
               </div>
             </div>
+            {!loading && (
+              <div className="mt-4 grid grid-cols-4 gap-3 border-y border-line py-3.5">
+                {[
+                  { l: 'Today', v: todayEarnings },
+                  { l: 'This week', v: weekEarnings },
+                  { l: 'This month', v: thisMonthEarnings },
+                  { l: 'This year', v: thisYearEarnings },
+                ].map((x) => (
+                  <div key={x.l} className="text-center">
+                    <p className="text-body font-semibold text-ink">{eur(x.v)}</p>
+                    <p className="mt-0.5 text-caption text-muted">{x.l}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             {loading ? (
               <div className="skeleton mt-5 h-[220px] rounded-xl" />
             ) : hasEarningsData ? (
@@ -266,7 +513,10 @@ export default function HostDashboard() {
         {/* My cars */}
         <Reveal>
         <section className="mt-8 scroll-mt-20" id="cars">
-          <h2 className="mb-4 font-display text-lg font-semibold text-ink">My cars</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-ink">My Fleet</h2>
+            <Link to="/list-your-car" className="text-detail font-medium text-muted hover:text-ink">Add vehicle</Link>
+          </div>
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton aspect-[16/10] rounded-2xl" />)}
@@ -275,6 +525,7 @@ export default function HostDashboard() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {hostCars.map((c) => {
                 const published = c.status === 'published';
+                const stats = carStats.get(c.id);
                 const cardInner = (
                   <>
                     <div className="relative aspect-[16/10]">
@@ -291,6 +542,10 @@ export default function HostDashboard() {
                           <Icon name="star" size={12} className="text-star" /> {c.reviews.length ? c.rating.toFixed(2) : 'New'}
                         </span>
                         <span className="font-medium text-ink">{eur(c.pricePerDay)}/day</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-caption text-muted">
+                        <span>{stats?.bookings ?? 0} booking{stats?.bookings === 1 ? '' : 's'}</span>
+                        <span className="font-medium text-ink">{eur(stats?.revenue ?? 0)} earned</span>
                       </div>
                     </div>
                   </>
@@ -330,10 +585,14 @@ export default function HostDashboard() {
               </div>
             </div>
           ) : (
-            <div className="card flex flex-col items-center gap-2 py-12 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="reviews" size={22} /></span>
-              <p className="mt-1 font-medium text-ink">No reviews yet</p>
-              <p className="max-w-xs text-detail text-muted">Reviews from completed trips will appear here.</p>
+            <div className="card">
+              <EmptyState
+                size="md"
+                icon="reviews"
+                title="No reviews yet"
+                description="Reviews from completed trips will appear here."
+                className="py-12"
+              />
             </div>
           )}
         </section>
@@ -342,31 +601,43 @@ export default function HostDashboard() {
         {/* Calendar */}
         <Reveal>
         <section className="mt-8 scroll-mt-20" id="calendar">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-ink">Calendar</h2>
-            <button disabled className="btn btn-secondary btn-sm cursor-not-allowed opacity-60" title="Coming soon">
-              <Icon name="calendar" size={15} /> Block dates
-            </button>
-          </div>
-          {classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length > 0 ? (
-            <div className="card divide-y divide-line">
-              {classified
-                .filter((c) => c.phase === 'upcoming' || c.phase === 'active')
-                .map((c) => (
-                  <div key={c.booking.id} className="flex items-center justify-between gap-3 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-detail font-medium text-ink">{c.booking.car.make} {c.booking.car.model}</p>
-                      <p className="text-caption text-muted">{fmtDate(c.booking.startDate)} → {fmtDate(c.booking.endDate)}</p>
-                    </div>
-                    <span className={`badge shrink-0 ${phaseBadge[c.phase]}`}>{phaseLabel[c.phase]}</span>
+          <h2 className="mb-4 font-display text-lg font-semibold text-ink">Calendar</h2>
+          {loading ? (
+            <div className="skeleton h-80 rounded-2xl" />
+          ) : hostCars && hostCars.length > 0 ? (
+            <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+              <div className="card p-6">
+                <HostFleetCalendar cars={hostCars.map((c) => ({ id: c.id, make: c.make, model: c.model }))} />
+              </div>
+              <div>
+                <p className="mb-3 text-detail font-medium text-ink-soft">Upcoming pickups &amp; returns</p>
+                {classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length > 0 ? (
+                  <div className="card divide-y divide-line">
+                    {classified
+                      .filter((c) => c.phase === 'upcoming' || c.phase === 'active')
+                      .map((c) => (
+                        <div key={c.booking.id} className="flex items-center justify-between gap-3 p-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-detail font-medium text-ink">{c.booking.car.make} {c.booking.car.model}</p>
+                            <p className="text-caption text-muted">{fmtDate(c.booking.startDate)} → {fmtDate(c.booking.endDate)}</p>
+                          </div>
+                          <span className={`badge shrink-0 ${phaseBadge[c.phase]}`}>{phaseLabel[c.phase]}</span>
+                        </div>
+                      ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="card flex flex-col items-center gap-2 py-10 text-center">
+                    <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="calendar" size={20} /></span>
+                    <p className="mt-1 font-medium text-ink">No dates booked yet</p>
+                  </div>
+                )}
+                <p className="mt-3 text-caption text-faint">Manually blocking dates is coming soon.</p>
+              </div>
             </div>
           ) : (
             <div className="card flex flex-col items-center gap-2 py-12 text-center">
               <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="calendar" size={22} /></span>
-              <p className="mt-1 font-medium text-ink">No dates booked yet</p>
-              <p className="max-w-xs text-detail text-muted">Manually blocking dates is coming soon.</p>
+              <p className="mt-1 font-medium text-ink">Add a car to see its calendar</p>
             </div>
           )}
         </section>

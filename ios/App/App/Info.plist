@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>CX Rent</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    <key>UISceneConfigurations</key>
+    <dict>
+      <key>UIWindowSceneSessionRoleApplication</key>
+      <array>
+        <dict>
+            <key>UISceneConfigurationName</key>
+            <string>Default Configuration</string>
+            <key>UISceneDelegateClassName</key>
+            <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+            <key>UISceneStoryboardFile</key>
+            <string>Main</string>
+        </dict>
+      </array>
+    </dict>
+	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<!-- Real, required usage strings — not placeholders. Each maps to an
+	     actual feature: the identity-verification selfie (TripDetails.tsx)
+	     needs the camera; every other upload (car listing photos, profile
+	     photo, driver's licence, vehicle inspection photos) picks an
+	     existing image, needing photo-library read access. Without these
+	     two keys iOS kills the app the instant a user taps an upload
+	     control — this isn't optional polish, it's a functional
+	     requirement once the web app runs inside a native WKWebView. -->
+	<key>NSCameraUsageDescription</key>
+	<string>CX Rent uses your camera to take a selfie for identity verification before your first rental.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CX Rent needs access to your photos so you can upload your profile picture, driver's licence, vehicle photos, and rental inspection photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CX Rent can save photos, such as your booking confirmation or a shared vehicle image, to your library.</string>
+	<!-- Lets iOS route Google's OAuth redirect back into this app instead
+	     of leaving it stranded in the system browser — see
+	     NATIVE_OAUTH_REDIRECT in src/lib/auth.tsx for the full flow this
+	     supports. "com.cxrent.app" here MUST equal both this Info.plist's
+	     own CFBundleIdentifier (via PRODUCT_BUNDLE_IDENTIFIER above) and
+	     capacitor.config.ts's appId — all three change together the day
+	     the placeholder becomes your real bundle identifier. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.cxrent.app</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

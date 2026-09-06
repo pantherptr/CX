@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
+import { useUnreadMessageCount } from '../lib/data/messages';
 import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 interface Item {
@@ -15,17 +16,26 @@ interface Item {
 // The center slot opens the Drive Challenge modal rather than navigating —
 // `to` is unused for it (rendered specially below) and `match` always
 // false, since there's no route for a modal to be "on".
+//
+// Messages sits here rather than Saved Cars — a two-way, time-sensitive
+// channel with a real business need (coordinating a pickup) earns a
+// primary tab more than a passive wishlist does; Saved Cars is still one
+// tap away via Profile's menu, same as My Trips, Rewards and Payments.
 const items: Item[] = [
   { label: 'Home', to: '/dashboard', icon: 'grid', match: (p, h) => p === '/dashboard' && h === '' },
   { label: 'Explore', to: '/browse', icon: 'search', match: (p) => p === '/browse' },
   { label: 'Drive', to: '', icon: 'car', match: () => false },
-  { label: 'Saved', to: '/dashboard#saved', icon: 'heart', match: (p, h) => p === '/dashboard' && h === '#saved' },
+  { label: 'Messages', to: '/messages', icon: 'message', match: (p) => p === '/messages' },
   { label: 'Profile', to: '/settings', icon: 'user', match: (p) => p === '/settings' },
 ];
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
-    stack awkwardly on top of them, so it stays hidden there instead. */
-const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//];
+    stack awkwardly on top of them, so it stays hidden there instead.
+    `/messages` is the other case: a real chat composer needs the entire
+    bottom edge of the screen to itself (its own safe-area padding, no
+    tab bar between it and the keyboard) the same way Messages/WhatsApp/
+    Telegram hide their own tab chrome inside a conversation. */
+const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/];
 
 /** Single source of truth for "is the bottom tab bar showing right now" —
     shared with App.tsx so it can reserve matching scroll padding. */
@@ -40,6 +50,8 @@ export function useBottomNavVisible() {
 export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
+  const { session } = useAuth();
+  const unreadCount = useUnreadMessageCount(session?.user.id);
 
   const activeIndex = useMemo(
     () => items.findIndex((it) => it.match(pathname, hash)),
@@ -92,14 +104,21 @@ export function BottomNav() {
               className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
               aria-current={active ? 'page' : undefined}
             >
-              <Icon
-                name={it.icon}
-                size={23}
-                className={`transition-all duration-300 ease-out ${
-                  active ? 'scale-110 text-accent' : 'text-ink-soft'
-                }`}
-                strokeWidth={active ? 2.1 : 1.75}
-              />
+              <span className="relative">
+                <Icon
+                  name={it.icon}
+                  size={23}
+                  className={`transition-all duration-300 ease-out ${
+                    active ? 'scale-110 text-accent' : 'text-ink-soft'
+                  }`}
+                  strokeWidth={active ? 2.1 : 1.75}
+                />
+                {it.label === 'Messages' && unreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </span>
               <span
                 className={`text-micro font-semibold tracking-wide transition-colors duration-300 ${
                   active ? 'text-accent' : 'text-ink-soft'

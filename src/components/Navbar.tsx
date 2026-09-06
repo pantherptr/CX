@@ -390,6 +390,25 @@ function AppNavbar() {
                   </button>
                 </div>
               )}
+              {profile?.is_owner ? (
+                <NavLink
+                  to="/owner"
+                  onClick={() => setDrawerOpen(false)}
+                  className="mb-3 flex items-center gap-3 rounded-xl border border-line bg-noir px-3 py-2.5 text-body font-medium text-white transition-colors hover:bg-noir-2"
+                >
+                  <Icon name="verified" size={19} className="text-accent-bright" />
+                  Owner Control Center
+                </NavLink>
+              ) : profile?.is_admin ? (
+                <NavLink
+                  to="/admin"
+                  onClick={() => setDrawerOpen(false)}
+                  className="mb-3 flex items-center gap-3 rounded-xl border border-line bg-panel/60 px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
+                >
+                  <Icon name="shield" size={19} className="text-muted" />
+                  Admin panel
+                </NavLink>
+              ) : null}
               <ul className="flex flex-col gap-0.5">
                 {nav.map((n) => {
                   if (n.isDrive) {

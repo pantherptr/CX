@@ -13,6 +13,7 @@ import {
   saveBuild,
   type CarConfigOptions,
 } from '../lib/data/carConfig';
+import { shareLink, haptics } from '../lib/native';
 import type { Car } from '../data/types';
 
 /**
@@ -199,12 +200,12 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
     toast({ title: 'Saved to your Garage', desc: 'Find it under My CX Garage.', icon: 'check' });
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const url = `${window.location.origin}/cars/${car.slug}?build=1&view=${view}`;
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast({ title: 'Build link copied', icon: 'check' }))
-      .catch(() => toast({ title: 'Could not copy link', icon: 'info' }));
+    const result = await shareLink({ title: `My ${car.make} ${car.model} build`, text: 'Check out my CX build', url });
+    haptics.light();
+    // 'failed' also covers the user dismissing the native share sheet.
+    if (result === 'copied') toast({ title: 'Build link copied', icon: 'check' });
   };
 
   // CX Card — drawn to a canvas from real vehicle data only, then handed

@@ -196,7 +196,11 @@ export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
 export async function fetchCarWithHost(slug: string): Promise<{ car: Car; host: Host } | null> {
   const { data, error } = await supabase
     .from('cars')
-    .select(`${CAR_SELECT}, host:profiles!cars_host_id_fkey(*)`)
+    // Explicit column list, not `(*)`: this is a public, unauthenticated
+    // fetch (anyone viewing a car listing), and `profiles` also carries
+    // `phone`/`location`/`is_admin` — none of which `mapHost` reads or
+    // any visitor should receive. Keep this in sync with `HostRow` below.
+    .select(`${CAR_SELECT}, host:profiles!cars_host_id_fkey(id, full_name, avatar_url, bio, joined, rating, trips, response_time, response_rate, verified, is_superhost)`)
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle();

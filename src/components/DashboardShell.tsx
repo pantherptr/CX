@@ -257,7 +257,7 @@ export function DashboardShell({
   );
 
   return (
-    <div className="min-h-screen bg-bg lg:flex">
+    <div className="min-h-dvh bg-bg lg:flex">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 border-r border-line bg-surface lg:block">
         {SidebarInner}
@@ -273,7 +273,13 @@ export function DashboardShell({
         </div>
       )}
 
-      <div className={`flex min-w-0 flex-1 flex-col ${fullHeight ? 'h-screen' : ''}`}>
+      {/* `dvh`, not `vh` — `100vh` on iOS Safari/WKWebView is measured
+          against the largest possible viewport (chrome hidden), so a
+          fixed h-screen layout either gets cut off or leaves the
+          composer covered by the keyboard once the real, currently
+          visible viewport shrinks. `dvh` tracks the actual visible
+          height live, including when the keyboard opens. */}
+      <div className={`flex min-w-0 flex-1 flex-col ${fullHeight ? 'h-dvh' : ''}`}>
         {/* Topbar */}
         <header className="sticky top-0 z-40 flex h-[64px] items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-xl sm:px-6">
           <button onClick={() => setOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel lg:hidden" aria-label="Open menu">
@@ -283,7 +289,41 @@ export function DashboardShell({
             <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input placeholder="Search trips, cars, hosts…" className="input !py-2.5 !pl-10 bg-surface" />
           </div>
+          {isHost && (
+            <div className="hidden shrink-0 gap-1 rounded-full border border-line bg-panel/60 p-1 lg:flex">
+              <Link
+                to="/dashboard"
+                className={`rounded-full px-3 py-1.5 text-label font-semibold uppercase tracking-wide transition-colors ${
+                  variant === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                Customer
+              </Link>
+              <Link
+                to="/host"
+                className={`rounded-full px-3 py-1.5 text-label font-semibold uppercase tracking-wide transition-colors ${
+                  variant === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:text-ink'
+                }`}
+              >
+                Host
+              </Link>
+            </div>
+          )}
           <div className="ml-auto flex items-center gap-1.5">
+            {/* Only ever rendered for the one real Owner/Admin row — see
+                profiles.is_owner / is_admin (migration 0021). Nothing
+                here is a permission check of its own; it's just a
+                shortcut link that happens to be invisible to everyone
+                else. */}
+            {profile?.is_owner ? (
+              <Link to="/owner" className="btn btn-sm hidden items-center gap-1.5 border border-noir bg-noir text-white hover:bg-noir-2 sm:inline-flex">
+                <Icon name="verified" size={15} className="text-accent-bright" /> Owner
+              </Link>
+            ) : profile?.is_admin ? (
+              <Link to="/admin" className="btn btn-secondary btn-sm hidden items-center gap-1.5 sm:inline-flex">
+                <Icon name="shield" size={15} /> Admin
+              </Link>
+            ) : null}
             <Link to="/browse" className="btn btn-secondary btn-sm hidden sm:inline-flex">Find a car</Link>
             <Link to="/notifications" className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
               <Icon name="bell" size={20} />

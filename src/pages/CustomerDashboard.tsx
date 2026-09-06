@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { CarLoader } from '../components/CarLoader';
+import { SearchBar } from '../components/SearchBar';
+import { EmptyState } from '../components/primitives';
+import { ConciergeLauncher } from '../components/Concierge';
 import { Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
@@ -71,6 +74,75 @@ function RewardRow({ reward }: { reward: Reward }) {
     </div>
   );
 }
+
+function QuickAction({ icon, label, to, onClick }: { icon: IconName; label: string; to?: string; onClick?: () => void }) {
+  const inner = (
+    <>
+      <span className="grid h-11 w-11 place-items-center rounded-xl bg-panel text-ink-soft transition-colors group-hover:bg-ink group-hover:text-white">
+        <Icon name={icon} size={19} />
+      </span>
+      <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">{label}</span>
+    </>
+  );
+  const cls = 'card group flex flex-col items-center justify-center gap-2.5 py-5 text-center transition-transform hover:-translate-y-0.5';
+  return to ? (
+    <Link to={to} className={cls}>{inner}</Link>
+  ) : (
+    <button onClick={onClick} className={cls}>{inner}</button>
+  );
+}
+
+interface ActivityItem {
+  id: string;
+  icon: IconName;
+  label: string;
+  sub: string;
+  at: string;
+}
+
+/** Recent Activity, built entirely from data the dashboard already
+ *  fetched — no separate activity/event-log table exists in the backend,
+ *  so this is derived rather than read from one. Two event types the
+ *  original brief asked for are deliberately absent: "Payment completed"
+ *  (bookings don't record a payment moment distinct from creation — it
+ *  would just duplicate "Booking confirmed" at the same instant) and
+ *  "Concierge request" (the Concierge is a stateless matching flow with
+ *  no persisted request record). Showing either would be inventing an
+ *  event that never truthfully happened. */
+function buildActivity(bookings: Booking[], rewards: Reward[]): ActivityItem[] {
+  const items: ActivityItem[] = [];
+
+  for (const b of bookings) {
+    const phase = classifyBooking(b);
+    if (phase === 'cancelled') {
+      items.push({ id: `${b.id}-cancelled`, icon: 'info', label: 'Booking cancelled', sub: `${b.car.make} ${b.car.model} · ${b.reference}`, at: b.createdAt });
+    } else {
+      items.push({ id: `${b.id}-confirmed`, icon: 'checkCircle', label: 'Booking confirmed', sub: `${b.car.make} ${b.car.model} · ${b.reference}`, at: b.createdAt });
+      if (phase === 'completed') {
+        items.push({ id: `${b.id}-completed`, icon: 'trips', label: 'Rental completed', sub: `${b.car.make} ${b.car.model} · ${b.reference}`, at: `${b.endDate}T00:00:00` });
+      }
+    }
+  }
+
+  for (const r of rewards) {
+    items.push({ id: `${r.id}-earned`, icon: 'gift', label: 'Reward earned', sub: `${r.discountPercentage}% off · ${r.couponCode}`, at: r.createdAt });
+    if (r.usedAt) {
+      items.push({ id: `${r.id}-used`, icon: 'gift', label: 'Reward used', sub: `${r.discountPercentage}% off · ${r.couponCode}`, at: r.usedAt });
+    }
+  }
+
+  return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 8);
+}
+
+const relativeTime = (iso: string) => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diffMs / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
 
 function TripRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
@@ -150,6 +222,8 @@ export default function CustomerDashboard() {
 
   const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
 
+  const activity = useMemo(() => buildActivity(bookings ?? [], rewards ?? []), [bookings, rewards]);
+
   const handleMessageHost = async () => {
     if (!session || !nextTrip) return;
     setMessaging(true);
@@ -195,6 +269,29 @@ export default function CustomerDashboard() {
             </>
           )}
         </div>
+
+        {/* Quick actions */}
+        <Reveal delay={220}>
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <QuickAction icon="search" label="Find a Car" to="/browse" />
+            <QuickAction icon="trips" label="My Bookings" to="/dashboard#trips" />
+            <QuickAction icon="heart" label="Favorites" to="/dashboard#saved" />
+            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2.5 py-5 text-center transition-transform hover:-translate-y-0.5">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-panel text-ink-soft transition-colors group-hover:bg-ink group-hover:text-white">
+                <Icon name="sparkles" size={19} />
+              </span>
+              <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">Concierge</span>
+            </ConciergeLauncher>
+          </div>
+        </Reveal>
+
+        {/* Search from dashboard */}
+        <Reveal delay={260}>
+          <section className="mt-6">
+            <h2 className="mb-3 font-display text-lg font-semibold text-ink">Find another car</h2>
+            <SearchBar variant="compact" />
+          </section>
+        </Reveal>
 
         {/* Next trip highlight */}
         {bookingsLoading ? (
@@ -289,23 +386,22 @@ export default function CustomerDashboard() {
               ) : tabBookings.length > 0 ? (
                 tabBookings.map((b) => <TripRow key={b.id} booking={b} />)
               ) : (
-                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted">
-                    <Icon name="trips" size={20} />
-                  </span>
-                  <p className="mt-1 font-medium text-ink">
-                    {tab === 'upcoming' && 'No upcoming trips'}
-                    {tab === 'active' && 'No trips in progress'}
-                    {tab === 'completed' && 'No completed trips yet'}
-                    {tab === 'cancelled' && 'No cancelled trips'}
-                  </p>
-                  <p className="max-w-xs text-detail text-muted">
-                    {tab === 'upcoming' ? 'Your next journey starts here.' : 'Nothing to show in this tab yet.'}
-                  </p>
-                  {tab === 'upcoming' && (
-                    <Link to="/browse" className="btn btn-primary btn-sm mt-1">Browse cars</Link>
-                  )}
-                </div>
+                <EmptyState
+                  size="sm"
+                  icon="trips"
+                  className="px-4 py-10"
+                  title={
+                    tab === 'upcoming'
+                      ? 'No upcoming trips'
+                      : tab === 'active'
+                        ? 'No trips in progress'
+                        : tab === 'completed'
+                          ? 'No completed trips yet'
+                          : 'No cancelled trips'
+                  }
+                  description={tab === 'upcoming' ? 'Your next journey starts here.' : 'Nothing to show in this tab yet.'}
+                  action={tab === 'upcoming' ? <Link to="/browse" className="btn btn-primary btn-sm">Browse cars</Link> : undefined}
+                />
               )}
             </div>
           </section>
@@ -341,10 +437,7 @@ export default function CustomerDashboard() {
                   </Link>
                 ))
               ) : (
-                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="message" size={20} /></span>
-                  <p className="mt-1 font-medium text-ink">No conversations yet</p>
-                </div>
+                <EmptyState size="sm" icon="message" title="No conversations yet" className="px-4 py-10" />
               )}
             </div>
           </section>
@@ -361,14 +454,72 @@ export default function CustomerDashboard() {
               {saved.map((c) => <CarCard key={c.id} car={c} />)}
             </div>
           ) : (
-            <div className="card flex flex-col items-center gap-2 py-12 text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-muted"><Icon name="heart" size={22} /></span>
-              <p className="mt-1 font-medium text-ink">No saved cars yet</p>
-              <p className="max-w-xs text-detail text-muted">Tap the heart on any car to save it here for later.</p>
-              <Link to="/browse" className="btn btn-primary btn-sm mt-2">Browse cars</Link>
+            <div className="card">
+              <EmptyState
+                size="md"
+                icon="heart"
+                title="No saved cars yet"
+                description="Tap the heart on any car to save it here for later."
+                action={<Link to="/browse" className="btn btn-primary btn-sm">Browse cars</Link>}
+                className="py-12"
+              />
             </div>
           )}
         </section>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+          {/* Concierge */}
+          <section className="relative overflow-hidden rounded-2xl bg-noir p-6">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{ background: 'radial-gradient(55% 55% at 85% 10%, rgba(0,212,71,0.16), transparent 62%)' }}
+            />
+            <div className="relative">
+              <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-bright">
+                <Icon name="sparkles" size={14} /> CX Concierge
+              </p>
+              <h2 className="mt-2 font-display text-xl font-semibold text-white">Need something specific?</h2>
+              <p className="mt-2 text-detail leading-relaxed text-white/60">
+                Tell us how you want to drive — city, road trip, business, performance — and we'll match you to the
+                right car from the fleet in under a minute.
+              </p>
+              <ConciergeLauncher className="btn btn-accent-bright btn-sm mt-5">
+                Ask the Concierge <Icon name="arrowRight" size={15} />
+              </ConciergeLauncher>
+            </div>
+          </section>
+
+          {/* Recent activity */}
+          <section>
+            <h2 className="mb-4 font-display text-lg font-semibold text-ink">Recent Activity</h2>
+            <div className="card min-h-[120px] divide-y divide-line">
+              {bookingsLoading || rewardsLoading ? (
+                <div className="flex flex-col items-center gap-2 py-10 text-center">
+                  <CarLoader size={60} />
+                </div>
+              ) : activity.length > 0 ? (
+                activity.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 p-4">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name={item.icon} size={16} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-detail font-medium text-ink">{item.label}</p>
+                      <p className="truncate text-caption text-muted">{item.sub}</p>
+                    </div>
+                    <span className="shrink-0 text-caption text-faint">{relativeTime(item.at)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="clock" size={20} /></span>
+                  <p className="mt-1 font-medium text-ink">Nothing yet</p>
+                  <p className="max-w-xs text-detail text-muted">Your bookings and rewards will show up here as they happen.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
         {/* Rewards */}
         <section className="mt-8 scroll-mt-20" id="rewards">

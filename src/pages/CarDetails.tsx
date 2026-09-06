@@ -12,8 +12,56 @@ import { BookingCard } from '../components/BookingCard';
 import { HostCard } from '../components/HostCard';
 import { CarCard } from '../components/CarCard';
 import { useApp } from '../lib/store';
+import { useAuth } from '../lib/auth';
 import { useCompare } from '../lib/compareStore';
+import { shareLink, haptics } from '../lib/native';
+import { createReport } from '../lib/data/reports';
 import NotFound from './NotFound';
+
+const REPORT_REASONS = ['Misleading listing', 'Suspicious pricing', 'Inappropriate photos', 'Safety concern', 'Other'];
+
+function ReportListingModal({ carId, onClose }: { carId: string; onClose: () => void }) {
+  const { toast } = useApp();
+  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    const { error } = await createReport(carId, reason, message);
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Couldn't send your report", desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Report sent', desc: "Thanks — CX Rent's team will review this listing.", icon: 'checkCircle' });
+    onClose();
+  };
+
+  return (
+    <Modal open onClose={onClose} className="max-w-sm rounded-2xl p-6" labelledBy="report-title">
+      <h2 id="report-title" className="font-display text-lg font-semibold text-ink">Report this listing</h2>
+      <label className="mt-4 flex flex-col gap-1.5 text-detail font-medium text-ink-soft">
+        Reason
+        <select value={reason} onChange={(e) => setReason(e.target.value)} className="input">
+          {REPORT_REASONS.map((r) => (
+            <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+      </label>
+      <label className="mt-3 flex flex-col gap-1.5 text-detail font-medium text-ink-soft">
+        Details (optional)
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} className="input resize-none" placeholder="Tell us more…" />
+      </label>
+      <div className="mt-5 flex justify-end gap-2">
+        <button onClick={onClose} className="btn btn-secondary btn-sm">Cancel</button>
+        <button onClick={submit} disabled={submitting} className="btn btn-primary btn-sm disabled:opacity-50">
+          {submitting ? 'Sending…' : 'Send report'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
 
 const featureIcon: Record<string, IconName> = {
   'Apple CarPlay': 'apple', Bluetooth: 'music', 'Heated seats': 'flame',
@@ -34,11 +82,13 @@ export default function CarDetails() {
   const autoOpenBuild = searchParams.get('build') === '1';
   const sharedView = Number(searchParams.get('view')) || 0;
   const { isFavorite, toggleFavorite, toast } = useApp();
+  const { session } = useAuth();
   const { isComparing, toggleCompare } = useCompare();
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
   const [similar, setSimilar] = useState<Car[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,11 +212,16 @@ export default function CarDetails() {
               <Icon name="sparkles" size={16} /> Build Your CX
             </ConfiguratorLauncher>
             <button
-              onClick={() => {
-                navigator.clipboard
-                  .writeText(window.location.href)
-                  .then(() => toast({ title: 'Link copied to clipboard', icon: 'check' }))
-                  .catch(() => toast({ title: 'Could not copy link', icon: 'info' }));
+              onClick={async () => {
+                const result = await shareLink({
+                  title: `${car.make} ${car.model}`,
+                  text: `Check out the ${car.make} ${car.model} on CX Rent`,
+                  url: window.location.href,
+                });
+                haptics.light();
+                // 'failed' also covers the user simply dismissing the native
+                // share sheet — not a real error, so it stays silent.
+                if (result === 'copied') toast({ title: 'Link copied to clipboard', icon: 'check' });
               }}
               className="btn btn-secondary btn-sm"
             >
@@ -187,6 +242,16 @@ export default function CarDetails() {
             </button>
           </div>
         </div>
+
+        {session && (
+          <button
+            onClick={() => setReportOpen(true)}
+            className="mt-2 inline-flex items-center gap-1.5 text-caption text-faint hover:text-muted"
+          >
+            <Icon name="info" size={12} /> Report this listing
+          </button>
+        )}
+        {reportOpen && <ReportListingModal carId={car.id} onClose={() => setReportOpen(false)} />}
 
         {/* Gallery */}
         <div className="mt-6 grid gap-2.5 sm:grid-cols-4 sm:grid-rows-2 sm:h-[460px]">

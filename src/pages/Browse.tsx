@@ -4,6 +4,7 @@ import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { CarCard } from '../components/CarCard';
 import { Icon } from '../components/Icon';
+import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher } from '../components/Concierge';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
@@ -446,21 +447,26 @@ export default function Browse() {
               ))}
             </div>
           ) : error ? (
-            <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-danger">
-                <Icon name="info" size={26} />
-              </span>
-              <h3 className="mt-2 font-display text-xl font-semibold text-ink">Couldn't load cars</h3>
-              <p className="max-w-sm text-body text-muted">{error}</p>
+            <div className="card">
+              <EmptyState
+                size="lg"
+                tone="danger"
+                icon="info"
+                title="Couldn't load cars"
+                description={error}
+                className="px-6 py-20"
+              />
             </div>
           ) : results.length === 0 ? (
-            <div className="card flex flex-col items-center gap-3 px-6 py-20 text-center">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-muted">
-                <Icon name="search" size={26} />
-              </span>
-              <h3 className="mt-2 font-display text-xl font-semibold text-ink">No cars match your filters</h3>
-              <p className="max-w-sm text-body text-muted">Try widening your price range or clearing a few filters to see more of the fleet.</p>
-              <button onClick={reset} className="btn btn-primary mt-2">Clear all filters</button>
+            <div className="card">
+              <EmptyState
+                size="lg"
+                icon="search"
+                title="No cars match your filters"
+                description="Try widening your price range or clearing a few filters to see more of the fleet."
+                action={<button onClick={reset} className="btn btn-primary">Clear all filters</button>}
+                className="px-6 py-20"
+              />
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
