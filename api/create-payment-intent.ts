@@ -28,7 +28,13 @@ import { applyCors } from './_lib/cors.js';
  * renter and cached on profiles.stripe_customer_id.
  */
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
+// Pinned explicitly (matching the installed `stripe` package's own default)
+// so the PaymentIntent this creates and the Stripe.js Elements that render
+// it agree on shape — an account whose dashboard default has since moved to
+// a newer API version would otherwise leave Elements trying to parse an
+// object it doesn't recognize, which fails silently (the card form just
+// never finishes loading rather than throwing a visible error).
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2025-02-24.acacia' });
 
 interface CreatePaymentIntentBody {
   carId?: string;
