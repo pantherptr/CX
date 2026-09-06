@@ -99,6 +99,7 @@ export default function Booking() {
   // (quote_booking()) before Stripe is ever involved.
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [quotedAmount, setQuotedAmount] = useState<number | null>(null);
+  const [deposit, setDeposit] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
@@ -171,6 +172,7 @@ export default function Booking() {
     let cancelled = false;
     setClientSecret(null);
     setQuotedAmount(null);
+    setDeposit(null);
     setSubmitError(null);
     setPaymentLoading(true);
     createPaymentIntent(
@@ -189,6 +191,7 @@ export default function Booking() {
         if (cancelled) return;
         setClientSecret(res.clientSecret);
         setQuotedAmount(res.amount);
+        setDeposit(res.deposit);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -540,6 +543,7 @@ export default function Booking() {
             <PaymentStep
               clientSecret={clientSecret}
               amount={quotedAmount ?? grandTotal}
+              deposit={deposit}
               loading={paymentLoading}
               error={submitError}
               submitting={submitting}
