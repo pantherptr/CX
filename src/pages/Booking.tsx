@@ -203,8 +203,15 @@ export default function Booking() {
     return () => {
       cancelled = true;
     };
+    // Depend on stable primitives, not the `result`/`session`/`availableReward`
+    // object references themselves — Supabase's session object gets a new
+    // identity on every token refresh (and availableReward is recomputed,
+    // unmemoized, on every render), so depending on the objects directly
+    // re-ran this effect continuously: each run minted a fresh PaymentIntent
+    // and tore down/remounted Stripe Elements before it could ever finish
+    // loading, leaving the payment form stuck.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, step, session, pickupDate, returnDate, pickupLoc, fareTier, selectedExtras, applyReward, availableReward, dateError]);
+  }, [result?.car.id, step, session?.access_token, pickupDate, returnDate, pickupLoc, fareTier, selectedExtras, applyReward, availableReward?.id, dateError]);
 
   if (loadError) {
     return (
