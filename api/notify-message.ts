@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { applyCors } from './_lib/cors';
-import { sendPushToUser } from './_lib/push';
+import { applyCors } from './_lib/cors.js';
+import { sendPushToUser } from './_lib/push.js';
 
 /**
  * Pushes the other participant(s) in a conversation after a message is

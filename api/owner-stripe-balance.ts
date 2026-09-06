@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { applyCors } from './_lib/cors';
+import { applyCors } from './_lib/cors.js';
 
 /**
  * Real Stripe balance for the Owner Home dashboard's "Available balance" /

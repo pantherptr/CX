@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { sendBookingConfirmedEmail, sendNewBookingHostEmail } from './_lib/email';
-import { sendPushToUser } from './_lib/push';
+import { sendBookingConfirmedEmail, sendNewBookingHostEmail } from './_lib/email.js';
+import { sendPushToUser } from './_lib/push.js';
 
 /**
  * The refundable security deposit — see

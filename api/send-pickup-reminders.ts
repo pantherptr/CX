@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
-import { sendPickupReminderEmail, sendReturnReminderEmail } from './_lib/email';
-import { sendPushToUser } from './_lib/push';
+import { sendPickupReminderEmail, sendReturnReminderEmail } from './_lib/email.js';
+import { sendPushToUser } from './_lib/push.js';
 
 /**
  * The daily housekeeping sweep — everything here runs once a day rather

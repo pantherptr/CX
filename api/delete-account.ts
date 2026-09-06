@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { applyCors } from './_lib/cors';
+import { applyCors } from './_lib/cors.js';
 
 /**
  * Real account deletion — required by Apple's App Store guidelines
