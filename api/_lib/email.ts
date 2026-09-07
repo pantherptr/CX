@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { eur } from '../../src/lib/format';
+import { eur } from '../../src/lib/format.js';
 
 /**
  * Transactional email for the booking lifecycle — the one part of
