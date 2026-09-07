@@ -143,106 +143,116 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const extraIds = meta.extraIds ? meta.extraIds.split(',').filter(Boolean) : [];
 
-  // Same insert createBooking() used to perform from the browser — the
-  // prepare_booking trigger computes host_id, total_price and the
-  // reference exactly as before. The only addition is
-  // stripe_payment_intent_id, set in the same insert (not a follow-up
-  // update) so the unique index on that column is what makes a retried
-  // webhook delivery a no-op instead of a duplicate booking — the same
-  // "the constraint is the real guarantee, not the pre-check" principle
-  // already used for double-booking (see checkAvailability's comment in
-  // src/lib/data/bookings.ts).
-  const { data: booking, error: insertError } = await supabase
-    .from('bookings')
-    .insert({
-      car_id: meta.carId,
-      renter_id: meta.renterId,
-      start_date: meta.startDate,
-      end_date: meta.endDate,
-      pickup_location: meta.pickupLocation || null,
-      protection_addon: true,
-      fare_tier: meta.fareTier || 'standard',
-      reward_id: meta.rewardId || null,
-      stripe_payment_intent_id: paymentIntent.id,
-    })
-    .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
-    .single();
-
-  if (insertError) {
-    if (insertError.code === '23505') {
-      // Another delivery of this same event already created the booking.
-      return res.status(200).json({ received: true, alreadyProcessed: true });
-    }
-    // The card has already been charged at this point — this must not be
-    // swallowed. Returning 500 makes Stripe retry the webhook; the
-    // payment_intent id is also visible in the Stripe dashboard for
-    // manual reconciliation if retries don't resolve it.
-    console.error('[stripe-webhook] booking insert failed for', paymentIntent.id, insertError);
-    return res.status(500).json({ error: 'Could not create booking.' });
-  }
-
-  if (extraIds.length > 0) {
-    const { error: extrasError } = await supabase
-      .from('booking_extras')
-      .insert(extraIds.map((extraId) => ({ booking_id: booking.id, extra_id: extraId })));
-    if (extrasError) {
-      // The booking (and the charge) is real either way — logged for
-      // follow-up rather than failing the whole webhook over an extra.
-      console.error('[stripe-webhook] extras insert failed for booking', booking.id, extrasError);
-    }
-  }
-
-  const depositAmountCents = Number(meta.depositAmountCents || '0');
-  await placeDepositHold(supabase, stripe, booking.id, paymentIntent, depositAmountCents);
-
-  // Confirmation emails — fire-and-forget from the webhook's point of
-  // view. Any failure here (a lookup, Resend being down, a missing key)
-  // is logged and swallowed: the booking is real and paid for regardless,
-  // and Stripe must not be told to retry a payment that already
-  // succeeded just because an email didn't send.
+  // Everything below touches the database/Stripe on the strength of a
+  // real, already-succeeded charge — wrapped so an unexpected throw comes
+  // back as a diagnosable JSON error (and a 500 Stripe will retry)
+  // instead of an opaque platform-level crash.
   try {
-    const [{ data: car }, { data: renterAuth }, { data: hostAuth }, { data: hostProfile }] = await Promise.all([
-      supabase.from('cars').select('make, model, year').eq('id', meta.carId).single(),
-      supabase.auth.admin.getUserById(meta.renterId),
-      supabase.auth.admin.getUserById(booking.host_id),
-      supabase.from('profiles').select('full_name').eq('id', booking.host_id).single(),
-    ]);
-    const { data: renterProfile } = await supabase.from('profiles').select('full_name').eq('id', meta.renterId).single();
+    // Same insert createBooking() used to perform from the browser — the
+    // prepare_booking trigger computes host_id, total_price and the
+    // reference exactly as before. The only addition is
+    // stripe_payment_intent_id, set in the same insert (not a follow-up
+    // update) so the unique index on that column is what makes a retried
+    // webhook delivery a no-op instead of a duplicate booking — the same
+    // "the constraint is the real guarantee, not the pre-check" principle
+    // already used for double-booking (see checkAvailability's comment in
+    // src/lib/data/bookings.ts).
+    const { data: booking, error: insertError } = await supabase
+      .from('bookings')
+      .insert({
+        car_id: meta.carId,
+        renter_id: meta.renterId,
+        start_date: meta.startDate,
+        end_date: meta.endDate,
+        pickup_location: meta.pickupLocation || null,
+        protection_addon: true,
+        fare_tier: meta.fareTier || 'standard',
+        reward_id: meta.rewardId || null,
+        stripe_payment_intent_id: paymentIntent.id,
+      })
+      .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
+      .single();
 
-    const carLabel = car ? `${car.year} ${car.make} ${car.model}` : 'your car';
-    const tripBase = {
-      reference: booking.reference,
-      carLabel,
-      startDate: booking.start_date,
-      endDate: booking.end_date,
-      pickupLocation: booking.pickup_location || '',
-      totalPrice: Number(booking.total_price),
-    };
+    if (insertError) {
+      if (insertError.code === '23505') {
+        // Another delivery of this same event already created the booking.
+        return res.status(200).json({ received: true, alreadyProcessed: true });
+      }
+      // The card has already been charged at this point — this must not be
+      // swallowed. Returning 500 makes Stripe retry the webhook; the
+      // payment_intent id is also visible in the Stripe dashboard for
+      // manual reconciliation if retries don't resolve it.
+      console.error('[stripe-webhook] booking insert failed for', paymentIntent.id, insertError);
+      return res.status(500).json({ error: insertError.message });
+    }
 
-    const renterEmail = renterAuth?.user?.email;
-    const hostEmail = hostAuth?.user?.email;
+    if (extraIds.length > 0) {
+      const { error: extrasError } = await supabase
+        .from('booking_extras')
+        .insert(extraIds.map((extraId) => ({ booking_id: booking.id, extra_id: extraId })));
+      if (extrasError) {
+        // The booking (and the charge) is real either way — logged for
+        // follow-up rather than failing the whole webhook over an extra.
+        console.error('[stripe-webhook] extras insert failed for booking', booking.id, extrasError);
+      }
+    }
 
-    await Promise.all([
-      renterEmail
-        ? sendBookingConfirmedEmail(renterEmail, { ...tripBase, otherPartyName: hostProfile?.full_name || 'your host' })
-        : Promise.resolve(),
-      hostEmail
-        ? sendNewBookingHostEmail(hostEmail, { ...tripBase, otherPartyName: renterProfile?.full_name || 'A renter' })
-        : Promise.resolve(),
-      sendPushToUser(supabase, meta.renterId, {
-        title: 'Booking confirmed',
-        body: `Your ${carLabel} is booked for ${tripBase.startDate}.`,
-        data: { url: '/dashboard#trips' },
-      }),
-      sendPushToUser(supabase, booking.host_id, {
-        title: 'New booking',
-        body: `${renterProfile?.full_name || 'A renter'} booked your ${carLabel}.`,
-        data: { url: '/host#bookings' },
-      }),
-    ]);
+    const depositAmountCents = Number(meta.depositAmountCents || '0');
+    await placeDepositHold(supabase, stripe, booking.id, paymentIntent, depositAmountCents);
+
+    // Confirmation emails — fire-and-forget from the webhook's point of
+    // view. Any failure here (a lookup, Resend being down, a missing key)
+    // is logged and swallowed: the booking is real and paid for regardless,
+    // and Stripe must not be told to retry a payment that already
+    // succeeded just because an email didn't send.
+    try {
+      const [{ data: car }, { data: renterAuth }, { data: hostAuth }, { data: hostProfile }] = await Promise.all([
+        supabase.from('cars').select('make, model, year').eq('id', meta.carId).single(),
+        supabase.auth.admin.getUserById(meta.renterId),
+        supabase.auth.admin.getUserById(booking.host_id),
+        supabase.from('profiles').select('full_name').eq('id', booking.host_id).single(),
+      ]);
+      const { data: renterProfile } = await supabase.from('profiles').select('full_name').eq('id', meta.renterId).single();
+
+      const carLabel = car ? `${car.year} ${car.make} ${car.model}` : 'your car';
+      const tripBase = {
+        reference: booking.reference,
+        carLabel,
+        startDate: booking.start_date,
+        endDate: booking.end_date,
+        pickupLocation: booking.pickup_location || '',
+        totalPrice: Number(booking.total_price),
+      };
+
+      const renterEmail = renterAuth?.user?.email;
+      const hostEmail = hostAuth?.user?.email;
+
+      await Promise.all([
+        renterEmail
+          ? sendBookingConfirmedEmail(renterEmail, { ...tripBase, otherPartyName: hostProfile?.full_name || 'your host' })
+          : Promise.resolve(),
+        hostEmail
+          ? sendNewBookingHostEmail(hostEmail, { ...tripBase, otherPartyName: renterProfile?.full_name || 'A renter' })
+          : Promise.resolve(),
+        sendPushToUser(supabase, meta.renterId, {
+          title: 'Booking confirmed',
+          body: `Your ${carLabel} is booked for ${tripBase.startDate}.`,
+          data: { url: '/dashboard#trips' },
+        }),
+        sendPushToUser(supabase, booking.host_id, {
+          title: 'New booking',
+          body: `${renterProfile?.full_name || 'A renter'} booked your ${carLabel}.`,
+          data: { url: '/host#bookings' },
+        }),
+      ]);
+    } catch (err) {
+      console.error('[stripe-webhook] confirmation emails/push failed for booking', booking.id, err);
+    }
+
+    return res.status(200).json({ received: true, bookingId: booking.id });
   } catch (err) {
-    console.error('[stripe-webhook] confirmation emails/push failed for booking', booking.id, err);
+    console.error('[stripe-webhook] unexpected failure processing', paymentIntent.id, err);
+    const message = err instanceof Error ? err.message : 'Unexpected error processing this payment.';
+    return res.status(500).json({ error: message });
   }
-
-  return res.status(200).json({ received: true, bookingId: booking.id });
 }
