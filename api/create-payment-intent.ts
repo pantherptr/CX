@@ -102,57 +102,67 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'This trip could not be priced.' });
   }
 
-  // One Stripe Customer per renter, reused across bookings — required for
-  // setup_future_usage (a PaymentIntent can only save a payment method
-  // against a Customer, not anonymously) and cheap to cache.
-  const { data: profileRow } = await supabase.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
-  let customerId = profileRow?.stripe_customer_id ?? undefined;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: { supabaseUserId: user.id },
+  // Everything below this point calls Stripe — wrapped so a Stripe-side
+  // rejection (bad key, account restriction, etc.) comes back as a
+  // diagnosable JSON error instead of crashing the function outright
+  // (Vercel would otherwise report a bare FUNCTION_INVOCATION_FAILED).
+  try {
+    // One Stripe Customer per renter, reused across bookings — required
+    // for setup_future_usage (a PaymentIntent can only save a payment
+    // method against a Customer, not anonymously) and cheap to cache.
+    const { data: profileRow } = await supabase.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
+    let customerId = profileRow?.stripe_customer_id ?? undefined;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { supabaseUserId: user.id },
+      });
+      customerId = customer.id;
+      // Best-effort cache — if this write fails, the next payment just
+      // creates (and this time successfully saves) another Customer
+      // rather than breaking the current one.
+      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: quote.currency || 'eur',
+      customer: customerId,
+      setup_future_usage: 'off_session',
+      automatic_payment_methods: { enabled: true },
+      // Everything the webhook needs to create the booking after the
+      // charge succeeds — this is the only record of the renter's choices
+      // between "paid" and "booking exists", so it has to be complete.
+      // depositAmountCents rides along here too so the webhook's deposit
+      // hold (see api/stripe-webhook.ts) charges the exact figure this
+      // renter was quoted, not a value recomputed later without their
+      // session context.
+      metadata: {
+        carId,
+        renterId: user.id,
+        startDate,
+        endDate,
+        pickupLocation,
+        fareTier: fareTier ?? 'standard',
+        extraIds: (extraIds ?? []).join(','),
+        rewardId: rewardId ?? '',
+        depositAmountCents: String(depositAmountCents),
+      },
     });
-    customerId = customer.id;
-    // Best-effort cache — if this write fails, the next payment just
-    // creates (and this time successfully saves) another Customer rather
-    // than breaking the current one.
-    await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
+
+    if (!paymentIntent.client_secret) {
+      return res.status(500).json({ error: 'Could not start payment.' });
+    }
+
+    return res.status(200).json({
+      clientSecret: paymentIntent.client_secret,
+      amount: Number(quote.total),
+      currency: quote.currency,
+      deposit: Number(quote.deposit),
+    });
+  } catch (err) {
+    console.error('[create-payment-intent] Stripe call failed:', err);
+    const message = err instanceof Stripe.errors.StripeError ? err.message : 'Could not start payment.';
+    return res.status(502).json({ error: message });
   }
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount,
-    currency: quote.currency || 'eur',
-    customer: customerId,
-    setup_future_usage: 'off_session',
-    automatic_payment_methods: { enabled: true },
-    // Everything the webhook needs to create the booking after the
-    // charge succeeds — this is the only record of the renter's choices
-    // between "paid" and "booking exists", so it has to be complete.
-    // depositAmountCents rides along here too so the webhook's deposit
-    // hold (see api/stripe-webhook.ts) charges the exact figure this
-    // renter was quoted, not a value recomputed later without their
-    // session context.
-    metadata: {
-      carId,
-      renterId: user.id,
-      startDate,
-      endDate,
-      pickupLocation,
-      fareTier: fareTier ?? 'standard',
-      extraIds: (extraIds ?? []).join(','),
-      rewardId: rewardId ?? '',
-      depositAmountCents: String(depositAmountCents),
-    },
-  });
-
-  if (!paymentIntent.client_secret) {
-    return res.status(500).json({ error: 'Could not start payment.' });
-  }
-
-  return res.status(200).json({
-    clientSecret: paymentIntent.client_secret,
-    amount: Number(quote.total),
-    currency: quote.currency,
-    deposit: Number(quote.deposit),
-  });
 }
