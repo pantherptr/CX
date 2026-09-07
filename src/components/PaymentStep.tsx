@@ -13,7 +13,7 @@ import { eur } from '../lib/format';
  * payment.
  */
 const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY, { apiVersion: '2025-02-24.acacia' })
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
   : null;
 
 interface PaymentFormProps {

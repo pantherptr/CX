@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Owner access required.' });
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   try {
     const balance = await stripe.balance.retrieve();
     const sum = (entries: Stripe.Balance.Available[]) => entries.reduce((total, e) => total + e.amount, 0) / 100;

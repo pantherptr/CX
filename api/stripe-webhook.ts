@@ -84,7 +84,7 @@ export const config = {
   api: { bodyParser: false },
 };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2025-02-24.acacia' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
 
 async function readRawBody(req: VercelRequest): Promise<Buffer> {
   const chunks: Buffer[] = [];
