@@ -145,6 +145,40 @@ export async function sendPickupReminderEmail(to: string, trip: TripEmailData) {
   await send(to, `Reminder: pick-up tomorrow — ${trip.carLabel}`, layout(`Your ${trip.carLabel} is ready tomorrow.`, body));
 }
 
+export async function sendBookingCancelledEmail(to: string, trip: TripEmailData) {
+  const body = `
+    <h1 style="margin:0 0 6px 0;font-size:20px;font-weight:700;">Booking cancelled</h1>
+    <p style="margin:0 0 20px 0;font-size:14px;line-height:1.6;color:#3d3a30;">
+      ${trip.otherPartyName ? `${trip.otherPartyName} cancelled` : 'This booking was cancelled for'} the trip below.
+    </p>
+    <table role="presentation" width="100%" style="border-top:1px solid #e7e5df;border-bottom:1px solid #e7e5df;padding:4px 0;">
+      ${row('Booking', trip.reference)}
+      ${row('Car', trip.carLabel)}
+      ${row('Pick-up', fmtDate(trip.startDate))}
+      ${row('Return', fmtDate(trip.endDate))}
+    </table>
+    ${button(`${SITE_URL}/dashboard#trips`, 'View my trips')}
+  `;
+  await send(to, `Booking cancelled — ${trip.carLabel}`, layout(`Booking ${trip.reference} was cancelled.`, body));
+}
+
+export async function sendBookingRefundedEmail(to: string, trip: TripEmailData) {
+  const body = `
+    <h1 style="margin:0 0 6px 0;font-size:20px;font-weight:700;">You've been refunded</h1>
+    <p style="margin:0 0 20px 0;font-size:14px;line-height:1.6;color:#3d3a30;">
+      ${eur(trip.totalPrice)} has been refunded to your original payment method. It can take a few
+      business days to show up on your statement.
+    </p>
+    <table role="presentation" width="100%" style="border-top:1px solid #e7e5df;border-bottom:1px solid #e7e5df;padding:4px 0;">
+      ${row('Booking', trip.reference)}
+      ${row('Car', trip.carLabel)}
+      ${row('Refunded', eur(trip.totalPrice))}
+    </table>
+    ${button(`${SITE_URL}/dashboard#trips`, 'View my trips')}
+  `;
+  await send(to, `Refund issued — ${trip.carLabel}`, layout(`Booking ${trip.reference} was refunded.`, body));
+}
+
 export async function sendReturnReminderEmail(to: string, trip: TripEmailData) {
   const body = `
     <h1 style="margin:0 0 6px 0;font-size:20px;font-weight:700;">Return is tomorrow</h1>

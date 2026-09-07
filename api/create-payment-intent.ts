@@ -26,6 +26,15 @@ import { applyCors } from './_lib/cors.js';
  * method against a Customer so it can be charged (or, here, authorized)
  * again without the renter present. The Customer is created once per
  * renter and cached on profiles.stripe_customer_id.
+ *
+ * Reservation: a 'pending' hold row IS inserted here, before Stripe is
+ * ever contacted — see supabase/migrations/0026_booking_reservations.sql.
+ * That insert goes through the same `bookings_no_overlap` exclusion
+ * constraint every other booking does, so two renters racing for the same
+ * dates get resolved right here, atomically, before either one's card is
+ * charged — not after, with no way to undo the loser's charge. The
+ * webhook (api/stripe-webhook.ts) confirms this same row on success
+ * rather than inserting a fresh one.
  */
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
@@ -102,10 +111,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'This trip could not be priced.' });
   }
 
+  // The reservation itself — inserted as the renter (RLS: "Renters create
+  // own bookings"), so this can only ever create a hold for the calling
+  // user. reward_id/extras are deliberately NOT attached yet: reward
+  // consumption happens in confirm_booking_hold() once the charge
+  // actually succeeds, so an abandoned or expired hold never costs the
+  // renter their reward; extras are attached by the webhook exactly as
+  // before. prepare_booking still computes host_id/total_price/reference
+  // for this row the same way it always has.
+  const HOLD_TTL_MINUTES = 20;
+  const { data: hold, error: holdError } = await supabase
+    .from('bookings')
+    .insert({
+      car_id: carId,
+      renter_id: user.id,
+      start_date: startDate,
+      end_date: endDate,
+      pickup_location: pickupLocation,
+      protection_addon: true,
+      fare_tier: fareTier ?? 'standard',
+      status: 'pending',
+      hold_expires_at: new Date(Date.now() + HOLD_TTL_MINUTES * 60_000).toISOString(),
+    })
+    .select('id')
+    .single();
+
+  if (holdError || !hold) {
+    if (holdError?.code === '23P01') {
+      return res.status(409).json({ error: 'This car is unavailable for these dates.' });
+    }
+    return res.status(400).json({ error: holdError?.message ?? 'Could not reserve these dates.' });
+  }
+  const bookingId = hold.id as string;
+
   // Everything below this point calls Stripe — wrapped so a Stripe-side
   // rejection (bad key, account restriction, etc.) comes back as a
   // diagnosable JSON error instead of crashing the function outright
-  // (Vercel would otherwise report a bare FUNCTION_INVOCATION_FAILED).
+  // (Vercel would otherwise report a bare FUNCTION_INVOCATION_FAILED). Any
+  // failure here also releases the hold just created above — a Stripe
+  // outage must never leave a car's dates blocked for nothing.
   try {
     // One Stripe Customer per renter, reused across bookings — required
     // for setup_future_usage (a PaymentIntent can only save a payment
@@ -134,14 +178,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       currency: quote.currency || 'eur',
       setup_future_usage: 'off_session' as const,
       automatic_payment_methods: { enabled: true },
-      // Everything the webhook needs to create the booking after the
-      // charge succeeds — this is the only record of the renter's choices
-      // between "paid" and "booking exists", so it has to be complete.
-      // depositAmountCents rides along here too so the webhook's deposit
-      // hold (see api/stripe-webhook.ts) charges the exact figure this
-      // renter was quoted, not a value recomputed later without their
-      // session context.
+      // bookingId is what the webhook actually uses to confirm the hold
+      // (see confirm_booking_hold in the 0026 migration). The rest of
+      // these fields are kept as a fallback: if that hold has somehow
+      // gone missing by the time the charge succeeds (expired despite a
+      // real payment, or pre-migration data), the webhook falls back to
+      // inserting a fresh booking exactly the way it did before this
+      // migration, so a successful charge is never silently lost.
       metadata: {
+        bookingId,
         carId,
         renterId: user.id,
         startDate,
@@ -171,6 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (!paymentIntent.client_secret) {
+      await supabase.rpc('release_payment_hold', { p_booking_id: bookingId });
       return res.status(500).json({ error: 'Could not start payment.' });
     }
 
@@ -179,9 +225,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       amount: Number(quote.total),
       currency: quote.currency,
       deposit: Number(quote.deposit),
+      bookingId,
     });
   } catch (err) {
     console.error('[create-payment-intent] Stripe call failed:', err);
+    await supabase.rpc('release_payment_hold', { p_booking_id: bookingId });
     const message = err instanceof Stripe.errors.StripeError ? err.message : 'Could not start payment.';
     return res.status(502).json({ error: message });
   }

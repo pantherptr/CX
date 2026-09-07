@@ -385,7 +385,7 @@ export async function fetchNeedsAttention(): Promise<AttentionItem[]> {
     supabase.from('verifications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('deposit_status', 'failed'),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_host', true).eq('suspended', true),
-    supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'upcoming').eq('start_date', today),
+    supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').eq('start_date', today),
     supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
   ]);
 
@@ -475,28 +475,33 @@ export async function fetchPlatformBalance(): Promise<PlatformBalance | null> {
 }
 
 /** Real gross revenue — every booking's total_price, excluding cancelled
- *  trips (nothing was ultimately collected/kept for those). There is no
- *  commission or host-payout split anywhere in this schema (every
+ *  trips (nothing was ultimately collected/kept for those), and no longer
+ *  for refunded ones either (see supabase/migrations/0026_booking_reservations.sql
+ *  — refunded is a real, separate terminal state, not a flavor of
+ *  cancelled). 'pending'/'payment_processing' holds are excluded too:
+ *  nothing has actually been charged and kept yet at that point. There is
+ *  no commission or host-payout split anywhere in this schema (every
  *  PaymentIntent goes straight to the platform's own Stripe account —
  *  see api/create-payment-intent.ts), so this figure IS the platform's
  *  earnings today; a separate "platform take" number would have to
  *  invent a commission rate that doesn't exist in the product. */
 export async function fetchTotalRevenue(): Promise<number> {
-  const { data, error } = await supabase.from('bookings').select('total_price, status').neq('status', 'cancelled');
+  const { data, error } = await supabase.from('bookings').select('total_price, status').in('status', ['confirmed', 'completed']);
   if (error || !data) return 0;
   return data.reduce((sum, b) => sum + Number(b.total_price), 0);
 }
 
 /** Bookings currently in progress — start_date <= today <= end_date,
- *  status still 'upcoming' (the schema never introduces an 'active'
- *  status distinct from 'upcoming'; classifyBooking in lib/data/bookings.ts
- *  derives the same "active" phase client-side from these same dates). */
+ *  status 'confirmed' (renamed from 'upcoming' in 0026 — same meaning;
+ *  the schema still never introduces an 'active' status distinct from it,
+ *  classifyBooking in lib/data/bookings.ts derives the same "active"
+ *  phase client-side from these same dates). */
 export async function fetchActiveRentalsCount(): Promise<number> {
   const today = new Date().toISOString().slice(0, 10);
   const { count } = await supabase
     .from('bookings')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'upcoming')
+    .eq('status', 'confirmed')
     .lte('start_date', today)
     .gte('end_date', today);
   return count ?? 0;

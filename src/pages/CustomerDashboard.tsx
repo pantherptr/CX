@@ -25,17 +25,23 @@ const TABS: { id: TripPhase; label: string }[] = [
 ];
 
 const phaseBadge: Record<TripPhase, string> = {
+  pending: 'bg-panel-2 text-ink-soft',
+  payment_processing: 'bg-panel-2 text-ink-soft',
   upcoming: 'badge-accent',
   active: 'bg-accent text-white',
   completed: 'bg-panel-2 text-ink-soft',
   cancelled: 'bg-danger/10 text-danger',
+  refunded: 'bg-danger/10 text-danger',
 };
 
 const phaseLabel: Record<TripPhase, string> = {
+  pending: 'Payment pending',
+  payment_processing: 'Payment processing',
   upcoming: 'Confirmed',
   active: 'Active',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  refunded: 'Refunded',
 };
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -207,8 +213,12 @@ export default function CustomerDashboard() {
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const completedCount = classified.filter((c) => c.phase === 'completed').length;
   const tier = renterTier(completedCount);
+  // Only phases where the charge is real and was actually kept — a
+  // refund (see supabase/migrations/0026_booking_reservations.sql) gives
+  // the money back, so it must not still count as "spent", and a
+  // pending/processing hold hasn't charged anything yet.
   const totalSpent = classified
-    .filter((c) => c.phase !== 'cancelled')
+    .filter((c) => c.phase === 'upcoming' || c.phase === 'active' || c.phase === 'completed')
     .reduce((sum, c) => sum + c.booking.totalPrice, 0);
 
   // The one trip worth surfacing above the fold: an active trip beats a
@@ -220,7 +230,11 @@ export default function CustomerDashboard() {
     return relevant.sort((a, b) => a.booking.startDate.localeCompare(b.booking.startDate))[0]?.booking;
   }, [classified]);
 
-  const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
+  // A refunded trip is grouped under the Cancelled tab rather than given
+  // its own — both are "this trip isn't happening"; refunded additionally
+  // means the money came back. Pending/processing holds are rare enough
+  // (self-cancel within minutes if abandoned) not to need their own tab.
+  const tabBookings = classified.filter((c) => c.phase === tab || (tab === 'cancelled' && c.phase === 'refunded')).map((c) => c.booking);
 
   const activity = useMemo(() => buildActivity(bookings ?? [], rewards ?? []), [bookings, rewards]);
 

@@ -27,6 +27,12 @@ export interface PaymentIntentResult {
    *  Shown alongside `amount` so the renter knows about it before paying,
    *  not just after. */
   deposit: number;
+  /** The reservation hold this PaymentIntent is tied to — see
+   *  supabase/migrations/0026_booking_reservations.sql. Lets the client
+   *  release it early (Back button, leaving the page) instead of waiting
+   *  out its TTL; the webhook confirms it into a real booking on success
+   *  regardless. */
+  bookingId: string;
 }
 
 export async function createPaymentIntent(

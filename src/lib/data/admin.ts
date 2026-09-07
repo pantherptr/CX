@@ -1,5 +1,7 @@
 import { supabase } from '../supabase';
 import type { VerificationStatus } from './verification';
+import type { BookingStatus } from './bookings';
+import { apiUrl } from '../api';
 
 /**
  * Data access for the admin dashboard (see src/pages/AdminDashboard.tsx
@@ -117,7 +119,8 @@ export async function reviewVerification(
 export interface AdminBooking {
   id: string;
   reference: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  status: BookingStatus;
+  stripePaymentIntentId: string | null;
   startDate: string;
   endDate: string;
   totalPrice: number;
@@ -142,13 +145,14 @@ interface AdminBookingRow {
   total_price: number;
   created_at: string;
   deposit_status: AdminBooking['depositStatus'];
+  stripe_payment_intent_id: string | null;
   car: { make: string; model: string; year: number } | null;
   renter: { full_name: string | null } | null;
   host: { full_name: string | null } | null;
 }
 
 const ADMIN_BOOKING_SELECT = `
-  id, reference, status, start_date, end_date, total_price, created_at, deposit_status,
+  id, reference, status, start_date, end_date, total_price, created_at, deposit_status, stripe_payment_intent_id,
   car:cars!bookings_car_id_fkey (make, model, year),
   renter:profiles!bookings_renter_id_fkey (full_name),
   host:profiles!bookings_host_id_fkey (full_name)
@@ -165,6 +169,7 @@ export async function fetchAllBookingsAdmin(): Promise<AdminBooking[]> {
     id: r.id,
     reference: r.reference,
     status: r.status,
+    stripePaymentIntentId: r.stripe_payment_intent_id,
     startDate: r.start_date,
     endDate: r.end_date,
     totalPrice: Number(r.total_price),
@@ -178,10 +183,32 @@ export async function fetchAllBookingsAdmin(): Promise<AdminBooking[]> {
 
 /** Cancels any booking — this is the *same* update the renter/host-facing
  *  cancelBooking() in bookings.ts performs; it works here for a booking
- *  the caller doesn't own only because of the "Admins update all
- *  bookings" RLS policy (migration 0016), so there's no separate
- *  admin-only code path to keep in sync with the regular one. */
+ *  the caller doesn't own only because api/cancel-booking.ts itself
+ *  checks is_admin/is_owner, so there's no separate admin-only code path
+ *  to keep in sync with the regular one. */
 export { cancelBooking as adminCancelBooking } from './bookings';
+
+/** Owner/Admin-only real Stripe refund — see api/refund-booking.ts for
+ *  why this is a deliberate, separate action from cancellation rather
+ *  than something cancelling ever does automatically. */
+export async function refundBookingAdmin(bookingId: string): Promise<{ error: string | null }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { error: 'Sign in required.' };
+  try {
+    const res = await fetch(apiUrl('/api/refund-booking'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ bookingId }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) return { error: body?.error ?? 'Could not issue this refund.' };
+    return { error: null };
+  } catch {
+    return { error: 'Could not reach the server — please try again.' };
+  }
+}
 
 export interface AdminCar {
   id: string;

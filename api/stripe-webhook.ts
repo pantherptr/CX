@@ -123,9 +123,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid signature.' });
   }
 
+  // Trusted, RLS-bypassing client — service role, server-side only, never
+  // shipped to the browser.
+  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+
+  // The hold created in api/create-payment-intent.ts occupies the
+  // renter's dates the instant they reach Payment. If the charge never
+  // completes, that hold must not sit there blocking the car forever —
+  // release it back to 'cancelled' the moment Stripe tells us the attempt
+  // is over, rather than waiting out the full hold TTL.
+  if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const bookingId = (pi.metadata as Record<string, string>).bookingId;
+    if (bookingId) {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'payment_failed' })
+        .eq('id', bookingId)
+        .in('status', ['pending', 'payment_processing']);
+      if (error) console.error('[stripe-webhook] failed to release hold for', bookingId, error);
+    }
+    return res.status(200).json({ received: true });
+  }
+
+  // Fires for payment methods with a genuine async settlement window
+  // (Bancontact, some bank redirects) — cards go succeeded/failed
+  // directly and rarely pass through this. Purely a status label update;
+  // the hold already occupies the dates regardless.
+  if (event.type === 'payment_intent.processing') {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const bookingId = (pi.metadata as Record<string, string>).bookingId;
+    if (bookingId) {
+      const { error } = await supabase.from('bookings').update({ status: 'payment_processing' }).eq('id', bookingId).eq('status', 'pending');
+      if (error) console.error('[stripe-webhook] failed to mark processing for', bookingId, error);
+    }
+    return res.status(200).json({ received: true });
+  }
+
   if (event.type !== 'payment_intent.succeeded') {
-    // Anything else (failed, canceled, requires_action, ...) never had a
-    // booking created for it — there is nothing to reverse.
+    // Anything else never had a booking created/held for it — nothing to
+    // reconcile.
     return res.status(200).json({ received: true });
   }
 
@@ -137,64 +174,98 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Incomplete booking metadata on this payment.' });
   }
 
-  // Trusted, RLS-bypassing client — service role, server-side only, never
-  // shipped to the browser.
-  const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-
   const extraIds = meta.extraIds ? meta.extraIds.split(',').filter(Boolean) : [];
+  type ConfirmedBooking = { id: string; host_id: string; reference: string; total_price: number; start_date: string; end_date: string; pickup_location: string | null };
+
+  const attachExtras = async (bookingId: string) => {
+    if (extraIds.length === 0) return;
+    const { error: extrasError } = await supabase
+      .from('booking_extras')
+      .insert(extraIds.map((extraId) => ({ booking_id: bookingId, extra_id: extraId })));
+    if (extrasError) {
+      // The booking (and the charge) is real either way — logged for
+      // follow-up rather than failing the whole webhook over an extra.
+      console.error('[stripe-webhook] extras insert failed for booking', bookingId, extrasError);
+    }
+  };
 
   // Everything below touches the database/Stripe on the strength of a
   // real, already-succeeded charge — wrapped so an unexpected throw comes
   // back as a diagnosable JSON error (and a 500 Stripe will retry)
   // instead of an opaque platform-level crash.
   try {
-    // Same insert createBooking() used to perform from the browser — the
-    // prepare_booking trigger computes host_id, total_price and the
-    // reference exactly as before. The only addition is
-    // stripe_payment_intent_id, set in the same insert (not a follow-up
-    // update) so the unique index on that column is what makes a retried
-    // webhook delivery a no-op instead of a duplicate booking — the same
-    // "the constraint is the real guarantee, not the pre-check" principle
-    // already used for double-booking (see checkAvailability's comment in
-    // src/lib/data/bookings.ts).
-    const { data: booking, error: insertError } = await supabase
-      .from('bookings')
-      .insert({
-        car_id: meta.carId,
-        renter_id: meta.renterId,
-        start_date: meta.startDate,
-        end_date: meta.endDate,
-        pickup_location: meta.pickupLocation || null,
-        protection_addon: true,
-        fare_tier: meta.fareTier || 'standard',
-        reward_id: meta.rewardId || null,
-        stripe_payment_intent_id: paymentIntent.id,
-      })
-      .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
-      .single();
+    let booking: ConfirmedBooking | null = null;
 
-    if (insertError) {
-      if (insertError.code === '23505') {
-        // Another delivery of this same event already created the booking.
-        return res.status(200).json({ received: true, alreadyProcessed: true });
+    // The normal path: confirm the hold api/create-payment-intent.ts
+    // already inserted, turning it from 'pending'/'payment_processing'
+    // into 'confirmed'. Reward validation + consumption happens inside
+    // this function, not before, so an abandoned hold never burns a
+    // reward for nothing.
+    if (meta.bookingId) {
+      const { data: confirmedId, error: confirmError } = await supabase.rpc('confirm_booking_hold', {
+        p_booking_id: meta.bookingId,
+        p_reward_id: meta.rewardId || null,
+        p_stripe_payment_intent_id: paymentIntent.id,
+      });
+      if (confirmError) {
+        console.error('[stripe-webhook] confirm_booking_hold failed for', paymentIntent.id, confirmError);
+      } else if (confirmedId) {
+        const { data: row, error: fetchError } = await supabase
+          .from('bookings')
+          .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
+          .eq('id', confirmedId)
+          .single();
+        if (fetchError) console.error('[stripe-webhook] could not re-fetch confirmed booking', confirmedId, fetchError);
+        else {
+          booking = row;
+          await attachExtras(booking.id);
+        }
       }
-      // The card has already been charged at this point — this must not be
-      // swallowed. Returning 500 makes Stripe retry the webhook; the
-      // payment_intent id is also visible in the Stripe dashboard for
-      // manual reconciliation if retries don't resolve it.
-      console.error('[stripe-webhook] booking insert failed for', paymentIntent.id, insertError);
-      return res.status(500).json({ error: insertError.message });
     }
 
-    if (extraIds.length > 0) {
-      const { error: extrasError } = await supabase
-        .from('booking_extras')
-        .insert(extraIds.map((extraId) => ({ booking_id: booking.id, extra_id: extraId })));
-      if (extrasError) {
-        // The booking (and the charge) is real either way — logged for
-        // follow-up rather than failing the whole webhook over an extra.
-        console.error('[stripe-webhook] extras insert failed for booking', booking.id, extrasError);
+    // Fallback — no confirmable hold existed (the hold expired despite
+    // this charge succeeding, or this payment predates the reservation
+    // system). Insert a fresh booking exactly the way every booking was
+    // created before hold-based reservations existed, so a successful
+    // charge is never silently lost. The exclusion constraint and the
+    // stripe_payment_intent_id unique index still protect this path.
+    if (!booking) {
+      const { data: inserted, error: insertError } = await supabase
+        .from('bookings')
+        .insert({
+          car_id: meta.carId,
+          renter_id: meta.renterId,
+          start_date: meta.startDate,
+          end_date: meta.endDate,
+          pickup_location: meta.pickupLocation || null,
+          protection_addon: true,
+          fare_tier: meta.fareTier || 'standard',
+          reward_id: meta.rewardId || null,
+          status: 'confirmed',
+          stripe_payment_intent_id: paymentIntent.id,
+        })
+        .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          // Another delivery of this same event already created the booking.
+          return res.status(200).json({ received: true, alreadyProcessed: true });
+        }
+        // The card has already been charged at this point — this must not be
+        // swallowed. Returning 500 makes Stripe retry the webhook; the
+        // payment_intent id is also visible in the Stripe dashboard for
+        // manual reconciliation if retries don't resolve it.
+        console.error('[stripe-webhook] booking insert failed for', paymentIntent.id, insertError);
+        return res.status(500).json({ error: insertError.message });
       }
+      booking = inserted;
+      await attachExtras(booking.id);
+    }
+
+    if (!booking) {
+      console.error('[stripe-webhook] no booking record after confirm/insert for', paymentIntent.id);
+      return res.status(500).json({ error: 'Could not finalize this booking.' });
     }
 
     const depositAmountCents = Number(meta.depositAmountCents || '0');

@@ -64,8 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const SELECT = 'id, reference, renter_id, start_date, end_date, pickup_location, total_price, car:cars!bookings_car_id_fkey (make, model, year)';
 
   const [{ data: pickups, error: pickupsError }, { data: returns, error: returnsError }] = await Promise.all([
-    supabase.from('bookings').select(SELECT).eq('status', 'upcoming').eq('start_date', tomorrowISO),
-    supabase.from('bookings').select(SELECT).eq('status', 'upcoming').eq('end_date', tomorrowISO),
+    supabase.from('bookings').select(SELECT).eq('status', 'confirmed').eq('start_date', tomorrowISO),
+    supabase.from('bookings').select(SELECT).eq('status', 'confirmed').eq('end_date', tomorrowISO),
   ]);
 
   if (pickupsError || returnsError) {

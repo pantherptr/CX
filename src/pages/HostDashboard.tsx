@@ -21,17 +21,23 @@ const TABS: { id: TripPhase; label: string }[] = [
 ];
 
 const phaseBadge: Record<TripPhase, string> = {
+  pending: 'bg-panel-2 text-ink-soft',
+  payment_processing: 'bg-panel-2 text-ink-soft',
   upcoming: 'badge-accent',
   active: 'bg-accent text-white',
   completed: 'bg-panel-2 text-ink-soft',
   cancelled: 'bg-danger/10 text-danger',
+  refunded: 'bg-danger/10 text-danger',
 };
 
 const phaseLabel: Record<TripPhase, string> = {
+  pending: 'Payment pending',
+  payment_processing: 'Payment processing',
   upcoming: 'Confirmed',
   active: 'Active',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  refunded: 'Refunded',
 };
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -314,9 +320,16 @@ export default function HostDashboard() {
   const thisMonthKey = new Date().toISOString().slice(0, 7);
   const thisYearKey = String(new Date().getFullYear());
   const weekAgoKey = toISO(new Date(Date.now() - 6 * 86_400_000));
+  // Only phases where the charge is real and was actually kept — see the
+  // same note on CustomerDashboard.tsx's totalSpent.
   const earningsInRange = (fromKey: string, toKey?: string) =>
     classified
-      .filter((c) => c.phase !== 'cancelled' && c.booking.startDate >= fromKey && (!toKey || c.booking.startDate <= toKey))
+      .filter(
+        (c) =>
+          (c.phase === 'upcoming' || c.phase === 'active' || c.phase === 'completed') &&
+          c.booking.startDate >= fromKey &&
+          (!toKey || c.booking.startDate <= toKey),
+      )
       .reduce((sum, c) => sum + c.booking.totalPrice, 0);
   const todayEarnings = earningsInRange(todayISOKey, todayISOKey);
   const weekEarnings = earningsInRange(weekAgoKey);
@@ -330,7 +343,9 @@ export default function HostDashboard() {
   const series = useMemo(() => monthlySeries(hostBookings ?? []), [hostBookings]);
   const hasEarningsData = series.some((d) => d.value > 0);
 
-  const tabBookings = classified.filter((c) => c.phase === tab).map((c) => c.booking);
+  // A refunded trip is grouped under the Cancelled tab rather than given
+  // its own — see the same note on CustomerDashboard.tsx's tabBookings.
+  const tabBookings = classified.filter((c) => c.phase === tab || (tab === 'cancelled' && c.phase === 'refunded')).map((c) => c.booking);
 
   // Real revenue + booking count per vehicle, for the fleet cards below —
   // grouped from the same bookings already fetched, not a separate query.

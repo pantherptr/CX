@@ -11,6 +11,7 @@ import {
   reviewVerification,
   fetchAllBookingsAdmin,
   adminCancelBooking,
+  refundBookingAdmin,
   fetchAllCarsAdmin,
   adminSetCarStatus,
   type AdminUser,
@@ -183,9 +184,12 @@ export function UsersPanel() {
 }
 
 export const bookingStatusBadge: Record<AdminBooking['status'], string> = {
-  upcoming: 'badge-accent',
+  pending: 'bg-panel-2 text-ink-soft',
+  payment_processing: 'bg-panel-2 text-ink-soft',
+  confirmed: 'badge-accent',
   completed: 'bg-panel-2 text-ink-soft',
   cancelled: 'bg-danger/10 text-danger',
+  refunded: 'bg-danger/10 text-danger',
 };
 
 /** 'not_required' is intentionally omitted here — it's the common case
@@ -232,6 +236,19 @@ export function BookingsPanel() {
     load();
   };
 
+  const refund = async (id: string) => {
+    if (!window.confirm('Issue a real Stripe refund for this booking? This moves real money back to the renter.')) return;
+    setBusyId(id);
+    const { error: err } = await refundBookingAdmin(id);
+    setBusyId(null);
+    if (err) {
+      toast({ title: 'Could not issue this refund', desc: err, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Refund issued', icon: 'checkCircle' });
+    load();
+  };
+
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
   if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
   if (items.length === 0) return <div className="card"><EmptyState size="md" icon="info" title="No bookings yet." className="p-10" /></div>;
@@ -254,13 +271,22 @@ export function BookingsPanel() {
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-body font-medium text-ink">{eur(b.totalPrice)}</span>
-            {b.status === 'upcoming' && (
+            {(b.status === 'pending' || b.status === 'payment_processing' || b.status === 'confirmed') && (
               <button
                 onClick={() => cancel(b.id)}
                 disabled={busyId === b.id}
                 className="btn btn-secondary btn-sm !text-danger disabled:opacity-50"
               >
                 Cancel
+              </button>
+            )}
+            {b.stripePaymentIntentId && b.status !== 'refunded' && (
+              <button
+                onClick={() => refund(b.id)}
+                disabled={busyId === b.id}
+                className="btn btn-secondary btn-sm disabled:opacity-50"
+              >
+                Refund
               </button>
             )}
           </div>

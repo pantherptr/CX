@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { unsplash } from '../img';
+import { apiUrl } from '../api';
 
 /**
  * Live bookings data-access layer. Pricing, the host on the booking, and
@@ -64,12 +65,19 @@ export interface Extra {
   icon: string;
 }
 
+/** See supabase/migrations/0026_booking_reservations.sql. 'upcoming' was
+ *  renamed to 'confirmed' there — same rows, same meaning ("a real, paid
+ *  booking"), just a clearer name now that 'pending' means something
+ *  earlier in the lifecycle. 'active'/'completed' are never written to
+ *  the DB; see classifyBooking below. */
+export type BookingStatus = 'pending' | 'payment_processing' | 'confirmed' | 'completed' | 'cancelled' | 'refunded';
+
 export interface Booking {
   id: string;
   reference: string;
   startDate: string;
   endDate: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  status: BookingStatus;
   totalPrice: number;
   discountAmount: number;
   rewardId: string | null;
@@ -84,14 +92,20 @@ export interface Booking {
   renter: BookingRenter;
 }
 
-/** The DB only tracks upcoming/completed/cancelled; "active" (the trip is
- *  happening right now) and a stale "upcoming" whose end date has already
- *  passed are refined here from today's date rather than needing a
- *  background job to flip statuses. */
-export type TripPhase = 'upcoming' | 'active' | 'completed' | 'cancelled';
+/** 'pending'/'payment_processing' pass straight through — those are the
+ *  in-progress-checkout states and never need date-derivation. Once a
+ *  booking is 'confirmed', "active" (the trip is happening right now) and
+ *  a stale "confirmed" whose end date has already passed are refined here
+ *  from today's date, same as before this migration, just relabeled
+ *  'upcoming' for continuity with the rest of the UI rather than renamed
+ *  to 'confirmed' everywhere it's already used as a phase name. */
+export type TripPhase = 'pending' | 'payment_processing' | 'upcoming' | 'active' | 'completed' | 'cancelled' | 'refunded';
 
 export function classifyBooking(b: Pick<Booking, 'status' | 'startDate' | 'endDate'>): TripPhase {
+  if (b.status === 'refunded') return 'refunded';
   if (b.status === 'cancelled') return 'cancelled';
+  if (b.status === 'pending') return 'pending';
+  if (b.status === 'payment_processing') return 'payment_processing';
   if (b.status === 'completed') return 'completed';
   const today = new Date().toISOString().slice(0, 10);
   if (b.endDate < today) return 'completed';
@@ -126,7 +140,7 @@ interface BookingRow {
   reference: string;
   start_date: string;
   end_date: string;
-  status: Booking['status'];
+  status: BookingStatus;
   total_price: number;
   discount_amount: number;
   reward_id: string | null;
@@ -328,7 +342,7 @@ export async function checkAvailability(
     .from('bookings')
     .select('id')
     .eq('car_id', carId)
-    .neq('status', 'cancelled')
+    .not('status', 'in', '(cancelled,refunded)')
     .lte('start_date', endDate)
     .gte('end_date', startDate)
     .limit(1);
@@ -357,6 +371,15 @@ export async function fetchBookedRanges(carId: string): Promise<BookedRange[]> {
   }));
 }
 
+/** How often an open availability calendar re-checks the real booked
+ *  ranges. `bookings`' own RLS means a browsing customer (the audience
+ *  that most needs to know a car just got taken) can't be pushed a
+ *  Realtime event for someone else's row — see 0026_booking_reservations.sql's
+ *  comment on why this is a poll, not a subscription. 20s keeps the
+ *  calendar honest without hammering the DB while someone's just looking
+ *  at it. */
+const AVAILABILITY_POLL_MS = 20_000;
+
 export function useBookedRanges(carId: string | null) {
   const [ranges, setRanges] = useState<BookedRange[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -369,15 +392,21 @@ export function useBookedRanges(carId: string | null) {
     let cancelled = false;
     setRanges(null);
     setError(null);
-    fetchBookedRanges(carId)
-      .then((data) => {
-        if (!cancelled) setRanges(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load availability.');
-      });
+
+    const load = () =>
+      fetchBookedRanges(carId)
+        .then((data) => {
+          if (!cancelled) setRanges(data);
+        })
+        .catch((err) => {
+          if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load availability.');
+        });
+
+    load();
+    const interval = setInterval(load, AVAILABILITY_POLL_MS);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [carId]);
 
@@ -494,9 +523,38 @@ export async function modifyBookingDates(
   return { booking: mapBooking(data as unknown as BookingRow), error: null };
 }
 
+/** Routed through api/cancel-booking.ts (not a direct table update) so
+ *  the standard-fare 24h cancellation window is enforced somewhere it
+ *  can't be bypassed, and so the other party actually gets notified —
+ *  see that file's own comment for why this moved server-side. */
 export async function cancelBooking(id: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', id);
-  return { error: error?.message ?? null };
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { error: 'Sign in required.' };
+  try {
+    const res = await fetch(apiUrl('/api/cancel-booking'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ bookingId: id }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) return { error: body?.error ?? 'Could not cancel this booking.' };
+    return { error: null };
+  } catch {
+    return { error: 'Could not reach the server — please try again.' };
+  }
+}
+
+/** Lets a renter give up their own not-yet-paid hold immediately (Back
+ *  button on Payment, closing the tab mid-checkout) instead of leaving it
+ *  to expire on its own — see release_payment_hold() in
+ *  0026_booking_reservations.sql. A plain RPC, not a server endpoint:
+ *  this is exactly as sensitive as any other update a renter can already
+ *  make to their own booking, just phrased as a function so the
+ *  status/timestamp bookkeeping lives in one place. */
+export async function releasePaymentHold(bookingId: string): Promise<void> {
+  await supabase.rpc('release_payment_hold', { p_booking_id: bookingId });
 }
 
 export async function acceptRentalAgreement(id: string): Promise<{ error: string | null }> {

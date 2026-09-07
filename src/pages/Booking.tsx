@@ -12,6 +12,7 @@ import { fetchCarWithHost } from '../lib/data/cars';
 import {
   checkAvailability,
   useExtrasCatalog,
+  releasePaymentHold,
   type Booking as BookingRecord,
   type FareTier,
 } from '../lib/data/bookings';
@@ -170,6 +171,11 @@ export default function Booking() {
     if (!result || step !== 3 || !session) return;
     if (dateError || !pickupDate || !returnDate) return;
     let cancelled = false;
+    // Set by the response below and read from the cleanup's closure once
+    // it resolves — lets the cleanup release the hold this run created
+    // even though it fires asynchronously, well after this effect body
+    // has returned.
+    let holdBookingId: string | null = null;
     setClientSecret(null);
     setQuotedAmount(null);
     setDeposit(null);
@@ -192,6 +198,7 @@ export default function Booking() {
         setClientSecret(res.clientSecret);
         setQuotedAmount(res.amount);
         setDeposit(res.deposit);
+        holdBookingId = res.bookingId;
       })
       .catch((err) => {
         if (cancelled) return;
@@ -202,6 +209,13 @@ export default function Booking() {
       });
     return () => {
       cancelled = true;
+      // Give up these dates immediately rather than waiting out the
+      // hold's TTL — covers both leaving Payment for a different step
+      // (this effect re-running on its own dependencies) and leaving the
+      // page entirely (unmount). A hold the webhook has already confirmed
+      // is untouched: release_payment_hold() only ever affects a row
+      // that's still 'pending'/'payment_processing'.
+      if (holdBookingId) releasePaymentHold(holdBookingId);
     };
     // Depend on stable primitives, not the `result`/`session`/`availableReward`
     // object references themselves. In particular, key off `session.user.id`

@@ -22,25 +22,37 @@ import { useVerification, submitVerification } from '../lib/data/verification';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
+import { parseISO } from '../lib/calendarGrid';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const phaseBadge: Record<TripPhase, string> = {
+  pending: 'bg-panel-2 text-ink-soft',
+  payment_processing: 'bg-panel-2 text-ink-soft',
   upcoming: 'badge-accent',
   active: 'bg-accent text-white',
   completed: 'bg-panel-2 text-ink-soft',
   cancelled: 'bg-danger/10 text-danger',
+  refunded: 'bg-danger/10 text-danger',
 };
 
 const phaseLabel: Record<TripPhase, string> = {
+  pending: 'Payment pending',
+  payment_processing: 'Payment processing',
   upcoming: 'Upcoming',
   active: 'Active',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  refunded: 'Refunded',
 };
 
+// parseISO builds the date at local midnight (not UTC, which is what a
+// bare `new Date(dateStr)` would do) — this is what drives the
+// cancellation-window boundary, so getting it wrong could let a renter
+// in a negative-UTC-offset timezone cancel (or be blocked from
+// cancelling) up to a day off from the real deadline.
 function daysUntil(dateStr: string) {
-  const ms = new Date(dateStr).getTime() - Date.now();
+  const ms = parseISO(dateStr).getTime() - Date.now();
   return Math.ceil(ms / 86400000);
 }
 
