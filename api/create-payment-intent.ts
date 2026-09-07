@@ -112,23 +112,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // method against a Customer, not anonymously) and cheap to cache.
     const { data: profileRow } = await supabase.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
     let customerId = profileRow?.stripe_customer_id ?? undefined;
-    if (!customerId) {
+
+    const createFreshCustomer = async () => {
       const customer = await stripe.customers.create({
         email: user.email,
         metadata: { supabaseUserId: user.id },
       });
-      customerId = customer.id;
       // Best-effort cache — if this write fails, the next payment just
       // creates (and this time successfully saves) another Customer
       // rather than breaking the current one.
-      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
+      await supabase.from('profiles').update({ stripe_customer_id: customer.id }).eq('id', user.id);
+      return customer.id;
+    };
+
+    if (!customerId) {
+      customerId = await createFreshCustomer();
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntentParams = {
       amount,
       currency: quote.currency || 'eur',
-      customer: customerId,
-      setup_future_usage: 'off_session',
+      setup_future_usage: 'off_session' as const,
       automatic_payment_methods: { enabled: true },
       // Everything the webhook needs to create the booking after the
       // charge succeeds — this is the only record of the renter's choices
@@ -148,7 +152,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         rewardId: rewardId ?? '',
         depositAmountCents: String(depositAmountCents),
       },
-    });
+    };
+
+    let paymentIntent: Stripe.PaymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create({ ...paymentIntentParams, customer: customerId });
+    } catch (err) {
+      // A cached stripe_customer_id can point at a Customer that doesn't
+      // exist in whatever Stripe account STRIPE_SECRET_KEY now belongs to
+      // (e.g. the key was rotated to a different account/sandbox after
+      // this renter's first booking) — self-heal by minting a fresh one
+      // instead of leaving every future booking permanently broken for
+      // them.
+      const isMissingCustomer = err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'resource_missing';
+      if (!isMissingCustomer) throw err;
+      customerId = await createFreshCustomer();
+      paymentIntent = await stripe.paymentIntents.create({ ...paymentIntentParams, customer: customerId });
+    }
 
     if (!paymentIntent.client_secret) {
       return res.status(500).json({ error: 'Could not start payment.' });
