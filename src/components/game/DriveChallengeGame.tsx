@@ -1153,85 +1153,24 @@ export default function DriveChallengeGame({
       ctx.scale(punch, punch);
       ctx.translate(-width / 2 + jx, -height / 2 + jy);
 
-      // ---- premium evening/night highway environment (sky, stars, verges) ----
-      // How much of the top of the frame is sky-only, above where the
-      // guardrails/asphalt/lane-markings actually begin — kept small and
-      // close to the top edge (rather than the ~10% band this used to be)
-      // so the road itself reads as one continuous surface receding to a
-      // near vanishing point, with just enough of a sliver above it for
-      // the stars/skyline to read as genuine distance. The guardrails
-      // still visually converge all the way to y=0 above this line (see
-      // `drawRail`), which is what actually sells "vanishing point" —
-      // this only controls where the solid road/verge fills themselves
-      // start, so shrinking it removes the flat, disconnected-looking
-      // gap that used to sit between the converging rails and the
-      // pavement they were supposedly framing.
-      const horizonY = height * 0.045;
-      // A deep indigo-to-noir sky with a low, warm dusk band at the horizon —
-      // this single gradient is what makes the whole scene read as "premium
-      // night drive" even though the camera never shows a literal horizon line.
-      const sky = ctx.createLinearGradient(0, 0, 0, height);
-      sky.addColorStop(0, '#080b12');
-      sky.addColorStop(0.07, '#0d1420');
-      sky.addColorStop(0.13, '#182233');
-      sky.addColorStop(0.17, '#2c2a3a');
-      sky.addColorStop(0.2, '#241c22');
-      sky.addColorStop(0.5, '#1a1d22');
-      sky.addColorStop(1, '#121417');
-      ctx.fillStyle = sky;
+      // ---- premium evening/night highway environment (road, verges) ----
+      // The road/verge/guardrail fills all start at y=0 now — no sky-only
+      // band above them at all. There used to be one (first shrunk, then
+      // still visibly a separate strip): a flat-colored area above the
+      // painted road that read as a disconnected section rather than the
+      // road continuing naturally to the top of the frame. Removing it
+      // outright is what actually fixes that, rather than shrinking it
+      // and hoping it reads as a natural horizon — the road surface (and
+      // the depth cue of the guardrails converging toward the top) is now
+      // the ONLY thing above the car, all the way to y=0.
+      const horizonY = 0;
+      // A deep indigo-to-noir base tone, painted once as a safety
+      // background under the (now full-height) road fills — practically
+      // never visible itself, but keeps the canvas from ever showing a
+      // default/transparent color at a seam or on the very first frame
+      // before anything else has painted.
+      ctx.fillStyle = '#141821';
       ctx.fillRect(-4, -4, width + 8, height + 8);
-
-      // Draws a radial glow flattened into an ellipse (wide horizontally,
-      // short vertically) via a scale transform around its own center —
-      // a plain circular gradient sized to span the width reads fine on
-      // a tall/narrow (phone) canvas, but on a wide desktop window the
-      // same width-sized radius is nowhere near faded out by the time it
-      // reaches this low sky band's bottom edge: the gradient's own
-      // alpha=0 stop never gets a chance to finish, so the band just
-      // stops dead at a hard, visible seam instead of fading away.
-      // Squashing the circle into an ellipse keeps the wide horizontal
-      // spread while guaranteeing the vertical falloff always completes
-      // within `ry`, on any aspect ratio.
-      const drawSkyGlow = (cx: number, cy: number, rx: number, ry: number, colorRgb: string, peakAlpha: number) => {
-        if (ry <= 0 || rx <= 0) return;
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.scale(rx / ry, 1);
-        const g = ctx.createRadialGradient(0, 0, 2, 0, 0, ry);
-        g.addColorStop(0, `rgba(${colorRgb},${peakAlpha})`);
-        g.addColorStop(1, `rgba(${colorRgb},0)`);
-        ctx.fillStyle = g;
-        // Generous bounds in this already-scaled local space — comfortably
-        // past the point the gradient has finished fading, so nothing
-        // clips the fade itself the way the old fixed-height rect did.
-        ctx.fillRect(-ry * 2, -ry * 2, ry * 4, ry * 4);
-        ctx.restore();
-      };
-
-      // A quiet CX-green wash low in the sky — brand presence in the
-      // atmosphere itself, not just the HUD/car, kept subtle enough it
-      // reads as "city glow on the horizon" rather than a green sky.
-      drawSkyGlow(width * 0.28, height * 0.19, width * 0.55, height * 0.32, '0,212,71', 0.16);
-
-      // Warm dusk glow, upper corner — a low sun/streetlamp-district haze
-      // rather than a bright daytime sun.
-      const sunX = width * 0.76;
-      drawSkyGlow(sunX, height * 0.05, width * 0.36, height * 0.3, '255,196,130', 0.28);
-
-      // Stars — fixed slots (deterministic hash, not re-randomized per
-      // frame) so they read as a static field rather than static noise;
-      // a slow per-star twinkle is the only thing that changes frame to
-      // frame, skipped under reduced motion in favor of a fixed brightness.
-      // Confined to the upper sky band, above the skyline.
-      for (let i = 0; i < 34; i++) {
-        const sx = hash1(i * 3.1 + 1) * width;
-        const sy = hash1(i * 7.7 + 2) * horizonY * 1.3;
-        const tw = reducedMotion ? 0.55 : 0.35 + 0.4 * (0.5 + 0.5 * Math.sin(elapsed * (0.6 + hash1(i) * 0.8) + i));
-        ctx.fillStyle = `rgba(255,255,255,${tw.toFixed(3)})`;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 0.6 + hash1(i * 1.7) * 0.9, 0, Math.PI * 2);
-        ctx.fill();
-      }
 
       // Grass verges — fills the trapezoid from the canvas edge out to the
       // sidewalk, so the shoulders read as ground rather than void. Night-
@@ -1297,7 +1236,7 @@ export default function DriveChallengeGame({
 
         const seamSpacing = 46;
         const seamOffset = distanceUnits * 0.6;
-        for (let y = -((seamOffset % seamSpacing)); y < height; y += seamSpacing) {
+        for (let y = ((seamOffset % seamSpacing) - seamSpacing); y < height; y += seamSpacing) {
           const t = Math.max(0, Math.min(1, y / height));
           const x0 = tx0 + (bx0 - tx0) * t;
           const x1 = tx1 + (bx1 - tx1) * t;
@@ -1369,7 +1308,7 @@ export default function DriveChallengeGame({
       const grainSpacing = 90;
       const grainOffset = distanceUnits * 0.6;
       let grainSeed = Math.round(grainOffset / grainSpacing);
-      for (let gy = -((grainOffset % grainSpacing)); gy < height; gy += grainSpacing, grainSeed++) {
+      for (let gy = ((grainOffset % grainSpacing) - grainSpacing); gy < height; gy += grainSpacing, grainSeed++) {
         const t = Math.max(0, Math.min(1, gy / height));
         const spanX0 = railTopInset + (railInset + 13 - railTopInset) * t;
         const spanX1 = width - railTopInset - (railInset + 13 - railTopInset) * t;
@@ -1391,7 +1330,7 @@ export default function DriveChallengeGame({
       const patchSpacing = 340;
       const patchOffset = distanceUnits * 0.6;
       let patchSeed = Math.round(patchOffset / patchSpacing);
-      for (let py = -((patchOffset % patchSpacing)); py < height; py += patchSpacing, patchSeed++) {
+      for (let py = ((patchOffset % patchSpacing) - patchSpacing); py < height; py += patchSpacing, patchSeed++) {
         const t = Math.max(0, Math.min(1, py / height));
         const spanX0 = railTopInset + (railInset + 13 - railTopInset) * t;
         const spanX1 = width - railTopInset - (railInset + 13 - railTopInset) * t;
@@ -1446,7 +1385,7 @@ export default function DriveChallengeGame({
         ctx.fillStyle = 'rgba(0,212,71,0.85)';
         const spacing = 70;
         const offset = distanceUnits * 0.6;
-        for (let y = -((offset % spacing)); y < height; y += spacing) {
+        for (let y = ((offset % spacing) - spacing); y < height; y += spacing) {
           const t = y / height;
           const x = bx0 + (tx0 - bx0) * (1 - t);
           ctx.beginPath();
@@ -1488,7 +1427,7 @@ export default function DriveChallengeGame({
         const f = i / LANES;
         const xTop = roadTopL + (roadTopR - roadTopL) * f;
         const xBot = roadBotL + (roadBotR - roadBotL) * f;
-        for (let y = -dashOffset; y < height; y += DASH_CYCLE) {
+        for (let y = dashOffset - DASH_CYCLE; y < height; y += DASH_CYCLE) {
           const y0 = Math.max(horizonY, y);
           const y1 = Math.min(height, y + DASH_ON);
           if (y1 <= y0) continue;
@@ -1514,14 +1453,157 @@ export default function DriveChallengeGame({
       const poleSpacing = 260;
       const poleOffset = distanceUnits * 0.6;
       let poleIndex = Math.round(poleOffset / poleSpacing);
-      // Two canopy tones so the treeline doesn't read as one shade copy-
-      // pasted down the road — picked per-tree via the same deterministic
-      // hash everything else here uses.
-      const CANOPY_TONES: [string, string][] = [
-        ['#8fd99f', '#2f6f47'],
-        ['#7ccf9a', '#276140'],
+      // Four canopy tone triples (rim-light / mid / core-shadow, rather
+      // than a flat two-stop fill) so the treeline reads as real planted
+      // variety — including one cooler, slightly blue-green pine tone —
+      // instead of one shade of green copy-pasted down the road.
+      const CANOPY_TONES: [string, string, string][] = [
+        ['#a8e8b6', '#6fbf83', '#2b5c3c'],
+        ['#93dba0', '#5fae72', '#254f34'],
+        ['#8fd4a3', '#579b6a', '#20472e'],
+        ['#7fc9ad', '#4f9878', '#1c4034'],
       ];
-      for (let y = -((poleOffset % poleSpacing)); y < height; y += poleSpacing, poleIndex++) {
+      // Three real size classes (small/medium/large), weighted toward
+      // small/medium, rather than one continuous random range — a
+      // roadside planted with a few big old trees among mostly younger
+      // ones reads as natural; a range that's just "big or small at
+      // random" doesn't.
+      // Kept within the roadside verge's own (narrow) visible margin — a
+      // canopy radius much past ~19 routinely got clipped by the canvas
+      // edge at this margin width, which would have made the "large"
+      // class look worse (chopped in half), not better.
+      const TREE_SIZES: { canopy: [number, number]; trunk: [number, number] }[] = [
+        { canopy: [6, 9], trunk: [8, 12] },
+        { canopy: [9, 13], trunk: [12, 17] },
+        { canopy: [14, 18], trunk: [17, 22] },
+      ];
+      const TREE_SIZE_WEIGHTS = [0.45, 0.4, 0.15];
+
+      const drawTree = (tx0: number, groundY: number, ds: number, slot: number) => {
+        const sizeRoll = hash1(slot * 8.3 + 3.7);
+        let acc = 0;
+        let sizeClass = TREE_SIZES[0];
+        for (let k = 0; k < TREE_SIZES.length; k++) {
+          acc += TREE_SIZE_WEIGHTS[k];
+          if (sizeRoll < acc) {
+            sizeClass = TREE_SIZES[k];
+            break;
+          }
+        }
+        const canopyR = (sizeClass.canopy[0] + hash1(slot * 3.7 + 1.1) * (sizeClass.canopy[1] - sizeClass.canopy[0])) * ds;
+        const trunkH = (sizeClass.trunk[0] + hash1(slot * 4.1) * (sizeClass.trunk[1] - sizeClass.trunk[0])) * ds;
+        const xJitter = (hash1(slot * 5.3 + 2.4) - 0.5) * 9 * ds;
+        const tx = tx0 + xJitter;
+        const [c0, c1, c2] = CANOPY_TONES[Math.floor(hash1(slot * 6.6) * CANOPY_TONES.length)];
+        const lean = (hash1(slot * 9.9) - 0.5) * 0.14;
+
+        // Ground contact shadow — grounds the tree instead of it reading
+        // as a cutout floating over the verge.
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(tx + canopyR * 0.12, groundY + 2 * ds, canopyR * 0.62, canopyR * 0.22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Trunk — tapered (narrower at the top) with a three-stop fill
+        // for a hint of roundness, instead of a flat uniform-width rect.
+        const trunkBaseW = (2.3 + hash1(slot * 12.2)) * ds;
+        const trunkTopW = trunkBaseW * 0.55;
+        const trunkTop = groundY - trunkH;
+        const trunkGrad = ctx.createLinearGradient(tx - trunkBaseW / 2, 0, tx + trunkBaseW / 2, 0);
+        trunkGrad.addColorStop(0, '#2a1d13');
+        trunkGrad.addColorStop(0.5, '#5c4027');
+        trunkGrad.addColorStop(1, '#221708');
+        ctx.fillStyle = trunkGrad;
+        ctx.beginPath();
+        ctx.moveTo(tx - trunkTopW / 2 + lean * trunkH, trunkTop);
+        ctx.lineTo(tx + trunkTopW / 2 + lean * trunkH, trunkTop);
+        ctx.lineTo(tx + trunkBaseW / 2, groundY);
+        ctx.lineTo(tx - trunkBaseW / 2, groundY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Canopy — a darker shadow lobe behind/below, several mid-tone
+        // body lobes at varied offsets and sizes for an irregular (not
+        // perfectly circular) silhouette, and a small rim-light fleck on
+        // the near side for a cheap sense of volume.
+        const canopyCx = tx + lean * trunkH * 0.4;
+        const canopyCy = trunkTop - canopyR * 0.35;
+        ctx.fillStyle = c2;
+        ctx.beginPath();
+        ctx.arc(canopyCx + canopyR * 0.18, canopyCy + canopyR * 0.22, canopyR * 0.82, 0, Math.PI * 2);
+        ctx.fill();
+        const bodyGrad = ctx.createRadialGradient(
+          canopyCx - canopyR * 0.3, canopyCy - canopyR * 0.35, 1,
+          canopyCx, canopyCy, canopyR * 1.05,
+        );
+        bodyGrad.addColorStop(0, c0);
+        bodyGrad.addColorStop(0.55, c1);
+        bodyGrad.addColorStop(1, c2);
+        ctx.fillStyle = bodyGrad;
+        for (const [dx, dy, r] of [[0, 0, 1], [-0.52, 0.18, 0.7], [0.5, 0.22, 0.68], [0.02, -0.4, 0.6]] as const) {
+          ctx.beginPath();
+          ctx.arc(canopyCx + dx * canopyR, canopyCy + dy * canopyR, canopyR * r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath();
+        ctx.arc(canopyCx - canopyR * 0.38, canopyCy - canopyR * 0.42, canopyR * 0.26, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      // Bushes — low, trunk-less vegetation clusters that break up the
+      // treeline without every roadside slot being a full-height tree.
+      const drawBush = (tx0: number, groundY: number, ds: number, slot: number) => {
+        const r = (5 + hash1(slot * 4.4) * 4) * ds;
+        const tx = tx0 + (hash1(slot * 5.7) - 0.5) * 6 * ds;
+        const cy = groundY - r * 0.5;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.26)';
+        ctx.beginPath();
+        ctx.ellipse(tx, groundY + ds, r * 0.7, r * 0.24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        const [c0, c1, c2] = CANOPY_TONES[Math.floor(hash1(slot * 7.7) * CANOPY_TONES.length)];
+        const grad = ctx.createRadialGradient(tx - r * 0.3, cy - r * 0.3, 1, tx, cy, r * 1.1);
+        grad.addColorStop(0, c0);
+        grad.addColorStop(0.6, c1);
+        grad.addColorStop(1, c2);
+        ctx.fillStyle = grad;
+        for (const [dx, dy, rr] of [[-0.4, 0.15, 0.75], [0.4, 0.1, 0.72], [0, -0.25, 0.85]] as const) {
+          ctx.beginPath();
+          ctx.arc(tx + dx * r, cy + dy * r, r * rr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      };
+
+      // Small roadside rocks — cheap (two fills), just enough incidental
+      // ground detail that the verge doesn't read as grass-only.
+      const drawRock = (tx0: number, groundY: number, ds: number, slot: number) => {
+        const r = (3 + hash1(slot * 2.9) * 3.5) * ds;
+        const tx = tx0 + (hash1(slot * 6.1) - 0.5) * 5 * ds;
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(tx, groundY + ds * 0.6, r * 0.9, r * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        const grad = ctx.createLinearGradient(tx - r, groundY - r, tx + r, groundY);
+        grad.addColorStop(0, '#6b6f74');
+        grad.addColorStop(1, '#33363a');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(tx - r, groundY);
+        ctx.lineTo(tx - r * 0.6, groundY - r * 0.9);
+        ctx.lineTo(tx + r * 0.3, groundY - r * 1.1);
+        ctx.lineTo(tx + r, groundY - r * 0.2);
+        ctx.lineTo(tx + r * 0.7, groundY);
+        ctx.closePath();
+        ctx.fill();
+      };
+
+      for (let y = ((poleOffset % poleSpacing) - poleSpacing); y < height; y += poleSpacing, poleIndex++) {
         // Roadside objects grow as they near the bottom of the frame,
         // same depth-scale idea as the entities — the clearest "they're
         // approaching" cue this fixed-position scroll trick can offer.
@@ -1529,42 +1611,38 @@ export default function DriveChallengeGame({
         for (const side of [-1, 1] as const) {
           const slot = poleIndex * 2 + (side === -1 ? 0 : 1);
           const x = side === -1 ? railInset - 5 : width - railInset + 5;
+          // Vegetation gets its own, more inboard anchor than lamps/
+          // barriers — a thin lamp pole reads fine right at the canvas
+          // edge, but a round tree canopy centered there had roughly
+          // half its own radius clipped off by the edge itself. Shifted
+          // in just far enough to give a canopy real room on both sides.
+          const vegX = side === -1 ? railInset + 10 : width - railInset - 10;
 
-          // Every other pole is a tree instead of a lamp, alternating
-          // which side gets which so the roadside doesn't read as a
-          // mechanical repeat of one prop.
-          const isTree = (poleIndex + (side === -1 ? 0 : 1)) % 2 === 0;
-          if (isTree) {
-            // Size and position vary per tree (deterministic hash, not
-            // re-rolled per frame) so the treeline reads as planted
-            // rather than a single stamped asset repeated down the road.
-            const sizeT = hash1(slot * 3.7 + 1.1);
-            const canopyR = (10 + sizeT * 9) * ds;
-            const xJitter = (hash1(slot * 5.3 + 2.4) - 0.5) * 9 * ds;
-            const tx = x + xJitter;
-            const trunkH = (13 + hash1(slot * 4.1) * 7) * ds;
-            const [c0, c1] = CANOPY_TONES[Math.floor(hash1(slot * 6.6) * CANOPY_TONES.length)];
-            ctx.fillStyle = '#4a3320';
-            ctx.fillRect(tx - 1.4 * ds, y, 2.8 * ds, trunkH);
-            const canopyY = y - canopyR * 0.4;
-            const canopyGrad = ctx.createRadialGradient(tx - canopyR * 0.3, canopyY - canopyR * 0.3, 1, tx, canopyY, canopyR);
-            canopyGrad.addColorStop(0, c0);
-            canopyGrad.addColorStop(1, c1);
-            ctx.fillStyle = canopyGrad;
-            for (const [dx, dy, r] of [[0, 0, 1], [-0.5, 0.3, 0.72], [0.55, 0.25, 0.68]] as const) {
-              ctx.beginPath();
-              ctx.arc(tx + dx * canopyR, canopyY + dy * canopyR, canopyR * r, 0, Math.PI * 2);
-              ctx.fill();
-            }
+          // What this slot becomes is a weighted hash roll, not a
+          // mechanical alternation — a strict every-other-pole pattern
+          // reads as an obvious repeat the moment you notice it, where a
+          // hash-driven roll (deterministic per slot, so still stable
+          // frame to frame) never lines up into a visible rhythm.
+          const roll = hash1(slot * 13.7 + 0.9);
+          if (roll < 0.4) {
+            drawTree(vegX, y, ds, slot);
+            continue;
+          }
+          if (roll < 0.55) {
+            drawBush(vegX, y, ds, slot);
+            continue;
+          }
+          if (roll < 0.63) {
+            drawRock(vegX, y, ds, slot);
             continue;
           }
 
-          // A small fraction of lamp slots become a barrier segment
-          // instead — "road barriers where appropriate" without crowding
-          // out the lamps that do the actual lighting work. Now the real
-          // Blender guardrail (CX_DRIVE_ASSETS/Barriers/guardrail.glb)
+          // A small fraction of the remaining slots become a barrier
+          // segment instead — "road barriers where appropriate" without
+          // crowding out the lamps that do the actual lighting work. The
+          // real Blender guardrail (CX_DRIVE_ASSETS/Barriers/guardrail.glb)
           // rendered to a sprite, replacing the old striped-panel shape.
-          const isBarrier = hash1(slot * 9.3 + 0.5) < 0.14;
+          const isBarrier = roll < 0.71;
           if (isBarrier) {
             if (barrierImg.complete && barrierImg.naturalWidth > 0) {
               const bw = 30 * ds;
