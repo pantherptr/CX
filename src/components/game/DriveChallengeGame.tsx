@@ -1168,23 +1168,42 @@ export default function DriveChallengeGame({
       ctx.fillStyle = sky;
       ctx.fillRect(-4, -4, width + 8, height + 8);
 
+      // Draws a radial glow flattened into an ellipse (wide horizontally,
+      // short vertically) via a scale transform around its own center —
+      // a plain circular gradient sized to span the width reads fine on
+      // a tall/narrow (phone) canvas, but on a wide desktop window the
+      // same width-sized radius is nowhere near faded out by the time it
+      // reaches this low sky band's bottom edge: the gradient's own
+      // alpha=0 stop never gets a chance to finish, so the band just
+      // stops dead at a hard, visible seam instead of fading away.
+      // Squashing the circle into an ellipse keeps the wide horizontal
+      // spread while guaranteeing the vertical falloff always completes
+      // within `ry`, on any aspect ratio.
+      const drawSkyGlow = (cx: number, cy: number, rx: number, ry: number, colorRgb: string, peakAlpha: number) => {
+        if (ry <= 0 || rx <= 0) return;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(rx / ry, 1);
+        const g = ctx.createRadialGradient(0, 0, 2, 0, 0, ry);
+        g.addColorStop(0, `rgba(${colorRgb},${peakAlpha})`);
+        g.addColorStop(1, `rgba(${colorRgb},0)`);
+        ctx.fillStyle = g;
+        // Generous bounds in this already-scaled local space — comfortably
+        // past the point the gradient has finished fading, so nothing
+        // clips the fade itself the way the old fixed-height rect did.
+        ctx.fillRect(-ry * 2, -ry * 2, ry * 4, ry * 4);
+        ctx.restore();
+      };
+
       // A quiet CX-green wash low in the sky — brand presence in the
       // atmosphere itself, not just the HUD/car, kept subtle enough it
       // reads as "city glow on the horizon" rather than a green sky.
-      const brandGlow = ctx.createRadialGradient(width * 0.28, height * 0.19, 2, width * 0.28, height * 0.19, width * 0.55);
-      brandGlow.addColorStop(0, 'rgba(0,212,71,0.16)');
-      brandGlow.addColorStop(1, 'rgba(0,212,71,0)');
-      ctx.fillStyle = brandGlow;
-      ctx.fillRect(0, 0, width, height * 0.26);
+      drawSkyGlow(width * 0.28, height * 0.19, width * 0.55, height * 0.32, '0,212,71', 0.16);
 
       // Warm dusk glow, upper corner — a low sun/streetlamp-district haze
       // rather than a bright daytime sun.
       const sunX = width * 0.76;
-      const sunGlow = ctx.createRadialGradient(sunX, height * 0.05, 2, sunX, height * 0.05, width * 0.36);
-      sunGlow.addColorStop(0, 'rgba(255,196,130,0.28)');
-      sunGlow.addColorStop(1, 'rgba(255,196,130,0)');
-      ctx.fillStyle = sunGlow;
-      ctx.fillRect(0, 0, width, height * 0.24);
+      drawSkyGlow(sunX, height * 0.05, width * 0.36, height * 0.3, '255,196,130', 0.28);
 
       // Stars — fixed slots (deterministic hash, not re-randomized per
       // frame) so they read as a static field rather than static noise;
@@ -2221,13 +2240,18 @@ export default function DriveChallengeGame({
         className="drive-milestone pointer-events-none absolute inset-x-0 top-[max(4.75rem,calc(env(safe-area-inset-top)+4rem))] mx-auto w-fit rounded-full border border-accent-bright/30 bg-black/60 px-4 py-1.5 text-caption font-bold uppercase tracking-wide text-accent-bright opacity-0 backdrop-blur-xl"
       />
 
-      {/* Objective — persistent progress toward the current distance leg,
-          sitting below the milestone toast so a pop-in callout never
-          collides with it. Values are pushed in imperatively from the
-          loop, same pattern as every other HUD number on this screen. */}
+      {/* Objective — persistent progress toward the current distance leg.
+          Stacked under the Score/Combo chips rather than centered over
+          the road: centered, it sat directly in the middle lane's path,
+          right where oncoming traffic needs to be seen. Off to the side
+          with the rest of the HUD, it's out of the way of every lane on
+          any screen shape (phone or a wide desktop window alike), not
+          just the aspect ratio it happened to be tuned against. Values
+          are pushed in imperatively from the loop, same pattern as
+          every other HUD number on this screen. */}
       <div
         ref={objectivePanelElRef}
-        className="drive-hud-chip pointer-events-none absolute left-1/2 top-[max(7.25rem,calc(env(safe-area-inset-top)+6.5rem))] w-[12.5rem] -translate-x-1/2 rounded-2xl px-3.5 py-2 backdrop-blur-xl"
+        className="drive-hud-chip pointer-events-none absolute left-4 top-[max(6.25rem,calc(env(safe-area-inset-top)+5.5rem))] w-[12.5rem] rounded-2xl px-3.5 py-2 backdrop-blur-xl"
       >
         <p className="flex items-center gap-1 text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">
           <Icon name="star" size={10} fill className="text-accent-bright" /> Objective
