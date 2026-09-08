@@ -1,0 +1,18 @@
+-- Raises the CX Drive Challenge's one active reward tier from 6,000 to
+-- 10,000 points, per the same "data change, not new code" pattern
+-- 0012_drive_challenge_hardened_rewards.sql already used to raise it
+-- from 500 to 6,000: `game_reward_tiers.active` already makes every
+-- other tier invisible (RLS) and unclaimable (claim_game_reward's own
+-- lookup filters `where active`), so this single tier is the entire
+-- "first major prize" moment today.
+--
+-- Nothing downstream needs to change for this to take effect:
+--   - The intro screen's tier list and the results screen's "score
+--     X+ to unlock" copy both render directly from this table.
+--   - `eliteThreshold` (DriveChallengeLauncher.tsx) is derived as
+--     `min(tiers.pointsRequired)`, so with a single active tier it's
+--     always equal to it — meaning clearing 10,000 now also clears
+--     the leaderboard's own "Top 1%" bar and gets the full gold
+--     "Rare Achievement" treatment (confetti, star glow) already built
+--     for that, not just the plain green "Reward Unlocked" panel.
+update public.game_reward_tiers set points_required = 10000 where points_required = 6000;

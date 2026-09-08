@@ -46,6 +46,30 @@ interface CarStats {
   handling: number;
 }
 
+/** Two more stat bars beyond the three that actually feed gameplay —
+ *  kept in their own type, never merged into `CarStats`/`mult`, so
+ *  there's no way a future edit accidentally wires "Protection" into a
+ *  real speed/accel/handling multiplier. Purely presentational, same
+ *  "look dramatically different, stay close in real feel" contract the
+ *  existing display `stats` already use. */
+interface CarExtraStats {
+  braking: number;
+  protection: number;
+}
+
+type RarityTier = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+
+/** One visual identity per rarity tier — a color plus a glow strength,
+ *  not just "a different color swatch": higher tiers get a wider glow
+ *  radius and a brighter core so "Mythic" reads as unmistakably more
+ *  special than "Common" at a glance, before anyone reads the label. */
+const RARITY_META: Record<RarityTier, { label: string; color: string; glow: string; ring: string }> = {
+  common: { label: 'Common', color: '#9aa3ad', glow: '0 0 0 rgba(154,163,173,0)', ring: 'rgba(154,163,173,0.4)' },
+  rare: { label: 'Rare', color: '#4fb2ff', glow: '0 0 18px rgba(79,178,255,0.35)', ring: 'rgba(79,178,255,0.55)' },
+  epic: { label: 'Epic', color: '#b06bff', glow: '0 0 22px rgba(176,107,255,0.4)', ring: 'rgba(176,107,255,0.6)' },
+  legendary: { label: 'Legendary', color: '#ff9f40', glow: '0 0 26px rgba(255,159,64,0.45)', ring: 'rgba(255,159,64,0.65)' },
+  mythic: { label: 'Mythic', color: '#ff5fd1', glow: '0 0 32px rgba(255,95,209,0.55)', ring: 'rgba(255,95,209,0.75)' },
+};
 interface CarDef {
   id: string;
   name: string;
@@ -54,8 +78,10 @@ interface CarDef {
    *  `DriveChallengeGame`'s `bodyColor` prop. */
   bodyColor: string;
   rarity: number;
+  rarityTier: RarityTier;
   /** 0–100 values shown on the card as progress bars. */
   stats: CarStats;
+  extraStats: CarExtraStats;
   /** Small, bounded gameplay multipliers (~0.85–1.15) actually fed into
    *  `DriveChallengeGame` — kept deliberately separate from the display
    *  `stats` above so every car can look dramatically different on the
@@ -86,7 +112,9 @@ const CAR_CATALOG: CarDef[] = [
     tagline: 'Balanced. Built for every driver.',
     bodyColor: '#f2f4ee',
     rarity: 3,
+    rarityTier: 'common',
     stats: { topSpeed: 66, acceleration: 70, handling: 75 },
+    extraStats: { braking: 78, protection: 80 },
     mult: { topSpeed: 1, acceleration: 1, handling: 1 },
     topSpeedKmh: 280,
     unlockKm: 0,
@@ -97,7 +125,9 @@ const CAR_CATALOG: CarDef[] = [
     tagline: 'Sharper throttle, tighter line.',
     bodyColor: '#00d447',
     rarity: 3,
+    rarityTier: 'rare',
     stats: { topSpeed: 75, acceleration: 85, handling: 68 },
+    extraStats: { braking: 72, protection: 65 },
     mult: { topSpeed: 1.02, acceleration: 1.1, handling: 0.95 },
     topSpeedKmh: 320,
     unlockKm: 1,
@@ -108,7 +138,9 @@ const CAR_CATALOG: CarDef[] = [
     tagline: 'Aggressive aero, higher ceiling.',
     bodyColor: '#2f6fe0',
     rarity: 4,
+    rarityTier: 'epic',
     stats: { topSpeed: 86, acceleration: 80, handling: 70 },
+    extraStats: { braking: 75, protection: 68 },
     mult: { topSpeed: 1.08, acceleration: 1.05, handling: 0.97 },
     topSpeedKmh: 365,
     unlockKm: 5,
@@ -119,7 +151,9 @@ const CAR_CATALOG: CarDef[] = [
     tagline: 'Blistering pace — not for beginners.',
     bodyColor: '#1c1f1c',
     rarity: 4,
+    rarityTier: 'legendary',
     stats: { topSpeed: 94, acceleration: 90, handling: 55 },
+    extraStats: { braking: 60, protection: 55 },
     mult: { topSpeed: 1.12, acceleration: 1.12, handling: 0.88 },
     topSpeedKmh: 400,
     unlockKm: 10,
@@ -130,7 +164,9 @@ const CAR_CATALOG: CarDef[] = [
     tagline: 'The ultimate CX. No compromises.',
     bodyColor: '#c9d8f5',
     rarity: 5,
+    rarityTier: 'mythic',
     stats: { topSpeed: 100, acceleration: 95, handling: 85 },
+    extraStats: { braking: 88, protection: 92 },
     mult: { topSpeed: 1.14, acceleration: 1.14, handling: 1.05 },
     topSpeedKmh: ABSOLUTE_MAX_KMH,
     unlockKm: 20,
@@ -275,10 +311,12 @@ function ConfettiBurst({ active, intense = false }: { active: boolean; intense?:
   );
 }
 
-const STAT_LABELS: { key: keyof CarStats; label: string }[] = [
+const STAT_LABELS: { key: keyof CarStats | keyof CarExtraStats; label: string }[] = [
   { key: 'topSpeed', label: 'Top Speed' },
   { key: 'acceleration', label: 'Acceleration' },
   { key: 'handling', label: 'Handling' },
+  { key: 'braking', label: 'Braking' },
+  { key: 'protection', label: 'Protection' },
 ];
 
 /** The Garage — a premium showroom-style car configurator reachable
@@ -304,6 +342,8 @@ function CarGaragePanel({
   const preview = CAR_CATALOG.find((c) => c.id === previewId) ?? CAR_CATALOG[0];
   const previewUnlocked = unlockedCars.includes(preview.id);
   const isCurrent = preview.id === selectedId;
+  const rarity = RARITY_META[preview.rarityTier];
+  const previewStats = { ...preview.stats, ...preview.extraStats };
 
   return (
     <div className="animate-fade-up w-full max-w-sm">
@@ -312,19 +352,32 @@ function CarGaragePanel({
 
       {/* Showroom stage — ambient glow, drifting particles, a gentle
           turntable idle animation and a soft floor shadow under the
-          preview, all CSS-only. */}
-      <div className="drive-showroom relative mx-auto mt-5 h-40 w-full overflow-hidden rounded-2xl border border-white/10">
+          preview, all CSS-only. The glow ring is tinted per-rarity
+          (via a CSS custom property) rather than a fixed green wash, so
+          a Mythic car visibly lights the whole stage differently than
+          a Common one before a single stat is read. */}
+      <div
+        key={`stage-${preview.rarityTier}`}
+        className="drive-showroom drive-showroom-rarity-in relative mx-auto mt-5 h-40 w-full overflow-hidden rounded-2xl border"
+        style={{ borderColor: rarity.ring, ['--rarity-color' as string]: rarity.color }}
+      >
         <span className="drive-showroom-particle" style={{ left: '28%', animationDelay: '0s' }} />
         <span className="drive-showroom-particle" style={{ left: '52%', animationDelay: '1.1s' }} />
         <span className="drive-showroom-particle" style={{ left: '72%', animationDelay: '2.2s' }} />
         <div key={preview.id} className="drive-car-enter absolute inset-0 grid place-items-center">
           <div className="relative">
             <span className="drive-showroom-floor absolute -bottom-4 left-1/2 h-5 w-36 -translate-x-1/2" />
-            <div className="drive-car-idle relative">
+            <div className="drive-car-idle relative" style={{ filter: `drop-shadow(${rarity.glow})` }}>
               <CarShowroomArt carId={preview.id} bodyColor={preview.bodyColor} />
             </div>
           </div>
         </div>
+        <span
+          className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-nano font-bold uppercase tracking-wide backdrop-blur"
+          style={{ borderColor: rarity.ring, color: rarity.color, background: 'rgba(0,0,0,0.55)' }}
+        >
+          <Icon name="sparkles" size={10} /> {rarity.label}
+        </span>
         {!previewUnlocked && (
           <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-nano font-bold uppercase tracking-wide text-white/70 backdrop-blur">
             <Icon name="lock" size={10} /> Locked
@@ -334,7 +387,7 @@ function CarGaragePanel({
 
       <div className="mt-4 flex items-center justify-center gap-0.5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Icon key={i} name="star" size={13} fill={i < preview.rarity} className={i < preview.rarity ? 'text-star' : 'text-white/15'} />
+          <Icon key={i} name="star" size={13} fill={i < preview.rarity} className={i < preview.rarity ? '' : 'text-white/15'} style={i < preview.rarity ? { color: rarity.color } : undefined} />
         ))}
       </div>
       <p className="mt-2 text-center font-display text-lg font-semibold text-white">{preview.name}</p>
@@ -345,12 +398,12 @@ function CarGaragePanel({
           <div key={key}>
             <div className="flex items-center justify-between text-micro font-semibold uppercase tracking-wide text-white/45">
               <span>{label}</span>
-              <span className="tabular-nums text-white/70">{preview.stats[key]}</span>
+              <span className="tabular-nums text-white/70">{previewStats[key]}</span>
             </div>
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="drive-stat-fill h-full rounded-full bg-accent-bright"
-                style={{ width: `${preview.stats[key]}%` }}
+                className="drive-stat-fill h-full rounded-full"
+                style={{ width: `${previewStats[key]}%`, background: rarity.color }}
               />
             </div>
           </div>
@@ -367,11 +420,20 @@ function CarGaragePanel({
             Select Car
           </button>
         ) : (
-          <div className="rounded-[0.85rem] border border-white/10 bg-white/[0.03] py-3 text-center">
+          <div className="rounded-[0.85rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-center">
             <p className="text-caption font-semibold uppercase tracking-wide text-white/50">
               Unlock at {preview.unlockKm} km best distance
             </p>
-            <p className="mt-0.5 text-label text-white/35">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full transition-[width] duration-500 ease-out"
+                style={{
+                  width: `${Math.min(100, (bestDistance / preview.unlockKm) * 100)}%`,
+                  background: rarity.color,
+                }}
+              />
+            </div>
+            <p className="mt-1.5 text-label text-white/35">
               {bestDistance.toFixed(1)} / {preview.unlockKm} km
             </p>
           </div>
@@ -383,20 +445,34 @@ function CarGaragePanel({
           const unlocked = unlockedCars.includes(c.id);
           const active = c.id === selectedId;
           const previewed = c.id === previewId;
+          const cardRarity = RARITY_META[c.rarityTier];
           return (
             <button
               key={c.id}
               onClick={() => setPreviewId(c.id)}
               className={`drive-car-card relative flex flex-col items-center gap-2 overflow-hidden rounded-xl border px-3 py-3 text-center transition-all ${
-                previewed
-                  ? 'drive-car-card-active border-accent-bright/60 bg-accent-bright/10'
-                  : 'border-white/10 bg-white/[0.04] hover:border-white/25'
+                previewed ? 'drive-car-card-active bg-white/[0.06]' : 'border-white/10 bg-white/[0.04] hover:border-white/25'
               } ${!unlocked ? 'opacity-80' : ''}`}
+              style={previewed ? { borderColor: cardRarity.ring, boxShadow: `0 0 0 1px ${cardRarity.ring} inset` } : undefined}
             >
-              <span className="grid h-9 place-items-center">
+              <span className="grid h-9 place-items-center" style={{ filter: `drop-shadow(${cardRarity.glow})` }}>
                 <CarShowroomArt carId={c.id} bodyColor={c.bodyColor} width={26} height={40} />
               </span>
               <span className="text-label font-semibold text-white/85">{c.name}</span>
+              {unlocked ? (
+                <span className="text-nano font-bold uppercase tracking-wide" style={{ color: cardRarity.color }}>
+                  {cardRarity.label}
+                </span>
+              ) : (
+                // Reserves the same vertical space the rarity label above
+                // takes for unlocked cards, so every card in the grid is
+                // the same height regardless of state — the locked
+                // overlay below covers this row itself with its own
+                // rarity + requirement copy instead.
+                <span className="text-nano opacity-0" aria-hidden="true">
+                  {cardRarity.label}
+                </span>
+              )}
               {active && unlocked && (
                 <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent-bright text-noir">
                   <Icon name="check" size={11} />
@@ -405,9 +481,11 @@ function CarGaragePanel({
               {!unlocked && (
                 <span className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-0.5 bg-black/70 py-1">
                   <span className="flex items-center gap-1 text-nano font-bold uppercase tracking-wide text-white/60">
-                    <Icon name="lock" size={9} /> Locked
+                    <Icon name="lock" size={9} /> {cardRarity.label}
                   </span>
-                  <span className="text-nano font-semibold text-accent-bright/80">Unlock at {c.unlockKm} km</span>
+                  <span className="text-nano font-semibold" style={{ color: cardRarity.color }}>
+                    Unlock at {c.unlockKm} km
+                  </span>
                 </span>
               )}
             </button>

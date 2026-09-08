@@ -198,9 +198,13 @@ const CAR_DESIGNS: Record<CarDesign, BodyProfile> = {
     glassWidth: 0.24, glassSpan: [-0.24, 0.04], accent: 'spine', spoiler: 'wing', stance: 1.1,
   },
   x: {
-    right: [[0, -0.5], [0.31, -0.3], [0.41, -0.06], [0.39, 0.14], [0.43, 0.32], [0.3, 0.48]],
-    tailFlat: 0.4, frontTrackW: 0.31, rearTrackW: 0.43,
-    glassWidth: 0.31, glassSpan: [-0.27, 0.09], accent: 'duotone', spoiler: 'lip', stance: 1.04,
+    // Widened further from `hyper` than before — the flagship reads as
+    // a substantial, wide-bodied GT (a genuinely different category:
+    // presence over rawness) rather than a narrower reskin of the
+    // extreme low/narrow hypercar it used to sit right next to.
+    right: [[0, -0.5], [0.34, -0.3], [0.45, -0.06], [0.44, 0.14], [0.48, 0.32], [0.36, 0.48]],
+    tailFlat: 0.5, frontTrackW: 0.34, rearTrackW: 0.48,
+    glassWidth: 0.31, glassSpan: [-0.27, 0.09], accent: 'duotone', spoiler: 'lip', stance: 1.06,
   },
 };
 
@@ -2321,17 +2325,73 @@ export default function DriveChallengeGame({
       drawPlayerBody(ctx, carDesign, bodyColor, CAR_W, CAR_H, wheelSteer);
       ctx.restore();
 
-      // Crash/shield feedback — a 'source-atop' tint pass, which only
-      // paints over pixels the body itself already drew (paint, glass,
-      // accents and all keep showing through), rather than a flat
-      // rectangle covering the car.
+      // Crash/shield feedback — dynamically traced from the CURRENT car's
+      // own silhouette (`CAR_DESIGNS[carDesign]`, the exact same profile
+      // `drawPlayerBody` itself just used two lines up), not a hard-coded
+      // shape. Change the Garage selection and this follows with zero
+      // special-casing here — the same `traceBodyPath` helper that builds
+      // the paint fill and hairline outline is reused as-is. A
+      // 'source-atop' tint colors the body's own already-drawn pixels
+      // (paint, glass, accents keep showing through, never a flat
+      // rectangle laid over the car), and a glowing outline stroked
+      // along that same path is what actually sells "the car itself is
+      // lit up" rather than just tinted.
       if (carState !== 'normal') {
-        ctx.save();
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.globalAlpha = carState === 'crash' ? 0.55 : 0.4;
-        ctx.fillStyle = carState === 'crash' ? '#e0402f' : '#00d447';
-        ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
-        ctx.restore();
+        const profile = CAR_DESIGNS[carDesign];
+        if (carState === 'crash') {
+          // A sharp flicker through the impact hang — a couple of fast
+          // flashes, not a steady glow, reading as "critical damage"
+          // rather than a calm state change.
+          const flicker = 0.55 + 0.35 * Math.abs(Math.sin(crashElapsed * 26));
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.globalAlpha = flicker;
+          ctx.fillStyle = '#e0402f';
+          ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
+          ctx.restore();
+
+          ctx.save();
+          traceBodyPath(ctx, profile, CAR_W, CAR_H);
+          ctx.shadowColor = 'rgba(224,64,47,0.95)';
+          ctx.shadowBlur = 16 + flicker * 10;
+          ctx.strokeStyle = `rgba(255,90,70,${flicker.toFixed(3)})`;
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Shield — a calm, continuous pulse (a deliberately different
+          // pace from the crash flicker above) plus an outer halo a
+          // touch larger than the body itself: the closest read this
+          // silhouette-tracing technique has to "an energy field around
+          // the car" without falling back to a generic circle that has
+          // nothing to do with the car's actual shape.
+          const pulse = 0.5 + 0.5 * Math.sin(elapsed * 5);
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.globalAlpha = 0.22 + pulse * 0.12;
+          ctx.fillStyle = '#00d447';
+          ctx.fillRect(-CAR_W / 2, -CAR_H / 2, CAR_W, CAR_H);
+          ctx.restore();
+
+          ctx.save();
+          traceBodyPath(ctx, profile, CAR_W, CAR_H);
+          ctx.shadowColor = 'rgba(0,212,71,0.9)';
+          ctx.shadowBlur = 10 + pulse * 8;
+          ctx.strokeStyle = `rgba(125,255,176,${(0.7 + pulse * 0.3).toFixed(3)})`;
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.save();
+          ctx.scale(1.09, 1.06);
+          traceBodyPath(ctx, profile, CAR_W, CAR_H);
+          ctx.shadowColor = 'rgba(0,212,71,0.7)';
+          ctx.shadowBlur = 14;
+          ctx.strokeStyle = `rgba(0,212,71,${(0.25 + pulse * 0.2).toFixed(3)})`;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.restore();
+        }
       }
 
       // The real CX badge on the grille reads as a small dot at this
