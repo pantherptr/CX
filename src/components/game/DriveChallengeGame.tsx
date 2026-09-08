@@ -1435,6 +1435,37 @@ export default function DriveChallengeGame({
       const poleSpacing = 260;
       const poleOffset = distanceUnits * 0.6;
       let poleIndex = Math.round(poleOffset / poleSpacing);
+
+      // ---- neighborhoods — the mix of roadside props shifts every leg of
+      // the drive, so a long run reads as passing through different parts
+      // of a city rather than one procedural strip on a loop. Six weights
+      // per zone — [villa, premium villa, condo, urban block, hedge,
+      // barrier] — the remainder always falls to lamps, so the deliberate
+      // choice per zone is really "how much of the skyline vs. how much
+      // low-rise/greenery", not lamp density (a good lit rhythm matters
+      // in every zone). Computed ONCE per frame (not per building), and
+      // blended smoothly into the next zone over the back stretch of the
+      // current one rather than cutting hard at the boundary.
+      const ZONE_LENGTH_KM = 0.7;
+      const ZONE_WEIGHTS: [number, number, number, number, number, number][] = [
+        [0.28, 0.06, 0.08, 0.02, 0.12, 0.06], // modern residential
+        [0.18, 0.3, 0.02, 0, 0.18, 0.08], // luxury villa district
+        [0.08, 0.04, 0.26, 0.14, 0.04, 0.06], // modern city district
+        [0.04, 0.02, 0.12, 0.3, 0.02, 0.04], // commercial strip
+        [0.02, 0, 0.2, 0.34, 0, 0.02], // high-rise skyline
+      ];
+      const zonePos = distanceUnits / 5000 / ZONE_LENGTH_KM;
+      const zoneIdx = Math.floor(zonePos) % ZONE_WEIGHTS.length;
+      const nextZoneIdx = (zoneIdx + 1) % ZONE_WEIGHTS.length;
+      const zoneBlend = Math.max(0, (zonePos - Math.floor(zonePos) - 0.75) / 0.25);
+      const zoneW = ZONE_WEIGHTS[zoneIdx];
+      const nextZoneW = ZONE_WEIGHTS[nextZoneIdx];
+      // Cumulative thresholds a per-slot hash roll is compared against
+      // below — villaCut, then +premium, +condo, +urban, +hedge, +barrier;
+      // anything past the last one is a lamp.
+      let zoneAcc = 0;
+      const zoneCuts = zoneW.map((v, i) => (zoneAcc += v + (nextZoneW[i] - v) * zoneBlend));
+
       // ---- roadside urban district: villas, condos, low-rise blocks ----
       // Four building kinds, each a width/height/floor-count range rather
       // than a fixed size — every instance still comes out different.
@@ -1576,6 +1607,25 @@ export default function DriveChallengeGame({
           ctx.ellipse(tx, groundY, w * 0.55, 2.6 * ds, 0, 0, Math.PI * 2);
           ctx.fill();
         }
+
+        // Atmospheric haze — a soft dark-blue wash over the whole facade,
+        // strength tied to the same `ds` depth cue everything here already
+        // scales by. A building at the top of the frame (small `ds`, far
+        // away) reads noticeably hazier and less distinct than one at the
+        // bottom — real atmospheric perspective, the actual cue that sells
+        // "distance" rather than just "this happens to be a smaller copy
+        // of the same building". One extra fill, reusing the same rounded
+        // rect already built above.
+        const haze = Math.max(0, Math.min(1, (1.12 - ds) / 0.5));
+        if (haze > 0.04) {
+          ctx.save();
+          ctx.globalAlpha = haze * 0.5;
+          ctx.fillStyle = '#151b26';
+          ctx.beginPath();
+          roundRect(ctx, tx - w / 2, top, w, h, 1.4 * ds);
+          ctx.fill();
+          ctx.restore();
+        }
       };
 
       // A trimmed hedge/fence line — cheap (one shadow + one rounded
@@ -1624,23 +1674,23 @@ export default function DriveChallengeGame({
           // hash-driven roll (deterministic per slot, so still stable
           // frame to frame) never lines up into a visible rhythm.
           const roll = hash1(slot * 13.7 + 0.9);
-          if (roll < 0.22) {
+          if (roll < zoneCuts[0]) {
             drawBuilding('villa', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.32) {
+          if (roll < zoneCuts[1]) {
             drawBuilding('villaPremium', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.44) {
+          if (roll < zoneCuts[2]) {
             drawBuilding('condo', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.51) {
+          if (roll < zoneCuts[3]) {
             drawBuilding('urban', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.61) {
+          if (roll < zoneCuts[4]) {
             drawHedge(innerEdge, side, y, ds, slot);
             continue;
           }
@@ -1650,7 +1700,7 @@ export default function DriveChallengeGame({
           // crowding out the lamps that do the actual lighting work. The
           // real Blender guardrail (CX_DRIVE_ASSETS/Barriers/guardrail.glb)
           // rendered to a sprite, replacing the old striped-panel shape.
-          const isBarrier = roll < 0.68;
+          const isBarrier = roll < zoneCuts[5];
           if (isBarrier) {
             if (barrierImg.complete && barrierImg.naturalWidth > 0) {
               const bw = 30 * ds;
@@ -1957,16 +2007,29 @@ export default function DriveChallengeGame({
             roundRect(ctx, x - cw * 0.36, e.y - ch * 0.34, cw * 0.72, ch * 0.24, 4);
             ctx.fill();
           }
-          // A soft glow on the light bar — the small extra touch that
+          // A bright glow on the light bar — the small extra touch that
           // makes it read as an actual lit lamp against the dark asphalt
           // rather than a flat red rectangle. Same technique the player
-          // car's own lights already use, just a notch quieter.
+          // car's own lights already use.
           ctx.save();
-          ctx.shadowColor = 'rgba(255,120,120,0.65)';
-          ctx.shadowBlur = 3.5 * ds;
-          ctx.fillStyle = 'rgba(255,120,120,0.85)';
-          ctx.fillRect(x - cw * 0.4, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
-          ctx.fillRect(x + cw * 0.24, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
+          ctx.shadowColor = 'rgba(255,80,70,0.75)';
+          ctx.shadowBlur = 4.5 * ds;
+          ctx.fillStyle = 'rgba(255,90,80,0.92)';
+          ctx.fillRect(x - cw * 0.4, e.y - ch / 2 + 3 * ds, cw * 0.16, 3.2 * ds);
+          ctx.fillRect(x + cw * 0.24, e.y - ch / 2 + 3 * ds, cw * 0.16, 3.2 * ds);
+          ctx.restore();
+          // A faint red reflection trailing onto the asphalt directly
+          // behind the lights — kept tiny and tight to the car's own
+          // footprint (never a standalone shape on open road) so it
+          // reads as "this car's own light on the ground", not another
+          // stray mark on the driving surface.
+          ctx.save();
+          ctx.globalAlpha = 0.22;
+          const tailReflGrad = ctx.createLinearGradient(x, e.y - ch * 0.44, x, e.y - ch * 0.18);
+          tailReflGrad.addColorStop(0, 'rgba(255,90,80,0.6)');
+          tailReflGrad.addColorStop(1, 'rgba(255,90,80,0)');
+          ctx.fillStyle = tailReflGrad;
+          ctx.fillRect(x - cw * 0.32, e.y - ch * 0.44, cw * 0.64, ch * 0.26);
           ctx.restore();
 
           if (e.kind === 'truck') {
@@ -2183,6 +2246,38 @@ export default function DriveChallengeGame({
         ctx.fill();
         ctx.restore();
       }
+
+      // Headlight beams — two short, soft cones sweeping just ahead of the
+      // car, additively blended so they brighten the asphalt and lane-
+      // dashes they cross rather than painting flat color over them. Kept
+      // deliberately modest (under 2 car-lengths, low peak opacity) —
+      // this scene's own forward motion (world scrolling toward the
+      // player) is what actually sells "driving forward"; the beam is
+      // only ever a small supporting detail on top of that, never a
+      // dominant shape competing with the road's own perspective.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const beamLen = CAR_H * 1.9;
+      const beamNearHalf = CAR_W * 0.13;
+      const beamFarHalf = CAR_W * 0.36;
+      const beamNearY = -CAR_H * 0.47;
+      const beamFarY = beamNearY - beamLen;
+      for (const side of [-1, 1] as const) {
+        const hx = side * CAR_W * 0.27;
+        const beamGrad = ctx.createLinearGradient(hx, beamNearY, hx, beamFarY);
+        beamGrad.addColorStop(0, 'rgba(255,246,214,0.16)');
+        beamGrad.addColorStop(0.5, 'rgba(255,240,200,0.08)');
+        beamGrad.addColorStop(1, 'rgba(255,235,185,0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(hx - beamNearHalf, beamNearY);
+        ctx.lineTo(hx + beamNearHalf, beamNearY);
+        ctx.lineTo(hx + beamFarHalf * 0.6, beamFarY);
+        ctx.lineTo(hx - beamFarHalf * 0.6, beamFarY);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
 
       // The player's car — one of five hand-drawn vector silhouettes (see
       // `drawPlayerBody`/`CAR_DESIGNS` above), matching the same drawn-
