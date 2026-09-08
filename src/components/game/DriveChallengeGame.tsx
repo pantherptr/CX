@@ -1233,37 +1233,6 @@ export default function DriveChallengeGame({
         ctx.fill();
       }
 
-      // City skyline — a cheap, distant parallax layer (scrolls slower
-      // than the guardrails/verges in front of it) that's the one real
-      // depth cue this scene was missing: near things now visibly move
-      // faster than far things, not just "things converge toward a point".
-      const skylineOffset = (distanceUnits * 0.09) % (width * 1.4);
-      for (let i = -1; i < 5; i++) {
-        const bw = 34 + (i % 3) * 10;
-        const bh = height * (0.05 + ((i * 37) % 5) * 0.014);
-        const bx = ((i * 92 - skylineOffset) % (width + 200)) - 100;
-        const by = horizonY * 1.45 - bh;
-        // Dark building silhouettes against the night sky — the lit
-        // windows (below) are what carries all the detail now, the same
-        // way a real night skyline reads as near-black shapes punctuated
-        // by light rather than lit concrete.
-        const tone = i % 2 === 0 ? '#161c26' : '#1c222d';
-        ctx.fillStyle = tone;
-        ctx.beginPath();
-        roundRect(ctx, bx, by, bw, bh, 2);
-        ctx.fill();
-        // Lit windows — every so many tinted CX green, the rest a warm
-        // interior white, both bright against the near-black tower.
-        for (let wy = by + 6; wy < by + bh - 5; wy += 9) {
-          for (let wx = bx + 5; wx < bx + bw - 5; wx += 9) {
-            const lit = hash1(wx * 0.31 + wy * 0.7 + i * 5.1) > 0.22;
-            if (!lit) continue;
-            ctx.fillStyle = (wx + wy) % 27 < 9 ? 'rgba(0,212,71,0.65)' : 'rgba(255,222,168,0.8)';
-            ctx.fillRect(wx, wy, 2.6, 3.4);
-          }
-        }
-      }
-
       // Grass verges — fills the trapezoid from the canvas edge out to the
       // sidewalk, so the shoulders read as ground rather than void. Night-
       // toned (deep moonlit green) rather than the old bright daylight fill.
@@ -2124,40 +2093,6 @@ export default function DriveChallengeGame({
         ctx.restore();
       }
 
-      // Headlight beams — two soft cones sweeping forward onto the road,
-      // drawn in the car's own local space (before the body, so the body
-      // cleanly occludes the base of each beam right at the lamp) and
-      // additively blended ('lighter') so they brighten the dark asphalt
-      // and lane-dashes they cross rather than painting flat color over
-      // them — the difference between "a light" and "a translucent grey
-      // triangle". Narrow at the lamp, fanning out and fading to nothing
-      // over a few car-lengths: real low-beam falloff, not a giant static
-      // glow — and never so bright it washes into a full-screen bloom.
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const beamLen = CAR_H * 3.4;
-      const beamNearHalf = CAR_W * 0.15;
-      const beamFarHalf = CAR_W * 0.68;
-      const beamNearY = -CAR_H * 0.46;
-      const beamFarY = beamNearY - beamLen;
-      for (const side of [-1, 1] as const) {
-        const hx = side * CAR_W * 0.28;
-        const splay = side * CAR_W * 0.55;
-        const beamGrad = ctx.createLinearGradient(hx, beamNearY, hx + splay * 0.55, beamFarY);
-        beamGrad.addColorStop(0, `rgba(255,247,214,${(0.22 + speedT * 0.1).toFixed(3)})`);
-        beamGrad.addColorStop(0.35, `rgba(255,240,196,${(0.12 + speedT * 0.05).toFixed(3)})`);
-        beamGrad.addColorStop(1, 'rgba(255,232,178,0)');
-        ctx.fillStyle = beamGrad;
-        ctx.beginPath();
-        ctx.moveTo(hx - beamNearHalf, beamNearY);
-        ctx.lineTo(hx + beamNearHalf, beamNearY);
-        ctx.lineTo(hx + splay + beamFarHalf, beamFarY);
-        ctx.lineTo(hx + splay - beamFarHalf, beamFarY);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
-
       // The player's car — one of five hand-drawn vector silhouettes (see
       // `drawPlayerBody`/`CAR_DESIGNS` above), matching the same drawn-
       // primitive technique as every traffic car, roadway and prop in
@@ -2197,23 +2132,6 @@ export default function DriveChallengeGame({
         ctx.shadowColor = 'rgba(0,212,71,0.65)';
         ctx.shadowBlur = 5;
         ctx.drawImage(logoImg, -lw / 2, grilleY, lw, lh);
-        ctx.restore();
-      }
-
-      // Headlight glow — kept as a light-only effect layered over the
-      // sprite's own baked-in headlight shapes, brightening with speed
-      // exactly like the previous vector version did.
-      const hlY = -CAR_H * 0.42;
-      for (const side of [-1, 1]) {
-        const hx = side * CAR_W * 0.28;
-        ctx.save();
-        ctx.globalAlpha = 0.35 + speedT * 0.35;
-        ctx.shadowColor = 'rgba(255,255,255,0.9)';
-        ctx.shadowBlur = 9 + speedT * 8;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.ellipse(hx, hlY, 4, 2.4, 0, 0, Math.PI * 2);
-        ctx.fill();
         ctx.restore();
       }
 
