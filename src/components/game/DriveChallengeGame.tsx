@@ -1141,8 +1141,8 @@ export default function DriveChallengeGame({
         // "subtle camera movement" that reads as momentum even when the
         // player isn't fast enough to trigger the sharper jitter below.
         punch = 1 + Math.min(0.018, Math.max(0, (speed - 260) / 700) * 0.018);
-        if (speed > 620) {
-          const jitter = Math.min(3, (speed - 620) / 60);
+        if (speed > 680) {
+          const jitter = Math.min(2, (speed - 680) / 80);
           jx = (Math.random() - 0.5) * jitter;
           jy = (Math.random() - 0.5) * jitter;
         }
@@ -1154,6 +1154,19 @@ export default function DriveChallengeGame({
       ctx.translate(-width / 2 + jx, -height / 2 + jy);
 
       // ---- premium evening/night highway environment (sky, stars, verges) ----
+      // How much of the top of the frame is sky-only, above where the
+      // guardrails/asphalt/lane-markings actually begin — kept small and
+      // close to the top edge (rather than the ~10% band this used to be)
+      // so the road itself reads as one continuous surface receding to a
+      // near vanishing point, with just enough of a sliver above it for
+      // the stars/skyline to read as genuine distance. The guardrails
+      // still visually converge all the way to y=0 above this line (see
+      // `drawRail`), which is what actually sells "vanishing point" —
+      // this only controls where the solid road/verge fills themselves
+      // start, so shrinking it removes the flat, disconnected-looking
+      // gap that used to sit between the converging rails and the
+      // pavement they were supposedly framing.
+      const horizonY = height * 0.045;
       // A deep indigo-to-noir sky with a low, warm dusk band at the horizon —
       // this single gradient is what makes the whole scene read as "premium
       // night drive" even though the camera never shows a literal horizon line.
@@ -1212,7 +1225,7 @@ export default function DriveChallengeGame({
       // Confined to the upper sky band, above the skyline.
       for (let i = 0; i < 34; i++) {
         const sx = hash1(i * 3.1 + 1) * width;
-        const sy = hash1(i * 7.7 + 2) * height * 0.13;
+        const sy = hash1(i * 7.7 + 2) * horizonY * 1.3;
         const tw = reducedMotion ? 0.55 : 0.35 + 0.4 * (0.5 + 0.5 * Math.sin(elapsed * (0.6 + hash1(i) * 0.8) + i));
         ctx.fillStyle = `rgba(255,255,255,${tw.toFixed(3)})`;
         ctx.beginPath();
@@ -1229,7 +1242,7 @@ export default function DriveChallengeGame({
         const bw = 34 + (i % 3) * 10;
         const bh = height * (0.05 + ((i * 37) % 5) * 0.014);
         const bx = ((i * 92 - skylineOffset) % (width + 200)) - 100;
-        const by = height * 0.145 - bh;
+        const by = horizonY * 1.45 - bh;
         // Dark building silhouettes against the night sky — the lit
         // windows (below) are what carries all the detail now, the same
         // way a real night skyline reads as near-black shapes punctuated
@@ -1265,13 +1278,13 @@ export default function DriveChallengeGame({
       const drawVerge = (side: -1 | 1) => {
         const bx = side === -1 ? sidewalkBottomInset : width - sidewalkBottomInset;
         const tx = side === -1 ? sidewalkTopInset : width - sidewalkTopInset;
-        const grad = ctx.createLinearGradient(0, height * 0.14, 0, height);
+        const grad = ctx.createLinearGradient(0, horizonY + height * 0.04, 0, height);
         grad.addColorStop(0, '#1f3a2c');
         grad.addColorStop(1, '#12261c');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(side === -1 ? 0 : width, height * 0.1);
-        ctx.lineTo(tx, height * 0.1);
+        ctx.moveTo(side === -1 ? 0 : width, horizonY);
+        ctx.lineTo(tx, horizonY);
         ctx.lineTo(bx, height);
         ctx.lineTo(side === -1 ? 0 : width, height);
         ctx.closePath();
@@ -1280,7 +1293,7 @@ export default function DriveChallengeGame({
         // enough to read as tended grass rather than a flat fill.
         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
         ctx.lineWidth = 10;
-        for (let y = height * 0.15; y < height; y += 34) {
+        for (let y = horizonY + height * 0.05; y < height; y += 34) {
           const t = y / height;
           const x = bx + (tx - bx) * (1 - t) * 0.4;
           ctx.beginPath();
@@ -1301,13 +1314,13 @@ export default function DriveChallengeGame({
         const bx1 = side === -1 ? railInset : width - railInset;
         const tx0 = side === -1 ? sidewalkTopInset : width - sidewalkTopInset;
         const tx1 = side === -1 ? railTopInset : width - railTopInset;
-        const grad = ctx.createLinearGradient(0, height * 0.1, 0, height);
+        const grad = ctx.createLinearGradient(0, horizonY, 0, height);
         grad.addColorStop(0, '#3a3f45');
         grad.addColorStop(1, '#54595f');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(tx0, height * 0.1);
-        ctx.lineTo(tx1, height * 0.1);
+        ctx.moveTo(tx0, horizonY);
+        ctx.lineTo(tx1, horizonY);
         ctx.lineTo(bx1, height);
         ctx.lineTo(bx0, height);
         ctx.closePath();
@@ -1335,14 +1348,14 @@ export default function DriveChallengeGame({
       // continuation of the sky wash bleeding through underneath it.
       // Purely a background layer: lane positions used by gameplay are
       // untouched (they're computed from `laneX`, not from this shape).
-      const roadGrad = ctx.createLinearGradient(0, height * 0.1, 0, height);
+      const roadGrad = ctx.createLinearGradient(0, horizonY, 0, height);
       roadGrad.addColorStop(0, '#2b3038');
       roadGrad.addColorStop(0.55, '#20242a');
       roadGrad.addColorStop(1, '#131518');
       ctx.fillStyle = roadGrad;
       ctx.beginPath();
-      ctx.moveTo(railTopInset + 5, height * 0.1);
-      ctx.lineTo(width - railTopInset - 5, height * 0.1);
+      ctx.moveTo(railTopInset + 5, horizonY);
+      ctx.lineTo(width - railTopInset - 5, horizonY);
       ctx.lineTo(width - railInset - 13, height);
       ctx.lineTo(railInset + 13, height);
       ctx.closePath();
@@ -1355,28 +1368,28 @@ export default function DriveChallengeGame({
       // than road texture scrolling past.
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(railTopInset + 5, height * 0.1);
-      ctx.lineTo(width - railTopInset - 5, height * 0.1);
+      ctx.moveTo(railTopInset + 5, horizonY);
+      ctx.lineTo(width - railTopInset - 5, horizonY);
       ctx.lineTo(width - railInset - 13, height);
       ctx.lineTo(railInset + 13, height);
       ctx.closePath();
       ctx.clip();
       const reflectDrift = reducedMotion ? 0.5 : 0.5 + Math.sin(elapsed * 0.17) * 0.5;
       const reflectX = width * (0.15 + reflectDrift * 0.7);
-      const sheen = ctx.createLinearGradient(reflectX - width * 0.3, height * 0.1, reflectX + width * 0.3, height);
+      const sheen = ctx.createLinearGradient(reflectX - width * 0.3, horizonY, reflectX + width * 0.3, height);
       sheen.addColorStop(0, 'rgba(180,200,255,0)');
       sheen.addColorStop(0.5, 'rgba(180,200,255,0.06)');
       sheen.addColorStop(1, 'rgba(180,200,255,0)');
       ctx.fillStyle = sheen;
-      ctx.fillRect(0, height * 0.1, width, height * 0.9);
+      ctx.fillRect(0, horizonY, width, height - horizonY);
       // A second, quieter warm sheen from the dusk glow overhead — two
       // overlapping reflections read as "wet", one alone reads as "shiny".
-      const sheen2 = ctx.createLinearGradient(0, height * 0.1, width, height);
+      const sheen2 = ctx.createLinearGradient(0, horizonY, width, height);
       sheen2.addColorStop(0.6, 'rgba(255,210,160,0)');
       sheen2.addColorStop(0.72, 'rgba(255,210,160,0.035)');
       sheen2.addColorStop(0.84, 'rgba(255,210,160,0)');
       ctx.fillStyle = sheen2;
-      ctx.fillRect(0, height * 0.1, width, height * 0.9);
+      ctx.fillRect(0, horizonY, width, height - horizonY);
       ctx.restore();
 
       // Asphalt grain — a handful of short, faint streaks scrolling with
@@ -1433,7 +1446,7 @@ export default function DriveChallengeGame({
         const bx = side === -1 ? railInset + 13 : width - railInset - 13;
         const tx = side === -1 ? railTopInset + 5 : width - railTopInset - 5;
         ctx.beginPath();
-        ctx.moveTo(tx, height * 0.1);
+        ctx.moveTo(tx, horizonY);
         ctx.lineTo(bx, height);
         ctx.stroke();
       }
@@ -1478,21 +1491,49 @@ export default function DriveChallengeGame({
       // Lane dividers — classic bright road-marking white, with a soft
       // glow so each lane is unmistakable at a glance against the dark
       // asphalt (the one visual requirement this whole pass leads with).
+      //
+      // Each line follows the road's own converging edges (the exact
+      // same taper `drawRail` uses for the guardrails) instead of a
+      // plain vertical line at a fixed fraction of the canvas width —
+      // a vertical line drifts outside the actual painted lane near the
+      // top of the frame, since the road itself narrows there but a
+      // vertical line doesn't. Width also eases down via `depthScale`
+      // as each dash recedes, the same depth cue every roadside prop
+      // here already uses. Segments are drawn individually rather than
+      // one `setLineDash` stroke specifically so each can carry its own
+      // tapered width — canvas has no per-dash line-width control.
+      const roadTopL = railTopInset + 5;
+      const roadTopR = width - railTopInset - 5;
+      const roadBotL = railInset + 13;
+      const roadBotR = width - railInset - 13;
       ctx.save();
       ctx.shadowColor = 'rgba(255,255,255,0.55)';
       ctx.shadowBlur = 6;
       ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([18, 22]);
-      ctx.lineDashOffset = -((distanceUnits * 0.6) % 40);
+      ctx.lineCap = 'butt';
+      const DASH_CYCLE = 40;
+      const DASH_ON = 18;
+      const dashOffset = (distanceUnits * 0.6) % DASH_CYCLE;
+      const roadSpan = Math.max(1, height - horizonY);
       for (let i = 1; i < LANES; i++) {
-        const x = (width / LANES) * i;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
+        const f = i / LANES;
+        const xTop = roadTopL + (roadTopR - roadTopL) * f;
+        const xBot = roadBotL + (roadBotR - roadBotL) * f;
+        for (let y = -dashOffset; y < height; y += DASH_CYCLE) {
+          const y0 = Math.max(horizonY, y);
+          const y1 = Math.min(height, y + DASH_ON);
+          if (y1 <= y0) continue;
+          const t0 = (y0 - horizonY) / roadSpan;
+          const t1 = (y1 - horizonY) / roadSpan;
+          const x0 = xTop + (xBot - xTop) * t0;
+          const x1 = xTop + (xBot - xTop) * t1;
+          ctx.lineWidth = 3 * depthScale(y0);
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
       }
-      ctx.setLineDash([]);
       ctx.restore();
 
       // Roadside props — street lamps (pole + arm + glowing head) drifting
@@ -1856,9 +1897,17 @@ export default function DriveChallengeGame({
             roundRect(ctx, x - cw * 0.36, e.y - ch * 0.34, cw * 0.72, ch * 0.24, 4);
             ctx.fill();
           }
+          // A soft glow on the light bar — the small extra touch that
+          // makes it read as an actual lit lamp against the dark asphalt
+          // rather than a flat red rectangle. Same technique the player
+          // car's own lights already use, just a notch quieter.
+          ctx.save();
+          ctx.shadowColor = 'rgba(255,120,120,0.65)';
+          ctx.shadowBlur = 3.5 * ds;
           ctx.fillStyle = 'rgba(255,120,120,0.85)';
           ctx.fillRect(x - cw * 0.4, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
           ctx.fillRect(x + cw * 0.24, e.y - ch / 2 + 3 * ds, cw * 0.16, 3 * ds);
+          ctx.restore();
 
           if (e.kind === 'truck') {
             if (e.variant === 1) {
@@ -2017,14 +2066,18 @@ export default function DriveChallengeGame({
       const susSquat = Math.min(1, Math.abs(carTilt) * 2.6);
       ctx.translate(0, susBob);
 
-      // Contact shadow.
+      // Contact shadow — a tight, dark core right under the belly plus a
+      // softer outer falloff, rather than one flat-peaked gradient, so
+      // the car reads as actually resting its weight on the asphalt
+      // instead of hovering a couple of pixels above a generic blob.
       ctx.save();
       const shadowGrad = ctx.createRadialGradient(0, CAR_H * 0.4, 2, 0, CAR_H * 0.4, CAR_W * 0.8);
-      shadowGrad.addColorStop(0, `rgba(0,0,0,${(0.45 + susSquat * 0.1).toFixed(3)})`);
+      shadowGrad.addColorStop(0, `rgba(0,0,0,${(0.6 + susSquat * 0.12).toFixed(3)})`);
+      shadowGrad.addColorStop(0.35, `rgba(0,0,0,${(0.42 + susSquat * 0.08).toFixed(3)})`);
       shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = shadowGrad;
       ctx.beginPath();
-      ctx.ellipse(0, CAR_H * 0.4, CAR_W * 0.62 * (1 - susSquat * 0.12), CAR_H * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, CAR_H * 0.4, CAR_W * 0.64 * (1 - susSquat * 0.12), CAR_H * 0.21, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
@@ -2070,6 +2123,40 @@ export default function DriveChallengeGame({
         ctx.fill();
         ctx.restore();
       }
+
+      // Headlight beams — two soft cones sweeping forward onto the road,
+      // drawn in the car's own local space (before the body, so the body
+      // cleanly occludes the base of each beam right at the lamp) and
+      // additively blended ('lighter') so they brighten the dark asphalt
+      // and lane-dashes they cross rather than painting flat color over
+      // them — the difference between "a light" and "a translucent grey
+      // triangle". Narrow at the lamp, fanning out and fading to nothing
+      // over a few car-lengths: real low-beam falloff, not a giant static
+      // glow — and never so bright it washes into a full-screen bloom.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const beamLen = CAR_H * 3.4;
+      const beamNearHalf = CAR_W * 0.15;
+      const beamFarHalf = CAR_W * 0.68;
+      const beamNearY = -CAR_H * 0.46;
+      const beamFarY = beamNearY - beamLen;
+      for (const side of [-1, 1] as const) {
+        const hx = side * CAR_W * 0.28;
+        const splay = side * CAR_W * 0.55;
+        const beamGrad = ctx.createLinearGradient(hx, beamNearY, hx + splay * 0.55, beamFarY);
+        beamGrad.addColorStop(0, `rgba(255,247,214,${(0.22 + speedT * 0.1).toFixed(3)})`);
+        beamGrad.addColorStop(0.35, `rgba(255,240,196,${(0.12 + speedT * 0.05).toFixed(3)})`);
+        beamGrad.addColorStop(1, 'rgba(255,232,178,0)');
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(hx - beamNearHalf, beamNearY);
+        ctx.lineTo(hx + beamNearHalf, beamNearY);
+        ctx.lineTo(hx + splay + beamFarHalf, beamFarY);
+        ctx.lineTo(hx + splay - beamFarHalf, beamFarY);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
 
       // The player's car — one of five hand-drawn vector silhouettes (see
       // `drawPlayerBody`/`CAR_DESIGNS` above), matching the same drawn-
@@ -2138,10 +2225,6 @@ export default function DriveChallengeGame({
       ctx.fill();
       roundRect(ctx, CAR_W * 0.14, CAR_H * 0.5 - 5, CAR_W * 0.2, 3.4, 1.5);
       ctx.fill();
-
-      // Wheels are baked into the sprite itself (real tire/rim geometry
-      // from the Blender model) — no separate wheel pass needed here
-      // anymore.
 
       // Brake-light glow when crashing.
       if (carState === 'crash') {
