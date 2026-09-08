@@ -47,6 +47,8 @@ interface CreatePaymentIntentBody {
   fareTier?: 'standard' | 'flexible';
   extraIds?: string[];
   rewardId?: string | null;
+  fulfillmentType?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -69,9 +71,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as CreatePaymentIntentBody;
-  const { carId, startDate, endDate, pickupLocation, fareTier, extraIds, rewardId } = body;
+  const { carId, startDate, endDate, pickupLocation, fareTier, extraIds, rewardId, deliveryAddress } = body;
+  const fulfillmentType = body.fulfillmentType ?? 'pickup';
   if (!carId || !startDate || !endDate || !pickupLocation) {
     return res.status(400).json({ error: 'Missing trip details.' });
+  }
+  if (fulfillmentType === 'delivery' && !deliveryAddress?.trim()) {
+    return res.status(400).json({ error: 'A delivery address is required.' });
   }
 
   // Scoped to the calling renter via their own JWT — auth.uid() inside
@@ -98,8 +104,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       p_fare_tier: fareTier ?? 'standard',
       p_extra_ids: extraIds && extraIds.length > 0 ? extraIds : [],
       p_reward_id: rewardId ?? null,
+      p_fulfillment_type: fulfillmentType,
     })
-    .single<{ total: number; currency: string; days: number; deposit: number }>();
+    .single<{ total: number; currency: string; days: number; deposit: number; delivery_fee: number }>();
 
   if (quoteError || !quote) {
     return res.status(400).json({ error: quoteError?.message ?? 'Could not price this trip.' });
@@ -130,6 +137,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       pickup_location: pickupLocation,
       protection_addon: true,
       fare_tier: fareTier ?? 'standard',
+      fulfillment_type: fulfillmentType,
+      delivery_address: fulfillmentType === 'delivery' ? deliveryAddress : null,
       status: 'pending',
       hold_expires_at: new Date(Date.now() + HOLD_TTL_MINUTES * 60_000).toISOString(),
     })
@@ -196,6 +205,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         extraIds: (extraIds ?? []).join(','),
         rewardId: rewardId ?? '',
         depositAmountCents: String(depositAmountCents),
+        fulfillmentType,
+        deliveryAddress: fulfillmentType === 'delivery' ? (deliveryAddress ?? '') : '',
       },
     };
 
@@ -225,6 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       amount: Number(quote.total),
       currency: quote.currency,
       deposit: Number(quote.deposit),
+      deliveryFee: Number(quote.delivery_fee ?? 0),
       bookingId,
     });
   } catch (err) {

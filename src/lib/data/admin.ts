@@ -128,6 +128,8 @@ export interface AdminBooking {
   renterName: string;
   hostName: string;
   createdAt: string;
+  fulfillmentType: 'pickup' | 'delivery';
+  deliveryAddress: string | null;
   /** See supabase/migrations/0019_security_deposit.sql — 'not_required'
    *  for bookings placed before the deposit feature shipped or priced
    *  under the deposit floor; 'failed' is the one value that needs an
@@ -146,13 +148,15 @@ interface AdminBookingRow {
   created_at: string;
   deposit_status: AdminBooking['depositStatus'];
   stripe_payment_intent_id: string | null;
+  fulfillment_type: 'pickup' | 'delivery';
+  delivery_address: string | null;
   car: { make: string; model: string; year: number } | null;
   renter: { full_name: string | null } | null;
   host: { full_name: string | null } | null;
 }
 
 const ADMIN_BOOKING_SELECT = `
-  id, reference, status, start_date, end_date, total_price, created_at, deposit_status, stripe_payment_intent_id,
+  id, reference, status, start_date, end_date, total_price, created_at, deposit_status, stripe_payment_intent_id, fulfillment_type, delivery_address,
   car:cars!bookings_car_id_fkey (make, model, year),
   renter:profiles!bookings_renter_id_fkey (full_name),
   host:profiles!bookings_host_id_fkey (full_name)
@@ -178,6 +182,8 @@ export async function fetchAllBookingsAdmin(): Promise<AdminBooking[]> {
     hostName: r.host?.full_name || 'Unnamed host',
     createdAt: r.created_at,
     depositStatus: r.deposit_status,
+    fulfillmentType: r.fulfillment_type,
+    deliveryAddress: r.delivery_address,
   }));
 }
 

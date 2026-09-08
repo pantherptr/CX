@@ -63,6 +63,14 @@ interface CarRow {
   rating: number;
   trips: number;
   status: 'draft' | 'published';
+  pickup_enabled: boolean;
+  delivery_enabled: boolean;
+  delivery_fee_type: 'free' | 'fixed';
+  delivery_fee_amount: number;
+  delivery_radius_km: number | null;
+  delivery_instructions: string | null;
+  delivery_hours_start: string | null;
+  delivery_hours_end: string | null;
   car_images: CarImageRow[];
   reviews: ReviewRow[];
 }
@@ -112,6 +120,14 @@ function mapCar(row: CarRow): Car {
     hostId: row.host_id,
     reviews: (row.reviews ?? []).map(mapReview),
     status: row.status,
+    pickupEnabled: row.pickup_enabled,
+    deliveryEnabled: row.delivery_enabled,
+    deliveryFeeType: row.delivery_fee_type,
+    deliveryFeeAmount: Number(row.delivery_fee_amount),
+    deliveryRadiusKm: row.delivery_radius_km !== null ? Number(row.delivery_radius_km) : null,
+    deliveryInstructions: row.delivery_instructions ?? '',
+    deliveryHoursStart: row.delivery_hours_start,
+    deliveryHoursEnd: row.delivery_hours_end,
   };
 }
 
@@ -281,6 +297,14 @@ export interface CreateCarInput {
   features: string[];
   instantBook: boolean;
   status: 'draft' | 'published';
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  deliveryFeeType: 'free' | 'fixed';
+  deliveryFeeAmount: number;
+  deliveryRadiusKm?: number;
+  deliveryInstructions?: string;
+  deliveryHoursStart?: string;
+  deliveryHoursEnd?: string;
 }
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 6);
@@ -353,6 +377,14 @@ export async function createCar(
         features: input.features,
         instant_book: input.instantBook,
         status: input.status,
+        pickup_enabled: input.pickupEnabled,
+        delivery_enabled: input.deliveryEnabled,
+        delivery_fee_type: input.deliveryFeeType,
+        delivery_fee_amount: input.deliveryFeeAmount,
+        delivery_radius_km: input.deliveryRadiusKm ?? null,
+        delivery_instructions: input.deliveryInstructions || null,
+        delivery_hours_start: input.deliveryHoursStart || null,
+        delivery_hours_end: input.deliveryHoursEnd || null,
       })
       .select(CAR_SELECT)
       .single();

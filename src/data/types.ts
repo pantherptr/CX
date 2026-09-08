@@ -64,6 +64,23 @@ export interface Car {
    *  'suspended'/'removed' are Owner Control Center states (see supabase/migrations/0021_owner_control_center.sql); RLS already
    *  hides both from anyone but the car's own host and the Owner, same as 'draft'. */
   status?: 'draft' | 'published' | 'suspended' | 'removed';
+  /** See supabase/migrations/0027_delivery_options.sql. Only populated
+   *  for real Supabase-backed cars, same caveat as `status` above —
+   *  code reading these treats a missing value as the DB default
+   *  (pickup enabled, delivery not). A car must offer at least one of
+   *  pickup/delivery (enforced by a DB constraint) — delivery-only
+   *  listings are valid and real. deliveryFeeAmount is only meaningful
+   *  when deliveryFeeType is 'fixed'; deliveryRadiusKm/deliveryInstructions/
+   *  delivery hours are host-facing, informational only (this schema has
+   *  no geocoding to enforce a radius against). */
+  pickupEnabled?: boolean;
+  deliveryEnabled?: boolean;
+  deliveryFeeType?: 'free' | 'fixed';
+  deliveryFeeAmount?: number;
+  deliveryRadiusKm?: number | null;
+  deliveryInstructions?: string;
+  deliveryHoursStart?: string | null;
+  deliveryHoursEnd?: string | null;
 }
 
 export interface Category {

@@ -264,9 +264,11 @@ export function BookingsPanel() {
               {depositStatusLabel[b.depositStatus] && (
                 <span className={`badge ${depositStatusBadge[b.depositStatus]}`}>{depositStatusLabel[b.depositStatus]}</span>
               )}
+              {b.fulfillmentType === 'delivery' && <span className="badge bg-panel-2 text-ink-soft">Delivery</span>}
             </p>
             <p className="text-caption text-muted">
               {b.reference} · {b.renterName} → {b.hostName} · {fmtDate(b.startDate)}–{fmtDate(b.endDate)}
+              {b.fulfillmentType === 'delivery' && b.deliveryAddress ? ` · Deliver to ${b.deliveryAddress}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">

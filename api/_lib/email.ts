@@ -76,6 +76,12 @@ export interface TripEmailData {
   totalPrice: number;
   /** Only used by the confirmation/new-booking templates. */
   otherPartyName?: string;
+  /** See supabase/migrations/0027_delivery_options.sql. Optional so
+   *  every existing call site (pickup reminders, cancellation, refund)
+   *  keeps working unchanged — only the booking-confirmed templates
+   *  pass this. */
+  fulfillmentType?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
 }
 
 async function send(to: string, subject: string, html: string) {
@@ -103,7 +109,7 @@ export async function sendBookingConfirmedEmail(to: string, trip: TripEmailData)
       ${row('Car', trip.carLabel)}
       ${row('Pick-up', fmtDate(trip.startDate))}
       ${row('Return', fmtDate(trip.endDate))}
-      ${row('Location', trip.pickupLocation)}
+      ${trip.fulfillmentType === 'delivery' ? row('Delivery to', trip.deliveryAddress || '') : row('Location', trip.pickupLocation)}
       ${row('Total paid', eur(trip.totalPrice))}
     </table>
     ${button(`${SITE_URL}/dashboard#trips`, 'View my trip')}
@@ -121,7 +127,7 @@ export async function sendNewBookingHostEmail(to: string, trip: TripEmailData) {
       ${row('Booking', trip.reference)}
       ${row('Pick-up', fmtDate(trip.startDate))}
       ${row('Return', fmtDate(trip.endDate))}
-      ${row('Location', trip.pickupLocation)}
+      ${trip.fulfillmentType === 'delivery' ? row('Deliver to', trip.deliveryAddress || '') : row('Location', trip.pickupLocation)}
       ${row('Payout', eur(trip.totalPrice))}
     </table>
     ${button(`${SITE_URL}/host#bookings`, 'View booking')}

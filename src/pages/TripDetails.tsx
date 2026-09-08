@@ -206,7 +206,7 @@ export default function TripDetails() {
     (booking.fareTier === 'flexible' ? daysUntil(booking.startDate) >= 0 : daysUntil(booking.startDate) >= 1);
   const canModify = phase === 'upcoming';
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    booking.pickupLocation || booking.car.location,
+    booking.fulfillmentType === 'delivery' ? booking.deliveryAddress || '' : booking.pickupLocation || booking.car.location,
   )}`;
 
   const handleSelfieChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -301,7 +301,9 @@ export default function TripDetails() {
   const specs: { icon: IconName; label: string; value: string }[] = [
     { icon: 'calendar', label: 'Pick-up', value: new Date(booking.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
     { icon: 'calendar', label: 'Return', value: new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
-    { icon: 'pin', label: 'Location', value: booking.pickupLocation || booking.car.location },
+    booking.fulfillmentType === 'delivery'
+      ? { icon: 'car', label: 'Delivery to', value: booking.deliveryAddress || '' }
+      : { icon: 'pin', label: 'Location', value: booking.pickupLocation || booking.car.location },
     { icon: 'card', label: 'Total paid', value: eur(booking.totalPrice) },
   ];
 
@@ -436,9 +438,13 @@ export default function TripDetails() {
         {/* Pickup location */}
         <Reveal>
         <section className="mt-8 border-t border-line pt-6">
-          <h2 className="font-display text-lg font-semibold text-ink">Pick-up location</h2>
+          <h2 className="font-display text-lg font-semibold text-ink">
+            {booking.fulfillmentType === 'delivery' ? 'Delivery address' : 'Pick-up location'}
+          </h2>
           <div className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-line p-4">
-            <p className="text-body text-ink-soft">{booking.pickupLocation || booking.car.location}</p>
+            <p className="text-body text-ink-soft">
+              {booking.fulfillmentType === 'delivery' ? booking.deliveryAddress : booking.pickupLocation || booking.car.location}
+            </p>
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm shrink-0">
               Open Maps <Icon name="arrowUpRight" size={14} />
             </a>
@@ -517,6 +523,9 @@ export default function TripDetails() {
             {booking.extras.map((ex) => (
               <div key={ex.id} className="flex justify-between"><dt className="text-muted">{ex.name}</dt><dd className="text-ink">{eur(ex.unitPrice * ex.quantity)}</dd></div>
             ))}
+            {booking.fulfillmentType === 'delivery' && (
+              <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Delivery fee <Icon name="car" size={13} /></dt><dd className="text-ink">{booking.deliveryFee > 0 ? eur(booking.deliveryFee) : 'Free'}</dd></div>
+            )}
             <div className="hairline my-1" />
             <div className="flex justify-between text-copy font-semibold text-ink"><dt>Total</dt><dd>{eur(booking.totalPrice)}</dd></div>
           </dl>

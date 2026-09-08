@@ -193,18 +193,41 @@ export interface OwnerCarDetail {
   features: string[];
   instantBook: boolean;
   status: 'draft' | 'published' | 'suspended' | 'removed';
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  deliveryFeeType: 'free' | 'fixed';
+  deliveryFeeAmount: number;
+  deliveryRadiusKm: number | null;
+  deliveryInstructions: string | null;
+  deliveryHoursStart: string | null;
+  deliveryHoursEnd: string | null;
 }
 
 const OWNER_CAR_DETAIL_SELECT = `
   id, slug, host_id, make, model, trim, year, category, city, location, price_per_day,
   transmission, fuel, seats, doors, mileage, drive, description, features, instant_book, status,
+  pickup_enabled, delivery_enabled, delivery_fee_type, delivery_fee_amount, delivery_radius_km,
+  delivery_instructions, delivery_hours_start, delivery_hours_end,
   host:profiles!cars_host_id_fkey (full_name)
 `;
 
 export async function fetchCarDetail(carId: string): Promise<OwnerCarDetail | null> {
   const { data, error } = await supabase.from('cars').select(OWNER_CAR_DETAIL_SELECT).eq('id', carId).single();
   if (error) throw error;
-  const r = data as unknown as OwnerCarDetail & { price_per_day: number; instant_book: boolean; host_id: string; host: { full_name: string | null } | null };
+  const r = data as unknown as OwnerCarDetail & {
+    price_per_day: number;
+    instant_book: boolean;
+    host_id: string;
+    host: { full_name: string | null } | null;
+    pickup_enabled: boolean;
+    delivery_enabled: boolean;
+    delivery_fee_type: 'free' | 'fixed';
+    delivery_fee_amount: number;
+    delivery_radius_km: number | null;
+    delivery_instructions: string | null;
+    delivery_hours_start: string | null;
+    delivery_hours_end: string | null;
+  };
   return {
     id: r.id,
     slug: r.slug,
@@ -228,6 +251,14 @@ export async function fetchCarDetail(carId: string): Promise<OwnerCarDetail | nu
     features: r.features,
     instantBook: r.instant_book,
     status: r.status,
+    pickupEnabled: r.pickup_enabled,
+    deliveryEnabled: r.delivery_enabled,
+    deliveryFeeType: r.delivery_fee_type,
+    deliveryFeeAmount: Number(r.delivery_fee_amount),
+    deliveryRadiusKm: r.delivery_radius_km !== null ? Number(r.delivery_radius_km) : null,
+    deliveryInstructions: r.delivery_instructions,
+    deliveryHoursStart: r.delivery_hours_start,
+    deliveryHoursEnd: r.delivery_hours_end,
   };
 }
 
@@ -246,6 +277,14 @@ export type OwnerCarPatch = Partial<{
   doors: number;
   mileage: string | null;
   drive: string | null;
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  deliveryFeeType: 'free' | 'fixed';
+  deliveryFeeAmount: number;
+  deliveryRadiusKm: number | null;
+  deliveryInstructions: string | null;
+  deliveryHoursStart: string | null;
+  deliveryHoursEnd: string | null;
 }>;
 
 export async function updateCarAsOwner(carId: string, patch: OwnerCarPatch): Promise<{ error: string | null }> {
@@ -264,6 +303,14 @@ export async function updateCarAsOwner(carId: string, patch: OwnerCarPatch): Pro
   if (patch.doors !== undefined) row.doors = patch.doors;
   if (patch.mileage !== undefined) row.mileage = patch.mileage;
   if (patch.drive !== undefined) row.drive = patch.drive;
+  if (patch.pickupEnabled !== undefined) row.pickup_enabled = patch.pickupEnabled;
+  if (patch.deliveryEnabled !== undefined) row.delivery_enabled = patch.deliveryEnabled;
+  if (patch.deliveryFeeType !== undefined) row.delivery_fee_type = patch.deliveryFeeType;
+  if (patch.deliveryFeeAmount !== undefined) row.delivery_fee_amount = patch.deliveryFeeAmount;
+  if (patch.deliveryRadiusKm !== undefined) row.delivery_radius_km = patch.deliveryRadiusKm;
+  if (patch.deliveryInstructions !== undefined) row.delivery_instructions = patch.deliveryInstructions;
+  if (patch.deliveryHoursStart !== undefined) row.delivery_hours_start = patch.deliveryHoursStart;
+  if (patch.deliveryHoursEnd !== undefined) row.delivery_hours_end = patch.deliveryHoursEnd;
 
   const { error } = await supabase.from('cars').update(row).eq('id', carId);
   if (!error) void logOwnerAction('edit_vehicle', 'car', carId, patch as Record<string, unknown>);

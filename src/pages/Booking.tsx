@@ -56,11 +56,12 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
-function Labeled({ label, children, full }: { label: string; children: ReactNode; full?: boolean }) {
+function Labeled({ label, children, full, hint }: { label: string; children: ReactNode; full?: boolean; hint?: string }) {
   return (
     <label className={full ? 'sm:col-span-2' : ''}>
       <span className="field-label">{label}</span>
       {children}
+      {hint && <span className="mt-1 block text-caption text-faint">{hint}</span>}
     </label>
   );
 }
@@ -81,6 +82,13 @@ export default function Booking() {
   const [pickupDate, setPickupDate] = useState(params.get('start') ?? '');
   const [returnDate, setReturnDate] = useState(params.get('end') ?? '');
   const [pickupLoc, setPickupLoc] = useState(params.get('loc') ?? '');
+  // See supabase/migrations/0027_delivery_options.sql. Defaulted to
+  // 'delivery' below once the car loads, for a delivery-only listing —
+  // pickupEnabled/deliveryEnabled are optional on `Car` (only real
+  // Supabase-backed cars carry them), so a car predating this feature
+  // behaves exactly as before: pickup only, no choice shown.
+  const [fulfillmentType, setFulfillmentType] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [dateError, setDateError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
   const [fareTier, setFareTier] = useState<FareTier>('standard');
@@ -110,6 +118,7 @@ export default function Booking() {
         if (cancelled) return;
         setResult(data);
         if (data && !pickupLoc) setPickupLoc(data.car.location);
+        if (data && data.car.pickupEnabled === false && data.car.deliveryEnabled) setFulfillmentType('delivery');
       })
       .catch((err) => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load this car.');
@@ -190,6 +199,8 @@ export default function Booking() {
         fareTier,
         extraIds: Array.from(selectedExtras),
         rewardId: applyReward && availableReward ? availableReward.id : undefined,
+        fulfillmentType,
+        deliveryAddress: fulfillmentType === 'delivery' ? deliveryAddress : undefined,
       },
       session.access_token,
     )
@@ -228,7 +239,7 @@ export default function Booking() {
     // calls createPaymentIntent, so a refreshed token is still used — it
     // just doesn't need to restart the whole quote over a silent refresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result?.car.id, step, session?.user.id, pickupDate, returnDate, pickupLoc, fareTier, selectedExtras, applyReward, availableReward?.id, dateError]);
+  }, [result?.car.id, step, session?.user.id, pickupDate, returnDate, pickupLoc, fareTier, selectedExtras, applyReward, availableReward?.id, dateError, fulfillmentType, deliveryAddress]);
 
   if (loadError) {
     return (
@@ -261,7 +272,11 @@ export default function Booking() {
     0,
   );
   const flexSurcharge = fareTier === 'flexible' ? Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE) * activeDays : 0;
-  const preDiscountTotal = b.total + extrasTotal + flexSurcharge;
+  // Preview only, same trust level as the reward discount below — the
+  // real fee is computed server-side in quote_booking() from the car's
+  // own stored config, never trusted from here.
+  const deliveryFee = fulfillmentType === 'delivery' && car.deliveryFeeType === 'fixed' ? car.deliveryFeeAmount ?? 0 : 0;
+  const preDiscountTotal = b.total + extrasTotal + flexSurcharge + deliveryFee;
   // Preview only — what actually gets charged and shown on the
   // confirmation screen comes back from the real inserted row
   // (confirmed.discountAmount), computed server-side by prepare_booking.
@@ -277,7 +292,9 @@ export default function Booking() {
       return next;
     });
 
-  const canContinueStep0 = !dateError && pickupDate && returnDate && availability === 'available';
+  const canContinueStep0 =
+    !dateError && pickupDate && returnDate && availability === 'available' &&
+    (fulfillmentType === 'pickup' || deliveryAddress.trim().length > 0);
 
   const next = () => {
     if (step === 0 && !canContinueStep0) return;
@@ -365,7 +382,9 @@ export default function Booking() {
             {[
               { l: 'Pick-up', v: fmtDate(confirmed.startDate), icon: 'calendar' as IconName },
               { l: 'Return', v: fmtDate(confirmed.endDate), icon: 'calendar' as IconName },
-              { l: 'Location', v: confirmed.pickupLocation || car.location, icon: 'pin' as IconName },
+              confirmed.fulfillmentType === 'delivery'
+                ? { l: 'Delivery to', v: confirmed.deliveryAddress || '', icon: 'car' as IconName }
+                : { l: 'Location', v: confirmed.pickupLocation || car.location, icon: 'pin' as IconName },
               { l: 'Total paid', v: eur(confirmed.totalPrice), icon: 'card' as IconName },
             ].map((x) => (
               <div key={x.l}>
@@ -426,12 +445,58 @@ export default function Booking() {
               <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
               <p className="mt-1.5 text-body text-muted">Confirm where and when you'd like the car.</p>
               <div className="mt-6 card p-6">
-                <Labeled label="Pick-up location">
-                  <div className="relative">
-                    <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                    <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
+                {car.pickupEnabled !== false && car.deliveryEnabled && (
+                  <div className="mb-5">
+                    <span className="field-label">How would you like to receive the car?</span>
+                    <div className="mt-2 grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFulfillmentType('pickup')}
+                        className={`rounded-xl border p-3.5 text-left transition-colors ${fulfillmentType === 'pickup' ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'}`}
+                      >
+                        <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="pin" size={15} /> Pick Up</span>
+                        <span className="mt-0.5 block text-detail text-muted">Go to the host's pick-up location.</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFulfillmentType('delivery')}
+                        className={`rounded-xl border p-3.5 text-left transition-colors ${fulfillmentType === 'delivery' ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'}`}
+                      >
+                        <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="car" size={15} /> Deliver to Me</span>
+                        <span className="mt-0.5 block text-detail text-muted">
+                          {car.deliveryFeeType === 'fixed' ? `+${eur(car.deliveryFeeAmount ?? 0)}` : 'Free'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </Labeled>
+                )}
+
+                {fulfillmentType === 'pickup' ? (
+                  <Labeled label="Pick-up location">
+                    <div className="relative">
+                      <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                      <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
+                    </div>
+                  </Labeled>
+                ) : (
+                  <Labeled label="Delivery address" hint="The host will confirm the exact drop-off details with you.">
+                    <div className="relative">
+                      <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                      <input
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Street, city"
+                        className="input !pl-11"
+                      />
+                    </div>
+                    {car.deliveryRadiusKm && (
+                      <p className="mt-1.5 text-detail text-muted">Delivery available within ~{car.deliveryRadiusKm}km of the host.</p>
+                    )}
+                    {car.deliveryInstructions && (
+                      <p className="mt-1 text-detail text-muted">{car.deliveryInstructions}</p>
+                    )}
+                  </Labeled>
+                )}
 
                 <div className="mt-5 border-t border-line pt-5">
                   <span className="field-label">Dates</span>
@@ -610,8 +675,10 @@ export default function Booking() {
                 <span className="font-medium text-ink">{fmtDate(pickupDate)} → {fmtDate(returnDate)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-detail">
-                <span className="flex items-center gap-1.5 text-muted"><Icon name="pin" size={14} /> Location</span>
-                <span className="truncate pl-2 font-medium text-ink">{pickupLoc || car.location}</span>
+                <span className="flex items-center gap-1.5 text-muted">
+                  <Icon name={fulfillmentType === 'delivery' ? 'car' : 'pin'} size={14} /> {fulfillmentType === 'delivery' ? 'Delivery to' : 'Location'}
+                </span>
+                <span className="truncate pl-2 font-medium text-ink">{fulfillmentType === 'delivery' ? deliveryAddress : pickupLoc || car.location}</span>
               </div>
             </div>
 
@@ -647,6 +714,12 @@ export default function Booking() {
                   <dd className="text-ink">{eur(ex.priceModel === 'per_day' ? ex.price * activeDays : ex.price)}</dd>
                 </div>
               ))}
+              {fulfillmentType === 'delivery' && (
+                <div className="flex justify-between">
+                  <dt className="flex items-center gap-1 text-muted">Delivery fee <Icon name="car" size={13} /></dt>
+                  <dd className="text-ink">{deliveryFee > 0 ? eur(deliveryFee) : 'Free'}</dd>
+                </div>
+              )}
               {discountPreview > 0 && (
                 <div className="flex justify-between text-accent">
                   <dt>Discount ({availableReward?.discountPercentage}% OFF)</dt>

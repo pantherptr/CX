@@ -293,6 +293,9 @@ function HostBookingRow({ booking }: { booking: Booking }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-detail font-medium text-ink">{booking.renter.name}</p>
         <p className="truncate text-caption text-muted">{booking.car.make} {booking.car.model} · {fmtDate(booking.startDate)}–{fmtDate(booking.endDate)}</p>
+        {booking.fulfillmentType === 'delivery' && (
+          <p className="truncate text-caption text-muted"><Icon name="car" size={11} className="mr-1 inline" />Deliver to {booking.deliveryAddress}</p>
+        )}
       </div>
       <p className="shrink-0 text-detail font-medium text-ink">{eur(booking.totalPrice)}</p>
       <span className={`badge shrink-0 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>

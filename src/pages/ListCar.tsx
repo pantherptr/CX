@@ -84,6 +84,14 @@ export default function ListCar() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [price, setPrice] = useState(95);
+  const [pickupEnabled, setPickupEnabled] = useState(true);
+  const [deliveryEnabled, setDeliveryEnabled] = useState(false);
+  const [deliveryFeeType, setDeliveryFeeType] = useState<'free' | 'fixed'>('free');
+  const [deliveryFeeAmount, setDeliveryFeeAmount] = useState('15');
+  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState('10');
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
+  const [deliveryHoursStart, setDeliveryHoursStart] = useState('09:00');
+  const [deliveryHoursEnd, setDeliveryHoursEnd] = useState('19:00');
 
   const [submitting, setSubmitting] = useState<'draft' | 'published' | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -142,7 +150,7 @@ export default function ListCar() {
       Number(form.seats) >= 1 && Number(form.doors) >= 1 && Number(form.luggage) >= 0,
     ),
     photos.length >= 1,
-    price > 0,
+    price > 0 && (pickupEnabled || deliveryEnabled) && (!deliveryEnabled || deliveryFeeType === 'free' || Number(deliveryFeeAmount) >= 0),
     true,
   ];
   const canContinue = stepValid[step];
@@ -181,6 +189,14 @@ export default function ListCar() {
         features,
         instantBook,
         status,
+        pickupEnabled,
+        deliveryEnabled,
+        deliveryFeeType,
+        deliveryFeeAmount: deliveryFeeType === 'fixed' ? Number(deliveryFeeAmount) || 0 : 0,
+        deliveryRadiusKm: deliveryEnabled && deliveryRadiusKm ? Number(deliveryRadiusKm) : undefined,
+        deliveryInstructions: deliveryEnabled ? deliveryInstructions.trim() || undefined : undefined,
+        deliveryHoursStart: deliveryEnabled ? deliveryHoursStart : undefined,
+        deliveryHoursEnd: deliveryEnabled ? deliveryHoursEnd : undefined,
       },
       photos.map((p) => p.file),
     );
@@ -522,6 +538,105 @@ export default function ListCar() {
                 <Icon name="info" size={15} className="mt-px shrink-0" />
                 Renters also pay a service fee and protection on top of your daily rate — you receive the rate you set.
               </p>
+
+              <div className="mt-8 border-t border-line pt-6">
+                <h3 className="font-display text-lg font-semibold text-ink">Pickup &amp; delivery options</h3>
+                <p className="mt-1 text-body text-muted">How can renters get this car?</p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${pickupEnabled ? 'border-ink' : 'border-line'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={pickupEnabled}
+                      onChange={(e) => setPickupEnabled(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+                    />
+                    <span>
+                      <span className="flex items-center gap-1.5 text-body font-medium text-ink"><Icon name="pin" size={15} /> Customer pickup</span>
+                      <span className="block text-detail text-muted">Renter comes to your pick-up area.</span>
+                    </span>
+                  </label>
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${deliveryEnabled ? 'border-ink' : 'border-line'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={deliveryEnabled}
+                      onChange={(e) => setDeliveryEnabled(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+                    />
+                    <span>
+                      <span className="flex items-center gap-1.5 text-body font-medium text-ink"><Icon name="car" size={15} /> Car delivery</span>
+                      <span className="block text-detail text-muted">You deliver the car to the renter.</span>
+                    </span>
+                  </label>
+                </div>
+
+                {!pickupEnabled && !deliveryEnabled && (
+                  <p className="mt-3 flex items-center gap-2 text-detail text-danger">
+                    <Icon name="info" size={15} /> Offer at least one of pickup or delivery.
+                  </p>
+                )}
+
+                {deliveryEnabled && (
+                  <div className="mt-5 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
+                    <Labeled label="Delivery fee">
+                      <select
+                        value={deliveryFeeType}
+                        onChange={(e) => setDeliveryFeeType(e.target.value as 'free' | 'fixed')}
+                        className="input"
+                      >
+                        <option value="free">Free</option>
+                        <option value="fixed">Fixed price</option>
+                      </select>
+                    </Labeled>
+                    {deliveryFeeType === 'fixed' && (
+                      <Labeled label="Fee amount">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          value={deliveryFeeAmount}
+                          onChange={(e) => setDeliveryFeeAmount(e.target.value)}
+                          className="input"
+                        />
+                      </Labeled>
+                    )}
+                    <Labeled label="Delivery area" hint="Shown to renters — not enforced automatically, use your own judgement per request.">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          value={deliveryRadiusKm}
+                          onChange={(e) => setDeliveryRadiusKm(e.target.value)}
+                          className="input"
+                        />
+                        <span className="shrink-0 text-detail text-muted">km radius</span>
+                      </div>
+                    </Labeled>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Labeled label="Available from">
+                        <input type="time" value={deliveryHoursStart} onChange={(e) => setDeliveryHoursStart(e.target.value)} className="input" />
+                      </Labeled>
+                      <Labeled label="Until">
+                        <input type="time" value={deliveryHoursEnd} onChange={(e) => setDeliveryHoursEnd(e.target.value)} className="input" />
+                      </Labeled>
+                    </div>
+                    <Labeled label="Delivery instructions (optional)" full>
+                      <textarea
+                        value={deliveryInstructions}
+                        onChange={(e) => setDeliveryInstructions(e.target.value)}
+                        rows={2}
+                        placeholder="e.g. Please share the exact drop-off address after booking."
+                        className="input resize-y"
+                      />
+                    </Labeled>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

@@ -16,6 +16,11 @@ export interface CreatePaymentIntentInput {
   fareTier: FareTier;
   extraIds: string[];
   rewardId?: string;
+  /** See supabase/migrations/0027_delivery_options.sql. Defaults to
+   *  'pickup' server-side when omitted, so this stays optional for any
+   *  caller that predates delivery. */
+  fulfillmentType?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
 }
 
 export interface PaymentIntentResult {
@@ -27,6 +32,10 @@ export interface PaymentIntentResult {
    *  Shown alongside `amount` so the renter knows about it before paying,
    *  not just after. */
   deposit: number;
+  /** Server-computed, from the car's own stored delivery fee config —
+   *  see supabase/migrations/0027_delivery_options.sql. 0 for a pickup
+   *  booking or a free-delivery listing. */
+  deliveryFee: number;
   /** The reservation hold this PaymentIntent is tied to — see
    *  supabase/migrations/0026_booking_reservations.sql. Lets the client
    *  release it early (Back button, leaving the page) instead of waiting

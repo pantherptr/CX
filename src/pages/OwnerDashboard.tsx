@@ -366,6 +366,14 @@ function ManageVehicleModal({ carId, onClose, onSaved }: { carId: string; onClos
       instantBook: car.instantBook,
       seats: car.seats,
       doors: car.doors,
+      pickupEnabled: car.pickupEnabled,
+      deliveryEnabled: car.deliveryEnabled,
+      deliveryFeeType: car.deliveryFeeType,
+      deliveryFeeAmount: car.deliveryFeeAmount,
+      deliveryRadiusKm: car.deliveryRadiusKm,
+      deliveryInstructions: car.deliveryInstructions,
+      deliveryHoursStart: car.deliveryHoursStart,
+      deliveryHoursEnd: car.deliveryHoursEnd,
     });
     setSaving(false);
     if (error) {
@@ -455,6 +463,72 @@ function ManageVehicleModal({ carId, onClose, onSaved }: { carId: string; onClos
         <input type="checkbox" checked={car.instantBook} onChange={(e) => patch('instantBook', e.target.checked)} />
         Instant book
       </label>
+
+      <div className="mt-6 rounded-xl border border-line p-4">
+        <p className="text-detail font-semibold uppercase tracking-wide text-faint">Pickup &amp; delivery</p>
+        <div className="mt-3 flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-detail font-medium text-ink-soft">
+            <input type="checkbox" checked={car.pickupEnabled} onChange={(e) => patch('pickupEnabled', e.target.checked)} />
+            Customer pickup
+          </label>
+          <label className="flex items-center gap-2 text-detail font-medium text-ink-soft">
+            <input type="checkbox" checked={car.deliveryEnabled} onChange={(e) => patch('deliveryEnabled', e.target.checked)} />
+            Car delivery
+          </label>
+        </div>
+        {!car.pickupEnabled && !car.deliveryEnabled && (
+          <p className="mt-2 flex items-center gap-1.5 text-detail text-danger"><Icon name="info" size={14} /> Offer at least one method.</p>
+        )}
+        {car.deliveryEnabled && (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5 text-detail font-medium text-ink-soft">Delivery fee
+              <select value={car.deliveryFeeType} onChange={(e) => patch('deliveryFeeType', e.target.value)} className="input">
+                <option value="free">Free</option>
+                <option value="fixed">Fixed price</option>
+              </select>
+            </label>
+            {car.deliveryFeeType === 'fixed' && (
+              <label className="flex flex-col gap-1.5 text-detail font-medium text-ink-soft">Fee amount (€)
+                <input type="number" min={0} value={car.deliveryFeeAmount} onChange={(e) => patch('deliveryFeeAmount', Number(e.target.value))} className="input" />
+              </label>
+            )}
+            <label className="flex flex-col gap-1.5 text-detail font-medium text-ink-soft">Delivery radius (km)
+              <input
+                type="number"
+                min={1}
+                value={car.deliveryRadiusKm ?? ''}
+                onChange={(e) => patch('deliveryRadiusKm', e.target.value ? Number(e.target.value) : (null as unknown as number))}
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-detail font-medium text-ink-soft">Hours
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={car.deliveryHoursStart ?? ''}
+                  onChange={(e) => patch('deliveryHoursStart', (e.target.value || null) as unknown as string)}
+                  className="input"
+                />
+                <span className="text-faint">–</span>
+                <input
+                  type="time"
+                  value={car.deliveryHoursEnd ?? ''}
+                  onChange={(e) => patch('deliveryHoursEnd', (e.target.value || null) as unknown as string)}
+                  className="input"
+                />
+              </div>
+            </label>
+            <label className="col-span-2 flex flex-col gap-1.5 text-detail font-medium text-ink-soft">Delivery instructions
+              <textarea
+                value={car.deliveryInstructions ?? ''}
+                onChange={(e) => patch('deliveryInstructions', (e.target.value || null) as unknown as string)}
+                rows={2}
+                className="input resize-none"
+              />
+            </label>
+          </div>
+        )}
+      </div>
 
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between">

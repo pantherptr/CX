@@ -175,7 +175,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const extraIds = meta.extraIds ? meta.extraIds.split(',').filter(Boolean) : [];
-  type ConfirmedBooking = { id: string; host_id: string; reference: string; total_price: number; start_date: string; end_date: string; pickup_location: string | null };
+  type ConfirmedBooking = {
+    id: string;
+    host_id: string;
+    reference: string;
+    total_price: number;
+    start_date: string;
+    end_date: string;
+    pickup_location: string | null;
+    fulfillment_type: 'pickup' | 'delivery';
+    delivery_address: string | null;
+    delivery_fee: number;
+  };
 
   const attachExtras = async (bookingId: string) => {
     if (extraIds.length === 0) return;
@@ -212,7 +223,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else if (confirmedId) {
         const { data: row, error: fetchError } = await supabase
           .from('bookings')
-          .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
+          .select('id, host_id, reference, total_price, start_date, end_date, pickup_location, fulfillment_type, delivery_address, delivery_fee')
           .eq('id', confirmedId)
           .single();
         if (fetchError) console.error('[stripe-webhook] could not re-fetch confirmed booking', confirmedId, fetchError);
@@ -240,11 +251,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           pickup_location: meta.pickupLocation || null,
           protection_addon: true,
           fare_tier: meta.fareTier || 'standard',
+          fulfillment_type: meta.fulfillmentType || 'pickup',
+          delivery_address: meta.fulfillmentType === 'delivery' ? meta.deliveryAddress || null : null,
           reward_id: meta.rewardId || null,
           status: 'confirmed',
           stripe_payment_intent_id: paymentIntent.id,
         })
-        .select('id, host_id, reference, total_price, start_date, end_date, pickup_location')
+        .select('id, host_id, reference, total_price, start_date, end_date, pickup_location, fulfillment_type, delivery_address, delivery_fee')
         .single();
 
       if (insertError) {
@@ -293,6 +306,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         endDate: booking.end_date,
         pickupLocation: booking.pickup_location || '',
         totalPrice: Number(booking.total_price),
+        fulfillmentType: booking.fulfillment_type,
+        deliveryAddress: booking.delivery_address || '',
       };
 
       const renterEmail = renterAuth?.user?.email;

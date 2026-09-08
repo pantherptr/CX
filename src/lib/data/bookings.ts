@@ -84,6 +84,10 @@ export interface Booking {
   protectionAddon: boolean;
   pickupLocation: string | null;
   fareTier: FareTier;
+  /** See supabase/migrations/0027_delivery_options.sql. */
+  fulfillmentType: 'pickup' | 'delivery';
+  deliveryAddress: string | null;
+  deliveryFee: number;
   extras: BookingExtra[];
   agreementAcceptedAt: string | null;
   createdAt: string;
@@ -147,6 +151,9 @@ interface BookingRow {
   protection_addon: boolean;
   pickup_location: string | null;
   fare_tier: FareTier;
+  fulfillment_type: 'pickup' | 'delivery';
+  delivery_address: string | null;
+  delivery_fee: number;
   booking_extras: BookingExtraRow[];
   agreement_accepted_at: string | null;
   created_at: string;
@@ -175,7 +182,7 @@ interface BookingRow {
 }
 
 const BOOKING_SELECT = `
-  id, reference, start_date, end_date, status, total_price, discount_amount, reward_id, protection_addon, pickup_location, fare_tier, agreement_accepted_at, created_at,
+  id, reference, start_date, end_date, status, total_price, discount_amount, reward_id, protection_addon, pickup_location, fare_tier, fulfillment_type, delivery_address, delivery_fee, agreement_accepted_at, created_at,
   car:cars!bookings_car_id_fkey (id, slug, make, model, trim, year, location, price_per_day, car_images(url, position)),
   host:profiles!bookings_host_id_fkey (id, full_name, avatar_url, response_time),
   renter:profiles!bookings_renter_id_fkey (id, full_name, avatar_url),
@@ -197,6 +204,9 @@ function mapBooking(row: BookingRow): Booking {
     protectionAddon: row.protection_addon,
     pickupLocation: row.pickup_location,
     fareTier: row.fare_tier,
+    fulfillmentType: row.fulfillment_type,
+    deliveryAddress: row.delivery_address,
+    deliveryFee: Number(row.delivery_fee),
     agreementAcceptedAt: row.agreement_accepted_at,
     extras: (row.booking_extras ?? []).map((be) => ({
       id: be.extra.id,
