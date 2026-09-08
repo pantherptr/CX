@@ -1324,24 +1324,6 @@ export default function DriveChallengeGame({
         }
       }
 
-      // Larger, sparser dark asphalt patches — resurfacing seams/wear
-      // marks, coarser spacing than the grain streaks above so they read
-      // as patches rather than more of the same texture.
-      const patchSpacing = 340;
-      const patchOffset = distanceUnits * 0.6;
-      let patchSeed = Math.round(patchOffset / patchSpacing);
-      for (let py = ((patchOffset % patchSpacing) - patchSpacing); py < height; py += patchSpacing, patchSeed++) {
-        const t = Math.max(0, Math.min(1, py / height));
-        const spanX0 = railTopInset + (railInset + 13 - railTopInset) * t;
-        const spanX1 = width - railTopInset - (railInset + 13 - railTopInset) * t;
-        const px = spanX0 + hash1(patchSeed * 3.3) * (spanX1 - spanX0);
-        const pw = (26 + hash1(patchSeed * 5.1) * 30) * (0.5 + t * 0.7);
-        ctx.fillStyle = 'rgba(0,0,0,0.12)';
-        ctx.beginPath();
-        ctx.ellipse(px, py, pw, pw * 0.32, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       // Solid road-edge markings, just inside each rail — a faint glow so
       // they read crisply against the dark night asphalt rather than just
       // relying on raw contrast.
@@ -1453,153 +1435,168 @@ export default function DriveChallengeGame({
       const poleSpacing = 260;
       const poleOffset = distanceUnits * 0.6;
       let poleIndex = Math.round(poleOffset / poleSpacing);
-      // Four canopy tone triples (rim-light / mid / core-shadow, rather
-      // than a flat two-stop fill) so the treeline reads as real planted
-      // variety — including one cooler, slightly blue-green pine tone —
-      // instead of one shade of green copy-pasted down the road.
-      const CANOPY_TONES: [string, string, string][] = [
-        ['#a8e8b6', '#6fbf83', '#2b5c3c'],
-        ['#93dba0', '#5fae72', '#254f34'],
-        ['#8fd4a3', '#579b6a', '#20472e'],
-        ['#7fc9ad', '#4f9878', '#1c4034'],
-      ];
-      // Three real size classes (small/medium/large), weighted toward
-      // small/medium, rather than one continuous random range — a
-      // roadside planted with a few big old trees among mostly younger
-      // ones reads as natural; a range that's just "big or small at
-      // random" doesn't.
-      // Kept within the roadside verge's own (narrow) visible margin — a
-      // canopy radius much past ~19 routinely got clipped by the canvas
-      // edge at this margin width, which would have made the "large"
-      // class look worse (chopped in half), not better.
-      const TREE_SIZES: { canopy: [number, number]; trunk: [number, number] }[] = [
-        { canopy: [6, 9], trunk: [8, 12] },
-        { canopy: [9, 13], trunk: [12, 17] },
-        { canopy: [14, 18], trunk: [17, 22] },
-      ];
-      const TREE_SIZE_WEIGHTS = [0.45, 0.4, 0.15];
+      // ---- roadside urban district: villas, condos, low-rise blocks ----
+      // Four building kinds, each a width/height/floor-count range rather
+      // than a fixed size — every instance still comes out different.
+      // Heights are free to be tall (nothing above the roadside limits
+      // that), but *widths* are kept inside the same narrow verge margin
+      // vegetation used to fight — see the inner-edge anchoring below,
+      // which is the part that actually keeps buildings off the asphalt.
+      type BuildingKind = 'villa' | 'villaPremium' | 'condo' | 'urban';
+      interface BuildingSpec {
+        width: [number, number];
+        height: [number, number];
+        floors: [number, number];
+        windowsPerFloor: number;
+        glassFront: boolean;
+        shopfront: boolean;
+        balconies: boolean;
+      }
+      const BUILDING_SPECS: Record<BuildingKind, BuildingSpec> = {
+        villa: { width: [16, 20], height: [16, 24], floors: [1, 2], windowsPerFloor: 2, glassFront: false, shopfront: false, balconies: false },
+        villaPremium: { width: [19, 24], height: [22, 32], floors: [2, 3], windowsPerFloor: 2, glassFront: true, shopfront: false, balconies: true },
+        condo: { width: [15, 19], height: [42, 64], floors: [4, 6], windowsPerFloor: 2, glassFront: false, shopfront: false, balconies: true },
+        urban: { width: [17, 21], height: [66, 96], floors: [6, 8], windowsPerFloor: 3, glassFront: false, shopfront: true, balconies: false },
+      };
+      // Muted, varied night facade tones — none of them saturated, so the
+      // warm lit windows are always what actually reads as bright.
+      const FACADE_TONES = ['#3a3f4a', '#333e49', '#413a3c', '#2f3a40', '#3b3535', '#39424c'];
+      const SIGN_COLORS = ['rgba(0,212,71,0.85)', 'rgba(255,180,90,0.85)', 'rgba(120,180,255,0.8)'];
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-      const drawTree = (tx0: number, groundY: number, ds: number, slot: number) => {
-        const sizeRoll = hash1(slot * 8.3 + 3.7);
-        let acc = 0;
-        let sizeClass = TREE_SIZES[0];
-        for (let k = 0; k < TREE_SIZES.length; k++) {
-          acc += TREE_SIZE_WEIGHTS[k];
-          if (sizeRoll < acc) {
-            sizeClass = TREE_SIZES[k];
-            break;
+      // `innerEdge` is this building's road-facing edge — the ONE number
+      // that actually has to be right for "buildings never enter the
+      // lanes". The building is built outward from it (away from the
+      // road), so no matter how wide a given instance rolls, its footprint
+      // can only ever grow further from the asphalt, never closer to it.
+      const drawBuilding = (kind: BuildingKind, innerEdge: number, side: -1 | 1, groundY: number, ds: number, slot: number) => {
+        const spec = BUILDING_SPECS[kind];
+        const w = lerp(spec.width[0], spec.width[1], hash1(slot * 3.3 + 1)) * ds;
+        const h = lerp(spec.height[0], spec.height[1], hash1(slot * 4.4 + 2)) * ds;
+        const floors = Math.max(1, Math.round(lerp(spec.floors[0], spec.floors[1], hash1(slot * 5.5 + 3))));
+        const tx = innerEdge - (side === -1 ? w / 2 : -w / 2);
+        const top = groundY - h;
+        const tone = FACADE_TONES[Math.floor(hash1(slot * 7.7 + 5) * FACADE_TONES.length)];
+
+        // Ground shadow — deliberately narrower than the footprint itself
+        // (0.46 vs the building's own 0.5 half-width) and centered on the
+        // building, not biased toward the road, so it always stays fully
+        // inside the building's own footprint and can never bleed onto
+        // the asphalt beside it.
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,0,0,0.28)';
+        ctx.beginPath();
+        ctx.ellipse(tx, groundY + 1.5 * ds, w * 0.46, 2.2 * ds, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Facade — a subtle vertical gradient (a touch darker toward the
+        // roofline) instead of a flat fill, plus a crisp dark outline so
+        // each building reads as a distinct volume against its neighbors.
+        const facadeGrad = ctx.createLinearGradient(0, top, 0, groundY);
+        facadeGrad.addColorStop(0, shade(tone, -8));
+        facadeGrad.addColorStop(1, shade(tone, 10));
+        ctx.fillStyle = facadeGrad;
+        ctx.beginPath();
+        roundRect(ctx, tx - w / 2, top, w, h, 1.4 * ds);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        roundRect(ctx, tx - w / 2, top, w, h, 1.4 * ds);
+        ctx.stroke();
+
+        // Windows — most lit warm, some dark (occupied vs not), a small
+        // fraction tinted CX green; premium villas get one big glazed
+        // front instead of small panes, urban blocks get a bright
+        // shopfront + a small discreet sign on the ground floor.
+        const floorH = h / floors;
+        const cols = spec.windowsPerFloor;
+        const winW = (w / cols) * 0.5;
+        const winH = floorH * 0.42;
+        for (let f = 0; f < floors; f++) {
+          const floorTop = top + h - (f + 1) * floorH;
+          if (spec.glassFront && f < 2) {
+            const lit = hash1(slot * 11 + f * 3.1) > 0.15;
+            ctx.fillStyle = lit ? 'rgba(255,214,150,0.55)' : 'rgba(20,26,22,0.7)';
+            roundRect(ctx, tx - w * 0.42, floorTop + floorH * 0.1, w * 0.84, floorH * 0.8, 1 * ds);
+            ctx.fill();
+            continue;
+          }
+          if (spec.shopfront && f === 0) {
+            ctx.fillStyle = 'rgba(255,200,130,0.4)';
+            roundRect(ctx, tx - w * 0.44, floorTop + floorH * 0.15, w * 0.88, floorH * 0.6, 1 * ds);
+            ctx.fill();
+            const signColor = SIGN_COLORS[Math.floor(hash1(slot * 9.1) * SIGN_COLORS.length)];
+            ctx.save();
+            ctx.shadowColor = signColor;
+            ctx.shadowBlur = 2.5 * ds;
+            ctx.fillStyle = signColor;
+            roundRect(ctx, tx - w * 0.3, floorTop - floorH * 0.16, w * 0.6, floorH * 0.16, 0.8 * ds);
+            ctx.fill();
+            ctx.restore();
+            continue;
+          }
+          for (let c = 0; c < cols; c++) {
+            const wx = tx - w / 2 + (w / cols) * (c + 0.5) - winW / 2;
+            const wy = floorTop + floorH * 0.29;
+            const roll = hash1(slot * 13 + f * 5.3 + c * 2.1);
+            if (roll < 0.3) ctx.fillStyle = 'rgba(14,18,16,0.75)';
+            else if (roll > 0.92) ctx.fillStyle = 'rgba(0,212,71,0.55)';
+            else ctx.fillStyle = 'rgba(255,214,150,0.6)';
+            roundRect(ctx, wx, wy, winW, winH, 0.6 * ds);
+            ctx.fill();
+          }
+          if (spec.balconies && f > 0 && f % 2 === 0) {
+            ctx.fillStyle = 'rgba(210,214,218,0.35)';
+            ctx.fillRect(tx - w / 2 - 1 * ds, floorTop + floorH, w + 2 * ds, 1.1 * ds);
           }
         }
-        const canopyR = (sizeClass.canopy[0] + hash1(slot * 3.7 + 1.1) * (sizeClass.canopy[1] - sizeClass.canopy[0])) * ds;
-        const trunkH = (sizeClass.trunk[0] + hash1(slot * 4.1) * (sizeClass.trunk[1] - sizeClass.trunk[0])) * ds;
-        const xJitter = (hash1(slot * 5.3 + 2.4) - 0.5) * 9 * ds;
-        const tx = tx0 + xJitter;
-        const [c0, c1, c2] = CANOPY_TONES[Math.floor(hash1(slot * 6.6) * CANOPY_TONES.length)];
-        const lean = (hash1(slot * 9.9) - 0.5) * 0.14;
 
-        // Ground contact shadow — grounds the tree instead of it reading
-        // as a cutout floating over the verge.
-        ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(tx + canopyR * 0.12, groundY + 2 * ds, canopyR * 0.62, canopyR * 0.22, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // Trunk — tapered (narrower at the top) with a three-stop fill
-        // for a hint of roundness, instead of a flat uniform-width rect.
-        const trunkBaseW = (2.3 + hash1(slot * 12.2)) * ds;
-        const trunkTopW = trunkBaseW * 0.55;
-        const trunkTop = groundY - trunkH;
-        const trunkGrad = ctx.createLinearGradient(tx - trunkBaseW / 2, 0, tx + trunkBaseW / 2, 0);
-        trunkGrad.addColorStop(0, '#2a1d13');
-        trunkGrad.addColorStop(0.5, '#5c4027');
-        trunkGrad.addColorStop(1, '#221708');
-        ctx.fillStyle = trunkGrad;
-        ctx.beginPath();
-        ctx.moveTo(tx - trunkTopW / 2 + lean * trunkH, trunkTop);
-        ctx.lineTo(tx + trunkTopW / 2 + lean * trunkH, trunkTop);
-        ctx.lineTo(tx + trunkBaseW / 2, groundY);
-        ctx.lineTo(tx - trunkBaseW / 2, groundY);
-        ctx.closePath();
-        ctx.fill();
-
-        // Canopy — a darker shadow lobe behind/below, several mid-tone
-        // body lobes at varied offsets and sizes for an irregular (not
-        // perfectly circular) silhouette, and a small rim-light fleck on
-        // the near side for a cheap sense of volume.
-        const canopyCx = tx + lean * trunkH * 0.4;
-        const canopyCy = trunkTop - canopyR * 0.35;
-        ctx.fillStyle = c2;
-        ctx.beginPath();
-        ctx.arc(canopyCx + canopyR * 0.18, canopyCy + canopyR * 0.22, canopyR * 0.82, 0, Math.PI * 2);
-        ctx.fill();
-        const bodyGrad = ctx.createRadialGradient(
-          canopyCx - canopyR * 0.3, canopyCy - canopyR * 0.35, 1,
-          canopyCx, canopyCy, canopyR * 1.05,
-        );
-        bodyGrad.addColorStop(0, c0);
-        bodyGrad.addColorStop(0.55, c1);
-        bodyGrad.addColorStop(1, c2);
-        ctx.fillStyle = bodyGrad;
-        for (const [dx, dy, r] of [[0, 0, 1], [-0.52, 0.18, 0.7], [0.5, 0.22, 0.68], [0.02, -0.4, 0.6]] as const) {
-          ctx.beginPath();
-          ctx.arc(canopyCx + dx * canopyR, canopyCy + dy * canopyR, canopyR * r, 0, Math.PI * 2);
-          ctx.fill();
+        // Roof — a thin bright parapet edge, plus a small rooftop utility
+        // block on the taller kinds for a less boxy silhouette.
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        ctx.fillRect(tx - w / 2, top - 1 * ds, w, 1.4 * ds);
+        if (kind === 'condo' || kind === 'urban') {
+          const boxW = w * 0.28;
+          const boxH = floorH * 0.4;
+          ctx.fillStyle = shade(tone, -18);
+          ctx.fillRect(tx - boxW / 2, top - boxH, boxW, boxH);
         }
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.beginPath();
-        ctx.arc(canopyCx - canopyR * 0.38, canopyCy - canopyR * 0.42, canopyR * 0.26, 0, Math.PI * 2);
-        ctx.fill();
-      };
 
-      // Bushes — low, trunk-less vegetation clusters that break up the
-      // treeline without every roadside slot being a full-height tree.
-      const drawBush = (tx0: number, groundY: number, ds: number, slot: number) => {
-        const r = (5 + hash1(slot * 4.4) * 4) * ds;
-        const tx = tx0 + (hash1(slot * 5.7) - 0.5) * 6 * ds;
-        const cy = groundY - r * 0.5;
-        ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.26)';
-        ctx.beginPath();
-        ctx.ellipse(tx, groundY + ds, r * 0.7, r * 0.24, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        const [c0, c1, c2] = CANOPY_TONES[Math.floor(hash1(slot * 7.7) * CANOPY_TONES.length)];
-        const grad = ctx.createRadialGradient(tx - r * 0.3, cy - r * 0.3, 1, tx, cy, r * 1.1);
-        grad.addColorStop(0, c0);
-        grad.addColorStop(0.6, c1);
-        grad.addColorStop(1, c2);
-        ctx.fillStyle = grad;
-        for (const [dx, dy, rr] of [[-0.4, 0.15, 0.75], [0.4, 0.1, 0.72], [0, -0.25, 0.85]] as const) {
+        // A soft warm ground-level glow for the low-rise kinds — reads as
+        // a lit entrance/garden without needing separate path geometry.
+        // Same "stay inside the footprint" rule as the shadow above.
+        if (kind === 'villa' || kind === 'villaPremium') {
+          const glow = ctx.createRadialGradient(tx, groundY, 0, tx, groundY, w * 0.55);
+          glow.addColorStop(0, 'rgba(255,214,150,0.16)');
+          glow.addColorStop(1, 'rgba(255,214,150,0)');
+          ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(tx + dx * r, cy + dy * r, r * rr, 0, Math.PI * 2);
+          ctx.ellipse(tx, groundY, w * 0.55, 2.6 * ds, 0, 0, Math.PI * 2);
           ctx.fill();
         }
       };
 
-      // Small roadside rocks — cheap (two fills), just enough incidental
-      // ground detail that the verge doesn't read as grass-only.
-      const drawRock = (tx0: number, groundY: number, ds: number, slot: number) => {
-        const r = (3 + hash1(slot * 2.9) * 3.5) * ds;
-        const tx = tx0 + (hash1(slot * 6.1) - 0.5) * 5 * ds;
+      // A trimmed hedge/fence line — cheap (one shadow + one rounded
+      // fill), built outward from the same inner-edge anchor as the
+      // buildings so it never reaches the road either.
+      const drawHedge = (innerEdge: number, side: -1 | 1, groundY: number, ds: number, slot: number) => {
+        const w = (16 + hash1(slot * 2.9) * 8) * ds;
+        const hh = (4 + hash1(slot * 2.2) * 2.5) * ds;
+        const tx = innerEdge - (side === -1 ? w / 2 : -w / 2);
         ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
-        ctx.ellipse(tx, groundY + ds * 0.6, r * 0.9, r * 0.3, 0, 0, Math.PI * 2);
+        ctx.ellipse(tx, groundY + ds, w * 0.42, 1.5 * ds, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-        const grad = ctx.createLinearGradient(tx - r, groundY - r, tx + r, groundY);
-        grad.addColorStop(0, '#6b6f74');
-        grad.addColorStop(1, '#33363a');
+        const grad = ctx.createLinearGradient(0, groundY - hh, 0, groundY);
+        grad.addColorStop(0, '#4a7a58');
+        grad.addColorStop(1, '#213c29');
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(tx - r, groundY);
-        ctx.lineTo(tx - r * 0.6, groundY - r * 0.9);
-        ctx.lineTo(tx + r * 0.3, groundY - r * 1.1);
-        ctx.lineTo(tx + r, groundY - r * 0.2);
-        ctx.lineTo(tx + r * 0.7, groundY);
-        ctx.closePath();
+        roundRect(ctx, tx - w / 2, groundY - hh, w, hh, hh * 0.4);
         ctx.fill();
       };
 
@@ -1608,15 +1605,18 @@ export default function DriveChallengeGame({
         // same depth-scale idea as the entities — the clearest "they're
         // approaching" cue this fixed-position scroll trick can offer.
         const ds = depthScale(Math.max(0, y));
+        // Same taper the asphalt/guardrails themselves use — the actual
+        // road-facing edge at this row, so "outward from here" always
+        // means "outward from where the pavement really is right now",
+        // not a fixed x that's only correct at one distance.
+        const t = Math.max(0, Math.min(1, y / height));
+        const roadEdgeSpan = railInset + 13 - railTopInset;
+        const roadEdgeL = railTopInset + roadEdgeSpan * t - 3;
+        const roadEdgeR = width - railTopInset - roadEdgeSpan * t + 3;
         for (const side of [-1, 1] as const) {
           const slot = poleIndex * 2 + (side === -1 ? 0 : 1);
           const x = side === -1 ? railInset - 5 : width - railInset + 5;
-          // Vegetation gets its own, more inboard anchor than lamps/
-          // barriers — a thin lamp pole reads fine right at the canvas
-          // edge, but a round tree canopy centered there had roughly
-          // half its own radius clipped off by the edge itself. Shifted
-          // in just far enough to give a canopy real room on both sides.
-          const vegX = side === -1 ? railInset + 10 : width - railInset - 10;
+          const innerEdge = side === -1 ? roadEdgeL : roadEdgeR;
 
           // What this slot becomes is a weighted hash roll, not a
           // mechanical alternation — a strict every-other-pole pattern
@@ -1624,16 +1624,24 @@ export default function DriveChallengeGame({
           // hash-driven roll (deterministic per slot, so still stable
           // frame to frame) never lines up into a visible rhythm.
           const roll = hash1(slot * 13.7 + 0.9);
-          if (roll < 0.4) {
-            drawTree(vegX, y, ds, slot);
+          if (roll < 0.22) {
+            drawBuilding('villa', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.55) {
-            drawBush(vegX, y, ds, slot);
+          if (roll < 0.32) {
+            drawBuilding('villaPremium', innerEdge, side, y, ds, slot);
             continue;
           }
-          if (roll < 0.63) {
-            drawRock(vegX, y, ds, slot);
+          if (roll < 0.44) {
+            drawBuilding('condo', innerEdge, side, y, ds, slot);
+            continue;
+          }
+          if (roll < 0.51) {
+            drawBuilding('urban', innerEdge, side, y, ds, slot);
+            continue;
+          }
+          if (roll < 0.61) {
+            drawHedge(innerEdge, side, y, ds, slot);
             continue;
           }
 
@@ -1642,7 +1650,7 @@ export default function DriveChallengeGame({
           // crowding out the lamps that do the actual lighting work. The
           // real Blender guardrail (CX_DRIVE_ASSETS/Barriers/guardrail.glb)
           // rendered to a sprite, replacing the old striped-panel shape.
-          const isBarrier = roll < 0.71;
+          const isBarrier = roll < 0.68;
           if (isBarrier) {
             if (barrierImg.complete && barrierImg.naturalWidth > 0) {
               const bw = 30 * ds;
