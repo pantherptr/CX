@@ -76,10 +76,27 @@ const TONES: Record<GameSound, Tone[]> = {
   ],
 };
 
+/** Idle/full-speed frequencies (Hz) for the two engine-drone layers —
+ *  not a physical engine model, just a low sawtooth fundamental plus a
+ *  triangle layer a fifth above it, both rising with speed. Picked by
+ *  ear for "audible momentum" without competing with the music or SFX. */
+const ENGINE_FREQ_1 = { idle: 46, max: 141 };
+const ENGINE_FREQ_2 = { idle: 69, max: 209 };
+const ENGINE_GAIN = { idle: 0.02, max: 0.052 };
+/** How long the drone takes to ease into/out of its target value — long
+ *  enough to never click or pop, short enough to still feel responsive
+ *  to a boost or a crash. */
+const ENGINE_RAMP_S = 0.16;
+
 export function useGameAudio() {
   const ctxRef = useRef<AudioContext | null>(null);
   const musicRef = useRef<HTMLAudioElement | null>(null);
   const musicFadeRafRef = useRef<number | null>(null);
+  /** The continuous speed-drone — null whenever it isn't currently
+   *  playing (paused, countdown, results screen). Two oscillators
+   *  sharing one gain node so `updateEngine`/`stopEngine` only ever
+   *  touch one gain ramp regardless of the layer count. */
+  const engineRef = useRef<{ osc1: OscillatorNode; osc2: OscillatorNode; gain: GainNode } | null>(null);
   /** The volume music should sit at once any in-flight fade completes —
    *  read by `toggleMute` so unmuting restores the *current phase's*
    *  level (low on the intro/countdown screen, gameplay level mid-run)
@@ -95,12 +112,33 @@ export function useGameAudio() {
 
   useEffect(() => {
     return () => {
+      if (engineRef.current) {
+        try {
+          engineRef.current.osc1.stop();
+          engineRef.current.osc2.stop();
+        } catch {
+          // Already stopped — nothing left to clean up.
+        }
+        engineRef.current = null;
+      }
       ctxRef.current?.close().catch(() => {});
       ctxRef.current = null;
       if (musicFadeRafRef.current !== null) cancelAnimationFrame(musicFadeRafRef.current);
       musicRef.current?.pause();
       musicRef.current = null;
     };
+  }, []);
+
+  /** Lazily creates (or resumes) the one `AudioContext` every synthesized
+   *  sound in this hook — SFX, and now the engine drone — shares. */
+  const getAudioCtx = useCallback(() => {
+    let ctx = ctxRef.current;
+    if (!ctx) {
+      ctx = new AudioContext();
+      ctxRef.current = ctx;
+    }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
   }, []);
 
   /** Lazily creates the one `<audio>` element this hook instance will
@@ -192,12 +230,7 @@ export function useGameAudio() {
   const play = useCallback(
     (sound: GameSound) => {
       if (muted) return;
-      let ctx = ctxRef.current;
-      if (!ctx) {
-        ctx = new AudioContext();
-        ctxRef.current = ctx;
-      }
-      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const ctx = getAudioCtx();
 
       for (const tone of TONES[sound]) {
         const startAt = ctx.currentTime + (tone.delay ?? 0);
@@ -216,8 +249,79 @@ export function useGameAudio() {
         osc.stop(startAt + tone.duration);
       }
     },
+    [muted, getAudioCtx],
+  );
+
+  /** Starts the continuous engine drone — a no-op if it's already
+   *  running (idempotent, so a caller doesn't need to track whether it
+   *  already called this). Begins at idle level and eases in, same
+   *  "never a click or pop" contract as the music fades above. */
+  const startEngine = useCallback(() => {
+    if (muted || engineRef.current) return;
+    const ctx = getAudioCtx();
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'triangle';
+    osc1.frequency.value = ENGINE_FREQ_1.idle;
+    osc2.frequency.value = ENGINE_FREQ_2.idle;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    osc1.start();
+    osc2.start();
+    gain.gain.setTargetAtTime(ENGINE_GAIN.idle, ctx.currentTime, ENGINE_RAMP_S);
+    engineRef.current = { osc1, osc2, gain };
+  }, [muted, getAudioCtx]);
+
+  /** Retunes the running drone toward `intensity` (0 = idle, 1 = flat
+   *  out) — called every simulating frame from the game loop with the
+   *  same speed fraction the HUD/camera-punch effects already use, so
+   *  the engine note and the visual sense of speed rise together. A
+   *  no-op if the drone isn't currently running (paused, not yet
+   *  started) rather than an error, since the game loop calls this
+   *  unconditionally while active. */
+  const updateEngine = useCallback(
+    (intensity: number) => {
+      const e = engineRef.current;
+      if (!e) return;
+      const ctx = ctxRef.current;
+      if (!ctx) return;
+      const t = Math.min(1, Math.max(0, intensity));
+      const now = ctx.currentTime;
+      e.osc1.frequency.setTargetAtTime(ENGINE_FREQ_1.idle + t * (ENGINE_FREQ_1.max - ENGINE_FREQ_1.idle), now, ENGINE_RAMP_S);
+      e.osc2.frequency.setTargetAtTime(ENGINE_FREQ_2.idle + t * (ENGINE_FREQ_2.max - ENGINE_FREQ_2.idle), now, ENGINE_RAMP_S);
+      e.gain.gain.setTargetAtTime(muted ? 0 : ENGINE_GAIN.idle + t * (ENGINE_GAIN.max - ENGINE_GAIN.idle), now, ENGINE_RAMP_S);
+    },
     [muted],
   );
+
+  /** Eases the drone out and stops both oscillators shortly after —
+  *   called on pause, on the run ending (crash or otherwise), and from
+  *   this hook's own unmount cleanup above. Safe to call repeatedly:
+  *   a second call while the fade-out is still in flight finds
+  *   `engineRef.current` already cleared and simply no-ops. */
+  const stopEngine = useCallback(() => {
+    const e = engineRef.current;
+    if (!e) return;
+    const ctx = ctxRef.current;
+    engineRef.current = null;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    e.gain.gain.cancelScheduledValues(now);
+    e.gain.gain.setTargetAtTime(0, now, ENGINE_RAMP_S * 0.75);
+    const { osc1, osc2 } = e;
+    window.setTimeout(() => {
+      try {
+        osc1.stop();
+        osc2.stop();
+      } catch {
+        // Context may already be closed (modal closed mid-fade) — fine.
+      }
+    }, 400);
+  }, []);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
@@ -235,9 +339,20 @@ export function useGameAudio() {
         cancelMusicFade();
         el.volume = next ? 0 : musicTargetVolumeRef.current;
       }
+      // Muting snaps the engine drone to silence immediately, the same
+      // way music does; unmuting needs no equivalent snap-back here —
+      // the drone only ever runs during active gameplay, where the game
+      // loop's own per-frame `updateEngine` call restores it to whatever
+      // the current speed calls for on the very next frame.
+      const engine = engineRef.current;
+      const ctx = ctxRef.current;
+      if (engine && ctx && next) {
+        engine.gain.gain.cancelScheduledValues(ctx.currentTime);
+        engine.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      }
       return next;
     });
   }, [cancelMusicFade]);
 
-  return { play, muted, toggleMute, duckMusic, startGameplayMusic, pauseMusic };
+  return { play, muted, toggleMute, duckMusic, startGameplayMusic, pauseMusic, startEngine, updateEngine, stopEngine };
 }

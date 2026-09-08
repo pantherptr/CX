@@ -150,6 +150,77 @@ function shadeHex(hex: string, percent: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
+/** The same five body-profile control points DriveChallengeGame's canvas
+ *  renderer draws the in-run car from — kept as a small, deliberately
+ *  duplicated copy here (same tradeoff as `shadeHex` above) rather than
+ *  importing the lazy game module into this eagerly-loaded launcher,
+ *  which would defeat its whole code-splitting point. Only the numbers
+ *  a showroom silhouette needs: the half-width/height profile from nose
+ *  to tail, and how flat the tail cut is. */
+const CAR_BODY_PROFILES: Record<string, { right: [number, number][]; tailFlat: number }> = {
+  gt: { right: [[0, -0.5], [0.28, -0.3], [0.4, -0.06], [0.37, 0.14], [0.38, 0.32], [0.24, 0.48]], tailFlat: 0.35 },
+  sport: { right: [[0, -0.5], [0.25, -0.3], [0.38, -0.06], [0.34, 0.14], [0.42, 0.32], [0.27, 0.48]], tailFlat: 0.45 },
+  r: { right: [[0, -0.5], [0.33, -0.3], [0.43, -0.06], [0.4, 0.14], [0.44, 0.32], [0.32, 0.48]], tailFlat: 0.6 },
+  hyper: { right: [[0, -0.5], [0.29, -0.3], [0.33, -0.06], [0.4, 0.14], [0.46, 0.32], [0.38, 0.48]], tailFlat: 0.75 },
+  x: { right: [[0, -0.5], [0.31, -0.3], [0.41, -0.06], [0.39, 0.14], [0.43, 0.32], [0.3, 0.48]], tailFlat: 0.4 },
+};
+
+/** Same "rounded polygon" construction as the canvas game's own
+ *  `traceBodyPath` (curve through each profile point toward the midpoint
+ *  of the next, mirrored for a perfectly symmetric closed shape) — just
+ *  emitting an SVG path string instead of executing `ctx` calls, so the
+ *  showroom silhouette is always the exact same shape as the car the
+ *  player actually drives. */
+function carBodySvgPath(designId: string, w: number, h: number): string {
+  const profile = CAR_BODY_PROFILES[designId] ?? CAR_BODY_PROFILES.gt;
+  const right = profile.right.map(([fx, fy]) => [fx * w, fy * h] as [number, number]);
+  const stripTail = profile.tailFlat <= 0.02;
+  const mirrorSource = right.slice(1, stripTail ? -1 : undefined);
+  const left = mirrorSource.slice().reverse().map(([x, y]) => [-x, y] as [number, number]);
+  const pts = [...right, ...left];
+  const n = pts.length;
+  const mid = (a: [number, number], b: [number, number]): [number, number] => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const cx = w / 2;
+  const cy = h / 2;
+  const start = mid(pts[n - 1], pts[0]);
+  let d = `M ${(start[0] + cx).toFixed(1)} ${(start[1] + cy).toFixed(1)} `;
+  for (let i = 0; i < n; i++) {
+    const cur = pts[i];
+    const next = pts[(i + 1) % n];
+    const m = mid(cur, next);
+    d += `Q ${(cur[0] + cx).toFixed(1)} ${(cur[1] + cy).toFixed(1)} ${(m[0] + cx).toFixed(1)} ${(m[1] + cy).toFixed(1)} `;
+  }
+  return `${d}Z`;
+}
+
+/** The showroom's hero preview — a small SVG rendering of the exact same
+ *  body silhouette the live game draws on canvas (see `carBodySvgPath`
+ *  above), replacing what used to be a plain rounded-rect placeholder.
+ *  Purely presentational: nothing here feeds gameplay. */
+function CarShowroomArt({ carId, bodyColor }: { carId: string; bodyColor: string }) {
+  const w = 76;
+  const h = 118;
+  const gradId = `car-body-${carId}`;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ filter: 'drop-shadow(0 16px 18px rgba(0,0,0,0.55))' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2={w} y2={h} gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor={shadeHex(bodyColor, 26)} />
+          <stop offset="0.4" stopColor={bodyColor} />
+          <stop offset="1" stopColor={shadeHex(bodyColor, -26)} />
+        </linearGradient>
+        <linearGradient id={`${gradId}-glass`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#141a1e" />
+          <stop offset="1" stopColor="#28323a" />
+        </linearGradient>
+      </defs>
+      <path d={carBodySvgPath(carId, w, h)} fill={`url(#${gradId})`} stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+      <ellipse cx={w / 2} cy={h * 0.36} rx={w * 0.24} ry={h * 0.15} fill={`url(#${gradId}-glass)`} />
+      <rect x={w * 0.28} y={h * 0.04} width={w * 0.44} height={h * 0.03} rx={h * 0.015} fill="rgba(0,0,0,0.35)" />
+    </svg>
+  );
+}
+
 /** One-shot confetti burst — mounted only while `active`, so it never
  *  costs anything on the screens that don't call for it. Purely
  *  decorative: no state, no timers, each piece just plays its CSS fall
@@ -235,15 +306,8 @@ function CarGaragePanel({
         <div key={preview.id} className="drive-car-enter absolute inset-0 grid place-items-center">
           <div className="relative">
             <span className="drive-showroom-floor absolute -bottom-4 left-1/2 h-5 w-36 -translate-x-1/2" />
-            <div
-              className="drive-car-idle relative h-16 w-28 rounded-[1.1rem]"
-              style={{
-                background: `linear-gradient(135deg, ${shadeHex(preview.bodyColor, 20)}, ${preview.bodyColor} 45%, ${shadeHex(preview.bodyColor, -18)})`,
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.16), 0 18px 30px rgba(0,0,0,0.55)',
-              }}
-            >
-              <span className="absolute inset-x-3 top-2 h-3 rounded-full bg-black/40" />
-              <span className="absolute inset-x-4 bottom-2 h-1 rounded-full bg-accent-bright/70" />
+            <div className="drive-car-idle relative">
+              <CarShowroomArt carId={preview.id} bodyColor={preview.bodyColor} />
             </div>
           </div>
         </div>
@@ -353,7 +417,7 @@ export function DriveChallengeLauncher({
   const { toast } = useApp();
   const tiers = useRewardTiers();
   const config = useGameConfig();
-  const { play, muted, toggleMute, duckMusic, startGameplayMusic, pauseMusic } = useGameAudio();
+  const { play, muted, toggleMute, duckMusic, startGameplayMusic, pauseMusic, startEngine, updateEngine, stopEngine } = useGameAudio();
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('intro');
@@ -864,8 +928,12 @@ export function DriveChallengeLauncher({
                     active={phase === 'playing'}
                     onFinish={handleFinish}
                     play={play}
+                    startEngine={startEngine}
+                    updateEngine={updateEngine}
+                    stopEngine={stopEngine}
                     bestScore={bestScore}
                     bodyColor={selectedCar.bodyColor}
+                    carId={selectedCar.id}
                     topSpeedMul={selectedCar.mult.topSpeed}
                     accelMul={selectedCar.mult.acceleration}
                     handlingMul={selectedCar.mult.handling}
