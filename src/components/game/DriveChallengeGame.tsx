@@ -91,6 +91,11 @@ interface Entity {
   /** Set once a near-miss/collision resolves for this entity, so the
    *  graze effect (streak + score bonus) can only ever fire once. */
   grazed?: boolean;
+  /** Set the instant this entity's y first passes the player's own y —
+   *  i.e. the moment it's actually behind the car, not just alongside
+   *  it. Purely a one-shot cosmetic trigger (see the overtake flash
+   *  below); never touches score, same as `grazed` never re-fires. */
+  overtaken?: boolean;
 }
 
 /** A transient "NEAR MISS +N" moment — a ring pop plus rising label,
@@ -479,6 +484,7 @@ export default function DriveChallengeGame({
   const scoreChipRef = useRef<HTMLDivElement>(null);
   const bestElRef = useRef<HTMLParagraphElement>(null);
   const speedElRef = useRef<HTMLSpanElement>(null);
+  const speedChipRef = useRef<HTMLDivElement>(null);
   const comboElRef = useRef<HTMLParagraphElement>(null);
   const comboChipRef = useRef<HTMLDivElement>(null);
   const comboTierElRef = useRef<HTMLParagraphElement>(null);
@@ -1062,6 +1068,21 @@ export default function DriveChallengeGame({
               applyComboTier(combo);
             }
           }
+
+          // Overtake acknowledgment — the instant a real traffic vehicle's
+          // y first reaches the player's own (i.e. it's actually behind
+          // the car now, not just alongside it), a quick quiet streak
+          // marks the moment. No score change: passing a car at a
+          // comfortable distance is already its own reward via not
+          // crashing into it, and the near-miss system above already
+          // pays out for anything close enough to matter. `overtaken`
+          // guards it the same way `grazed` guards near-miss — once
+          // per entity, never re-fires as it keeps scrolling past.
+          if (!e.overtaken && e.y >= py && (e.kind === 'car' || e.kind === 'truck' || e.kind === 'moving')) {
+            e.overtaken = true;
+            spawnBurst(ex, py, 3, { spread: 0.4, speed: 140, size: 1.8, color: 'rgba(0,212,71,0.55)', life: 0.28, mode: 'streak' });
+          }
+
           next.push(e);
         }
         entities = next;
@@ -1085,6 +1106,12 @@ export default function DriveChallengeGame({
         }
         if (scoreElRef.current) scoreElRef.current.textContent = String(Math.floor(score));
         if (speedElRef.current) speedElRef.current.textContent = String(displaySpeed);
+        // A warm "redline" glow once the car is deep into its own top-
+        // speed range — the same escalating-feedback idea the combo chip
+        // already uses, just tied to velocity. `topSpeedKmh` is this
+        // car's own realistic cap, so a slower car redlines at its own
+        // pace rather than needing the absolute 425 ceiling every time.
+        speedChipRef.current?.classList.toggle('drive-speed-redline', displaySpeed >= topSpeedKmh * 0.82);
         if (comboElRef.current) comboElRef.current.textContent = `×${combo}`;
         if (distanceElRef.current) distanceElRef.current.textContent = (distanceUnits / 5000).toFixed(1);
         if (!recordBroken && bestScore > 0 && score > bestScore) {
@@ -2449,7 +2476,7 @@ export default function DriveChallengeGame({
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
           <div
             ref={objectiveFillElRef}
-            className="h-full rounded-full bg-accent-bright transition-[width] duration-300 ease-out"
+            className="drive-objective-fill h-full rounded-full bg-accent-bright transition-[width] duration-300 ease-out"
             style={{ width: '0%' }}
           />
         </div>
@@ -2462,7 +2489,7 @@ export default function DriveChallengeGame({
       </div>
 
       <div className="pointer-events-none absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
-        <div className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
+        <div ref={speedChipRef} className="drive-hud-chip rounded-2xl px-3.5 py-2 text-right backdrop-blur-xl">
           <p className="text-nano font-bold uppercase tracking-[0.16em] text-accent-bright/75">Speed</p>
           <p className="font-display text-2xl font-bold leading-none tabular-nums text-white">
             <span ref={speedElRef}>0</span>
