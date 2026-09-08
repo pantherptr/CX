@@ -197,10 +197,24 @@ function carBodySvgPath(designId: string, w: number, h: number): string {
  *  body silhouette the live game draws on canvas (see `carBodySvgPath`
  *  above), replacing what used to be a plain rounded-rect placeholder.
  *  Purely presentational: nothing here feeds gameplay. */
-function CarShowroomArt({ carId, bodyColor }: { carId: string; bodyColor: string }) {
-  const w = 76;
-  const h = 118;
-  const gradId = `car-body-${carId}`;
+function CarShowroomArt({
+  carId,
+  bodyColor,
+  width: w = 76,
+  height: h = 118,
+}: {
+  carId: string;
+  bodyColor: string;
+  width?: number;
+  height?: number;
+}) {
+  // Keyed by size as well as car — two instances of the same car (the
+  // hero preview and its grid card both showing the currently-selected
+  // one) render at different dimensions side by side, and SVG gradient
+  // ids share ONE namespace across the whole document, so a size-only
+  // key would leave the smaller instance rendering with the larger
+  // one's `userSpaceOnUse` coordinates.
+  const gradId = `car-body-${carId}-${w}x${h}`;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ filter: 'drop-shadow(0 16px 18px rgba(0,0,0,0.55))' }}>
       <defs>
@@ -379,7 +393,9 @@ function CarGaragePanel({
                   : 'border-white/10 bg-white/[0.04] hover:border-white/25'
               } ${!unlocked ? 'opacity-80' : ''}`}
             >
-              <span className="h-8 w-14 rounded-lg" style={{ background: c.bodyColor }} />
+              <span className="grid h-9 place-items-center">
+                <CarShowroomArt carId={c.id} bodyColor={c.bodyColor} width={26} height={40} />
+              </span>
               <span className="text-label font-semibold text-white/85">{c.name}</span>
               {active && unlocked && (
                 <span className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-accent-bright text-noir">

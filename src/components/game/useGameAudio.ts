@@ -24,7 +24,8 @@ export type GameSound =
   | 'crash'
   | 'gameover'
   | 'reward'
-  | 'record';
+  | 'record'
+  | 'screech';
 
 const MUTE_KEY = 'cx-drive-sound-muted';
 
@@ -73,6 +74,14 @@ const TONES: Record<GameSound, Tone[]> = {
   record: [
     { freq: 700, glide: 900, duration: 0.11, type: 'triangle', gain: 0.07 },
     { freq: 1050, glide: 1320, duration: 0.16, type: 'triangle', gain: 0.08, delay: 0.1 },
+  ],
+  // A quick tire chirp for a sharp, high-speed lane change — two close
+  // detuned tones falling in pitch together (sawtooth + square) reads as
+  // grittier than either alone, the closest this oscillator-only palette
+  // gets to a real rubber-on-asphalt screech.
+  screech: [
+    { freq: 1200, glide: 340, duration: 0.14, type: 'sawtooth', gain: 0.045 },
+    { freq: 900, glide: 260, duration: 0.14, type: 'square', gain: 0.03 },
   ],
 };
 

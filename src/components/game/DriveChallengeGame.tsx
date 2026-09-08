@@ -586,6 +586,13 @@ export default function DriveChallengeGame({
 
     let playerLane = 1;
     let currentLaneX = laneX(playerLane);
+    // The lateral speed `currentLaneX` is moving at — the one extra bit
+    // of state a spring-damper needs over a plain lerp. Lets a lane
+    // change carry a touch of weight (a small, controlled overshoot as
+    // the car settles into the new lane) instead of gliding to a stop
+    // exactly on target, the way a real chassis settling on its
+    // suspension would rather than teleporting along an eased curve.
+    let laneVelocity = 0;
     let prevLane = playerLane;
     let carTilt = 0;
     let entities: Entity[] = [];
@@ -871,8 +878,21 @@ export default function DriveChallengeGame({
           }
         }
 
+        // Slightly under-damped spring-mass instead of a plain lerp — the
+        // car still snaps toward the target lane about as quickly as the
+        // old `dt * 12` factor did, but now carries a small, controlled
+        // overshoot-and-settle rather than gliding to a dead stop exactly
+        // on target. `omega0` sets how snappy the response is (scaled by
+        // `handlingMul`, same knob the old lerp used); `zeta` just under
+        // 1 keeps the overshoot subtle — a real damping ratio, not just
+        // a fudge factor, so it can't blow up even at the loop's worst-
+        // case clamped `dt`.
         const target = laneX(playerLane);
-        currentLaneX += (target - currentLaneX) * Math.min(1, dt * 12 * handlingMul);
+        const omega0 = 13 * handlingMul;
+        const zeta = 0.88;
+        const springAccel = (target - currentLaneX) * (omega0 * omega0) - laneVelocity * (2 * zeta * omega0);
+        laneVelocity += springAccel * dt;
+        currentLaneX += laneVelocity * dt;
 
         // Cosmetic: lean the car into the turn, proportional to how far
         // it still has to travel to the target lane, then settle.
@@ -891,6 +911,11 @@ export default function DriveChallengeGame({
             color: 'rgba(210,210,204,0.55)',
             life: 0.5,
           });
+          // A sharp lane change only chirps the tires once the run is
+          // genuinely fast (matches the speed-lines' own 380 threshold
+          // below) — at low speed the same move is just a lane change,
+          // not hard enough cornering to earn the sound.
+          if (speed > 380) playRef.current('screech');
           prevLane = playerLane;
         }
 
