@@ -1775,9 +1775,14 @@ export default function DriveChallengeGame({
           const wMul = e.kind === 'truck' ? 1 : sil === 2 ? 1.07 : sil === 4 ? 1.05 : sil === 1 ? 0.94 : 1;
           const cw = e.w * ds * wMul, ch = e.h * ds;
 
+          // Contact shadow — a tight dark core plus a softer outer
+          // falloff (same two-stop treatment the player car's own shadow
+          // uses) so traffic reads as resting its weight on the asphalt
+          // rather than a flat cutout hovering over a generic blob.
           ctx.save();
           const shGrad = ctx.createRadialGradient(x, e.y + ch * 0.42, 1, x, e.y + ch * 0.42, cw * 0.7);
-          shGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+          shGrad.addColorStop(0, 'rgba(0,0,0,0.5)');
+          shGrad.addColorStop(0.4, 'rgba(0,0,0,0.34)');
           shGrad.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = shGrad;
           ctx.beginPath();
