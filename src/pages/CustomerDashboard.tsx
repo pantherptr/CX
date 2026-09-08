@@ -158,7 +158,7 @@ function TripRow({ booking }: { booking: Booking }) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-ink">{booking.car.make} {booking.car.model}</p>
         <p className="text-detail text-muted">
-          {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)} · {booking.pickupLocation || booking.car.location}
+          {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)} · {booking.fulfillmentType === 'delivery' ? booking.deliveryAddress : (booking.pickupLocation || booking.car.location)}
         </p>
         <p className="mt-0.5 text-caption text-faint">Booking {booking.reference}</p>
       </div>
@@ -338,7 +338,9 @@ export default function CustomerDashboard() {
                     {[
                       { l: 'Pick-up', v: fmtDate(nextTrip.startDate), icon: 'calendar' as const },
                       { l: 'Return', v: fmtDate(nextTrip.endDate), icon: 'calendar' as const },
-                      { l: 'Location', v: nextTrip.pickupLocation || nextTrip.car.location, icon: 'pin' as const },
+                      nextTrip.fulfillmentType === 'delivery'
+                        ? { l: 'Delivery to', v: nextTrip.deliveryAddress || '', icon: 'car' as const }
+                        : { l: 'Location', v: nextTrip.pickupLocation || nextTrip.car.location, icon: 'pin' as const },
                     ].map((x) => (
                       <div key={x.l}>
                         <p className="flex items-center gap-1.5 text-caption text-muted"><Icon name={x.icon} size={13} /> {x.l}</p>
