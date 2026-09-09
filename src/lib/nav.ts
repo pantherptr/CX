@@ -5,12 +5,6 @@ export interface NavItem {
   to: string;
   icon: IconName;
   badge?: number;
-  /** Marks the CX Drive entry — rendered as a launcher button (opens the
-   *  game modal) instead of a `NavLink`, since it has no route of its
-   *  own. Kept as an explicit flag rather than matching on `label` so
-   *  the special-cased render sites (DashboardShell, AppNavbar) don't
-   *  depend on exact copy. */
-  isDrive?: boolean;
 }
 
 /** Single source of truth for the authenticated app's driver-mode nav —
@@ -19,7 +13,7 @@ export interface NavItem {
 export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/dashboard', icon: 'grid' },
   { label: 'CX Garage', to: '/garage', icon: 'key' },
-  { label: 'Drive', to: '', icon: 'car', isDrive: true },
+  { label: 'Car Empire', to: '/empire', icon: 'trophy' },
   { label: 'Browse Cars', to: '/browse', icon: 'search' },
   { label: 'My Trips', to: '/dashboard#trips', icon: 'trips' },
   { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },
@@ -33,7 +27,7 @@ export const customerNav = (unreadCount: number): NavItem[] => [
 /** Host-mode nav — same sharing rationale as `customerNav`. */
 export const hostNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/host', icon: 'grid' },
-  { label: 'Drive', to: '', icon: 'car', isDrive: true },
+  { label: 'Car Empire', to: '/empire', icon: 'trophy' },
   { label: 'My Cars', to: '/host#cars', icon: 'cars' },
   { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
   { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },

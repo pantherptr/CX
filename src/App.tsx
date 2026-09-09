@@ -27,6 +27,7 @@ import NotFound from './pages/NotFound';
 // Split per route so each page's cost is paid only when it's opened.
 const Compare = lazy(() => import('./pages/Compare'));
 const Garage = lazy(() => import('./pages/Garage'));
+const Empire = lazy(() => import('./pages/Empire'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
@@ -177,6 +178,7 @@ export default function App() {
               sign-in teaser for a signed-out visitor rather than a hard
               redirect, per its own spec. */}
           <Route path="/garage" element={<Garage />} />
+          <Route path="/empire" element={<Empire />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />

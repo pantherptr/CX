@@ -5,7 +5,6 @@ import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
-import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 import { ConciergeLauncher } from './Concierge';
 
 const links = [
@@ -101,7 +100,8 @@ function PublicNavbar() {
                 </li>
               ))}
             </ul>
-            <DriveChallengeLauncher
+            <Link
+              to="/empire"
               className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-detail font-semibold transition-colors lg:inline-flex ${
                 transparent ? 'text-accent-700' : 'text-accent-700'
               }`}
@@ -110,14 +110,9 @@ function PublicNavbar() {
                 className="pointer-events-none absolute inset-0 -z-10 rounded-lg opacity-0 blur-[10px] transition-opacity duration-300 group-hover:opacity-100"
                 style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
               />
-              <img
-                src="/cx-drive-challenge-icon.png"
-                alt=""
-                className="h-6 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
-                style={{ objectPosition: '50% 8%' }}
-              />
-              <span className="tracking-wide">DRIVE</span>
-            </DriveChallengeLauncher>
+              <Icon name="trophy" size={17} className="transition-transform duration-300 group-hover:scale-110" />
+              <span className="tracking-wide">EMPIRE</span>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -226,18 +221,13 @@ function PublicNavbar() {
                   </li>
                 ))}
                 <li onClick={() => setMenuOpen(false)}>
-                  <DriveChallengeLauncher className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3 text-lead font-bold text-white transition-colors hover:bg-white/10">
+                  <Link to="/empire" className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3 text-lead font-bold text-white transition-colors hover:bg-white/10">
                     <span className="flex items-center gap-3">
-                      <img
-                        src="/cx-drive-challenge-icon.png"
-                        alt=""
-                        className="h-8 w-auto object-contain"
-                        style={{ objectPosition: '50% 8%' }}
-                      />
-                      <span className="tracking-wide">DRIVE</span>
+                      <Icon name="trophy" size={22} className="text-accent-bright" />
+                      <span className="tracking-wide">CAR EMPIRE</span>
                     </span>
                     <Icon name="chevronRight" size={18} className="text-accent-bright" />
-                  </DriveChallengeLauncher>
+                  </Link>
                 </li>
               </ul>
               <div className="my-5 h-px bg-white/10" />
@@ -411,25 +401,6 @@ function AppNavbar() {
               ) : null}
               <ul className="flex flex-col gap-0.5">
                 {nav.map((n) => {
-                  if (n.isDrive) {
-                    return (
-                      <li key={n.label} onClick={() => setDrawerOpen(false)}>
-                        <DriveChallengeLauncher className="group relative flex w-full items-center gap-3 overflow-hidden rounded-xl bg-accent-bright/10 px-3 py-2.5 text-body font-semibold text-accent-700 transition-colors hover:bg-accent-bright/[0.16]">
-                          <span
-                            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                            style={{ background: 'radial-gradient(120px 40px at 0% 50%, rgba(0,212,71,0.22), transparent 75%)' }}
-                          />
-                          <img
-                            src="/cx-drive-challenge-icon.png"
-                            alt=""
-                            className="relative h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:scale-110"
-                            style={{ objectPosition: '50% 8%' }}
-                          />
-                          <span className="relative flex-1 text-left tracking-wide">{n.label.toUpperCase()}</span>
-                        </DriveChallengeLauncher>
-                      </li>
-                    );
-                  }
                   return (
                     <li key={n.label}>
                       <NavLink

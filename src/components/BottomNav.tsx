@@ -4,7 +4,6 @@ import { Icon, type IconName } from './Icon';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
-import { DriveChallengeLauncher } from './game/DriveChallengeLauncher';
 
 interface Item {
   label: string;
@@ -13,10 +12,6 @@ interface Item {
   match: (pathname: string, hash: string) => boolean;
 }
 
-// The center slot opens the Drive Challenge modal rather than navigating —
-// `to` is unused for it (rendered specially below) and `match` always
-// false, since there's no route for a modal to be "on".
-//
 // Messages sits here rather than Saved Cars — a two-way, time-sensitive
 // channel with a real business need (coordinating a pickup) earns a
 // primary tab more than a passive wishlist does; Saved Cars is still one
@@ -24,7 +19,7 @@ interface Item {
 const items: Item[] = [
   { label: 'Home', to: '/dashboard', icon: 'grid', match: (p, h) => p === '/dashboard' && h === '' },
   { label: 'Explore', to: '/browse', icon: 'search', match: (p) => p === '/browse' },
-  { label: 'Drive', to: '', icon: 'car', match: () => false },
+  { label: 'Empire', to: '/empire', icon: 'trophy', match: (p) => p === '/empire' },
   { label: 'Messages', to: '/messages', icon: 'message', match: (p) => p === '/messages' },
   { label: 'Profile', to: '/settings', icon: 'user', match: (p) => p === '/settings' },
 ];
@@ -77,25 +72,6 @@ export function BottomNav() {
         />
         {items.map((it, i) => {
           const active = i === activeIndex;
-
-          if (it.label === 'Drive') {
-            return (
-              <DriveChallengeLauncher
-                key={it.label}
-                className="group relative z-10 flex flex-col items-center justify-center gap-1.5 py-2"
-              >
-                <img
-                  src="/cx-drive-challenge-icon.png"
-                  alt="CX Drive Challenge"
-                  className="h-11 w-auto object-contain transition-transform duration-200 ease-out group-hover:scale-105 group-active:scale-95"
-                  style={{ filter: 'drop-shadow(0 3px 8px rgba(22,22,26,0.22))' }}
-                />
-                <span className="text-micro font-bold uppercase tracking-wide text-accent">
-                  {it.label}
-                </span>
-              </DriveChallengeLauncher>
-            );
-          }
 
           return (
             <Link

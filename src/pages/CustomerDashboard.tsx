@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
@@ -11,8 +11,7 @@ import { Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
-import { useMyRewards, rewardStatus, claimGameReward, takePendingClaim, type Reward, type RewardStatus } from '../lib/data/rewards';
-import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
+import { useMyRewards, rewardStatus, type Reward, type RewardStatus } from '../lib/data/rewards';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -183,24 +182,6 @@ export default function CustomerDashboard() {
   const [rewardTab, setRewardTab] = useState<RewardStatus>('available');
   const [messaging, setMessaging] = useState(false);
 
-  // A CX Drive Challenge run played while signed out stays claimable —
-  // DriveChallengeLauncher stashes its session id before sending the
-  // player to /signup (see stashPendingClaim in lib/data/rewards.ts).
-  // This is where it actually gets redeemed, since a fresh sign-up
-  // always lands on the dashboard.
-  useEffect(() => {
-    if (!session) return;
-    const pending = takePendingClaim();
-    if (!pending) return;
-    claimGameReward(pending).then(({ reward, error }) => {
-      if (reward) {
-        toast({ title: 'Reward added to your account', desc: `${reward.discountPercentage}% OFF — ${reward.couponCode}`, icon: 'gift' });
-      } else if (error) {
-        toast({ title: "Couldn't claim your Drive Challenge reward", desc: error, icon: 'info' });
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user.id]);
 
   const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
@@ -541,15 +522,10 @@ export default function CustomerDashboard() {
         <section className="mt-8 scroll-mt-20" id="rewards">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="font-display text-lg font-semibold text-ink">Rewards</h2>
-            <DriveChallengeLauncher className="btn btn-secondary btn-sm self-start">
-              <img
-                src="/cx-drive-challenge-icon.png"
-                alt=""
-                className="h-4 w-4 rounded object-cover"
-                style={{ objectPosition: '50% 10%' }}
-              />
-              Play the Challenge
-            </DriveChallengeLauncher>
+            <Link to="/empire" className="btn btn-secondary btn-sm self-start">
+              <Icon name="trophy" size={15} />
+              Play Car Empire
+            </Link>
           </div>
           <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
             {REWARD_TABS.map((t) => {
@@ -587,7 +563,7 @@ export default function CustomerDashboard() {
                 </p>
                 <p className="max-w-xs text-detail text-muted">
                   {rewardTab === 'available'
-                    ? 'Play the CX Drive Challenge above to earn a real discount.'
+                    ? 'Book a car and grow your CX Score to unlock real booking discounts.'
                     : 'Nothing to show in this tab yet.'}
                 </p>
               </div>

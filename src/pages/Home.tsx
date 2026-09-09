@@ -7,7 +7,6 @@ import { Reveal, Img, useCountUp } from '../components/motion';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher } from '../components/Concierge';
 import { useCars } from '../lib/data/cars';
-import { DriveChallengeLauncher } from '../components/game/DriveChallengeLauncher';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
@@ -395,30 +394,27 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= DRIVE — small, elegant, one clear CTA ================= */}
+      {/* ================= EMPIRE — small, elegant, one clear CTA ================= */}
       <section className="container-page section">
         <Reveal>
           <div className="flex flex-col items-center gap-6 rounded-2xl border border-line bg-panel/50 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
             <div className="flex items-center gap-5">
-              <img
-                src="/cx-drive-challenge-icon.png"
-                alt=""
-                className="hidden h-16 w-auto shrink-0 object-contain sm:block"
-                style={{ objectPosition: '50% 8%' }}
-              />
+              <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent-050 text-accent-700 sm:flex">
+                <Icon name="trophy" size={30} />
+              </span>
               <div>
-                <p className="eyebrow">CX Drive Challenge</p>
+                <p className="eyebrow">CX Rent — Luxury Car Empire</p>
                 <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
-                  Play DRIVE. Beat the score. Unlock your reward.
+                  Buy. Restore. Sell. Build your empire.
                 </h2>
                 <p className="mt-2 max-w-md text-body leading-relaxed text-muted">
-                  A fast, addictive driving challenge built right into CX — score high enough and earn a real discount on your next booking.
+                  A real car-trading business built right into CX — buy undervalued cars, restore and customize them, and sell for profit while your CX Score unlocks real booking discounts.
                 </p>
               </div>
             </div>
-            <DriveChallengeLauncher className="btn btn-accent-bright btn-lg shrink-0">
-              Play DRIVE <Icon name="arrowRight" size={17} />
-            </DriveChallengeLauncher>
+            <Link to="/empire" className="btn btn-accent-bright btn-lg shrink-0">
+              Play Empire <Icon name="arrowRight" size={17} />
+            </Link>
           </div>
         </Reveal>
       </section>

@@ -91,9 +91,8 @@ function answerFor(s: Exclude<Step, 'results'>, prefs: Preferences): string {
 }
 
 /** The trigger button — pass whatever styling the placement wants via
- *  `className`, same shape as `DriveChallengeLauncher`, so the homepage,
- *  Cars page and Garage each style their own entry point but share this
- *  one modal implementation. */
+ *  `className`, so the homepage, Cars page and Garage each style their
+ *  own entry point but share this one modal implementation. */
 export function ConciergeLauncher({ className, children }: { className?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
