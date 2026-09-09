@@ -159,10 +159,17 @@ def build_body():
             i += 1
 
     bevel = obj.modifiers.new('Bevel', 'BEVEL')
-    bevel.width = 0.035
-    bevel.segments = 3
+    bevel.width = 0.02
+    bevel.segments = 2
     bevel.limit_method = 'ANGLE'
     bevel.angle_limit = math.radians(35)
+
+    # A light subsurf rounds the panels into the smooth, organic curves a
+    # real body has — the loft alone is too faceted straight off the ring
+    # geometry, even with per-face smooth shading.
+    subsurf = obj.modifiers.new('Subdivision', 'SUBSURF')
+    subsurf.levels = 1
+    subsurf.render_levels = 2
 
     for poly in obj.data.polygons:
         poly.use_smooth = True
@@ -308,13 +315,15 @@ def build_lens(name, x, y, z, length_x, width_y, height_z, material):
 
 
 def build_lights(materials):
-    # Slim wraparound LED strip — a front-facing segment plus a second
-    # segment angled onto the fender, rather than one box lamp.
+    # Oval lens clusters, recessed into the front fender — a rounded
+    # teardrop headlamp reads far more like a real car than a flat strip.
     for tag, side in (('L', 1), ('R', -1)):
-        y = side * 0.52
-        build_lens(f'CX_Headlight_{tag}', -2.10, y, 0.24, length_x=0.03, width_y=0.16, height_z=0.035, material=materials['headlight'])
-        wrap = build_lens(f'CX_Headlight_Wrap_{tag}', -1.98, side * 0.62, 0.24, length_x=0.10, width_y=0.03, height_z=0.035, material=materials['headlight'])
-        wrap.rotation_euler = (0, 0, side * math.radians(35))
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, segments=20, ring_count=12, location=(-2.06, side * 0.56, 0.24))
+        lamp = bpy.context.active_object
+        lamp.name = f'CX_Headlight_{tag}'
+        lamp.scale = (0.09, 0.055, 0.045)
+        lamp.rotation_euler = (0, 0, side * math.radians(20))
+        lamp.data.materials.append(materials['headlight'])
 
     # Full-width light bar across the tail — two segments meeting near
     # the centreline for one continuous strip, a distinctive CX signature.
