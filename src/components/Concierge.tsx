@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
-import { CarLoader } from './CarLoader';
+import { PremiumPageLoader } from './PremiumLoader';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
 import { useCompare } from '../lib/compareStore';
@@ -608,7 +608,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
             <div className="pb-8">
               {!cars ? (
                 <div className="flex min-h-[40dvh] items-center justify-center">
-                  <CarLoader size={80} />
+                  <PremiumPageLoader size={80} />
                 </div>
               ) : top ? (
                 <>

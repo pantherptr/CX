@@ -4,7 +4,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher } from '../components/Concierge';
 import { Reveal, useCountUp } from '../components/motion';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SectionHead } from '../components/primitives';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
@@ -305,7 +305,7 @@ export default function Garage() {
 
       {loading ? (
         <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
-          <CarLoader size={90} />
+          <PremiumPageLoader size={90} />
         </div>
       ) : !hasAnyData ? (
         /* ================= EMPTY STATE ================= */

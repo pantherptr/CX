@@ -84,7 +84,7 @@ export function AuthDivider() {
  *                full lockup would feel heavy.
  *   - auto     — full lockup at `sm:` and up, symbol below it. Used by
  *                the one header that has to double as both. */
-const LOGO_SRC = {
+export const LOGO_SRC = {
   full: '/cx-logo-full.png',
   symbol: '/cx-logo-symbol.png',
   wordmark: '/cx-logo-wordmark.png',

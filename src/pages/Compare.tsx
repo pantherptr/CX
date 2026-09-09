@@ -5,7 +5,7 @@ import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import type { Car } from '../data/types';
 
 /**
@@ -78,7 +78,7 @@ export default function Compare() {
 
       {loading ? (
         <div className="mt-16 flex flex-col items-center gap-3 py-16 text-center">
-          <CarLoader size={80} />
+          <PremiumPageLoader size={80} />
         </div>
       ) : selected.length === 0 ? (
         <div className="card mt-8 flex flex-col items-center gap-3 px-6 py-20 text-center">

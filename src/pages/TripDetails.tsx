@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { Reveal } from '../components/motion';
 import { Modal } from '../components/primitives';
 import { eur } from '../lib/format';
@@ -164,7 +164,7 @@ export default function TripDetails() {
     return (
       <DashboardShell variant="customer" active="My Trips">
         <div className="flex flex-col items-center gap-3 py-24 text-center">
-          <CarLoader size={90} />
+          <PremiumPageLoader size={90} />
           <p className="text-body text-muted">Loading trip…</p>
         </div>
       </DashboardShell>

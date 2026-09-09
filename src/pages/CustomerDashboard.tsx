@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher } from '../components/Concierge';
@@ -397,7 +397,7 @@ export default function CustomerDashboard() {
             <div key={tab} className="card min-h-[120px] divide-y divide-line animate-fade-in">
               {bookingsLoading ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
-                  <CarLoader size={70} />
+                  <PremiumPageLoader size={70} />
                 </div>
               ) : tabBookings.length > 0 ? (
                 tabBookings.map((b) => <TripRow key={b.id} booking={b} />)
@@ -431,7 +431,7 @@ export default function CustomerDashboard() {
             <div className="card min-h-[120px] divide-y divide-line">
               {conversationsLoading ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
-                  <CarLoader size={60} />
+                  <PremiumPageLoader size={60} />
                 </div>
               ) : conversations && conversations.length > 0 ? (
                 conversations.slice(0, 4).map((c) => (
@@ -511,7 +511,7 @@ export default function CustomerDashboard() {
             <div className="card min-h-[120px] divide-y divide-line">
               {bookingsLoading || rewardsLoading ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
-                  <CarLoader size={60} />
+                  <PremiumPageLoader size={60} />
                 </div>
               ) : activity.length > 0 ? (
                 activity.map((item) => (
@@ -569,7 +569,7 @@ export default function CustomerDashboard() {
           <div key={rewardTab} className="card min-h-[120px] divide-y divide-line animate-fade-in">
             {rewardsLoading ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <CarLoader size={70} />
+                <PremiumPageLoader size={70} />
               </div>
             ) : (rewards ?? []).filter((r) => rewardStatus(r) === rewardTab).length > 0 ? (
               (rewards ?? [])

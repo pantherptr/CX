@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { SplashScreen, CarLoader } from './components/CarLoader';
+import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { HostRoute } from './components/HostRoute';
@@ -144,7 +144,7 @@ export default function App() {
   const bottomNavVisible = useBottomNavVisible();
   return (
     <>
-      {splash.visible && <SplashScreen hiding={splash.hiding} />}
+      {splash.visible && <PremiumInitialLoader hiding={splash.hiding} />}
       <ScrollToTop />
       <MaintenanceGate>
       <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
@@ -156,7 +156,7 @@ export default function App() {
       <Suspense
         fallback={
           <div className="flex min-h-[60dvh] items-center justify-center" role="status" aria-label="Loading">
-            <CarLoader size={80} />
+            <PremiumPageLoader size={80} />
           </div>
         }
       >

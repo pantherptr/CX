@@ -459,6 +459,71 @@
   .loader-sheen { animation: loader-sheen 2.8s ease-in-out infinite; }
   .loader-glow { animation: loader-glow-pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 
+  /* ---- Premium supercar orbit ----
+     A car (and, separately, its ground shadow) sweeps around an
+     elliptical path implied purely by `transform: translate(...)` —
+     no `offset-path`/motion-path gamble, no JS loop, just the one CSS
+     property every browser animates identically. `--orbit-rx`/
+     `--orbit-ry` (set inline per instance) parameterize the SAME two
+     keyframe definitions for both the tiny inline spinner and the full
+     showroom-scale splash animation.
+
+     The 8 steps below are exact cos/sin samples of a clockwise circle
+     starting at the 3-o'clock point (0%) — standard "rounded polygon"
+     trig, not eyeballed numbers — so the sweep itself is a true smooth
+     ellipse despite `linear` timing between few keyframes.
+
+     Depth (scale) peaks at 25% (6 o'clock = nearest to the viewer) and
+     troughs at 75% (12 o'clock = farthest), matching a platform viewed
+     from a raised angle. The left/right mirror flip lands exactly at
+     0%/50% (the horizontal extremes), which is also where the car's
+     real horizontal velocity is momentarily zero — the one instant a
+     rigid 2D silhouette can reverse facing without ever looking like it
+     "un-drives" the path it just traveled. */
+  @keyframes orbit-drive {
+    0%    { transform: translate(var(--orbit-rx), 0) scaleX(-1) scale(0.9); }
+    12.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * 0.707)) scaleX(-1) scale(1.11); }
+    25%   { transform: translate(0, var(--orbit-ry)) scaleX(-1) scale(1.2); }
+    37.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * 0.707)) scaleX(-1) scale(1.11); }
+    50%   { transform: translate(calc(var(--orbit-rx) * -1), 0) scaleX(1) scale(0.9); }
+    62.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * -0.707)) scaleX(1) scale(0.69); }
+    75%   { transform: translate(0, calc(var(--orbit-ry) * -1)) scaleX(1) scale(0.6); }
+    87.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * -0.707)) scaleX(1) scale(0.69); }
+    100%  { transform: translate(var(--orbit-rx), 0) scaleX(1) scale(0.9); }
+  }
+  /* Same path, no mirror (a shadow is symmetric either way) — opacity
+     fades with distance alongside the scale, so the "nearest" point of
+     the loop reads as both biggest and darkest, "farthest" as both
+     smallest and faintest. */
+  @keyframes orbit-shadow-drive {
+    0%    { transform: translate(var(--orbit-rx), 0) scale(0.85); opacity: 0.38; }
+    12.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * 0.707)) scale(1.05); opacity: 0.48; }
+    25%   { transform: translate(0, var(--orbit-ry)) scale(1.15); opacity: 0.55; }
+    37.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * 0.707)) scale(1.05); opacity: 0.48; }
+    50%   { transform: translate(calc(var(--orbit-rx) * -1), 0) scale(0.85); opacity: 0.38; }
+    62.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * -0.707)) scale(0.62); opacity: 0.26; }
+    75%   { transform: translate(0, calc(var(--orbit-ry) * -1)) scale(0.5); opacity: 0.18; }
+    87.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * -0.707)) scale(0.62); opacity: 0.26; }
+    100%  { transform: translate(var(--orbit-rx), 0) scale(0.85); opacity: 0.38; }
+  }
+  .orbit-car-el {
+    animation: orbit-drive var(--orbit-duration, 4.2s) linear infinite;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  }
+  .orbit-shadow-el {
+    animation: orbit-shadow-drive var(--orbit-duration, 4.2s) linear infinite;
+    filter: blur(6px);
+  }
+  .orbit-ring {
+    background: radial-gradient(closest-side, rgba(0, 212, 71, 0.12), rgba(0, 212, 71, 0.02) 70%, transparent 100%);
+    box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0.16);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-car-el, .orbit-shadow-el { animation: none; }
+    .orbit-car-el { transform: translate(0, var(--orbit-ry)) scale(1.1) scaleX(-1); }
+    .orbit-shadow-el { transform: translate(0, var(--orbit-ry)) scale(1.1); opacity: 0.5; }
+  }
+
   .skeleton {
     position: relative;
     overflow: hidden;

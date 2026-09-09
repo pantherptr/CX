@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { Icon } from '../components/Icon';
 import { EmptyState, Modal, VerifiedBadge, RoleLabel, type VerifiedRole } from '../components/primitives';
 import { useAuth } from '../lib/auth';
@@ -195,7 +195,7 @@ export default function Messages() {
           <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center">
-                <CarLoader size={70} />
+                <PremiumPageLoader size={70} />
               </div>
             ) : conversations && conversations.length > 0 ? (
               conversations.map((c) => (
@@ -255,7 +255,7 @@ export default function Messages() {
               <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8">
                 {messages === null ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <CarLoader size={70} />
+                    <PremiumPageLoader size={70} />
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">

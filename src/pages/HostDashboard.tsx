@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { EmptyState } from '../components/primitives';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
 import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -237,7 +238,7 @@ function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: 
       </div>
 
       <div className="relative mt-3 grid grid-cols-7 gap-y-1">
-        {loading && <div className="absolute inset-0 z-10 grid place-items-center bg-surface/60"><CarLoaderInline /></div>}
+        {loading && <div className="absolute inset-0 z-10 grid place-items-center bg-surface/60"><PremiumPageLoader size={64} /></div>}
         {WEEKDAYS.map((w) => (
           <span key={w} className="py-1 text-center text-label font-semibold uppercase tracking-wide text-faint">{w}</span>
         ))}
@@ -273,10 +274,6 @@ function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: 
       </div>
     </div>
   );
-}
-
-function CarLoaderInline() {
-  return <span className="text-caption text-muted">Loading…</span>;
 }
 
 function HostBookingRow({ booking }: { booking: Booking }) {

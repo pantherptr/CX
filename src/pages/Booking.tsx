@@ -5,7 +5,7 @@ import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
-import { CarLoader } from '../components/CarLoader';
+import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { fetchCarWithHost } from '../lib/data/cars';
@@ -256,7 +256,7 @@ export default function Booking() {
   if (result === undefined) {
     return (
       <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
-        <CarLoader size={90} />
+        <PremiumPageLoader size={90} />
         <p className="text-body text-muted">Loading…</p>
       </div>
     );
