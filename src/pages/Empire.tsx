@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
-import { CarSilhouette } from '../components/empire/CarSilhouette';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useAuth } from '../lib/auth';
 import { eur } from '../lib/format';
@@ -14,9 +13,6 @@ import {
   useRepairCosts,
   useCustomizationOptions,
   buyMarketCar,
-  repairCar,
-  customizeCar,
-  sellCar,
   upgradeBusiness,
   estimateNetWorth,
   type MarketListing,
@@ -31,8 +27,14 @@ import {
   nextLevel,
   cxScoreEventLabel,
 } from '../lib/data/cxScore';
+import { VehicleViewport } from '../three/VehicleViewport';
+import { VehicleStage, type VehicleStageCar } from '../three/VehicleStage';
 
 type Tab = 'market' | 'collection' | 'business' | 'score';
+
+type StageState =
+  | { mode: 'preview'; listing: MarketListing }
+  | { mode: 'configure'; car: InventoryCar };
 
 function RarityBadge({ rarity }: { rarity: Rarity }) {
   const meta = RARITY_META[rarity];
@@ -46,35 +48,6 @@ function RarityBadge({ rarity }: { rarity: Rarity }) {
   );
 }
 
-function StatBar({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-white/50">
-        <span>{label}</span>
-        <span className="tabular-nums text-white/70">{value}</span>
-      </div>
-      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-accent-bright" style={{ width: `${Math.min(100, value)}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function ConditionBar({ label, value }: { label: string; value: number }) {
-  const tone = value >= 80 ? 'var(--color-accent-bright)' : value >= 45 ? 'var(--color-star)' : 'var(--color-danger)';
-  return (
-    <div>
-      <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-muted">
-        <span>{label}</span>
-        <span className="tabular-nums" style={{ color: tone }}>{value}%</span>
-      </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-panel-2">
-        <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, background: tone }} />
-      </div>
-    </div>
-  );
-}
-
 function HeroStat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-white/15 bg-white/[0.06] px-5 py-4 backdrop-blur-md">
@@ -85,119 +58,99 @@ function HeroStat({ icon, label, value }: { icon: IconName; label: string; value
   );
 }
 
-function MarketCard({ listing, cash, onBuy }: { listing: MarketListing; cash: number; onBuy: (id: string) => void }) {
-  const [busy, setBusy] = useState(false);
+function listingToStageCar(l: MarketListing): VehicleStageCar {
+  return {
+    id: l.listingId,
+    name: l.name,
+    brand: l.brand,
+    category: l.category,
+    rarity: l.rarity,
+    silhouette: l.silhouette,
+    conditionEngine: l.conditionPct,
+    conditionBody: l.conditionPct,
+    conditionInterior: l.conditionPct,
+    mileageKm: l.mileageKm,
+    customization: {},
+    purchasePrice: l.price,
+    marketValue: l.marketValue,
+  };
+}
+
+function inventoryToStageCar(c: InventoryCar): VehicleStageCar {
+  return {
+    id: c.id,
+    name: c.name,
+    brand: c.brand,
+    category: c.category,
+    rarity: c.rarity,
+    silhouette: c.silhouette,
+    conditionEngine: c.conditionEngine,
+    conditionBody: c.conditionBody,
+    conditionInterior: c.conditionInterior,
+    mileageKm: c.mileageKm,
+    customization: c.customization,
+    purchasePrice: c.purchasePrice,
+    marketValue: c.marketValue,
+  };
+}
+
+function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: number; onOpen: () => void }) {
   const meta = RARITY_META[listing.rarity];
   const canAfford = cash >= listing.price;
   const profit = listing.marketValue - listing.price;
 
   return (
-    <div className="card overflow-hidden" style={{ boxShadow: meta.glow }}>
-      <div className="relative bg-panel-2 px-4 pt-5">
-        <RarityBadge rarity={listing.rarity} />
-        <CarSilhouette silhouette={listing.silhouette} color={meta.color} className="mt-3 h-20 w-full" />
+    <button onClick={onOpen} className="card block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
+      <div className="relative aspect-[4/3] bg-panel-2">
+        <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={listing.rarity} /></span>
+        <VehicleViewport
+          config={{ silhouette: listing.silhouette, rarity: listing.rarity, conditionAvg: listing.conditionPct, customization: {} }}
+          className="h-full w-full"
+        />
       </div>
       <div className="p-4">
         <p className="text-caption text-muted">{listing.brand} · {listing.category}</p>
         <p className="font-display text-lead font-semibold text-ink">{listing.name}</p>
-        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
-          <StatBar label="Top Speed" value={Math.round((listing.topSpeed / 420) * 100)} />
-          <StatBar label="Accel" value={listing.acceleration} />
-          <StatBar label="Handling" value={listing.handling} />
-          <StatBar label="Braking" value={listing.braking} />
-        </div>
-        <div className="mt-3 flex items-center justify-between text-detail text-ink-soft">
+        <div className="mt-2 flex items-center justify-between text-detail text-ink-soft">
           <span>Condition {listing.conditionPct}%</span>
           <span>{listing.mileageKm.toLocaleString('en-GB')} km</span>
         </div>
-        <div className="mt-4 flex items-end justify-between">
+        <div className="mt-3 flex items-end justify-between">
           <div>
             <p className="font-display text-xl font-semibold text-ink">{eur(listing.price)}</p>
             <p className={`text-caption ${profit > 0 ? 'text-accent-700' : 'text-muted'}`}>
               Market value {eur(listing.marketValue)}{profit > 0 ? ` · +${eur(profit)} potential` : ''}
             </p>
           </div>
+          <span className={`text-detail font-semibold ${canAfford ? 'text-accent-700' : 'text-faint'}`}>
+            {canAfford ? 'View in 3D →' : 'Not enough cash'}
+          </span>
         </div>
-        <button
-          disabled={!canAfford || busy}
-          onClick={async () => {
-            setBusy(true);
-            await onBuy(listing.listingId);
-            setBusy(false);
-          }}
-          className="btn btn-accent-bright btn-block mt-3 disabled:opacity-40"
-        >
-          {busy ? 'Buying…' : canAfford ? 'Buy' : 'Not enough cash'}
-        </button>
       </div>
-    </div>
+    </button>
   );
 }
 
-function InventoryCard({
-  car,
-  repairCosts,
-  options,
-  onChanged,
-  onError,
-}: {
-  car: InventoryCar;
-  repairCosts: { component: 'engine' | 'body' | 'interior'; label: string; cost: number }[];
-  options: { id: string; category: string; key: string; label: string; cost: number }[];
-  onChanged: () => void;
-  onError: (message: string) => void;
-}) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [showCustomize, setShowCustomize] = useState(false);
+function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void }) {
   const meta = RARITY_META[car.rarity];
   const avgCondition = Math.round((car.conditionEngine + car.conditionBody + car.conditionInterior) / 3);
   const estValue = Math.round(car.marketValue * (avgCondition / 100) * (1 + 0.02 * Object.keys(car.customization).length));
 
-  const doRepair = async (component: 'engine' | 'body' | 'interior') => {
-    setBusy(component);
-    const { error } = await repairCar(car.id, component);
-    setBusy(null);
-    if (error) onError(error);
-    else onChanged();
-  };
-
-  const doCustomize = async (optionId: string) => {
-    setBusy(optionId);
-    const { error } = await customizeCar(car.id, optionId);
-    setBusy(null);
-    if (error) onError(error);
-    else onChanged();
-  };
-
-  const doSell = async () => {
-    if (!confirm(`Sell the ${car.name} for an estimated ${eur(estValue)}?`)) return;
-    setBusy('sell');
-    const { error } = await sellCar(car.id);
-    setBusy(null);
-    if (error) onError(error);
-    else onChanged();
-  };
-
-  const categories = Array.from(new Set(options.map((o) => o.category)));
-
   return (
-    <div className="card overflow-hidden" style={{ boxShadow: meta.glow }}>
-      <div className="relative bg-panel-2 px-4 pt-5">
-        <RarityBadge rarity={car.rarity} />
-        <CarSilhouette silhouette={car.silhouette} color={meta.color} className="mt-3 h-20 w-full" />
+    <button onClick={onOpen} className="card block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
+      <div className="relative aspect-[4/3] bg-panel-2">
+        <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={car.rarity} /></span>
+        <VehicleViewport
+          config={{ silhouette: car.silhouette, rarity: car.rarity, conditionAvg: avgCondition, customization: car.customization }}
+          className="h-full w-full"
+        />
       </div>
       <div className="p-4">
         <p className="text-caption text-muted">{car.brand} · {car.category}</p>
         <p className="font-display text-lead font-semibold text-ink">{car.name}</p>
-
-        <div className="mt-3 space-y-2">
-          <ConditionBar label="Engine" value={car.conditionEngine} />
-          <ConditionBar label="Body" value={car.conditionBody} />
-          <ConditionBar label="Interior" value={car.conditionInterior} />
-        </div>
-
+        <p className="mt-1 text-detail text-ink-soft">Condition {avgCondition}%</p>
         {Object.keys(car.customization).length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {Object.entries(car.customization).map(([cat, key]) => (
               <span key={cat} className="rounded-full border border-line px-2 py-0.5 text-[10px] font-medium capitalize text-ink-soft">
                 {String(key).replace(/_/g, ' ')}
@@ -205,66 +158,12 @@ function InventoryCard({
             ))}
           </div>
         )}
-
-        <p className="mt-3 text-caption text-muted">Estimated value <span className="font-semibold text-ink">{eur(estValue)}</span></p>
-
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
-          {repairCosts.map((r) => {
-            const value = r.component === 'engine' ? car.conditionEngine : r.component === 'body' ? car.conditionBody : car.conditionInterior;
-            const full = value >= 100;
-            return (
-              <button
-                key={r.component}
-                disabled={full || busy !== null}
-                onClick={() => doRepair(r.component)}
-                title={`${r.label} — ${eur(r.cost)}`}
-                className="btn btn-secondary btn-sm disabled:opacity-40"
-              >
-                {busy === r.component ? '…' : full ? 'OK' : `Fix ${r.component[0].toUpperCase()}`}
-              </button>
-            );
-          })}
+        <div className="mt-3 flex items-end justify-between">
+          <p className="text-caption text-muted">Est. value <span className="font-semibold text-ink">{eur(estValue)}</span></p>
+          <span className="text-detail font-semibold text-accent-700">Customize →</span>
         </div>
-
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          <button onClick={() => setShowCustomize((v) => !v)} className="btn btn-secondary btn-sm">
-            Customize
-          </button>
-          <button disabled={busy !== null} onClick={doSell} className="btn btn-sm border border-line text-ink hover:border-ink disabled:opacity-40">
-            {busy === 'sell' ? 'Selling…' : 'Sell'}
-          </button>
-        </div>
-
-        {showCustomize && (
-          <div className="mt-3 max-h-56 space-y-3 overflow-y-auto rounded-xl border border-line p-3">
-            {categories.map((cat) => (
-              <div key={cat}>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{cat.replace(/_/g, ' ')}</p>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {options
-                    .filter((o) => o.category === cat)
-                    .map((o) => {
-                      const active = car.customization[cat] === o.key;
-                      return (
-                        <button
-                          key={o.id}
-                          disabled={active || busy !== null}
-                          onClick={() => doCustomize(o.id)}
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 ${
-                            active ? 'border-accent bg-accent-050 text-accent-700' : 'border-line text-ink-soft hover:border-ink'
-                          }`}
-                        >
-                          {active ? '✓ ' : ''}{o.label} · {eur(o.cost)}
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -272,6 +171,8 @@ export default function Empire() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [tab, setTab] = useState<Tab>('market');
+  const [stage, setStage] = useState<StageState | null>(null);
+  const [buying, setBuying] = useState(false);
 
   const { state: playerState, refresh: refreshState } = usePlayerState();
   const { listings, refresh: refreshMarket } = useMarket();
@@ -304,16 +205,20 @@ export default function Empire() {
     : 100;
 
   const handleBuy = async (listingId: string) => {
+    setBuying(true);
     const { error } = await buyMarketCar(listingId);
+    setBuying(false);
     if (error) {
       setMarketMsg(error);
+      setTimeout(() => setMarketMsg(null), 3500);
     } else {
       setMarketMsg('Purchased — added to your collection.');
+      setTimeout(() => setMarketMsg(null), 3500);
+      setStage(null);
       refreshState();
       refreshMarket();
       refreshInventory();
     }
-    setTimeout(() => setMarketMsg(null), 3500);
   };
 
   const handleUpgrade = async () => {
@@ -408,7 +313,7 @@ export default function Empire() {
             {marketMsg && <p className="mb-4 text-detail font-medium text-accent-700">{marketMsg}</p>}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((l) => (
-                <MarketCard key={l.listingId} listing={l} cash={playerState.cash} onBuy={handleBuy} />
+                <MarketCard key={l.listingId} listing={l} cash={playerState.cash} onOpen={() => setStage({ mode: 'preview', listing: l })} />
               ))}
             </div>
           </div>
@@ -427,14 +332,7 @@ export default function Empire() {
             ) : (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {ownedCars.map((c) => (
-                  <InventoryCard
-                    key={c.id}
-                    car={c}
-                    repairCosts={repairCosts ?? []}
-                    options={customizationOptions ?? []}
-                    onChanged={onInventoryChanged}
-                    onError={onInventoryError}
-                  />
+                  <InventoryCard key={c.id} car={c} onOpen={() => setStage({ mode: 'configure', car: c })} />
                 ))}
               </div>
             )}
@@ -481,44 +379,65 @@ export default function Empire() {
         )}
 
         {tab === 'business' && (
-          <div className="mt-8 max-w-2xl">
-            {upgradeMsg && <p className="mb-4 text-detail font-medium text-accent-700">{upgradeMsg}</p>}
-            <div className="card p-6">
-              <p className="eyebrow">Current Tier</p>
-              <h3 className="mt-1 font-display text-2xl font-semibold text-ink">{currentTier?.name}</h3>
-              <p className="mt-1 text-body text-muted">{currentTier?.description}</p>
-              <p className="mt-3 text-detail text-ink-soft">Showroom capacity: {currentTier?.displaySlots} cars</p>
+          <div className="mt-8">
+            <div className="max-w-2xl">
+              {upgradeMsg && <p className="mb-4 text-detail font-medium text-accent-700">{upgradeMsg}</p>}
+              <div className="card p-6">
+                <p className="eyebrow">Current Tier</p>
+                <h3 className="mt-1 font-display text-2xl font-semibold text-ink">{currentTier?.name}</h3>
+                <p className="mt-1 text-body text-muted">{currentTier?.description}</p>
+                <p className="mt-3 text-detail text-ink-soft">Showroom capacity: {currentTier?.displaySlots} cars</p>
+              </div>
+
+              {nextTier ? (
+                <div className="card mt-4 p-6">
+                  <p className="eyebrow">Next Tier</p>
+                  <h3 className="mt-1 font-display text-xl font-semibold text-ink">{nextTier.name}</h3>
+                  <p className="mt-1 text-body text-muted">{nextTier.description}</p>
+                  <div className="mt-4 space-y-2 text-detail">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Cash required</span>
+                      <span className={playerState.cash >= nextTier.cashRequired ? 'text-accent-700' : 'text-ink'}>
+                        {eur(nextTier.cashRequired)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">CX Score required</span>
+                      <span className={(score ?? 0) >= nextTier.cxScoreRequired ? 'text-accent-700' : 'text-ink'}>
+                        {nextTier.cxScoreRequired.toLocaleString('en-GB')}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    disabled={upgrading || playerState.cash < nextTier.cashRequired || (score ?? 0) < nextTier.cxScoreRequired}
+                    onClick={handleUpgrade}
+                    className="btn btn-accent-bright btn-lg btn-block mt-5 disabled:opacity-40"
+                  >
+                    {upgrading ? 'Upgrading…' : `Upgrade to ${nextTier.name}`}
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-4 text-body text-muted">You've reached the highest business tier — Global Car Empire.</p>
+              )}
             </div>
 
-            {nextTier ? (
-              <div className="card mt-4 p-6">
-                <p className="eyebrow">Next Tier</p>
-                <h3 className="mt-1 font-display text-xl font-semibold text-ink">{nextTier.name}</h3>
-                <p className="mt-1 text-body text-muted">{nextTier.description}</p>
-                <div className="mt-4 space-y-2 text-detail">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted">Cash required</span>
-                    <span className={playerState.cash >= nextTier.cashRequired ? 'text-accent-700' : 'text-ink'}>
-                      {eur(nextTier.cashRequired)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted">CX Score required</span>
-                    <span className={(score ?? 0) >= nextTier.cxScoreRequired ? 'text-accent-700' : 'text-ink'}>
-                      {nextTier.cxScoreRequired.toLocaleString('en-GB')}
-                    </span>
-                  </div>
+            {ownedCars.length > 0 && (
+              <div className="mt-10">
+                <h3 className="font-display text-xl font-semibold text-ink">Showroom Floor</h3>
+                <p className="mt-1 text-caption text-muted">
+                  {Math.min(ownedCars.length, currentTier?.displaySlots ?? ownedCars.length)} of {currentTier?.displaySlots} slots on display
+                </p>
+                <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {ownedCars.slice(0, currentTier?.displaySlots ?? ownedCars.length).map((c) => (
+                    <div key={c.id} className="aspect-square overflow-hidden rounded-2xl bg-noir-2">
+                      <VehicleViewport
+                        config={{ silhouette: c.silhouette, rarity: c.rarity, conditionAvg: Math.round((c.conditionEngine + c.conditionBody + c.conditionInterior) / 3), customization: c.customization }}
+                        className="h-full w-full"
+                      />
+                    </div>
+                  ))}
                 </div>
-                <button
-                  disabled={upgrading || playerState.cash < nextTier.cashRequired || (score ?? 0) < nextTier.cxScoreRequired}
-                  onClick={handleUpgrade}
-                  className="btn btn-accent-bright btn-lg btn-block mt-5 disabled:opacity-40"
-                >
-                  {upgrading ? 'Upgrading…' : `Upgrade to ${nextTier.name}`}
-                </button>
               </div>
-            ) : (
-              <p className="mt-4 text-body text-muted">You've reached the highest business tier — Global Car Empire.</p>
             )}
           </div>
         )}
@@ -593,6 +512,21 @@ export default function Empire() {
           </div>
         )}
       </div>
+
+      {stage && (
+        <VehicleStage
+          mode={stage.mode}
+          car={stage.mode === 'preview' ? listingToStageCar(stage.listing) : inventoryToStageCar(stage.car)}
+          options={customizationOptions ?? []}
+          repairCosts={repairCosts ?? []}
+          onClose={() => setStage(null)}
+          onBuy={stage.mode === 'preview' ? () => handleBuy(stage.listing.listingId) : undefined}
+          buying={buying}
+          cash={playerState.cash}
+          onChanged={onInventoryChanged}
+          onError={onInventoryError}
+        />
+      )}
     </div>
   );
 }
