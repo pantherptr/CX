@@ -45,6 +45,7 @@ export const RARITY_TINT: Record<Rarity, string> = {
  *  scaled, until a dedicated model exists for it. */
 export const MODEL_SOURCES: Record<string, string> = {
   default: '/models/cx-rent-car.glb',
+  'cx-vortex-spyder': '/models/cx-vortex-spyder.glb',
 };
 
 export function modelSourceFor(silhouette: string): string {
@@ -70,6 +71,8 @@ const PROPORTIONS: Record<string, ProportionProfile> = {
   hypercar: { length: 1.08, height: 0.8, width: 1.1, rideHeight: -0.03 },
   'hypercar-wing': { length: 1.1, height: 0.78, width: 1.12, rideHeight: -0.03 },
   concept: { length: 1.06, height: 0.84, width: 1.09, rideHeight: -0.02 },
+  // A dedicated sculpted asset — no scaling hack needed.
+  'cx-vortex-spyder': { length: 1.0, height: 1.0, width: 1.0, rideHeight: 0 },
 };
 
 export function proportionFor(silhouette: string): ProportionProfile {

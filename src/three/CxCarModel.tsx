@@ -18,6 +18,7 @@ import {
 } from './vehicleVisuals';
 
 useGLTF.preload(modelSourceFor('sedan'));
+useGLTF.preload(modelSourceFor('cx-vortex-spyder'));
 
 const ADDON_PREFIX = 'cx-addon-';
 
@@ -92,7 +93,7 @@ export function CxCarModel({ config }: { config: VehicleConfig }) {
           color: worn.color, metalness: paint.metalness, roughness: worn.roughness,
           clearcoat: worn.clearcoat, clearcoatRoughness: paint.clearcoatRoughness,
         }));
-      } else if (name.startsWith('CX_Rim')) {
+      } else if (name.startsWith('CX_Rim') || name.startsWith('Rim_Spoke')) {
         obj.material = ownedMaterial(new THREE.MeshStandardMaterial({
           color: wheel.color, metalness: wheel.metalness, roughness: wheel.roughness,
         }));
@@ -128,13 +129,67 @@ export function CxCarModel({ config }: { config: VehicleConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [root, config.rarity, config.conditionAvg, JSON.stringify(config.customization)]);
 
-  // Procedural bolt-ons for options the base sculpt has no mesh for at
-  // all — brakes/exhaust/body-kit pay for a real added part, not just a
-  // number, without needing a bespoke GLB per combination.
+  // Brakes/exhaust/body-kit: on an asset that models these parts for
+  // real (CX Vortex Spyder), toggle the pre-built part's visibility and
+  // retint it — a genuine geometry change with no runtime mesh
+  // construction. On the older shared placeholder asset, which has no
+  // such parts, fall back to bolting on simple procedural geometry so
+  // the option still visibly does something.
   useLayoutEffect(() => {
     clearAddons(root);
-
     const caliper = caliperFor(config);
+    const exhaust = exhaustFor(config);
+    const kit = bodyKitFor(config);
+
+    let usedRealParts = false;
+
+    const brakeCorners = ['FL', 'FR', 'RL', 'RR'].map((tag) => root.getObjectByName(`Brake_${tag}`));
+    if (brakeCorners.some(Boolean)) {
+      usedRealParts = true;
+      for (const disc of brakeCorners) {
+        if (!disc) continue;
+        disc.visible = Boolean(caliper);
+        if (caliper) {
+          disc.traverse((obj) => {
+            if (!(obj instanceof THREE.Mesh)) return;
+            if (obj.material?.userData?.cxOwned) (obj.material as THREE.Material).dispose();
+            const isCaliper = obj.name.startsWith('Brake_Caliper');
+            obj.material = ownedMaterial(new THREE.MeshStandardMaterial(
+              isCaliper
+                ? { color: caliper.color, metalness: 0.5, roughness: 0.35 }
+                : { color: '#3a3a3d', metalness: 0.8, roughness: 0.4 },
+            ));
+          });
+        }
+      }
+    }
+
+    const exhaustObj = root.getObjectByName('Exhaust');
+    if (exhaustObj) {
+      usedRealParts = true;
+      exhaustObj.visible = Boolean(exhaust);
+      if (exhaust) {
+        exhaustObj.traverse((obj) => {
+          if (!(obj instanceof THREE.Mesh)) return;
+          if (obj.material?.userData?.cxOwned) (obj.material as THREE.Material).dispose();
+          obj.material = ownedMaterial(new THREE.MeshStandardMaterial({ color: exhaust.color, metalness: exhaust.metalness, roughness: exhaust.roughness }));
+        });
+      }
+    }
+
+    const spoiler = root.getObjectByName('Spoiler');
+    const skirtL = root.getObjectByName('Side_Skirt_Wide_L');
+    const skirtR = root.getObjectByName('Side_Skirt_Wide_R');
+    if (spoiler || skirtL || skirtR) {
+      usedRealParts = true;
+      if (spoiler) spoiler.visible = Boolean(kit);
+      if (skirtL) skirtL.visible = kit === 'widebody';
+      if (skirtR) skirtR.visible = kit === 'widebody';
+    }
+
+    if (usedRealParts) return;
+
+    // --- Procedural fallback (older placeholder asset) ---
     if (caliper) {
       for (const name of ['CX_Rim_FL', 'CX_Rim_FR', 'CX_Rim_RL', 'CX_Rim_RR']) {
         const rim = root.getObjectByName(name);
@@ -151,7 +206,6 @@ export function CxCarModel({ config }: { config: VehicleConfig }) {
       }
     }
 
-    const exhaust = exhaustFor(config);
     if (exhaust) {
       const rearRim = root.getObjectByName('CX_Rim_RL') ?? root.getObjectByName('CX_Rim_RR');
       const rearX = (rearRim?.position.x ?? 1.4) + 0.55;
@@ -169,7 +223,6 @@ export function CxCarModel({ config }: { config: VehicleConfig }) {
       }
     }
 
-    const kit = bodyKitFor(config);
     if (kit) {
       const wide = kit === 'widebody';
       const wingWidth = wide ? 1.75 : 1.45;
