@@ -27,8 +27,8 @@ import {
   nextLevel,
   cxScoreEventLabel,
 } from '../lib/data/cxScore';
-import { VehicleViewport } from '../three/VehicleViewport';
-import { VehicleStage, type VehicleStageCar } from '../three/VehicleStage';
+import { VehicleArtwork } from '../vehicleArt/VehicleArtwork';
+import { VehicleExperience, type VehicleExperienceCar } from '../vehicleArt/VehicleExperience';
 
 type Tab = 'market' | 'collection' | 'business' | 'score';
 
@@ -58,7 +58,7 @@ function HeroStat({ icon, label, value }: { icon: IconName; label: string; value
   );
 }
 
-function listingToStageCar(l: MarketListing): VehicleStageCar {
+function listingToExperienceCar(l: MarketListing): VehicleExperienceCar {
   return {
     id: l.listingId,
     name: l.name,
@@ -76,7 +76,7 @@ function listingToStageCar(l: MarketListing): VehicleStageCar {
   };
 }
 
-function inventoryToStageCar(c: InventoryCar): VehicleStageCar {
+function inventoryToExperienceCar(c: InventoryCar): VehicleExperienceCar {
   return {
     id: c.id,
     name: c.name,
@@ -100,12 +100,12 @@ function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: n
   const profit = listing.marketValue - listing.price;
 
   return (
-    <button onClick={onOpen} className="card block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
-      <div className="relative aspect-[4/3] bg-panel-2">
+    <button onClick={onOpen} className="card group block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
+      <div className="relative aspect-[4/3] overflow-hidden bg-noir-2">
         <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={listing.rarity} /></span>
-        <VehicleViewport
-          config={{ silhouette: listing.silhouette, rarity: listing.rarity, conditionAvg: listing.conditionPct, customization: {} }}
-          className="h-full w-full"
+        <VehicleArtwork
+          config={{ name: listing.name, rarity: listing.rarity, customization: {} }}
+          className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
         />
       </div>
       <div className="p-4">
@@ -123,7 +123,7 @@ function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: n
             </p>
           </div>
           <span className={`text-detail font-semibold ${canAfford ? 'text-accent-700' : 'text-faint'}`}>
-            {canAfford ? 'View in 3D →' : 'Not enough cash'}
+            {canAfford ? 'View →' : 'Not enough cash'}
           </span>
         </div>
       </div>
@@ -137,12 +137,12 @@ function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void 
   const estValue = Math.round(car.marketValue * (avgCondition / 100) * (1 + 0.02 * Object.keys(car.customization).length));
 
   return (
-    <button onClick={onOpen} className="card block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
-      <div className="relative aspect-[4/3] bg-panel-2">
+    <button onClick={onOpen} className="card group block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
+      <div className="relative aspect-[4/3] overflow-hidden bg-noir-2">
         <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={car.rarity} /></span>
-        <VehicleViewport
-          config={{ silhouette: car.silhouette, rarity: car.rarity, conditionAvg: avgCondition, customization: car.customization }}
-          className="h-full w-full"
+        <VehicleArtwork
+          config={{ name: car.name, rarity: car.rarity, customization: car.customization }}
+          className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
         />
       </div>
       <div className="p-4">
@@ -430,8 +430,8 @@ export default function Empire() {
                 <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                   {ownedCars.slice(0, currentTier?.displaySlots ?? ownedCars.length).map((c) => (
                     <div key={c.id} className="aspect-square overflow-hidden rounded-2xl bg-noir-2">
-                      <VehicleViewport
-                        config={{ silhouette: c.silhouette, rarity: c.rarity, conditionAvg: Math.round((c.conditionEngine + c.conditionBody + c.conditionInterior) / 3), customization: c.customization }}
+                      <VehicleArtwork
+                        config={{ name: c.name, rarity: c.rarity, customization: c.customization }}
                         className="h-full w-full"
                       />
                     </div>
@@ -514,9 +514,9 @@ export default function Empire() {
       </div>
 
       {stage && (
-        <VehicleStage
+        <VehicleExperience
           mode={stage.mode}
-          car={stage.mode === 'preview' ? listingToStageCar(stage.listing) : inventoryToStageCar(stage.car)}
+          car={stage.mode === 'preview' ? listingToExperienceCar(stage.listing) : inventoryToExperienceCar(stage.car)}
           options={customizationOptions ?? []}
           repairCosts={repairCosts ?? []}
           onClose={() => setStage(null)}

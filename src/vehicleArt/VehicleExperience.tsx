@@ -10,8 +10,8 @@ import {
   type CustomizationOption,
   type RepairCost,
 } from '../lib/data/empire';
-import { Showroom } from './Showroom';
-import { CxCarModel } from './CxCarModel';
+import { VehicleArtwork } from './VehicleArtwork';
+import { rarityGlowRadial } from './vehicleArt';
 
 const CATEGORY_LABELS: Record<string, string> = {
   paint: 'Paint',
@@ -26,13 +26,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   engine: 'Engine',
 };
 
-/** Suspension/engine are real gameplay performance upgrades with no
- *  corresponding mesh on the base sculpt (they tune stats, not
- *  silhouette) — shown in the same list so the spend is still visible,
- *  just without implying a visual change that isn't real. */
-const VISUAL_CATEGORIES = new Set(['paint', 'wheels', 'windows', 'brakes', 'exhaust', 'body_kit', 'interior', 'lights']);
+/** Which categories actually repaint the photo right now (see
+ *  vehicleArt.ts's header comment for why the rest don't yet) — shown
+ *  in the panel either way since every option is real and priced, just
+ *  labelled honestly. */
+const PIXEL_ACCURATE_CATEGORIES = new Set(['paint', 'body_kit']);
 
-export interface VehicleStageCar {
+export interface VehicleExperienceCar {
   id: string; // inventoryId (configure) or listingId (preview)
   name: string;
   brand: string;
@@ -48,9 +48,9 @@ export interface VehicleStageCar {
   marketValue: number;
 }
 
-interface VehicleStageProps {
+interface VehicleExperienceProps {
   mode: 'preview' | 'configure';
-  car: VehicleStageCar;
+  car: VehicleExperienceCar;
   options: CustomizationOption[];
   repairCosts: RepairCost[];
   onClose: () => void;
@@ -61,13 +61,13 @@ interface VehicleStageProps {
   onError?: (message: string) => void;
 }
 
-function estimateResale(car: VehicleStageCar) {
+function estimateResale(car: VehicleExperienceCar) {
   const avgCondition = (car.conditionEngine + car.conditionBody + car.conditionInterior) / 300;
   const customizationValue = Object.entries(car.customization).length * 0.02;
   return Math.round(car.marketValue * avgCondition * (1 + customizationValue));
 }
 
-function customizationCostTotal(car: VehicleStageCar, options: CustomizationOption[]) {
+function customizationCostTotal(car: VehicleExperienceCar, options: CustomizationOption[]) {
   let total = 0;
   for (const [category, key] of Object.entries(car.customization)) {
     const opt = options.find((o) => o.category === category && o.key === key);
@@ -76,7 +76,14 @@ function customizationCostTotal(car: VehicleStageCar, options: CustomizationOpti
   return total;
 }
 
-export function VehicleStage({ mode, car, options, repairCosts, onClose, onBuy, buying, cash, onChanged, onError }: VehicleStageProps) {
+/**
+ * The cinematic full-screen vehicle view — Market preview and the
+ * Collection configurator both open through this. The vehicle is the
+ * only thing on screen that moves: a slow ambient rarity-tinted glow
+ * behind it, a pointer-tracked tilt on the photo itself, ground shadow,
+ * and (Legendary/Mythic) a sparkle overlay — see VehicleArtwork.
+ */
+export function VehicleExperience({ mode, car, options, repairCosts, onClose, onBuy, buying, cash, onChanged, onError }: VehicleExperienceProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('paint');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -125,7 +132,7 @@ export function VehicleStage({ mode, car, options, repairCosts, onClose, onBuy, 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-noir">
+    <div className="animate-page fixed inset-0 z-[100] flex flex-col bg-noir">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
         <div>
           <p className="text-caption uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</p>
@@ -157,7 +164,7 @@ export function VehicleStage({ mode, car, options, repairCosts, onClose, onBuy, 
                   }`}
                 >
                   {CATEGORY_LABELS[cat] ?? cat}
-                  {!VISUAL_CATEGORIES.has(cat) && <span className="ml-1.5 text-[10px] text-on-noir-muted/60">(stat)</span>}
+                  {!PIXEL_ACCURATE_CATEGORIES.has(cat) && <span className="ml-1.5 text-[10px] text-on-noir-muted/60">(stat)</span>}
                 </button>
               ))}
             </div>
@@ -206,18 +213,16 @@ export function VehicleStage({ mode, car, options, repairCosts, onClose, onBuy, 
           <div className="order-2 hidden lg:order-1 lg:block" />
         )}
 
-        {/* CENTER — the actual 3D vehicle */}
-        <div className="order-1 min-h-[45vh] lg:order-2">
-          <Showroom rarity={car.rarity} quality="full" autoRotate={false} interactive>
-            <CxCarModel
-              config={{
-                silhouette: car.silhouette,
-                rarity: car.rarity,
-                conditionAvg: avgCondition,
-                customization: car.customization,
-              }}
-            />
-          </Showroom>
+        {/* CENTER — the vehicle, dominating the screen against a
+            premium ambient automotive environment. */}
+        <div className="relative order-1 min-h-[45vh] overflow-hidden lg:order-2">
+          <div className="pointer-events-none absolute inset-0" style={{ background: rarityGlowRadial(car.rarity) }} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
+          <VehicleArtwork
+            config={{ name: car.name, rarity: car.rarity, customization: car.customization }}
+            interactive
+            className="h-full w-full p-6 sm:p-10"
+          />
         </div>
 
         {/* RIGHT — vehicle info + financial impact */}
