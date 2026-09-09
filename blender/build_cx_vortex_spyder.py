@@ -58,32 +58,40 @@ def clean_scene():
 # -> deck/screen edge -> top-center, all as (y, z) pairs.
 # ---------------------------------------------------------------------
 STATIONS = [
-    # x,     profile: (height z, half-width y) from bottom-centre round to top-centre
-    (-2.30, [(0.14, 0.00), (0.15, 0.12), (0.22, 0.20), (0.30, 0.17), (0.38, 0.09), (0.42, 0.00)]),  # nose tip
-    (-2.10, [(0.12, 0.00), (0.13, 0.34), (0.26, 0.50), (0.42, 0.46), (0.52, 0.26), (0.56, 0.00)]),  # front bumper
-    (-1.70, [(0.11, 0.00), (0.12, 0.42), (0.30, 0.62), (0.50, 0.56), (0.62, 0.30), (0.66, 0.00)]),  # front arch leading edge
-    (-1.30, [(0.11, 0.00), (0.12, 0.46), (0.32, 0.68), (0.54, 0.60), (0.66, 0.30), (0.70, 0.00)]),  # front arch centre
-    (-0.85, [(0.11, 0.00), (0.12, 0.40), (0.34, 0.58), (0.52, 0.46), (0.60, 0.20), (0.62, 0.00)]),  # cowl / screen base
-    (-0.30, [(0.11, 0.00), (0.12, 0.38), (0.34, 0.56), (0.48, 0.42), (0.54, 0.16), (0.55, 0.00)]),  # open cockpit — lowest deck
-    (0.35,  [(0.11, 0.00), (0.12, 0.40), (0.36, 0.58), (0.52, 0.44), (0.58, 0.18), (0.60, 0.00)]),  # seat-back bulkhead
-    (0.95,  [(0.12, 0.00), (0.13, 0.48), (0.40, 0.70), (0.62, 0.62), (0.76, 0.32), (0.82, 0.00)]),  # rear deck rise
-    (1.35,  [(0.12, 0.00), (0.13, 0.52), (0.42, 0.76), (0.66, 0.66), (0.80, 0.34), (0.86, 0.00)]),  # rear haunch — widest
-    (1.75,  [(0.13, 0.00), (0.14, 0.44), (0.36, 0.62), (0.54, 0.52), (0.66, 0.26), (0.70, 0.00)]),  # rear bumper shoulder
-    (2.10,  [(0.15, 0.00), (0.16, 0.24), (0.26, 0.34), (0.36, 0.28), (0.44, 0.14), (0.48, 0.00)]),  # tail
-    (2.25,  [(0.18, 0.00), (0.19, 0.08), (0.24, 0.12), (0.30, 0.10), (0.36, 0.05), (0.38, 0.00)]),  # tail cap
+    # x,     profile: (height z, half-width y) — bottom-centre, sill,
+    #        shoulder (widest — crease line), upper-shoulder, beltline,
+    #        deck/screen edge, top-centre. Dimensions target a real
+    #        mid-engine-supercar envelope: 4.5m long, 2.65m wheelbase,
+    #        ~1.85m wide, ~1.05m tall at the highest point (rear deck).
+    (-2.36, [(0.07, 0.00), (0.08, 0.08), (0.10, 0.13), (0.12, 0.14), (0.14, 0.11), (0.17, 0.06), (0.19, 0.00)]),  # nose tip — low, narrow point
+    (-2.20, [(0.06, 0.00), (0.07, 0.42), (0.10, 0.58), (0.16, 0.60), (0.26, 0.50), (0.38, 0.26), (0.44, 0.00)]),  # front splitter edge
+    (-1.95, [(0.10, 0.00), (0.11, 0.40), (0.20, 0.62), (0.32, 0.64), (0.46, 0.52), (0.56, 0.28), (0.60, 0.00)]),  # front bumper / intakes
+    (-1.65, [(0.11, 0.00), (0.12, 0.44), (0.26, 0.70), (0.42, 0.74), (0.58, 0.58), (0.66, 0.30), (0.70, 0.00)]),  # front arch leading edge
+    (-1.45, [(0.11, 0.00), (0.12, 0.46), (0.28, 0.74), (0.46, 0.78), (0.62, 0.60), (0.70, 0.30), (0.74, 0.00)]),  # front axle
+    (-0.95, [(0.11, 0.00), (0.12, 0.42), (0.30, 0.66), (0.48, 0.62), (0.56, 0.46), (0.62, 0.22), (0.64, 0.00)]),  # cowl / screen base
+    (-0.40, [(0.11, 0.00), (0.12, 0.40), (0.30, 0.62), (0.46, 0.56), (0.52, 0.40), (0.56, 0.18), (0.58, 0.00)]),  # door / cockpit front
+    (0.20,  [(0.11, 0.00), (0.12, 0.42), (0.32, 0.64), (0.48, 0.58), (0.56, 0.42), (0.60, 0.20), (0.62, 0.00)]),  # seat-back bulkhead
+    (0.68,  [(0.12, 0.00), (0.13, 0.44), (0.34, 0.56), (0.50, 0.54), (0.62, 0.44), (0.68, 0.22), (0.70, 0.00)]),  # side-intake scoop — pinched in vs. its neighbours
+    (1.10,  [(0.13, 0.00), (0.14, 0.54), (0.40, 0.82), (0.62, 0.80), (0.76, 0.58), (0.84, 0.28), (0.88, 0.00)]),  # rear haunch leading edge
+    (1.35,  [(0.13, 0.00), (0.14, 0.58), (0.42, 0.88), (0.64, 0.84), (0.78, 0.60), (0.86, 0.28), (0.90, 0.00)]),  # rear axle / widest
+    (1.65,  [(0.14, 0.00), (0.15, 0.48), (0.36, 0.70), (0.54, 0.62), (0.64, 0.44), (0.70, 0.20), (0.72, 0.00)]),  # rear deck / engine cover
+    (1.95,  [(0.15, 0.00), (0.16, 0.34), (0.28, 0.48), (0.38, 0.42), (0.46, 0.30), (0.52, 0.14), (0.54, 0.00)]),  # rear bumper
+    (2.20,  [(0.08, 0.00), (0.09, 0.22), (0.16, 0.30), (0.24, 0.28), (0.30, 0.20), (0.34, 0.10), (0.36, 0.00)]),  # tail / diffuser edge
 ]
 
 
 # ---------------------------------------------------------------------
 # Wheel geometry — shared constants so the body's arch cutters and the
-# actual wheel meshes agree exactly on position and clearance.
+# actual wheel meshes agree exactly on position and clearance. Sized
+# like real 20"/21" supercar wheel-and-tyre packages (~0.69m/0.71m
+# rolling diameter).
 # ---------------------------------------------------------------------
-WHEEL_X_FRONT = -1.30
+WHEEL_X_FRONT = -1.45
 WHEEL_X_REAR = 1.35
-WHEEL_TRACK_Y = 0.66      # wheel-centre offset from the car's centreline
-WHEEL_RADIUS = 0.34
-WHEEL_WIDTH = 0.24
-ARCH_RADIUS = 0.40
+WHEEL_TRACK_Y = 0.80      # wheel-centre offset from the car's centreline
+WHEEL_RADIUS = 0.345
+WHEEL_WIDTH = 0.26
+ARCH_RADIUS = 0.385
 
 WHEEL_POSITIONS_HALF = [(WHEEL_X_FRONT, WHEEL_TRACK_Y), (WHEEL_X_REAR, WHEEL_TRACK_Y)]
 
@@ -167,12 +175,21 @@ def build_body():
 # (linked-duplicate mesh data) at the four corners.
 # ---------------------------------------------------------------------
 def build_wheel_template():
+    # Hub barrel plus a wider, thinner outer lip so the rim reads as a
+    # deep-dish forged wheel rather than a flat disc.
     bm = bmesh.new()
     bmesh.ops.create_cone(
-        bm, cap_ends=True, cap_tris=False, segments=24,
-        radius1=WHEEL_RADIUS * 0.62, radius2=WHEEL_RADIUS * 0.62,
-        depth=WHEEL_WIDTH * 0.7,
+        bm, cap_ends=True, cap_tris=False, segments=32,
+        radius1=WHEEL_RADIUS * 0.58, radius2=WHEEL_RADIUS * 0.58,
+        depth=WHEEL_WIDTH * 0.62,
     )
+    lip = bmesh.ops.create_cone(
+        bm, cap_ends=False, cap_tris=False, segments=32,
+        radius1=WHEEL_RADIUS * 0.60, radius2=WHEEL_RADIUS * 0.78,
+        depth=WHEEL_WIDTH * 0.18,
+    )
+    for v in lip['verts']:
+        v.co.z += WHEEL_WIDTH * 0.30
     bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, 'X'))
     hub_mesh = bpy.data.meshes.new('CX_Rim_Mesh')
     bm.to_mesh(hub_mesh)
@@ -182,9 +199,11 @@ def build_wheel_template():
 
 def build_tyre_mesh():
     # A simple torus, axis along Y to match the wheel's rolling axis.
+    # A modest minor radius keeps the sidewall low-profile — a wall of
+    # rubber reads as an economy car, not a supercar.
     bpy.ops.mesh.primitive_torus_add(
-        major_radius=WHEEL_RADIUS, minor_radius=WHEEL_WIDTH * 0.42,
-        major_segments=24, minor_segments=12, location=(0, 0, 0),
+        major_radius=WHEEL_RADIUS, minor_radius=WHEEL_WIDTH * 0.36,
+        major_segments=32, minor_segments=14, location=(0, 0, 0),
     )
     tyre = bpy.context.active_object
     tyre.rotation_euler = (math.radians(90), 0, 0)
@@ -198,8 +217,8 @@ def build_spoke(rim_loc, angle_deg, tag, index, material):
     bpy.ops.mesh.primitive_cube_add(size=1, location=rim_loc)
     spoke = bpy.context.active_object
     spoke.name = f'Rim_Spoke_{tag}_{index}'
-    spoke.scale = (WHEEL_RADIUS * 0.5, WHEEL_WIDTH * 0.32, 0.045)
-    spoke.rotation_euler = (0, math.radians(angle_deg), 0)
+    spoke.scale = (WHEEL_RADIUS * 0.56, WHEEL_WIDTH * 0.30, 0.035)
+    spoke.rotation_euler = (0, math.radians(angle_deg), math.radians(14))
     spoke.data.materials.append(material)
     return spoke
 
@@ -219,8 +238,8 @@ def build_wheels(materials):
         rim.location = (x, y, WHEEL_RADIUS)
         rim.data.materials.append(materials['rim'])
         bpy.context.collection.objects.link(rim)
-        for i in range(5):
-            build_spoke((x, y, WHEEL_RADIUS), i * 72, tag, i, materials['rim'])
+        for i in range(8):
+            build_spoke((x, y, WHEEL_RADIUS), i * 45, tag, i, materials['rim'])
 
         tyre = bpy.data.objects.new(f'CX_Tire_{tag}', tyre_mesh_src.copy())
         tyre.location = (x, y, WHEEL_RADIUS)
@@ -259,12 +278,12 @@ def make_disc_mesh():
 # ---------------------------------------------------------------------
 def build_glass(materials):
     bm = bmesh.new()
-    # Raked windshield: cowl edge up to the cockpit-opening top edge,
-    # one panel per side, mirrored.
-    v0 = bm.verts.new((-0.85, 0.00, 0.62))   # base, centreline
-    v1 = bm.verts.new((-0.85, 0.55, 0.50))   # base, side
-    v2 = bm.verts.new((-0.60, 0.45, 0.78))   # top, side (raked back)
-    v3 = bm.verts.new((-0.60, 0.00, 0.84))   # top, centreline
+    # Raked windshield: cowl edge up to the header rail above the driver's
+    # eye line, one panel per side, mirrored.
+    v0 = bm.verts.new((-0.95, 0.00, 0.64))   # base, centreline (cowl)
+    v1 = bm.verts.new((-0.95, 0.56, 0.50))   # base, side
+    v2 = bm.verts.new((-0.62, 0.46, 0.80))   # top, side (raked back)
+    v3 = bm.verts.new((-0.62, 0.00, 0.86))   # top, centreline
     bm.faces.new((v0, v1, v2, v3))
     mesh = bpy.data.meshes.new('CX_Glass_Windshield_Mesh')
     bm.to_mesh(mesh)
@@ -289,15 +308,26 @@ def build_lens(name, x, y, z, length_x, width_y, height_z, material):
 
 
 def build_lights(materials):
-    for tag, y in (('L', WHEEL_TRACK_Y - 0.05), ('R', -(WHEEL_TRACK_Y - 0.05))):
-        build_lens(f'CX_Headlight_{tag}', -2.16, y, 0.42, length_x=0.05, width_y=0.12, height_z=0.07, material=materials['headlight'])
-        build_lens(f'CX_Taillight_{tag}', 2.10, y, 0.52, length_x=0.04, width_y=0.16, height_z=0.06, material=materials['taillight'])
+    # Slim wraparound LED strip — a front-facing segment plus a second
+    # segment angled onto the fender, rather than one box lamp.
+    for tag, side in (('L', 1), ('R', -1)):
+        y = side * 0.52
+        build_lens(f'CX_Headlight_{tag}', -2.10, y, 0.24, length_x=0.03, width_y=0.16, height_z=0.035, material=materials['headlight'])
+        wrap = build_lens(f'CX_Headlight_Wrap_{tag}', -1.98, side * 0.62, 0.24, length_x=0.10, width_y=0.03, height_z=0.035, material=materials['headlight'])
+        wrap.rotation_euler = (0, 0, side * math.radians(35))
+
+    # Full-width light bar across the tail — two segments meeting near
+    # the centreline for one continuous strip, a distinctive CX signature.
+    for tag, side in (('L', 1), ('R', -1)):
+        build_lens(f'CX_Taillight_{tag}', 2.02, side * 0.24, 0.40, length_x=0.03, width_y=0.42, height_z=0.045, material=materials['taillight'])
 
 
 def build_mirrors(materials):
-    for tag, y in (('L', 0.78), ('R', -0.78)):
-        build_lens(f'CX_Mirror_Stalk_{tag}', -0.72, y * 0.82, 0.62, length_x=0.03, width_y=0.03, height_z=0.10, material=materials['interior'])
-        build_lens(f'CX_Mirror_{tag}', -0.78, y, 0.64, length_x=0.10, width_y=0.06, height_z=0.05, material=materials['body_paint'])
+    for tag, side in (('L', 1), ('R', -1)):
+        y = side * 0.62
+        build_lens(f'CX_Mirror_Stalk_{tag}', -0.62, side * 0.52, 0.60, length_x=0.025, width_y=0.025, height_z=0.14, material=materials['interior'])
+        pod = build_lens(f'CX_Mirror_{tag}', -0.66, y, 0.70, length_x=0.14, width_y=0.06, height_z=0.05, material=materials['body_paint'])
+        pod.rotation_euler = (0, 0, side * math.radians(-12))
 
 
 # ---------------------------------------------------------------------
@@ -305,16 +335,22 @@ def build_mirrors(materials):
 # through the open cockpit and over the low windshield.
 # ---------------------------------------------------------------------
 def build_interior(materials):
-    build_lens('CX_Dash', -0.78, 0.0, 0.50, length_x=0.10, width_y=0.62, height_z=0.10, material=materials['interior'])
+    build_lens('CX_Dash', -0.90, 0.0, 0.52, length_x=0.12, width_y=0.64, height_z=0.10, material=materials['interior'])
+    # Digital instrument cluster — a small flat emissive panel recessed
+    # into the dash, ahead of the steering wheel.
+    build_lens('Instrument_Cluster', -0.86, 0.0, 0.58, length_x=0.01, width_y=0.18, height_z=0.06, material=materials['screen'])
+    # Centre console running back between the seats.
+    build_lens('Centre_Console', -0.35, 0.0, 0.38, length_x=0.55, width_y=0.10, height_z=0.10, material=materials['interior'])
 
-    for tag, y in (('L', 0.28), ('R', -0.28)):
-        build_lens(f'CX_Seat_{tag}', -0.15, y, 0.34, length_x=0.28, width_y=0.24, height_z=0.10, material=materials['interior'])
-        build_lens(f'CX_SeatBack_{tag}', -0.38, y, 0.52, length_x=0.06, width_y=0.24, height_z=0.22, material=materials['interior'])
+    for tag, y in (('L', 0.24), ('R', -0.24)):
+        build_lens(f'CX_Seat_{tag}', -0.25, y, 0.36, length_x=0.30, width_y=0.22, height_z=0.10, material=materials['interior'])
+        build_lens(f'CX_SeatBack_{tag}', -0.48, y, 0.54, length_x=0.07, width_y=0.22, height_z=0.24, material=materials['interior'])
+        build_lens(f'CX_SeatBolster_{tag}_A', -0.25, y - (0.13 if tag == 'L' else -0.13), 0.40, length_x=0.30, width_y=0.05, height_z=0.16, material=materials['interior'])
 
-    bpy.ops.mesh.primitive_torus_add(major_radius=0.15, minor_radius=0.018, major_segments=20, minor_segments=8, location=(-0.95, 0.0, 0.58))
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.14, minor_radius=0.016, major_segments=20, minor_segments=8, location=(-1.05, 0.0, 0.60))
     wheel = bpy.context.active_object
     wheel.name = 'SteeringWheel'
-    wheel.rotation_euler = (0, math.radians(20), 0)
+    wheel.rotation_euler = (0, math.radians(25), 0)
     wheel.data.materials.append(materials['interior'])
 
 
@@ -326,11 +362,11 @@ def build_interior(materials):
 # ---------------------------------------------------------------------
 def build_spoiler(materials):
     bm = bmesh.new()
-    half_span = 0.62
+    half_span = 0.70
     v = [
-        bm.verts.new((1.55, -half_span, 0.95)), bm.verts.new((1.55, half_span, 0.95)),
-        bm.verts.new((1.70, half_span, 0.98)), bm.verts.new((1.70, -half_span, 0.98)),
-        bm.verts.new((1.42, -half_span, 0.90)), bm.verts.new((1.42, half_span, 0.90)),
+        bm.verts.new((1.92, -half_span, 0.92)), bm.verts.new((1.92, half_span, 0.92)),
+        bm.verts.new((2.06, half_span, 0.95)), bm.verts.new((2.06, -half_span, 0.95)),
+        bm.verts.new((1.78, -half_span, 0.86)), bm.verts.new((1.78, half_span, 0.86)),
     ]
     bm.faces.new((v[0], v[1], v[2], v[3]))
     bm.faces.new((v[4], v[5], v[1], v[0]))
@@ -338,11 +374,11 @@ def build_spoiler(materials):
     bm.to_mesh(mesh)
     bm.free()
     wing = bpy.data.objects.new('Spoiler', mesh)
-    wing.data.materials.append(materials['body_paint'])
+    wing.data.materials.append(materials['carbon'])
     bpy.context.collection.objects.link(wing)
 
     for side in (1, -1):
-        strut = build_lens('Spoiler_Strut', 1.48, side * 0.35, 0.86, length_x=0.05, width_y=0.05, height_z=0.16, material=materials['body_paint'])
+        strut = build_lens('Spoiler_Strut', 1.86, side * 0.42, 0.80, length_x=0.05, width_y=0.05, height_z=0.18, material=materials['body_paint'])
         strut.parent = wing
 
     return wing
@@ -350,19 +386,23 @@ def build_spoiler(materials):
 
 def build_side_skirts(materials):
     for side, tag in ((1, 'L'), (-1, 'R')):
-        build_lens(f'Side_Skirt_Wide_{tag}', 0.0, side * 0.92, 0.16, length_x=1.55, width_y=0.10, height_z=0.09, material=materials['body_paint'])
+        build_lens(f'Side_Skirt_Wide_{tag}', -0.05, side * 0.94, 0.16, length_x=2.20, width_y=0.10, height_z=0.09, material=materials['carbon'])
 
 
 def build_exhaust(materials):
     obj = bpy.data.objects.new('Exhaust', bpy.data.meshes.new('Exhaust_Mesh'))
     bpy.context.collection.objects.link(obj)
     for side in (1, -1):
-        bpy.ops.mesh.primitive_cylinder_add(radius=0.06, depth=0.22, location=(2.12, side * 0.28, 0.20))
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.055, depth=0.16, location=(2.24, side * 0.22, 0.16))
         pipe = bpy.context.active_object
         pipe.name = f'Exhaust_Pipe_{"L" if side > 0 else "R"}'
         pipe.rotation_euler = (0, math.radians(90), 0)
         pipe.data.materials.append(materials['chrome'])
         pipe.parent = obj
+
+    build_lens('Diffuser', 2.10, 0.0, 0.09, length_x=0.24, width_y=0.86, height_z=0.03, material=materials['carbon'])
+    for i, side in enumerate((-0.6, -0.3, 0, 0.3, 0.6)):
+        build_lens(f'Diffuser_Fin_{i}', 2.10, side * 0.80, 0.13, length_x=0.24, width_y=0.012, height_z=0.06, material=materials['carbon'])
 
 
 # ---------------------------------------------------------------------
@@ -488,6 +528,8 @@ def build_materials():
         'brake_disc': make_material('Brake_Disc', (0.35, 0.35, 0.37, 1), metallic=0.8, roughness=0.4),
         'brake_caliper': make_material('Brake_Caliper', (0.6, 0.08, 0.06, 1), metallic=0.3, roughness=0.35),
         'chrome': make_material('Chrome', (0.8, 0.8, 0.82, 1), metallic=1.0, roughness=0.08),
+        'carbon': make_material('Carbon_Fiber', (0.05, 0.05, 0.06, 1), metallic=0.15, roughness=0.35),
+        'screen': make_material('Screen', (0.02, 0.02, 0.03, 1), metallic=0.0, roughness=0.3, emission=(0.3, 0.7, 1.0, 1), emission_strength=1.2),
     }
 
 
