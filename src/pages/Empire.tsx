@@ -101,7 +101,7 @@ function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: n
 
   return (
     <button onClick={onOpen} className="card group block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
-      <div className="relative aspect-[4/3] overflow-hidden bg-noir-2">
+      <div className="relative aspect-[4/3]">
         <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={listing.rarity} /></span>
         <VehicleArtwork
           config={{ name: listing.name, rarity: listing.rarity, customization: {} }}
@@ -123,7 +123,7 @@ function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: n
             </p>
           </div>
           <span className={`text-detail font-semibold ${canAfford ? 'text-accent-700' : 'text-faint'}`}>
-            {canAfford ? 'View →' : 'Not enough cash'}
+            {canAfford ? 'Configure →' : 'Not enough cash'}
           </span>
         </div>
       </div>
@@ -138,7 +138,7 @@ function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void 
 
   return (
     <button onClick={onOpen} className="card group block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
-      <div className="relative aspect-[4/3] overflow-hidden bg-noir-2">
+      <div className="relative aspect-[4/3]">
         <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={car.rarity} /></span>
         <VehicleArtwork
           config={{ name: car.name, rarity: car.rarity, customization: car.customization }}
@@ -160,7 +160,7 @@ function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void 
         )}
         <div className="mt-3 flex items-end justify-between">
           <p className="text-caption text-muted">Est. value <span className="font-semibold text-ink">{eur(estValue)}</span></p>
-          <span className="text-detail font-semibold text-accent-700">Customize →</span>
+          <span className="text-detail font-semibold text-accent-700">View & Configure →</span>
         </div>
       </div>
     </button>

@@ -11,7 +11,7 @@ import {
   type RepairCost,
 } from '../lib/data/empire';
 import { VehicleArtwork } from './VehicleArtwork';
-import { rarityGlowRadial } from './vehicleArt';
+import { rarityGlowRadial, availableViews, paintSwatch, optionSwatch, VIEW_LABELS, type ViewKey } from './vehicleArt';
 
 const CATEGORY_LABELS: Record<string, string> = {
   paint: 'Paint',
@@ -26,7 +26,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   engine: 'Engine',
 };
 
-/** Which categories actually repaint the photo right now (see
+/** Groups the existing customization categories into the three
+ *  sections a real configurator organizes around — no new categories
+ *  invented, just a friendlier grouping of what's already there. */
+const SECTIONS: { title: string; categories: string[] }[] = [
+  { title: 'Exterior', categories: ['paint', 'wheels', 'brakes', 'body_kit', 'exhaust', 'lights', 'windows'] },
+  { title: 'Interior', categories: ['interior'] },
+  { title: 'Performance', categories: ['engine', 'suspension'] },
+];
+
+/** Which categories actually repaint the artwork right now (see
  *  vehicleArt.ts's header comment for why the rest don't yet) — shown
  *  in the panel either way since every option is real and priced, just
  *  labelled honestly. */
@@ -77,17 +86,23 @@ function customizationCostTotal(car: VehicleExperienceCar, options: Customizatio
 }
 
 /**
- * The cinematic full-screen vehicle view — Market preview and the
- * Collection configurator both open through this. The vehicle is the
- * only thing on screen that moves: a slow ambient rarity-tinted glow
- * behind it, a pointer-tracked tilt on the photo itself, ground shadow,
- * and (Legendary/Mythic) a sparkle overlay — see VehicleArtwork.
+ * The full-screen vehicle configurator — Market preview and the
+ * Collection configurator both open through this. Large hero artwork
+ * with a view switcher (3/4 front / side / rear / interior, whichever
+ * exist for this car) on the left, a professional option panel with
+ * visual swatches and a live price/profit summary on the right —
+ * modelled on the workflow of a premium manufacturer configurator,
+ * built from original CX artwork rather than any real brand's assets.
  */
 export function VehicleExperience({ mode, car, options, repairCosts, onClose, onBuy, buying, cash, onChanged, onError }: VehicleExperienceProps) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string>('Exterior');
   const [activeCategory, setActiveCategory] = useState<string>('paint');
   const [localError, setLocalError] = useState<string | null>(null);
   const meta = RARITY_META[car.rarity];
+
+  const views = useMemo(() => availableViews(car.name), [car.name]);
+  const [activeView, setActiveView] = useState<ViewKey>(views[0]);
 
   const reportError = (message: string) => {
     setLocalError(message);
@@ -100,8 +115,6 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
   const customizationSpend = useMemo(() => customizationCostTotal(car, options), [car, options]);
   const totalInvestment = car.purchasePrice + (mode === 'configure' ? customizationSpend : 0);
   const potentialProfit = resale - totalInvestment;
-
-  const categories = Array.from(new Set(options.map((o) => o.category)));
 
   const doRepair = async (component: 'engine' | 'body' | 'interior') => {
     setBusy(component);
@@ -149,137 +162,198 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
         </div>
       )}
 
-      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr_300px]">
-        {/* LEFT — customization categories (configure mode only) */}
-        {mode === 'configure' ? (
-          <div className="order-2 overflow-y-auto border-white/10 p-3 lg:order-1 lg:border-r lg:p-4">
-            <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-on-noir-muted">Customize</p>
-            <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
-              {categories.map((cat) => (
+      <div className="grid flex-1 grid-cols-1 overflow-y-auto lg:overflow-hidden lg:grid-cols-[1fr_340px]">
+        {/* HERO — the vehicle, dominating the screen, with a view
+            switcher beneath it when more than one angle exists. */}
+        <div className="relative order-1 flex h-[45vh] shrink-0 flex-col overflow-hidden lg:h-auto">
+          <div className="relative flex-1 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0" style={{ background: rarityGlowRadial(car.rarity) }} />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
+            <VehicleArtwork
+              config={{ name: car.name, rarity: car.rarity, customization: car.customization }}
+              interactive
+              view={activeView}
+              className="h-full w-full p-6 sm:p-10"
+            />
+          </div>
+          {views.length > 1 && (
+            <div className="flex shrink-0 justify-center gap-2 border-t border-white/10 bg-black/30 px-4 py-3">
+              {views.map((v) => (
                 <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`shrink-0 rounded-xl px-3 py-2.5 text-left text-detail font-semibold transition-colors ${
-                    activeCategory === cat ? 'bg-white/15 text-on-noir' : 'text-on-noir-muted hover:bg-white/5'
+                  key={v}
+                  onClick={() => setActiveView(v)}
+                  className={`rounded-full px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                    activeView === v ? 'bg-white text-noir' : 'border border-white/15 text-on-noir-muted hover:border-white/30'
                   }`}
                 >
-                  {CATEGORY_LABELS[cat] ?? cat}
-                  {!PIXEL_ACCURATE_CATEGORIES.has(cat) && <span className="ml-1.5 text-[10px] text-on-noir-muted/60">(stat)</span>}
+                  {VIEW_LABELS[v]}
                 </button>
               ))}
             </div>
-
-            <div className="mt-3 space-y-1.5">
-              {options
-                .filter((o) => o.category === activeCategory)
-                .map((o) => {
-                  const active = car.customization[activeCategory] === o.key;
-                  return (
-                    <button
-                      key={o.id}
-                      disabled={active || busy !== null}
-                      onClick={() => doCustomize(o.id)}
-                      className={`flex w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-detail transition-colors disabled:opacity-60 ${
-                        active ? 'border-accent-bright/50 bg-accent-bright/10 text-on-noir' : 'border-white/10 text-on-noir-muted hover:border-white/25'
-                      }`}
-                    >
-                      <span>{active ? '✓ ' : ''}{o.label}</span>
-                      <span className="tabular-nums">{eur(o.cost)}</span>
-                    </button>
-                  );
-                })}
-            </div>
-
-            <p className="mt-6 px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-on-noir-muted">Restore Condition</p>
-            <div className="space-y-1.5">
-              {repairCosts.map((r) => {
-                const value = r.component === 'engine' ? car.conditionEngine : r.component === 'body' ? car.conditionBody : car.conditionInterior;
-                const full = value >= 100;
-                return (
-                  <button
-                    key={r.component}
-                    disabled={full || busy !== null}
-                    onClick={() => doRepair(r.component)}
-                    className="flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2.5 text-left text-detail text-on-noir-muted transition-colors hover:border-white/25 disabled:opacity-40"
-                  >
-                    <span>{r.label} ({value}%)</span>
-                    <span className="tabular-nums">{full ? 'OK' : eur(r.cost)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="order-2 hidden lg:order-1 lg:block" />
-        )}
-
-        {/* CENTER — the vehicle, dominating the screen against a
-            premium ambient automotive environment. */}
-        <div className="relative order-1 min-h-[45vh] overflow-hidden lg:order-2">
-          <div className="pointer-events-none absolute inset-0" style={{ background: rarityGlowRadial(car.rarity) }} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
-          <VehicleArtwork
-            config={{ name: car.name, rarity: car.rarity, customization: car.customization }}
-            interactive
-            className="h-full w-full p-6 sm:p-10"
-          />
+          )}
         </div>
 
-        {/* RIGHT — vehicle info + financial impact */}
-        <div className="order-3 overflow-y-auto border-white/10 p-4 lg:border-l lg:p-5">
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Condition</p>
-              <p className="mt-1 font-display text-lead font-semibold text-on-noir">{avgCondition}%</p>
-            </div>
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Mileage</p>
-              <p className="mt-1 font-display text-lead font-semibold text-on-noir">{car.mileageKm.toLocaleString('en-GB')} km</p>
-            </div>
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">{mode === 'preview' ? 'Price' : 'Purchase Price'}</p>
-              <p className="mt-1 font-display text-lead font-semibold text-on-noir">{eur(car.purchasePrice)}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Market Value</p>
-              <p className="mt-1 font-display text-lead font-semibold text-on-noir">{eur(car.marketValue)}</p>
-            </div>
-            {mode === 'configure' && (
+        {/* RIGHT — professional configurator panel: expandable
+            sections, visual swatches, live price/profit summary. */}
+        <div className="order-2 flex flex-col border-white/10 lg:overflow-hidden lg:border-l">
+          <div className="p-4 lg:flex-1 lg:overflow-y-auto lg:p-5">
+            <div className="grid grid-cols-2 gap-2.5">
               <div className="rounded-xl border border-white/10 p-3">
-                <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Customization Cost</p>
-                <p className="mt-1 font-display text-lead font-semibold text-on-noir">{eur(customizationSpend)}</p>
+                <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Condition</p>
+                <p className="mt-1 font-display text-lead font-semibold text-on-noir">{avgCondition}%</p>
               </div>
-            )}
-            <div className="rounded-xl border border-white/10 p-3">
-              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Est. Resale Value</p>
-              <p className="mt-1 font-display text-lead font-semibold text-on-noir">{eur(resale)}</p>
+              <div className="rounded-xl border border-white/10 p-3">
+                <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Mileage</p>
+                <p className="mt-1 font-display text-lead font-semibold text-on-noir">{car.mileageKm.toLocaleString('en-GB')} km</p>
+              </div>
             </div>
+
+            {mode === 'configure' ? (
+              <div className="mt-5">
+                {SECTIONS.map((section) => {
+                  const sectionOpen = openSection === section.title;
+                  const sectionCategories = section.categories.filter((c) => options.some((o) => o.category === c));
+                  if (sectionCategories.length === 0) return null;
+                  return (
+                    <div key={section.title} className="border-b border-white/10">
+                      <button
+                        onClick={() => {
+                          setOpenSection(sectionOpen ? '' : section.title);
+                          if (!sectionOpen) setActiveCategory(sectionCategories[0]);
+                        }}
+                        className="flex w-full items-center justify-between py-3 text-left text-detail font-bold uppercase tracking-wider text-on-noir"
+                      >
+                        {section.title}
+                        <Icon name="chevronDown" size={15} className={`text-on-noir-muted transition-transform ${sectionOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {sectionOpen && (
+                        <div className="pb-4">
+                          <div className="flex flex-wrap gap-1.5">
+                            {sectionCategories.map((cat) => (
+                              <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                                  activeCategory === cat ? 'bg-white/15 text-on-noir' : 'text-on-noir-muted hover:bg-white/5'
+                                }`}
+                              >
+                                {CATEGORY_LABELS[cat] ?? cat}
+                                {!PIXEL_ACCURATE_CATEGORIES.has(cat) && <span className="ml-1 text-[9px] text-on-noir-muted/60">(stat)</span>}
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-3 space-y-1.5">
+                            {options
+                              .filter((o) => o.category === activeCategory && sectionCategories.includes(activeCategory))
+                              .map((o) => {
+                                const active = car.customization[activeCategory] === o.key;
+                                const swatch = activeCategory === 'paint' ? paintSwatch(o.key) : optionSwatch(activeCategory, o.key);
+                                return (
+                                  <button
+                                    key={o.id}
+                                    disabled={active || busy !== null}
+                                    onClick={() => doCustomize(o.id)}
+                                    className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-detail transition-colors disabled:opacity-60 ${
+                                      active ? 'border-accent-bright/50 bg-accent-bright/10 text-on-noir' : 'border-white/10 text-on-noir-muted hover:border-white/25'
+                                    }`}
+                                  >
+                                    {swatch && (
+                                      <span
+                                        className="h-6 w-6 shrink-0 rounded-full border border-white/25"
+                                        style={{ background: swatch }}
+                                      />
+                                    )}
+                                    <span className="flex-1">{active ? '✓ ' : ''}{o.label}</span>
+                                    <span className="tabular-nums">{eur(o.cost)}</span>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <div className="pt-4">
+                  <p className="pb-2 text-[10px] font-bold uppercase tracking-wider text-on-noir-muted">Restore Condition</p>
+                  <div className="space-y-1.5">
+                    {repairCosts.map((r) => {
+                      const value = r.component === 'engine' ? car.conditionEngine : r.component === 'body' ? car.conditionBody : car.conditionInterior;
+                      const full = value >= 100;
+                      return (
+                        <button
+                          key={r.component}
+                          disabled={full || busy !== null}
+                          onClick={() => doRepair(r.component)}
+                          className="flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2.5 text-left text-detail text-on-noir-muted transition-colors hover:border-white/25 disabled:opacity-40"
+                        >
+                          <span>{r.label} ({value}%)</span>
+                          <span className="tabular-nums">{full ? 'OK' : eur(r.cost)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-5 text-detail text-on-noir-muted">Buy this vehicle to unlock full customization.</p>
+            )}
           </div>
 
-          <div className="mt-4 rounded-xl bg-white/5 p-4">
-            <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Potential Profit</p>
-            <p className={`mt-1 font-display text-2xl font-semibold ${potentialProfit >= 0 ? 'text-accent-bright' : 'text-danger'}`}>
-              {potentialProfit >= 0 ? '+' : ''}{eur(potentialProfit)}
-            </p>
-          </div>
+          {/* Sticky live price / profit summary */}
+          <div className="shrink-0 border-t border-white/10 bg-black/40 p-4 lg:p-5">
+            <div className="space-y-1.5 text-detail">
+              <div className="flex items-center justify-between text-on-noir-muted">
+                <span>{mode === 'preview' ? 'Base Vehicle' : 'Purchase Price'}</span>
+                <span className="tabular-nums text-on-noir">{eur(car.purchasePrice)}</span>
+              </div>
+              {mode === 'configure' && (
+                <div className="flex items-center justify-between text-on-noir-muted">
+                  <span>Options</span>
+                  <span className="tabular-nums text-on-noir">+{eur(customizationSpend)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between border-t border-white/10 pt-1.5 font-semibold">
+                <span className="text-on-noir">Total Investment</span>
+                <span className="tabular-nums text-on-noir">{eur(totalInvestment)}</span>
+              </div>
+              <div className="flex items-center justify-between text-on-noir-muted">
+                <span>Market Value</span>
+                <span className="tabular-nums text-on-noir">{eur(car.marketValue)}</span>
+              </div>
+              <div className="flex items-center justify-between text-on-noir-muted">
+                <span>Est. Resale Value</span>
+                <span className="tabular-nums text-on-noir">{eur(resale)}</span>
+              </div>
+            </div>
 
-          {mode === 'preview' ? (
-            <button
-              disabled={buying || (cash !== undefined && cash < car.purchasePrice)}
-              onClick={onBuy}
-              className="btn btn-accent-bright btn-lg btn-block mt-6 disabled:opacity-40"
-            >
-              {buying ? 'Buying…' : cash !== undefined && cash < car.purchasePrice ? 'Not enough cash' : 'Buy This Vehicle'}
-            </button>
-          ) : (
-            <button
-              disabled={busy !== null}
-              onClick={doSell}
-              className="btn btn-lg btn-block mt-6 border border-white/20 text-on-noir hover:bg-white/10 disabled:opacity-40"
-            >
-              {busy === 'sell' ? 'Selling…' : 'Sell Vehicle'}
-            </button>
-          )}
+            <div className="mt-3 rounded-xl bg-white/5 p-3">
+              <p className="text-[10px] uppercase tracking-wide text-on-noir-muted">Potential Profit</p>
+              <p className={`mt-0.5 font-display text-xl font-semibold ${potentialProfit >= 0 ? 'text-accent-bright' : 'text-danger'}`}>
+                {potentialProfit >= 0 ? '+' : ''}{eur(potentialProfit)}
+              </p>
+            </div>
+
+            {mode === 'preview' ? (
+              <button
+                disabled={buying || (cash !== undefined && cash < car.purchasePrice)}
+                onClick={onBuy}
+                className="btn btn-accent-bright btn-lg btn-block mt-4 disabled:opacity-40"
+              >
+                {buying ? 'Buying…' : cash !== undefined && cash < car.purchasePrice ? 'Not enough cash' : 'Buy This Vehicle'}
+              </button>
+            ) : (
+              <button
+                disabled={busy !== null}
+                onClick={doSell}
+                className="btn btn-lg btn-block mt-4 border border-white/20 text-on-noir hover:bg-white/10 disabled:opacity-40"
+              >
+                {busy === 'sell' ? 'Selling…' : 'Sell Vehicle'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

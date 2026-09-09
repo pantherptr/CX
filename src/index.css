@@ -996,19 +996,22 @@
   }
   .animate-crash-shake { animation: crash-shake 0.35s var(--ease-out-expo); }
 
-  /* ---- CX Vehicle Art — layered 2.5D presentation for the Empire
-     game's photographed vehicles (replaces the earlier real-time 3D
-     system). A soft rarity glow behind the car, a grounded contact
-     shadow, an optional pointer-tracked tilt, and a sparkle overlay
-     reserved for Legendary/Mythic. ---- */
+  /* ---- CX Vehicle Art — premium game-style presentation for the
+     Empire game's vehicles: a transparent cutout floating over a
+     rarity-tinted backdrop (never a boxed studio photograph), a
+     grounded contact shadow, an optional pointer-tracked tilt, and a
+     sparkle overlay reserved for Legendary/Mythic. The artwork is
+     deliberately allowed to overflow its frame slightly (see the
+     >100% image scale) so the car feels bigger than its card. ---- */
   .vehicle-art-frame {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     width: 100%;
     height: 100%;
     border-radius: inherit;
+    overflow: visible;
     perspective: 1200px;
   }
   .vehicle-art-glow {
@@ -1020,22 +1023,32 @@
   .vehicle-art-image {
     position: relative;
     z-index: 1;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 58%;
+    width: 92%;
+    height: 88%;
+    object-fit: contain;
+    object-position: center bottom;
     transform-style: preserve-3d;
     transition: transform 0.35s var(--ease-out-expo), filter 0.4s ease;
     will-change: transform;
+    filter: drop-shadow(0 18px 20px rgba(0,0,0,0.5));
+  }
+  .vehicle-art-frame--interior { align-items: stretch; }
+  .vehicle-art-image--interior {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    filter: none !important;
+    border-radius: inherit;
   }
   .vehicle-art-shadow {
     position: absolute;
     left: 50%;
-    bottom: 4%;
-    width: 62%;
-    height: 10%;
+    bottom: 6%;
+    width: 58%;
+    height: 8%;
     transform: translateX(-50%);
-    background: radial-gradient(closest-side, rgba(0,0,0,0.45), transparent 75%);
+    background: radial-gradient(closest-side, rgba(0,0,0,0.55), transparent 75%);
     z-index: 0;
     pointer-events: none;
   }
