@@ -22,6 +22,7 @@ export interface District {
   description: string;
   icon: IconName;
   baseRateMultiplier: number;
+  minBusinessTier: number;
 }
 
 interface DistrictRow {
@@ -30,6 +31,7 @@ interface DistrictRow {
   description: string;
   icon: IconName;
   base_rate_multiplier: number;
+  min_business_tier: number;
 }
 
 function mapDistrict(row: DistrictRow): District {
@@ -39,6 +41,7 @@ function mapDistrict(row: DistrictRow): District {
     description: row.description,
     icon: row.icon,
     baseRateMultiplier: row.base_rate_multiplier,
+    minBusinessTier: row.min_business_tier,
   };
 }
 
@@ -168,4 +171,23 @@ export function useCityEvents() {
     };
   }, [reload]);
   return { events, refresh: () => setReload((n) => n + 1) };
+}
+
+/** Display-only mirror of _rental_daily_rate()'s server-side formula —
+ *  used to preview a rental's daily rate before the player commits (the
+ *  RPC always re-derives the real number itself). */
+export function estimateDailyRentalRate(
+  car: { marketValue: number; conditionEngine: number; conditionBody: number; conditionInterior: number; category: string },
+  district: District,
+  demand: DistrictDemand[],
+  events: CityEvent[]
+): number {
+  const matchedDemand = demand.find((d) => d.districtKey === district.districtKey && d.category === car.category);
+  const eventBonus = events
+    .filter((e) => e.districtKey === district.districtKey && (e.category === null || e.category === car.category))
+    .reduce((sum, e) => sum + e.effectPct, 0);
+  const conditionFactor = (car.conditionEngine + car.conditionBody + car.conditionInterior) / 300;
+  return Math.round(
+    car.marketValue * 0.012 * district.baseRateMultiplier * (1 + ((matchedDemand?.demandPct ?? 0) + eventBonus) / 100) * Math.max(0.4, conditionFactor)
+  );
 }

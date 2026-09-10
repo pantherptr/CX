@@ -13,6 +13,7 @@ import type { DistrictKey, Demand } from './districts';
 
 export type RentalSource = 'standard' | 'customer_request';
 export type RentalStatus = 'active' | 'completed' | 'cancelled';
+export type PriceTier = 'below_market' | 'market' | 'premium';
 
 export interface RentalRecord {
   id: string;
@@ -23,6 +24,7 @@ export interface RentalRecord {
   dailyRate: number;
   demandTier: Demand;
   payout: number;
+  priceTier: PriceTier;
   source: RentalSource;
   startedAt: string;
   resolvesAt: string;
@@ -45,6 +47,7 @@ interface RentalRow {
   daily_rate: number;
   demand_tier: Demand;
   payout: number;
+  price_tier: PriceTier;
   source: RentalSource;
   started_at: string;
   resolves_at: string;
@@ -58,7 +61,7 @@ interface RentalRow {
 }
 
 const RENTAL_SELECT = `
-  id, inventory_id, district_key, category, duration_days, daily_rate, demand_tier, payout,
+  id, inventory_id, district_key, category, duration_days, daily_rate, demand_tier, payout, price_tier,
   source, started_at, resolves_at, status, resolved_at,
   inventory:game_inventory (
     customization, custom_name,
@@ -76,6 +79,7 @@ function mapRental(row: RentalRow): RentalRecord {
     dailyRate: row.daily_rate,
     demandTier: row.demand_tier,
     payout: row.payout,
+    priceTier: row.price_tier,
     source: row.source,
     startedAt: row.started_at,
     resolvesAt: row.resolves_at,
@@ -121,14 +125,26 @@ export function useMyRentals(userId: string | undefined) {
 export async function assignCarToRental(
   inventoryId: string,
   districtKey: DistrictKey,
-  durationDays: 1 | 3 | 7
+  durationDays: 1 | 3 | 7,
+  priceTier: PriceTier = 'market'
 ): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('assign_car_to_rental', {
     p_inventory_id: inventoryId,
     p_district_key: districtKey,
     p_duration_days: durationDays,
+    p_price_tier: priceTier,
   });
   return { error: error?.message ?? null };
+}
+
+/** Display-only mirror of assign_car_to_rental()'s tier+duration
+ *  multipliers — the RPC always re-derives the real payout server-side;
+ *  this just lets the picker preview it before the player commits. */
+export function estimateRentalPayout(dailyRate: number, durationDays: 1 | 3 | 7, priceTier: PriceTier): number {
+  const tierMultiplier = priceTier === 'below_market' ? 0.85 : priceTier === 'premium' ? 1.2 : 1.0;
+  const adjustedDailyRate = Math.round(dailyRate * tierMultiplier);
+  const durationMultiplier = durationDays >= 7 ? 1.1 : durationDays >= 3 ? 1.05 : 1.0;
+  return Math.round(adjustedDailyRate * durationDays * durationMultiplier);
 }
 
 /** The lazy-resolution entry point — resolves anything past its due time

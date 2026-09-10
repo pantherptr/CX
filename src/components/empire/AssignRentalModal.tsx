@@ -1,34 +1,50 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
+import { eur } from '../../lib/format';
 import { RARITY_META, type InventoryCar } from '../../lib/data/empire';
-import type { District } from '../../lib/data/districts';
-import type { CustomerRequest } from '../../lib/data/rentals';
+import { estimateDailyRentalRate, type District, type DistrictDemand, type CityEvent } from '../../lib/data/districts';
+import { estimateRentalPayout, type CustomerRequest, type PriceTier } from '../../lib/data/rentals';
 
 export type AssignTarget =
   | { mode: 'district'; district: District }
   | { mode: 'request'; request: CustomerRequest; districtName: string };
 
 const DURATIONS: (1 | 3 | 7)[] = [1, 3, 7];
+const PRICE_TIERS: { key: PriceTier; label: string }[] = [
+  { key: 'below_market', label: 'Below Market' },
+  { key: 'market', label: 'Market' },
+  { key: 'premium', label: 'Premium' },
+];
 
 /** Assign an owned car to a rental — two modes: free district assignment
- *  (car + duration picker) or fulfilling a customer request (duration
- *  pre-locked, car list pre-filtered to the requested category). */
+ *  (car, duration, and price-tier picker) or fulfilling a customer
+ *  request (duration/bonus pre-locked, car list pre-filtered to the
+ *  requested category, no price tier — the bonus_pct already is the
+ *  pricing lever there). */
 export function AssignRentalModal({
-  target, ownedCars, busy, onClose, onSubmit,
+  target, ownedCars, demand, events, busy, onClose, onSubmit,
 }: {
   target: AssignTarget;
   ownedCars: InventoryCar[];
+  demand: DistrictDemand[];
+  events: CityEvent[];
   busy: boolean;
   onClose: () => void;
-  onSubmit: (inventoryId: string, durationDays: 1 | 3 | 7) => void;
+  onSubmit: (inventoryId: string, durationDays: 1 | 3 | 7, priceTier: PriceTier) => void;
 }) {
   const requiredCategory = target.mode === 'request' ? target.request.category : null;
   const eligible = requiredCategory ? ownedCars.filter((c) => c.category === requiredCategory) : ownedCars;
 
   const [selectedCar, setSelectedCar] = useState<string | null>(null);
   const [duration, setDuration] = useState<1 | 3 | 7>(target.mode === 'request' ? (target.request.durationDays as 1 | 3) : 1);
+  const [priceTier, setPriceTier] = useState<PriceTier>('market');
 
   const title = target.mode === 'district' ? `Assign a Car — ${target.district.name}` : `Fulfill Request — ${target.request.customerName}`;
+
+  const selectedCarData = eligible.find((c) => c.id === selectedCar) ?? null;
+  const dailyRate = target.mode === 'district' && selectedCarData
+    ? estimateDailyRentalRate(selectedCarData, target.district, demand, events)
+    : null;
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -79,28 +95,50 @@ export function AssignRentalModal({
         </div>
 
         {target.mode === 'district' && (
-          <div className="mt-4">
-            <p className="text-caption text-on-noir-muted">Duration</p>
-            <div className="mt-1.5 flex gap-2">
-              {DURATIONS.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDuration(d)}
-                  className={`flex-1 rounded-lg border py-2 text-detail font-semibold transition-colors ${
-                    duration === d ? 'border-accent-bright bg-accent-bright/10 text-accent-bright' : 'border-white/10 text-on-noir-muted hover:border-white/25'
-                  }`}
-                >
-                  {d}d
-                </button>
-              ))}
+          <>
+            <div className="mt-4">
+              <p className="text-caption text-on-noir-muted">Duration</p>
+              <div className="mt-1.5 flex gap-2">
+                {DURATIONS.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDuration(d)}
+                    className={`flex-1 rounded-lg border py-2 text-detail font-semibold transition-colors ${
+                      duration === d ? 'border-accent-bright bg-accent-bright/10 text-accent-bright' : 'border-white/10 text-on-noir-muted hover:border-white/25'
+                    }`}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+
+            <div className="mt-4">
+              <p className="text-caption text-on-noir-muted">Price</p>
+              <div className="mt-1.5 grid grid-cols-3 gap-2">
+                {PRICE_TIERS.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setPriceTier(t.key)}
+                    className={`rounded-lg border py-2 text-center transition-colors ${
+                      priceTier === t.key ? 'border-accent-bright bg-accent-bright/10' : 'border-white/10 hover:border-white/25'
+                    }`}
+                  >
+                    <p className={`text-detail font-semibold ${priceTier === t.key ? 'text-accent-bright' : 'text-on-noir'}`}>{t.label}</p>
+                    <p className="mt-0.5 text-[10px] text-on-noir-muted tabular-nums">
+                      {dailyRate !== null ? eur(estimateRentalPayout(dailyRate, duration, t.key)) : '—'}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
         <div className="mt-4 flex justify-end border-t border-white/8 pt-4">
           <button
             disabled={busy || !selectedCar}
-            onClick={() => selectedCar && onSubmit(selectedCar, duration)}
+            onClick={() => selectedCar && onSubmit(selectedCar, duration, target.mode === 'district' ? priceTier : 'market')}
             className="btn btn-accent-bright btn-sm disabled:opacity-40"
           >
             {busy ? 'Assigning…' : 'Confirm'}

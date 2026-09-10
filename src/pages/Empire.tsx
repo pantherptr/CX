@@ -44,7 +44,7 @@ import { useDistricts, useDistrictDemand, useCityEvents, type DistrictKey } from
 import {
   useMyRentals, useMyCustomerRequests, syncRentals, assignCarToRental, cancelRental,
   acceptCustomerRequest, declineCustomerRequest, estimateRentalCxPoints,
-  type RentalStatus,
+  type RentalStatus, type PriceTier,
 } from '../lib/data/rentals';
 import {
   useCorporateContracts, useMyContractCommitments, syncContracts, acceptContract, cancelContractCommitment,
@@ -57,6 +57,7 @@ import {
   useAchievementTemplates, useMyAchievementUnlocks, checkAndAwardAchievements,
 } from '../lib/data/achievements';
 import { useEmpireLeaderboard } from '../lib/data/leaderboard';
+import { useActivityFeed } from '../lib/data/activity';
 import { reputationLabel } from '../lib/data/reputation';
 import { VehicleArtwork } from '../vehicleArt/VehicleArtwork';
 import { VehicleExperience, type VehicleExperienceCar } from '../vehicleArt/VehicleExperience';
@@ -344,7 +345,7 @@ export default function Empire() {
   const { events: cityEvents, refresh: refreshCityEvents } = useCityEvents();
   const { rentals, refresh: refreshRentals } = useMyRentals(userId);
   const { requests: customerRequests, refresh: refreshRequests } = useMyCustomerRequests(userId);
-  const contracts = useCorporateContracts();
+  const { contracts, refresh: refreshContracts } = useCorporateContracts();
   const { commitments, refresh: refreshCommitments } = useMyContractCommitments(userId);
   const missions = useMissionTemplates();
   const { progress: dailyProgress, refresh: refreshDailyProgress } = useDailyProgress();
@@ -352,6 +353,7 @@ export default function Empire() {
   const achievements = useAchievementTemplates();
   const { unlocks: achievementUnlocks, refresh: refreshAchievementUnlocks } = useMyAchievementUnlocks(userId);
   const leaderboard = useEmpireLeaderboard();
+  const { feed: activityFeed, refresh: refreshActivityFeed } = useActivityFeed(userId);
 
   const [marketMsg, setMarketMsg] = useState<string | null>(null);
   const [collectionMsg, setCollectionMsg] = useState<string | null>(null);
@@ -510,6 +512,8 @@ export default function Empire() {
         refreshDailyProgress();
         refreshDistrictDemand();
         refreshCityEvents();
+        refreshContracts();
+        refreshActivityFeed();
       } catch {
         // Lazy resolution failing silently on one poll is fine — the
         // next poll (or the next tab open) tries again.
@@ -635,9 +639,9 @@ export default function Empire() {
     setTimeout(() => setCityMsg(null), 3500);
   };
 
-  const handleAssignToDistrict = async (inventoryId: string, districtKey: DistrictKey, durationDays: 1 | 3 | 7) => {
+  const handleAssignToDistrict = async (inventoryId: string, districtKey: DistrictKey, durationDays: 1 | 3 | 7, priceTier: PriceTier) => {
     setCityBusyId(inventoryId);
-    const { error } = await assignCarToRental(inventoryId, districtKey, durationDays);
+    const { error } = await assignCarToRental(inventoryId, districtKey, durationDays, priceTier);
     setCityBusyId(null);
     if (error) flashCityMsg(error);
     else {
@@ -799,6 +803,7 @@ export default function Empire() {
               districts={districts ?? []}
               demand={districtDemand ?? []}
               events={cityEvents ?? []}
+              activityFeed={activityFeed ?? []}
               rentals={rentals ?? []}
               customerRequests={customerRequests ?? []}
               contracts={contracts ?? []}
@@ -808,6 +813,7 @@ export default function Empire() {
               playerState={playerState}
               dailyProgress={dailyProgress}
               missionClaims={missionClaims ?? []}
+              businessTiers={businessTiers ?? []}
               busyId={cityBusyId}
               onAssignToDistrict={handleAssignToDistrict}
               onAcceptRequest={handleAcceptRequest}
