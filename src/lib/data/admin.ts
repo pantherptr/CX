@@ -272,3 +272,57 @@ export async function adminSetCarStatus(id: string, status: 'draft' | 'published
   const { error } = await supabase.from('cars').update({ status }).eq('id', id);
   return { error: error?.message ?? null };
 }
+
+export interface AdminPlayer {
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  cash: number;
+  reputation: number;
+  businessTier: number;
+}
+
+interface AdminPlayerRow {
+  user_id: string;
+  cash: number;
+  reputation: number;
+  business_tier: number;
+  profile: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+const ADMIN_PLAYER_SELECT =
+  'user_id, cash, reputation, business_tier, profile:profiles!game_player_state_user_id_fkey (full_name, avatar_url)';
+
+/** Every Luxury Car Empire player and their current cash/reputation/tier
+ *  — only visible here via the "Admins view all Empire state" policy
+ *  (0034_admin_grant_cash.sql); a regular player's own client only ever
+ *  sees their own row. */
+export async function fetchAllPlayers(): Promise<AdminPlayer[]> {
+  const { data, error } = await supabase
+    .from('game_player_state')
+    .select(ADMIN_PLAYER_SELECT)
+    .order('cash', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as AdminPlayerRow[]).map((r) => ({
+    userId: r.user_id,
+    fullName: r.profile?.full_name || 'Unnamed user',
+    avatarUrl: r.profile?.avatar_url ?? null,
+    cash: Number(r.cash),
+    reputation: r.reputation,
+    businessTier: r.business_tier,
+  }));
+}
+
+/** Adds to a player's Empire cash — see admin_grant_cash() in
+ *  0034_admin_grant_cash.sql for why this goes through a dedicated RPC
+ *  rather than a direct table update. */
+export async function adminGrantCash(userId: string, amount: number): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('admin_grant_cash', { p_user_id: userId, p_amount: amount });
+  return { error: error?.message ?? null };
+}
+
+/** Sets a player's Empire cash to an exact value. */
+export async function adminSetCash(userId: string, amount: number): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('admin_set_cash', { p_user_id: userId, p_amount: amount });
+  return { error: error?.message ?? null };
+}
