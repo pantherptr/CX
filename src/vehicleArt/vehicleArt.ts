@@ -11,19 +11,30 @@ import type { Rarity } from '../lib/data/empire';
  *    stack (instant, free, no per-colour asset); BODY_KIT swaps to a
  *    second pre-rendered "wide" image where one exists.
  *
- * 2. REALISTIC AUTOMOTIVE PHOTOGRAPHY (CX Vortex — the new flagship
- *    standard every future template should match): a photoreal AI-
- *    generated car cutout composited, at render time, over ONE shared
- *    master environment plate (PHOTOREAL_BACKDROP) — never a baked-
+ * 2. CX COLLECTOR GARAGE — premium CGI game-render style (CX Vortex —
+ *    the flagship standard every future template should match): an
+ *    AI-generated car cutout, rendered in a "premium CGI automotive
+ *    render" style (ray-traced, studio-lit, ArtStation-adjacent —
+ *    explicitly NOT a photograph and NOT the earlier toy-car direction,
+ *    both tried and rejected this session), composited at render time
+ *    over ONE shared showroom plate (GARAGE_BACKDROP) — never a baked-
  *    together single image. Keeping the car and the environment as
  *    separate layers is what still lets PAINT recolor the car via the
  *    same CSS filter stack as the stylized style, without dragging the
- *    background's color along with it. Every realistic vehicle reuses
- *    the exact same backdrop plate — regenerating "the same street"
- *    independently per vehicle does not produce a pixel-consistent
- *    result (proven this session across many attempts), so a single
- *    shared plate is the only reliable way the whole fleet reads as one
- *    consistent world rather than disconnected AI generations.
+ *    background's color along with it. Every such vehicle reuses the
+ *    exact same showroom plate — regenerating "the same room" independently
+ *    per vehicle does not produce a pixel-consistent result (proven this
+ *    session across many attempts, both for the street plate and this
+ *    one), so a single shared plate is the only reliable way the whole
+ *    fleet reads as one consistent showroom rather than disconnected AI
+ *    generations. Note on prompting: "video game key art / ArtStation /
+ *    octane render" style keywords measurably increased the rate of the
+ *    model copying real production cars (Aventador/McLaren/Lamborghini
+ *    silhouettes and badges) compared to a plain "photograph" framing —
+ *    the working formula keeps the proven "futuristic concept car"
+ *    design language and only adds "photorealistic CGI render quality"
+ *    plus the showroom lighting/floor description, not heavier game-art
+ *    style tags.
  *
  * Neither style does true per-part layer compositing (a separate
  * transparent PNG per wheel/spoiler/etc.): getting AI-generated layers
@@ -55,21 +66,24 @@ export interface VehicleArtSources {
   views: Partial<Record<ViewKey, string>>;
   /** Body-kit ("wide") variant of the front3q view only, for now. */
   wide?: string;
-  /** A shared, reusable photoreal environment plate this vehicle's cutout
-   *  composites over at render time (see PHOTOREAL_BACKDROP below) —
-   *  present only for vehicles built in the realistic-photography
-   *  direction. Every such vehicle uses the SAME plate so the whole
-   *  fleet reads as one consistent world, per the explicit "same street"
-   *  requirement — never generate a new environment per car. */
+  /** A shared, reusable CX Collector Garage showroom plate this
+   *  vehicle's cutout composites over at render time (see
+   *  GARAGE_BACKDROP below) — present only for vehicles built in the
+   *  premium-CGI-render direction. Every such vehicle uses the SAME
+   *  plate so the whole fleet reads as one consistent showroom, per the
+   *  explicit "same collector garage" requirement — never generate a
+   *  new environment per car. */
   photoBackdrop?: string;
 }
 
-/** The one master environment plate every realistic-photography vehicle
- *  composites onto. Regenerating "the same street" independently per
- *  vehicle does not produce a pixel-consistent result (proven this
- *  session) — a single shared plate is the only reliable way to
- *  guarantee every car appears to live in the same place. */
-export const PHOTOREAL_BACKDROP = '/vehicle-art/street/master.webp';
+/** The one master showroom plate every CX Collector Garage vehicle
+ *  composites onto — dark premium architecture, circular display
+ *  platform, dramatic overhead spotlight rig, polished reflective
+ *  floor. Regenerating "the same room" independently per vehicle does
+ *  not produce a pixel-consistent result (proven repeatedly this
+ *  session), so a single shared plate is the only reliable way to
+ *  guarantee every car appears to live in the same showroom. */
+export const GARAGE_BACKDROP = '/vehicle-art/garage/master.webp';
 
 /** Keyed by the exact `game_vehicle_templates.name` — every template
  *  gets its own bespoke artwork rather than a shared placeholder. */
@@ -89,7 +103,7 @@ export const ARTWORK_SOURCES: Record<string, VehicleArtSources> = {
       rear: '/vehicle-art/cx-vortex/rear.webp',
       interior: '/vehicle-art/cx-vortex/interior.webp',
     },
-    photoBackdrop: PHOTOREAL_BACKDROP,
+    photoBackdrop: GARAGE_BACKDROP,
   },
   'Titan 4x4': { views: { front3q: '/vehicle-art/titan_4x4.webp' } },
   'Phantom Reaper': { views: { front3q: '/vehicle-art/phantom_reaper.webp' } },
