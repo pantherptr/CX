@@ -116,30 +116,39 @@ function MarketCard({ listing, cash, onOpen }: { listing: MarketListing; cash: n
   const profit = listing.marketValue - listing.price;
 
   return (
-    <button onClick={onOpen} className="card group block overflow-hidden text-left" style={{ boxShadow: meta.glow }}>
-      <div className="relative aspect-[4/3]">
+    <button
+      onClick={onOpen}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-noir-2 text-left transition-all duration-500 ease-out-expo hover:-translate-y-1.5 hover:border-white/25"
+      style={{ boxShadow: meta.glow }}
+    >
+      <div className="relative aspect-[4/3] overflow-hidden">
         <span className="absolute left-3 top-3 z-10"><RarityBadge rarity={listing.rarity} /></span>
         <VehicleArtwork
           config={{ name: listing.name, rarity: listing.rarity, customization: {} }}
-          className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
+          className="h-full w-full transition-transform duration-500 ease-out-expo group-hover:scale-[1.04]"
         />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-noir-2 to-transparent" />
       </div>
-      <div className="p-4">
-        <p className="text-caption text-muted">{listing.brand} · {listing.category}</p>
-        <p className="font-display text-lead font-semibold text-ink">{listing.name}</p>
-        <div className="mt-2 flex items-center justify-between text-detail text-ink-soft">
-          <span>Condition {listing.conditionPct}%</span>
-          <span>{listing.mileageKm.toLocaleString('en-GB')} km</span>
+      <div className="flex flex-1 flex-col p-4">
+        <p className="text-caption uppercase tracking-wide text-on-noir-muted/70">{listing.brand} · {listing.category}</p>
+        <p className="mt-0.5 font-display text-lead font-semibold text-on-noir">{listing.name}</p>
+        <div className="mt-2 flex items-center gap-3 text-caption text-on-noir-muted">
+          <span className="inline-flex items-center gap-1"><Icon name="gauge" size={12} /> {listing.conditionPct}%</span>
+          <span className="inline-flex items-center gap-1"><Icon name="route" size={12} /> {listing.mileageKm.toLocaleString('en-GB')} km</span>
         </div>
-        <div className="mt-3 flex items-end justify-between">
+        <div className="mt-4 flex items-end justify-between gap-2 border-t border-white/8 pt-3">
           <div>
-            <p className="font-display text-xl font-semibold text-ink">{eur(listing.price)}</p>
-            <p className={`text-caption ${profit > 0 ? 'text-accent-700' : 'text-muted'}`}>
-              Market value {eur(listing.marketValue)}{profit > 0 ? ` · +${eur(profit)} potential` : ''}
+            <p className="font-display text-xl font-semibold text-on-noir tabular-nums">{eur(listing.price)}</p>
+            <p className={`text-caption ${profit > 0 ? 'text-accent-bright' : 'text-on-noir-muted'}`}>
+              {profit > 0 ? `+${eur(profit)} potential` : `Market ${eur(listing.marketValue)}`}
             </p>
           </div>
-          <span className={`text-detail font-semibold ${canAfford ? 'text-accent-700' : 'text-faint'}`}>
-            {canAfford ? 'Configure →' : 'Not enough cash'}
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-detail font-semibold transition-colors duration-300 ${
+              canAfford ? 'bg-white/10 text-on-noir group-hover:bg-accent-bright group-hover:text-noir' : 'text-on-noir-muted/50'
+            }`}
+          >
+            {canAfford ? 'Configure' : 'Locked'} {canAfford && <Icon name="arrowRight" size={12} />}
           </span>
         </div>
       </div>
@@ -202,10 +211,10 @@ function HotCarsStrip({ hotCars }: { hotCars: HotCar[] }) {
         {hotCars.map((h) => {
           const meta = DEMAND_META[h.demandTier];
           return (
-            <div key={h.templateId} className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-panel/60 px-3.5 py-2">
+            <div key={h.templateId} className="flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-white/6 px-3.5 py-2">
               <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
-              <span className="text-detail font-semibold text-ink">{h.name}</span>
-              <span className="text-caption text-muted">{meta.label} · +{h.demandPct}%</span>
+              <span className="text-detail font-semibold text-on-noir">{h.name}</span>
+              <span className="text-caption text-on-noir-muted">{meta.label} · +{h.demandPct}%</span>
             </div>
           );
         })}
@@ -510,8 +519,8 @@ export default function Empire() {
   }
 
   return (
-    <div>
-      <section className="relative overflow-hidden bg-noir">
+    <div className="bg-noir">
+      <section className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute inset-0 opacity-70"
           style={{ background: 'radial-gradient(70% 55% at 20% 10%, rgba(0,212,71,0.16), transparent 65%)' }}
@@ -530,7 +539,7 @@ export default function Empire() {
         </div>
       </section>
 
-      <div className="container-page py-8">
+      <div className="container-page pb-16 pt-6">
         <div className="flex gap-2 overflow-x-auto pb-2">
           {([
             ['market', 'Car Market', 'tag'],
@@ -543,7 +552,7 @@ export default function Empire() {
               key={key}
               onClick={() => setTab(key)}
               className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
-                tab === key ? 'bg-ink text-white' : 'border border-line text-ink-soft hover:border-ink'
+                tab === key ? 'bg-white text-noir' : 'border border-white/15 text-on-noir-muted hover:border-white/30 hover:text-on-noir'
               }`}
             >
               <Icon name={icon} size={14} /> {label}
@@ -553,7 +562,7 @@ export default function Empire() {
 
         {tab === 'market' && (
           <div className="mt-8">
-            {marketMsg && <p className="mb-4 text-detail font-medium text-accent-700">{marketMsg}</p>}
+            {marketMsg && <p className="mb-4 text-detail font-medium text-accent-bright">{marketMsg}</p>}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((l) => (
                 <MarketCard key={l.listingId} listing={l} cash={playerState.cash} onOpen={() => setStage({ mode: 'preview', listing: l })} />
@@ -567,7 +576,7 @@ export default function Empire() {
             {collectionMsg && <p className="mb-4 text-detail font-medium text-danger">{collectionMsg}</p>}
             {ownedCars.length === 0 ? (
               <div className="py-16 text-center">
-                <p className="text-body text-muted">Your collection is empty — buy your first car from the Market.</p>
+                <p className="text-body text-on-noir-muted">Your collection is empty — buy your first car from the Market.</p>
                 <button onClick={() => setTab('market')} className="btn btn-accent-bright btn-lg mt-5">
                   Browse Market
                 </button>
@@ -628,9 +637,9 @@ export default function Empire() {
             </div>
 
             <div className="mt-10">
-              <h3 className="font-display text-xl font-semibold text-ink">Active Listings</h3>
+              <h3 className="font-display text-xl font-semibold text-on-noir">Active Listings</h3>
               {activeListings.length === 0 ? (
-                <p className="mt-4 text-detail text-muted">Nothing listed right now — list an owned car for sale from My Collection.</p>
+                <p className="mt-4 text-detail text-on-noir-muted">Nothing listed right now — list an owned car for sale from My Collection.</p>
               ) : (
                 <div className="mt-4 flex flex-col gap-3">
                   {activeListings.map((l) => (
@@ -649,7 +658,7 @@ export default function Empire() {
 
             {soldListings.length > 0 && (
               <div className="mt-10">
-                <h3 className="font-display text-xl font-semibold text-ink">Sold History</h3>
+                <h3 className="font-display text-xl font-semibold text-on-noir">Sold History</h3>
                 <div className="card mt-4 divide-y divide-line">
                   {soldListings.map((l) => (
                     <SoldListingRow key={l.id} listing={l} />
@@ -663,7 +672,7 @@ export default function Empire() {
         {tab === 'business' && (
           <div className="mt-8">
             <div className="max-w-2xl">
-              {upgradeMsg && <p className="mb-4 text-detail font-medium text-accent-700">{upgradeMsg}</p>}
+              {upgradeMsg && <p className="mb-4 text-detail font-medium text-accent-bright">{upgradeMsg}</p>}
               <div className="card p-6">
                 <p className="eyebrow">Current Tier</p>
                 <h3 className="mt-1 font-display text-2xl font-semibold text-ink">{currentTier?.name}</h3>
@@ -699,14 +708,14 @@ export default function Empire() {
                   </button>
                 </div>
               ) : (
-                <p className="mt-4 text-body text-muted">You've reached the highest business tier — Global Car Empire.</p>
+                <p className="mt-4 text-body text-on-noir-muted">You've reached the highest business tier — Global Car Empire.</p>
               )}
             </div>
 
             {ownedCars.length > 0 && (
               <div className="mt-10">
-                <h3 className="font-display text-xl font-semibold text-ink">Showroom Floor</h3>
-                <p className="mt-1 text-caption text-muted">
+                <h3 className="font-display text-xl font-semibold text-on-noir">Showroom Floor</h3>
+                <p className="mt-1 text-caption text-on-noir-muted">
                   {Math.min(ownedCars.length, currentTier?.displaySlots ?? ownedCars.length)} of {currentTier?.displaySlots} slots on display
                 </p>
                 <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -774,7 +783,7 @@ export default function Empire() {
             </div>
 
             <div className="mt-8">
-              <h3 className="font-display text-xl font-semibold text-ink">Score History</h3>
+              <h3 className="font-display text-xl font-semibold text-on-noir">Score History</h3>
               <div className="card mt-4 divide-y divide-line">
                 {(history ?? []).length === 0 ? (
                   <p className="p-4 text-detail text-muted">No CX Score activity yet.</p>
