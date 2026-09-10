@@ -1041,6 +1041,26 @@
     filter: none !important;
     border-radius: inherit;
   }
+  /* Realistic-photography vehicles (CX Vortex): the car cutout composites
+     live over the shared master street plate, clipped to the card shape
+     rather than allowed to bleed past it the way the stylized cutouts do
+     — this is a real environment photo, not a floating game asset. */
+  .vehicle-art-frame--photoreal { overflow: hidden; }
+  .vehicle-art-photo-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 65%;
+    border-radius: inherit;
+  }
+  .vehicle-art-image--photoreal {
+    width: 88%;
+    height: 82%;
+    object-position: center bottom;
+  }
   .vehicle-art-shadow {
     position: absolute;
     left: 50%;

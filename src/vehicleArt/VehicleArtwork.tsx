@@ -52,6 +52,7 @@ export function VehicleArtwork({ config, interactive = false, className, view = 
   const filter = paintFilterFor(config.customization);
   const glow = RARITY_GLOW[config.rarity];
   const sparkle = SPARKLE_RARITIES.has(config.rarity);
+  const isPhotoreal = Boolean(art.photoBackdrop);
 
   const frameRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -74,6 +75,42 @@ export function VehicleArtwork({ config, interactive = false, className, view = 
     filter,
     transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${interactive ? 1.08 : 1.04})`,
   };
+
+  // Photoreal vehicles composite their cutout over the shared master
+  // street plate at render time (rather than a single baked-together
+  // image) specifically so `filter` above still only recolors the car,
+  // not the environment — see vehicleArt.ts's header comment. The
+  // rarity presentation is deliberately much more restrained here (no
+  // colored glow/backdrop tint) since "avoid game-like glowing
+  // outlines" was an explicit part of the realistic-photography spec;
+  // rarity still reads through the badge/name UI around the artwork.
+  if (isPhotoreal && !isInterior) {
+    return (
+      <div
+        ref={frameRef}
+        onMouseMove={handleMove}
+        onMouseLeave={handleLeave}
+        className={`vehicle-art-frame vehicle-art-frame--photoreal ${className ?? ''}`}
+      >
+        <img src={art.photoBackdrop} alt="" aria-hidden loading="lazy" className="vehicle-art-photo-backdrop" />
+        <div className="vehicle-art-shadow" />
+        <img
+          src={src}
+          alt={config.name}
+          loading="lazy"
+          className="vehicle-art-image vehicle-art-image--photoreal"
+          style={imgStyle}
+        />
+        {sparkle && (
+          <div className="vehicle-art-sparkles">
+            {SPARKLE_POSITIONS.map((p, i) => (
+              <span key={i} className="vehicle-art-sparkle" style={{ top: p.top, left: p.left, animationDelay: p.delay }} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

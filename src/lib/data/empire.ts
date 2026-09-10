@@ -31,6 +31,12 @@ export interface PlayerState {
   businessTier: number;
   totalRevenue: number;
   totalExpenses: number;
+  carsSold: number;
+  successfulDeals: number;
+  failedDeals: number;
+  bestSale: number;
+  fastestSaleSeconds: number | null;
+  longestSaleSeconds: number | null;
 }
 
 interface PlayerStateRow {
@@ -39,6 +45,12 @@ interface PlayerStateRow {
   business_tier: number;
   total_revenue: number;
   total_expenses: number;
+  cars_sold: number;
+  successful_deals: number;
+  failed_deals: number;
+  best_sale: number;
+  fastest_sale_seconds: number | null;
+  longest_sale_seconds: number | null;
 }
 
 function mapPlayerState(row: PlayerStateRow): PlayerState {
@@ -48,6 +60,12 @@ function mapPlayerState(row: PlayerStateRow): PlayerState {
     businessTier: row.business_tier,
     totalRevenue: row.total_revenue,
     totalExpenses: row.total_expenses,
+    carsSold: row.cars_sold,
+    successfulDeals: row.successful_deals,
+    failedDeals: row.failed_deals,
+    bestSale: row.best_sale,
+    fastestSaleSeconds: row.fastest_sale_seconds,
+    longestSaleSeconds: row.longest_sale_seconds,
   };
 }
 
@@ -237,10 +255,12 @@ export interface InventoryCar extends VehicleStats {
   conditionInterior: number;
   mileageKm: number;
   customization: Record<string, string>;
-  status: 'owned' | 'sold';
+  status: 'owned' | 'listed' | 'sold';
   acquiredAt: string;
   soldAt: string | null;
   salePrice: number | null;
+  customName: string | null;
+  renameCount: number;
 }
 
 interface InventoryRow {
@@ -253,10 +273,12 @@ interface InventoryRow {
   condition_interior: number;
   mileage_km: number;
   customization: Record<string, string>;
-  status: 'owned' | 'sold';
+  status: 'owned' | 'listed' | 'sold';
   acquired_at: string;
   sold_at: string | null;
   sale_price: number | null;
+  custom_name: string | null;
+  rename_count: number;
   template: {
     name: string;
     brand: string;
@@ -294,6 +316,8 @@ function mapInventory(row: InventoryRow): InventoryCar {
     acquiredAt: row.acquired_at,
     soldAt: row.sold_at,
     salePrice: row.sale_price,
+    customName: row.custom_name,
+    renameCount: row.rename_count,
   };
 }
 
@@ -404,6 +428,11 @@ export async function estimateCarValue(inventoryId: string): Promise<number> {
   return data as number;
 }
 
+/** Instant sale — superseded for player-initiated sales by the listing
+ *  flow in carMarket.ts (list → wait → buyer → SOLD), which is what
+ *  VehicleExperience.tsx now calls. Left in place rather than deleted:
+ *  nothing else references it, and dropping a live production RPC for
+ *  zero benefit is unnecessary risk. */
 export async function sellCar(inventoryId: string): Promise<{ price: number | null; error: string | null }> {
   const { data, error } = await supabase.rpc('sell_car', { p_inventory_id: inventoryId });
   if (error) return { price: null, error: error.message };
@@ -414,11 +443,12 @@ export async function sellCar(inventoryId: string): Promise<{ price: number | nu
  *  owned collection, computed the same way `estimate_car_value()` does
  *  server-side (condition-weighted market value) but without a
  *  round-trip per car. Never used to move money; purely a dashboard
- *  number. */
+ *  number. Listed cars still count — the player still owns them, just
+ *  pending a sale. */
 export function estimateNetWorth(state: PlayerState | null, inventory: InventoryCar[] | null): number {
   if (!state) return 0;
   const ownedValue = (inventory ?? [])
-    .filter((c) => c.status === 'owned')
+    .filter((c) => c.status === 'owned' || c.status === 'listed')
     .reduce((sum, c) => sum + c.marketValue * ((c.conditionEngine + c.conditionBody + c.conditionInterior) / 300), 0);
   return Math.round(state.cash + ownedValue);
 }

@@ -5,11 +5,11 @@ import {
   RARITY_META,
   repairCar,
   customizeCar,
-  sellCar,
   type Rarity,
   type CustomizationOption,
   type RepairCost,
 } from '../lib/data/empire';
+import { estimateRenameFee, estimateSaleOutlook } from '../lib/data/carMarket';
 import { VehicleArtwork } from './VehicleArtwork';
 import { rarityGlowRadial, availableViews, paintSwatch, optionSwatch, VIEW_LABELS, type ViewKey } from './vehicleArt';
 
@@ -38,8 +38,10 @@ const SECTIONS: { title: string; categories: string[] }[] = [
 /** Which categories actually repaint the artwork right now (see
  *  vehicleArt.ts's header comment for why the rest don't yet) — shown
  *  in the panel either way since every option is real and priced, just
- *  labelled honestly. */
-const PIXEL_ACCURATE_CATEGORIES = new Set(['paint', 'body_kit']);
+ *  labelled honestly. Only paint has a working visual treatment today
+ *  (CSS filter, works for every vehicle) — body_kit needs a "wide"
+ *  asset per vehicle and none currently has one. */
+const PIXEL_ACCURATE_CATEGORIES = new Set(['paint']);
 
 export interface VehicleExperienceCar {
   id: string; // inventoryId (configure) or listingId (preview)
@@ -55,6 +57,9 @@ export interface VehicleExperienceCar {
   customization: Record<string, string>;
   purchasePrice: number;
   marketValue: number;
+  customName?: string | null;
+  renameCount?: number;
+  cash?: number;
 }
 
 interface VehicleExperienceProps {
@@ -68,6 +73,13 @@ interface VehicleExperienceProps {
   cash?: number;
   onChanged?: () => void;
   onError?: (message: string) => void;
+  /** Lists the car for sale at the given asking price — replaces the
+   *  old instant `sellCar()` for player-initiated sales (see
+   *  carMarket.ts's listCarForSale). */
+  onList?: (inventoryId: string, askingPrice: number) => Promise<void>;
+  /** Renames the car — carMarket.ts's renameCar charges the fee
+   *  server-side; this just triggers it and lets the caller refresh. */
+  onRename?: (inventoryId: string, newName: string) => Promise<void>;
 }
 
 function estimateResale(car: VehicleExperienceCar) {
@@ -94,7 +106,7 @@ function customizationCostTotal(car: VehicleExperienceCar, options: Customizatio
  * modelled on the workflow of a premium manufacturer configurator,
  * built from original CX artwork rather than any real brand's assets.
  */
-export function VehicleExperience({ mode, car, options, repairCosts, onClose, onBuy, buying, cash, onChanged, onError }: VehicleExperienceProps) {
+export function VehicleExperience({ mode, car, options, repairCosts, onClose, onBuy, buying, cash, onChanged, onError, onList, onRename }: VehicleExperienceProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<string>('Exterior');
   const [activeCategory, setActiveCategory] = useState<string>('paint');
@@ -103,6 +115,11 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
 
   const views = useMemo(() => availableViews(car.name), [car.name]);
   const [activeView, setActiveView] = useState<ViewKey>(views[0]);
+
+  const [listingMode, setListingMode] = useState(false);
+  const [askingPriceInput, setAskingPriceInput] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [nameInput, setNameInput] = useState(car.customName ?? '');
 
   const reportError = (message: string) => {
     setLocalError(message);
@@ -115,6 +132,11 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
   const customizationSpend = useMemo(() => customizationCostTotal(car, options), [car, options]);
   const totalInvestment = car.purchasePrice + (mode === 'configure' ? customizationSpend : 0);
   const potentialProfit = resale - totalInvestment;
+
+  const displayName = car.customName ? `${car.name} — "${car.customName}"` : car.name;
+  const renameFee = estimateRenameFee(car.rarity, car.renameCount ?? 0);
+  const askingPrice = Number(askingPriceInput);
+  const outlook = askingPrice > 0 ? estimateSaleOutlook(askingPrice, resale) : null;
 
   const doRepair = async (component: 'engine' | 'body' | 'interior') => {
     setBusy(component);
@@ -132,26 +154,79 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
     else onChanged?.();
   };
 
-  const doSell = async () => {
-    if (!confirm(`Sell the ${car.name} for an estimated ${eur(resale)}?`)) return;
-    setBusy('sell');
-    const { error } = await sellCar(car.id);
-    setBusy(null);
-    if (error) reportError(error);
-    else {
-      onChanged?.();
+  const confirmList = async () => {
+    if (!onList || !(askingPrice > 0)) return;
+    setBusy('list');
+    try {
+      await onList(car.id, askingPrice);
       onClose();
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : 'Could not list this vehicle.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const confirmRename = async () => {
+    const trimmed = nameInput.trim();
+    if (!onRename || !trimmed) return;
+    if (cash !== undefined && cash < renameFee) {
+      reportError('Not enough cash for this rename.');
+      return;
+    }
+    setBusy('rename');
+    try {
+      await onRename(car.id, trimmed);
+      setRenaming(false);
+    } catch (err) {
+      reportError(err instanceof Error ? err.message : 'Could not rename this vehicle.');
+    } finally {
+      setBusy(null);
     }
   };
 
   return (
     <div className="animate-page fixed inset-0 z-[100] flex flex-col bg-noir">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
-        <div>
+        <div className="min-w-0">
           <p className="text-caption uppercase tracking-wide" style={{ color: meta.color }}>{meta.label}</p>
-          <h2 className="font-display text-lead font-semibold text-on-noir sm:text-2xl">{car.brand} {car.name}</h2>
+          {renaming ? (
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                maxLength={40}
+                placeholder="Name this build…"
+                autoFocus
+                className="input h-9 w-48 text-detail"
+              />
+              <button
+                onClick={confirmRename}
+                disabled={busy !== null || !nameInput.trim()}
+                className="btn btn-accent-bright btn-sm disabled:opacity-40"
+              >
+                {busy === 'rename' ? '…' : `Save (${eur(renameFee)})`}
+              </button>
+              <button onClick={() => { setRenaming(false); setNameInput(car.customName ?? ''); }} className="btn btn-secondary btn-sm">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h2 className="truncate font-display text-lead font-semibold text-on-noir sm:text-2xl">{car.brand} {displayName}</h2>
+              {mode === 'configure' && onRename && (
+                <button
+                  onClick={() => setRenaming(true)}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-on-noir-muted hover:bg-white/10 hover:text-on-noir"
+                  aria-label="Rename vehicle"
+                >
+                  <Icon name="tag" size={13} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
-        <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full border border-white/15 text-on-noir hover:bg-white/10">
+        <button onClick={onClose} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 text-on-noir hover:bg-white/10">
           <Icon name="x" size={18} />
         </button>
       </div>
@@ -344,13 +419,54 @@ export function VehicleExperience({ mode, car, options, repairCosts, onClose, on
               >
                 {buying ? 'Buying…' : cash !== undefined && cash < car.purchasePrice ? 'Not enough cash' : 'Buy This Vehicle'}
               </button>
+            ) : listingMode ? (
+              <div className="mt-4 space-y-2.5">
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase tracking-wide text-on-noir-muted">Your Asking Price</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={askingPriceInput}
+                    onChange={(e) => setAskingPriceInput(e.target.value)}
+                    placeholder={String(resale)}
+                    autoFocus
+                    className="input h-11 w-full text-body"
+                  />
+                </div>
+                <p className="text-[11px] text-on-noir-muted">
+                  Suggested range: {eur(Math.round(resale * 0.9))} – {eur(Math.round(resale * 1.15))}
+                </p>
+                {outlook && (
+                  <p
+                    className="text-detail font-semibold"
+                    style={{
+                      color:
+                        outlook.label === 'Overpriced' ? 'var(--color-danger)'
+                        : outlook.label === 'Competitive' ? 'var(--color-accent-bright)'
+                        : 'var(--color-on-noir-muted)',
+                    }}
+                  >
+                    {outlook.label} — <span className="font-normal">{outlook.hint}</span>
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => setListingMode(false)} className="btn btn-secondary btn-block">Cancel</button>
+                  <button
+                    onClick={confirmList}
+                    disabled={busy !== null || !(askingPrice > 0)}
+                    className="btn btn-accent-bright btn-block disabled:opacity-40"
+                  >
+                    {busy === 'list' ? 'Listing…' : 'List For Sale'}
+                  </button>
+                </div>
+              </div>
             ) : (
               <button
                 disabled={busy !== null}
-                onClick={doSell}
+                onClick={() => { setAskingPriceInput(String(resale)); setListingMode(true); }}
                 className="btn btn-lg btn-block mt-4 border border-white/20 text-on-noir hover:bg-white/10 disabled:opacity-40"
               >
-                {busy === 'sell' ? 'Selling…' : 'Sell Vehicle'}
+                List For Sale
               </button>
             )}
           </div>

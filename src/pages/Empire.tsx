@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -20,6 +20,19 @@ import {
   type Rarity,
 } from '../lib/data/empire';
 import {
+  useMyListings,
+  syncListings,
+  listCarForSale,
+  cancelListing,
+  acceptOffer,
+  rejectOffer,
+  renameCar,
+  fetchTodaysHotCars,
+  DEMAND_META,
+  type CarListing,
+  type HotCar,
+} from '../lib/data/carMarket';
+import {
   useCxScoreLevels,
   useCxScore,
   useCxScoreHistory,
@@ -29,8 +42,9 @@ import {
 } from '../lib/data/cxScore';
 import { VehicleArtwork } from '../vehicleArt/VehicleArtwork';
 import { VehicleExperience, type VehicleExperienceCar } from '../vehicleArt/VehicleExperience';
+import { SoldMoment, type SoldMomentData } from '../vehicleArt/SoldMoment';
 
-type Tab = 'market' | 'collection' | 'business' | 'score';
+type Tab = 'market' | 'collection' | 'sales' | 'business' | 'score';
 
 type StageState =
   | { mode: 'preview'; listing: MarketListing }
@@ -91,6 +105,8 @@ function inventoryToExperienceCar(c: InventoryCar): VehicleExperienceCar {
     customization: c.customization,
     purchasePrice: c.purchasePrice,
     marketValue: c.marketValue,
+    customName: c.customName,
+    renameCount: c.renameCount,
   };
 }
 
@@ -147,7 +163,9 @@ function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void 
       </div>
       <div className="p-4">
         <p className="text-caption text-muted">{car.brand} · {car.category}</p>
-        <p className="font-display text-lead font-semibold text-ink">{car.name}</p>
+        <p className="font-display text-lead font-semibold text-ink">
+          {car.name}{car.customName ? <span className="text-accent-700"> — "{car.customName}"</span> : ''}
+        </p>
         <p className="mt-1 text-detail text-ink-soft">Condition {avgCondition}%</p>
         {Object.keys(car.customization).length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -167,6 +185,110 @@ function InventoryCard({ car, onOpen }: { car: InventoryCar; onOpen: () => void 
   );
 }
 
+function timeRemainingLabel(resolvesAt: string): string {
+  const ms = new Date(resolvesAt).getTime() - Date.now();
+  if (ms <= 0) return 'Resolving…';
+  const mins = Math.ceil(ms / 60000);
+  if (mins < 60) return `${mins} min left`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m left`;
+}
+
+function HotCarsStrip({ hotCars }: { hotCars: HotCar[] }) {
+  if (hotCars.length === 0) return null;
+  return (
+    <div className="mb-6">
+      <p className="eyebrow">Today's Hot Cars</p>
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+        {hotCars.map((h) => {
+          const meta = DEMAND_META[h.demandTier];
+          return (
+            <div key={h.templateId} className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-panel/60 px-3.5 py-2">
+              <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
+              <span className="text-detail font-semibold text-ink">{h.name}</span>
+              <span className="text-caption text-muted">{meta.label} · +{h.demandPct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ActiveListingCard({
+  listing, busy, onCancel, onAccept, onReject,
+}: {
+  listing: CarListing;
+  busy: string | null;
+  onCancel: (id: string) => void;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const meta = RARITY_META[listing.rarity];
+  const demandMeta = DEMAND_META[listing.demandTier];
+  const hasOffer = listing.pendingOfferPrice !== null && listing.pendingOfferExpiresAt && new Date(listing.pendingOfferExpiresAt) > new Date();
+  const isBusy = busy === listing.id;
+
+  return (
+    <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center" style={{ boxShadow: meta.glow }}>
+      <div className="h-24 w-32 shrink-0 overflow-hidden rounded-xl">
+        <VehicleArtwork config={{ name: listing.name, rarity: listing.rarity, customization: listing.customization }} className="h-full w-full" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 truncate font-display text-lead font-semibold text-ink">
+          {listing.name}{listing.customName ? <span className="text-accent-700"> — "{listing.customName}"</span> : ''}
+        </p>
+        <p className="mt-0.5 flex items-center gap-2 text-caption text-muted">
+          <span style={{ color: demandMeta.color }}>{demandMeta.label}</span> · Waiting for buyer · {timeRemainingLabel(listing.resolvesAt)}
+        </p>
+        <p className="mt-1 text-detail text-ink-soft">
+          Asking <span className="font-semibold text-ink">{eur(listing.askingPrice)}</span> · Market value {eur(listing.suggestedPrice)}
+        </p>
+        {hasOffer && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-accent-050 p-2.5">
+            <span className="text-detail font-semibold text-accent-700">Offer: {eur(listing.pendingOfferPrice!)}</span>
+            <button disabled={isBusy} onClick={() => onAccept(listing.id)} className="btn btn-accent-bright btn-sm disabled:opacity-40">
+              Accept
+            </button>
+            <button disabled={isBusy} onClick={() => onReject(listing.id)} className="btn btn-secondary btn-sm disabled:opacity-40">
+              Reject
+            </button>
+          </div>
+        )}
+      </div>
+      <button
+        disabled={isBusy}
+        onClick={() => onCancel(listing.id)}
+        className="btn btn-secondary btn-sm shrink-0 disabled:opacity-50"
+      >
+        Cancel Listing
+      </button>
+    </div>
+  );
+}
+
+function SoldListingRow({ listing }: { listing: CarListing }) {
+  const profit = (listing.salePrice ?? 0) - listing.purchasePrice;
+  return (
+    <div className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-medium text-ink">
+          {listing.name}{listing.customName ? ` — "${listing.customName}"` : ''}
+        </p>
+        <p className="text-caption text-muted">
+          {listing.buyerName ? `Sold to ${listing.buyerName} · ` : ''}
+          {listing.resolvedAt ? new Date(listing.resolvedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+        </p>
+      </div>
+      <div className="flex items-center gap-4">
+        <span className="text-detail text-ink-soft tabular-nums">{eur(listing.salePrice ?? 0)}</span>
+        <span className={`font-display text-lead font-semibold tabular-nums ${profit >= 0 ? 'text-accent-700' : 'text-danger'}`}>
+          {profit >= 0 ? '+' : ''}{eur(profit)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function Empire() {
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -177,6 +299,7 @@ export default function Empire() {
   const { state: playerState, refresh: refreshState } = usePlayerState();
   const { listings, refresh: refreshMarket } = useMarket();
   const { inventory, refresh: refreshInventory } = useMyInventory(userId);
+  const { listings: myListings, refresh: refreshListings } = useMyListings(userId);
   const repairCosts = useRepairCosts();
   const customizationOptions = useCustomizationOptions();
   const businessTiers = useBusinessTiers();
@@ -187,13 +310,81 @@ export default function Empire() {
 
   const [marketMsg, setMarketMsg] = useState<string | null>(null);
   const [collectionMsg, setCollectionMsg] = useState<string | null>(null);
+  const [salesMsg, setSalesMsg] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
+  const [listingBusyId, setListingBusyId] = useState<string | null>(null);
+  const [hotCars, setHotCars] = useState<HotCar[]>([]);
+  const [soldQueue, setSoldQueue] = useState<SoldMomentData[]>([]);
+  const prevListingsRef = useRef<Map<string, CarListing['status']>>(new Map());
 
   const ownedCars = useMemo(() => (inventory ?? []).filter((c) => c.status === 'owned'), [inventory]);
-  const soldCars = useMemo(() => (inventory ?? []).filter((c) => c.status === 'sold'), [inventory]);
   const netWorth = estimateNetWorth(playerState, inventory);
   const totalProfit = (playerState?.totalRevenue ?? 0) - (playerState?.totalExpenses ?? 0);
+
+  const activeListings = useMemo(() => (myListings ?? []).filter((l) => l.status === 'active'), [myListings]);
+  const soldListings = useMemo(() => (myListings ?? []).filter((l) => l.status === 'sold'), [myListings]);
+  const avgProfit = soldListings.length > 0
+    ? Math.round(soldListings.reduce((sum, l) => sum + ((l.salePrice ?? 0) - l.purchasePrice), 0) / soldListings.length)
+    : 0;
+  const mostExpensiveCar = (inventory ?? []).reduce((max, c) => Math.max(max, c.purchasePrice), 0);
+  const mostValuableCollection = ownedCars.reduce((sum, c) => sum + c.marketValue, 0);
+
+  // Resolve any due listings whenever the Sales tab is opened, and keep
+  // polling lightly while it stays open — the lazy-resolution pattern
+  // this whole feature is built on (see 0035's header comment) means a
+  // sale only becomes visible the next time the client calls this, so
+  // a light poll is what makes an already-open tab feel close to live.
+  useEffect(() => {
+    if (tab !== 'sales' || !userId) return;
+    let cancelled = false;
+
+    const sync = async () => {
+      try {
+        const next = await syncListings();
+        if (cancelled) return;
+        const prev = prevListingsRef.current;
+        const freshlySold: SoldMomentData[] = [];
+        for (const l of next) {
+          const wasActive = prev.get(l.id) === 'active';
+          if (wasActive && l.status === 'sold' && l.resolvedAt && Date.now() - new Date(l.resolvedAt).getTime() < 120_000) {
+            freshlySold.push({
+              name: l.name,
+              customName: l.customName,
+              rarity: l.rarity,
+              customization: l.customization,
+              buyerName: l.buyerName ?? 'A buyer',
+              buyerType: l.buyerType,
+              salePrice: l.salePrice ?? 0,
+              profit: (l.salePrice ?? 0) - l.purchasePrice,
+            });
+          }
+        }
+        prevListingsRef.current = new Map(next.map((l) => [l.id, l.status]));
+        if (freshlySold.length > 0) {
+          setSoldQueue((q) => [...q, ...freshlySold]);
+          refreshState();
+          refreshInventory();
+        }
+        refreshListings();
+      } catch {
+        // Lazy resolution failing silently on one poll is fine — the
+        // next poll (or the next tab open) tries again.
+      }
+    };
+
+    sync();
+    const interval = setInterval(sync, 45_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, userId]);
+
+  useEffect(() => {
+    fetchTodaysHotCars().then(setHotCars).catch(() => setHotCars([]));
+  }, []);
 
   const currentTier = businessTiers?.find((t) => t.tier === playerState?.businessTier) ?? null;
   const nextTier = businessTiers?.find((t) => t.tier === (playerState?.businessTier ?? 1) + 1) ?? null;
@@ -238,6 +429,57 @@ export default function Empire() {
   const onInventoryError = (message: string) => {
     setCollectionMsg(message);
     setTimeout(() => setCollectionMsg(null), 3500);
+  };
+
+  const flashSalesMsg = (message: string) => {
+    setSalesMsg(message);
+    setTimeout(() => setSalesMsg(null), 3500);
+  };
+
+  const handleList = async (inventoryId: string, askingPrice: number) => {
+    const { error } = await listCarForSale(inventoryId, askingPrice);
+    if (error) throw new Error(error);
+    refreshInventory();
+    refreshListings();
+    setTab('sales');
+  };
+
+  const handleRename = async (inventoryId: string, newName: string) => {
+    const { error } = await renameCar(inventoryId, newName);
+    if (error) throw new Error(error);
+    refreshState();
+    refreshInventory();
+  };
+
+  const handleCancelListing = async (listingId: string) => {
+    setListingBusyId(listingId);
+    const { error } = await cancelListing(listingId);
+    setListingBusyId(null);
+    if (error) flashSalesMsg(error);
+    else {
+      refreshInventory();
+      refreshListings();
+    }
+  };
+
+  const handleAcceptOffer = async (listingId: string) => {
+    setListingBusyId(listingId);
+    const { error } = await acceptOffer(listingId);
+    setListingBusyId(null);
+    if (error) flashSalesMsg(error);
+    else {
+      refreshState();
+      refreshInventory();
+      refreshListings();
+    }
+  };
+
+  const handleRejectOffer = async (listingId: string) => {
+    setListingBusyId(listingId);
+    const { error } = await rejectOffer(listingId);
+    setListingBusyId(null);
+    if (error) flashSalesMsg(error);
+    else refreshListings();
   };
 
   if (!session) {
@@ -293,6 +535,7 @@ export default function Empire() {
           {([
             ['market', 'Car Market', 'tag'],
             ['collection', 'My Collection', 'cars'],
+            ['sales', 'Sales', 'trending'],
             ['business', 'Business', 'chart'],
             ['score', 'CX Score', 'trophy'],
           ] as [Tab, string, IconName][]).map(([key, label, icon]) => (
@@ -337,44 +580,83 @@ export default function Empire() {
               </div>
             )}
 
-            {soldCars.length > 0 && (
-              <div className="mt-12">
-                <h3 className="font-display text-xl font-semibold text-ink">Sale History</h3>
-                <div className="card mt-4 divide-y divide-line">
-                  {soldCars.map((c) => {
-                    const profit = (c.salePrice ?? 0) - c.purchasePrice;
-                    return (
-                      <div key={c.id} className="flex items-center justify-between p-4">
-                        <div>
-                          <p className="font-medium text-ink">{c.name}</p>
-                          <p className="text-caption text-muted">Bought {eur(c.purchasePrice)} · Sold {eur(c.salePrice ?? 0)}</p>
-                        </div>
-                        <span className={`font-display text-lead font-semibold ${profit >= 0 ? 'text-accent-700' : 'text-danger'}`}>
-                          {profit >= 0 ? '+' : ''}{eur(profit)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          </div>
+        )}
 
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {tab === 'sales' && (
+          <div className="mt-8">
+            {salesMsg && <p className="mb-4 text-detail font-medium text-danger">{salesMsg}</p>}
+            <HotCarsStrip hotCars={hotCars} />
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="card p-4">
+                <p className="text-caption text-muted">Cars Sold</p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink">{playerState.carsSold}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-caption text-muted">Best Sale</p>
+                <p className="mt-1 font-display text-xl font-semibold text-accent-700">{eur(playerState.bestSale)}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-caption text-muted">Successful / Failed</p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink">{playerState.successfulDeals} / {playerState.failedDeals}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-caption text-muted">Average Profit</p>
+                <p className={`mt-1 font-display text-xl font-semibold ${avgProfit >= 0 ? 'text-accent-700' : 'text-danger'}`}>
+                  {avgProfit >= 0 ? '+' : ''}{eur(avgProfit)}
+                </p>
+              </div>
+              <div className="card p-4">
+                <p className="text-caption text-muted">Most Expensive Car</p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink">{eur(mostExpensiveCar)}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-caption text-muted">Collection Value</p>
+                <p className="mt-1 font-display text-xl font-semibold text-ink">{eur(mostValuableCollection)}</p>
+              </div>
               <div className="card p-4">
                 <p className="text-caption text-muted">Total Revenue</p>
                 <p className="mt-1 font-display text-xl font-semibold text-ink">{eur(playerState.totalRevenue)}</p>
               </div>
               <div className="card p-4">
-                <p className="text-caption text-muted">Total Expenses</p>
-                <p className="mt-1 font-display text-xl font-semibold text-ink">{eur(playerState.totalExpenses)}</p>
-              </div>
-              <div className="card p-4 col-span-2 sm:col-span-2">
                 <p className="text-caption text-muted">Total Profit</p>
                 <p className={`mt-1 font-display text-xl font-semibold ${totalProfit >= 0 ? 'text-accent-700' : 'text-danger'}`}>
                   {totalProfit >= 0 ? '+' : ''}{eur(totalProfit)}
                 </p>
               </div>
             </div>
+
+            <div className="mt-10">
+              <h3 className="font-display text-xl font-semibold text-ink">Active Listings</h3>
+              {activeListings.length === 0 ? (
+                <p className="mt-4 text-detail text-muted">Nothing listed right now — list an owned car for sale from My Collection.</p>
+              ) : (
+                <div className="mt-4 flex flex-col gap-3">
+                  {activeListings.map((l) => (
+                    <ActiveListingCard
+                      key={l.id}
+                      listing={l}
+                      busy={listingBusyId}
+                      onCancel={handleCancelListing}
+                      onAccept={handleAcceptOffer}
+                      onReject={handleRejectOffer}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {soldListings.length > 0 && (
+              <div className="mt-10">
+                <h3 className="font-display text-xl font-semibold text-ink">Sold History</h3>
+                <div className="card mt-4 divide-y divide-line">
+                  {soldListings.map((l) => (
+                    <SoldListingRow key={l.id} listing={l} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -525,6 +807,15 @@ export default function Empire() {
           cash={playerState.cash}
           onChanged={onInventoryChanged}
           onError={onInventoryError}
+          onList={stage.mode === 'configure' ? handleList : undefined}
+          onRename={stage.mode === 'configure' ? handleRename : undefined}
+        />
+      )}
+
+      {soldQueue.length > 0 && (
+        <SoldMoment
+          data={soldQueue[0]}
+          onDone={() => setSoldQueue((q) => q.slice(1))}
         />
       )}
     </div>

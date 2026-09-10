@@ -1,46 +1,52 @@
 import type { Rarity } from '../lib/data/empire';
 
 /**
- * CX Vehicle Art — the visual system that replaced real-time 3D
- * rendering (see git history: src/three/*, removed). Every vehicle is
- * AI-generated hero artwork (an original design — never a copy of a
- * real production car; see the generation notes in this session's
- * history for what was rejected and why), cut out to a transparent
- * silhouette and stylized toward a punchier "premium game asset" look
- * (richer contrast/saturation, sharpened detail) rather than left as a
- * flat product photo. Presented with CSS-only depth: a rarity-tinted
- * backdrop, a pointer-tracked tilt, a soft ground shadow, and — for the
- * top two rarities — a sparkle overlay.
+ * CX Vehicle Art — two coexisting rendering styles, chosen per template
+ * by which asset fields are present (see ARTWORK_SOURCES):
  *
- * This is deliberately NOT true per-part layer compositing (a separate
+ * 1. STYLIZED GAME ART (every template except CX Vortex): a single
+ *    AI-generated hero cutout on a rarity-tinted CSS gradient backdrop,
+ *    pointer-tracked tilt, soft CSS ground shadow, sparkle overlay for
+ *    the top two rarities. PAINT recolors the cutout via a CSS filter
+ *    stack (instant, free, no per-colour asset); BODY_KIT swaps to a
+ *    second pre-rendered "wide" image where one exists.
+ *
+ * 2. REALISTIC AUTOMOTIVE PHOTOGRAPHY (CX Vortex — the new flagship
+ *    standard every future template should match): a photoreal AI-
+ *    generated car cutout composited, at render time, over ONE shared
+ *    master environment plate (PHOTOREAL_BACKDROP) — never a baked-
+ *    together single image. Keeping the car and the environment as
+ *    separate layers is what still lets PAINT recolor the car via the
+ *    same CSS filter stack as the stylized style, without dragging the
+ *    background's color along with it. Every realistic vehicle reuses
+ *    the exact same backdrop plate — regenerating "the same street"
+ *    independently per vehicle does not produce a pixel-consistent
+ *    result (proven this session across many attempts), so a single
+ *    shared plate is the only reliable way the whole fleet reads as one
+ *    consistent world rather than disconnected AI generations.
+ *
+ * Neither style does true per-part layer compositing (a separate
  * transparent PNG per wheel/spoiler/etc.): getting AI-generated layers
  * to align pixel-for-pixel across independent generations isn't
- * reliable. Instead:
- *   - PAINT recolors the actual artwork in real time via a CSS filter
- *     stack, so it's genuinely instant and free — no per-colour asset.
- *   - BODY_KIT swaps to a second, fully pre-rendered "wide" image of
- *     the same car when one exists for it — a real, different image,
- *     not a filter.
- *   - VIEWS (3/4 front, side, rear, interior) are separate pre-rendered
- *     images of the same vehicle — currently built out for the
- *     flagship (Vortex Spyder) as the reference implementation; every
- *     other template still has just its one 3/4-front hero, and the
- *     view switcher hides itself down to a single tab when that's all
- *     that exists rather than pretending extra angles are available.
- *   - The remaining customization categories (wheels, wheel finish,
- *     brakes, exhaust, window tint, interior, lights) are real,
- *     persisted, and priced exactly like every other option, but do
- *     not yet change the artwork — there is no honest way to depict a
- *     wheel swap on a single baked image without a dedicated render
- *     per option, which would multiply the asset count
- *     combinatorially. Flagged in the UI rather than silently faked.
+ * reliable. VIEWS (3/4 front, side, 3/4 rear, front, rear, interior) are
+ * separate pre-rendered images of the same vehicle; the view switcher
+ * hides itself down to whatever subset actually exists for a template
+ * rather than pretending extra angles are available. The remaining
+ * customization categories (wheels, wheel finish, brakes, exhaust,
+ * window tint, interior, lights) are real, persisted, and priced
+ * exactly like every other option, but do not yet change the artwork —
+ * there is no honest way to depict a wheel swap on a single baked image
+ * without a dedicated render per option, which would multiply the asset
+ * count combinatorially. Flagged in the UI rather than silently faked.
  */
 
-export type ViewKey = 'front3q' | 'side' | 'rear' | 'interior';
+export type ViewKey = 'front3q' | 'side' | 'rear3q' | 'front' | 'rear' | 'interior';
 
 export const VIEW_LABELS: Record<ViewKey, string> = {
   front3q: '3/4 Front',
   side: 'Side',
+  rear3q: '3/4 Rear',
+  front: 'Front',
   rear: 'Rear',
   interior: 'Interior',
 };
@@ -49,7 +55,21 @@ export interface VehicleArtSources {
   views: Partial<Record<ViewKey, string>>;
   /** Body-kit ("wide") variant of the front3q view only, for now. */
   wide?: string;
+  /** A shared, reusable photoreal environment plate this vehicle's cutout
+   *  composites over at render time (see PHOTOREAL_BACKDROP below) —
+   *  present only for vehicles built in the realistic-photography
+   *  direction. Every such vehicle uses the SAME plate so the whole
+   *  fleet reads as one consistent world, per the explicit "same street"
+   *  requirement — never generate a new environment per car. */
+  photoBackdrop?: string;
 }
+
+/** The one master environment plate every realistic-photography vehicle
+ *  composites onto. Regenerating "the same street" independently per
+ *  vehicle does not produce a pixel-consistent result (proven this
+ *  session) — a single shared plate is the only reliable way to
+ *  guarantee every car appears to live in the same place. */
+export const PHOTOREAL_BACKDROP = '/vehicle-art/street/master.webp';
 
 /** Keyed by the exact `game_vehicle_templates.name` — every template
  *  gets its own bespoke artwork rather than a shared placeholder. */
@@ -60,14 +80,16 @@ export const ARTWORK_SOURCES: Record<string, VehicleArtSources> = {
   'Retro Coupe': { views: { front3q: '/vehicle-art/retro_coupe.webp' } },
   'Nightfury X': { views: { front3q: '/vehicle-art/nightfury_x.webp' } },
   'Apex GTR': { views: { front3q: '/vehicle-art/apex_gtr.webp' } },
-  'Vortex Spyder': {
+  'CX Vortex': {
     views: {
-      front3q: '/vehicle-art/vortex_spyder.webp',
-      side: '/vehicle-art/vortex_spyder_side.webp',
-      rear: '/vehicle-art/vortex_spyder_rear.webp',
-      interior: '/vehicle-art/vortex_spyder_interior.webp',
+      front3q: '/vehicle-art/cx-vortex/front3q.webp',
+      side: '/vehicle-art/cx-vortex/side.webp',
+      rear3q: '/vehicle-art/cx-vortex/rear3q.webp',
+      front: '/vehicle-art/cx-vortex/front.webp',
+      rear: '/vehicle-art/cx-vortex/rear.webp',
+      interior: '/vehicle-art/cx-vortex/interior.webp',
     },
-    wide: '/vehicle-art/vortex_spyder_wide.webp',
+    photoBackdrop: PHOTOREAL_BACKDROP,
   },
   'Titan 4x4': { views: { front3q: '/vehicle-art/titan_4x4.webp' } },
   'Phantom Reaper': { views: { front3q: '/vehicle-art/phantom_reaper.webp' } },
@@ -85,7 +107,7 @@ export function artworkFor(name: string): VehicleArtSources {
 /** Views actually available for this vehicle, front3q always first. */
 export function availableViews(name: string): ViewKey[] {
   const views = artworkFor(name).views;
-  const order: ViewKey[] = ['front3q', 'side', 'rear', 'interior'];
+  const order: ViewKey[] = ['front3q', 'side', 'rear3q', 'front', 'rear', 'interior'];
   return order.filter((v) => views[v]);
 }
 
