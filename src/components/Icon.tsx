@@ -9,7 +9,7 @@ import {
   MessageSquareText, Send, Paperclip, BarChart3, CarFront, Route, Globe,
   Snowflake, Music, Apple, Info, BadgeCheck, Briefcase, Trophy, Gift, Pause,
   Play, Volume2, VolumeX, Truck, Package, Tag,
-  GitCompare,
+  GitCompare, Target, Handshake, Building2, Plane,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,7 +25,8 @@ export type IconName =
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
   | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
   | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff'
-  | 'minus' | 'truck' | 'package' | 'tag' | 'compare';
+  | 'minus' | 'truck' | 'package' | 'tag' | 'compare'
+  | 'target' | 'handshake' | 'building' | 'plane';
 
 /**
  * Every icon in the product renders through the same Lucide set — one
@@ -53,6 +54,7 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   play: Play, volume: Volume2, volumeOff: VolumeX, minus: Minus,
   truck: Truck, package: Package, tag: Tag,
   compare: GitCompare,
+  target: Target, handshake: Handshake, building: Building2, plane: Plane,
 };
 
 const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause'];

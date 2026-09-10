@@ -40,11 +40,33 @@ import {
   nextLevel,
   cxScoreEventLabel,
 } from '../lib/data/cxScore';
+import { useDistricts, useDistrictDemand, useCityEvents, type DistrictKey } from '../lib/data/districts';
+import {
+  useMyRentals, useMyCustomerRequests, syncRentals, assignCarToRental, cancelRental,
+  acceptCustomerRequest, declineCustomerRequest, estimateRentalCxPoints,
+  type RentalStatus,
+} from '../lib/data/rentals';
+import {
+  useCorporateContracts, useMyContractCommitments, syncContracts, acceptContract, cancelContractCommitment,
+  type CommitmentStatus,
+} from '../lib/data/contracts';
+import {
+  useMissionTemplates, useDailyProgress, useMyMissionClaims, claimMission,
+} from '../lib/data/missions';
+import {
+  useAchievementTemplates, useMyAchievementUnlocks, checkAndAwardAchievements,
+} from '../lib/data/achievements';
+import { useEmpireLeaderboard } from '../lib/data/leaderboard';
+import { reputationLabel } from '../lib/data/reputation';
 import { VehicleArtwork } from '../vehicleArt/VehicleArtwork';
 import { VehicleExperience, type VehicleExperienceCar } from '../vehicleArt/VehicleExperience';
 import { SoldMoment, type SoldMomentData } from '../vehicleArt/SoldMoment';
+import { CelebrationMoment, type CelebrationData } from '../vehicleArt/CelebrationMoment';
+import { CityTab } from '../components/empire/CityTab';
+import { AchievementGrid } from '../components/empire/AchievementGrid';
+import { LeaderboardTab } from '../components/empire/LeaderboardTab';
 
-type Tab = 'market' | 'collection' | 'sales' | 'business' | 'score';
+type Tab = 'city' | 'market' | 'collection' | 'sales' | 'business' | 'score' | 'leaderboard';
 
 type StageState =
   | { mode: 'preview'; listing: MarketListing }
@@ -301,7 +323,7 @@ function SoldListingRow({ listing }: { listing: CarListing }) {
 export default function Empire() {
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [tab, setTab] = useState<Tab>('market');
+  const [tab, setTab] = useState<Tab>('city');
   const [stage, setStage] = useState<StageState | null>(null);
   const [buying, setBuying] = useState(false);
 
@@ -313,19 +335,38 @@ export default function Empire() {
   const customizationOptions = useCustomizationOptions();
   const businessTiers = useBusinessTiers();
 
-  const { score } = useCxScore(userId);
+  const { score, refresh: refreshScore } = useCxScore(userId);
   const levels = useCxScoreLevels();
   const history = useCxScoreHistory(userId);
+
+  const districts = useDistricts();
+  const { demand: districtDemand, refresh: refreshDistrictDemand } = useDistrictDemand();
+  const { events: cityEvents, refresh: refreshCityEvents } = useCityEvents();
+  const { rentals, refresh: refreshRentals } = useMyRentals(userId);
+  const { requests: customerRequests, refresh: refreshRequests } = useMyCustomerRequests(userId);
+  const contracts = useCorporateContracts();
+  const { commitments, refresh: refreshCommitments } = useMyContractCommitments(userId);
+  const missions = useMissionTemplates();
+  const { progress: dailyProgress, refresh: refreshDailyProgress } = useDailyProgress();
+  const { claims: missionClaims, refresh: refreshMissionClaims } = useMyMissionClaims(userId);
+  const achievements = useAchievementTemplates();
+  const { unlocks: achievementUnlocks, refresh: refreshAchievementUnlocks } = useMyAchievementUnlocks(userId);
+  const leaderboard = useEmpireLeaderboard();
 
   const [marketMsg, setMarketMsg] = useState<string | null>(null);
   const [collectionMsg, setCollectionMsg] = useState<string | null>(null);
   const [salesMsg, setSalesMsg] = useState<string | null>(null);
+  const [cityMsg, setCityMsg] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeMsg, setUpgradeMsg] = useState<string | null>(null);
   const [listingBusyId, setListingBusyId] = useState<string | null>(null);
+  const [cityBusyId, setCityBusyId] = useState<string | null>(null);
   const [hotCars, setHotCars] = useState<HotCar[]>([]);
   const [soldQueue, setSoldQueue] = useState<SoldMomentData[]>([]);
+  const [celebrationQueue, setCelebrationQueue] = useState<CelebrationData[]>([]);
   const prevListingsRef = useRef<Map<string, CarListing['status']>>(new Map());
+  const prevRentalsRef = useRef<Map<string, RentalStatus>>(new Map());
+  const prevCommitmentsRef = useRef<Map<string, CommitmentStatus>>(new Map());
 
   const ownedCars = useMemo(() => (inventory ?? []).filter((c) => c.status === 'owned'), [inventory]);
   const netWorth = estimateNetWorth(playerState, inventory);
@@ -373,9 +414,102 @@ export default function Empire() {
         if (freshlySold.length > 0) {
           setSoldQueue((q) => [...q, ...freshlySold]);
           refreshState();
+          refreshScore();
           refreshInventory();
         }
         refreshListings();
+      } catch {
+        // Lazy resolution failing silently on one poll is fine — the
+        // next poll (or the next tab open) tries again.
+      }
+    };
+
+    sync();
+    const interval = setInterval(sync, 45_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, userId]);
+
+  // Same lazy-resolution + light-poll pattern as the Sales tab above,
+  // covering every City system at once (rentals, contracts, customer
+  // requests, achievements) since they all share one "what changed since
+  // I last looked" moment for the celebration queue.
+  useEffect(() => {
+    if (tab !== 'city' || !userId) return;
+    let cancelled = false;
+
+    const sync = async () => {
+      try {
+        const [nextRentals, nextCommitments, newAchievements] = await Promise.all([
+          syncRentals(),
+          syncContracts(),
+          checkAndAwardAchievements(),
+        ]);
+        if (cancelled) return;
+
+        const freshCelebrations: CelebrationData[] = [];
+
+        const prevRentals = prevRentalsRef.current;
+        for (const r of nextRentals) {
+          const wasActive = prevRentals.get(r.id) === 'active';
+          if (wasActive && r.status === 'completed' && r.resolvedAt && Date.now() - new Date(r.resolvedAt).getTime() < 120_000) {
+            freshCelebrations.push({
+              icon: r.source === 'customer_request' ? 'target' : 'pin',
+              eyebrow: r.source === 'customer_request' ? 'Request Fulfilled' : 'Rental Complete',
+              title: r.name,
+              subtitle: districts?.find((d) => d.districtKey === r.districtKey)?.name,
+              cashAwarded: r.payout,
+              cxAwarded: estimateRentalCxPoints(r.payout, r.durationDays),
+              rarity: r.rarity,
+            });
+          }
+        }
+        prevRentalsRef.current = new Map(nextRentals.map((r) => [r.id, r.status]));
+
+        const prevCommitments = prevCommitmentsRef.current;
+        for (const c of nextCommitments) {
+          const wasActive = prevCommitments.get(c.id) === 'active';
+          if (wasActive && c.status === 'completed' && c.resolvedAt && Date.now() - new Date(c.resolvedAt).getTime() < 120_000) {
+            const contract = contracts?.find((x) => x.id === c.contractId);
+            freshCelebrations.push({
+              icon: 'handshake',
+              eyebrow: 'Contract Complete',
+              title: contract?.title ?? 'Corporate Contract',
+              cashAwarded: c.payout,
+              cxAwarded: contract?.cxScoreBonus,
+            });
+          }
+        }
+        prevCommitmentsRef.current = new Map(nextCommitments.map((c) => [c.id, c.status]));
+
+        for (const a of newAchievements) {
+          freshCelebrations.push({
+            icon: a.icon,
+            eyebrow: 'Achievement Unlocked',
+            title: a.title,
+            subtitle: a.description,
+            cxAwarded: a.rewardCxPoints,
+            rarity: a.rarity,
+          });
+        }
+
+        if (freshCelebrations.length > 0) {
+          setCelebrationQueue((q) => [...q, ...freshCelebrations]);
+          refreshState();
+          refreshScore();
+          refreshInventory();
+          refreshAchievementUnlocks();
+        }
+        refreshRentals();
+        refreshCommitments();
+        refreshRequests();
+        refreshMissionClaims();
+        refreshDailyProgress();
+        refreshDistrictDemand();
+        refreshCityEvents();
       } catch {
         // Lazy resolution failing silently on one poll is fine — the
         // next poll (or the next tab open) tries again.
@@ -416,6 +550,7 @@ export default function Empire() {
       setTimeout(() => setMarketMsg(null), 3500);
       setStage(null);
       refreshState();
+      refreshScore();
       refreshMarket();
       refreshInventory();
     }
@@ -426,7 +561,10 @@ export default function Empire() {
     const { error } = await upgradeBusiness();
     setUpgrading(false);
     setUpgradeMsg(error ?? 'Business upgraded!');
-    if (!error) refreshState();
+    if (!error) {
+      refreshState();
+      refreshScore();
+    }
     setTimeout(() => setUpgradeMsg(null), 3500);
   };
 
@@ -478,6 +616,7 @@ export default function Empire() {
     if (error) flashSalesMsg(error);
     else {
       refreshState();
+      refreshScore();
       refreshInventory();
       refreshListings();
     }
@@ -489,6 +628,97 @@ export default function Empire() {
     setListingBusyId(null);
     if (error) flashSalesMsg(error);
     else refreshListings();
+  };
+
+  const flashCityMsg = (message: string) => {
+    setCityMsg(message);
+    setTimeout(() => setCityMsg(null), 3500);
+  };
+
+  const handleAssignToDistrict = async (inventoryId: string, districtKey: DistrictKey, durationDays: 1 | 3 | 7) => {
+    setCityBusyId(inventoryId);
+    const { error } = await assignCarToRental(inventoryId, districtKey, durationDays);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else {
+      refreshInventory();
+      refreshRentals();
+    }
+  };
+
+  const handleAcceptRequest = async (requestId: string, inventoryId: string) => {
+    setCityBusyId(requestId);
+    const { error } = await acceptCustomerRequest(requestId, inventoryId);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else {
+      refreshInventory();
+      refreshRentals();
+      refreshRequests();
+      refreshScore();
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    setCityBusyId(requestId);
+    const { error } = await declineCustomerRequest(requestId);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else refreshRequests();
+  };
+
+  const handleCancelRental = async (rentalId: string) => {
+    setCityBusyId(rentalId);
+    const { error } = await cancelRental(rentalId);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else {
+      refreshInventory();
+      refreshRentals();
+    }
+  };
+
+  const handleAcceptContract = async (contractId: string, inventoryIds: string[]) => {
+    setCityBusyId(contractId);
+    const { error } = await acceptContract(contractId, inventoryIds);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else {
+      refreshInventory();
+      refreshCommitments();
+    }
+  };
+
+  const handleCancelContract = async (commitmentId: string) => {
+    setCityBusyId(commitmentId);
+    const { error } = await cancelContractCommitment(commitmentId);
+    setCityBusyId(null);
+    if (error) flashCityMsg(error);
+    else {
+      refreshInventory();
+      refreshCommitments();
+    }
+  };
+
+  const handleClaimMission = async (missionId: string) => {
+    setCityBusyId(missionId);
+    const { cashAwarded, cxAwarded, error } = await claimMission(missionId);
+    setCityBusyId(null);
+    if (error) {
+      flashCityMsg(error);
+      return;
+    }
+    const mission = missions?.find((m) => m.id === missionId);
+    setCelebrationQueue((q) => [...q, {
+      icon: mission?.icon ?? 'trophy',
+      eyebrow: 'Mission Complete',
+      title: mission?.title ?? 'Mission Claimed',
+      cashAwarded,
+      cxAwarded,
+    }]);
+    refreshState();
+    refreshScore();
+    refreshMissionClaims();
   };
 
   if (!session) {
@@ -542,11 +772,13 @@ export default function Empire() {
       <div className="container-page pb-16 pt-6">
         <div className="flex gap-2 overflow-x-auto pb-2">
           {([
+            ['city', 'City', 'pin'],
             ['market', 'Car Market', 'tag'],
             ['collection', 'My Collection', 'cars'],
-            ['sales', 'Sales', 'trending'],
+            ['sales', 'Flipping', 'trending'],
             ['business', 'Business', 'chart'],
-            ['score', 'CX Score', 'trophy'],
+            ['score', 'Rank', 'trophy'],
+            ['leaderboard', 'Leaderboard', 'users'],
           ] as [Tab, string, IconName][]).map(([key, label, icon]) => (
             <button
               key={key}
@@ -559,6 +791,34 @@ export default function Empire() {
             </button>
           ))}
         </div>
+
+        {tab === 'city' && (
+          <div className="mt-8">
+            {cityMsg && <p className="mb-4 text-detail font-medium text-danger">{cityMsg}</p>}
+            <CityTab
+              districts={districts ?? []}
+              demand={districtDemand ?? []}
+              events={cityEvents ?? []}
+              rentals={rentals ?? []}
+              customerRequests={customerRequests ?? []}
+              contracts={contracts ?? []}
+              commitments={commitments ?? []}
+              ownedCars={ownedCars}
+              missions={missions ?? []}
+              playerState={playerState}
+              dailyProgress={dailyProgress}
+              missionClaims={missionClaims ?? []}
+              busyId={cityBusyId}
+              onAssignToDistrict={handleAssignToDistrict}
+              onAcceptRequest={handleAcceptRequest}
+              onDeclineRequest={handleDeclineRequest}
+              onCancelRental={handleCancelRental}
+              onAcceptContract={handleAcceptContract}
+              onCancelContract={handleCancelContract}
+              onClaimMission={handleClaimMission}
+            />
+          </div>
+        )}
 
         {tab === 'market' && (
           <div className="mt-8">
@@ -735,7 +995,10 @@ export default function Empire() {
 
         {tab === 'score' && (
           <div className="mt-8 max-w-2xl">
-            <div className="card p-6">
+            <p className="text-detail text-on-noir-muted">
+              Reputation: <span className="font-semibold text-on-noir">{reputationLabel(playerState.reputation)}</span> ({playerState.reputation}/100)
+            </p>
+            <div className="card mt-3 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="eyebrow">Current Level</p>
@@ -800,6 +1063,19 @@ export default function Empire() {
                 )}
               </div>
             </div>
+
+            <div className="mt-8">
+              <h3 className="font-display text-xl font-semibold text-on-noir">Achievements</h3>
+              <div className="mt-4">
+                <AchievementGrid achievements={achievements ?? []} unlocks={achievementUnlocks ?? []} playerState={playerState} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'leaderboard' && (
+          <div className="mt-8 max-w-2xl">
+            <LeaderboardTab entries={leaderboard} currentUserId={userId} />
           </div>
         )}
       </div>
@@ -825,6 +1101,13 @@ export default function Empire() {
         <SoldMoment
           data={soldQueue[0]}
           onDone={() => setSoldQueue((q) => q.slice(1))}
+        />
+      )}
+
+      {celebrationQueue.length > 0 && (
+        <CelebrationMoment
+          data={celebrationQueue[0]}
+          onDone={() => setCelebrationQueue((q) => q.slice(1))}
         />
       )}
     </div>

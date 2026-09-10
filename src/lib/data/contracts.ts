@@ -1,0 +1,154 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabase';
+import type { Rarity } from './empire';
+
+/**
+ * City Empire — corporate contracts. Exactly one hardcoded contract for
+ * this first slice (`apex_logistics_hq`), not a generic marketplace. See
+ * supabase/migrations/0036_city_empire.sql. Same security contract as
+ * the rest of Empire: this file only ever reads tables directly, every
+ * write is an RPC call.
+ */
+
+export interface CorporateContract {
+  id: string;
+  title: string;
+  description: string;
+  requiredVehicleCount: number;
+  requiredMinRarity: Rarity;
+  durationDays: number;
+  lumpSumPayout: number;
+  cxScoreBonus: number;
+  minBusinessTier: number;
+}
+
+interface CorporateContractRow {
+  id: string;
+  title: string;
+  description: string;
+  required_vehicle_count: number;
+  required_min_rarity: Rarity;
+  duration_days: number;
+  lump_sum_payout: number;
+  cx_score_bonus: number;
+  min_business_tier: number;
+}
+
+function mapContract(row: CorporateContractRow): CorporateContract {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    requiredVehicleCount: row.required_vehicle_count,
+    requiredMinRarity: row.required_min_rarity,
+    durationDays: row.duration_days,
+    lumpSumPayout: row.lump_sum_payout,
+    cxScoreBonus: row.cx_score_bonus,
+    minBusinessTier: row.min_business_tier,
+  };
+}
+
+export async function fetchCorporateContracts(): Promise<CorporateContract[]> {
+  const { data, error } = await supabase.from('game_corporate_contracts').select('*');
+  if (error) throw error;
+  return (data as CorporateContractRow[]).map(mapContract);
+}
+
+export function useCorporateContracts() {
+  const [contracts, setContracts] = useState<CorporateContract[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchCorporateContracts()
+      .then((c) => !cancelled && setContracts(c))
+      .catch(() => !cancelled && setContracts([]));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return contracts;
+}
+
+export type CommitmentStatus = 'active' | 'completed' | 'cancelled';
+
+export interface ContractCommitment {
+  id: string;
+  contractId: string;
+  inventoryIds: string[];
+  startedAt: string;
+  resolvesAt: string;
+  status: CommitmentStatus;
+  payout: number;
+  resolvedAt: string | null;
+}
+
+interface ContractCommitmentRow {
+  id: string;
+  contract_id: string;
+  inventory_ids: string[];
+  started_at: string;
+  resolves_at: string;
+  status: CommitmentStatus;
+  payout: number;
+  resolved_at: string | null;
+}
+
+function mapCommitment(row: ContractCommitmentRow): ContractCommitment {
+  return {
+    id: row.id,
+    contractId: row.contract_id,
+    inventoryIds: row.inventory_ids,
+    startedAt: row.started_at,
+    resolvesAt: row.resolves_at,
+    status: row.status,
+    payout: row.payout,
+    resolvedAt: row.resolved_at,
+  };
+}
+
+export async function fetchMyContractCommitments(userId: string): Promise<ContractCommitment[]> {
+  const { data, error } = await supabase
+    .from('game_contract_commitments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('started_at', { ascending: false });
+  if (error) throw error;
+  return (data as ContractCommitmentRow[]).map(mapCommitment);
+}
+
+export function useMyContractCommitments(userId: string | undefined) {
+  const [commitments, setCommitments] = useState<ContractCommitment[] | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!userId) {
+      setCommitments([]);
+      return;
+    }
+    let cancelled = false;
+    fetchMyContractCommitments(userId)
+      .then((c) => !cancelled && setCommitments(c))
+      .catch(() => !cancelled && setCommitments([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reload]);
+  return { commitments, refresh: () => setReload((n) => n + 1) };
+}
+
+export async function acceptContract(contractId: string, inventoryIds: string[]): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('accept_corporate_contract', {
+    p_contract_id: contractId,
+    p_inventory_ids: inventoryIds,
+  });
+  return { error: error?.message ?? null };
+}
+
+export async function syncContracts(): Promise<ContractCommitment[]> {
+  const { data, error } = await supabase.rpc('resolve_due_contracts');
+  if (error) throw error;
+  return (data as unknown as ContractCommitmentRow[]).map(mapCommitment);
+}
+
+export async function cancelContractCommitment(commitmentId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('cancel_contract_commitment', { p_commitment_id: commitmentId });
+  return { error: error?.message ?? null };
+}

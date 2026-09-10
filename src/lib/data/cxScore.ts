@@ -133,6 +133,12 @@ const EVENT_LABELS: Record<string, string> = {
   premium_vehicle_rental: 'Premium vehicle rental',
   profitable_sale: 'Profitable car sale',
   showroom_milestone: 'Business milestone reached',
+  district_rental_completed: 'District rental completed',
+  district_rental_length_bonus: 'Extended rental bonus',
+  customer_request_fulfilled: 'Customer request fulfilled',
+  mission_reward_claimed: 'Mission reward claimed',
+  achievement_unlocked: 'Achievement unlocked',
+  corporate_contract_completed: 'Corporate contract completed',
 };
 
 export function cxScoreEventLabel(eventType: string): string {

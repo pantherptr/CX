@@ -37,6 +37,9 @@ export interface PlayerState {
   bestSale: number;
   fastestSaleSeconds: number | null;
   longestSaleSeconds: number | null;
+  rentalsCompleted: number;
+  contractsCompleted: number;
+  requestsFulfilled: number;
 }
 
 interface PlayerStateRow {
@@ -51,6 +54,9 @@ interface PlayerStateRow {
   best_sale: number;
   fastest_sale_seconds: number | null;
   longest_sale_seconds: number | null;
+  rentals_completed: number;
+  contracts_completed: number;
+  requests_fulfilled: number;
 }
 
 function mapPlayerState(row: PlayerStateRow): PlayerState {
@@ -66,6 +72,9 @@ function mapPlayerState(row: PlayerStateRow): PlayerState {
     bestSale: row.best_sale,
     fastestSaleSeconds: row.fastest_sale_seconds,
     longestSaleSeconds: row.longest_sale_seconds,
+    rentalsCompleted: row.rentals_completed,
+    contractsCompleted: row.contracts_completed,
+    requestsFulfilled: row.requests_fulfilled,
   };
 }
 
@@ -255,7 +264,7 @@ export interface InventoryCar extends VehicleStats {
   conditionInterior: number;
   mileageKm: number;
   customization: Record<string, string>;
-  status: 'owned' | 'listed' | 'sold';
+  status: 'owned' | 'listed' | 'sold' | 'rented';
   acquiredAt: string;
   soldAt: string | null;
   salePrice: number | null;
@@ -273,7 +282,7 @@ interface InventoryRow {
   condition_interior: number;
   mileage_km: number;
   customization: Record<string, string>;
-  status: 'owned' | 'listed' | 'sold';
+  status: 'owned' | 'listed' | 'sold' | 'rented';
   acquired_at: string;
   sold_at: string | null;
   sale_price: number | null;
@@ -443,12 +452,17 @@ export async function sellCar(inventoryId: string): Promise<{ price: number | nu
  *  owned collection, computed the same way `estimate_car_value()` does
  *  server-side (condition-weighted market value) but without a
  *  round-trip per car. Never used to move money; purely a dashboard
- *  number. Listed cars still count — the player still owns them, just
- *  pending a sale. */
+ *  number. Listed and rented cars still count — the player still owns
+ *  them, just temporarily unavailable. Mirrors `fetch_empire_leaderboard`'s
+ *  server-side net-worth formula exactly. */
 export function estimateNetWorth(state: PlayerState | null, inventory: InventoryCar[] | null): number {
   if (!state) return 0;
   const ownedValue = (inventory ?? [])
-    .filter((c) => c.status === 'owned' || c.status === 'listed')
+    .filter((c) => c.status === 'owned' || c.status === 'listed' || c.status === 'rented')
     .reduce((sum, c) => sum + c.marketValue * ((c.conditionEngine + c.conditionBody + c.conditionInterior) / 300), 0);
   return Math.round(state.cash + ownedValue);
 }
+
+export const RARITY_RANK: Record<Rarity, number> = {
+  common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5, mythic: 6,
+};
