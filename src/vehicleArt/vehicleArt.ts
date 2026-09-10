@@ -1,40 +1,49 @@
 import type { Rarity } from '../lib/data/empire';
 
 /**
- * CX Vehicle Art — two coexisting rendering styles, chosen per template
- * by which asset fields are present (see ARTWORK_SOURCES):
+ * CX Vehicle Art — two coexisting rendering paths, chosen per template
+ * by which asset fields are present (see ARTWORK_SOURCES). As of the
+ * "CX Garage" fleet-wide pass, every one of the 12 templates uses path
+ * 2 below — path 1 is kept only as the underlying mechanism (still
+ * live in VehicleArtwork.tsx) in case a future template ever ships
+ * without a photoBackdrop, not because any current vehicle uses it.
  *
- * 1. STYLIZED GAME ART (every template except CX Vortex): a single
- *    AI-generated hero cutout on a rarity-tinted CSS gradient backdrop,
- *    pointer-tracked tilt, soft CSS ground shadow, sparkle overlay for
- *    the top two rarities. PAINT recolors the cutout via a CSS filter
- *    stack (instant, free, no per-colour asset); BODY_KIT swaps to a
- *    second pre-rendered "wide" image where one exists.
+ * 1. STYLIZED GAME ART (fallback path, unused by any current template):
+ *    a single AI-generated hero cutout on a rarity-tinted CSS gradient
+ *    backdrop, pointer-tracked tilt, soft CSS ground shadow, sparkle
+ *    overlay for the top two rarities. PAINT recolors the cutout via a
+ *    CSS filter stack (instant, free, no per-colour asset); BODY_KIT
+ *    swaps to a second pre-rendered "wide" image where one exists.
  *
- * 2. CX COLLECTOR GARAGE — premium CGI game-render style (CX Vortex —
- *    the flagship standard every future template should match): an
- *    AI-generated car cutout, rendered in a "premium CGI automotive
- *    render" style (ray-traced, studio-lit, ArtStation-adjacent —
- *    explicitly NOT a photograph and NOT the earlier toy-car direction,
- *    both tried and rejected this session), composited at render time
- *    over ONE shared showroom plate (GARAGE_BACKDROP) — never a baked-
- *    together single image. Keeping the car and the environment as
- *    separate layers is what still lets PAINT recolor the car via the
- *    same CSS filter stack as the stylized style, without dragging the
- *    background's color along with it. Every such vehicle reuses the
- *    exact same showroom plate — regenerating "the same room" independently
- *    per vehicle does not produce a pixel-consistent result (proven this
- *    session across many attempts, both for the street plate and this
- *    one), so a single shared plate is the only reliable way the whole
- *    fleet reads as one consistent showroom rather than disconnected AI
- *    generations. Note on prompting: "video game key art / ArtStation /
- *    octane render" style keywords measurably increased the rate of the
- *    model copying real production cars (Aventador/McLaren/Lamborghini
- *    silhouettes and badges) compared to a plain "photograph" framing —
- *    the working formula keeps the proven "futuristic concept car"
- *    design language and only adds "photorealistic CGI render quality"
- *    plus the showroom lighting/floor description, not heavier game-art
- *    style tags.
+ * 2. CX COLLECTOR GARAGE — premium CGI game-render style, used by every
+ *    template: an AI-generated car cutout, rendered in a "premium CGI
+ *    automotive render" style (ray-traced, studio-lit, ArtStation-
+ *    adjacent — explicitly NOT a photograph and NOT the earlier toy-car
+ *    direction, both tried and rejected this session), composited at
+ *    render time over ONE shared showroom plate (GARAGE_BACKDROP) —
+ *    never a baked-together single image. Keeping the car and the
+ *    environment as separate layers is what still lets PAINT recolor
+ *    the car via the same CSS filter stack as the stylized style,
+ *    without dragging the background's color along with it. Every
+ *    vehicle reuses the exact same showroom plate — regenerating "the
+ *    same room" independently per vehicle does not produce a pixel-
+ *    consistent result (proven this session across many attempts, both
+ *    for the street plate and this one), so a single shared plate is
+ *    the only reliable way the whole fleet reads as one consistent
+ *    showroom rather than disconnected AI generations.
+ *
+ *    Prompting notes from generating the full 12-vehicle fleet in this
+ *    style: "video game key art / ArtStation / octane render" style
+ *    keywords measurably increased the rate of the model copying real
+ *    production cars (exact Aventador/McLaren/Lamborghini silhouettes
+ *    and badges) compared to a plain "photograph" framing — the working
+ *    formula keeps a "futuristic concept car" design-language framing
+ *    and only adds "photorealistic CGI render quality" plus the
+ *    showroom lighting/floor description. Separately, red and yellow
+ *    paint colours specifically pulled the model toward Ferrari/
+ *    Lamborghini silhouettes and badges far more often than other
+ *    colours in this same prompt formula — worth avoiding (or budgeting
+ *    for extra retries) for future vehicles in this fleet.
  *
  * Neither style does true per-part layer compositing (a separate
  * transparent PNG per wheel/spoiler/etc.): getting AI-generated layers
@@ -88,12 +97,12 @@ export const GARAGE_BACKDROP = '/vehicle-art/garage/master.webp';
 /** Keyed by the exact `game_vehicle_templates.name` — every template
  *  gets its own bespoke artwork rather than a shared placeholder. */
 export const ARTWORK_SOURCES: Record<string, VehicleArtSources> = {
-  'Metro Runabout': { views: { front3q: '/vehicle-art/metro_runabout.webp' } },
-  'Highway Cruiser': { views: { front3q: '/vehicle-art/highway_cruiser.webp' } },
-  'Trail Blazer': { views: { front3q: '/vehicle-art/trail_blazer.webp' } },
-  'Retro Coupe': { views: { front3q: '/vehicle-art/retro_coupe.webp' } },
-  'Nightfury X': { views: { front3q: '/vehicle-art/nightfury_x.webp' } },
-  'Apex GTR': { views: { front3q: '/vehicle-art/apex_gtr.webp' } },
+  'Metro Runabout': { views: { front3q: '/vehicle-art/metro_runabout.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Highway Cruiser': { views: { front3q: '/vehicle-art/highway_cruiser.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Trail Blazer': { views: { front3q: '/vehicle-art/trail_blazer.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Retro Coupe': { views: { front3q: '/vehicle-art/retro_coupe.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Nightfury X': { views: { front3q: '/vehicle-art/nightfury_x.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Apex GTR': { views: { front3q: '/vehicle-art/apex_gtr.webp' }, photoBackdrop: GARAGE_BACKDROP },
   'CX Vortex': {
     views: {
       front3q: '/vehicle-art/cx-vortex/front3q.webp',
@@ -105,11 +114,11 @@ export const ARTWORK_SOURCES: Record<string, VehicleArtSources> = {
     },
     photoBackdrop: GARAGE_BACKDROP,
   },
-  'Titan 4x4': { views: { front3q: '/vehicle-art/titan_4x4.webp' } },
-  'Phantom Reaper': { views: { front3q: '/vehicle-art/phantom_reaper.webp' } },
-  'Obsidian Landau': { views: { front3q: '/vehicle-art/obsidian_landau.webp' } },
-  'Eclipse Zero': { views: { front3q: '/vehicle-art/eclipse_zero.webp' } },
-  'Celestial One': { views: { front3q: '/vehicle-art/celestial_one.webp' } },
+  'Titan 4x4': { views: { front3q: '/vehicle-art/titan_4x4.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Phantom Reaper': { views: { front3q: '/vehicle-art/phantom_reaper.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Obsidian Landau': { views: { front3q: '/vehicle-art/obsidian_landau.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Eclipse Zero': { views: { front3q: '/vehicle-art/eclipse_zero.webp' }, photoBackdrop: GARAGE_BACKDROP },
+  'Celestial One': { views: { front3q: '/vehicle-art/celestial_one.webp' }, photoBackdrop: GARAGE_BACKDROP },
 };
 
 const FALLBACK_ART: VehicleArtSources = { views: { front3q: '/vehicle-art/metro_runabout.webp' } };
