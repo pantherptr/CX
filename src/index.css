@@ -438,7 +438,12 @@
   @keyframes wheel-spin {
     to { transform: rotate(360deg); }
   }
-  .loader-wheel { animation: wheel-spin 0.6s linear infinite; transform-origin: center; transform-box: fill-box; }
+  /* Tied to the car's own orbit speed (not an independent fixed rate) —
+     a faster `--orbit-duration` (page spinner) spins the wheels
+     noticeably quicker than a slower one (cinematic splash), so the
+     wheels read as driven by the car rather than animated on their own
+     separate clock. */
+  .loader-wheel { animation: wheel-spin calc(var(--orbit-duration, 4.2s) / 7) linear infinite; transform-origin: center; transform-box: fill-box; }
 
   /* ---- Premium orbit ----
      An original circular track built entirely in code — no image asset.
@@ -470,7 +475,17 @@
      (+x, nose right — see TopDownCar) becomes the path's tangent at
      every angle for free: a circle's tangent at angle θ is θ+90°, which
      is exactly what "no counter-rotation, offset along the rotated
-     axis" produces — no separate per-frame trig, just one transform. */
+     axis" produces — no separate per-frame trig, just one transform.
+
+     `.orbit-motion` wraps every ROTATING piece (arc, glow, car) but not
+     the static base ring — it plays a single one-shot "settle into
+     motion" turn on mount (`orbit-motion-in`, this project's own
+     `--ease-out-expo`) that composes with the child's already-running
+     constant-speed loop: since it starts at a negative offset and eases
+     to exactly 0deg (contributing nothing once it finishes), the car
+     visibly starts slower and eases up to full cruising speed instead
+     of snapping straight to constant velocity — with zero risk of a
+     jump, because the handoff value is 0 by construction. */
   .orbit-stage {
     container-type: inline-size;
     --orbit-r: 48.4cqw;
@@ -478,6 +493,15 @@
   @keyframes orbit-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+  }
+  @keyframes orbit-motion-in {
+    from { transform: rotate(-26deg); }
+    to { transform: rotate(0deg); }
+  }
+  .orbit-motion {
+    position: absolute;
+    inset: 0;
+    animation: orbit-motion-in 700ms var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
   }
   .orbit-track,
   .orbit-arc,
@@ -539,14 +563,38 @@
     height: 0;
     animation: orbit-spin var(--orbit-duration, 4.2s) linear infinite;
   }
+  /* A soft, extremely subtle halo riding at the exact same point as the
+     car — reinforces the sense of motion/energy right where the car is,
+     distinct from (and smaller/tighter than) the arc's own ambient
+     glow. */
+  .orbit-car-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10cqw;
+    aspect-ratio: 1 / 1;
+    transform: translate(-50%, calc(-50% - var(--orbit-r)));
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 212, 71, 0.4), transparent 72%);
+    filter: blur(1.8cqw);
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 300ms ease-out;
+  }
   .orbit-car-sprite {
     position: absolute;
     width: 15.5cqw;
     aspect-ratio: 100 / 54;
     transform: translate(-50%, calc(-50% - var(--orbit-r)));
     filter: drop-shadow(0 0.35cqw 0.9cqw rgba(0, 0, 0, 0.32));
+    transition: opacity 300ms ease-out;
+  }
+  .orbit-stage--complete .orbit-car-sprite,
+  .orbit-stage--complete .orbit-car-glow {
+    opacity: 0;
   }
   @media (prefers-reduced-motion: reduce) {
+    .orbit-motion { animation: none; }
     .orbit-arc, .orbit-glow, .orbit-car-pivot { animation: none; }
   }
 

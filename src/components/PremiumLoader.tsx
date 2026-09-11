@@ -150,14 +150,17 @@ export function SupercarOrbit({
       style={{ width: size, aspectRatio: '1 / 1', ['--orbit-duration' as string]: `${duration}s` }}
     >
       <div className="orbit-track" />
-      <div className="orbit-glow" />
-      <div className="orbit-arc" />
-      <div className="orbit-complete-ring" />
-      <div className="orbit-car-pivot">
-        <div className="orbit-car-sprite">
-          <TopDownCar />
+      <div className="orbit-motion">
+        <div className="orbit-glow" />
+        <div className="orbit-arc" />
+        <div className="orbit-car-pivot">
+          <div className="orbit-car-glow" />
+          <div className="orbit-car-sprite">
+            <TopDownCar />
+          </div>
         </div>
       </div>
+      <div className="orbit-complete-ring" />
     </div>
   );
 }
