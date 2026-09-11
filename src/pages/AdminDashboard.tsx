@@ -3,16 +3,15 @@ import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { Logo } from '../components/primitives';
 import { useAuth } from '../lib/auth';
-import { VerificationsPanel, UsersPanel, BookingsPanel, CarsPanel, EmpirePanel } from '../components/admin/panels';
+import { VerificationsPanel, UsersPanel, BookingsPanel, CarsPanel } from '../components/admin/panels';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'empire';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'users', label: 'Users', icon: 'users' },
   { id: 'bookings', label: 'Bookings', icon: 'trips' },
   { id: 'cars', label: 'Cars', icon: 'cars' },
-  { id: 'empire', label: 'Empire', icon: 'trophy' },
 ];
 
 export default function AdminDashboard() {
@@ -59,7 +58,6 @@ export default function AdminDashboard() {
         {tab === 'users' && <UsersPanel />}
         {tab === 'bookings' && <BookingsPanel />}
         {tab === 'cars' && <CarsPanel />}
-        {tab === 'empire' && <EmpirePanel />}
       </div>
     </div>
   );

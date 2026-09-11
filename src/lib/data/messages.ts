@@ -35,7 +35,7 @@ export interface ConversationParticipant {
   role: ParticipantRole;
 }
 
-function roleFromFlags(flags: { is_owner: boolean; is_admin: boolean; is_host: boolean }): ParticipantRole {
+export function roleFromFlags(flags: { is_owner: boolean; is_admin: boolean; is_host: boolean }): ParticipantRole {
   if (flags.is_owner) return 'owner';
   if (flags.is_admin) return 'admin';
   if (flags.is_host) return 'host';

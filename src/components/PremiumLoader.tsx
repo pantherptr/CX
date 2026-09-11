@@ -183,8 +183,8 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
 /** Full-screen loading overlay — shown once per session while the app
  *  boots, and reused as the shared Suspense fallback while a route
  *  chunk loads. A pure white field covering the entire viewport above
- *  everything else (navbar, footer, page content, the Empire game shell,
- *  any background) with the ring animation large and centered — no card
+ *  everything else (navbar, footer, page content, any background) with
+ *  the ring animation large and centered — no card
  *  around it, no text, no progress readout, no controls. Responsive by
  *  pure CSS: `min(40vmin, 320px)` keeps it compact and centered on
  *  desktop, comfortably margined on phones, and proportionate on

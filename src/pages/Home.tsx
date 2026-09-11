@@ -400,20 +400,20 @@ export default function Home() {
           <div className="flex flex-col items-center gap-6 rounded-2xl border border-line bg-panel/50 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
             <div className="flex items-center gap-5">
               <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent-050 text-accent-700 sm:flex">
-                <Icon name="trophy" size={30} />
+                <Icon name="sparkles" size={30} />
               </span>
               <div>
-                <p className="eyebrow">CX Rent — Luxury Car Empire</p>
+                <p className="eyebrow">EMPIRE</p>
                 <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
-                  Buy. Restore. Sell. Build your empire.
+                  The official voice of CX Rent.
                 </h2>
                 <p className="mt-2 max-w-md text-body leading-relaxed text-muted">
-                  A real car-trading business built right into CX — buy undervalued cars, restore and customize them, and sell for profit while your CX Score unlocks real booking discounts.
+                  News, announcements and new cars — straight from the CX Rent team. One feed, no noise.
                 </p>
               </div>
             </div>
             <Link to="/empire" className="btn btn-accent-bright btn-lg shrink-0">
-              Play Empire <Icon name="arrowRight" size={17} />
+              Open Empire <Icon name="arrowRight" size={17} />
             </Link>
           </div>
         </Reveal>

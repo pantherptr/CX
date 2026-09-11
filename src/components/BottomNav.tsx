@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { EmpireLogo } from './EmpireLogo';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
+import { useEmpireUnreadCount } from '../lib/data/empireFeed';
 
 interface Item {
   label: string;
@@ -30,10 +31,12 @@ const items: Item[] = [
     `/messages` is the other case: a real chat composer needs the entire
     bottom edge of the screen to itself (its own safe-area padding, no
     tab bar between it and the keyboard) the same way Messages/WhatsApp/
-    Telegram hide their own tab chrome inside a conversation. `/empire` is
-    a fullscreen game shell with its own EmpireNavigation bottom bar — the
-    site's tab bar would double up with it. */
-const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/, /^\/empire/];
+    Telegram hide their own tab chrome inside a conversation. `/empire`
+    used to be here too (the old City Empire game supplied its own full
+    bottom nav) — EMPIRE is now a single feed with no nav of its own, so
+    the site's tab bar is the only way back on mobile and must stay
+    visible there. */
+const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/];
 
 /** Single source of truth for "is the bottom tab bar showing right now" —
     shared with App.tsx so it can reserve matching scroll padding. */
@@ -50,6 +53,15 @@ export function BottomNav() {
   const { pathname, hash } = useLocation();
   const { session } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
+  const empireUnread = useEmpireUnreadCount(session?.user.id);
+
+  // Empire.tsx marks the feed seen server-side on mount; clear the badge
+  // here too the moment the pathname lands on /empire, rather than
+  // waiting on a cross-component refresh mechanism for a single badge.
+  useEffect(() => {
+    if (pathname === '/empire') empireUnread.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const activeIndex = useMemo(
     () => items.findIndex((it) => it.match(pathname, hash)),
@@ -105,6 +117,11 @@ export function BottomNav() {
                 {it.label === 'Messages' && unreadCount > 0 && (
                   <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+                {isEmpire && empireUnread.count > 0 && (
+                  <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent-bright px-0.5 text-[9px] font-bold leading-none text-noir">
+                    {empireUnread.count > 9 ? '9+' : empireUnread.count}
                   </span>
                 )}
               </span>

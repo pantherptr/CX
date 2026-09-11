@@ -14,14 +14,10 @@ import {
   refundBookingAdmin,
   fetchAllCarsAdmin,
   adminSetCarStatus,
-  fetchAllPlayers,
-  adminGrantCash,
-  adminSetCash,
   type AdminUser,
   type AdminVerification,
   type AdminBooking,
   type AdminCar,
-  type AdminPlayer,
 } from '../../lib/data/admin';
 
 /**
@@ -358,95 +354,3 @@ export function CarsPanel() {
   );
 }
 
-/** One player's row in EmpirePanel — its own component so each row keeps
- *  its own draft amount without re-rendering (or clearing) every other
- *  row's input on every keystroke. */
-function EmpirePlayerRow({ player, onChanged }: { player: AdminPlayer; onChanged: () => void }) {
-  const { toast } = useApp();
-  const [amount, setAmount] = useState('');
-  const [busy, setBusy] = useState<'add' | 'set' | null>(null);
-
-  const parsed = Number(amount);
-  const valid = amount.trim() !== '' && Number.isFinite(parsed) && parsed >= 0;
-
-  const run = async (mode: 'add' | 'set') => {
-    if (!valid || (mode === 'add' && parsed <= 0)) return;
-    setBusy(mode);
-    const { error } = mode === 'add' ? await adminGrantCash(player.userId, parsed) : await adminSetCash(player.userId, parsed);
-    setBusy(null);
-    if (error) {
-      toast({ title: 'Could not update this balance', desc: error, icon: 'info' });
-      return;
-    }
-    toast({ title: mode === 'add' ? `Added ${eur(parsed)} to ${player.fullName}` : `Set ${player.fullName}'s cash to ${eur(parsed)}`, icon: 'checkCircle' });
-    setAmount('');
-    onChanged();
-  };
-
-  return (
-    <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar url={player.avatarUrl} />
-        <div className="min-w-0">
-          <p className="truncate font-medium text-ink">{player.fullName}</p>
-          <p className="text-caption text-muted">Reputation {player.reputation} · Tier {player.businessTier}</p>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="w-28 shrink-0 text-right font-display text-body font-semibold text-ink tabular-nums">{eur(player.cash)}</span>
-        <input
-          type="number"
-          min={0}
-          step={1000}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount"
-          className="input h-9 w-28 text-detail"
-        />
-        <button
-          onClick={() => run('add')}
-          disabled={!valid || parsed <= 0 || busy !== null}
-          className="btn btn-accent-bright btn-sm disabled:opacity-40"
-        >
-          {busy === 'add' ? '…' : 'Give'}
-        </button>
-        <button
-          onClick={() => run('set')}
-          disabled={!valid || busy !== null}
-          className="btn btn-secondary btn-sm disabled:opacity-40"
-        >
-          {busy === 'set' ? '…' : 'Set to'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** Owner control over the Empire economy — give any player cash or set
- *  their balance outright, e.g. to fund testing without waiting out the
- *  normal earn loop. See admin_grant_cash/admin_set_cash in
- *  0034_admin_grant_cash.sql. */
-export function EmpirePanel() {
-  const [items, setItems] = useState<AdminPlayer[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = () => {
-    fetchAllPlayers()
-      .then(setItems)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load players.'));
-  };
-
-  useEffect(load, []);
-
-  if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
-  if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
-  if (items.length === 0) return <div className="card"><EmptyState size="md" icon="info" title="No Empire players yet." className="p-10" /></div>;
-
-  return (
-    <div className="flex flex-col gap-2">
-      {items.map((p) => (
-        <EmpirePlayerRow key={p.userId} player={p} onChanged={load} />
-      ))}
-    </div>
-  );
-}

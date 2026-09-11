@@ -7,9 +7,9 @@ import { supabase } from '../supabase';
  * legacy unclaimed coupons). As with that file: the client never writes
  * a score or a discount directly. Every point comes from
  * `public.award_cx_score`, reachable only from inside other
- * `security definer` functions (`claim_rental_cx_score`, and the Empire
- * game's purchase/sale/upgrade RPCs in empire.ts) that have already
- * verified a real event server-side. This layer only ever reads.
+ * `security definer` functions (`claim_rental_cx_score`, wired into real
+ * booking price quotes) that have already verified a real event
+ * server-side. This layer only ever reads.
  */
 
 export interface CxScoreLevel {

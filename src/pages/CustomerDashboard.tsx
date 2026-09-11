@@ -522,10 +522,6 @@ export default function CustomerDashboard() {
         <section className="mt-8 scroll-mt-20" id="rewards">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="font-display text-lg font-semibold text-ink">Rewards</h2>
-            <Link to="/empire" className="btn btn-secondary btn-sm self-start">
-              <Icon name="trophy" size={15} />
-              Play Car Empire
-            </Link>
           </div>
           <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
             {REWARD_TABS.map((t) => {

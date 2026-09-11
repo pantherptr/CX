@@ -10,6 +10,7 @@ import {
   Snowflake, Music, Apple, Info, BadgeCheck, Briefcase, Trophy, Gift, Pause,
   Play, Volume2, VolumeX, Truck, Package, Tag,
   GitCompare, Target, Handshake, Building2, Plane,
+  Bookmark, Share2, MoreHorizontal, Pencil, Trash2, Pin, Image,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,7 +27,8 @@ export type IconName =
   | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
   | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff'
   | 'minus' | 'truck' | 'package' | 'tag' | 'compare'
-  | 'target' | 'handshake' | 'building' | 'plane';
+  | 'target' | 'handshake' | 'building' | 'plane'
+  | 'bookmark' | 'share' | 'moreHorizontal' | 'edit' | 'trash' | 'pinned' | 'image';
 
 /**
  * Every icon in the product renders through the same Lucide set — one
@@ -55,9 +57,11 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   truck: Truck, package: Package, tag: Tag,
   compare: GitCompare,
   target: Target, handshake: Handshake, building: Building2, plane: Plane,
+  bookmark: Bookmark, share: Share2, moreHorizontal: MoreHorizontal,
+  edit: Pencil, trash: Trash2, pinned: Pin, image: Image,
 };
 
-const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause'];
+const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause', 'bookmark', 'pinned'];
 
 interface IconProps {
   name: IconName;
