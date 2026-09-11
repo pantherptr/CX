@@ -168,6 +168,7 @@ export interface CustomerRequest {
   customerName: string;
   bonusPct: number;
   durationDays: number;
+  isVip: boolean;
   status: 'pending' | 'accepted' | 'expired';
   createdAt: string;
   expiresAt: string;
@@ -180,6 +181,7 @@ interface CustomerRequestRow {
   customer_name: string;
   bonus_pct: number;
   duration_days: number;
+  is_vip: boolean;
   status: 'pending' | 'accepted' | 'expired';
   created_at: string;
   expires_at: string;
@@ -193,6 +195,7 @@ function mapCustomerRequest(row: CustomerRequestRow): CustomerRequest {
     customerName: row.customer_name,
     bonusPct: row.bonus_pct,
     durationDays: row.duration_days,
+    isVip: row.is_vip,
     status: row.status,
     createdAt: row.created_at,
     expiresAt: row.expires_at,

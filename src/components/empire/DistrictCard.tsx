@@ -1,6 +1,6 @@
 import { Icon } from '../Icon';
-import type { District, DistrictDemand, CityEvent } from '../../lib/data/districts';
-import { DEMAND_META } from '../../lib/data/districts';
+import type { District, DistrictDemand, CityEvent, DistrictInfluence, DistrictMilestone, DistrictMilestoneClaim } from '../../lib/data/districts';
+import { DEMAND_META, competitorShareFor, nextUnclaimedMilestone } from '../../lib/data/districts';
 
 const DEMAND_RANK: Record<string, number> = { low: 0, normal: 1, high: 2, hot: 3, iconic: 4 };
 
@@ -12,26 +12,28 @@ const DEMAND_RANK: Record<string, number> = { low: 0, normal: 1, high: 2, hot: 3
  * art, upgradeable later without touching any game logic.
  */
 export function DistrictCard({
-  district, demand, events, locked, requiredTierName, onAssign,
+  district, demand, events, locked, requiredTierName, influence, milestoneClaims, onAssign, onClaimMilestone,
 }: {
   district: District;
   demand: DistrictDemand[];
   events: CityEvent[];
   locked?: boolean;
   requiredTierName?: string;
+  influence?: DistrictInfluence;
+  milestoneClaims: DistrictMilestoneClaim[];
   onAssign: () => void;
+  onClaimMilestone: (milestone: DistrictMilestone) => void;
 }) {
   const topDemand = [...demand].sort((a, b) => (DEMAND_RANK[b.demandTier] ?? 0) - (DEMAND_RANK[a.demandTier] ?? 0)).slice(0, 3);
   const hottest = topDemand[0];
   const glowColor = locked ? '#3f4a42' : hottest ? DEMAND_META[hottest.demandTier].color : '#3f4a42';
   const activeEvent = events.find((e) => e.districtKey === district.districtKey);
-
-  const Wrapper = locked ? 'div' : 'button';
+  const claimable = !locked && influence ? nextUnclaimedMilestone(influence.influencePct, milestoneClaims, district.districtKey) : null;
+  const share = influence ? competitorShareFor(influence.influencePct) : null;
 
   return (
-    <Wrapper
-      onClick={locked ? undefined : onAssign}
-      className={`group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-noir-2 p-4 text-left transition-all duration-500 ease-out-expo ${
+    <div
+      className={`group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-noir-2 p-4 transition-all duration-500 ease-out-expo ${
         locked ? 'opacity-60' : 'hover:-translate-y-1.5 hover:border-white/25'
       }`}
       style={{ boxShadow: `0 0 20px ${glowColor}33` }}
@@ -67,15 +69,41 @@ export function DistrictCard({
         </div>
       )}
 
-      {locked ? (
-        <span className="mt-4 inline-flex w-fit items-center gap-1 text-detail font-semibold text-on-noir-muted">
-          Unlocks at {requiredTierName}
-        </span>
-      ) : (
-        <span className="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-detail font-semibold text-on-noir transition-colors duration-300 group-hover:bg-accent-bright group-hover:text-noir">
-          Assign a Car <Icon name="arrowRight" size={12} />
-        </span>
+      {!locked && influence && share && (
+        <div className="mt-3">
+          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full bg-accent-bright" style={{ width: `${influence.influencePct}%` }} />
+            <div className="h-full bg-white/25" style={{ width: `${share.pctA}%` }} />
+            <div className="h-full bg-white/10" style={{ width: `${share.pctB}%` }} />
+          </div>
+          <p className="mt-1 text-[10px] text-on-noir-muted">
+            {influence.influencePct}% influence · {influence.completedRentals}/20 rentals
+          </p>
+        </div>
       )}
-    </Wrapper>
+
+      <div className="mt-4 flex items-center gap-2">
+        {locked ? (
+          <span className="inline-flex w-fit items-center gap-1 text-detail font-semibold text-on-noir-muted">
+            Unlocks at {requiredTierName}
+          </span>
+        ) : (
+          <button
+            onClick={onAssign}
+            className="inline-flex w-fit items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-detail font-semibold text-on-noir transition-colors duration-300 group-hover:bg-accent-bright group-hover:text-noir"
+          >
+            Assign a Car <Icon name="arrowRight" size={12} />
+          </button>
+        )}
+        {claimable !== null && (
+          <button
+            onClick={() => onClaimMilestone(claimable)}
+            className="inline-flex w-fit items-center gap-1 rounded-full bg-star/15 px-3 py-1.5 text-detail font-semibold text-star"
+          >
+            Claim {claimable}%
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

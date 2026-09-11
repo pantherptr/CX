@@ -21,6 +21,8 @@ export interface CorporateContract {
   lumpSumPayout: number;
   cxScoreBonus: number;
   minBusinessTier: number;
+  isFlash: boolean;
+  expiresAt: string | null;
 }
 
 interface CorporateContractRow {
@@ -33,6 +35,8 @@ interface CorporateContractRow {
   lump_sum_payout: number;
   cx_score_bonus: number;
   min_business_tier: number;
+  is_flash: boolean;
+  expires_at: string | null;
 }
 
 function mapContract(row: CorporateContractRow): CorporateContract {
@@ -46,6 +50,8 @@ function mapContract(row: CorporateContractRow): CorporateContract {
     lumpSumPayout: row.lump_sum_payout,
     cxScoreBonus: row.cx_score_bonus,
     minBusinessTier: row.min_business_tier,
+    isFlash: row.is_flash,
+    expiresAt: row.expires_at,
   };
 }
 

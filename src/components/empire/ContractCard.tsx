@@ -11,6 +11,13 @@ function timeRemainingLabel(resolvesAt: string): string {
   return `${Math.ceil(hours / 24)}d left`;
 }
 
+function flashTimeLeftLabel(expiresAt: string): string {
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return 'expired';
+  const mins = Math.ceil(ms / 60000);
+  return `${mins}m to accept`;
+}
+
 /** The one flagship corporate contract for this first slice — either
  *  its requirements (accept flow) or the active commitment's progress. */
 export function ContractCard({
@@ -24,6 +31,7 @@ export function ContractCard({
   onCancel: () => void;
 }) {
   const rarityMeta = RARITY_META[contract.requiredMinRarity];
+  const isExpired = contract.isFlash && contract.expiresAt !== null && new Date(contract.expiresAt).getTime() < Date.now();
 
   return (
     <div className="rounded-2xl border border-white/10 bg-noir-2 p-5">
@@ -31,8 +39,15 @@ export function ContractCard({
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-bright/10 text-accent-bright">
           <Icon name="handshake" size={22} />
         </span>
-        <div className="min-w-0">
-          <p className="font-display text-lead font-semibold text-on-noir">{contract.title}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-display text-lead font-semibold text-on-noir">{contract.title}</p>
+            {contract.isFlash && contract.expiresAt && (
+              <span className="shrink-0 rounded-full bg-danger/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-danger">
+                FLASH · {flashTimeLeftLabel(contract.expiresAt)}
+              </span>
+            )}
+          </div>
           <p className="mt-0.5 text-caption text-on-noir-muted">{contract.description}</p>
         </div>
       </div>
@@ -55,8 +70,8 @@ export function ContractCard({
             <span>{contract.durationDays} days</span>
             <span className="font-semibold text-accent-bright">{eur(contract.lumpSumPayout)}</span>
           </div>
-          <button disabled={!canAccept || busy} onClick={onOpenModal} className="btn btn-accent-bright btn-sm shrink-0 disabled:opacity-40">
-            Accept
+          <button disabled={!canAccept || busy || isExpired} onClick={onOpenModal} className="btn btn-accent-bright btn-sm shrink-0 disabled:opacity-40">
+            {isExpired ? 'Expired' : 'Accept'}
           </button>
         </div>
       )}

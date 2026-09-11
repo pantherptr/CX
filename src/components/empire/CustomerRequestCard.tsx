@@ -24,11 +24,18 @@ export function CustomerRequestCard({
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-noir-2 p-4 sm:flex-row sm:items-center">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-bright/10 text-accent-bright">
-        <Icon name="target" size={20} />
+      <span
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${request.isVip ? 'bg-star/15 text-star' : 'bg-accent-bright/10 text-accent-bright'}`}
+      >
+        <Icon name={request.isVip ? 'star' : 'target'} size={20} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-display text-lead font-semibold text-on-noir">{request.customerName}</p>
+        <p className="flex items-center gap-2 font-display text-lead font-semibold text-on-noir">
+          {request.customerName}
+          {request.isVip && (
+            <span className="rounded-full bg-star/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-star">VIP</span>
+          )}
+        </p>
         <p className="mt-0.5 text-caption text-on-noir-muted">
           Needs a <span className="text-on-noir">{request.category}</span> in {districtName} · {request.durationDays}d · {timeLeftLabel(request.expiresAt)}
         </p>

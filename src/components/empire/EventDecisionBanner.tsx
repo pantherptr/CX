@@ -1,6 +1,7 @@
 import { Icon } from '../Icon';
 import type { CityEvent, District } from '../../lib/data/districts';
 import type { InventoryCar, PlayerState } from '../../lib/data/empire';
+import { actionableCityEvents } from '../../lib/empireActions';
 
 function timeLeftLabel(endsAt: string): string {
   const ms = new Date(endsAt).getTime() - Date.now();
@@ -26,17 +27,7 @@ export function EventDecisionBanner({
   onAssign: (district: District) => void;
 }) {
   const businessTier = playerState?.businessTier ?? 1;
-
-  const actionable = events
-    .filter((e) => !dismissed.has(e.id))
-    .map((event) => {
-      const district = districts.find((d) => d.districtKey === event.districtKey);
-      if (!district || businessTier < district.minBusinessTier) return null;
-      const hasMatch = ownedCars.some((c) => event.category === null || c.category === event.category);
-      if (!hasMatch) return null;
-      return { event, district };
-    })
-    .filter((x): x is { event: CityEvent; district: District } => x !== null);
+  const actionable = actionableCityEvents(events, districts, ownedCars, businessTier, dismissed);
 
   if (actionable.length === 0) return null;
 

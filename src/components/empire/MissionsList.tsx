@@ -3,20 +3,21 @@ import { eur } from '../../lib/format';
 import type { PlayerState } from '../../lib/data/empire';
 import {
   missionProgress, isMissionClaimed,
-  type MissionTemplate, type DailyProgress, type MissionClaim,
+  type MissionTemplate, type DailyProgress, type MissionClaim, type WeeklyProgress,
 } from '../../lib/data/missions';
 
 function MissionRow({
-  mission, playerState, dailyProgress, claimed, busy, onClaim,
+  mission, playerState, dailyProgress, weeklyProgress, claimed, busy, onClaim,
 }: {
   mission: MissionTemplate;
   playerState: PlayerState | null;
   dailyProgress: DailyProgress | null;
+  weeklyProgress: WeeklyProgress | null;
   claimed: boolean;
   busy: boolean;
   onClaim: () => void;
 }) {
-  const progress = missionProgress(mission, playerState, dailyProgress);
+  const progress = missionProgress(mission, playerState, dailyProgress, weeklyProgress);
   const pct = Math.min(100, Math.round((progress / mission.target) * 100));
   const complete = progress >= mission.target;
 
@@ -54,11 +55,12 @@ function MissionRow({
 }
 
 export function MissionsList({
-  missions, playerState, dailyProgress, claims, busyMissionId, onClaim,
+  missions, playerState, dailyProgress, weeklyProgress, claims, busyMissionId, onClaim,
 }: {
   missions: MissionTemplate[];
   playerState: PlayerState | null;
   dailyProgress: DailyProgress | null;
+  weeklyProgress: WeeklyProgress | null;
   claims: MissionClaim[];
   busyMissionId: string | null;
   onClaim: (missionId: string) => void;
@@ -66,6 +68,7 @@ export function MissionsList({
   const today = new Date().toISOString().slice(0, 10);
   const lifetime = missions.filter((m) => m.scope === 'lifetime');
   const daily = missions.filter((m) => m.scope === 'daily');
+  const weekly = missions.filter((m) => m.scope === 'weekly');
 
   return (
     <div className="space-y-6">
@@ -79,7 +82,27 @@ export function MissionsList({
                 mission={m}
                 playerState={playerState}
                 dailyProgress={dailyProgress}
-                claimed={isMissionClaimed(m, claims, today)}
+                weeklyProgress={weeklyProgress}
+                claimed={isMissionClaimed(m, claims, today, weeklyProgress?.weekStart)}
+                busy={busyMissionId === m.id}
+                onClaim={() => onClaim(m.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {weekly.length > 0 && (
+        <div>
+          <p className="eyebrow">This Week</p>
+          <div className="mt-2 space-y-2">
+            {weekly.map((m) => (
+              <MissionRow
+                key={m.id}
+                mission={m}
+                playerState={playerState}
+                dailyProgress={dailyProgress}
+                weeklyProgress={weeklyProgress}
+                claimed={isMissionClaimed(m, claims, today, weeklyProgress?.weekStart)}
                 busy={busyMissionId === m.id}
                 onClaim={() => onClaim(m.id)}
               />
@@ -97,7 +120,8 @@ export function MissionsList({
                 mission={m}
                 playerState={playerState}
                 dailyProgress={dailyProgress}
-                claimed={isMissionClaimed(m, claims, today)}
+                weeklyProgress={weeklyProgress}
+                claimed={isMissionClaimed(m, claims, today, weeklyProgress?.weekStart)}
                 busy={busyMissionId === m.id}
                 onClaim={() => onClaim(m.id)}
               />

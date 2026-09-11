@@ -40,7 +40,10 @@ import {
   nextLevel,
   cxScoreEventLabel,
 } from '../lib/data/cxScore';
-import { useDistricts, useDistrictDemand, useCityEvents, type DistrictKey } from '../lib/data/districts';
+import {
+  useDistricts, useDistrictDemand, useCityEvents, useDistrictInfluence, useMyDistrictMilestoneClaims,
+  claimDistrictMilestone, type DistrictKey, type DistrictMilestone,
+} from '../lib/data/districts';
 import {
   useMyRentals, useMyCustomerRequests, syncRentals, assignCarToRental, cancelRental,
   acceptCustomerRequest, declineCustomerRequest, estimateRentalCxPoints,
@@ -51,13 +54,14 @@ import {
   type CommitmentStatus,
 } from '../lib/data/contracts';
 import {
-  useMissionTemplates, useDailyProgress, useMyMissionClaims, claimMission,
+  useMissionTemplates, useDailyProgress, useWeeklyProgress, useMyMissionClaims, claimMission,
 } from '../lib/data/missions';
 import {
   useAchievementTemplates, useMyAchievementUnlocks, checkAndAwardAchievements,
 } from '../lib/data/achievements';
 import { useEmpireLeaderboard } from '../lib/data/leaderboard';
 import { useActivityFeed } from '../lib/data/activity';
+import { useLoginStreak } from '../lib/data/loginStreak';
 import { reputationLabel } from '../lib/data/reputation';
 import { VehicleArtwork } from '../vehicleArt/VehicleArtwork';
 import { VehicleExperience, type VehicleExperienceCar } from '../vehicleArt/VehicleExperience';
@@ -349,10 +353,14 @@ export default function Empire() {
   const { commitments, refresh: refreshCommitments } = useMyContractCommitments(userId);
   const missions = useMissionTemplates();
   const { progress: dailyProgress, refresh: refreshDailyProgress } = useDailyProgress();
+  const { progress: weeklyProgress, refresh: refreshWeeklyProgress } = useWeeklyProgress();
   const { claims: missionClaims, refresh: refreshMissionClaims } = useMyMissionClaims(userId);
   const achievements = useAchievementTemplates();
   const { unlocks: achievementUnlocks, refresh: refreshAchievementUnlocks } = useMyAchievementUnlocks(userId);
+  const { influence: districtInfluence, refresh: refreshDistrictInfluence } = useDistrictInfluence(userId);
+  const { claims: districtMilestoneClaims, refresh: refreshDistrictMilestoneClaims } = useMyDistrictMilestoneClaims(userId);
   const leaderboard = useEmpireLeaderboard();
+  useLoginStreak(userId);
   const { feed: activityFeed, refresh: refreshActivityFeed } = useActivityFeed(userId);
 
   const [marketMsg, setMarketMsg] = useState<string | null>(null);
@@ -510,10 +518,12 @@ export default function Empire() {
         refreshRequests();
         refreshMissionClaims();
         refreshDailyProgress();
+        refreshWeeklyProgress();
         refreshDistrictDemand();
         refreshCityEvents();
         refreshContracts();
         refreshActivityFeed();
+        refreshDistrictInfluence();
       } catch {
         // Lazy resolution failing silently on one poll is fine — the
         // next poll (or the next tab open) tries again.
@@ -725,6 +735,27 @@ export default function Empire() {
     refreshMissionClaims();
   };
 
+  const handleClaimDistrictMilestone = async (districtKey: DistrictKey, milestone: DistrictMilestone) => {
+    setCityBusyId(`${districtKey}-${milestone}`);
+    const { cashAwarded, cxAwarded, error } = await claimDistrictMilestone(districtKey, milestone);
+    setCityBusyId(null);
+    if (error) {
+      flashCityMsg(error);
+      return;
+    }
+    const districtName = districts?.find((d) => d.districtKey === districtKey)?.name ?? districtKey;
+    setCelebrationQueue((q) => [...q, {
+      icon: milestone === 90 ? 'trophy' : 'gauge',
+      eyebrow: milestone === 90 ? 'District Dominated' : 'District Milestone',
+      title: `${districtName} — ${milestone}%`,
+      cashAwarded,
+      cxAwarded,
+    }]);
+    refreshState();
+    refreshScore();
+    refreshDistrictMilestoneClaims();
+  };
+
   if (!session) {
     return (
       <div className="relative overflow-hidden bg-noir">
@@ -812,8 +843,11 @@ export default function Empire() {
               missions={missions ?? []}
               playerState={playerState}
               dailyProgress={dailyProgress}
+              weeklyProgress={weeklyProgress}
               missionClaims={missionClaims ?? []}
               businessTiers={businessTiers ?? []}
+              districtInfluence={districtInfluence ?? []}
+              districtMilestoneClaims={districtMilestoneClaims ?? []}
               busyId={cityBusyId}
               onAssignToDistrict={handleAssignToDistrict}
               onAcceptRequest={handleAcceptRequest}
@@ -822,6 +856,7 @@ export default function Empire() {
               onAcceptContract={handleAcceptContract}
               onCancelContract={handleCancelContract}
               onClaimMission={handleClaimMission}
+              onClaimDistrictMilestone={handleClaimDistrictMilestone}
             />
           </div>
         )}
@@ -1071,7 +1106,10 @@ export default function Empire() {
             </div>
 
             <div className="mt-8">
-              <h3 className="font-display text-xl font-semibold text-on-noir">Achievements</h3>
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-display text-xl font-semibold text-on-noir">Trophy Case</h3>
+                <p className="text-caption text-on-noir-muted">{achievementUnlocks?.length ?? 0} / {achievements?.length ?? 0} unlocked</p>
+              </div>
               <div className="mt-4">
                 <AchievementGrid achievements={achievements ?? []} unlocks={achievementUnlocks ?? []} playerState={playerState} />
               </div>

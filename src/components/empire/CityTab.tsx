@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import type { PlayerState, InventoryCar, BusinessTier } from '../../lib/data/empire';
-import type { District, DistrictDemand, CityEvent } from '../../lib/data/districts';
+import type { District, DistrictDemand, CityEvent, DistrictInfluence, DistrictMilestoneClaim, DistrictMilestone } from '../../lib/data/districts';
 import type { RentalRecord, CustomerRequest, PriceTier } from '../../lib/data/rentals';
 import type { CorporateContract, ContractCommitment } from '../../lib/data/contracts';
-import type { MissionTemplate, DailyProgress, MissionClaim } from '../../lib/data/missions';
+import type { MissionTemplate, DailyProgress, MissionClaim, WeeklyProgress } from '../../lib/data/missions';
 import type { ActivityItem } from '../../lib/data/activity';
 import { ActivityFeed } from './ActivityFeed';
 import { EventDecisionBanner } from './EventDecisionBanner';
+import { LiveActionCenter } from './LiveActionCenter';
 import { CityEventsStrip } from './CityEventsStrip';
 import { DistrictCard } from './DistrictCard';
 import { CustomerRequestCard } from './CustomerRequestCard';
@@ -18,9 +19,10 @@ import { MissionsList } from './MissionsList';
 
 export function CityTab({
   districts, demand, events, activityFeed, rentals, customerRequests, contracts, commitments,
-  ownedCars, missions, playerState, dailyProgress, missionClaims, businessTiers,
+  ownedCars, missions, playerState, dailyProgress, weeklyProgress, missionClaims, businessTiers,
+  districtInfluence, districtMilestoneClaims,
   busyId, onAssignToDistrict, onAcceptRequest, onDeclineRequest, onCancelRental,
-  onAcceptContract, onCancelContract, onClaimMission,
+  onAcceptContract, onCancelContract, onClaimMission, onClaimDistrictMilestone,
 }: {
   districts: District[];
   demand: DistrictDemand[];
@@ -34,8 +36,11 @@ export function CityTab({
   missions: MissionTemplate[];
   playerState: PlayerState | null;
   dailyProgress: DailyProgress | null;
+  weeklyProgress: WeeklyProgress | null;
   missionClaims: MissionClaim[];
   businessTiers: BusinessTier[];
+  districtInfluence: DistrictInfluence[];
+  districtMilestoneClaims: DistrictMilestoneClaim[];
   busyId: string | null;
   onAssignToDistrict: (inventoryId: string, districtKey: District['districtKey'], durationDays: 1 | 3 | 7, priceTier: PriceTier) => void;
   onAcceptRequest: (requestId: string, inventoryId: string) => void;
@@ -44,6 +49,7 @@ export function CityTab({
   onAcceptContract: (contractId: string, inventoryIds: string[]) => void;
   onCancelContract: (commitmentId: string) => void;
   onClaimMission: (missionId: string) => void;
+  onClaimDistrictMilestone: (districtKey: District['districtKey'], milestone: DistrictMilestone) => void;
 }) {
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
   const [contractModalId, setContractModalId] = useState<string | null>(null);
@@ -54,8 +60,39 @@ export function CityTab({
   const businessTier = playerState?.businessTier ?? 1;
   const tierName = (tier: number) => businessTiers.find((t) => t.tier === tier)?.name ?? `Tier ${tier}`;
 
+  const openAssignForRequest = (request: CustomerRequest) =>
+    setAssignTarget({
+      mode: 'request',
+      request,
+      districtName: districts.find((d) => d.districtKey === request.districtKey)?.name ?? request.districtKey,
+    });
+  const openAssignForEvent = (district: District) => setAssignTarget({ mode: 'district', district });
+  const openContract = (contractId: string) => setContractModalId(contractId);
+
   return (
     <div>
+      <LiveActionCenter
+        customerRequests={customerRequests}
+        events={events}
+        districts={districts}
+        ownedCars={ownedCars}
+        playerState={playerState}
+        contracts={contracts}
+        commitments={commitments}
+        missions={missions}
+        dailyProgress={dailyProgress}
+        weeklyProgress={weeklyProgress}
+        missionClaims={missionClaims}
+        districtInfluence={districtInfluence}
+        districtMilestoneClaims={districtMilestoneClaims}
+        dismissedEventIds={dismissedEventIds}
+        onOpenAssignRequest={openAssignForRequest}
+        onOpenAssignEvent={openAssignForEvent}
+        onOpenContract={openContract}
+        onClaimMission={onClaimMission}
+        onClaimDistrictMilestone={onClaimDistrictMilestone}
+      />
+
       <ActivityFeed feed={activityFeed} />
 
       <div className="mt-6">
@@ -69,7 +106,7 @@ export function CityTab({
         playerState={playerState}
         dismissed={dismissedEventIds}
         onDismiss={(id) => setDismissedEventIds((prev) => new Set(prev).add(id))}
-        onAssign={(district) => setAssignTarget({ mode: 'district', district })}
+        onAssign={openAssignForEvent}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,7 +120,10 @@ export function CityTab({
               events={events}
               locked={locked}
               requiredTierName={locked ? tierName(d.minBusinessTier) : undefined}
+              influence={districtInfluence.find((i) => i.districtKey === d.districtKey)}
+              milestoneClaims={districtMilestoneClaims}
               onAssign={() => setAssignTarget({ mode: 'district', district: d })}
+              onClaimMilestone={(milestone) => onClaimDistrictMilestone(d.districtKey, milestone)}
             />
           );
         })}
@@ -99,13 +139,7 @@ export function CityTab({
                 request={r}
                 districts={districts}
                 busy={busyId === r.id}
-                onOpenAssign={() =>
-                  setAssignTarget({
-                    mode: 'request',
-                    request: r,
-                    districtName: districts.find((d) => d.districtKey === r.districtKey)?.name ?? r.districtKey,
-                  })
-                }
+                onOpenAssign={() => openAssignForRequest(r)}
                 onDecline={() => onDeclineRequest(r.id)}
               />
             ))}
@@ -124,7 +158,7 @@ export function CityTab({
                 commitment={activeCommitmentByContract.get(c.id) ?? null}
                 canAccept={(playerState?.businessTier ?? 1) >= c.minBusinessTier}
                 busy={busyId === c.id}
-                onOpenModal={() => setContractModalId(c.id)}
+                onOpenModal={() => openContract(c.id)}
                 onCancel={() => {
                   const commitment = activeCommitmentByContract.get(c.id);
                   if (commitment) onCancelContract(commitment.id);
@@ -153,6 +187,7 @@ export function CityTab({
             missions={missions}
             playerState={playerState}
             dailyProgress={dailyProgress}
+            weeklyProgress={weeklyProgress}
             claims={missionClaims}
             busyMissionId={busyId}
             onClaim={onClaimMission}

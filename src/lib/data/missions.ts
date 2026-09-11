@@ -13,13 +13,15 @@ import type { PlayerState } from './empire';
  * write is an RPC call.
  */
 
-export type MissionScope = 'lifetime' | 'daily';
+export type MissionScope = 'lifetime' | 'daily' | 'weekly';
 export type MissionMetric =
   | 'rentals_completed'
   | 'contracts_completed'
   | 'requests_fulfilled'
   | 'daily_rentals_completed'
-  | 'daily_requests_fulfilled';
+  | 'daily_requests_fulfilled'
+  | 'weekly_rentals_completed'
+  | 'weekly_contracts_completed';
 
 export interface MissionTemplate {
   id: string;
@@ -123,25 +125,68 @@ export function useDailyProgress() {
   return { progress, refresh: () => setReload((n) => n + 1) };
 }
 
+export interface WeeklyProgress {
+  weekStart: string;
+  weeklyRentalsCompleted: number;
+  weeklyContractsCompleted: number;
+}
+
+interface WeeklyProgressRow {
+  week_start: string;
+  weekly_rentals_completed: number;
+  weekly_contracts_completed: number;
+}
+
+function mapWeeklyProgress(row: WeeklyProgressRow): WeeklyProgress {
+  return {
+    weekStart: row.week_start,
+    weeklyRentalsCompleted: row.weekly_rentals_completed,
+    weeklyContractsCompleted: row.weekly_contracts_completed,
+  };
+}
+
+export async function ensureWeeklyProgress(): Promise<WeeklyProgress> {
+  const { data, error } = await supabase.rpc('ensure_weekly_progress');
+  if (error) throw error;
+  return mapWeeklyProgress(data as WeeklyProgressRow);
+}
+
+export function useWeeklyProgress() {
+  const [progress, setProgress] = useState<WeeklyProgress | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    ensureWeeklyProgress()
+      .then((p) => !cancelled && setProgress(p))
+      .catch(() => !cancelled && setProgress(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
+  return { progress, refresh: () => setReload((n) => n + 1) };
+}
+
 export interface MissionClaim {
   missionId: string;
   scope: MissionScope;
   claimDate: string;
+  claimWeek: string | null;
 }
 
 interface MissionClaimRow {
   mission_id: string;
   scope: MissionScope;
   claim_date: string;
+  claim_week: string | null;
 }
 
 export async function fetchMyMissionClaims(userId: string): Promise<MissionClaim[]> {
   const { data, error } = await supabase
     .from('game_mission_claims')
-    .select('mission_id, scope, claim_date')
+    .select('mission_id, scope, claim_date, claim_week')
     .eq('user_id', userId);
   if (error) throw error;
-  return (data as MissionClaimRow[]).map((r) => ({ missionId: r.mission_id, scope: r.scope, claimDate: r.claim_date }));
+  return (data as MissionClaimRow[]).map((r) => ({ missionId: r.mission_id, scope: r.scope, claimDate: r.claim_date, claimWeek: r.claim_week }));
 }
 
 export function useMyMissionClaims(userId: string | undefined) {
@@ -170,22 +215,33 @@ export async function claimMission(missionId: string): Promise<{ cashAwarded: nu
   return { cashAwarded: row?.cash_awarded ?? 0, cxAwarded: row?.cx_awarded ?? 0, error: null };
 }
 
-/** Reads the right counter for a mission's metric off player/daily
- *  state — the client-side mirror of claim_mission()'s server-side
- *  `case` on metric_key. Display-only; the RPC re-derives this itself. */
-export function missionProgress(mission: MissionTemplate, playerState: PlayerState | null, dailyProgress: DailyProgress | null): number {
+/** Reads the right counter for a mission's metric off player/daily/
+ *  weekly state — the client-side mirror of claim_mission()'s
+ *  server-side `case` on metric_key. Display-only; the RPC re-derives
+ *  this itself. */
+export function missionProgress(
+  mission: MissionTemplate,
+  playerState: PlayerState | null,
+  dailyProgress: DailyProgress | null,
+  weeklyProgress: WeeklyProgress | null = null
+): number {
   switch (mission.metricKey) {
     case 'rentals_completed': return playerState?.rentalsCompleted ?? 0;
     case 'contracts_completed': return playerState?.contractsCompleted ?? 0;
     case 'requests_fulfilled': return playerState?.requestsFulfilled ?? 0;
     case 'daily_rentals_completed': return dailyProgress?.dailyRentalsCompleted ?? 0;
     case 'daily_requests_fulfilled': return dailyProgress?.dailyRequestsFulfilled ?? 0;
+    case 'weekly_rentals_completed': return weeklyProgress?.weeklyRentalsCompleted ?? 0;
+    case 'weekly_contracts_completed': return weeklyProgress?.weeklyContractsCompleted ?? 0;
   }
 }
 
-export function isMissionClaimed(mission: MissionTemplate, claims: MissionClaim[], today: string): boolean {
+export function isMissionClaimed(mission: MissionTemplate, claims: MissionClaim[], today: string, weekStart?: string): boolean {
   if (mission.scope === 'lifetime') {
     return claims.some((c) => c.missionId === mission.id && c.scope === 'lifetime');
+  }
+  if (mission.scope === 'weekly') {
+    return claims.some((c) => c.missionId === mission.id && c.scope === 'weekly' && c.claimWeek === weekStart);
   }
   return claims.some((c) => c.missionId === mission.id && c.scope === 'daily' && c.claimDate === today);
 }

@@ -173,6 +173,132 @@ export function useCityEvents() {
   return { events, refresh: () => setReload((n) => n + 1) };
 }
 
+export const DISTRICT_MILESTONES = [25, 50, 75, 90] as const;
+export type DistrictMilestone = (typeof DISTRICT_MILESTONES)[number];
+
+export interface DistrictInfluence {
+  districtKey: DistrictKey;
+  completedRentals: number;
+  influencePct: number;
+}
+
+interface DistrictInfluenceRow {
+  district_key: DistrictKey;
+  completed_rentals: number;
+  influence_pct: number;
+}
+
+function mapDistrictInfluence(row: DistrictInfluenceRow): DistrictInfluence {
+  return {
+    districtKey: row.district_key,
+    completedRentals: row.completed_rentals,
+    influencePct: row.influence_pct,
+  };
+}
+
+export async function fetchDistrictInfluence(): Promise<DistrictInfluence[]> {
+  const { data, error } = await supabase.rpc('fetch_district_influence');
+  if (error) throw error;
+  return (data as DistrictInfluenceRow[]).map(mapDistrictInfluence);
+}
+
+export function useDistrictInfluence(userId: string | undefined) {
+  const [influence, setInfluence] = useState<DistrictInfluence[] | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!userId) {
+      setInfluence([]);
+      return;
+    }
+    let cancelled = false;
+    fetchDistrictInfluence()
+      .then((i) => !cancelled && setInfluence(i))
+      .catch(() => !cancelled && setInfluence([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reload]);
+  return { influence, refresh: () => setReload((n) => n + 1) };
+}
+
+export interface DistrictMilestoneClaim {
+  districtKey: DistrictKey;
+  milestone: DistrictMilestone;
+}
+
+interface DistrictMilestoneClaimRow {
+  district_key: DistrictKey;
+  milestone: DistrictMilestone;
+}
+
+export async function fetchMyDistrictMilestoneClaims(userId: string): Promise<DistrictMilestoneClaim[]> {
+  const { data, error } = await supabase
+    .from('game_district_milestone_claims')
+    .select('district_key, milestone')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return (data as DistrictMilestoneClaimRow[]).map((r) => ({ districtKey: r.district_key, milestone: r.milestone }));
+}
+
+export function useMyDistrictMilestoneClaims(userId: string | undefined) {
+  const [claims, setClaims] = useState<DistrictMilestoneClaim[] | null>(null);
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (!userId) {
+      setClaims([]);
+      return;
+    }
+    let cancelled = false;
+    fetchMyDistrictMilestoneClaims(userId)
+      .then((c) => !cancelled && setClaims(c))
+      .catch(() => !cancelled && setClaims([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, reload]);
+  return { claims, refresh: () => setReload((n) => n + 1) };
+}
+
+export async function claimDistrictMilestone(
+  districtKey: DistrictKey,
+  milestone: DistrictMilestone
+): Promise<{ cashAwarded: number; cxAwarded: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('claim_district_milestone', { p_district_key: districtKey, p_milestone: milestone });
+  if (error) return { cashAwarded: 0, cxAwarded: 0, error: error.message };
+  const row = (data as { cash_awarded: number; cx_awarded: number }[])[0];
+  return { cashAwarded: row?.cash_awarded ?? 0, cxAwarded: row?.cx_awarded ?? 0, error: null };
+}
+
+export function isDistrictMilestoneClaimed(claims: DistrictMilestoneClaim[], districtKey: DistrictKey, milestone: DistrictMilestone): boolean {
+  return claims.some((c) => c.districtKey === districtKey && c.milestone === milestone);
+}
+
+/** The next milestone this district has reached but not yet claimed, or
+ *  null if none is currently reachable. */
+export function nextUnclaimedMilestone(
+  influencePct: number,
+  claims: DistrictMilestoneClaim[],
+  districtKey: DistrictKey
+): DistrictMilestone | null {
+  for (const milestone of DISTRICT_MILESTONES) {
+    if (influencePct >= milestone && !isDistrictMilestoneClaimed(claims, districtKey, milestone)) {
+      return milestone;
+    }
+  }
+  return null;
+}
+
+const COMPETITOR_NAMES: [string, string] = ['Nova Mobility', 'UrbanDrive'];
+
+/** Deterministic, purely cosmetic split of the remainder after CX
+ *  influence — not a simulated rival, just flavor for the progress bar. */
+export function competitorShareFor(influencePct: number): { nameA: string; pctA: number; nameB: string; pctB: number } {
+  const remainder = 100 - influencePct;
+  const pctA = Math.round(remainder * 0.6);
+  const pctB = remainder - pctA;
+  return { nameA: COMPETITOR_NAMES[0], pctA, nameB: COMPETITOR_NAMES[1], pctB };
+}
+
 /** Display-only mirror of _rental_daily_rate()'s server-side formula —
  *  used to preview a rental's daily rate before the player commits (the
  *  RPC always re-derives the real number itself). */
