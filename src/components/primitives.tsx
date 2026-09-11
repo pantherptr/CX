@@ -73,21 +73,15 @@ export function AuthDivider() {
 }
 
 /* ------------------------------- Logo -------------------------------
- * Renders one of the three official CX logo lockups exactly as provided
- * (trimmed of surrounding transparent margin and resized — never
- * recolored, redistorted, or redrawn):
- *   - full     — symbol + wordmark. Primary brand mark: homepage,
- *                desktop headers, auth pages, footer, splash screens.
- *   - symbol   — the mark alone. Compact contexts: mobile headers/nav,
- *                dashboard sidebar, favicon.
- *   - wordmark — text only. Secondary/lighter brand moments where the
- *                full lockup would feel heavy.
- *   - auto     — full lockup at `sm:` and up, symbol below it. Used by
- *                the one header that has to double as both. */
+ * Renders the CX key mark exactly as provided (trimmed of surrounding
+ * transparent margin and resized — never recolored, redistorted, or
+ * redrawn). All variants point at the same symbol image — there is
+ * only the one mark now, used everywhere: homepage, desktop headers,
+ * mobile nav, auth pages, footer, dashboard sidebar, favicon. */
 export const LOGO_SRC = {
-  full: '/cx-logo-full.png',
+  full: '/cx-logo-symbol.png',
   symbol: '/cx-logo-symbol.png',
-  wordmark: '/cx-logo-wordmark.png',
+  wordmark: '/cx-logo-symbol.png',
 } as const;
 
 export function Logo({
