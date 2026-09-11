@@ -245,3 +245,21 @@ export function isMissionClaimed(mission: MissionTemplate, claims: MissionClaim[
   }
   return claims.some((c) => c.missionId === mission.id && c.scope === 'daily' && c.claimDate === today);
 }
+
+/** How many missions are complete but not yet claimed right now — the
+ *  read-only count the game HUD's notification badge keys off. Reuses
+ *  missionProgress/isMissionClaimed rather than re-deriving eligibility. */
+export function claimableMissionCount(
+  missions: MissionTemplate[],
+  playerState: PlayerState | null,
+  dailyProgress: DailyProgress | null,
+  weeklyProgress: WeeklyProgress | null,
+  claims: MissionClaim[],
+  today: string,
+  weekStart?: string
+): number {
+  return missions.filter((m) => {
+    const progress = missionProgress(m, playerState, dailyProgress, weeklyProgress);
+    return progress >= m.target && !isMissionClaimed(m, claims, today, weekStart);
+  }).length;
+}

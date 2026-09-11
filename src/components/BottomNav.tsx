@@ -30,8 +30,10 @@ const items: Item[] = [
     `/messages` is the other case: a real chat composer needs the entire
     bottom edge of the screen to itself (its own safe-area padding, no
     tab bar between it and the keyboard) the same way Messages/WhatsApp/
-    Telegram hide their own tab chrome inside a conversation. */
-const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/];
+    Telegram hide their own tab chrome inside a conversation. `/empire` is
+    a fullscreen game shell with its own EmpireNavigation bottom bar — the
+    site's tab bar would double up with it. */
+const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/, /^\/empire/];
 
 /** Single source of truth for "is the bottom tab bar showing right now" —
     shared with App.tsx so it can reserve matching scroll padding. */

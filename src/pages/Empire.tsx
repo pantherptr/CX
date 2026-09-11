@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Icon, type IconName } from '../components/Icon';
-import { PremiumPageLoader } from '../components/PremiumLoader';
+import { Link, useNavigate } from 'react-router-dom';
+import { Icon } from '../components/Icon';
+import { EmpireLogo } from '../components/EmpireLogo';
+import { EmpireGameShell } from '../components/empireShell/EmpireGameShell';
+import { EmpireLaunchScreen, useEmpireLaunchGate } from '../components/empireShell/EmpireLaunchScreen';
+import type { EmpireNavItem } from '../components/empireShell/EmpireNavigation';
 import { useAuth } from '../lib/auth';
 import { eur } from '../lib/format';
 import {
@@ -14,7 +17,6 @@ import {
   useCustomizationOptions,
   buyMarketCar,
   upgradeBusiness,
-  estimateNetWorth,
   type MarketListing,
   type InventoryCar,
   type Rarity,
@@ -54,7 +56,7 @@ import {
   type CommitmentStatus,
 } from '../lib/data/contracts';
 import {
-  useMissionTemplates, useDailyProgress, useWeeklyProgress, useMyMissionClaims, claimMission,
+  useMissionTemplates, useDailyProgress, useWeeklyProgress, useMyMissionClaims, claimMission, claimableMissionCount,
 } from '../lib/data/missions';
 import {
   useAchievementTemplates, useMyAchievementUnlocks, checkAndAwardAchievements,
@@ -73,6 +75,16 @@ import { LeaderboardTab } from '../components/empire/LeaderboardTab';
 
 type Tab = 'city' | 'market' | 'collection' | 'sales' | 'business' | 'score' | 'leaderboard';
 
+const EMPIRE_NAV_ITEMS: EmpireNavItem<Tab>[] = [
+  { key: 'city', label: 'City', icon: 'pin' },
+  { key: 'market', label: 'Market', icon: 'tag' },
+  { key: 'collection', label: 'Garage', icon: 'cars' },
+  { key: 'sales', label: 'Flipping', icon: 'trending' },
+  { key: 'business', label: 'Finance', icon: 'chart' },
+  { key: 'score', label: 'Rank', icon: 'trophy' },
+  { key: 'leaderboard', label: 'Leaderboard', icon: 'users' },
+];
+
 type StageState =
   | { mode: 'preview'; listing: MarketListing }
   | { mode: 'configure'; car: InventoryCar };
@@ -86,16 +98,6 @@ function RarityBadge({ rarity }: { rarity: Rarity }) {
     >
       {meta.label}
     </span>
-  );
-}
-
-function HeroStat({ icon, label, value }: { icon: IconName; label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/15 bg-white/[0.06] px-5 py-4 backdrop-blur-md">
-      <Icon name={icon} size={18} className="text-accent-bright" />
-      <p className="mt-2 font-display text-xl font-semibold text-white tabular-nums sm:text-2xl">{value}</p>
-      <p className="mt-0.5 text-caption text-white/60">{label}</p>
-    </div>
   );
 }
 
@@ -327,10 +329,17 @@ function SoldListingRow({ listing }: { listing: CarListing }) {
 
 export default function Empire() {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const userId = session?.user.id;
   const [tab, setTab] = useState<Tab>('city');
   const [stage, setStage] = useState<StageState | null>(null);
   const [buying, setBuying] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
+  const handleExit = () => {
+    setExiting(true);
+    window.setTimeout(() => navigate(session ? '/dashboard' : '/'), 200);
+  };
 
   const { state: playerState, refresh: refreshState } = usePlayerState();
   const { listings, refresh: refreshMarket } = useMarket();
@@ -379,7 +388,6 @@ export default function Empire() {
   const prevCommitmentsRef = useRef<Map<string, CommitmentStatus>>(new Map());
 
   const ownedCars = useMemo(() => (inventory ?? []).filter((c) => c.status === 'owned'), [inventory]);
-  const netWorth = estimateNetWorth(playerState, inventory);
   const totalProfit = (playerState?.totalRevenue ?? 0) - (playerState?.totalExpenses ?? 0);
 
   const activeListings = useMemo(() => (myListings ?? []).filter((l) => l.status === 'active'), [myListings]);
@@ -551,6 +559,14 @@ export default function Empire() {
   const levelProgress = currentLevel && upcomingLevel
     ? Math.min(100, Math.round((((score ?? 0) - currentLevel.minScore) / (upcomingLevel.minScore - currentLevel.minScore)) * 100))
     : 100;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const claimableCount = claimableMissionCount(
+    missions ?? [], playerState, dailyProgress, weeklyProgress, missionClaims ?? [], today, weeklyProgress?.weekStart
+  );
+
+  const dataReady = !!playerState && !!listings && !!inventory && !!businessTiers && !!levels;
+  const launchDone = useEmpireLaunchGate(dataReady);
 
   const handleBuy = async (listingId: string) => {
     setBuying(true);
@@ -758,10 +774,10 @@ export default function Empire() {
 
   if (!session) {
     return (
-      <div className="relative overflow-hidden bg-noir">
-        <div className="container-page relative flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
-          <img src="/empire-logo.png" alt="" className="h-36 w-auto object-contain sm:h-44" />
-          <h1 className="mt-4 font-display text-3xl font-semibold text-on-noir sm:text-5xl">CX Rent — Luxury Car Empire</h1>
+      <EmpireGameShell mode="title" onExit={handleExit} exiting={exiting}>
+        <div className="flex min-h-[70vh] flex-col items-center justify-center py-16 text-center">
+          <EmpireLogo size={140} />
+          <h1 className="mt-6 font-display text-3xl font-semibold text-on-noir sm:text-5xl">CX Rent — Luxury Car Empire</h1>
           <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted">
             Sign in to buy, restore, customize and sell luxury cars — and build your own empire.
           </p>
@@ -769,63 +785,37 @@ export default function Empire() {
             Sign In <Icon name="arrowRight" size={17} />
           </Link>
         </div>
-      </div>
+      </EmpireGameShell>
     );
   }
 
-  if (!playerState || !listings || !inventory || !businessTiers || !levels) {
+  if (!playerState || !listings || !inventory || !businessTiers || !levels || !launchDone) {
+    const readyCount = [playerState, listings, inventory, businessTiers, levels].filter(Boolean).length;
     return (
-      <div className="container-page flex flex-col items-center gap-3 py-24 text-center">
-        <PremiumPageLoader size={90} />
-      </div>
+      <EmpireGameShell mode="loading" onExit={handleExit} exiting={exiting}>
+        <EmpireLaunchScreen readyCount={readyCount} totalCount={5} />
+      </EmpireGameShell>
     );
   }
 
   return (
-    <div className="bg-noir">
-      <section className="relative overflow-hidden">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{ background: 'radial-gradient(70% 55% at 20% 10%, rgba(0,212,71,0.16), transparent 65%)' }}
-        />
-        <div className="container-page relative py-14 sm:py-16">
-          <img src="/empire-logo.png" alt="" className="h-16 w-auto object-contain sm:h-20" />
-          <p className="eyebrow mt-3">CX Rent</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold text-on-noir sm:text-5xl">Luxury Car Empire</h1>
-          <p className="mt-2 max-w-md text-copy text-on-noir-muted">{currentTier?.name ?? 'Small Garage'} · Reputation {playerState.reputation}/100</p>
-
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <HeroStat icon="wallet" label="Cash" value={eur(playerState.cash)} />
-            <HeroStat icon="trending" label="Net Worth" value={eur(netWorth)} />
-            <HeroStat icon="trophy" label="CX Score" value={(score ?? 0).toLocaleString('en-GB')} />
-            <HeroStat icon="cars" label="Cars Owned" value={String(ownedCars.length)} />
-          </div>
-        </div>
-      </section>
-
-      <div className="container-page pb-16 pt-6">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {([
-            ['city', 'City', 'pin'],
-            ['market', 'Car Market', 'tag'],
-            ['collection', 'My Collection', 'cars'],
-            ['sales', 'Flipping', 'trending'],
-            ['business', 'Business', 'chart'],
-            ['score', 'Rank', 'trophy'],
-            ['leaderboard', 'Leaderboard', 'users'],
-          ] as [Tab, string, IconName][]).map(([key, label, icon]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
-                tab === key ? 'bg-white text-noir' : 'border border-white/15 text-on-noir-muted hover:border-white/30 hover:text-on-noir'
-              }`}
-            >
-              <Icon name={icon} size={14} /> {label}
-            </button>
-          ))}
-        </div>
-
+    <EmpireGameShell
+      mode="game"
+      activeTab={tab}
+      navItems={EMPIRE_NAV_ITEMS}
+      onTabChange={setTab}
+      onExit={handleExit}
+      exiting={exiting}
+      hud={{
+        levelLabel: currentLevel?.label ?? 'New Member',
+        levelProgress,
+        cash: playerState.cash,
+        reputation: playerState.reputation,
+        score: score ?? 0,
+        claimableCount,
+      }}
+    >
+      <div key={tab} className="animate-fade-in">
         {tab === 'city' && (
           <div className="mt-8">
             {cityMsg && <p className="mb-4 text-detail font-medium text-danger">{cityMsg}</p>}
@@ -1153,6 +1143,6 @@ export default function Empire() {
           onDone={() => setCelebrationQueue((q) => q.slice(1))}
         />
       )}
-    </div>
+    </EmpireGameShell>
   );
 }

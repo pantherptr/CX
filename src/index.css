@@ -921,6 +921,17 @@
   .pl-safe { padding-left: env(safe-area-inset-left, 0px); }
   .pr-safe { padding-right: env(safe-area-inset-right, 0px); }
 
+  /* Fades the trailing edge of a horizontally-scrolling row on narrow
+     phone widths only — a visual "there's more, swipe" hint for the
+     Empire HUD's stat-chip strip, which is wide enough that it clips at
+     phone widths but has full room to breathe from tablet up. */
+  @media (max-width: 639px) {
+    .empire-hud-scroll {
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+      mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent);
+    }
+  }
+
   /* iOS Safari (and Capacitor's WKWebView) auto-zooms the whole page in
      the moment a focused text field's computed font-size is under 16px —
      this app's own `.input` class and several raw <input>/<textarea>

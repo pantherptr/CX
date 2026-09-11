@@ -178,7 +178,6 @@ export default function App() {
               sign-in teaser for a signed-out visitor rather than a hard
               redirect, per its own spec. */}
           <Route path="/garage" element={<Garage />} />
-          <Route path="/empire" element={<Empire />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
@@ -212,6 +211,14 @@ export default function App() {
             <Route path="/owner" element={<OwnerDashboard />} />
           </Route>
         </Route>
+
+        {/* Empire is a deliberate sibling of MarketingLayout, not a child
+            of it — it supplies 100% of its own chrome (EmpireGameShell)
+            the same way the dashboard-area routes below opt out of
+            MarketingLayout in favor of DashboardShell. No ProtectedRoute
+            wrapper: the page itself shows a sign-in title screen for a
+            signed-out visitor rather than a hard redirect. */}
+        <Route path="/empire" element={<Empire />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
