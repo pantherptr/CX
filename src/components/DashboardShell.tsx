@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
+import { EmpireLogo } from './EmpireLogo';
 import { useAuth } from '../lib/auth';
 import { useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -82,6 +83,27 @@ export function DashboardShell({
         <div className="hairline" />
       </div>
       <nav className="flex-1 overflow-y-auto p-3">
+        <NavLink
+          to="/empire"
+          onClick={() => setOpen(false)}
+          className={({ isActive }) =>
+            `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
+              isActive
+                ? 'border-accent-bright bg-accent-bright/15 text-ink'
+                : 'border-accent-bright/30 bg-accent-bright/[0.06] text-ink hover:border-accent-bright/55 hover:bg-accent-bright/10'
+            }`
+          }
+        >
+          <span
+            className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[12px] transition-opacity duration-300 group-hover:opacity-100"
+            style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
+          />
+          <span className="flex items-center gap-3">
+            <EmpireLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+            <span className="tracking-wide">EMPIRE</span>
+          </span>
+          <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
+        </NavLink>
         <p className="px-3 py-2 text-label font-semibold uppercase tracking-wide text-faint">
           {variant === 'customer' ? 'Traveller' : 'Hosting'}
         </p>

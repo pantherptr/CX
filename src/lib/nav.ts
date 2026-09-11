@@ -13,7 +13,6 @@ export interface NavItem {
 export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/dashboard', icon: 'grid' },
   { label: 'CX Garage', to: '/garage', icon: 'key' },
-  { label: 'Car Empire', to: '/empire', icon: 'trophy' },
   { label: 'Browse Cars', to: '/browse', icon: 'search' },
   { label: 'My Trips', to: '/dashboard#trips', icon: 'trips' },
   { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },
@@ -27,7 +26,6 @@ export const customerNav = (unreadCount: number): NavItem[] => [
 /** Host-mode nav — same sharing rationale as `customerNav`. */
 export const hostNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/host', icon: 'grid' },
-  { label: 'Car Empire', to: '/empire', icon: 'trophy' },
   { label: 'My Cars', to: '/host#cars', icon: 'cars' },
   { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
   { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },

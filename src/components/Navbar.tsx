@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Logo } from './primitives';
+import { EmpireLogo } from './EmpireLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -100,19 +101,29 @@ function PublicNavbar() {
                 </li>
               ))}
             </ul>
-            <Link
+            <NavLink
               to="/empire"
-              className={`group relative hidden items-center gap-2 rounded-lg px-3 py-2 text-detail font-semibold transition-colors lg:inline-flex ${
-                transparent ? 'text-accent-700' : 'text-accent-700'
-              }`}
+              className={({ isActive }) =>
+                `group relative hidden items-center gap-2 overflow-hidden rounded-full border px-3.5 py-1.5 text-detail font-bold transition-all duration-300 lg:inline-flex ${
+                  isActive
+                    ? 'border-accent-bright bg-accent-bright text-noir shadow-[0_2px_10px_rgba(0,212,71,0.35)]'
+                    : 'border-accent-bright/30 bg-accent-bright/10 text-accent-700 hover:-translate-y-px hover:border-accent-bright/60 hover:bg-accent-bright/15'
+                }`
+              }
             >
-              <span
-                className="pointer-events-none absolute inset-0 -z-10 rounded-lg opacity-0 blur-[10px] transition-opacity duration-300 group-hover:opacity-100"
-                style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
-              />
-              <Icon name="trophy" size={17} className="transition-transform duration-300 group-hover:scale-110" />
-              <span className="tracking-wide">EMPIRE</span>
-            </Link>
+              {({ isActive }) => (
+                <>
+                  {!isActive && (
+                    <span
+                      className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[10px] transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
+                    />
+                  )}
+                  <EmpireLogo size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                  <span className="tracking-wide">EMPIRE</span>
+                </>
+              )}
+            </NavLink>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -221,13 +232,26 @@ function PublicNavbar() {
                   </li>
                 ))}
                 <li onClick={() => setMenuOpen(false)}>
-                  <Link to="/empire" className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-3 py-3 text-lead font-bold text-white transition-colors hover:bg-white/10">
+                  <NavLink
+                    to="/empire"
+                    className={({ isActive }) =>
+                      `group relative flex w-full items-center justify-between overflow-hidden rounded-xl border px-3 py-3 text-lead font-bold text-white transition-all duration-300 ${
+                        isActive
+                          ? 'border-accent-bright bg-accent-bright/20'
+                          : 'border-accent-bright/25 bg-accent-bright/[0.07] hover:border-accent-bright/50 hover:bg-accent-bright/10'
+                      }`
+                    }
+                  >
+                    <span
+                      className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[14px] transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.35), transparent 75%)' }}
+                    />
                     <span className="flex items-center gap-3">
-                      <Icon name="trophy" size={22} className="text-accent-bright" />
-                      <span className="tracking-wide">CAR EMPIRE</span>
+                      <EmpireLogo size={28} className="transition-transform duration-300 group-hover:scale-110" />
+                      <span className="tracking-wide">EMPIRE</span>
                     </span>
-                    <Icon name="chevronRight" size={18} className="text-accent-bright" />
-                  </Link>
+                    <Icon name="chevronRight" size={18} className="text-accent-bright transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </NavLink>
                 </li>
               </ul>
               <div className="my-5 h-px bg-white/10" />
@@ -399,6 +423,27 @@ function AppNavbar() {
                   Admin panel
                 </NavLink>
               ) : null}
+              <NavLink
+                to="/empire"
+                onClick={() => setDrawerOpen(false)}
+                className={({ isActive }) =>
+                  `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
+                    isActive
+                      ? 'border-accent-bright bg-accent-bright/15 text-ink'
+                      : 'border-accent-bright/30 bg-accent-bright/[0.06] text-ink hover:border-accent-bright/55 hover:bg-accent-bright/10'
+                  }`
+                }
+              >
+                <span
+                  className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[12px] transition-opacity duration-300 group-hover:opacity-100"
+                  style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
+                />
+                <span className="flex items-center gap-3">
+                  <EmpireLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+                  <span className="tracking-wide">EMPIRE</span>
+                </span>
+                <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </NavLink>
               <ul className="flex flex-col gap-0.5">
                 {nav.map((n) => {
                   return (

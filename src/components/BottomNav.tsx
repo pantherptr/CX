@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { EmpireLogo } from './EmpireLogo';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -72,6 +73,7 @@ export function BottomNav() {
         />
         {items.map((it, i) => {
           const active = i === activeIndex;
+          const isEmpire = it.label === 'Empire';
 
           return (
             <Link
@@ -81,14 +83,23 @@ export function BottomNav() {
               aria-current={active ? 'page' : undefined}
             >
               <span className="relative">
-                <Icon
-                  name={it.icon}
-                  size={23}
-                  className={`transition-all duration-300 ease-out ${
-                    active ? 'scale-110 text-accent' : 'text-ink-soft'
-                  }`}
-                  strokeWidth={active ? 2.1 : 1.75}
-                />
+                {isEmpire ? (
+                  <span
+                    className={`grid place-items-center rounded-full transition-all duration-300 ease-out ${active ? 'scale-110' : ''}`}
+                    style={active ? { filter: 'drop-shadow(0 0 6px rgba(0,212,71,0.65))' } : undefined}
+                  >
+                    <EmpireLogo size={24} />
+                  </span>
+                ) : (
+                  <Icon
+                    name={it.icon}
+                    size={23}
+                    className={`transition-all duration-300 ease-out ${
+                      active ? 'scale-110 text-accent' : 'text-ink-soft'
+                    }`}
+                    strokeWidth={active ? 2.1 : 1.75}
+                  />
+                )}
                 {it.label === 'Messages' && unreadCount > 0 && (
                   <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -96,11 +107,11 @@ export function BottomNav() {
                 )}
               </span>
               <span
-                className={`text-micro font-semibold tracking-wide transition-colors duration-300 ${
-                  active ? 'text-accent' : 'text-ink-soft'
+                className={`text-micro font-bold tracking-wide transition-colors duration-300 ${
+                  isEmpire ? (active ? 'text-accent-bright' : 'text-accent-700') : active ? 'text-accent' : 'text-ink-soft'
                 }`}
               >
-                {it.label}
+                {isEmpire ? 'EMPIRE' : it.label}
               </span>
             </Link>
           );
