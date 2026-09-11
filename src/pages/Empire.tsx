@@ -760,10 +760,8 @@ export default function Empire() {
     return (
       <div className="relative overflow-hidden bg-noir">
         <div className="container-page relative flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-accent-bright">
-            <Icon name="cars" size={26} />
-          </span>
-          <h1 className="mt-6 font-display text-3xl font-semibold text-on-noir sm:text-5xl">CX Rent — Luxury Car Empire</h1>
+          <img src="/empire-logo.png" alt="" className="h-36 w-auto object-contain sm:h-44" />
+          <h1 className="mt-4 font-display text-3xl font-semibold text-on-noir sm:text-5xl">CX Rent — Luxury Car Empire</h1>
           <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted">
             Sign in to buy, restore, customize and sell luxury cars — and build your own empire.
           </p>
@@ -791,7 +789,8 @@ export default function Empire() {
           style={{ background: 'radial-gradient(70% 55% at 20% 10%, rgba(0,212,71,0.16), transparent 65%)' }}
         />
         <div className="container-page relative py-14 sm:py-16">
-          <p className="eyebrow">CX Rent</p>
+          <img src="/empire-logo.png" alt="" className="h-16 w-auto object-contain sm:h-20" />
+          <p className="eyebrow mt-3">CX Rent</p>
           <h1 className="mt-2 font-display text-3xl font-semibold text-on-noir sm:text-5xl">Luxury Car Empire</h1>
           <p className="mt-2 max-w-md text-copy text-on-noir-muted">{currentTier?.name ?? 'Small Garage'} · Reputation {playerState.reputation}/100</p>
 
