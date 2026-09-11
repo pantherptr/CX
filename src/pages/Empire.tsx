@@ -2,29 +2,38 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { EmpireLogo } from '../components/EmpireLogo';
-import { PremiumPageLoader } from '../components/PremiumLoader';
 import { EmpireFeedHeader } from '../components/empireFeed/EmpireFeedHeader';
+import { EmpireStoriesBar } from '../components/empireFeed/EmpireStoriesBar';
 import { EmpirePostComposer } from '../components/empireFeed/EmpirePostComposer';
 import { EmpirePostCard } from '../components/empireFeed/EmpirePostCard';
+import { EmpirePostSkeleton } from '../components/empireFeed/EmpirePostSkeleton';
+import { EmpireCategoryFilter } from '../components/empireFeed/EmpireCategoryFilter';
 import { useAuth } from '../lib/auth';
-import { useEmpireFeed, markEmpireFeedSeen } from '../lib/data/empireFeed';
+import { useEmpireFeed, useEmpirePinnedPost, markEmpireFeedSeen, type EmpireCategory } from '../lib/data/empireFeed';
 
 /** EMPIRE — the official CX Rent social/news feed. Owner/Admin publish;
  *  every signed-in user views, likes, comments, saves and shares. A
  *  dedicated fullscreen route (a MarketingLayout sibling in App.tsx, no
- *  site Navbar/Footer) with its own minimal header — see
- *  EmpireFeedHeader — rather than the elaborate multi-tab shell the old
- *  City Empire game used, since a single feed has nothing to tab
- *  between. */
+ *  site Navbar/Footer) with its own minimal header. Structure, top to
+ *  bottom: EmpireFeedHeader -> Stories (collapses to nothing when there
+ *  are none) -> the one Featured/pinned post (collapses to nothing when
+ *  none is pinned) -> a category filter -> the paginated feed. */
 export default function Empire() {
   const { session, profile } = useAuth();
   const canManage = Boolean(profile?.is_admin || profile?.is_owner);
-  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost } = useEmpireFeed();
+  const [category, setCategory] = useState<EmpireCategory | null>(null);
+  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost } = useEmpireFeed(category);
+  const pinned = useEmpirePinnedPost();
   const [composerOpen, setComposerOpen] = useState(false);
 
   useEffect(() => {
     if (session) markEmpireFeedSeen();
   }, [session]);
+
+  const resyncAfterPin = () => {
+    pinned.refresh();
+    refresh();
+  };
 
   if (!session) {
     return (
@@ -51,6 +60,19 @@ export default function Empire() {
       <EmpireFeedHeader signedIn />
 
       <main className="mx-auto w-full max-w-xl flex-1 px-3 py-4 sm:px-4 sm:py-6">
+        <EmpireStoriesBar canManage={canManage} />
+
+        {pinned.post && (
+          <EmpirePostCard
+            post={pinned.post}
+            canManage={canManage}
+            featured
+            onChanged={(updated) => pinned.setPost(updated)}
+            onDeleted={() => pinned.setPost(null)}
+            onPinToggled={resyncAfterPin}
+          />
+        )}
+
         {canManage && (
           composerOpen ? (
             <EmpirePostComposer
@@ -70,14 +92,18 @@ export default function Empire() {
           )
         )}
 
+        <EmpireCategoryFilter value={category} onChange={setCategory} />
+
         {posts === null ? (
-          <div className="flex flex-col items-center gap-3 py-24 text-center">
-            <PremiumPageLoader size={70} />
-          </div>
+          <>
+            <EmpirePostSkeleton />
+            <EmpirePostSkeleton />
+            <EmpirePostSkeleton />
+          </>
         ) : posts.length === 0 ? (
           <div className="py-24 text-center">
             <EmpireLogo size={48} className="mx-auto opacity-50" />
-            <p className="mt-4 text-body text-muted">Nothing published yet — check back soon.</p>
+            <p className="mt-4 text-body text-muted">Empire is just getting started.</p>
           </div>
         ) : (
           <>
@@ -88,6 +114,7 @@ export default function Empire() {
                 canManage={canManage}
                 onChanged={(updated) => patchPost(post.id, updated)}
                 onDeleted={removePost}
+                onPinToggled={resyncAfterPin}
               />
             ))}
             {hasMore && (

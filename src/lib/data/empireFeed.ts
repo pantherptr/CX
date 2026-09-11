@@ -107,8 +107,8 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
   };
 }
 
-export async function fetchEmpireFeed(limit: number = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
-  const { data, error } = await supabase.rpc('fetch_empire_feed', { p_limit: limit, p_before: before ?? null });
+export async function fetchEmpireFeed(limit: number = FEED_PAGE_SIZE, before?: string, category?: EmpireCategory | null): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_feed', { p_limit: limit, p_before: before ?? null, p_category: category ?? null });
   if (error) throw error;
   return (data as EmpirePostRow[]).map(mapEmpirePost);
 }
@@ -116,24 +116,29 @@ export async function fetchEmpireFeed(limit: number = FEED_PAGE_SIZE, before?: s
 /** Paginated feed — a plain `useX` hook isn't enough here since the list
  *  grows via `loadMore`, not a single re-fetch; `refresh` still resets it
  *  to the first page the same way every other hook's `refresh` re-runs
- *  its initial fetch. */
-export function useEmpireFeed() {
+ *  its initial fetch. Pinned posts are never included here (fetched
+ *  separately via `useEmpirePinnedPost` for the Featured section) — the
+ *  feed RPC excludes `is_pinned` rows unconditionally. Re-fetches from
+ *  the first page whenever `category` changes. */
+export function useEmpireFeed(category: EmpireCategory | null = null) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const loadInitial = useCallback(async () => {
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE);
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category);
       setPosts(rows);
       setHasMore(rows.length === FEED_PAGE_SIZE);
     } catch {
       setPosts([]);
       setHasMore(false);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   useEffect(() => {
+    setPosts(null);
     loadInitial();
   }, [loadInitial]);
 
@@ -141,7 +146,7 @@ export function useEmpireFeed() {
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, posts[posts.length - 1].createdAt);
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, posts[posts.length - 1].createdAt, category);
       setPosts((prev) => [...(prev ?? []), ...rows]);
       setHasMore(rows.length === FEED_PAGE_SIZE);
     } catch {
@@ -149,7 +154,8 @@ export function useEmpireFeed() {
     } finally {
       setLoadingMore(false);
     }
-  }, [posts, loadingMore, hasMore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts, loadingMore, hasMore, category]);
 
   /** Replaces one post in place (e.g. after a like/save toggle or an
    *  edit) without a full re-fetch. */
@@ -162,6 +168,36 @@ export function useEmpireFeed() {
   }, []);
 
   return { posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost };
+}
+
+export async function fetchEmpirePinnedPost(): Promise<EmpirePost | null> {
+  const { data, error } = await supabase.rpc('fetch_empire_pinned_post');
+  if (error) throw error;
+  const rows = data as EmpirePostRow[];
+  return rows.length > 0 ? mapEmpirePost(rows[0]) : null;
+}
+
+/** The Featured Announcement slot — independent of the paginated feed,
+ *  `null` means "no pinned post right now" (a real, valid state, not
+ *  loading — see the `loaded` flag for that distinction). */
+export function useEmpirePinnedPost() {
+  const [post, setPost] = useState<EmpirePost | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(() => {
+    fetchEmpirePinnedPost()
+      .then((p) => {
+        setPost(p);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { post, loaded, refresh, setPost };
 }
 
 export interface CreateEmpirePostInput {

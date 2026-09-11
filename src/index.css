@@ -377,6 +377,19 @@
   @keyframes shimmer {
     100% { transform: translateX(100%); }
   }
+  /* Story viewer's per-slide progress fill — driven by a real CSS
+     animation (not a JS interval) so `animation-play-state: paused`
+     holds its exact current position for free on hold-to-pause. */
+  @keyframes empire-story-progress {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+  @keyframes like-pop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .animate-like-pop { animation: like-pop 0.35s var(--ease-out-expo, ease-out); }
   @keyframes slide-in-right {
     from { opacity: 0; transform: translateX(24px); }
     to { opacity: 1; transform: translateX(0); }

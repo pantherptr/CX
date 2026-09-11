@@ -25,21 +25,53 @@ function timeAgo(iso: string): string {
 
 const categoryLabel = (c: EmpirePost['category']) => EMPIRE_CATEGORIES.find((x) => x.value === c)?.label ?? c;
 
+function PostImage({ src, className, onClick }: { src: string; className: string; onClick?: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const content = (
+    <>
+      {!loaded && <div className="skeleton absolute inset-0" />}
+      <img
+        src={src}
+        alt=""
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${onClick ? 'hover:scale-[1.03]' : ''} transition-transform`}
+      />
+    </>
+  );
+  return onClick ? (
+    <button onClick={onClick} className={`relative overflow-hidden bg-panel ${className}`}>{content}</button>
+  ) : (
+    <div className={`relative overflow-hidden bg-panel ${className}`}>{content}</div>
+  );
+}
+
 /** One post in the feed. Author badge, category chip, body, media grid,
  *  the like/comment/save/share row, and — only when the viewer is
  *  Owner/Admin — an overflow menu for edit/delete/pin/toggle-comments.
  *  The admin controls are a client-side convenience only; every action
- *  they trigger is re-checked server-side by the RPC it calls. */
+ *  they trigger is re-checked server-side by the RPC it calls.
+ *  `featured` swaps in the Featured Announcement treatment (bigger
+ *  media, more concise text) — used for the one pinned post, rendered
+ *  through this same component rather than a forked duplicate so there
+ *  is exactly one place owning the like/save/comment/admin-menu logic.
+ *  `onPinToggled` lets the page resync both the regular feed and the
+ *  pinned-post slot after a pin/unpin, since a post's home (regular list
+ *  vs Featured slot) changes the moment its pin state does. */
 export function EmpirePostCard({
   post,
   canManage,
+  featured = false,
   onChanged,
   onDeleted,
+  onPinToggled,
 }: {
   post: EmpirePost;
   canManage: boolean;
+  featured?: boolean;
   onChanged: (post: EmpirePost) => void;
   onDeleted: (postId: string) => void;
+  onPinToggled?: () => void;
 }) {
   const { toast } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,9 +79,16 @@ export function EmpirePostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [likeBounce, setLikeBounce] = useState(false);
+
+  const isExclusive = post.category === 'exclusive';
 
   const handleLike = async () => {
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
+    if (!post.likedByMe) {
+      setLikeBounce(true);
+      window.setTimeout(() => setLikeBounce(false), 350);
+    }
     const { error } = await toggleEmpirePostLike(post.id);
     if (error) onChanged(post);
   };
@@ -90,8 +129,17 @@ export function EmpirePostCard({
     setBusy(true);
     const { error } = await setEmpirePostPinned(post.id, !post.isPinned);
     setBusy(false);
-    if (error) toast({ title: 'Could not update pin', desc: error, icon: 'info' });
-    else onChanged({ ...post, isPinned: !post.isPinned });
+    if (error) {
+      toast({ title: 'Could not update pin', desc: error, icon: 'info' });
+      return;
+    }
+    // Pinning moves a post OUT of the regular feed into the Featured
+    // slot (and vice versa for unpinning) — it can never just be patched
+    // in place, it has to leave whichever list currently renders it, and
+    // the page needs to resync both the regular feed and the Featured
+    // slot to pick it up in its new home.
+    onDeleted(post.id);
+    onPinToggled?.();
   };
 
   const handleToggleComments = async () => {
@@ -120,10 +168,23 @@ export function EmpirePostCard({
   }
 
   return (
-    <article className={`card mb-4 overflow-hidden p-0 ${post.isPinned ? 'ring-1 ring-accent-bright/40' : ''}`}>
-      {post.isPinned && (
-        <div className="flex items-center gap-1.5 border-b border-line bg-accent-050 px-4 py-1.5 text-caption font-semibold text-accent-700">
-          <Icon name="pinned" size={12} fill /> Pinned
+    <article
+      className={`card mb-4 animate-fade-up overflow-hidden p-0 ${
+        featured
+          ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
+          : isExclusive
+            ? 'ring-1 ring-[#c9971c]/40'
+            : ''
+      }`}
+    >
+      {featured && (
+        <div className="flex items-center gap-1.5 border-b border-line bg-accent-bright/10 px-4 py-1.5 text-caption font-semibold text-accent-700">
+          <Icon name="pinned" size={12} fill /> Pinned Announcement
+        </div>
+      )}
+      {!featured && isExclusive && (
+        <div className="flex items-center gap-1.5 border-b border-line bg-[#c9971c]/10 px-4 py-1.5 text-caption font-semibold text-[#8a6d1f]">
+          <Icon name="sparkles" size={12} /> Exclusive
         </div>
       )}
 
@@ -178,26 +239,38 @@ export function EmpirePostCard({
         )}
       </div>
 
-      {post.title && <h3 className="px-4 pb-1 font-display text-lead font-semibold text-ink sm:px-5">{post.title}</h3>}
-      <p className="whitespace-pre-wrap break-words px-4 pb-3 text-body leading-relaxed text-ink sm:px-5">{post.body}</p>
+      {post.title && (
+        <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{post.title}</h3>
+      )}
+      <p className={`whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed text-ink sm:px-5 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
+        {post.body}
+      </p>
 
       {post.mediaUrls.length > 0 && (
-        <div className={`grid gap-0.5 px-0 ${post.mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {post.mediaUrls.map((url, i) => (
-            <button
-              key={url}
-              onClick={() => setViewerIndex(i)}
-              className={`overflow-hidden bg-panel ${post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}`}
-            >
-              <img src={url} alt="" className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
-            </button>
-          ))}
-        </div>
+        featured ? (
+          <PostImage src={post.mediaUrls[0]} className="aspect-[16/10] w-full" onClick={() => setViewerIndex(0)} />
+        ) : (
+          <div className={`grid gap-0.5 px-0 ${post.mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {post.mediaUrls.map((url, i) => (
+              <PostImage
+                key={url}
+                src={url}
+                onClick={() => setViewerIndex(i)}
+                className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
+              />
+            ))}
+          </div>
+        )
       )}
 
       <div className="flex items-center gap-1 px-2 py-1.5 sm:px-3">
         <button onClick={handleLike} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
-          <Icon name="heart" size={18} fill={post.likedByMe} className={post.likedByMe ? 'text-[#e2384d]' : ''} />
+          <Icon
+            name="heart"
+            size={18}
+            fill={post.likedByMe}
+            className={`${post.likedByMe ? 'text-[#e2384d]' : ''} ${likeBounce ? 'animate-like-pop' : ''}`}
+          />
           {post.likeCount > 0 && compact(post.likeCount)}
         </button>
         <button onClick={() => setCommentsOpen((v) => !v)} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
@@ -214,7 +287,9 @@ export function EmpirePostCard({
       </div>
 
       {commentsOpen && (
-        <EmpireComments postId={post.id} disabled={post.commentsDisabled} onCommentAdded={() => onChanged({ ...post, commentCount: post.commentCount + 1 })} />
+        <div className="animate-fade-in">
+          <EmpireComments postId={post.id} disabled={post.commentsDisabled} onCommentAdded={() => onChanged({ ...post, commentCount: post.commentCount + 1 })} />
+        </div>
       )}
 
       {viewerIndex !== null && (
