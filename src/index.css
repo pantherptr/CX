@@ -438,90 +438,116 @@
   @keyframes wheel-spin {
     to { transform: rotate(360deg); }
   }
-  @keyframes loader-bar {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(320%); }
-  }
-  /* A single glint travels across the paint, then pauses — reads as one
-     considered reflection pass rather than a constant shimmer. */
-  @keyframes loader-sheen {
-    0% { transform: translateX(0); opacity: 0; }
-    8% { opacity: 0.5; }
-    28% { opacity: 0.5; }
-    40% { opacity: 0; }
-    100% { transform: translateX(232px); opacity: 0; }
-  }
-  @keyframes loader-glow-pulse {
-    0%, 100% { opacity: 0.16; transform: scale(1); }
-    50% { opacity: 0.32; transform: scale(1.05); }
-  }
   .loader-wheel { animation: wheel-spin 0.6s linear infinite; transform-origin: center; transform-box: fill-box; }
-  .loader-sheen { animation: loader-sheen 2.8s ease-in-out infinite; }
-  .loader-glow { animation: loader-glow-pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 
-  /* ---- Premium supercar orbit ----
-     A car (and, separately, its ground shadow) sweeps around an
-     elliptical path implied purely by `transform: translate(...)` —
-     no `offset-path`/motion-path gamble, no JS loop, just the one CSS
-     property every browser animates identically. `--orbit-rx`/
-     `--orbit-ry` (set inline per instance) parameterize the SAME two
-     keyframe definitions for both the tiny inline spinner and the full
-     showroom-scale splash animation.
+  /* ---- Premium orbit ----
+     An original circular track built entirely in code — no image asset.
+     `.orbit-stage` is a container-query context, so every measurement
+     below is `cqw` (percent of ITS OWN rendered width), not a computed
+     JS pixel — the identical markup scales correctly whether given a
+     fixed pixel `size` (the small inline call sites) or a fluid
+     `min(Nvmin, Npx)` wrapper (the full-screen splash), with no resize
+     listener.
 
-     The 8 steps below are exact cos/sin samples of a clockwise circle
-     starting at the 3-o'clock point (0%) — standard "rounded polygon"
-     trig, not eyeballed numbers — so the sweep itself is a true smooth
-     ellipse despite `linear` timing between few keyframes.
+     `.orbit-track` is a static light-gray full ring. `.orbit-arc` is a
+     `conic-gradient` carved into the same thin ring via a radial-
+     gradient mask (cheaper and crisper than an SVG stroke at these
+     sizes) — its gradient stops build a soft, true angular fade from
+     fully transparent (the "not yet driven" gray majority of the
+     circle), through a dim green, up to a bright near-white head at the
+     360deg/0deg seam. `.orbit-glow` is the same gradient again, wider
+     and blurred, sitting behind the crisp arc for a soft light
+     diffusion. Both share one `rotate()` keyframe with `.orbit-car-
+     pivot`, so the bright head of the arc and the car are the same
+     point, always — not two independently-timed animations that could
+     drift apart.
 
-     Depth (scale) peaks at 25% (6 o'clock = nearest to the viewer) and
-     troughs at 75% (12 o'clock = farthest), matching a platform viewed
-     from a raised angle. The left/right mirror flip lands exactly at
-     0%/50% (the horizontal extremes), which is also where the car's
-     real horizontal velocity is momentarily zero — the one instant a
-     rigid 2D silhouette can reverse facing without ever looking like it
-     "un-drives" the path it just traveled. */
-  @keyframes orbit-drive {
-    0%    { transform: translate(var(--orbit-rx), 0) scaleX(-1) scale(0.9); }
-    12.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * 0.707)) scaleX(-1) scale(1.11); }
-    25%   { transform: translate(0, var(--orbit-ry)) scaleX(-1) scale(1.2); }
-    37.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * 0.707)) scaleX(-1) scale(1.11); }
-    50%   { transform: translate(calc(var(--orbit-rx) * -1), 0) scaleX(1) scale(0.9); }
-    62.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * -0.707)) scaleX(1) scale(0.69); }
-    75%   { transform: translate(0, calc(var(--orbit-ry) * -1)) scaleX(1) scale(0.6); }
-    87.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * -0.707)) scaleX(1) scale(0.69); }
-    100%  { transform: translate(var(--orbit-rx), 0) scaleX(1) scale(0.9); }
+     The car itself isn't just rotated in place: `.orbit-car-sprite`
+     centers the sprite on the pivot and then offsets it OUTWARD by
+     `--orbit-r` (the ring's own centerline radius), so its wheels sit
+     exactly on the track's circumference. Because the whole offset+
+     sprite is carried by the pivot's rotation, the sprite's own facing
+     (+x, nose right — see TopDownCar) becomes the path's tangent at
+     every angle for free: a circle's tangent at angle θ is θ+90°, which
+     is exactly what "no counter-rotation, offset along the rotated
+     axis" produces — no separate per-frame trig, just one transform. */
+  .orbit-stage {
+    container-type: inline-size;
+    --orbit-r: 48.4cqw;
   }
-  /* Same path, no mirror (a shadow is symmetric either way) — opacity
-     fades with distance alongside the scale, so the "nearest" point of
-     the loop reads as both biggest and darkest, "farthest" as both
-     smallest and faintest. */
-  @keyframes orbit-shadow-drive {
-    0%    { transform: translate(var(--orbit-rx), 0) scale(0.85); opacity: 0.38; }
-    12.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * 0.707)) scale(1.05); opacity: 0.48; }
-    25%   { transform: translate(0, var(--orbit-ry)) scale(1.15); opacity: 0.55; }
-    37.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * 0.707)) scale(1.05); opacity: 0.48; }
-    50%   { transform: translate(calc(var(--orbit-rx) * -1), 0) scale(0.85); opacity: 0.38; }
-    62.5% { transform: translate(calc(var(--orbit-rx) * -0.707), calc(var(--orbit-ry) * -0.707)) scale(0.62); opacity: 0.26; }
-    75%   { transform: translate(0, calc(var(--orbit-ry) * -1)) scale(0.5); opacity: 0.18; }
-    87.5% { transform: translate(calc(var(--orbit-rx) * 0.707), calc(var(--orbit-ry) * -0.707)) scale(0.62); opacity: 0.26; }
-    100%  { transform: translate(var(--orbit-rx), 0) scale(0.85); opacity: 0.38; }
+  @keyframes orbit-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
-  .orbit-car-el {
-    animation: orbit-drive var(--orbit-duration, 4.2s) linear infinite;
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  .orbit-track,
+  .orbit-arc,
+  .orbit-glow,
+  .orbit-complete-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    -webkit-mask-image: radial-gradient(farthest-side, transparent calc(100% - 3.2cqw), #000 calc(100% - 3.2cqw));
+    mask-image: radial-gradient(farthest-side, transparent calc(100% - 3.2cqw), #000 calc(100% - 3.2cqw));
   }
-  .orbit-shadow-el {
-    animation: orbit-shadow-drive var(--orbit-duration, 4.2s) linear infinite;
-    filter: blur(6px);
+  .orbit-track {
+    background: rgba(15, 18, 16, 0.1);
   }
-  .orbit-ring {
-    background: radial-gradient(closest-side, rgba(0, 212, 71, 0.12), rgba(0, 212, 71, 0.02) 70%, transparent 100%);
-    box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0.16);
+  .orbit-arc,
+  .orbit-glow {
+    animation: orbit-spin var(--orbit-duration, 4.2s) linear infinite;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg, transparent 208deg,
+      rgba(0, 212, 71, 0.12) 258deg,
+      rgba(0, 212, 71, 0.6) 330deg,
+      #00d447 351deg,
+      #f2fff6 360deg
+    );
+  }
+  .orbit-glow {
+    filter: blur(2.6cqw);
+    opacity: 0.6;
+    transform: scale(1.04);
+  }
+  .orbit-arc {
+    filter: drop-shadow(0 0 1cqw rgba(0, 212, 71, 0.5));
+    transition: opacity 320ms ease-out;
+  }
+  .orbit-complete-ring {
+    background: #00d447;
+    filter: drop-shadow(0 0 1.6cqw rgba(0, 212, 71, 0.55));
+    opacity: 0;
+    transition: opacity 320ms ease-out;
+  }
+  .orbit-stage--complete .orbit-arc,
+  .orbit-stage--complete .orbit-glow,
+  .orbit-stage--complete .orbit-car-pivot {
+    animation-play-state: paused;
+  }
+  .orbit-stage--complete .orbit-arc,
+  .orbit-stage--complete .orbit-glow {
+    opacity: 0;
+  }
+  .orbit-stage--complete .orbit-complete-ring {
+    opacity: 1;
+  }
+  .orbit-car-pivot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    animation: orbit-spin var(--orbit-duration, 4.2s) linear infinite;
+  }
+  .orbit-car-sprite {
+    position: absolute;
+    width: 15.5cqw;
+    aspect-ratio: 100 / 54;
+    transform: translate(-50%, calc(-50% - var(--orbit-r)));
+    filter: drop-shadow(0 0.35cqw 0.9cqw rgba(0, 0, 0, 0.32));
   }
   @media (prefers-reduced-motion: reduce) {
-    .orbit-car-el, .orbit-shadow-el { animation: none; }
-    .orbit-car-el { transform: translate(0, var(--orbit-ry)) scale(1.1) scaleX(-1); }
-    .orbit-shadow-el { transform: translate(0, var(--orbit-ry)) scale(1.1); opacity: 0.5; }
+    .orbit-arc, .orbit-glow, .orbit-car-pivot { animation: none; }
   }
 
   .skeleton {

@@ -116,6 +116,21 @@ function useSplash(minMs = 1500) {
   const [visible, setVisible] = useState(() => !sessionStorage.getItem('cx-splashed'));
   const [hiding, setHiding] = useState(false);
 
+  // Locks the underlying page's own scroll for as long as the splash
+  // covers it — without this, a tall page behind the splash keeps its
+  // scrollbar, which shrinks the fixed full-screen splash's own width
+  // by the scrollbar's size and throws its centered content very
+  // slightly off true viewport-center. A true full-screen overlay
+  // shouldn't leave the page under it interactable anyway.
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [visible]);
+
   useEffect(() => {
     if (!visible) return;
     const start = performance.now();

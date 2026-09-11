@@ -1,145 +1,162 @@
-import { LOGO_SRC } from './primitives';
-
 /**
- * The premium loading system — one reusable orbit animation
- * (`SupercarOrbit`) driving two presentations:
+ * The premium loading system — one reusable "orbit" animation
+ * (`SupercarOrbit`) driving every loading state in the app:
  *
  *   `PremiumPageLoader`    — compact, dropped into any page/section
- *                            that's waiting on data (the same role the
- *                            old plain `CarLoader` spinner used to play).
- *   `PremiumInitialLoader` — the full-screen cinematic splash shown once
- *                            per session while the app first boots.
+ *                            that's waiting on data.
+ *   `PremiumInitialLoader` — the full-screen loading overlay shown once
+ *                            per session while the app first boots, and
+ *                            the shared Suspense fallback for route
+ *                            chunks. Bare: a pure white screen with the
+ *                            animation at its center, nothing else drawn
+ *                            around it — no card, no box, no image asset.
  *
- * Both are pure CSS: a supercar silhouette and its ground shadow sweep
- * around an elliptical path via a single `transform` keyframe animation
- * each (see `.orbit-car-el`/`.orbit-shadow-el` in index.css) — no motion-
- * path browser-support gamble, no JS animation loop, no WebGL. The
- * ellipse radius is passed in as CSS custom properties (`--orbit-rx`/
- * `--orbit-ry`), so the exact same two keyframe definitions drive the
- * tiny inline spinner and the large splash animation alike.
+ * Everything here is original, built in code: a thin circular track (two
+ * stacked masked-ring divs — a static light-gray base plus a rotating
+ * `conic-gradient` arc, giving the "mostly gray with a travelling green
+ * section" progress read the brief asks for, with a true angular fade
+ * built into the gradient itself rather than faked) and a small top-down
+ * car (`TopDownCar`, pure SVG) riding it. The car isn't just rotated
+ * around the circle — it sits at a fixed radius from the ring's own
+ * center and is carried by the SAME `rotate()` transform the arc uses,
+ * so its position is exactly on the circumference at every angle and its
+ * own rotation IS the path's tangent at that point (a circle's tangent
+ * at angle θ is θ+90°, which is exactly what "no counter-rotation" on a
+ * sprite drawn nose-first along the rotation's own axis produces for
+ * free — see `.orbit-car-sprite`). Sizing is entirely CSS (container
+ * query units), so the same markup scales from a 60px inline spinner to
+ * a full-viewport splash with no JS resize listener, no per-frame React
+ * state, and full `prefers-reduced-motion` support.
  */
 
-/** The car artwork itself — a low, wide performance silhouette with a
- *  sculpted-metal body gradient, a slow periodic light sweep across the
- *  paint, a pulsing green underglow and spinning wheels. This is the
- *  same illustration the old `CarLoader` used; only its container now
- *  moves it around an orbit instead of holding it still. */
-function SupercarSprite({ size }: { size: number }) {
-  const bodyD =
-    'M16 114 Q12 106 18 96 Q24 88 38 87 L60 85 Q70 80 88 79 L108 79 ' +
-    'Q118 79 126 85 L136 92 Q148 89 162 91 Q174 93 182 101 L188 109 ' +
-    'Q190 113 186 116 L176 118 L34 118 Q18 118 16 114 Z';
-
+/** A small top-down car — an original CX Rent silhouette, not any real
+ *  manufacturer's shape: a low, wide-cabin body in a cool silver/
+ *  graphite gradient, dark tinted glass front and rear, a roof reflection
+ *  streak, a soft blurred contact shadow, and a red tail light / green
+ *  nose marker for orientation at a glance. Drawn facing +x (nose to the
+ *  right) so that, parked at the top of the ring with no extra rotation,
+ *  it already points the correct tangential direction for clockwise
+ *  travel — see `.orbit-car-sprite`. Each wheel gets a spinning spoke
+ *  mark (`.loader-wheel`) so the wheels visibly turn while driving. */
+function TopDownCar() {
+  const wheels: [number, number][] = [
+    [23, 3],
+    [77, 3],
+    [23, 51],
+    [77, 51],
+  ];
   return (
-    <svg width={size} height={size * 0.72} viewBox="0 0 200 144" fill="none" role="img" aria-label="">
+    <svg width="100%" height="100%" viewBox="0 0 100 54" fill="none" role="img" aria-label="">
       <defs>
-        <linearGradient id="orbitCarBody" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e4e4de" />
-          <stop offset="18%" stopColor="#8a8a82" />
-          <stop offset="55%" stopColor="#232420" />
-          <stop offset="100%" stopColor="#050605" />
+        <linearGradient id="topCarBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f2f4f6" />
+          <stop offset="26%" stopColor="#b3b9c0" />
+          <stop offset="52%" stopColor="#565d67" />
+          <stop offset="100%" stopColor="#1c1f24" />
         </linearGradient>
-        <clipPath id="orbitCarClip">
-          <path d={bodyD} />
-        </clipPath>
+        <linearGradient id="topCarRoof" x1="0" y1="0" x2="1" y2="0.2">
+          <stop offset="0%" stopColor="#666e79" />
+          <stop offset="55%" stopColor="#2c3138" />
+          <stop offset="100%" stopColor="#15171b" />
+        </linearGradient>
+        <linearGradient id="topCarSheen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id="topCarShadow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#000" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
-      {/* Rear diffuser fins */}
-      <g stroke="#dcdbd3" strokeWidth="1.4" opacity="0.8">
-        <line x1="20" y1="118" x2="26" y2="110" />
-        <line x1="26" y1="118" x2="32" y2="111" />
-        <line x1="32" y1="118" x2="38" y2="112" />
-      </g>
-      <line x1="20" y1="118" x2="24" y2="112" stroke="#00d447" strokeWidth="1.4" opacity="0.85" />
+      {/* Soft contact shadow, slightly offset — reads as the car sitting
+          just above the page rather than pasted flat onto it. */}
+      <ellipse cx="51" cy="30" rx="46" ry="22" fill="url(#topCarShadow)" />
 
-      {/* Body */}
-      <path d={bodyD} fill="url(#orbitCarBody)" />
-
-      {/* Light sweep — clipped to the body silhouette so the "reflection"
-          only ever travels across the paint. */}
-      <g clipPath="url(#orbitCarClip)">
-        <rect className="loader-sheen" x="-34" y="70" width="22" height="60" fill="#fff" opacity="0" transform="skewX(-18)" />
-      </g>
-
-      {/* Cabin / glass */}
-      <path d="M42 87 Q56 82 72 81 L104 80 Q114 80 121 86 L130 93 L52 93 Q44 93 42 87 Z" fill="#0d100e" opacity="0.94" />
-      <line x1="78" y1="81" x2="86" y2="93" stroke="#00d447" strokeWidth="1.2" opacity="0.5" />
-
-      {/* Side intake ahead of the front wheel */}
-      <path d="M124 100 L140 97 L142 104 L126 107 Z" fill="#0d100e" opacity="0.85" />
-      <line x1="128" y1="101" x2="139" y2="99" stroke="#8b8b83" strokeWidth="0.8" opacity="0.5" />
-      <line x1="128" y1="104" x2="139" y2="102" stroke="#8b8b83" strokeWidth="0.8" opacity="0.5" />
-
-      {/* Green pinstripe along the sill + splitter edge */}
-      <line x1="34" y1="117.5" x2="176" y2="117.5" stroke="#00d447" strokeWidth="1.3" opacity="0.75" />
-      <line x1="182" y1="103" x2="188" y2="109" stroke="#00d447" strokeWidth="1.6" opacity="0.9" />
-
-      {/* Sharp LED headlight, blade-shaped, with a soft glow behind it */}
-      <circle cx="180" cy="99" r="4" fill="#00d447" opacity="0.35" style={{ filter: 'blur(3px)' }} />
-      <path d="M172 98 L186 96 L184 101 L171 102 Z" fill="#fff" opacity="0.95" />
-      <line x1="171" y1="104" x2="184" y2="103" stroke="#00d447" strokeWidth="1.1" opacity="0.8" />
-
-      {/* Wheels */}
-      {[46, 152].map((cx, i) => (
-        <g key={cx}>
-          <circle cx={cx} cy="122" r="18" fill="#16161a" />
-          <circle cx={cx} cy="122" r="18" fill="none" stroke="#dcdbd3" strokeWidth="1" opacity="0.35" />
-          <rect x={cx + 10} y="119" width="4" height="6" rx="1" fill="#00d447" opacity="0.8" />
-          <g className="loader-wheel" style={i === 1 ? { animationDelay: '-0.12s' } : undefined}>
-            <circle cx={cx} cy="122" r="7.5" fill="none" stroke="#fff" strokeWidth="1.6" opacity="0.85" />
-            {[0, 72, 144, 216, 288].map((deg) => (
-              <line
-                key={deg}
-                x1={cx}
-                y1="122"
-                x2={cx + 7.2 * Math.cos((deg * Math.PI) / 180)}
-                y2={122 + 7.2 * Math.sin((deg * Math.PI) / 180)}
-                stroke="#fff"
-                strokeWidth="1.6"
-                opacity="0.85"
-              />
-            ))}
+      {/* Wheels — drawn first so the body overlaps their inner edge */}
+      {wheels.map(([cx, cy], i) => (
+        <g key={`${cx}-${cy}`}>
+          <rect x={cx - 5.2} y={cy - 3.2} width="10.4" height="6.4" rx="1.8" fill="#131417" />
+          <rect x={cx - 5.2} y={cy - 3.2} width="10.4" height="6.4" rx="1.8" fill="none" stroke="#3a3d43" strokeWidth="0.5" />
+          <g className="loader-wheel" style={{ transformOrigin: `${cx}px ${cy}px`, animationDelay: `${i * -0.09}s` }}>
+            <line x1={cx - 3.4} y1={cy} x2={cx + 3.4} y2={cy} stroke="#8a9099" strokeWidth="1.1" opacity="0.9" />
+            <line x1={cx} y1={cy - 2.4} x2={cx} y2={cy + 2.4} stroke="#8a9099" strokeWidth="0.7" opacity="0.55" />
           </g>
         </g>
       ))}
+
+      {/* Body */}
+      <rect x="5.5" y="8" width="89" height="38" rx="16" fill="url(#topCarBody)" />
+      <rect x="6" y="8.5" width="88" height="37" rx="15.5" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="0.6" />
+
+      {/* Cabin / roof, with a diagonal reflection streak for "realistic
+          reflections" without needing a real environment map. */}
+      <rect x="32" y="13" width="37" height="28" rx="10" fill="url(#topCarRoof)" />
+      <path d="M36 15 L46 15 L38 39 L32 39 Z" fill="url(#topCarSheen)" opacity="0.5" />
+      <line x1="50.5" y1="14" x2="50.5" y2="40" stroke="#8b9099" strokeWidth="0.5" opacity="0.4" />
+
+      {/* Rear window (left, tail end) */}
+      <path d="M11 15 Q11 11 17 11 L29 13 L29 41 L17 43 Q11 43 11 39 Z" fill="#0e1013" opacity="0.68" />
+      {/* Windshield (right, nose end) */}
+      <path d="M89 15 Q89 11 83 11 L71 13 L71 41 L83 43 Q89 43 89 39 Z" fill="#0e1013" opacity="0.78" />
+      <path d="M83 14 L86 14.6 L83.5 21 L80.5 20.4 Z" fill="url(#topCarSheen)" opacity="0.4" />
+
+      {/* Tail light — rear, brand red */}
+      <rect x="5.8" y="19" width="2.6" height="16" rx="1.3" fill="#ef4444" />
+      <rect x="5.8" y="19" width="2.6" height="16" rx="1.3" fill="none" stroke="#fca5a5" strokeOpacity="0.5" strokeWidth="0.4" />
+      {/* Front marker light — nose, brand green */}
+      <rect x="91.6" y="19" width="2.6" height="16" rx="1.3" fill="#00d447" />
+      <rect x="91.6" y="19" width="2.6" height="16" rx="1.3" fill="none" stroke="#baffd4" strokeOpacity="0.5" strokeWidth="0.4" />
     </svg>
   );
 }
 
-/** The reusable orbit: a platform ring, a ground shadow and the car
- *  itself, the latter two swept around the SAME elliptical path (fed by
- *  `--orbit-rx`/`--orbit-ry`) so the shadow always sits directly under
- *  wherever the car currently is. `duration` alone is enough to make one
- *  instance feel like an unhurried showroom turntable and another feel
- *  like a brisk in-page spinner — same motion, different pace. */
-export function SupercarOrbit({ size = 160, duration = 4.2 }: { size?: number; duration?: number }) {
-  const rx = size * 0.5;
-  const ry = size * 0.14;
-  const carW = size * 0.6;
-  const vars = {
-    ['--orbit-rx' as string]: `${rx}px`,
-    ['--orbit-ry' as string]: `${ry}px`,
-    ['--orbit-duration' as string]: `${duration}s`,
-  };
-
+/** The reusable orbit: a static light-gray base ring plus a rotating
+ *  `conic-gradient` arc (masked into a thin ring via a radial-gradient
+ *  mask — cheaper and crisper than an SVG stroke at these sizes), with
+ *  `TopDownCar` riding it at the ring's own radius via the SAME shared
+ *  `rotate()` keyframe (see `.orbit-arc`/`.orbit-car-pivot` in
+ *  index.css) — the car and the arc's bright leading edge never drift
+ *  apart because they're driven by one animation, not two coordinated
+ *  ones. Sizing is entirely CSS: this div is a container-query context
+ *  (`.orbit-stage`), and the ring/car's own thickness, radius and size
+ *  are expressed in `cqw` (percent of its OWN rendered width) so the
+ *  identical markup scales correctly whether given a fixed pixel `size`
+ *  (the small inline call sites) or a fluid `min(Nvmin, Npx)` wrapper
+ *  class (the full-screen one) — no JS resize handling either way.
+ *  `duration` alone is enough to make one instance feel like an
+ *  unhurried loop and another feel like a brisk in-page spinner.
+ *  `completing` cross-fades the travelling arc into one fully-lit ring
+ *  and holds it there — the "lap complete" moment right before the
+ *  loader itself fades away. */
+export function SupercarOrbit({
+  size,
+  duration = 4.2,
+  className = '',
+  completing = false,
+}: {
+  /** Fixed width in px. Omit to let the element fill its parent's width
+   *  (e.g. a responsive wrapper class) instead. */
+  size?: number;
+  duration?: number;
+  className?: string;
+  /** Freezes the travel and lights the ring fully — play this for a
+   *  couple hundred ms right before unmounting/hiding the loader. */
+  completing?: boolean;
+}) {
   return (
-    <div className="relative" style={{ width: size, height: size * 0.62, ...vars }}>
-      {/* Platform ring — a flattened glow standing in for the circular
-          track itself, so the motion reads as "going around something"
-          from the very first frame, not just a car sliding side to side. */}
-      <div
-        className="orbit-ring absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{ width: rx * 2.05, height: ry * 2.3 }}
-      />
-      <div
-        className="orbit-shadow-el absolute left-1/2 top-1/2 rounded-full bg-black"
-        style={{ width: carW * 0.62, height: carW * 0.14, marginLeft: -(carW * 0.31), marginTop: -(carW * 0.07) }}
-      />
-      <div
-        className="orbit-car-el absolute left-1/2 top-1/2"
-        style={{ width: carW, marginLeft: -(carW / 2), marginTop: -(carW * 0.37) }}
-      >
-        <SupercarSprite size={carW} />
+    <div
+      className={`orbit-stage relative ${completing ? 'orbit-stage--complete' : ''} ${className}`}
+      style={{ width: size, aspectRatio: '1 / 1', ['--orbit-duration' as string]: `${duration}s` }}
+    >
+      <div className="orbit-track" />
+      <div className="orbit-glow" />
+      <div className="orbit-arc" />
+      <div className="orbit-complete-ring" />
+      <div className="orbit-car-pivot">
+        <div className="orbit-car-sprite">
+          <TopDownCar />
+        </div>
       </div>
     </div>
   );
@@ -150,59 +167,38 @@ export function SupercarOrbit({ size = 160, duration = 4.2 }: { size?: number; d
  *  Suspense fallback for lazy-loaded routes and inside any page/panel
  *  that's waiting on its own data. Same `size` contract as before, so
  *  every existing call site only needed its import/tag renamed, not
- *  restructured. */
+ *  restructured. No visible caption — `label` only reaches screen
+ *  readers now; the animation itself is the entire signal. */
 export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: number; label?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2" role="status" aria-label={label}>
+    <div role="status" aria-label={label}>
       <SupercarOrbit size={size} duration={3.1} />
-      <p className="text-nano font-semibold uppercase tracking-[0.2em] text-faint">{label}</p>
     </div>
   );
 }
 
-/** Full-screen cinematic splash shown once per session while the app
- *  boots — dark, atmospheric, the supercar orbit at showroom scale, the
- *  wordmark beneath it, and an indeterminate progress sweep rather than
- *  a fabricated percentage (there's no real download-progress signal to
- *  report here, and a precise-looking number that isn't would be worse
- *  than an honestly indeterminate bar). */
+/** Full-screen loading overlay — shown once per session while the app
+ *  boots, and reused as the shared Suspense fallback while a route
+ *  chunk loads. A pure white field covering the entire viewport above
+ *  everything else (navbar, footer, page content, the Empire game shell,
+ *  any background) with the ring animation large and centered — no card
+ *  around it, no text, no progress readout, no controls. Responsive by
+ *  pure CSS: `min(72vmin, 640px)` keeps it large and prominent on
+ *  desktop, comfortably margined on phones, and proportionate on
+ *  tablets, with no resize listener. `hiding` plays the ring's own
+ *  "lap complete" flourish alongside the wrapper's fade, so the loader
+ *  never just vanishes mid-travel. */
 export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-noir transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-white transition-opacity duration-500 ${
         hiding ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
+      role="status"
+      aria-label="Loading"
     >
-      {/* Cinematic backdrop — a deep vignette plus a low brand-green wash,
-          the same "premium night" language the Drive Challenge already
-          uses, rather than a flat single color. */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(120% 70% at 50% 38%, rgba(0,212,71,0.14), transparent 60%),' +
-            'radial-gradient(140% 90% at 50% 100%, rgba(0,212,71,0.06), transparent 55%),' +
-            'linear-gradient(180deg, #0a0d0b 0%, #0d120e 55%, #080b09 100%)',
-        }}
-      />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:radial-gradient(rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:3px_3px]" />
-
-      <div className="relative animate-scale-in">
-        <SupercarOrbit size={240} duration={5.4} />
-      </div>
-
-      <img
-        src={LOGO_SRC.wordmark}
-        alt="CX"
-        className="relative mt-4 h-6 w-auto object-contain opacity-95 animate-fade-up"
-        style={{ animationDelay: '160ms' }}
-      />
-
-      <div className="relative mt-7 flex flex-col items-center gap-2 animate-fade-in" style={{ animationDelay: '320ms' }}>
-        <p className="text-nano font-bold uppercase tracking-[0.32em] text-accent-bright/80">Loading</p>
-        <div className="h-[3px] w-44 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full w-1/3 rounded-full bg-accent-bright" style={{ animation: 'loader-bar 1.3s var(--ease-out-expo) infinite' }} />
-        </div>
+      <div className="animate-scale-in" style={{ width: 'min(72vmin, 640px)' }}>
+        <SupercarOrbit duration={5.2} completing={hiding} />
       </div>
     </div>
   );
