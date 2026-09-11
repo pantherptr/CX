@@ -253,7 +253,7 @@ export default function Home() {
             />
             <div className="relative max-w-xl">
               <p className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
-                <img src="/cxsnake.PNG" alt="" className="h-5 w-5 object-contain" /> CX Concierge
+                <img src="/cx-logo-symbol.png" alt="" className="h-5 w-5 object-contain" /> CX Concierge
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
                 Find your CX

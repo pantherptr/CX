@@ -111,7 +111,7 @@ function ConciergeAvatar({ size = 30 }: { size?: number }) {
       className="grid shrink-0 place-items-center rounded-full bg-accent-050 ring-1 ring-accent-100"
       style={{ width: size, height: size }}
     >
-      <img src="/cxsnake.PNG" alt="" className="h-[58%] w-[58%] object-contain" />
+      <img src="/cx-logo-symbol.png" alt="" className="h-[58%] w-[58%] object-contain" />
     </span>
   );
 }
