@@ -183,7 +183,7 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
  *  everything else (navbar, footer, page content, the Empire game shell,
  *  any background) with the ring animation large and centered — no card
  *  around it, no text, no progress readout, no controls. Responsive by
- *  pure CSS: `min(72vmin, 640px)` keeps it large and prominent on
+ *  pure CSS: `min(40vmin, 320px)` keeps it compact and centered on
  *  desktop, comfortably margined on phones, and proportionate on
  *  tablets, with no resize listener. `hiding` plays the ring's own
  *  "lap complete" flourish alongside the wrapper's fade, so the loader
@@ -197,7 +197,7 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
       role="status"
       aria-label="Loading"
     >
-      <div className="animate-scale-in" style={{ width: 'min(72vmin, 640px)' }}>
+      <div className="animate-scale-in" style={{ width: 'min(40vmin, 320px)' }}>
         <SupercarOrbit duration={5.2} completing={hiding} />
       </div>
     </div>
