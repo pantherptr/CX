@@ -183,9 +183,19 @@ export async function deleteEmpireHighlight(highlightId: string): Promise<{ erro
   return { error: null };
 }
 
+// uid-prefixed for the same reason uploadEmpireStoryMedia is — see that
+// function's comment in empireStories.ts. The old flat `highlights/...`
+// path failed the 0048 storage insert policy's
+// `auth.uid()::text = (storage.foldername(name))[1]` check for every
+// caller, silently (Highlights are Owner/Admin-only today, so this
+// symptom would only ever have shown up as "adding a Highlight slide
+// does nothing").
 export async function uploadEmpireHighlightMedia(file: File): Promise<{ url: string; path: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `highlights/${crypto.randomUUID()}.${ext}`;
+  const path = `${uid}/highlights/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };

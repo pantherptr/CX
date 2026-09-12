@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
@@ -87,9 +87,74 @@ export function useBottomNavVisible() {
   return Boolean(session) && isMobile && !suppressed;
 }
 
+// SIGNAL's feed is media-heavy (video/image posts) and wants every extra
+// bit of vertical space while scrolling — the rest of the app's screens
+// weren't asked for this and keep the nav permanently visible, so the
+// scroll listener below only ever attaches on these routes.
+const SIGNAL_ROUTE = /^\/signal(\/|$)/;
+
+// Direction-aware, threshold-gated hide/show — small jitters (a few px,
+// a momentum-scroll wobble) never flip state; only a clear, sustained
+// scroll in one direction does. Passive listener + rAF throttle keeps
+// this off the main thread's critical path (no React re-render happens
+// on most scroll events — only the rare ones that actually cross the
+// threshold or re-enter the top guard call setHidden at all).
+const HIDE_THRESHOLD = 24; // px of sustained one-direction movement before flipping
+const TOP_GUARD = 64; // always show near the very top, regardless of direction
+
+function useSignalScrollHide(active: boolean): boolean {
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+  const accum = useRef(0);
+  const dir = useRef<1 | -1 | 0>(0);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    if (!active) {
+      setHidden(false);
+      return;
+    }
+    lastY.current = window.scrollY;
+    accum.current = 0;
+    dir.current = 0;
+
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        ticking.current = false;
+        const y = window.scrollY;
+        const delta = y - lastY.current;
+        lastY.current = y;
+        if (y <= TOP_GUARD) {
+          accum.current = 0;
+          dir.current = 0;
+          setHidden(false);
+          return;
+        }
+        if (Math.abs(delta) < 1) return;
+        const nextDir = delta > 0 ? 1 : -1;
+        if (nextDir !== dir.current) {
+          dir.current = nextDir;
+          accum.current = 0;
+        }
+        accum.current += Math.abs(delta);
+        if (accum.current < HIDE_THRESHOLD) return;
+        setHidden(nextDir === 1);
+      });
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [active]);
+
+  return hidden;
+}
+
 export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
+  const scrollHidden = useSignalScrollHide(visible && SIGNAL_ROUTE.test(pathname));
   const { session } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
@@ -114,6 +179,19 @@ export function BottomNav() {
   return (
     <nav
       className="glass fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
+      style={{
+        // Pure transform/opacity — never touches layout or the page's
+        // own reserved bottom padding, so nothing about the feed's
+        // content reflows or jumps as this slides away; translateY(100%)
+        // is relative to the bar's own rendered height, which already
+        // includes its safe-area inset, so it clears the bar completely
+        // on every device without a hardcoded pixel value.
+        transform: scrollHidden ? 'translateY(100%)' : 'translateY(0)',
+        opacity: scrollHidden ? 0 : 1,
+        pointerEvents: scrollHidden ? 'none' : 'auto',
+        transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`,
+      }}
+      aria-hidden={scrollHidden || undefined}
       aria-label="Primary"
     >
       {/* Reusable shape definition for Signal's raised section — referenced

@@ -136,9 +136,9 @@ export default function Signal() {
         onAnalyticsClick={() => setAnalyticsOpen(true)}
       />
 
-      <main className="mx-auto w-full max-w-xl flex-1 px-3 py-4 sm:px-4 sm:py-6">
+      <main className="mx-auto w-full max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4">
         {space === 'community' && (
-          <p className="mb-4 flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-accent-700">
+          <p className="mb-2.5 flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-accent-700">
             <Icon name="users" size={13} /> Community
           </p>
         )}
@@ -189,7 +189,7 @@ export default function Signal() {
           ) : (
             <button
               onClick={() => setComposerOpen(true)}
-              className="card mb-5 flex w-full items-center gap-3 p-4 text-left text-ink-soft transition-colors hover:border-line-strong"
+              className="card mb-3 flex w-full items-center gap-3 p-3.5 text-left text-ink-soft transition-colors hover:border-line-strong"
             >
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink">
                 <Icon name="plus" size={18} />

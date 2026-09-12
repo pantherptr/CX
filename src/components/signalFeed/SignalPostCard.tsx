@@ -40,8 +40,32 @@ function timeAgo(iso: string): string {
 
 const categoryLabel = (c: EmpirePost['category']) => EMPIRE_CATEGORIES.find((x) => x.value === c)?.label ?? c;
 
-function PostImage({ src, className, onClick }: { src: string; className: string; onClick?: () => void }) {
+// A single video/image in the feed (not the fixed-crop hero or multi-media
+// grid) shows its OWN aspect ratio rather than a hardcoded 16:9 — but never
+// narrower than 4:5, so a 9:16 vertical clip is cropped down to a normal
+// portrait-post height instead of stretching to nearly the full viewport
+// (the "video takes over the screen" complaint this whole pass fixes). A
+// max-height is a second, independent safety net for wide desktop cards.
+const MIN_MEDIA_ASPECT = 4 / 5;
+const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
+
+function PostImage({
+  src,
+  className,
+  onClick,
+  dynamicAspect = false,
+}: {
+  src: string;
+  className: string;
+  onClick?: () => void;
+  /** True only for a single, standalone image post — reads the image's
+   *  own natural size instead of using `className`'s fixed aspect
+   *  utility. Multi-image grids and the Featured/Pinned hero keep their
+   *  fixed crop, unchanged. */
+  dynamicAspect?: boolean;
+}) {
   const [loaded, setLoaded] = useState(false);
+  const [aspect, setAspect] = useState<number | null>(null);
   const content = (
     <>
       {!loaded && <div className="skeleton absolute inset-0" />}
@@ -49,15 +73,25 @@ function PostImage({ src, className, onClick }: { src: string; className: string
         src={src}
         alt=""
         loading="lazy"
-        onLoad={() => setLoaded(true)}
+        onLoad={(e) => {
+          setLoaded(true);
+          if (dynamicAspect) {
+            const img = e.currentTarget;
+            if (img.naturalWidth && img.naturalHeight) {
+              setAspect(Math.max(img.naturalWidth / img.naturalHeight, MIN_MEDIA_ASPECT));
+            }
+          }
+        }}
         className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${onClick ? 'hover:scale-[1.03]' : ''} transition-transform`}
       />
     </>
   );
+  const dynamicClass = dynamicAspect ? `w-full ${MEDIA_MAX_HEIGHT_CLASS}` : className;
+  const style = dynamicAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5' } : undefined;
   return onClick ? (
-    <button onClick={onClick} className={`relative overflow-hidden bg-panel ${className}`}>{content}</button>
+    <button onClick={onClick} style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
   ) : (
-    <div className={`relative overflow-hidden bg-panel ${className}`}>{content}</div>
+    <div style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</div>
   );
 }
 
@@ -131,8 +165,8 @@ function PostVideo({
 
   return (
     <div
-      className={`relative overflow-hidden bg-panel ${className}`}
-      style={!fixedAspect && aspect ? { aspectRatio: `${aspect}`, height: 'auto' } : undefined}
+      className={`relative overflow-hidden bg-panel ${fixedAspect ? className : `w-full ${MEDIA_MAX_HEIGHT_CLASS}`}`}
+      style={!fixedAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5', height: 'auto' } : undefined}
     >
       {!loaded && <div className="skeleton absolute inset-0" />}
       <video
@@ -145,7 +179,10 @@ function PostVideo({
         onLoadedMetadata={(e) => {
           const v = e.currentTarget;
           setLoaded(true);
-          if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(v.videoWidth / v.videoHeight);
+          // Clamped to never go narrower than 4:5 — see MIN_MEDIA_ASPECT
+          // above; a 9:16 clip is cropped to a contained portrait height
+          // instead of stretching to nearly the full viewport.
+          if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(Math.max(v.videoWidth / v.videoHeight, MIN_MEDIA_ASPECT));
         }}
         onError={() => setErrored(true)}
         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -340,7 +377,7 @@ export function SignalPostCard({
 
   return (
     <article
-      className={`card mb-4 animate-fade-up overflow-hidden p-0 ${
+      className={`card mb-2.5 animate-fade-up overflow-hidden p-0 ${
         featured
           ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
           : isExclusive
@@ -360,9 +397,9 @@ export function SignalPostCard({
         </div>
       )}
 
-      <div className="flex items-start gap-3 p-4 pb-3 sm:px-5">
+      <div className="flex items-start gap-2.5 p-3 pb-2 sm:px-4">
         <Link to={signalProfileHref(post, profileBase)} className="shrink-0">
-          <SignalIdentityAvatar identity={identity} size={40} />
+          <SignalIdentityAvatar identity={identity} size={36} />
         </Link>
         <div className="min-w-0 flex-1">
           <Link to={signalProfileHref(post, profileBase)} className="flex items-center gap-1.5 hover:underline">
@@ -413,9 +450,9 @@ export function SignalPostCard({
       </div>
 
       {post.title && (
-        <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{post.title}</h3>
+        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{post.title}</h3>
       )}
-      <p className={`whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed text-ink sm:px-5 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
+      <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
         {post.body}
       </p>
 
@@ -445,7 +482,8 @@ export function SignalPostCard({
                   key={url}
                   src={url}
                   onClick={() => setViewerIndex(i)}
-                  className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
+                  className={post.mediaUrls.length === 1 ? 'aspect-[4/5]' : 'aspect-square'}
+                  dynamicAspect={post.mediaUrls.length === 1}
                 />
               ),
             )}
@@ -459,7 +497,7 @@ export function SignalPostCard({
           only ever sees the three actions themselves. Evenly split three
           ways so every touch target is equally large on mobile, rather
           than clustering left with Share pushed to the far edge. */}
-      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 sm:px-3">
+      <div className="grid grid-cols-3 gap-1 px-2 py-1 sm:px-3">
         {/* SIGNAL's signature interaction — "Respect", not "Like": same
             thumbs-up throughout both states (never swapped for a heart
             or checkmark), just filled + CX green + a quick scale/glow
@@ -468,7 +506,7 @@ export function SignalPostCard({
             line and shifting the row's height. */}
         <button
           onClick={handleRespect}
-          className={`pressable flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2.5 text-detail font-semibold transition-colors ${
+          className={`pressable flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
             post.likedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
           }`}
         >
@@ -482,14 +520,14 @@ export function SignalPostCard({
         </button>
         <button
           onClick={handleSave}
-          className={`pressable flex items-center justify-center gap-1.5 rounded-full py-2.5 text-detail font-semibold transition-colors ${
+          className={`pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold transition-colors ${
             post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
           }`}
         >
           <Icon name="bookmark" size={17} fill={post.savedByMe} />
           {post.savedByMe ? 'Saved' : 'Save'}
         </button>
-        <button onClick={handleShare} className="pressable flex items-center justify-center gap-1.5 rounded-full py-2.5 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
+        <button onClick={handleShare} className="pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
           <Icon name="share" size={17} />
           Share
         </button>
@@ -500,7 +538,7 @@ export function SignalPostCard({
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
       {canManage && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-4 py-2 text-[11px] text-faint sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-1.5 text-[11px] text-faint sm:px-4">
           <span className="font-semibold uppercase tracking-wide">Performance</span>
           <span>{compact(post.viewCount)} views</span>
           <span>{compact(post.likeCount)} likes</span>

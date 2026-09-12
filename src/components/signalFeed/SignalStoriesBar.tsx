@@ -42,11 +42,11 @@ export function SignalStoriesBar({
 
   if (stories === null) {
     return (
-      <div className="no-scrollbar mb-5 flex gap-4 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex shrink-0 flex-col items-center gap-1.5">
-            <div className="skeleton h-16 w-16 rounded-full" />
-            <div className="skeleton h-2.5 w-10 rounded-md" />
+          <div key={i} className="flex shrink-0 flex-col items-center gap-1">
+            <div className="skeleton h-14 w-14 rounded-full" />
+            <div className="skeleton h-2.5 w-9 rounded-md" />
           </div>
         ))}
       </div>
@@ -57,13 +57,13 @@ export function SignalStoriesBar({
 
   return (
     <>
-      <div className="no-scrollbar mb-5 flex gap-4 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
         {canCreate && (
-          <button onClick={() => setComposerOpen(true)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
-            <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-accent hover:text-accent-700">
-              <Icon name="plus" size={22} />
+          <button onClick={() => setComposerOpen(true)} className="pressable flex shrink-0 flex-col items-center gap-1">
+            <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-accent hover:text-accent-700">
+              <Icon name="plus" size={20} />
             </span>
-            <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">Add Story</span>
+            <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">Add Story</span>
           </button>
         )}
         {stories.map((story, i) => {
@@ -73,17 +73,17 @@ export function SignalStoriesBar({
           // as a broadcast channel rather than a personal-content ring.
           const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
           return (
-            <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
+            <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1">
               <span
-                className={`grid h-16 w-16 place-items-center rounded-full p-[2.5px] transition-opacity ${
+                className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] transition-opacity ${
                   story.viewedByMe ? 'bg-line-strong opacity-70' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
                 }`}
               >
                 <span className="grid h-full w-full place-items-center overflow-hidden rounded-full border-2 border-surface bg-panel">
-                  <SignalIdentityAvatar identity={identity} size={58} />
+                  <SignalIdentityAvatar identity={identity} size={50} />
                 </span>
               </span>
-              <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">{identity.name}</span>
+              <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{identity.name}</span>
             </button>
           );
         })}

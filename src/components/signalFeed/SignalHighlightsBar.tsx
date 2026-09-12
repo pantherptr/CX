@@ -17,15 +17,15 @@ export function SignalHighlightsBar({ canManage }: { canManage: boolean }) {
 
   return (
     <>
-      <div className="no-scrollbar mb-5 flex gap-4 overflow-x-auto pb-1">
+      <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
         {highlights.map((h, i) => (
-          <button key={h.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
-            <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-line-strong p-[2.5px]">
+          <button key={h.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1">
+            <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-line-strong p-[2.5px]">
               <span className="h-full w-full overflow-hidden rounded-full border-2 border-surface bg-panel">
                 {h.slides[0] && <img src={h.slides[0].mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
               </span>
             </span>
-            <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">{h.title}</span>
+            <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{h.title}</span>
           </button>
         ))}
       </div>

@@ -208,14 +208,26 @@ export async function markEmpireStoryViewed(storyId: string): Promise<void> {
   await supabase.rpc('mark_empire_story_viewed', { p_story_id: storyId });
 }
 
-/** Uploads one Story slide's media (image or video) — `stories/` prefixed
- *  purely to keep the shared `empire-post-media` bucket browsable in the
- *  dashboard, no policy difference from post media (same is_admin()-
- *  gated insert; the bucket's own file_size_limit/allowed_mime_types,
- *  see 0047_signal_video.sql, are the real server-side backstop). */
+/** Uploads one Story slide's media (image or video) — uid-prefixed
+ *  (`${uid}/stories/...`), same shape `uploadEmpirePostMedia` uses. This
+ *  MUST match the storage policy's own check: 0048_signal_community.sql
+ *  rewrote the `empire-post-media` insert policy to require
+ *  `auth.uid()::text = (storage.foldername(name))[1]` (whoever uploads a
+ *  file owns its top-level folder), replacing the older flat
+ *  `stories/<uuid>.ext` layout this function used to write — which,
+ *  after that migration, made every single Story upload fail RLS with
+ *  the literal string "stories" never equal to a real uid. That failure
+ *  was silently swallowed by handlePublish's per-slide try/catch in
+ *  SignalStoryComposer, so a Story would "publish" with zero slides and
+ *  then never appear anywhere (fetch_active_empire_stories only returns
+ *  stories that have at least one slide) — this is the exact "I publish
+ *  a story and nothing comes public" bug. */
 export async function uploadEmpireStoryMedia(file: File): Promise<{ url: string; path: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `stories/${crypto.randomUUID()}.${ext}`;
+  const path = `${uid}/stories/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
@@ -223,9 +235,13 @@ export async function uploadEmpireStoryMedia(file: File): Promise<{ url: string;
 
 /** Uploads a video slide's client-captured poster frame (see
  *  captureVideoPosterBlob in lib/media.ts) — always a JPEG blob, never
- *  user-supplied, so no extra type validation is needed here. */
+ *  user-supplied, so no extra type validation is needed here. Same
+ *  uid-prefix requirement as uploadEmpireStoryMedia above. */
 export async function uploadEmpireStoryPoster(blob: Blob): Promise<{ url: string; path: string }> {
-  const path = `stories/${crypto.randomUUID()}-poster.jpg`;
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('Not signed in');
+  const path = `${uid}/stories/${crypto.randomUUID()}-poster.jpg`;
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };

@@ -178,6 +178,7 @@ export function SignalStoryComposer({
       setPublishing(false);
       return;
     }
+    let succeeded = 0;
     for (const slide of slides) {
       try {
         const { path } = await uploadEmpireStoryMedia(slide.file);
@@ -189,17 +190,26 @@ export function SignalStoryComposer({
             // A missing poster isn't fatal — see addVideoFiles.
           }
         }
-        await addEmpireStorySlide(storyId, path, slide.mediaType, {
+        const { error: slideError } = await addEmpireStorySlide(storyId, path, slide.mediaType, {
           caption: slide.caption.trim() || undefined,
           ctaLabel: slide.ctaLabel.trim() || undefined,
           ctaUrl: slide.ctaUrl.trim() || undefined,
           posterPath,
         });
+        if (!slideError) succeeded++;
       } catch {
         // one slide failing shouldn't abandon the rest already uploaded
       }
     }
     setPublishing(false);
+    // A Story with zero real slides never appears anywhere (Stories only
+    // surface once they have at least one) — so a total failure here must
+    // be a visible error, not a silent no-op close, or publishing looks
+    // like it worked while the Story vanishes for good.
+    if (succeeded === 0) {
+      setError('Could not upload any media for this Story — check your connection and try again.');
+      return;
+    }
     onPublished();
   };
 

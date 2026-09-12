@@ -14,7 +14,7 @@ export function SignalCategoryFilter({
   onChange: (category: EmpireCategory | null) => void;
 }) {
   return (
-    <div className="no-scrollbar mb-4 flex gap-1.5 overflow-x-auto pb-1">
+    <div className="no-scrollbar mb-2.5 flex gap-1.5 overflow-x-auto pb-1">
       <button
         onClick={() => onChange(null)}
         className={`shrink-0 rounded-full px-3.5 py-1.5 text-caption font-semibold uppercase tracking-wide transition-colors ${

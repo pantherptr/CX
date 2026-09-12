@@ -24,7 +24,7 @@ export function SignalCommunityDiscoveryFilter({
   onChange: (filter: CommunityDiscoveryFilter) => void;
 }) {
   return (
-    <div className="no-scrollbar mb-4 flex gap-1.5 overflow-x-auto pb-1">
+    <div className="no-scrollbar mb-2.5 flex gap-1.5 overflow-x-auto pb-1">
       {FILTERS.map((f) => (
         <button
           key={f.value}

@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useAuth } from '../lib/auth';
@@ -239,29 +239,30 @@ const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: 
 };
 
 // One checkmark, hand-drawn to sit slightly off-center-low in a 24x24
-// box (a plain centered tick reads as clipped once the circle's own
+// box (a plain centered tick reads as clipped once the ring's own
 // stroke is added) — shared by every tier so the only thing that ever
 // changes between them is color, never shape.
 const CHECK_PATH = 'M7.4 12.6 L10.6 15.8 L16.7 9.2';
 
-/** Owner alone gets a two-stop gradient (green -> gold) for its ring and
- *  check — `useId()` keeps the `<linearGradient>` id collision-free when
- *  several Owner badges render on the same page (e.g. a feed of their
- *  own posts), which a hardcoded id would not. */
+// A 14-lobe scalloped "seal" outline (radius oscillating gently around a
+// circle) instead of a plain disc — the one shape choice that reads as a
+// verification SEAL rather than a borrowed platform check-bubble, per the
+// explicit "don't copy Instagram/X" brief. Generated once as a fixed point
+// path (112 line segments on a smooth cosine radius) rather than computed
+// at render time — it never needs to change, and a literal path costs
+// nothing to render at 12-24px.
+const SEAL_PATH =
+  'M 12.00 1.35 L 12.58 1.67 L 13.07 2.46 L 13.48 3.27 L 13.90 3.66 L 14.45 3.49 L 15.17 2.94 L 15.96 2.44 L 16.62 2.40 L 17.00 2.95 L 17.11 3.87 L 17.13 4.78 L 17.33 5.32 L 17.90 5.40 L 18.79 5.21 L 19.71 5.11 L 20.33 5.36 L 20.43 6.02 L 20.13 6.89 L 19.75 7.72 L 19.70 8.29 L 20.18 8.61 L 21.06 8.83 L 21.94 9.14 L 22.38 9.63 L 22.20 10.27 L 21.54 10.93 L 20.84 11.50 L 20.55 12.00 L 20.84 12.50 L 21.54 13.07 L 22.20 13.73 L 22.38 14.37 L 21.94 14.86 L 21.06 15.17 L 20.18 15.39 L 19.70 15.71 L 19.75 16.28 L 20.13 17.11 L 20.43 17.98 L 20.33 18.64 L 19.71 18.89 L 18.79 18.79 L 17.90 18.60 L 17.33 18.68 L 17.13 19.22 L 17.11 20.13 L 17.00 21.05 L 16.62 21.60 L 15.96 21.56 L 15.17 21.06 L 14.45 20.51 L 13.90 20.34 L 13.48 20.73 L 13.07 21.54 L 12.58 22.33 L 12.00 22.65 L 11.42 22.33 L 10.93 21.54 L 10.52 20.73 L 10.10 20.34 L 9.55 20.51 L 8.83 21.06 L 8.04 21.56 L 7.38 21.60 L 7.00 21.05 L 6.89 20.13 L 6.87 19.22 L 6.67 18.68 L 6.10 18.60 L 5.21 18.79 L 4.29 18.89 L 3.67 18.64 L 3.57 17.98 L 3.87 17.11 L 4.25 16.28 L 4.30 15.71 L 3.82 15.39 L 2.94 15.17 L 2.06 14.86 L 1.62 14.37 L 1.80 13.73 L 2.46 13.07 L 3.16 12.50 L 3.45 12.00 L 3.16 11.50 L 2.46 10.93 L 1.80 10.27 L 1.62 9.63 L 2.06 9.14 L 2.94 8.83 L 3.82 8.61 L 4.30 8.29 L 4.25 7.72 L 3.87 6.89 L 3.57 6.02 L 3.67 5.36 L 4.29 5.11 L 5.21 5.21 L 6.10 5.40 L 6.67 5.32 L 6.87 4.78 L 6.89 3.87 L 7.00 2.95 L 7.38 2.40 L 8.04 2.44 L 8.83 2.94 L 9.55 3.49 L 10.10 3.66 L 10.52 3.27 L 10.93 2.46 L 11.42 1.67 Z';
+
+/** Owner alone uses a real raster medallion (the gold-and-green shield
+ *  crest, `/owner-verified.png`) instead of the shared flat seal — a
+ *  deliberate one-off to make Owner visibly the most premium tier, per
+ *  direct request. Source art is a full ornate crest (crown, laurel,
+ *  "VERIFIED" banner) that turns to mud below ~40px, so this uses a
+ *  pre-cropped, circle-masked medallion of just its shield+check core
+ *  (see /tmp asset prep) rather than the full crest at inline sizes. */
 function OwnerBadgeMark({ size }: { size: number }) {
-  const gradientId = `owner-badge-${useId()}`;
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-      <defs>
-        <linearGradient id={gradientId} x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="var(--color-accent-bright)" />
-          <stop offset="1" stopColor="#e3b23a" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="10.4" fill="var(--color-noir)" stroke={`url(#${gradientId})`} strokeWidth="1.3" />
-      <path d={CHECK_PATH} fill="none" stroke={`url(#${gradientId})`} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <img src="/owner-verified.png" alt="Owner" width={size} height={size} className="shrink-0 rounded-full object-cover" />;
 }
 
 const BADGE_FILL: Record<Exclude<VerifiedRole, 'owner'>, string> = {
@@ -276,12 +277,19 @@ const BADGE_CHECK: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   host: '#ffffff',
   client: '#ffffff',
 };
+// Admin is the only non-Owner tier with its own ring color (green on
+// black, mirroring Owner's black-plus-ring construction one step down in
+// exclusivity); the others read fine as a flat seal with no separate ring.
+const BADGE_RING: Partial<Record<Exclude<VerifiedRole, 'owner'>, string>> = {
+  admin: 'var(--color-accent-bright)',
+};
 
 function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {
   if (role === 'owner') return <OwnerBadgeMark size={size} />;
+  const ring = BADGE_RING[role];
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
-      <circle cx="12" cy="12" r="10.4" fill={BADGE_FILL[role]} />
+      <path d={SEAL_PATH} fill={BADGE_FILL[role]} stroke={ring} strokeWidth={ring ? 1.3 : 0} strokeLinejoin="round" />
       <path d={CHECK_PATH} fill="none" stroke={BADGE_CHECK[role]} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
