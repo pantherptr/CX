@@ -42,9 +42,11 @@ const EASE = 'cubic-bezier(0.16,1,0.3,1)';
 // a button glued on top. Geometry lives in a 40%-wide, 34px-tall box
 // centered on Signal's column; everything left/right of it is the bar's
 // own untouched flat top edge and border.
-const HILL_RISE = 24; // px the plateau sits above the bar's flat top edge
-const HILL_BOX_HEIGHT = 38; // px — extends 14px back down into the bar for a seamless join
-const HILL_FLAT_Y = HILL_RISE / HILL_BOX_HEIGHT; // fraction: where the flat sides sit (≈0.632)
+const HILL_RISE = 40; // px the plateau sits above the bar's flat top edge — tall enough that
+// the logo (see the Link below) clears it with real, visible margin in both states, not just
+// technically-non-overlapping.
+const HILL_BOX_HEIGHT = 54; // px — extends 14px back down into the bar for a seamless join
+const HILL_FLAT_Y = HILL_RISE / HILL_BOX_HEIGHT; // fraction: where the flat sides sit (≈0.708)
 
 // Flat -> smooth S-curve up -> flat plateau (where the logo sits) -> S-curve down -> flat.
 // The same top contour is authored twice at two scales so the visible rim (stroke) lines up
@@ -193,25 +195,49 @@ export function BottomNav() {
                 aria-current={active ? 'page' : undefined}
               >
                 <span
-                  className="relative grid place-items-center transition-all duration-300"
+                  className="relative transition-all duration-300"
                   style={{
                     // Fixed at the same 23px the normal icons reserve, so
                     // Signal's own label sits on the identical baseline as
                     // Home/Explore/Messages/Profile's — the logo is visibly
-                    // larger and already escapes this box via translateY,
-                    // so it overflows it symmetrically without this slot
-                    // needing to grow (which would otherwise stretch the
-                    // whole shared grid row and nudge every other label).
+                    // larger and already escapes this box (see the
+                    // absolutely-centered inner span below), so it
+                    // overflows it symmetrically without this slot needing
+                    // to grow (which would otherwise stretch the whole
+                    // shared grid row and nudge every other label).
+                    // The lift (-19/-28) is tuned against HILL_RISE above
+                    // to always clear the raised section's rim with real
+                    // visible margin — never flush with it, let alone
+                    // behind it. The small translateX/extra translateY are
+                    // a deliberate optical correction, not arbitrary: the
+                    // artwork's own visual weight (the solid glyph vs. the
+                    // sparser radiating arcs) sits measurably right-and-
+                    // down of the image's geometric center (~5%/~9% of its
+                    // own size), so centering the bounding box alone reads
+                    // as faintly off-balance — this nudges the actual mass
+                    // back onto the column's true center.
                     width: 23,
                     height: 23,
-                    transform: active ? 'translateY(-21px) scale(1.1)' : 'translateY(-13px)',
+                    transform: active ? 'translate(-3px, -28px) scale(1.08)' : 'translate(-2.5px, -19px)',
                     filter: active
                       ? 'drop-shadow(0 0 10px rgba(0,212,71,0.55)) drop-shadow(0 2px 5px rgba(0,0,0,0.22))'
                       : 'drop-shadow(0 1px 3px rgba(0,0,0,0.16))',
                     transitionTimingFunction: EASE,
                   }}
                 >
-                  <SignalLogo size={active ? 32 : 28} />
+                  {/* Absolute + translate(-50%,-50%), not CSS Grid's
+                      place-items:center — Grid's auto-centering of an
+                      oversized item turns out to only behave reliably for
+                      genuine replaced elements (a bare <img>); SignalLogo's
+                      own root is a plain span, and place-items-center
+                      silently left it start-aligned instead of centered.
+                      Absolute positioning centers unambiguously regardless
+                      of the child's type or size. The live sweep effect is
+                      built into SignalLogo itself now (always on, every
+                      instance app-wide), not re-declared per call site. */}
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <SignalLogo size={active ? 36 : 30} />
+                  </span>
                   {signalUnread.count > 0 && (
                     <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent-bright px-0.5 text-[9px] font-bold leading-none text-noir">
                       {signalUnread.count > 9 ? '9+' : signalUnread.count}

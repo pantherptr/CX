@@ -390,6 +390,48 @@
     100% { transform: scale(1); }
   }
   .animate-like-pop { animation: like-pop 0.35s var(--ease-out-expo, ease-out); }
+
+  /* The Signal nav icon's "live signal" effect (BottomNav.tsx, active tab
+     only) — a soft highlight sweeping through the logo's own silhouette.
+     `.signal-sweep-mask` clips to the logo's alpha channel (set inline,
+     since the asset path lives in a component prop) and blends the sweep
+     additively so it brightens the existing chrome/green art rather than
+     painting over it; `.signal-sweep-bar` is the actual moving light,
+     oversized and offset so it can travel edge-to-edge under the mask.
+     Only `transform` is animated (compositor-only, no layout/paint cost)
+     and the keyframe's 0%/100% are identical, so the loop never jumps —
+     it eases forward and back like a single continuous sweep. */
+  .signal-sweep-mask {
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mix-blend-mode: screen;
+    overflow: hidden;
+  }
+  .signal-sweep-bar {
+    top: -60%;
+    left: -60%;
+    width: 220%;
+    height: 220%;
+    background: linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(170, 255, 195, 0.85) 48.5%,
+      rgba(255, 255, 255, 0.95) 50%,
+      rgba(170, 255, 195, 0.85) 51.5%,
+      transparent 58%
+    );
+    animation: signal-sweep-move 3.4s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes signal-sweep-move {
+    0%, 100% { transform: translate(-22%, -22%); }
+    50% { transform: translate(22%, 22%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .signal-sweep-bar { animation: none; opacity: 0; }
+  }
   @keyframes slide-in-right {
     from { opacity: 0; transform: translateX(24px); }
     to { opacity: 1; transform: translateX(0); }

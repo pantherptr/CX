@@ -1,54 +1,53 @@
-/** The SIGNAL crest — CX Rent's official brand asset, in two renditions
- *  picked automatically by size:
+/** The SIGNAL crest — CX Rent's one official brand asset, used everywhere
+ *  at whatever size a surface needs. `signal-icon.png` is a tight crop of
+ *  just the icon portion (the "CX" glyph merged with radiating signal
+ *  arcs) cut from the full lockup at `/SIGNAL.png`, which also carries
+ *  the "SIGNAL" wordmark and tagline baked in below the icon — every
+ *  surface using this component already sets its own "CX SIGNAL" text
+ *  next to it, so that text is cropped out here rather than duplicated.
+ *  Same asset at every call site — the bottom nav and the header must
+ *  read as the same mark, not two different logos.
  *
- *  - `size >= SMALL_ICON_THRESHOLD`: the real official artwork, cropped
- *    from the full lockup at `/SIGNAL.png` down to just its icon portion
- *    (`/signal-icon.png` — the "CX" glyph merged with radiating signal
- *    arcs, chrome-bevelled with a green glow). Every surface using this
- *    component already sets its own "CX SIGNAL" text next to it, so the
- *    wordmark/tagline baked into the full lockup is deliberately cropped
- *    out rather than duplicated.
- *  - below that: a bold, simplified inline-SVG version of the same
- *    broadcasting-mast-and-arcs motif, in the same black-to-green
- *    gradient. The official art's fine chrome bevels and thin radiating
- *    arcs turn into an illegible smudge once scaled down to a ~24px nav
- *    icon — this is the same "simplified mark for small sizes, detailed
- *    mark for large ones" split any real brand system uses (a favicon
- *    vs. a hero logo), not a mismatched fallback. */
-const SMALL_ICON_THRESHOLD = 40;
-
-function SignalMarkSimplified({ size, className }: { size: number; className: string }) {
-  return (
-    <svg viewBox="0 0 100 100" className={`shrink-0 ${className}`} style={{ height: size, width: size }} aria-hidden="true">
-      <defs>
-        <linearGradient id="signal-mark-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#00e850" />
-          <stop offset="55%" stopColor="#00d447" />
-          <stop offset="100%" stopColor="#005e23" />
-        </linearGradient>
-      </defs>
-      {/* Broadcasting mast */}
-      <rect x="46.5" y="43" width="7" height="34" rx="3.5" fill="url(#signal-mark-gradient)" />
-      <rect x="35" y="76" width="30" height="7" rx="3.5" fill="url(#signal-mark-gradient)" />
-      <circle cx="50" cy="38" r="7.5" fill="url(#signal-mark-gradient)" />
-      {/* Signal arcs, radiating outward — three nested, thinning with distance */}
-      <path d="M 41.0,27.3 A 14,14 0 0 1 59.0,27.3" fill="none" stroke="url(#signal-mark-gradient)" strokeWidth="5.5" strokeLinecap="round" />
-      <path d="M 34.6,19.6 A 24,24 0 0 1 65.4,19.6" fill="none" stroke="url(#signal-mark-gradient)" strokeWidth="5" strokeLinecap="round" opacity="0.82" />
-      <path d="M 28.1,12.0 A 34,34 0 0 1 71.9,12.0" fill="none" stroke="url(#signal-mark-gradient)" strokeWidth="4.5" strokeLinecap="round" opacity="0.62" />
-    </svg>
-  );
-}
+ *  Every instance carries the "live signal" effect permanently — a soft
+ *  highlight sweeping through the logo's own silhouette (masked to its
+ *  alpha channel, so it never spills outside the metal), blended
+ *  additively so it brightens the existing chrome/green art instead of
+ *  painting over it. It's baked in here rather than left as an opt-in
+ *  prop some call sites remember and others forget, so the mark reads
+ *  identically alive wherever it appears — header, nav, sign-in gate,
+ *  empty states — with no touch or active state required. Pure CSS
+ *  `transform` animation (see `.signal-sweep-bar` in index.css): no
+ *  per-frame JS, and the keyframe's start/end are identical so the loop
+ *  never visibly jumps.
+ *
+ *  Width is computed explicitly from the source's real aspect ratio, and
+ *  `max-width` is explicitly cleared — Tailwind's preflight resets every
+ *  `<img>` to `max-width: 100%` (the standard "never overflow your
+ *  container" default), and `max-width` always caps the final size no
+ *  matter how specific the competing `width` declaration is. Inside a
+ *  fixed-width flex/grid slot (the bottom nav's icon column, for one),
+ *  that silently caps the logo at the slot's own width regardless of
+ *  what `width` says, squashing it into a tall sliver that
+ *  `object-contain` then shrinks further to fit. */
+const ASPECT_RATIO = 982 / 637; // signal-icon.png's real width/height
 
 export function SignalLogo({ size = 24, className = '' }: { size?: number; className?: string }) {
-  if (size < SMALL_ICON_THRESHOLD) {
-    return <SignalMarkSimplified size={size} className={className} />;
-  }
+  const width = size * ASPECT_RATIO;
   return (
-    <img
-      src="/signal-icon.png"
-      alt=""
-      className={`shrink-0 object-contain ${className}`}
-      style={{ height: size, width: 'auto' }}
-    />
+    <span className={`relative inline-block shrink-0 ${className}`} style={{ height: size, width }}>
+      <img
+        src="/signal-icon.png"
+        alt=""
+        className="absolute inset-0 h-full w-full object-contain"
+        style={{ maxWidth: 'none' }}
+      />
+      <span
+        aria-hidden="true"
+        className="signal-sweep-mask pointer-events-none absolute inset-0"
+        style={{ WebkitMaskImage: 'url(/signal-icon.png)', maskImage: 'url(/signal-icon.png)' }}
+      >
+        <span className="signal-sweep-bar absolute" />
+      </span>
+    </span>
   );
 }
