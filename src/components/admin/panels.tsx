@@ -19,6 +19,7 @@ import {
   type AdminBooking,
   type AdminCar,
 } from '../../lib/data/admin';
+import { setVerifiedClient } from '../../lib/data/owner';
 
 /**
  * Shared between AdminDashboard and OwnerDashboard — these panels (and
@@ -151,14 +152,27 @@ export function VerificationsPanel() {
 }
 
 export function UsersPanel() {
+  const { toast } = useApp();
   const [items, setItems] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllUsers()
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load users.'));
   }, []);
+
+  const toggleVerifiedClient = async (u: AdminUser) => {
+    setBusyId(u.id);
+    const { error: err } = await setVerifiedClient(u.id, !u.isVerifiedClient, u.fullName);
+    setBusyId(null);
+    if (err) {
+      toast({ title: 'Could not update Verified Client status', desc: err, icon: 'info' });
+      return;
+    }
+    setItems((prev) => (prev ?? []).map((x) => (x.id === u.id ? { ...x, isVerifiedClient: !x.isVerifiedClient } : x)));
+  };
 
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
   if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
@@ -176,6 +190,16 @@ export function UsersPanel() {
           <div className="flex shrink-0 items-center gap-1.5">
             {u.isAdmin && <span className="badge badge-accent"><Icon name="shield" size={12} /> Admin</span>}
             {u.isHost && <span className="badge bg-panel-2 text-ink-soft"><Icon name="cars" size={12} /> Host</span>}
+            {!u.isAdmin && (
+              <button
+                onClick={() => toggleVerifiedClient(u)}
+                disabled={busyId === u.id}
+                className={`badge disabled:opacity-50 ${u.isVerifiedClient ? 'badge-accent' : 'bg-panel-2 text-ink-soft hover:bg-panel'}`}
+                title={u.isVerifiedClient ? 'Revoke Verified Client — lets them publish to Signal' : 'Grant Verified Client — lets them publish to Signal'}
+              >
+                <Icon name="verified" size={12} /> {u.isVerifiedClient ? 'Verified Client' : 'Verify Client'}
+              </button>
+            )}
           </div>
         </div>
       ))}

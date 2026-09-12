@@ -21,28 +21,36 @@ interface PendingMedia {
   mediaKind: 'image' | 'video';
 }
 
-/** Owner/Admin-only publish form — mounted by the page only when
- *  `roleFromFlags(profile)` resolves to owner/admin (UX gate only; the
- *  real enforcement is `is_admin()` inside every RPC this calls). Reused
+/** The Signal publish form — mounted by the page for whichever authorized
+ *  publishers it is (UX gate only; the real enforcement is
+ *  `can_publish_signal_content()` inside every RPC this calls). Reused
  *  for both creating a new post and editing an existing one — `editing`
  *  pre-fills the form and swaps Publish for Save. Media is staged
  *  locally with a preview and only uploaded on submit, same pattern as
  *  the listing photo step in ListCar.tsx. Images and video share one
  *  staging list and one upload pass — `uploadEmpirePostMedia` is already
- *  file-type-agnostic, so only selection/validation differ by kind. */
+ *  file-type-agnostic, so only selection/validation differ by kind.
+ *
+ *  `mode` is the one thing that changes between publishers: `'official'`
+ *  (Owner/Admin, the default) shows the Owner/CX Assistant/CX picker;
+ *  `'self'` (Host/Verified Client) hides it entirely and always publishes
+ *  under the caller's own real identity — the server forces this
+ *  regardless of what's sent, this just keeps the UI honest about it. */
 export function SignalPostComposer({
   editing,
   onDone,
   onCancel,
+  mode = 'official',
 }: {
   /** Present → editing this post. Absent → composing a new one. */
   editing?: EmpirePost;
   onDone: (post: EmpirePost) => void;
   onCancel?: () => void;
+  mode?: 'official' | 'self';
 }) {
   const { profile } = useAuth();
   const objectUrls = useRef<string[]>([]);
-  const [publisherType, setPublisherType] = useState<SignalPublisherType>(editing?.publisherType ?? lastSignalPublisherType());
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : (editing?.publisherType ?? lastSignalPublisherType()));
   const [category, setCategory] = useState<EmpireCategory>(editing?.category ?? 'news');
   const [title, setTitle] = useState(editing?.title ?? '');
   const [body, setBody] = useState(editing?.body ?? '');
@@ -156,7 +164,12 @@ export function SignalPostComposer({
       // mapCreatedPost) — carry the real, already-known engagement
       // numbers over from the pre-edit post rather than letting them
       // flash to zero until the next full refetch.
-      onDone(editing ? { ...result.post, likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount, viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe } : result.post);
+      onDone(editing ? {
+        ...result.post,
+        likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount,
+        viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe,
+        authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
+      } : result.post);
     } finally {
       setSubmitting(false);
     }
@@ -164,14 +177,16 @@ export function SignalPostComposer({
 
   return (
     <div className="card mb-5 p-4 sm:p-5">
-      <SignalPublisherPicker
-        value={publisherType}
-        onChange={setPublisherType}
-        ownerName={profile?.full_name || 'Owner'}
-        ownerAvatarUrl={profile?.avatar_url ?? null}
-      />
+      {mode === 'official' && (
+        <SignalPublisherPicker
+          value={publisherType}
+          onChange={setPublisherType}
+          ownerName={profile?.full_name || 'Owner'}
+          ownerAvatarUrl={profile?.avatar_url ?? null}
+        />
+      )}
 
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className={`flex flex-wrap gap-1.5 ${mode === 'official' ? 'mt-4' : ''}`}>
         {EMPIRE_CATEGORIES.map((c) => (
           <button
             key={c.value}

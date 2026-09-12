@@ -129,6 +129,19 @@ export async function fetchAllHosts(): Promise<OwnerHost[]> {
   }));
 }
 
+/** Grants/revokes SIGNAL community-publishing eligibility — unlike
+ *  `setHostSuspended` (a plain update relying on RLS + the profile lock
+ *  trigger, since the Owner already has a broad "update any profile"
+ *  policy), this goes through a dedicated `security definer` RPC so
+ *  Admin can grant it too without a new, much broader "Admin can update
+ *  any profile" RLS policy that would let Admin edit any field on any
+ *  account. See 0048_signal_community.sql's `set_verified_client`. */
+export async function setVerifiedClient(userId: string, value: boolean, userName: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_verified_client', { p_user_id: userId, p_value: value });
+  if (!error) void logOwnerAction(value ? 'verify_client' : 'unverify_client', 'user', userId, { userName });
+  return { error: error?.message ?? null };
+}
+
 export async function setHostSuspended(hostId: string, suspended: boolean, hostName: string): Promise<{ error: string | null }> {
   const { error } = await supabase.from('profiles').update({ suspended }).eq('id', hostId);
   if (!error) void logOwnerAction(suspended ? 'suspend_host' : 'unsuspend_host', 'host', hostId, { hostName });

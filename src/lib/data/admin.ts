@@ -19,6 +19,7 @@ export interface AdminUser {
   avatarUrl: string | null;
   isHost: boolean;
   isAdmin: boolean;
+  isVerifiedClient: boolean;
   createdAt: string;
 }
 
@@ -28,13 +29,14 @@ interface AdminUserRow {
   avatar_url: string | null;
   is_host: boolean;
   is_admin: boolean;
+  is_verified_client: boolean;
   created_at: string;
 }
 
 export async function fetchAllUsers(): Promise<AdminUser[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, is_host, is_admin, created_at')
+    .select('id, full_name, avatar_url, is_host, is_admin, is_verified_client, created_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data as AdminUserRow[]).map((r) => ({
@@ -43,6 +45,7 @@ export async function fetchAllUsers(): Promise<AdminUser[]> {
     avatarUrl: r.avatar_url,
     isHost: r.is_host,
     isAdmin: r.is_admin,
+    isVerifiedClient: r.is_verified_client,
     createdAt: r.created_at,
   }));
 }

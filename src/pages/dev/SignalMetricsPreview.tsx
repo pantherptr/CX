@@ -29,6 +29,8 @@ function mockPost(overrides: Partial<EmpirePost>): EmpirePost {
     authorName: 'CX Rent',
     authorAvatarUrl: null,
     authorRole: 'owner',
+    authorIsHost: false,
+    authorIsVerifiedClient: false,
     category: 'announcement',
     title: 'Layout fixture — not a real post',
     body: 'This card only exists to check how large numbers wrap and truncate. It is never fetched from the database.',

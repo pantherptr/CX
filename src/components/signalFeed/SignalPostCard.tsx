@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
+import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
@@ -11,6 +13,18 @@ import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalPostComposer } from './SignalPostComposer';
+import { SignalComments } from './SignalComments';
+
+/** Where tapping a post's identity block should go — the two official-
+ *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
+ *  renders a static info block for them instead of fetching a profile),
+ *  everyone else (Owner's real row, or a Host/Verified Client's 'self'
+ *  post) opens their real account by id. */
+function signalProfileHref(post: EmpirePost): string {
+  if (post.publisherType === 'cx') return '/signal/profile/cx';
+  if (post.publisherType === 'assistant') return '/signal/profile/assistant';
+  return `/signal/profile/${post.authorId}`;
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -184,6 +198,7 @@ export function SignalPostCard({
   post,
   canManage,
   featured = false,
+  showComments = false,
   onChanged,
   onDeleted,
   onPinToggled,
@@ -192,12 +207,18 @@ export function SignalPostCard({
   post: EmpirePost;
   canManage: boolean;
   featured?: boolean;
+  /** Only the detail view (`SignalPostDetail`) passes this — comments
+   *  stay out of the scrolling feed's cards to keep the feed as clean as
+   *  the no-public-counters redesign already made it; they're reachable
+   *  the moment you open a post. */
+  showComments?: boolean;
   onChanged: (post: EmpirePost) => void;
   onDeleted: (postId: string) => void;
   onPinToggled?: () => void;
   onFeaturedToggled?: () => void;
 }) {
   const { toast } = useApp();
+  const { session } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -205,7 +226,12 @@ export function SignalPostCard({
   const [likeBounce, setLikeBounce] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
-  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl);
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient);
+  // Real ownership (not just admin moderation) — a Host/Verified Client
+  // can edit/delete their own post even without canManage's broader
+  // pin/feature/Performance-line privileges. Admin keeps everything.
+  const isOwnPost = Boolean(session?.user.id) && post.authorId === session?.user.id;
+  const canModerate = canManage || isOwnPost;
 
   // Fire-and-forget — markEmpirePostViewed is dedup'd server-side
   // (empire_post_views is keyed on post_id + user_id), so a re-render or
@@ -303,6 +329,7 @@ export function SignalPostCard({
     return (
       <SignalPostComposer
         editing={post}
+        mode={post.publisherType === 'self' ? 'self' : 'official'}
         onDone={(updated) => { setEditing(false); onChanged(updated); }}
         onCancel={() => setEditing(false)}
       />
@@ -332,19 +359,21 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-3 p-4 pb-3 sm:px-5">
-        <SignalIdentityAvatar identity={identity} size={40} />
+        <Link to={signalProfileHref(post)} className="shrink-0">
+          <SignalIdentityAvatar identity={identity} size={40} />
+        </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <Link to={signalProfileHref(post)} className="flex items-center gap-1.5 hover:underline">
             <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
             <SignalIdentityBadge identity={identity} />
-          </div>
+          </Link>
           <p className="truncate text-caption text-muted">{identity.subtitle}</p>
           <p className="text-caption text-muted">
             {categoryLabel(post.category)} · {timeAgo(post.createdAt)}
             {post.editedAt && ' · Edited'}
           </p>
         </div>
-        {canManage && (
+        {canModerate && (
           <div className="relative shrink-0">
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -361,12 +390,16 @@ export function SignalPostCard({
                   <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
                     <Icon name="edit" size={15} /> Edit post
                   </button>
-                  <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                    <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
-                  </button>
-                  <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                    <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
-                  </button>
+                  {canManage && (
+                    <>
+                      <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                        <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
+                      </button>
+                      <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                        <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
+                      </button>
+                    </>
+                  )}
                   <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger hover:bg-danger/5">
                     <Icon name="trash" size={15} /> Delete post
                   </button>
@@ -471,6 +504,16 @@ export function SignalPostCard({
           <span>{compact(post.likeCount)} likes</span>
           <span>{compact(post.saveCount)} saves</span>
           <span>{compact(post.shareCount)} shares</span>
+        </div>
+      )}
+
+      {showComments && !post.commentsDisabled && (
+        <div className="border-t border-line">
+          <SignalComments
+            postId={post.id}
+            canModerateAll={canManage}
+            onCountChanged={(delta) => onChanged({ ...post, commentCount: post.commentCount + delta })}
+          />
         </div>
       )}
 

@@ -42,6 +42,13 @@ export interface EmpirePost {
    *  — but typed as the same union messages.ts uses so `<VerifiedBadge>`
    *  takes it directly with no cast. */
   authorRole: ParticipantRole;
+  /** Only meaningful for a `publisherType === 'self'` post (a Host or
+   *  Verified Client publishing under their own real identity) — used by
+   *  `resolveSignalIdentity` to pick the right badge. Sourced live from
+   *  the author's own current profile flags on every fetch, never stored
+   *  on the post itself. */
+  authorIsHost: boolean;
+  authorIsVerifiedClient: boolean;
   category: EmpireCategory;
   title: string | null;
   body: string;
@@ -78,6 +85,8 @@ interface EmpirePostRow {
   author_avatar_url: string | null;
   author_is_owner: boolean;
   author_is_admin: boolean;
+  author_is_host: boolean;
+  author_is_verified_client: boolean;
   category: EmpireCategory;
   title: string | null;
   body: string;
@@ -120,7 +129,9 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     authorId: row.author_id,
     authorName: row.author_name ?? 'CX Rent',
     authorAvatarUrl: row.author_avatar_url,
-    authorRole: roleFromFlags({ is_owner: row.author_is_owner, is_admin: row.author_is_admin, is_host: false }),
+    authorRole: roleFromFlags({ is_owner: row.author_is_owner, is_admin: row.author_is_admin, is_host: row.author_is_host }),
+    authorIsHost: row.author_is_host,
+    authorIsVerifiedClient: row.author_is_verified_client,
     category: row.category,
     title: row.title,
     body: row.body,
@@ -290,6 +301,8 @@ function mapCreatedPost(row: {
     authorName: '',
     authorAvatarUrl: null,
     authorRole: 'admin',
+    authorIsHost: false,
+    authorIsVerifiedClient: false,
     category: row.category,
     title: row.title,
     body: row.body,
@@ -343,20 +356,131 @@ export async function toggleEmpirePostSave(postId: string): Promise<{ saved: boo
   return { saved: Boolean(data), error: null };
 }
 
-// Comments were removed from Signal's UI entirely (replaced by a real,
-// server-tracked view count — see markEmpirePostViewed below and
-// SignalPostCard's action row). The empire_post_comments table and its
-// RPCs stay untouched server-side (no existing comment history is
-// deleted), but nothing in this app calls them anymore.
+// ---- Comments — revived for the community redesign (SIGNAL is no
+// longer an Owner-only broadcast feed). The tables/RPCs were never
+// removed server-side when the UI was pulled earlier, so no migration
+// was needed to bring this back — see 0040_empire_feed.sql. Listing is a
+// plain select (no RPC exists for it, unlike the writes) since RLS
+// already allows any signed-in user to read every row; the author's
+// name/avatar/role badge come along via the same FK-embed pattern
+// fetchCarWithHost uses for a Host. ----
 
-/** Uploads one composer image to the public `empire-post-media` bucket.
- *  Only Owner/Admin ever call this — the bucket's insert policy checks
- *  `is_admin()` directly (0040_empire_feed.sql), not a per-uploader
- *  folder like car-photos/avatars, since there's exactly one class of
- *  writer here. Same shape as `uploadCarPhoto` in cars.ts otherwise. */
+export interface EmpireComment {
+  id: string;
+  postId: string;
+  userId: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  authorIsOwner: boolean;
+  authorIsAdmin: boolean;
+  authorIsHost: boolean;
+  authorIsVerifiedClient: boolean;
+  body: string;
+  createdAt: string;
+}
+
+interface EmpireCommentRow {
+  id: string;
+  post_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  author: {
+    full_name: string | null;
+    avatar_url: string | null;
+    is_owner: boolean;
+    is_admin: boolean;
+    is_host: boolean;
+    is_verified_client: boolean;
+  } | null;
+}
+
+function mapEmpireComment(row: EmpireCommentRow): EmpireComment {
+  return {
+    id: row.id,
+    postId: row.post_id,
+    userId: row.user_id,
+    authorName: row.author?.full_name ?? 'CX Rent user',
+    authorAvatarUrl: row.author?.avatar_url ?? null,
+    authorIsOwner: row.author?.is_owner ?? false,
+    authorIsAdmin: row.author?.is_admin ?? false,
+    authorIsHost: row.author?.is_host ?? false,
+    authorIsVerifiedClient: row.author?.is_verified_client ?? false,
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchEmpirePostComments(postId: string): Promise<EmpireComment[]> {
+  const { data, error } = await supabase
+    .from('empire_post_comments')
+    .select('id, post_id, user_id, body, created_at, author:profiles!empire_post_comments_user_id_fkey(full_name, avatar_url, is_owner, is_admin, is_host, is_verified_client)')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data as unknown as EmpireCommentRow[]).map(mapEmpireComment);
+}
+
+export async function addEmpireComment(postId: string, body: string): Promise<{ comment: EmpireComment | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_comment', { p_post_id: postId, p_body: body });
+  if (error) return { comment: null, error: error.message };
+  const row = data as { id: string; post_id: string; user_id: string; body: string; created_at: string };
+  // The RPC returns a bare comment row (no joined author) — the caller
+  // already knows their own identity to render an optimistic entry;
+  // fetchEmpirePostComments' next real fetch fills in the rest.
+  return {
+    comment: {
+      id: row.id, postId: row.post_id, userId: row.user_id, body: row.body, createdAt: row.created_at,
+      authorName: '', authorAvatarUrl: null, authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false,
+    },
+    error: null,
+  };
+}
+
+export async function deleteEmpireComment(commentId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('delete_empire_post_comment', { p_comment_id: commentId });
+  return { error: error?.message ?? null };
+}
+
+export async function reportEmpireContent(target: { postId: string } | { commentId: string }, reason: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('report_empire_content', {
+    p_post_id: 'postId' in target ? target.postId : null,
+    p_comment_id: 'commentId' in target ? target.commentId : null,
+    p_reason: reason,
+  });
+  return { error: error?.message ?? null };
+}
+
+// ---- By-author / Saved — "My Posts" and "Saved" in the Quick Control,
+// and a tapped profile's own post strip. Same row shape/mapper as the
+// main feed. ----
+
+export async function fetchEmpirePostsByAuthor(authorId: string, limit = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_posts_by_author', { p_author_id: authorId, p_limit: limit, p_before: before ?? null });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_saved_posts', { p_limit: limit, p_before: before ?? null });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+/** Uploads one composer image/video to the public `empire-post-media`
+ *  bucket. Any authorized publisher can call this now (Owner/Admin/Host/
+ *  Verified Client — see `can_publish_signal_content()`), so the path is
+ *  namespaced by uploader folder (`0048_signal_community.sql`), the same
+ *  pattern the `verification-documents` bucket already uses — that's
+ *  what lets the delete policy scope "delete your own file, or admin"
+ *  instead of "any signed-in user", since this bucket is public-read
+ *  with otherwise-unguessable-but-visible paths. */
 export async function uploadEmpirePostMedia(file: File): Promise<{ url: string; path: string }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `${crypto.randomUUID()}.${ext}`;
+  const path = `${uid}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
@@ -547,6 +671,7 @@ export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
       owner: d.by_publisher?.owner ?? emptyStats,
       assistant: d.by_publisher?.assistant ?? emptyStats,
       cx: d.by_publisher?.cx ?? emptyStats,
+      self: d.by_publisher?.self ?? emptyStats,
     },
   };
 }

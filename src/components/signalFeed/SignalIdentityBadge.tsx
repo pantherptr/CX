@@ -25,6 +25,16 @@ export function SignalIdentityAvatar({ identity, size = 40 }: { identity: Signal
   if (identity.avatarUrl) {
     return <img src={identity.avatarUrl} alt="" className="shrink-0 rounded-full object-cover" style={style} />;
   }
+  if (identity.type === 'self') {
+    // A real Host/Verified Client with no profile photo set — a plain
+    // person glyph, not the Assistant's headset icon (that one specific
+    // icon means "this is the AI", which would misrepresent a real user).
+    return (
+      <span className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft" style={style}>
+        <Icon name="user" size={Math.round(size * 0.5)} />
+      </span>
+    );
+  }
   return (
     <span className="grid shrink-0 place-items-center rounded-full bg-noir text-accent-bright" style={style}>
       <Icon name="headset" size={Math.round(size * 0.45)} />
@@ -42,6 +52,12 @@ export function SignalIdentityAvatar({ identity, size = 40 }: { identity: Signal
 export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalIdentity; size?: number }) {
   if (identity.type === 'owner') {
     return <VerifiedBadge role="owner" size={size} />;
+  }
+  if (identity.type === 'self') {
+    // A real Host/Verified Client's own account tier — the same badges
+    // used everywhere else in the app for those tiers, not a separate
+    // SIGNAL-only mark, since this IS their real identity, not a voice.
+    return <VerifiedBadge role={identity.selfRole === 'host' ? 'host' : 'client'} size={size} />;
   }
   return (
     <span title="Official" className="inline-grid shrink-0 place-items-center rounded-full bg-accent-bright text-noir shadow-sm" style={{ width: size, height: size }}>

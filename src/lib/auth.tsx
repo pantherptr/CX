@@ -52,6 +52,10 @@ export interface Profile {
    *  trigger) — a suspended host keeps their account and history but is
    *  blocked from the host-side app. */
   suspended: boolean;
+  /** Admin-grantable, reversible — lets a Client publish to SIGNAL under
+   *  their own real identity (see 0048_signal_community.sql). Locked the
+   *  same way is_admin/is_owner/suspended are (profiles_lock_is_admin_update). */
+  is_verified_client: boolean;
   response_time: string | null;
   response_rate: number | null;
   created_at: string;

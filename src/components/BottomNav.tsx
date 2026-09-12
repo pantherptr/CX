@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
-import { SignalLogo } from './SignalLogo';
+import { CxsLogo } from './CxsLogo';
 import { useAuth } from '../lib/auth';
 import { useMediaQuery } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -221,17 +221,14 @@ export function BottomNav() {
                     // deliberate gap — scaled down together with the hill
                     // itself (both cut to roughly 45% of an earlier, much
                     // taller pass) so the logo sits close to the small bump
-                    // rather than floating high above it. The X offset is a
-                    // separate, unrelated optical correction: the artwork's
-                    // own visual weight (the solid glyph vs. the sparser
-                    // radiating arcs) sits measurably right-and-down of the
-                    // image's geometric center (~5%/~9% of its own size), so
-                    // centering the bounding box alone reads as faintly
-                    // off-balance — this nudges the actual mass back onto
-                    // the column's true center, independent of hill size.
+                    // rather than floating high above it. No X offset here —
+                    // unlike the old SignalLogo icon crop, CxsLogo already
+                    // crops to cxs.png's own visible bounding box (see its
+                    // own header comment), so the rendered mark is already
+                    // centered in this slot without a manual nudge.
                     width: 23,
                     height: 23,
-                    transform: active ? 'translate(-3px, -13px) scale(1.08)' : 'translate(-2.5px, -9px)',
+                    transform: active ? 'translate(0, -13px) scale(1.08)' : 'translate(0, -9px)',
                     filter: active
                       ? 'drop-shadow(0 0 10px rgba(0,212,71,0.55)) drop-shadow(0 2px 5px rgba(0,0,0,0.22))'
                       : 'drop-shadow(0 1px 3px rgba(0,0,0,0.16))',
@@ -241,15 +238,15 @@ export function BottomNav() {
                   {/* Absolute + translate(-50%,-50%), not CSS Grid's
                       place-items:center — Grid's auto-centering of an
                       oversized item turns out to only behave reliably for
-                      genuine replaced elements (a bare <img>); SignalLogo's
+                      genuine replaced elements (a bare <img>); CxsLogo's
                       own root is a plain span, and place-items-center
                       silently left it start-aligned instead of centered.
                       Absolute positioning centers unambiguously regardless
-                      of the child's type or size. The live sweep effect is
-                      built into SignalLogo itself now (always on, every
-                      instance app-wide), not re-declared per call site. */}
+                      of the child's type or size. The live glint effect is
+                      built into CxsLogo itself (always on, every instance),
+                      not re-declared per call site. */}
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <SignalLogo size={active ? 32 : 27} />
+                    <CxsLogo size={active ? 32 : 27} />
                   </span>
                   {signalUnread.count > 0 && (
                     <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent-bright px-0.5 text-[9px] font-bold leading-none text-noir">

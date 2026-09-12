@@ -13,10 +13,14 @@ import { SignalTrendingSection } from '../components/signalFeed/SignalTrendingSe
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
 import { SignalPostDetail } from '../components/signalFeed/SignalPostDetail';
+import { SignalProfileDetail } from '../components/signalFeed/SignalProfileDetail';
+import { SignalPostListOverlay } from '../components/signalFeed/SignalPostListOverlay';
+import { SignalQuickControl } from '../components/signalFeed/SignalQuickControl';
 import { SignalStoryViewer } from '../components/signalFeed/SignalStoryViewer';
 import { useAuth } from '../lib/auth';
 import {
-  useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, markEmpireFeedSeen, type EmpireCategory,
+  useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, markEmpireFeedSeen,
+  fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpireCategory,
 } from '../lib/data/empireFeed';
 import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '../lib/data/empireHighlights';
 
@@ -41,8 +45,13 @@ import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '..
 export default function Signal() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
-  const { postId, highlightId } = useParams<{ postId?: string; highlightId?: string }>();
+  const { postId, highlightId, authorId } = useParams<{ postId?: string; highlightId?: string; authorId?: string }>();
   const canManage = Boolean(profile?.is_admin || profile?.is_owner);
+  // A Host or Verified Client publishes under their own real identity
+  // ('self', never one of the three official voices — see
+  // signalIdentity.ts). Distinct from canManage, which is about
+  // moderating everyone's content, not just being allowed to post at all.
+  const canPublishSelf = Boolean(profile?.is_host || profile?.is_verified_client);
   const [category, setCategory] = useState<EmpireCategory | null>(null);
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost } = useEmpireFeed(category);
   const pinned = useEmpirePinnedPost();
@@ -51,6 +60,8 @@ export default function Signal() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [myPostsOpen, setMyPostsOpen] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
 
   useEffect(() => {
     if (session) markEmpireFeedSeen();
@@ -132,9 +143,10 @@ export default function Signal() {
           </div>
         )}
 
-        {canManage && (
+        {(canManage || canPublishSelf) && (
           composerOpen ? (
             <SignalPostComposer
+              mode={canManage ? 'official' : 'self'}
               onDone={() => { setComposerOpen(false); refresh(); }}
               onCancel={() => setComposerOpen(false)}
             />
@@ -193,6 +205,38 @@ export default function Signal() {
       </main>
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}
+
+      {authorId && <SignalProfileDetail authorId={authorId} canManage={canManage} onClose={closeOverlay} />}
+
+      {myPostsOpen && session && (
+        <SignalPostListOverlay
+          title="My Posts"
+          emptyMessage="You haven't posted to Signal yet."
+          canManage={canManage}
+          fetcher={() => fetchEmpirePostsByAuthor(session.user.id)}
+          onClose={() => setMyPostsOpen(false)}
+        />
+      )}
+
+      {savedOpen && (
+        <SignalPostListOverlay
+          title="Saved"
+          emptyMessage="Posts you save will show up here."
+          canManage={canManage}
+          fetcher={() => fetchEmpireSavedPosts()}
+          onClose={() => setSavedOpen(false)}
+        />
+      )}
+
+      <SignalQuickControl
+        items={[
+          { label: 'Home', icon: 'grid', onSelect: () => navigate('/signal') },
+          { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
+          { label: 'My Posts', icon: 'image', onSelect: () => setMyPostsOpen(true) },
+          { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
+          { label: 'Explore', icon: 'search', onSelect: () => setSearchOpen(true) },
+        ]}
+      />
 
       {highlightId && highlights && highlightIndex >= 0 && (
         <SignalStoryViewer

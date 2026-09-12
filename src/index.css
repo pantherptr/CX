@@ -505,6 +505,57 @@
     .signalbar-glint { animation: none; opacity: 0; }
   }
 
+  /* The cxs.png "S" mark's own live effect (CxsLogo.tsx) — used in the
+     bottom-nav SIGNAL tab and the SIGNAL side Quick Control, the two
+     navigation contexts that share this one identity. Same
+     long-quiet/brief-pass philosophy as `.signalbar-glint*` (two
+     independent, non-aligning cycles so the rare visible moment never
+     repeats on a fixed beat) but tuned fresh for this asset: the source
+     art already bakes in a permanent bright green neon edge, so the
+     travelling highlight here reads as "a pulse of light moving along
+     the already-lit neon tube" rather than a shine painted over flat
+     art — diegetic to the material the logo depicts, not a generic
+     overlay effect. `mask-size`/`mask-position` are set inline per
+     instance (CxsLogo crops the source PNG's own transparent padding via
+     the same technique on the `<img>` and this mask, so both stay
+     pixel-aligned); this class only owns the blend mode and the actual
+     moving gradient bars. */
+  .cxs-glint-mask {
+    mix-blend-mode: screen;
+    overflow: hidden;
+  }
+  .cxs-glint {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgba(210, 255, 225, 0.5) 47%,
+      rgba(245, 255, 250, 0.65) 50%,
+      rgba(210, 255, 225, 0.5) 53%,
+      transparent 70%
+    );
+    background-repeat: no-repeat;
+    background-size: 45% 100%;
+    opacity: 0;
+    will-change: background-position, opacity;
+  }
+  .cxs-glint-a { animation: cxs-glint-a-move 9s ease-in-out infinite; }
+  .cxs-glint-b { animation: cxs-glint-b-move 11.5s ease-in-out infinite; animation-delay: 4.2s; }
+  @keyframes cxs-glint-a-move {
+    0%, 85% { background-position: -60% 0; opacity: 0; }
+    88% { opacity: 0.55; }
+    93.5% { background-position: 160% 0; opacity: 0.55; }
+    97%, 100% { background-position: 160% 0; opacity: 0; }
+  }
+  @keyframes cxs-glint-b-move {
+    0%, 89% { background-position: -60% 0; opacity: 0; }
+    91.5% { opacity: 0.4; }
+    96.5% { background-position: 160% 0; opacity: 0.4; }
+    99.3%, 100% { background-position: 160% 0; opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cxs-glint { animation: none; opacity: 0; }
+  }
+
   @keyframes slide-in-right {
     from { opacity: 0; transform: translateX(24px); }
     to { opacity: 1; transform: translateX(0); }

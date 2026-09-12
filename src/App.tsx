@@ -258,6 +258,7 @@ export default function App() {
             feed underneath. */}
         <Route path="/signal/post/:postId" element={<Signal />} />
         <Route path="/signal/highlight/:highlightId" element={<Signal />} />
+        <Route path="/signal/profile/:authorId" element={<Signal />} />
 
         {/* Dev-only: hardcoded-number layout fixture, never present in a
             production build (see the gated import above). */}
