@@ -4,12 +4,11 @@ import { useApp } from '../../lib/store';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
-  setEmpirePostFeatured, markEmpirePostViewed, updateEmpirePost, type EmpirePost,
+  setEmpirePostFeatured, markEmpirePostViewed, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
-import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
 
 function timeAgo(iso: string): string {
@@ -48,10 +47,14 @@ function PostImage({ src, className, onClick }: { src: string; className: string
 }
 
 /** One post in the feed. Author badge, category chip, body, media grid,
- *  the like/comment/save/share row, and — only when the viewer is
- *  Owner/Admin — an overflow menu for edit/delete/pin/toggle-comments.
- *  The admin controls are a client-side convenience only; every action
- *  they trigger is re-checked server-side by the RPC it calls.
+ *  the like/views/save/share row, and — only when the viewer is
+ *  Owner/Admin — an overflow menu for edit/delete/pin. Comments were
+ *  removed from Signal entirely (no button, no panel, no per-post
+ *  toggle); the real, server-tracked view count (see markEmpirePostViewed
+ *  — deduped per user, not a fabricated number) sits in a Twitter-style
+ *  eye-icon slot where the comment button used to be. The admin controls
+ *  are a client-side convenience only; every action they trigger is
+ *  re-checked server-side by the RPC it calls.
  *  `featured` swaps in the Featured Announcement treatment (bigger
  *  media, more concise text) — used for the one pinned post, rendered
  *  through this same component rather than a forked duplicate so there
@@ -80,7 +83,6 @@ export function SignalPostCard({
   const { toast } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
@@ -167,22 +169,6 @@ export function SignalPostCard({
     onFeaturedToggled?.();
   };
 
-  const handleToggleComments = async () => {
-    setMenuOpen(false);
-    setBusy(true);
-    const { error } = await updateEmpirePost(post.id, {
-      category: post.category,
-      title: post.title ?? undefined,
-      body: post.body,
-      mediaPaths: post.mediaPaths,
-      commentsDisabled: !post.commentsDisabled,
-      publisherType: post.publisherType,
-    });
-    setBusy(false);
-    if (error) toast({ title: 'Could not update comments', desc: error, icon: 'info' });
-    else onChanged({ ...post, commentsDisabled: !post.commentsDisabled });
-  };
-
   if (editing) {
     return (
       <SignalPostComposer
@@ -251,9 +237,6 @@ export function SignalPostCard({
                   <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
                     <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
                   </button>
-                  <button onClick={handleToggleComments} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                    <Icon name="message" size={15} /> {post.commentsDisabled ? 'Enable comments' : 'Disable comments'}
-                  </button>
                   <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger hover:bg-danger/5">
                     <Icon name="trash" size={15} /> Delete post
                   </button>
@@ -298,10 +281,15 @@ export function SignalPostCard({
           />
           {post.likeCount > 0 && compact(post.likeCount)}
         </button>
-        <button onClick={() => setCommentsOpen((v) => !v)} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
-          <Icon name="message" size={17} />
-          {post.commentCount > 0 && compact(post.commentCount)}
-        </button>
+        {/* A real, server-tracked count (empire_post_views, deduped per
+            user — see markEmpirePostViewed above), not a fabricated
+            number — sits where the comment button used to be, in the
+            same quiet eye-icon style X/Twitter uses for view counts:
+            informational, not a button. */}
+        <span className="flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft">
+          <Icon name="eye" size={17} />
+          {post.viewCount > 0 && compact(post.viewCount)}
+        </span>
         <button onClick={handleSave} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
           <Icon name="bookmark" size={17} fill={post.savedByMe} className={post.savedByMe ? 'text-accent-700' : ''} />
           {post.saveCount > 0 && compact(post.saveCount)}
@@ -310,12 +298,6 @@ export function SignalPostCard({
           <Icon name="share" size={17} />
         </button>
       </div>
-
-      {commentsOpen && (
-        <div className="animate-fade-in">
-          <SignalComments postId={post.id} disabled={post.commentsDisabled} onCommentAdded={() => onChanged({ ...post, commentCount: post.commentCount + 1 })} />
-        </div>
-      )}
 
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />

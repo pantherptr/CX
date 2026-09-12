@@ -323,79 +323,11 @@ export async function toggleEmpirePostSave(postId: string): Promise<{ saved: boo
   return { saved: Boolean(data), error: null };
 }
 
-export interface EmpireComment {
-  id: string;
-  postId: string;
-  userId: string;
-  authorName: string;
-  authorAvatarUrl: string | null;
-  body: string;
-  createdAt: string;
-}
-
-interface EmpireCommentRow {
-  id: string;
-  post_id: string;
-  user_id: string;
-  body: string;
-  created_at: string;
-  profiles: { full_name: string | null; avatar_url: string | null } | null;
-}
-
-function mapComment(row: EmpireCommentRow): EmpireComment {
-  return {
-    id: row.id,
-    postId: row.post_id,
-    userId: row.user_id,
-    authorName: row.profiles?.full_name ?? 'CX Rent member',
-    authorAvatarUrl: row.profiles?.avatar_url ?? null,
-    body: row.body,
-    createdAt: row.created_at,
-  };
-}
-
-export async function fetchEmpirePostComments(postId: string): Promise<EmpireComment[]> {
-  const { data, error } = await supabase
-    .from('empire_post_comments')
-    .select('id, post_id, user_id, body, created_at, profiles(full_name, avatar_url)')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return (data as unknown as EmpireCommentRow[]).map(mapComment);
-}
-
-export function useEmpirePostComments(postId: string | null) {
-  const [comments, setComments] = useState<EmpireComment[] | null>(null);
-  const [reload, setReload] = useState(0);
-
-  useEffect(() => {
-    if (!postId) {
-      setComments(null);
-      return;
-    }
-    let cancelled = false;
-    fetchEmpirePostComments(postId)
-      .then((c) => !cancelled && setComments(c))
-      .catch(() => !cancelled && setComments([]));
-    return () => {
-      cancelled = true;
-    };
-  }, [postId, reload]);
-
-  return { comments, refresh: () => setReload((n) => n + 1) };
-}
-
-export async function addEmpireComment(postId: string, body: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.rpc('add_empire_post_comment', { p_post_id: postId, p_body: body });
-  if (error) return { error: error.message };
-  return { error: null };
-}
-
-export async function deleteEmpireComment(commentId: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.rpc('delete_empire_post_comment', { p_comment_id: commentId });
-  if (error) return { error: error.message };
-  return { error: null };
-}
+// Comments were removed from Signal's UI entirely (replaced by a real,
+// server-tracked view count — see markEmpirePostViewed below and
+// SignalPostCard's action row). The empire_post_comments table and its
+// RPCs stay untouched server-side (no existing comment history is
+// deleted), but nothing in this app calls them anymore.
 
 /** Uploads one composer image to the public `empire-post-media` bucket.
  *  Only Owner/Admin ever call this — the bucket's insert policy checks

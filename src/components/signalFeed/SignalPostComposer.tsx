@@ -40,7 +40,6 @@ export function SignalPostComposer({
   const [category, setCategory] = useState<EmpireCategory>(editing?.category ?? 'news');
   const [title, setTitle] = useState(editing?.title ?? '');
   const [body, setBody] = useState(editing?.body ?? '');
-  const [commentsDisabled, setCommentsDisabled] = useState(editing?.commentsDisabled ?? false);
   // Existing (already-uploaded) media paths, kept unless removed; newly
   // staged files are uploaded only on submit and appended after.
   const [existingPaths, setExistingPaths] = useState<string[]>(editing?.mediaPaths ?? []);
@@ -110,7 +109,7 @@ export function SignalPostComposer({
         uploaded.push(path);
       }
       const mediaPaths = [...existingPaths, ...uploaded];
-      const input = { category, title: title.trim() || undefined, body: body.trim(), mediaPaths, commentsDisabled, publisherType };
+      const input = { category, title: title.trim() || undefined, body: body.trim(), mediaPaths, publisherType };
       const result = editing ? await updateEmpirePost(editing.id, input) : await createEmpirePost(input);
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
@@ -190,7 +189,7 @@ export function SignalPostComposer({
 
       {imageError && <p className="mt-2 text-caption font-medium text-danger">{imageError}</p>}
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-3">
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -208,11 +207,6 @@ export function SignalPostComposer({
             className="hidden"
             onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
           />
-        </label>
-
-        <label className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
-          <input type="checkbox" checked={commentsDisabled} onChange={(e) => setCommentsDisabled(e.target.checked)} className="h-4 w-4 rounded" />
-          Disable comments
         </label>
       </div>
 

@@ -36,7 +36,7 @@ export function SignalTrendingSection() {
               <p className="line-clamp-2 text-caption font-semibold text-ink">{p.title || p.body}</p>
               <p className="mt-1 flex items-center gap-2 text-[11px] text-muted">
                 <span className="inline-flex items-center gap-0.5"><Icon name="heart" size={11} /> {compact(p.likeCount)}</span>
-                <span className="inline-flex items-center gap-0.5"><Icon name="message" size={11} /> {compact(p.commentCount)}</span>
+                <span className="inline-flex items-center gap-0.5"><Icon name="eye" size={11} /> {compact(p.viewCount)}</span>
               </p>
             </div>
           </Link>
