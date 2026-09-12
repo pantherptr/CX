@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { supabase } from '../supabase';
 import { unsplash } from '../img';
 import { apiUrl } from '../api';
@@ -145,7 +145,16 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   });
 }
 
+/** Loads the conversation list and keeps it live for as long as this hook
+ *  is mounted — any message INSERT this user is authorized to see (RLS
+ *  applies to Realtime the same as it does to a normal query, so no
+ *  explicit per-conversation filter is needed) triggers a lightweight
+ *  refetch, so a reply landing while you're sitting on the list itself —
+ *  not inside that thread — still updates the preview, timestamp, order
+ *  and unread badge without a manual reload. Debounced so a burst of
+ *  messages across several conversations collapses into one refetch. */
 export function useConversations(userId: string | undefined) {
+  const instanceId = useId();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -169,6 +178,26 @@ export function useConversations(userId: string | undefined) {
       cancelled = true;
     };
   }, [userId, refreshKey]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let debounceHandle: number | null = null;
+    const scheduleRefetch = () => {
+      if (debounceHandle) window.clearTimeout(debounceHandle);
+      debounceHandle = window.setTimeout(() => {
+        fetchConversations(userId).then(setConversations).catch(() => {});
+      }, 250);
+    };
+    const channel = supabase
+      .channel(`conversation-list:${userId}:${instanceId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, scheduleRefetch)
+      .subscribe();
+    return () => {
+      if (debounceHandle) window.clearTimeout(debounceHandle);
+      supabase.removeChannel(channel);
+    };
+  }, [userId, instanceId]);
 
   return { conversations, error, loading: conversations === null && !error, refresh: () => setRefreshKey((k) => k + 1) };
 }
@@ -329,7 +358,15 @@ export async function fetchUnreadCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+/** The unread-messages badge shown in the nav shells (Navbar, BottomNav,
+ *  DashboardShell, HostDashboard) — every one of them shares this same
+ *  hook, so the realtime subscription lives here once rather than each
+ *  caller having to remember to wire its own. Before this, the count was
+ *  fetched exactly once on mount and never changed again for the rest of
+ *  the session, regardless of new messages arriving or being read
+ *  elsewhere in the app (e.g. on the Messages page itself). */
 export function useUnreadMessageCount(userId: string | undefined) {
+  const instanceId = useId();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -338,13 +375,26 @@ export function useUnreadMessageCount(userId: string | undefined) {
       return;
     }
     let cancelled = false;
-    fetchUnreadCount(userId).then((n) => {
-      if (!cancelled) setCount(n);
-    });
+    const refetch = () => fetchUnreadCount(userId).then((n) => !cancelled && setCount(n));
+    refetch();
+
+    let debounceHandle: number | null = null;
+    const scheduleRefetch = () => {
+      if (debounceHandle) window.clearTimeout(debounceHandle);
+      debounceHandle = window.setTimeout(refetch, 250);
+    };
+    const channel = supabase
+      .channel(`unread-count:${userId}:${instanceId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, scheduleRefetch)
+      .subscribe();
+
     return () => {
       cancelled = true;
+      if (debounceHandle) window.clearTimeout(debounceHandle);
+      supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, instanceId]);
 
   return count;
 }
