@@ -16,7 +16,7 @@
 --    reusing it for a totally different "trusted community publisher"
 --    concept would silently conflate the two).
 -- ---------------------------------------------------------------------
-alter table public.profiles add column is_verified_client boolean not null default false;
+alter table public.profiles add column if not exists is_verified_client boolean not null default false;
 
 create or replace function public.lock_is_admin_update()
 returns trigger
@@ -226,6 +226,7 @@ grant execute on function public.create_empire_story(text, text) to authenticate
 --    existed before this migration).
 -- ---------------------------------------------------------------------
 drop policy if exists "Owner/Admin can upload Empire post media" on storage.objects;
+drop policy if exists "Authorized publishers can upload Signal media" on storage.objects;
 create policy "Authorized publishers can upload Signal media"
   on storage.objects for insert
   with check (
@@ -235,6 +236,7 @@ create policy "Authorized publishers can upload Signal media"
   );
 
 drop policy if exists "Owner/Admin can delete Empire post media" on storage.objects;
+drop policy if exists "Authors and admins can delete Signal media" on storage.objects;
 create policy "Authors and admins can delete Signal media"
   on storage.objects for delete
   using (
@@ -247,7 +249,7 @@ create policy "Authors and admins can delete Signal media"
 --    only by admins. No moderation queue UI this pass, just the backend
 --    plus a "Report" action that submits and confirms.
 -- ---------------------------------------------------------------------
-create table public.empire_post_reports (
+create table if not exists public.empire_post_reports (
   id uuid primary key default gen_random_uuid(),
   reporter_id uuid not null references public.profiles(id) on delete cascade,
   post_id uuid references public.empire_posts(id) on delete cascade,
@@ -258,8 +260,9 @@ create table public.empire_post_reports (
     (post_id is not null and comment_id is null) or (post_id is null and comment_id is not null)
   )
 );
-create index empire_post_reports_created_idx on public.empire_post_reports (created_at desc);
+create index if not exists empire_post_reports_created_idx on public.empire_post_reports (created_at desc);
 alter table public.empire_post_reports enable row level security;
+drop policy if exists "Admins view reports" on public.empire_post_reports;
 create policy "Admins view reports"
   on public.empire_post_reports for select
   using (public.is_admin());
