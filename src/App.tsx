@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet, useLocation, Navigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
@@ -27,7 +27,7 @@ import NotFound from './pages/NotFound';
 // Split per route so each page's cost is paid only when it's opened.
 const Compare = lazy(() => import('./pages/Compare'));
 const Garage = lazy(() => import('./pages/Garage'));
-const Empire = lazy(() => import('./pages/Empire'));
+const Signal = lazy(() => import('./pages/Signal'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
@@ -92,6 +92,17 @@ function ScrollToTop() {
 function DashboardHome() {
   const { profile } = useAuth();
   return profile?.is_owner ? <OwnerHome /> : <CustomerDashboard />;
+}
+
+/** Signal was renamed from Empire — old /empire* links (already shared,
+ *  bookmarked, or indexed) still need to land somewhere real rather than
+ *  404. Redirects to the equivalent /signal* path, preserving whatever
+ *  deep-link id was in the URL. */
+function EmpireToSignalRedirect() {
+  const { postId, highlightId } = useParams<{ postId?: string; highlightId?: string }>();
+  if (postId) return <Navigate to={`/signal/post/${postId}`} replace />;
+  if (highlightId) return <Navigate to={`/signal/highlight/${highlightId}`} replace />;
+  return <Navigate to="/signal" replace />;
 }
 
 function MarketingLayout() {
@@ -227,13 +238,25 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Empire is a deliberate sibling of MarketingLayout, not a child
-            of it — it supplies 100% of its own chrome (EmpireGameShell)
-            the same way the dashboard-area routes below opt out of
-            MarketingLayout in favor of DashboardShell. No ProtectedRoute
-            wrapper: the page itself shows a sign-in title screen for a
-            signed-out visitor rather than a hard redirect. */}
-        <Route path="/empire" element={<Empire />} />
+        {/* Signal is a deliberate sibling of MarketingLayout, not a child
+            of it — it supplies 100% of its own chrome the same way the
+            dashboard-area routes below opt out of MarketingLayout in favor
+            of DashboardShell. No ProtectedRoute wrapper: the page itself
+            shows a sign-in title screen for a signed-out visitor rather
+            than a hard redirect. */}
+        <Route path="/signal" element={<Signal />} />
+        {/* Deep links — a shared post/Highlight open the same Signal shell
+            with the item focused in an overlay, rather than a standalone
+            page, so "back" always returns to a live, scroll-preserved
+            feed underneath. */}
+        <Route path="/signal/post/:postId" element={<Signal />} />
+        <Route path="/signal/highlight/:highlightId" element={<Signal />} />
+
+        {/* Signal was renamed from Empire — keep the old routes alive as
+            redirects so links shared before the rename still resolve. */}
+        <Route path="/empire" element={<EmpireToSignalRedirect />} />
+        <Route path="/empire/post/:postId" element={<EmpireToSignalRedirect />} />
+        <Route path="/empire/highlight/:highlightId" element={<EmpireToSignalRedirect />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

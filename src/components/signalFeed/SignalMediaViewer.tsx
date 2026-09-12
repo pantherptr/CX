@@ -5,7 +5,7 @@ import { Icon } from '../Icon';
  *  Same `fixed inset-0` full-viewport overlay pattern used elsewhere in
  *  this app for fullscreen moments (no portal needed, plain CSS escapes
  *  any parent's layout regardless of DOM nesting). */
-export function EmpireMediaViewer({
+export function SignalMediaViewer({
   images,
   startIndex,
   onClose,

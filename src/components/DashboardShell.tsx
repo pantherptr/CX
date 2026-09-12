@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
-import { EmpireLogo } from './EmpireLogo';
+import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -84,7 +84,7 @@ export function DashboardShell({
       </div>
       <nav className="flex-1 overflow-y-auto p-3">
         <NavLink
-          to="/empire"
+          to="/signal"
           onClick={() => setOpen(false)}
           className={({ isActive }) =>
             `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
@@ -99,8 +99,8 @@ export function DashboardShell({
             style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
           />
           <span className="flex items-center gap-3">
-            <EmpireLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
-            <span className="tracking-wide">EMPIRE</span>
+            <SignalLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+            <span className="tracking-wide">SIGNAL</span>
           </span>
           <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
         </NavLink>

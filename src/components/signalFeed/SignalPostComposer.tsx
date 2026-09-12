@@ -21,7 +21,7 @@ interface PendingImage {
  *  pre-fills the form and swaps Publish for Save. Images are staged
  *  locally with a preview and only uploaded on submit, same pattern as
  *  the listing photo step in ListCar.tsx. */
-export function EmpirePostComposer({
+export function SignalPostComposer({
   editing,
   onDone,
   onCancel,

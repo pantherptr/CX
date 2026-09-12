@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { SignalLogo } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
@@ -394,16 +395,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= EMPIRE — small, elegant, one clear CTA ================= */}
+      {/* ================= SIGNAL — small, elegant, one clear CTA ================= */}
       <section className="container-page section">
         <Reveal>
           <div className="flex flex-col items-center gap-6 rounded-2xl border border-line bg-panel/50 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
             <div className="flex items-center gap-5">
               <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent-050 text-accent-700 sm:flex">
-                <Icon name="sparkles" size={30} />
+                <SignalLogo size={30} />
               </span>
               <div>
-                <p className="eyebrow">EMPIRE</p>
+                <p className="eyebrow">CX SIGNAL</p>
                 <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
                   The official voice of CX Rent.
                 </h2>
@@ -412,8 +413,8 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <Link to="/empire" className="btn btn-accent-bright btn-lg shrink-0">
-              Open Empire <Icon name="arrowRight" size={17} />
+            <Link to="/signal" className="btn btn-accent-bright btn-lg shrink-0">
+              Open Signal <Icon name="arrowRight" size={17} />
             </Link>
           </div>
         </Reveal>

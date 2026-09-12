@@ -18,7 +18,7 @@ function timeAgo(iso: string): string {
 /** Flat (non-threaded) comment list for one post — mounted only while
  *  the card's comment section is expanded, so a feed full of posts
  *  doesn't fetch every post's comments up front. */
-export function EmpireComments({ postId, disabled, onCommentAdded }: { postId: string; disabled: boolean; onCommentAdded?: () => void }) {
+export function SignalComments({ postId, disabled, onCommentAdded }: { postId: string; disabled: boolean; onCommentAdded?: () => void }) {
   const { session, profile } = useAuth();
   const { comments, refresh } = useEmpirePostComments(postId);
   const [body, setBody] = useState('');

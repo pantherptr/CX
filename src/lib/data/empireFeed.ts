@@ -3,14 +3,17 @@ import { supabase } from '../supabase';
 import { roleFromFlags, type ParticipantRole } from './messages';
 
 /**
- * EMPIRE — the official CX Rent social/news feed. Owner/Admin publish
- * (news, announcements, new vehicles, events, offers); every signed-in
- * user can view, like, comment, save and share. All writes go through
- * security-definer RPCs (see supabase/migrations/0040_empire_feed.sql) —
- * `is_admin()` gates posting/editing/deleting/pinning and already returns
- * true for the Owner too. This file never inserts/updates/deletes a
- * table directly, only ever calls `.rpc(...)`, matching the rest of the
- * app's data-access convention.
+ * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
+ * this file, its tables and its RPCs deliberately kept their original
+ * `empire_*`/`Empire*` names — internal implementation details invisible
+ * to users, not worth the migration risk of renaming a working schema for
+ * a UI-facing rebrand; see supabase/migrations/0040_empire_feed.sql).
+ * Owner/Admin publish (news, announcements, new vehicles, events, offers);
+ * every signed-in user can view, like, comment, save and share. All
+ * writes go through security-definer RPCs — `is_admin()` gates posting/
+ * editing/deleting/pinning and already returns true for the Owner too.
+ * This file never inserts/updates/deletes a table directly, only ever
+ * calls `.rpc(...)`, matching the rest of the app's data-access convention.
  */
 
 export type EmpireCategory = 'news' | 'update' | 'new_car' | 'feature' | 'event' | 'offer' | 'announcement' | 'exclusive';
@@ -44,6 +47,7 @@ export interface EmpirePost {
   mediaPaths: string[];
   mediaUrls: string[];
   isPinned: boolean;
+  isFeatured: boolean;
   commentsDisabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -51,6 +55,7 @@ export interface EmpirePost {
   likeCount: number;
   commentCount: number;
   saveCount: number;
+  viewCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
 }
@@ -67,6 +72,7 @@ interface EmpirePostRow {
   body: string;
   media_paths: string[];
   is_pinned: boolean;
+  is_featured: boolean;
   comments_disabled: boolean;
   created_at: string;
   updated_at: string;
@@ -74,6 +80,7 @@ interface EmpirePostRow {
   like_count: number;
   comment_count: number;
   save_count: number;
+  view_count: number;
   liked_by_me: boolean;
   saved_by_me: boolean;
 }
@@ -95,6 +102,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     mediaPaths: row.media_paths ?? [],
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,
+    isFeatured: row.is_featured,
     commentsDisabled: row.comments_disabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -102,6 +110,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     likeCount: row.like_count,
     commentCount: row.comment_count,
     saveCount: row.save_count,
+    viewCount: row.view_count,
     likedByMe: row.liked_by_me,
     savedByMe: row.saved_by_me,
   };
@@ -242,7 +251,7 @@ export async function updateEmpirePost(
 // author (themselves) and starting counts (all zero) for a fresh post.
 function mapCreatedPost(row: {
   id: string; author_id: string; category: EmpireCategory; title: string | null; body: string;
-  media_paths: string[]; is_pinned: boolean; comments_disabled: boolean;
+  media_paths: string[]; is_pinned: boolean; is_featured: boolean; comments_disabled: boolean;
   created_at: string; updated_at: string; edited_at: string | null;
 }): EmpirePost {
   return {
@@ -257,6 +266,7 @@ function mapCreatedPost(row: {
     mediaPaths: row.media_paths ?? [],
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,
+    isFeatured: row.is_featured,
     commentsDisabled: row.comments_disabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -264,6 +274,7 @@ function mapCreatedPost(row: {
     likeCount: 0,
     commentCount: 0,
     saveCount: 0,
+    viewCount: 0,
     likedByMe: false,
     savedByMe: false,
   };
@@ -415,4 +426,125 @@ export function useEmpireUnreadCount(userId: string | undefined) {
   }, [refresh]);
 
   return { count, refresh, clear: () => setCount(0) };
+}
+
+// ---- Featured content — Owner/Admin can mark any number of posts as
+// Featured (unlike the single unique Pinned announcement); a dedicated
+// section above the plain feed, collapses to nothing when none exist. ----
+
+export async function setEmpirePostFeatured(postId: string, featured: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_empire_post_featured', { p_post_id: postId, p_featured: featured });
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+export async function fetchEmpireFeaturedPosts(limit = 6): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_featured_posts', { p_limit: limit });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+export function useEmpireFeaturedPosts() {
+  const [posts, setPosts] = useState<EmpirePost[] | null>(null);
+
+  const refresh = useCallback(() => {
+    fetchEmpireFeaturedPosts()
+      .then(setPosts)
+      .catch(() => setPosts([]));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { posts, refresh };
+}
+
+// ---- View tracking — dedup'd server-side (empire_post_views has a
+// (post_id, user_id) primary key), so calling this on every card render is
+// safe: a refresh or re-render never inflates the count. ----
+
+export async function markEmpirePostViewed(postId: string): Promise<void> {
+  await supabase.rpc('mark_empire_post_viewed', { p_post_id: postId });
+}
+
+// ---- Trending — real engagement only, recent window, minimum bar; see
+// fetch_empire_trending_posts for the (deliberately simple) scoring. ----
+
+export async function fetchEmpireTrendingPosts(limit = 5): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_trending_posts', { p_limit: limit });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+export function useEmpireTrendingPosts() {
+  const [posts, setPosts] = useState<EmpirePost[] | null>(null);
+
+  useEffect(() => {
+    fetchEmpireTrendingPosts()
+      .then(setPosts)
+      .catch(() => setPosts([]));
+  }, []);
+
+  return { posts };
+}
+
+// ---- Search — lightweight ilike over title/body, any signed-in user. ----
+
+export async function searchEmpirePosts(query: string, category?: EmpireCategory | null, limit = 20): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('search_empire_posts', { p_query: query, p_category: category ?? null, p_limit: limit });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+// ---- Single-post fetch — powers the /empire/post/:id deep link. `null`
+// means the post doesn't exist (deleted, or a bad id), a real, distinct
+// state from "still loading". ----
+
+export async function fetchEmpirePostById(postId: string): Promise<EmpirePost | null> {
+  const { data, error } = await supabase.rpc('fetch_empire_post_by_id', { p_post_id: postId });
+  if (error) throw error;
+  const rows = data as EmpirePostRow[];
+  return rows.length > 0 ? mapEmpirePost(rows[0]) : null;
+}
+
+// ---- Owner/Admin analytics — one compact aggregate object, not a
+// dashboard's worth of separate queries. ----
+
+export interface EmpireAnalytics {
+  totalPostViews: number;
+  totalStoryViews: number;
+  postsLast7d: number;
+  postsPrev7d: number;
+  engagementLast7d: number;
+  engagementPrev7d: number;
+  mostViewed: { id: string; title: string; count: number } | null;
+  mostLiked: { id: string; title: string; count: number } | null;
+  mostCommented: { id: string; title: string; count: number } | null;
+  mostSaved: { id: string; title: string; count: number } | null;
+}
+
+export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
+  const { data, error } = await supabase.rpc('fetch_empire_analytics');
+  if (error) throw error;
+  const d = data as {
+    total_post_views: number; total_story_views: number; posts_last_7d: number; posts_prev_7d: number;
+    engagement_last_7d: number; engagement_prev_7d: number;
+    most_viewed: { id: string; title: string; count: number } | null;
+    most_liked: { id: string; title: string; count: number } | null;
+    most_commented: { id: string; title: string; count: number } | null;
+    most_saved: { id: string; title: string; count: number } | null;
+  };
+  return {
+    totalPostViews: d.total_post_views,
+    totalStoryViews: d.total_story_views,
+    postsLast7d: d.posts_last_7d,
+    postsPrev7d: d.posts_prev_7d,
+    engagementLast7d: d.engagement_last_7d,
+    engagementPrev7d: d.engagement_prev_7d,
+    mostViewed: d.most_viewed,
+    mostLiked: d.most_liked,
+    mostCommented: d.most_commented,
+    mostSaved: d.most_saved,
+  };
 }

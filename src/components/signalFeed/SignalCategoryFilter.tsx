@@ -3,10 +3,10 @@ import { EMPIRE_CATEGORIES, type EmpireCategory } from '../../lib/data/empireFee
 /** A minimal, fast horizontal category filter — ALL plus the real 8
  *  categories (not a lossy remapping into fewer buckets, which would
  *  make posts in an omitted category unreachable by any filter). State
- *  lives in the parent (`Empire.tsx`), reset on remount — "remembered
- *  during the current Empire session" reasonably means the lifetime of
+ *  lives in the parent (`Signal.tsx`), reset on remount — "remembered
+ *  during the current Signal session" reasonably means the lifetime of
  *  this page instance. */
-export function EmpireCategoryFilter({
+export function SignalCategoryFilter({
   value,
   onChange,
 }: {

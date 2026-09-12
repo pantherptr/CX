@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
-import { EmpireLogo } from '../EmpireLogo';
+import { SignalLogo } from '../SignalLogo';
 import { useActiveEmpireStories } from '../../lib/data/empireStories';
-import { EmpireStoryViewer } from './EmpireStoryViewer';
-import { EmpireStoryComposer } from './EmpireStoryComposer';
+import { SignalStoryViewer } from './SignalStoryViewer';
+import { SignalStoryComposer } from './SignalStoryComposer';
 
-/** The permanent Stories row at the top of Empire — self-contained: owns
+/** The permanent Stories row at the top of Signal — self-contained: owns
  *  its own fetch, viewer, and (for Owner/Admin) composer state, so the
  *  page just drops this in once. Renders nothing at all — not an empty
  *  placeholder — when there are zero active stories and the viewer
  *  isn't Owner/Admin (who still gets the "Add Story" circle so there's
  *  a way to create the first one). */
-export function EmpireStoriesBar({ canManage }: { canManage: boolean }) {
+export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
   const { stories, refresh } = useActiveEmpireStories();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -54,7 +54,7 @@ export function EmpireStoriesBar({ canManage }: { canManage: boolean }) {
                   <img src={story.slides[0].mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
                 ) : (
                   <span className="grid h-full w-full place-items-center">
-                    <EmpireLogo size={22} />
+                    <SignalLogo size={22} />
                   </span>
                 )}
               </span>
@@ -65,7 +65,7 @@ export function EmpireStoriesBar({ canManage }: { canManage: boolean }) {
       </div>
 
       {openIndex !== null && (
-        <EmpireStoryViewer
+        <SignalStoryViewer
           stories={stories}
           startIndex={openIndex}
           canManage={canManage}
@@ -75,7 +75,7 @@ export function EmpireStoriesBar({ canManage }: { canManage: boolean }) {
       )}
 
       {composerOpen && (
-        <EmpireStoryComposer
+        <SignalStoryComposer
           onClose={() => setComposerOpen(false)}
           onPublished={() => { setComposerOpen(false); refresh(); }}
         />

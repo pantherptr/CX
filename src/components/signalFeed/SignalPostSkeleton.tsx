@@ -1,10 +1,10 @@
-/** A skeleton placeholder shaped like `EmpirePostCard`, shown while the
+/** A skeleton placeholder shaped like `SignalPostCard`, shown while the
  *  initial feed/pinned/stories fetch is in flight — reuses the same
  *  `.skeleton` shimmer utility already used across the app (see
  *  `StatCardSkeleton` in DashboardShell.tsx) instead of a bare spinner,
  *  so the loading moment reads as "the page itself, not yet filled in"
  *  rather than a generic loading screen. */
-export function EmpirePostSkeleton() {
+export function SignalPostSkeleton() {
   return (
     <div className="card mb-4 overflow-hidden p-0">
       <div className="flex items-center gap-3 p-4 pb-3 sm:px-5">

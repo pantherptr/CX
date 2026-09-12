@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Logo } from './primitives';
-import { EmpireLogo } from './EmpireLogo';
+import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -102,7 +102,7 @@ function PublicNavbar() {
               ))}
             </ul>
             <NavLink
-              to="/empire"
+              to="/signal"
               className={({ isActive }) =>
                 `group relative hidden items-center gap-2 overflow-hidden rounded-full border px-3.5 py-1.5 text-detail font-bold transition-all duration-300 lg:inline-flex ${
                   isActive
@@ -119,8 +119,8 @@ function PublicNavbar() {
                       style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
                     />
                   )}
-                  <EmpireLogo size={20} className="transition-transform duration-300 group-hover:scale-110" />
-                  <span className="tracking-wide">EMPIRE</span>
+                  <SignalLogo size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                  <span className="tracking-wide">SIGNAL</span>
                 </>
               )}
             </NavLink>
@@ -233,7 +233,7 @@ function PublicNavbar() {
                 ))}
                 <li onClick={() => setMenuOpen(false)}>
                   <NavLink
-                    to="/empire"
+                    to="/signal"
                     className={({ isActive }) =>
                       `group relative flex w-full items-center justify-between overflow-hidden rounded-xl border px-3 py-3 text-lead font-bold text-white transition-all duration-300 ${
                         isActive
@@ -247,8 +247,8 @@ function PublicNavbar() {
                       style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.35), transparent 75%)' }}
                     />
                     <span className="flex items-center gap-3">
-                      <EmpireLogo size={28} className="transition-transform duration-300 group-hover:scale-110" />
-                      <span className="tracking-wide">EMPIRE</span>
+                      <SignalLogo size={28} className="transition-transform duration-300 group-hover:scale-110" />
+                      <span className="tracking-wide">SIGNAL</span>
                     </span>
                     <Icon name="chevronRight" size={18} className="text-accent-bright transition-transform duration-300 group-hover:translate-x-0.5" />
                   </NavLink>
@@ -424,7 +424,7 @@ function AppNavbar() {
                 </NavLink>
               ) : null}
               <NavLink
-                to="/empire"
+                to="/signal"
                 onClick={() => setDrawerOpen(false)}
                 className={({ isActive }) =>
                   `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
@@ -439,8 +439,8 @@ function AppNavbar() {
                   style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
                 />
                 <span className="flex items-center gap-3">
-                  <EmpireLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
-                  <span className="tracking-wide">EMPIRE</span>
+                  <SignalLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+                  <span className="tracking-wide">SIGNAL</span>
                 </span>
                 <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
               </NavLink>

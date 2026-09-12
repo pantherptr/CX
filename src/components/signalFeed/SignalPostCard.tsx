@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { VerifiedBadge } from '../primitives';
 import { useApp } from '../../lib/store';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
-  updateEmpirePost, type EmpirePost,
+  setEmpirePostFeatured, markEmpirePostViewed, updateEmpirePost, type EmpirePost,
 } from '../../lib/data/empireFeed';
-import { EmpireMediaViewer } from './EmpireMediaViewer';
-import { EmpireComments } from './EmpireComments';
-import { EmpirePostComposer } from './EmpirePostComposer';
+import { SignalMediaViewer } from './SignalMediaViewer';
+import { SignalComments } from './SignalComments';
+import { SignalPostComposer } from './SignalPostComposer';
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -55,16 +55,18 @@ function PostImage({ src, className, onClick }: { src: string; className: string
  *  media, more concise text) — used for the one pinned post, rendered
  *  through this same component rather than a forked duplicate so there
  *  is exactly one place owning the like/save/comment/admin-menu logic.
- *  `onPinToggled` lets the page resync both the regular feed and the
- *  pinned-post slot after a pin/unpin, since a post's home (regular list
- *  vs Featured slot) changes the moment its pin state does. */
-export function EmpirePostCard({
+ *  `onPinToggled`/`onFeaturedToggled` let the page resync every list a
+ *  post could live in after a pin/feature change, since a post's home
+ *  (regular feed vs Pinned vs Featured) changes the moment either flag
+ *  does — same reasoning for both, since the feed excludes both rows. */
+export function SignalPostCard({
   post,
   canManage,
   featured = false,
   onChanged,
   onDeleted,
   onPinToggled,
+  onFeaturedToggled,
 }: {
   post: EmpirePost;
   canManage: boolean;
@@ -72,6 +74,7 @@ export function EmpirePostCard({
   onChanged: (post: EmpirePost) => void;
   onDeleted: (postId: string) => void;
   onPinToggled?: () => void;
+  onFeaturedToggled?: () => void;
 }) {
   const { toast } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,6 +85,13 @@ export function EmpirePostCard({
   const [likeBounce, setLikeBounce] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
+
+  // Fire-and-forget — dedup'd server-side (empire_post_views is keyed on
+  // post_id + user_id), so a re-render or refresh never inflates the count.
+  useEffect(() => {
+    markEmpirePostViewed(post.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id]);
 
   const handleLike = async () => {
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
@@ -100,8 +110,8 @@ export function EmpirePostCard({
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/empire`;
-    const shareData = { title: post.title || 'CX Rent — Empire', text: post.body.slice(0, 140), url };
+    const url = `${window.location.origin}/signal/post/${post.id}`;
+    const shareData = { title: post.title || 'CX Rent — Signal', text: post.body.slice(0, 140), url };
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -142,6 +152,19 @@ export function EmpirePostCard({
     onPinToggled?.();
   };
 
+  const handleFeatureToggle = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    const { error } = await setEmpirePostFeatured(post.id, !post.isFeatured);
+    setBusy(false);
+    if (error) {
+      toast({ title: 'Could not update Featured', desc: error, icon: 'info' });
+      return;
+    }
+    onDeleted(post.id);
+    onFeaturedToggled?.();
+  };
+
   const handleToggleComments = async () => {
     setMenuOpen(false);
     setBusy(true);
@@ -159,7 +182,7 @@ export function EmpirePostCard({
 
   if (editing) {
     return (
-      <EmpirePostComposer
+      <SignalPostComposer
         editing={post}
         onDone={(updated) => { setEditing(false); onChanged(updated); }}
         onCancel={() => setEditing(false)}
@@ -179,7 +202,8 @@ export function EmpirePostCard({
     >
       {featured && (
         <div className="flex items-center gap-1.5 border-b border-line bg-accent-bright/10 px-4 py-1.5 text-caption font-semibold text-accent-700">
-          <Icon name="pinned" size={12} fill /> Pinned Announcement
+          <Icon name={post.isPinned ? 'pinned' : 'sparkles'} size={12} fill={post.isPinned} />
+          {post.isPinned ? 'Pinned Announcement' : 'Featured'}
         </div>
       )}
       {!featured && isExclusive && (
@@ -225,6 +249,9 @@ export function EmpirePostCard({
                   </button>
                   <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
                     <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
+                  </button>
+                  <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                    <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
                   </button>
                   <button onClick={handleToggleComments} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
                     <Icon name="message" size={15} /> {post.commentsDisabled ? 'Enable comments' : 'Disable comments'}
@@ -288,12 +315,12 @@ export function EmpirePostCard({
 
       {commentsOpen && (
         <div className="animate-fade-in">
-          <EmpireComments postId={post.id} disabled={post.commentsDisabled} onCommentAdded={() => onChanged({ ...post, commentCount: post.commentCount + 1 })} />
+          <SignalComments postId={post.id} disabled={post.commentsDisabled} onCommentAdded={() => onChanged({ ...post, commentCount: post.commentCount + 1 })} />
         </div>
       )}
 
       {viewerIndex !== null && (
-        <EmpireMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
+        <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}
     </article>
   );

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 
 /**
- * EMPIRE Stories — ephemeral (24h), Owner/Admin-only, multi-slide stories
- * permanently pinned above the Empire feed. Same conventions as
- * empireFeed.ts: every write goes through a security-definer RPC gated
- * on is_admin() (see supabase/migrations/0041_empire_stories.sql), this
- * file never inserts/updates/deletes a table directly.
+ * SIGNAL Stories (renamed from "Empire" — see empireFeed.ts's header for
+ * why the underlying `empire_*` names stayed put) — ephemeral (24h),
+ * Owner/Admin-only, multi-slide stories permanently pinned above the
+ * Signal feed. Same conventions as empireFeed.ts: every write goes
+ * through a security-definer RPC gated on is_admin() (see
+ * supabase/migrations/0041_empire_stories.sql), this file never
+ * inserts/updates/deletes a table directly.
  */
 
 export type StoryMediaType = 'image';

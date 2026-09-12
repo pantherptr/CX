@@ -380,7 +380,7 @@
   /* Story viewer's per-slide progress fill — driven by a real CSS
      animation (not a JS interval) so `animation-play-state: paused`
      holds its exact current position for free on hold-to-pause. */
-  @keyframes empire-story-progress {
+  @keyframes signal-story-progress {
     from { width: 0%; }
     to { width: 100%; }
   }

@@ -7,25 +7,35 @@ const HOLD_DELAY_MS = 180;
 const SWIPE_THRESHOLD_PX = 60;
 
 /** Fullscreen Story viewer — same `fixed inset-0` full-viewport escape
- *  pattern `EmpireMediaViewer.tsx` already uses. A per-slide progress
+ *  pattern `SignalMediaViewer.tsx` already uses. A per-slide progress
  *  bar row auto-advances on a real CSS animation (no per-frame JS timer
  *  — `animation-play-state` pauses/resumes at its exact current position
  *  for free), tap zones and horizontal swipes both navigate, and a
  *  press-and-hold pauses playback. Navigating past the last slide of the
  *  last story closes the viewer; navigating before the first slide of
  *  the first story is a no-op. */
-export function EmpireStoryViewer({
+export function SignalStoryViewer({
   stories,
   startIndex,
   canManage,
   onClose,
   onStoryDeleted,
+  onMarkViewed = markEmpireStoryViewed,
+  onDeleteStory = deleteEmpireStory,
+  deleteConfirmMessage = 'Delete this Story? This cannot be undone.',
 }: {
   stories: EmpireStory[];
   startIndex: number;
   canManage: boolean;
   onClose: () => void;
   onStoryDeleted: () => void;
+  /** Overridable so SignalHighlightsBar can reuse this same viewer for
+   *  permanent Highlights, which have no per-viewer "viewed" state. */
+  onMarkViewed?: (id: string) => void | Promise<void>;
+  /** Overridable so Highlights delete through their own RPC instead of
+   *  the Story-specific one. */
+  onDeleteStory?: (id: string) => Promise<{ error: string | null }>;
+  deleteConfirmMessage?: string;
 }) {
   const [storyIndex, setStoryIndex] = useState(startIndex);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -42,8 +52,9 @@ export function EmpireStoryViewer({
   useEffect(() => {
     if (story && !viewedRef.current.has(story.id)) {
       viewedRef.current.add(story.id);
-      markEmpireStoryViewed(story.id);
+      onMarkViewed(story.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story]);
 
   useEffect(() => {
@@ -121,9 +132,9 @@ export function EmpireStoryViewer({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this Story? This cannot be undone.')) return;
+    if (!window.confirm(deleteConfirmMessage)) return;
     setDeleting(true);
-    const { error } = await deleteEmpireStory(story.id);
+    const { error } = await onDeleteStory(story.id);
     setDeleting(false);
     if (!error) {
       onStoryDeleted();
@@ -144,7 +155,7 @@ export function EmpireStoryViewer({
                 className="h-full bg-white"
                 style={{
                   width: '0%',
-                  animationName: 'empire-story-progress',
+                  animationName: 'signal-story-progress',
                   animationDuration: `${SLIDE_DURATION_MS}ms`,
                   animationTimingFunction: 'linear',
                   animationFillMode: 'forwards',
