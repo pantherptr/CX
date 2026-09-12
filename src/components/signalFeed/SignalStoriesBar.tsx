@@ -7,15 +7,38 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalStoryComposer } from './SignalStoryComposer';
 
 /** The permanent Stories row at the top of Signal — self-contained: owns
- *  its own fetch, viewer, and (for Owner/Admin) composer state, so the
- *  page just drops this in once. Renders nothing at all — not an empty
- *  placeholder — when there are zero active stories and the viewer
- *  isn't Owner/Admin (who still gets the "Add Story" circle so there's
- *  a way to create the first one). */
-export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
-  const { stories, refresh } = useActiveEmpireStories();
+ *  its own fetch, viewer, and (for authorized publishers) composer
+ *  state, so the page just drops this in once. Renders nothing at all —
+ *  not an empty placeholder — when there are zero active stories in
+ *  this `scope` and the viewer can't create one here (still gets the
+ *  "Add Story" circle so there's a way to create the first one).
+ *
+ *  `scope` is the Official/Community split (mirrors the feed's own
+ *  `p_publisher_scope`) — filtered client-side from the one shared
+ *  `useActiveEmpireStories()` fetch rather than a second RPC, since the
+ *  active-Stories list is always small. `canCreate` replaces the old
+ *  single `canManage` gate: Official passes the admin `canManage`,
+ *  Community passes `canPublishSelf` — whoever may publish content in
+ *  *this* space may start a Story in it. `canManage` is the separate,
+ *  always-admin moderation flag (deleting a Story inside the viewer) —
+ *  Story deletion stays Owner/Admin-only in both spaces for now, even
+ *  though Community's own `canCreate` is a broader, non-admin flag. */
+export function SignalStoriesBar({
+  scope,
+  canCreate,
+  canManage,
+}: {
+  scope: 'official' | 'community';
+  canCreate: boolean;
+  canManage: boolean;
+}) {
+  const { stories: allStories, refresh } = useActiveEmpireStories();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+
+  const stories = allStories?.filter((s) =>
+    scope === 'official' ? s.publisherType !== 'self' : s.publisherType === 'self'
+  ) ?? null;
 
   if (stories === null) {
     return (
@@ -30,12 +53,12 @@ export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
     );
   }
 
-  if (stories.length === 0 && !canManage) return null;
+  if (stories.length === 0 && !canCreate) return null;
 
   return (
     <>
       <div className="no-scrollbar mb-5 flex gap-4 overflow-x-auto pb-1">
-        {canManage && (
+        {canCreate && (
           <button onClick={() => setComposerOpen(true)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
             <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-accent hover:text-accent-700">
               <Icon name="plus" size={22} />
@@ -48,7 +71,7 @@ export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
           // not a preview of the Story's own content — matches how the
           // identity system's own examples present the bar, and reads
           // as a broadcast channel rather than a personal-content ring.
-          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl);
+          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
           return (
             <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
               <span
@@ -78,6 +101,7 @@ export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
 
       {composerOpen && (
         <SignalStoryComposer
+          mode={scope === 'community' ? 'self' : 'official'}
           onClose={() => setComposerOpen(false)}
           onPublished={() => { setComposerOpen(false); refresh(); }}
         />

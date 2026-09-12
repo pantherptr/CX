@@ -35,17 +35,28 @@ interface PendingSlide {
   showDetails: boolean;
 }
 
-/** Owner/Admin-only: create a new Story (staged-then-upload-on-submit,
- *  same pattern as SignalPostComposer/ListCar.tsx), manage existing ones
- *  (active + expired, with view counts, delete, and "save to Highlight"),
- *  and manage the permanent Highlights collections themselves — kept as
- *  one sheet with three views rather than a separate admin-dashboard
- *  route, so management stays integrated into the Signal experience. */
-export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => void; onPublished: () => void }) {
+/** Create a new Story (staged-then-upload-on-submit, same pattern as
+ *  SignalPostComposer/ListCar.tsx). Owner/Admin (`mode="official"`,
+ *  the default) also get Manage (active + expired, with view counts,
+ *  delete, "save to Highlight") and Highlights management in the same
+ *  sheet, rather than a separate admin-dashboard route — those are
+ *  official/admin concepts, so a Host/Verified Client's `mode="self"`
+ *  Story composer skips the tab switcher entirely (always the create
+ *  view), skips the publisher picker, and always publishes as `'self'` —
+ *  mirroring `SignalPostComposer`'s own `mode` convention exactly. */
+export function SignalStoryComposer({
+  onClose,
+  onPublished,
+  mode = 'official',
+}: {
+  onClose: () => void;
+  onPublished: () => void;
+  mode?: 'official' | 'self';
+}) {
   const { profile } = useAuth();
   const [view, setView] = useState<'create' | 'manage' | 'highlights'>('create');
   const objectUrls = useRef<string[]>([]);
-  const [publisherType, setPublisherType] = useState<SignalPublisherType>(lastSignalPublisherType());
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<PendingSlide[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -248,40 +259,46 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
     <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center" role="dialog" aria-modal="true">
       <div className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface sm:max-w-lg sm:rounded-2xl">
         <div className="flex items-center gap-2 border-b border-line px-5 py-4">
-          <div className="flex gap-1 rounded-full bg-panel p-1">
-            <button
-              onClick={() => setView('create')}
-              className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'create' ? 'bg-ink text-white' : 'text-ink-soft'}`}
-            >
-              New Story
-            </button>
-            <button
-              onClick={() => setView('manage')}
-              className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'manage' ? 'bg-ink text-white' : 'text-ink-soft'}`}
-            >
-              Manage
-            </button>
-            <button
-              onClick={() => setView('highlights')}
-              className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'highlights' ? 'bg-ink text-white' : 'text-ink-soft'}`}
-            >
-              Highlights
-            </button>
-          </div>
+          {mode === 'official' ? (
+            <div className="flex gap-1 rounded-full bg-panel p-1">
+              <button
+                onClick={() => setView('create')}
+                className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'create' ? 'bg-ink text-white' : 'text-ink-soft'}`}
+              >
+                New Story
+              </button>
+              <button
+                onClick={() => setView('manage')}
+                className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'manage' ? 'bg-ink text-white' : 'text-ink-soft'}`}
+              >
+                Manage
+              </button>
+              <button
+                onClick={() => setView('highlights')}
+                className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${view === 'highlights' ? 'bg-ink text-white' : 'text-ink-soft'}`}
+              >
+                Highlights
+              </button>
+            </div>
+          ) : (
+            <span className="font-display font-semibold text-ink">New Story</span>
+          )}
           <button onClick={onClose} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
-          {view === 'create' && (
+          {(mode === 'self' || view === 'create') && (
             <>
-              <SignalPublisherPicker
-                value={publisherType}
-                onChange={setPublisherType}
-                ownerName={profile?.full_name || 'Owner'}
-                ownerAvatarUrl={profile?.avatar_url ?? null}
-              />
+              {mode === 'official' && (
+                <SignalPublisherPicker
+                  value={publisherType}
+                  onChange={setPublisherType}
+                  ownerName={profile?.full_name || 'Owner'}
+                  ownerAvatarUrl={profile?.avatar_url ?? null}
+                />
+              )}
 
               <input
                 value={title}
@@ -388,7 +405,7 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
               ) : (
                 allStories.map((s) => {
                   const expired = new Date(s.expiresAt).getTime() < Date.now();
-                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl);
+                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl, s.authorIsHost, s.authorIsVerifiedClient);
                   return (
                     <div key={s.id} className="flex flex-col gap-2 rounded-xl border border-line p-2.5">
                       <div className="flex items-center gap-3">

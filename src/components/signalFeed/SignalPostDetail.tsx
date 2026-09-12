@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
 import { fetchEmpirePostById, fetchEmpireFeed, type EmpirePost } from '../../lib/data/empireFeed';
@@ -25,6 +25,9 @@ export function SignalPostDetail({
   const [post, setPost] = useState<EmpirePost | null | 'error'>(null);
   const [loaded, setLoaded] = useState(false);
   const [related, setRelated] = useState<EmpirePost[] | null>(null);
+  const { pathname } = useLocation();
+  const base = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
+  const scope = base === '/signal/community' ? 'community' : 'official';
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +39,7 @@ export function SignalPostDetail({
         setPost(p);
         setLoaded(true);
         if (p) {
-          fetchEmpireFeed(5, undefined, p.category)
+          fetchEmpireFeed(5, undefined, p.category, { scope })
             .then((rows) => !cancelled && setRelated(rows.filter((r) => r.id !== p.id).slice(0, 4)))
             .catch(() => !cancelled && setRelated([]));
         }
@@ -50,7 +53,7 @@ export function SignalPostDetail({
     return () => {
       cancelled = true;
     };
-  }, [postId]);
+  }, [postId, scope]);
 
   return (
     <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg">
@@ -93,7 +96,7 @@ export function SignalPostDetail({
                 <h2 className="mb-3 text-detail font-semibold uppercase tracking-wide text-muted">More from Signal</h2>
                 <div className="flex flex-col gap-2">
                   {related.map((r) => (
-                    <Link key={r.id} to={`/signal/post/${r.id}`} className="pressable flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5 hover:border-line-strong">
+                    <Link key={r.id} to={`${base}/post/${r.id}`} className="pressable flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5 hover:border-line-strong">
                       {r.mediaUrls[0] ? (
                         <img src={r.mediaUrls[0]} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
                       ) : (

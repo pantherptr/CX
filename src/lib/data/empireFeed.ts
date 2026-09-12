@@ -154,8 +154,23 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
   };
 }
 
-export async function fetchEmpireFeed(limit: number = FEED_PAGE_SIZE, before?: string, category?: EmpireCategory | null): Promise<EmpirePost[]> {
-  const { data, error } = await supabase.rpc('fetch_empire_feed', { p_limit: limit, p_before: before ?? null, p_category: category ?? null });
+/** `scope` is SIGNAL's Official/Community split — 'official' matches the
+ *  three fixed voices, 'community' matches real Host/Verified Client
+ *  posts ('self'), omitted keeps the old unfiltered behavior. `authorKind`
+ *  only means anything alongside `scope: 'community'` (Discovery's
+ *  Hosts/Verified Clients chips). See 0049_signal_split_official_community.sql. */
+export interface EmpireFeedScope {
+  scope?: 'official' | 'community';
+  authorKind?: 'host' | 'verified_client';
+}
+
+export async function fetchEmpireFeed(
+  limit: number = FEED_PAGE_SIZE, before?: string, category?: EmpireCategory | null, scopeOpts?: EmpireFeedScope
+): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_feed', {
+    p_limit: limit, p_before: before ?? null, p_category: category ?? null,
+    p_publisher_scope: scopeOpts?.scope ?? null, p_author_kind: scopeOpts?.authorKind ?? null,
+  });
   if (error) throw error;
   return (data as EmpirePostRow[]).map(mapEmpirePost);
 }
@@ -166,15 +181,17 @@ export async function fetchEmpireFeed(limit: number = FEED_PAGE_SIZE, before?: s
  *  its initial fetch. Pinned posts are never included here (fetched
  *  separately via `useEmpirePinnedPost` for the Featured section) — the
  *  feed RPC excludes `is_pinned` rows unconditionally. Re-fetches from
- *  the first page whenever `category` changes. */
-export function useEmpireFeed(category: EmpireCategory | null = null) {
+ *  the first page whenever `category`/`scope`/`authorKind` changes. */
+export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?: EmpireFeedScope) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const scope = scopeOpts?.scope;
+  const authorKind = scopeOpts?.authorKind;
 
   const loadInitial = useCallback(async () => {
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category);
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
       setPosts(rows);
       setHasMore(rows.length === FEED_PAGE_SIZE);
     } catch {
@@ -182,7 +199,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null) {
       setHasMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [category, scope, authorKind]);
 
   useEffect(() => {
     setPosts(null);
@@ -193,7 +210,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null) {
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, posts[posts.length - 1].createdAt, category);
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, posts[posts.length - 1].createdAt, category, { scope, authorKind });
       setPosts((prev) => [...(prev ?? []), ...rows]);
       setHasMore(rows.length === FEED_PAGE_SIZE);
     } catch {
@@ -202,7 +219,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null) {
       setLoadingMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, loadingMore, hasMore, category]);
+  }, [posts, loadingMore, hasMore, category, scope, authorKind]);
 
   /** Replaces one post in place (e.g. after a like/save toggle or an
    *  edit) without a full re-fetch. */
@@ -577,22 +594,40 @@ export async function incrementEmpirePostShare(postId: string): Promise<void> {
 // ---- Trending — real engagement only, recent window, minimum bar; see
 // fetch_empire_trending_posts for the (deliberately simple) scoring. ----
 
-export async function fetchEmpireTrendingPosts(limit = 5): Promise<EmpirePost[]> {
-  const { data, error } = await supabase.rpc('fetch_empire_trending_posts', { p_limit: limit });
+export async function fetchEmpireTrendingPosts(limit = 5, scopeOpts?: EmpireFeedScope): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_empire_trending_posts', {
+    p_limit: limit, p_publisher_scope: scopeOpts?.scope ?? null, p_author_kind: scopeOpts?.authorKind ?? null,
+  });
   if (error) throw error;
   return (data as EmpirePostRow[]).map(mapEmpirePost);
 }
 
-export function useEmpireTrendingPosts() {
+export function useEmpireTrendingPosts(scopeOpts?: EmpireFeedScope, limit = 5) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
+  const scope = scopeOpts?.scope;
+  const authorKind = scopeOpts?.authorKind;
 
   useEffect(() => {
-    fetchEmpireTrendingPosts()
+    setPosts(null);
+    fetchEmpireTrendingPosts(limit, { scope, authorKind })
       .then(setPosts)
       .catch(() => setPosts([]));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, authorKind, limit]);
 
-  return { posts };
+  /** Same shape as `useEmpireFeed`'s own patch/remove — a "Popular" list
+   *  rendered as real, interactive `SignalPostCard`s (Community's
+   *  Discovery filter) needs local optimistic updates the same way the
+   *  main feed does; the small `SignalTrendingSection` strip doesn't use
+   *  these, but they cost nothing when unused. */
+  const patchPost = (id: string, patch: Partial<EmpirePost>) => {
+    setPosts((prev) => (prev ? prev.map((p) => (p.id === id ? { ...p, ...patch } : p)) : prev));
+  };
+  const removePost = (id: string) => {
+    setPosts((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
+  };
+
+  return { posts, patchPost, removePost };
 }
 
 // ---- Search — lightweight ilike over title/body, any signed-in user. ----

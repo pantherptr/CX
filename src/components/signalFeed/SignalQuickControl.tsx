@@ -6,6 +6,13 @@ interface QuickControlItem {
   label: string;
   icon: IconName;
   onSelect: () => void;
+  /** Highlights this row as "where you are" — used for Official/Community
+   *  so switching spaces never leaves you guessing which one you're in. */
+  active?: boolean;
+  /** Draws a thin divider below this row — used once, after
+   *  Official/Community, to visually group the two space-switchers apart
+   *  from the personal shortcuts (My Profile/My Posts/Saved/Explore). */
+  groupEnd?: boolean;
 }
 
 /** SIGNAL's own tiny navigation affordance — deliberately NOT a sidebar,
@@ -62,16 +69,21 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
         }`}
         style={{ marginLeft: '2rem', transitionTimingFunction: open ? 'var(--ease-out-expo, ease-out)' : 'ease-in' }}
       >
+        <p className="px-4 pb-1.5 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-faint">Signal</p>
         {items.map((item) => (
-          <button
-            key={item.label}
-            role="menuitem"
-            onClick={() => select(item.onSelect)}
-            className="pressable flex w-full items-center gap-2.5 px-4 py-3 text-left text-detail font-medium text-ink transition-colors hover:bg-panel"
-          >
-            <Icon name={item.icon} size={17} className="text-ink-soft" />
-            {item.label}
-          </button>
+          <div key={item.label}>
+            <button
+              role="menuitem"
+              onClick={() => select(item.onSelect)}
+              className={`pressable flex w-full items-center gap-2.5 px-4 py-3 text-left text-detail font-medium transition-colors ${
+                item.active ? 'bg-accent-050 text-accent-700' : 'text-ink hover:bg-panel'
+              }`}
+            >
+              <Icon name={item.icon} size={17} className={item.active ? 'text-accent-700' : 'text-ink-soft'} />
+              {item.label}
+            </button>
+            {item.groupEnd && <div className="mx-4 border-t border-line" />}
+          </div>
         ))}
       </div>
     </div>

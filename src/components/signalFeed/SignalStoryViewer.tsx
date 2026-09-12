@@ -102,7 +102,7 @@ export function SignalStoryViewer({
 
   if (!story || !slide) return null;
 
-  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl);
+  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {

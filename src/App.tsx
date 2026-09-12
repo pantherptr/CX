@@ -259,6 +259,13 @@ export default function App() {
         <Route path="/signal/post/:postId" element={<Signal />} />
         <Route path="/signal/highlight/:highlightId" element={<Signal />} />
         <Route path="/signal/profile/:authorId" element={<Signal />} />
+        {/* SIGNAL COMMUNITY — the same shell/component, reading its own
+            pathname to know which space it's in (see Signal.tsx's `space`).
+            Highlights stay Official-only, so there's no
+            /signal/community/highlight/:id route. */}
+        <Route path="/signal/community" element={<Signal />} />
+        <Route path="/signal/community/post/:postId" element={<Signal />} />
+        <Route path="/signal/community/profile/:authorId" element={<Signal />} />
 
         {/* Dev-only: hardcoded-number layout fixture, never present in a
             production build (see the gated import above). */}

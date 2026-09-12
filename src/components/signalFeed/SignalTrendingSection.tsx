@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { useEmpireTrendingPosts } from '../../lib/data/empireFeed';
+import { useEmpireTrendingPosts, type EmpireFeedScope } from '../../lib/data/empireFeed';
 
 /** A quiet "Trending" strip — real engagement only (see
  *  fetch_empire_trending_posts), never manufactured, and never shown as
@@ -10,9 +10,16 @@ import { useEmpireTrendingPosts } from '../../lib/data/empireFeed';
  *  like/view count on the card. Deliberately NOT another row of full
  *  SignalPostCards: a compact horizontal strip keeps it feeling like a
  *  light signal, not a second feed. Collapses to nothing until at least
- *  one post actually clears the engagement bar. */
-export function SignalTrendingSection() {
-  const { posts } = useEmpireTrendingPosts();
+ *  one post actually clears the engagement bar.
+ *
+ *  `scope`/`authorKind` scope this to Official or Community (see
+ *  0049_signal_split_official_community.sql) — Official's own Trending
+ *  never surfaces a stray community post and vice versa; Community
+ *  reuses this same component as its "Popular" Discovery chip. */
+export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {}) {
+  const { posts } = useEmpireTrendingPosts({ scope, authorKind });
+  const { pathname } = useLocation();
+  const base = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
 
   if (!posts || posts.length === 0) return null;
 
@@ -25,7 +32,7 @@ export function SignalTrendingSection() {
         {posts.map((p) => (
           <Link
             key={p.id}
-            to={`/signal/post/${p.id}`}
+            to={`${base}/post/${p.id}`}
             className="pressable flex w-40 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface"
           >
             <div className="relative aspect-[4/3] w-full bg-panel">

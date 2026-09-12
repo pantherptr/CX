@@ -38,6 +38,11 @@ export interface EmpireStory {
    *  resolveSignalIdentity). Independent of `publisherType`. */
   authorName: string;
   authorAvatarUrl: string | null;
+  /** Only meaningful for a `publisherType === 'self'` Story (a Host or
+   *  Verified Client's own) — resolves the correct badge, same as
+   *  EmpirePost's identically-named fields. */
+  authorIsHost: boolean;
+  authorIsVerifiedClient: boolean;
   title: string | null;
   createdAt: string;
   expiresAt: string;
@@ -66,6 +71,8 @@ interface StoryRow {
   author_id: string;
   author_name: string | null;
   author_avatar_url: string | null;
+  author_is_host: boolean;
+  author_is_verified_client: boolean;
   title: string | null;
   created_at: string;
   expires_at: string;
@@ -101,6 +108,8 @@ function mapStory(row: StoryRow): EmpireStory {
     authorId: row.author_id,
     authorName: row.author_name ?? 'CX Rent',
     authorAvatarUrl: row.author_avatar_url,
+    authorIsHost: row.author_is_host,
+    authorIsVerifiedClient: row.author_is_verified_client,
     title: row.title,
     createdAt: row.created_at,
     expiresAt: row.expires_at,

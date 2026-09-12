@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
@@ -20,10 +20,10 @@ import { SignalComments } from './SignalComments';
  *  renders a static info block for them instead of fetching a profile),
  *  everyone else (Owner's real row, or a Host/Verified Client's 'self'
  *  post) opens their real account by id. */
-function signalProfileHref(post: EmpirePost): string {
-  if (post.publisherType === 'cx') return '/signal/profile/cx';
-  if (post.publisherType === 'assistant') return '/signal/profile/assistant';
-  return `/signal/profile/${post.authorId}`;
+function signalProfileHref(post: EmpirePost, base: string): string {
+  if (post.publisherType === 'cx') return `${base}/profile/cx`;
+  if (post.publisherType === 'assistant') return `${base}/profile/assistant`;
+  return `${base}/profile/${post.authorId}`;
 }
 
 function timeAgo(iso: string): string {
@@ -219,6 +219,8 @@ export function SignalPostCard({
 }) {
   const { toast } = useApp();
   const { session } = useAuth();
+  const { pathname } = useLocation();
+  const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -359,11 +361,11 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-3 p-4 pb-3 sm:px-5">
-        <Link to={signalProfileHref(post)} className="shrink-0">
+        <Link to={signalProfileHref(post, profileBase)} className="shrink-0">
           <SignalIdentityAvatar identity={identity} size={40} />
         </Link>
         <div className="min-w-0 flex-1">
-          <Link to={signalProfileHref(post)} className="flex items-center gap-1.5 hover:underline">
+          <Link to={signalProfileHref(post, profileBase)} className="flex items-center gap-1.5 hover:underline">
             <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
             <SignalIdentityBadge identity={identity} />
           </Link>

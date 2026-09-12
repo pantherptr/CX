@@ -82,7 +82,8 @@ export function highlightAsStory(h: EmpireHighlight): EmpireStory {
   // see signalIdentity.ts's header); 'cx' is the neutral default for a
   // permanent, Owner-curated collection with no single publish moment.
   return {
-    id: h.id, authorId: '', authorName: 'CX Rent', authorAvatarUrl: null, title: h.title, createdAt: h.createdAt,
+    id: h.id, authorId: '', authorName: 'CX Rent', authorAvatarUrl: null,
+    authorIsHost: false, authorIsVerifiedClient: false, title: h.title, createdAt: h.createdAt,
     expiresAt: '', viewCount: 0, viewedByMe: true, slides: h.slides, publisherType: 'cx',
   };
 }
