@@ -57,6 +57,11 @@ export interface EmpirePost {
   commentCount: number;
   saveCount: number;
   viewCount: number;
+  /** Real completed-share events (native share sheet or copy-link) — see
+   *  incrementEmpirePostShare. None of these four counts are shown to
+   *  regular users; SignalPostCard only surfaces them in its
+   *  Owner/Admin-only "Post performance" line. */
+  shareCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
   /** Which of SIGNAL's three voices this post is permanently recorded
@@ -87,6 +92,7 @@ interface EmpirePostRow {
   comment_count: number;
   save_count: number;
   view_count: number;
+  share_count: number;
   liked_by_me: boolean;
   saved_by_me: boolean;
   publisher_type: SignalPublisherType;
@@ -94,6 +100,18 @@ interface EmpirePostRow {
 
 function mediaUrlFor(path: string): string {
   return supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm']);
+
+/** A post's `media_paths` stays a plain text[] of storage paths — no
+ *  schema change for video support there (unlike Stories, which needed
+ *  media_type/poster_path columns for their circular-thumbnail viewer
+ *  context). The path's own extension is enough to tell SignalPostCard/
+ *  SignalMediaViewer whether to render an <img> or a <video>. */
+export function mediaKindFromPath(path: string): 'image' | 'video' {
+  const ext = path.split('.').pop()?.toLowerCase() ?? '';
+  return VIDEO_EXTENSIONS.has(ext) ? 'video' : 'image';
 }
 
 function mapEmpirePost(row: EmpirePostRow): EmpirePost {
@@ -118,6 +136,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     commentCount: row.comment_count,
     saveCount: row.save_count,
     viewCount: row.view_count,
+    shareCount: row.share_count,
     likedByMe: row.liked_by_me,
     savedByMe: row.saved_by_me,
     publisherType: row.publisher_type,
@@ -286,6 +305,7 @@ function mapCreatedPost(row: {
     commentCount: 0,
     saveCount: 0,
     viewCount: 0,
+    shareCount: 0,
     likedByMe: false,
     savedByMe: false,
     publisherType: row.publisher_type,
@@ -412,6 +432,24 @@ export async function markEmpirePostViewed(postId: string): Promise<void> {
   await supabase.rpc('mark_empire_post_viewed', { p_post_id: postId });
 }
 
+// ---- Impressions — real, non-deduped (unlike Views): every render of a
+// post's card counts, so this is always >= the unique-viewer view count.
+// Not surfaced per-post (it would just clutter the feed card the way a
+// real platform keeps this in Insights, not the public post), only as a
+// site-wide total in Signal Analytics — see fetch_empire_analytics. ----
+
+export async function incrementEmpirePostImpression(postId: string): Promise<void> {
+  await supabase.rpc('increment_empire_post_impression', { p_post_id: postId });
+}
+
+// ---- Shares — a real event counter (a user actually completed the
+// native share sheet or copied the link), not deduped: sharing the same
+// post twice is two genuine share events, not a duplicate. ----
+
+export async function incrementEmpirePostShare(postId: string): Promise<void> {
+  await supabase.rpc('increment_empire_post_share', { p_post_id: postId });
+}
+
 // ---- Trending — real engagement only, recent window, minimum bar; see
 // fetch_empire_trending_posts for the (deliberately simple) scoring. ----
 
@@ -464,6 +502,8 @@ export interface EmpirePublisherStats {
 
 export interface EmpireAnalytics {
   totalPostViews: number;
+  /** Real, non-deduped render count — see incrementEmpirePostImpression. */
+  totalImpressions: number;
   totalStoryViews: number;
   postsLast7d: number;
   postsPrev7d: number;
@@ -482,7 +522,7 @@ export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
   const { data, error } = await supabase.rpc('fetch_empire_analytics');
   if (error) throw error;
   const d = data as {
-    total_post_views: number; total_story_views: number; posts_last_7d: number; posts_prev_7d: number;
+    total_post_views: number; total_impressions: number; total_story_views: number; posts_last_7d: number; posts_prev_7d: number;
     engagement_last_7d: number; engagement_prev_7d: number;
     most_viewed: { id: string; title: string; count: number } | null;
     most_liked: { id: string; title: string; count: number } | null;
@@ -493,6 +533,7 @@ export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
   const emptyStats: EmpirePublisherStats = { views: 0, likes: 0, comments: 0, saves: 0 };
   return {
     totalPostViews: d.total_post_views,
+    totalImpressions: d.total_impressions,
     totalStoryViews: d.total_story_views,
     postsLast7d: d.posts_last_7d,
     postsPrev7d: d.posts_prev_7d,

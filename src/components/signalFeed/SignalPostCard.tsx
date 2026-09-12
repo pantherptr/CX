@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
-  setEmpirePostFeatured, markEmpirePostViewed, type EmpirePost,
+  setEmpirePostFeatured, markEmpirePostViewed, incrementEmpirePostImpression, incrementEmpirePostShare,
+  mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -46,15 +47,131 @@ function PostImage({ src, className, onClick }: { src: string; className: string
   );
 }
 
+/** A post's inline video — autoplays muted only while genuinely visible
+ *  (a real IntersectionObserver, not a "did it mount" guess), preserves
+ *  its own aspect ratio instead of the fixed crop PostImage's siblings
+ *  use, and never forces a full-resolution fetch just to sit in a feed:
+ *  `preload="metadata"` only ever pulls enough to know its dimensions
+ *  and show a first frame — the actual video data streams in once
+ *  playback starts. A manual tap always wins over the observer (a
+ *  `userPaused` ref, not state, since it must never itself trigger a
+ *  re-render/re-observe). */
+function PostVideo({
+  src,
+  className,
+  onClick,
+  fixedAspect = false,
+}: {
+  src: string;
+  className: string;
+  onClick?: () => void;
+  /** The Featured/Pinned hero treatment deliberately crops to a fixed
+   *  16:10 box like its image counterpart does — only the regular feed
+   *  grid preserves each video's own intrinsic composition. */
+  fixedAspect?: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [aspect, setAspect] = useState<number | null>(null);
+  const userPausedRef = useRef(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (userPausedRef.current) return;
+        if (entry.isIntersecting) video.play().catch(() => {});
+        else video.pause();
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      userPausedRef.current = false;
+      video.play().catch(() => {});
+    } else {
+      userPausedRef.current = true;
+      video.pause();
+    }
+  };
+
+  if (errored) {
+    return (
+      <div className={`grid place-items-center bg-panel text-muted ${className}`}>
+        <div className="flex flex-col items-center gap-1.5 py-6">
+          <Icon name="image" size={22} />
+          <span className="text-caption">Video unavailable</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`relative overflow-hidden bg-panel ${className}`}
+      style={!fixedAspect && aspect ? { aspectRatio: `${aspect}`, height: 'auto' } : undefined}
+    >
+      {!loaded && <div className="skeleton absolute inset-0" />}
+      <video
+        ref={videoRef}
+        src={src}
+        muted={muted}
+        playsInline
+        loop
+        preload="metadata"
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          setLoaded(true);
+          if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(v.videoWidth / v.videoHeight);
+        }}
+        onError={() => setErrored(true)}
+        onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+        className={`h-full w-full cursor-pointer object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+      />
+      <button
+        onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+        aria-label={muted ? 'Unmute' : 'Mute'}
+        className="absolute bottom-2 right-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+      >
+        <Icon name={muted ? 'volumeOff' : 'volume'} size={15} />
+      </button>
+      {onClick && (
+        <button
+          onClick={onClick}
+          aria-label="Open fullscreen"
+          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+        >
+          <Icon name="arrowUpRight" size={15} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** One post in the feed. Author badge, category chip, body, media grid,
- *  the like/views/save/share row, and — only when the viewer is
- *  Owner/Admin — an overflow menu for edit/delete/pin. Comments were
- *  removed from Signal entirely (no button, no panel, no per-post
- *  toggle); the real, server-tracked view count (see markEmpirePostViewed
- *  — deduped per user, not a fabricated number) sits in a Twitter-style
- *  eye-icon slot where the comment button used to be. The admin controls
- *  are a client-side convenience only; every action they trigger is
- *  re-checked server-side by the RPC it calls.
+ *  a clean Respect/Save/Share action row with NO public numbers at all
+ *  ("Respect" is SIGNAL's own branded label for what's still, underneath,
+ *  the same real like — see handleRespect), and
+ *  — only when the viewer is Owner/Admin — an overflow menu for
+ *  edit/delete/pin plus a quiet "Performance" line with the real
+ *  Views/Likes/Saves/Shares counts. Comments were removed from Signal
+ *  entirely (no button, no panel, no per-post toggle). Every count is
+ *  still tracked for real server-side (empire_post_views/likes/saves,
+ *  plus the non-deduped impressions/shares columns) — this component
+ *  just stops rendering any of them to a regular signed-in user, per the
+ *  "no noisy statistics" redesign; Owner/Admin still sees the real
+ *  numbers, never a fabricated one. The admin controls are a client-side
+ *  convenience only; every action they trigger is re-checked server-side
+ *  by the RPC it calls.
  *  `featured` swaps in the Featured Announcement treatment (bigger
  *  media, more concise text) — used for the one pinned post, rendered
  *  through this same component rather than a forked duplicate so there
@@ -90,18 +207,27 @@ export function SignalPostCard({
   const isExclusive = post.category === 'exclusive';
   const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl);
 
-  // Fire-and-forget — dedup'd server-side (empire_post_views is keyed on
-  // post_id + user_id), so a re-render or refresh never inflates the count.
+  // Fire-and-forget — markEmpirePostViewed is dedup'd server-side
+  // (empire_post_views is keyed on post_id + user_id), so a re-render or
+  // refresh never inflates the "Views" count. incrementEmpirePostImpression
+  // is deliberately NOT deduped — impressions count every real render,
+  // same distinction a real platform's Insights view draws between
+  // unique reach and total impressions.
   useEffect(() => {
     markEmpirePostViewed(post.id);
+    incrementEmpirePostImpression(post.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post.id]);
 
-  const handleLike = async () => {
+  // Internally still "like" — toggle_empire_post_like/empire_post_likes/
+  // likedByMe/likeCount are unchanged on purpose (the real engagement
+  // architecture this sits on, preserved exactly as the brief asks); only
+  // the visible label/icon-treatment below present it as "Respect".
+  const handleRespect = async () => {
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     if (!post.likedByMe) {
       setLikeBounce(true);
-      window.setTimeout(() => setLikeBounce(false), 350);
+      window.setTimeout(() => setLikeBounce(false), 300);
     }
     const { error } = await toggleEmpirePostLike(post.id);
     if (error) onChanged(post);
@@ -119,12 +245,16 @@ export function SignalPostCard({
     if (navigator.share) {
       try {
         await navigator.share(shareData);
+        // Only a completed share is real activity — a cancelled system
+        // sheet throws and falls into the catch below, uncounted.
+        void incrementEmpirePostShare(post.id);
       } catch {
-        // user cancelled — no error toast needed
+        // user cancelled — no error toast, no share event recorded
       }
     } else {
       await navigator.clipboard.writeText(url);
       toast({ title: 'Link copied to clipboard', icon: 'check' });
+      void incrementEmpirePostShare(post.id);
     }
   };
 
@@ -256,48 +386,93 @@ export function SignalPostCard({
 
       {post.mediaUrls.length > 0 && (
         featured ? (
-          <PostImage src={post.mediaUrls[0]} className="aspect-[16/10] w-full" onClick={() => setViewerIndex(0)} />
+          mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
+            <PostVideo src={post.mediaUrls[0]} className="aspect-[16/10] w-full" fixedAspect onClick={() => setViewerIndex(0)} />
+          ) : (
+            <PostImage src={post.mediaUrls[0]} className="aspect-[16/10] w-full" onClick={() => setViewerIndex(0)} />
+          )
         ) : (
           <div className={`grid gap-0.5 px-0 ${post.mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {post.mediaUrls.map((url, i) => (
-              <PostImage
-                key={url}
-                src={url}
-                onClick={() => setViewerIndex(i)}
-                className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
-              />
-            ))}
+            {post.mediaUrls.map((url, i) =>
+              mediaKindFromPath(url) === 'video' ? (
+                <PostVideo
+                  key={url}
+                  src={url}
+                  onClick={() => setViewerIndex(i)}
+                  // A single video keeps its own composition; a mixed
+                  // multi-media grid still needs every cell the same
+                  // square shape so the grid itself stays tidy.
+                  className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
+                  fixedAspect={post.mediaUrls.length > 1}
+                />
+              ) : (
+                <PostImage
+                  key={url}
+                  src={url}
+                  onClick={() => setViewerIndex(i)}
+                  className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
+                />
+              ),
+            )}
           </div>
         )
       )}
 
-      <div className="flex items-center gap-1 px-2 py-1.5 sm:px-3">
-        <button onClick={handleLike} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
+      {/* No numbers anywhere in this row, deliberately — Views/Likes/
+          Saves/Shares are all still tracked for real underneath (see the
+          mount effect above and each handler below), but a regular user
+          only ever sees the three actions themselves. Evenly split three
+          ways so every touch target is equally large on mobile, rather
+          than clustering left with Share pushed to the far edge. */}
+      <div className="grid grid-cols-3 gap-1 px-2 py-1.5 sm:px-3">
+        {/* SIGNAL's signature interaction — "Respect", not "Like": same
+            thumbs-up throughout both states (never swapped for a heart
+            or checkmark), just filled + CX green + a quick scale/glow
+            pop when it lands. `whitespace-nowrap` keeps "Respected" (the
+            longer of the two labels) from ever wrapping to a second
+            line and shifting the row's height. */}
+        <button
+          onClick={handleRespect}
+          className={`pressable flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2.5 text-detail font-semibold transition-colors ${
+            post.likedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+          }`}
+        >
           <Icon
-            name="heart"
+            name="like"
             size={18}
             fill={post.likedByMe}
-            className={`${post.likedByMe ? 'text-[#e2384d]' : ''} ${likeBounce ? 'animate-like-pop' : ''}`}
+            className={likeBounce ? 'animate-respect-pop' : ''}
           />
-          {post.likeCount > 0 && compact(post.likeCount)}
+          {post.likedByMe ? 'Respected' : 'Respect'}
         </button>
-        {/* A real, server-tracked count (empire_post_views, deduped per
-            user — see markEmpirePostViewed above), not a fabricated
-            number — sits where the comment button used to be, in the
-            same quiet eye-icon style X/Twitter uses for view counts:
-            informational, not a button. */}
-        <span className="flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft">
-          <Icon name="eye" size={17} />
-          {post.viewCount > 0 && compact(post.viewCount)}
-        </span>
-        <button onClick={handleSave} className="pressable flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
-          <Icon name="bookmark" size={17} fill={post.savedByMe} className={post.savedByMe ? 'text-accent-700' : ''} />
-          {post.saveCount > 0 && compact(post.saveCount)}
+        <button
+          onClick={handleSave}
+          className={`pressable flex items-center justify-center gap-1.5 rounded-full py-2.5 text-detail font-semibold transition-colors ${
+            post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+          }`}
+        >
+          <Icon name="bookmark" size={17} fill={post.savedByMe} />
+          {post.savedByMe ? 'Saved' : 'Save'}
         </button>
-        <button onClick={handleShare} className="pressable ml-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:bg-panel">
+        <button onClick={handleShare} className="pressable flex items-center justify-center gap-1.5 rounded-full py-2.5 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
           <Icon name="share" size={17} />
+          Share
         </button>
       </div>
+
+      {/* Owner/Admin only — the real numbers behind the three actions
+          above, never shown to a regular user. Plain text, not a
+          dashboard: this is a glance, not an analytics screen (see
+          SignalAnalyticsSheet for the site-wide breakdown). */}
+      {canManage && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-4 py-2 text-[11px] text-faint sm:px-5">
+          <span className="font-semibold uppercase tracking-wide">Performance</span>
+          <span>{compact(post.viewCount)} views</span>
+          <span>{compact(post.likeCount)} likes</span>
+          <span>{compact(post.saveCount)} saves</span>
+          <span>{compact(post.shareCount)} shares</span>
+        </div>
+      )}
 
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />

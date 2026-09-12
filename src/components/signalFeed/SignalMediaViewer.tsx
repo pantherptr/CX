@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
+import { mediaKindFromPath } from '../../lib/data/empireFeed';
 
-/** A simple fullscreen image viewer — tap any post image to open it here.
- *  Same `fixed inset-0` full-viewport overlay pattern used elsewhere in
- *  this app for fullscreen moments (no portal needed, plain CSS escapes
- *  any parent's layout regardless of DOM nesting). */
+/** A simple fullscreen image/video viewer — tap any post media to open it
+ *  here. Same `fixed inset-0` full-viewport overlay pattern used
+ *  elsewhere in this app for fullscreen moments (no portal needed, plain
+ *  CSS escapes any parent's layout regardless of DOM nesting). A video
+ *  slide is `key`ed by its own URL so navigating to the next/previous
+ *  item fully remounts the element — the only way to guarantee the
+ *  previous video actually stops rather than keeps playing off-screen. */
 export function SignalMediaViewer({
   images,
   startIndex,
@@ -15,6 +19,7 @@ export function SignalMediaViewer({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(startIndex);
+  const isVideo = mediaKindFromPath(images[index]) === 'video';
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col bg-black/95 animate-fade-in" role="dialog" aria-modal="true">
@@ -32,7 +37,11 @@ export function SignalMediaViewer({
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 pb-safe">
-        <img src={images[index]} alt="" className="max-h-full max-w-full object-contain" />
+        {isVideo ? (
+          <video key={images[index]} src={images[index]} controls autoPlay playsInline className="max-h-full max-w-full object-contain" />
+        ) : (
+          <img src={images[index]} alt="" className="max-h-full max-w-full object-contain" />
+        )}
 
         {images.length > 1 && (
           <>

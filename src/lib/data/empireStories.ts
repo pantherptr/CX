@@ -12,13 +12,18 @@ import type { SignalPublisherType } from './signalIdentity';
  * inserts/updates/deletes a table directly.
  */
 
-export type StoryMediaType = 'image';
+export type StoryMediaType = 'image' | 'video';
 
 export interface EmpireStorySlide {
   id: string;
   mediaPath: string;
   mediaType: StoryMediaType;
   mediaUrl: string;
+  /** A client-captured first-frame thumbnail for a video slide (see
+   *  captureVideoPosterBlob in lib/media.ts) — `null` for image slides,
+   *  used as the `<video poster>` for instant perceived load in the
+   *  viewer. */
+  posterUrl: string | null;
   caption: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
@@ -49,6 +54,7 @@ interface StorySlideJson {
   id: string;
   media_path: string;
   media_type: StoryMediaType;
+  poster_path: string | null;
   caption: string | null;
   cta_label: string | null;
   cta_url: string | null;
@@ -81,6 +87,7 @@ function mapSlide(row: StorySlideJson): EmpireStorySlide {
     mediaPath: row.media_path,
     mediaType: row.media_type,
     mediaUrl: mediaUrlFor(row.media_path),
+    posterUrl: row.poster_path ? mediaUrlFor(row.poster_path) : null,
     caption: row.caption,
     ctaLabel: row.cta_label,
     ctaUrl: row.cta_url,
@@ -145,7 +152,7 @@ export async function addEmpireStorySlide(
   storyId: string,
   mediaPath: string,
   mediaType: StoryMediaType,
-  options?: { caption?: string; ctaLabel?: string; ctaUrl?: string }
+  options?: { caption?: string; ctaLabel?: string; ctaUrl?: string; posterPath?: string }
 ): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('add_empire_story_slide', {
     p_story_id: storyId,
@@ -154,6 +161,7 @@ export async function addEmpireStorySlide(
     p_caption: options?.caption ?? null,
     p_cta_label: options?.ctaLabel ?? null,
     p_cta_url: options?.ctaUrl ?? null,
+    p_poster_path: options?.posterPath ?? null,
   });
   if (error) return { error: error.message };
   return { error: null };
@@ -162,8 +170,9 @@ export async function addEmpireStorySlide(
 export async function deleteEmpireStorySlide(slideId: string): Promise<{ error: string | null }> {
   const { data, error } = await supabase.rpc('delete_empire_story_slide', { p_slide_id: slideId });
   if (error) return { error: error.message };
-  const path = (data as { media_path: string } | null)?.media_path;
-  if (path) await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+  const row = data as { media_path: string; poster_path: string | null } | null;
+  const paths = [row?.media_path, row?.poster_path].filter((p): p is string => Boolean(p));
+  if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
   return { error: null };
 }
 
@@ -190,13 +199,25 @@ export async function markEmpireStoryViewed(storyId: string): Promise<void> {
   await supabase.rpc('mark_empire_story_viewed', { p_story_id: storyId });
 }
 
-/** Uploads one Story slide image — `stories/` prefixed purely to keep
- *  the shared `empire-post-media` bucket browsable in the dashboard, no
- *  policy difference from post media (same is_admin()-gated insert). */
+/** Uploads one Story slide's media (image or video) — `stories/` prefixed
+ *  purely to keep the shared `empire-post-media` bucket browsable in the
+ *  dashboard, no policy difference from post media (same is_admin()-
+ *  gated insert; the bucket's own file_size_limit/allowed_mime_types,
+ *  see 0047_signal_video.sql, are the real server-side backstop). */
 export async function uploadEmpireStoryMedia(file: File): Promise<{ url: string; path: string }> {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `stories/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
+  if (error) throw error;
+  return { url: mediaUrlFor(path), path };
+}
+
+/** Uploads a video slide's client-captured poster frame (see
+ *  captureVideoPosterBlob in lib/media.ts) — always a JPEG blob, never
+ *  user-supplied, so no extra type validation is needed here. */
+export async function uploadEmpireStoryPoster(blob: Blob): Promise<{ url: string; path: string }> {
+  const path = `stories/${crypto.randomUUID()}-poster.jpg`;
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
 }

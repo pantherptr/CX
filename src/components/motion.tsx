@@ -278,6 +278,55 @@ export function useCountUp<T extends HTMLElement>(
 }
 
 /**
+ * Eases a displayed number smoothly toward `value` every time it changes
+ * — the counterpart to `useCountUp` for a live-updating inline stat
+ * (a like/view count ticking up after a real action) rather than a hero
+ * number that counts up once when scrolled into view. The first render
+ * snaps straight to `value` (a feed full of cards counting up from zero
+ * on every scroll would read as busy, not premium); only genuine
+ * changes after that animate, eased from the previously-displayed value
+ * rather than from zero.
+ */
+export function useAnimatedCount(value: number, duration = 450) {
+  const [display, setDisplay] = useState(value);
+  const fromRef = useRef(value);
+  const firstRef = useRef(true);
+
+  useEffect(() => {
+    if (firstRef.current) {
+      firstRef.current = false;
+      fromRef.current = value;
+      setDisplay(value);
+      return;
+    }
+    if (prefersReduced()) {
+      fromRef.current = value;
+      setDisplay(value);
+      return;
+    }
+    const from = fromRef.current;
+    const delta = value - from;
+    if (delta === 0) return;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(from + delta * eased);
+      if (p < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = value;
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+
+  return Math.round(display);
+}
+
+/**
  * Simple top-anchored parallax offset — how far an element has drifted
  * from `window.scrollY`, scaled by `factor` and capped so it never runs
  * away on a long page. Meant for hero imagery, not the reveal-through-

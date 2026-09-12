@@ -391,6 +391,19 @@
   }
   .animate-like-pop { animation: like-pop 0.35s var(--ease-out-expo, ease-out); }
 
+  /* SIGNAL's "Respect" tap — its own tighter, quieter cousin of
+     like-pop: a smaller scale (1.22 vs 1.35) paired with a soft green
+     glow that fades in and back out, over 260ms (the 200-300ms window
+     asked for) rather than 350ms. Scoped to this one interaction only —
+     unrelated CX Rent like/favorite buttons elsewhere keep using
+     like-pop untouched. */
+  @keyframes respect-pop {
+    0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 212, 71, 0)); }
+    40% { transform: scale(1.22); filter: drop-shadow(0 0 6px rgba(0, 212, 71, 0.55)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 212, 71, 0)); }
+  }
+  .animate-respect-pop { animation: respect-pop 0.26s var(--ease-out-expo, ease-out); }
+
   /* The Signal nav icon's "live signal" effect (BottomNav.tsx, active tab
      only) — a soft highlight sweeping through the logo's own silhouette.
      `.signal-sweep-mask` clips to the logo's alpha channel (set inline,
@@ -432,6 +445,66 @@
   @media (prefers-reduced-motion: reduce) {
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
+
+  /* The SIGNALBAR header logo's own "live" effect (SignalBarLogo.tsx) —
+     intentionally NOT `.signal-sweep-bar` above. That one is a fast,
+     continuous, obvious 3.4s loop meant to be noticed on an active nav
+     tab; this one is the opposite brief: a barely-there reflective
+     glint that should register as "alive", not as "animating". Masked
+     to the logo's own alpha channel and blended additively (screen), so
+     it only brightens existing chrome/green pixels and never washes
+     over the artwork. Two independent glints on deliberately
+     non-aligning cycles (8.4s / 10.8s, offset) — each one spends ~85%
+     of its cycle fully invisible and motionless, then travels once,
+     low-opacity, over roughly 900ms-1.1s, and goes quiet again. Because
+     the two periods don't share a short common multiple, their rare
+     visible moments drift in and out of coincidence over minutes rather
+     than repeating on a fixed beat. `background-position` (not
+     `transform`) is animated deliberately here: percentage positions
+     are relative to the *container's* box regardless of its aspect
+     ratio, so the same two keyframes sweep correctly across this very
+     wide wordmark without per-instance math. Still just two CSS
+     properties on a small masked layer — no JS, no re-renders. */
+  .signalbar-glint-mask {
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mix-blend-mode: screen;
+    overflow: hidden;
+  }
+  .signalbar-glint {
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgba(190, 255, 215, 0.4) 47%,
+      rgba(235, 255, 245, 0.55) 50%,
+      rgba(190, 255, 215, 0.4) 53%,
+      transparent 70%
+    );
+    background-repeat: no-repeat;
+    background-size: 45% 100%;
+    opacity: 0;
+    will-change: background-position, opacity;
+  }
+  .signalbar-glint-a { animation: signalbar-glint-a-move 8.4s ease-in-out infinite; }
+  .signalbar-glint-b { animation: signalbar-glint-b-move 10.8s ease-in-out infinite; animation-delay: 3.1s; }
+  @keyframes signalbar-glint-a-move {
+    0%, 84% { background-position: -60% 0; opacity: 0; }
+    87% { opacity: 0.5; }
+    93% { background-position: 160% 0; opacity: 0.5; }
+    96.5%, 100% { background-position: 160% 0; opacity: 0; }
+  }
+  @keyframes signalbar-glint-b-move {
+    0%, 88% { background-position: -60% 0; opacity: 0; }
+    90.5% { opacity: 0.38; }
+    96% { background-position: 160% 0; opacity: 0.38; }
+    99%, 100% { background-position: 160% 0; opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .signalbar-glint { animation: none; opacity: 0; }
+  }
+
   @keyframes slide-in-right {
     from { opacity: 0; transform: translateX(24px); }
     to { opacity: 1; transform: translateX(0); }

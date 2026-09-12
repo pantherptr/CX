@@ -63,6 +63,13 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
             <>
               <div className="grid grid-cols-2 gap-2.5">
                 <StatCard label="Total post views" value={data.totalPostViews} />
+                {/* Impressions (every real render) sits right next to Views
+                    (unique real viewers) so the Reach-vs-Impressions
+                    distinction reads at a glance — the same pairing a real
+                    platform's Insights view shows, and the honest
+                    foundation a future promoted-post feature would build
+                    on (see incrementEmpirePostImpression). */}
+                <StatCard label="Total impressions" value={data.totalImpressions} />
                 <StatCard label="Total Story views" value={data.totalStoryViews} />
                 <StatCard label="Posts this week" value={data.postsLast7d} />
                 <StatCard

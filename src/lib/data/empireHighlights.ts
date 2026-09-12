@@ -27,6 +27,7 @@ interface HighlightSlideJson {
   id: string;
   media_path: string;
   media_type: StoryMediaType;
+  poster_path: string | null;
   caption: string | null;
   cta_label: string | null;
   cta_url: string | null;
@@ -53,6 +54,7 @@ function mapSlide(row: HighlightSlideJson): EmpireStorySlide {
     mediaPath: row.media_path,
     mediaType: row.media_type,
     mediaUrl: mediaUrlFor(row.media_path),
+    posterUrl: row.poster_path ? mediaUrlFor(row.poster_path) : null,
     caption: row.caption,
     ctaLabel: row.cta_label,
     ctaUrl: row.cta_url,
@@ -137,7 +139,7 @@ export async function addEmpireHighlightSlide(
   highlightId: string,
   mediaPath: string,
   mediaType: StoryMediaType,
-  options?: { caption?: string; ctaLabel?: string; ctaUrl?: string }
+  options?: { caption?: string; ctaLabel?: string; ctaUrl?: string; posterPath?: string }
 ): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('add_empire_highlight_slide', {
     p_highlight_id: highlightId,
@@ -146,6 +148,7 @@ export async function addEmpireHighlightSlide(
     p_caption: options?.caption ?? null,
     p_cta_label: options?.ctaLabel ?? null,
     p_cta_url: options?.ctaUrl ?? null,
+    p_poster_path: options?.posterPath ?? null,
   });
   if (error) return { error: error.message };
   return { error: null };
@@ -154,8 +157,9 @@ export async function addEmpireHighlightSlide(
 export async function deleteEmpireHighlightSlide(slideId: string): Promise<{ error: string | null }> {
   const { data, error } = await supabase.rpc('delete_empire_highlight_slide', { p_slide_id: slideId });
   if (error) return { error: error.message };
-  const path = (data as { media_path: string } | null)?.media_path;
-  if (path) await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+  const row = data as { media_path: string; poster_path: string | null } | null;
+  const paths = [row?.media_path, row?.poster_path].filter((p): p is string => Boolean(p));
+  if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
   return { error: null };
 }
 

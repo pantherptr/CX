@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { useEmpireTrendingPosts } from '../../lib/data/empireFeed';
-import { compact } from '../../lib/format';
 
 /** A quiet "Trending" strip — real engagement only (see
- *  fetch_empire_trending_posts), never manufactured. Deliberately NOT
- *  another row of full SignalPostCards: a compact horizontal strip keeps
- *  it feeling like a light signal, not a second feed. Collapses to
- *  nothing until at least one post actually clears the engagement bar. */
+ *  fetch_empire_trending_posts), never manufactured, and never shown as
+ *  a number either — a post lands here because it genuinely cleared the
+ *  engagement bar, but per the "no public engagement counters" redesign
+ *  this surfaces as inclusion in the strip itself, not a visible
+ *  like/view count on the card. Deliberately NOT another row of full
+ *  SignalPostCards: a compact horizontal strip keeps it feeling like a
+ *  light signal, not a second feed. Collapses to nothing until at least
+ *  one post actually clears the engagement bar. */
 export function SignalTrendingSection() {
   const { posts } = useEmpireTrendingPosts();
 
@@ -34,10 +37,6 @@ export function SignalTrendingSection() {
             </div>
             <div className="p-2.5">
               <p className="line-clamp-2 text-caption font-semibold text-ink">{p.title || p.body}</p>
-              <p className="mt-1 flex items-center gap-2 text-[11px] text-muted">
-                <span className="inline-flex items-center gap-0.5"><Icon name="heart" size={11} /> {compact(p.likeCount)}</span>
-                <span className="inline-flex items-center gap-0.5"><Icon name="eye" size={11} /> {compact(p.viewCount)}</span>
-              </p>
             </div>
           </Link>
         ))}

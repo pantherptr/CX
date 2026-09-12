@@ -45,6 +45,13 @@ const TripDetails = lazy(() => import('./pages/TripDetails'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const OwnerDashboard = lazy(() => import('./pages/OwnerDashboard'));
 
+// Dev-only layout fixture (hardcoded numbers, no real data) — the import
+// itself is gated the same as the route below so it's excluded from a
+// production build entirely, not just hidden behind a check at runtime.
+const SignalMetricsPreview = import.meta.env.DEV
+  ? lazy(() => import('./pages/dev/SignalMetricsPreview'))
+  : null;
+
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
@@ -251,6 +258,10 @@ export default function App() {
             feed underneath. */}
         <Route path="/signal/post/:postId" element={<Signal />} />
         <Route path="/signal/highlight/:highlightId" element={<Signal />} />
+
+        {/* Dev-only: hardcoded-number layout fixture, never present in a
+            production build (see the gated import above). */}
+        {SignalMetricsPreview && <Route path="/dev/signal-metrics" element={<SignalMetricsPreview />} />}
 
         {/* Signal was renamed from Empire — keep the old routes alive as
             redirects so links shared before the rename still resolve. */}

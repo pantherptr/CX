@@ -8,6 +8,10 @@ const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
 const SWIPE_THRESHOLD_PX = 60;
 
+/** A video slide's progress bar (see below) tracks real playback via
+ *  `timeupdate` instead of this fixed duration — an image slide has no
+ *  natural "done" signal of its own, a video already does. */
+
 /** Fullscreen Story viewer — same `fixed inset-0` full-viewport escape
  *  pattern `SignalMediaViewer.tsx` already uses. A per-slide progress
  *  bar row auto-advances on a real CSS animation (no per-frame JS timer
@@ -43,13 +47,35 @@ export function SignalStoryViewer({
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Video-only: real playback progress (0-100, driven by `timeupdate`)
+  // and a per-slide mute flag, muted by default on every new slide per
+  // the brief.
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [muted, setMuted] = useState(true);
   const viewedRef = useRef<Set<string>>(new Set());
   const holdTimerRef = useRef<number | null>(null);
   const heldRef = useRef(false);
   const touchStartXRef = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const story = stories[storyIndex];
   const slide = story?.slides[slideIndex];
+  const isVideo = slide?.mediaType === 'video';
+
+  useEffect(() => {
+    setVideoProgress(0);
+    setMuted(true);
+  }, [slide?.id]);
+
+  // Hold-to-pause already drives the image slide's CSS animation via
+  // `animationPlayState` below — a video slide needs the same pause
+  // reflected in actual playback, not just the progress bar freezing.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [paused, slide?.id]);
 
   useEffect(() => {
     if (story && !viewedRef.current.has(story.id)) {
@@ -154,19 +180,26 @@ export function SignalStoryViewer({
             {i < slideIndex ? (
               <div className="h-full w-full bg-white" />
             ) : i === slideIndex ? (
-              <div
-                key={`${storyIndex}-${slideIndex}`}
-                className="h-full bg-white"
-                style={{
-                  width: '0%',
-                  animationName: 'signal-story-progress',
-                  animationDuration: `${SLIDE_DURATION_MS}ms`,
-                  animationTimingFunction: 'linear',
-                  animationFillMode: 'forwards',
-                  animationPlayState: paused ? 'paused' : 'running',
-                }}
-                onAnimationEnd={goNextSlide}
-              />
+              isVideo ? (
+                // Driven by the video's own timeupdate below, not a
+                // fixed-duration CSS animation — an image slide has no
+                // natural "done" signal of its own, a video already does.
+                <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
+              ) : (
+                <div
+                  key={`${storyIndex}-${slideIndex}`}
+                  className="h-full bg-white"
+                  style={{
+                    width: '0%',
+                    animationName: 'signal-story-progress',
+                    animationDuration: `${SLIDE_DURATION_MS}ms`,
+                    animationTimingFunction: 'linear',
+                    animationFillMode: 'forwards',
+                    animationPlayState: paused ? 'paused' : 'running',
+                  }}
+                  onAnimationEnd={goNextSlide}
+                />
+              )
             ) : null}
           </div>
         ))}
@@ -211,7 +244,39 @@ export function SignalStoryViewer({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <img key={slide.id} src={slide.mediaUrl} alt="" className="max-h-full max-w-full animate-fade-in object-contain" />
+        {isVideo ? (
+          <video
+            key={slide.id}
+            ref={videoRef}
+            src={slide.mediaUrl}
+            poster={slide.posterUrl ?? undefined}
+            autoPlay
+            muted={muted}
+            playsInline
+            // Stopping playback on leave is free: this element unmounts
+            // the moment `slide`/`story` changes or the viewer closes —
+            // that's what actually stops a video in a real browser, no
+            // manual cleanup needed.
+            onTimeUpdate={(e) => {
+              const v = e.currentTarget;
+              if (v.duration) setVideoProgress((v.currentTime / v.duration) * 100);
+            }}
+            onEnded={goNextSlide}
+            className="max-h-full max-w-full animate-fade-in object-contain"
+          />
+        ) : (
+          <img key={slide.id} src={slide.mediaUrl} alt="" className="max-h-full max-w-full animate-fade-in object-contain" />
+        )}
+
+        {isVideo && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+            aria-label={muted ? 'Unmute' : 'Mute'}
+            className="absolute bottom-4 right-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+          >
+            <Icon name={muted ? 'volumeOff' : 'volume'} size={17} />
+          </button>
+        )}
 
         <button onClick={() => handleZoneClick('prev')} aria-label="Previous" className="absolute inset-y-0 left-0 w-1/3" />
         <button onClick={() => handleZoneClick('next')} aria-label="Next" className="absolute inset-y-0 right-0 w-1/3" />

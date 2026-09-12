@@ -39,14 +39,19 @@ const EASE = 'cubic-bezier(0.16,1,0.3,1)';
 // Signal's raised section is a real shaped piece of the bar's own surface
 // (clip-path on a solid glass layer), not an icon floating on a separate
 // blob — this is what makes it read as "the navbar rises here" rather than
-// a button glued on top. Geometry lives in a 40%-wide, 34px-tall box
-// centered on Signal's column; everything left/right of it is the bar's
-// own untouched flat top edge and border.
-const HILL_RISE = 40; // px the plateau sits above the bar's flat top edge — tall enough that
-// the logo (see the Link below) clears it with real, visible margin in both states, not just
-// technically-non-overlapping.
-const HILL_BOX_HEIGHT = 54; // px — extends 14px back down into the bar for a seamless join
-const HILL_FLAT_Y = HILL_RISE / HILL_BOX_HEIGHT; // fraction: where the flat sides sit (≈0.708)
+// a button glued on top. Geometry lives in a narrow, short box centered on
+// Signal's column; everything left/right of it is the bar's own untouched
+// flat top edge and border. Deliberately a small architectural lift, not a
+// hill — HILL_RISE/HILL_WIDTH were both cut roughly in half from an earlier,
+// much taller/wider pass that read as an oversized bump rather than an
+// integrated part of the bar.
+const HILL_RISE = 18; // px the plateau sits above the bar's flat top edge — just enough for
+// the logo (see the Link below) to clear it with a small, deliberate gap, not the large
+// clearance a bigger hill needed.
+const HILL_WIDTH = '24%'; // narrow enough to read as "a small bump around the logo", not a
+// shape bulging into the neighboring Explore/Messages columns.
+const HILL_BOX_HEIGHT = 27; // px — extends 9px back down into the bar for a seamless join
+const HILL_FLAT_Y = HILL_RISE / HILL_BOX_HEIGHT; // fraction: where the flat sides sit (≈0.667)
 
 // Flat -> smooth S-curve up -> flat plateau (where the logo sits) -> S-curve down -> flat.
 // The same top contour is authored twice at two scales so the visible rim (stroke) lines up
@@ -131,11 +136,14 @@ export function BottomNav() {
         style={{
           top: -HILL_RISE,
           height: HILL_BOX_HEIGHT,
-          width: '40%',
+          width: HILL_WIDTH,
           clipPath: 'url(#signal-hill-clip)',
+          // Blur/offsets scaled down with the shape itself — the original
+          // values were tuned for a hill roughly twice this size and read
+          // as an oversized glow once the shape shrank without them.
           filter: signalActive
-            ? 'drop-shadow(0 -3px 12px rgba(0,212,71,0.35)) drop-shadow(0 3px 8px rgba(22,22,26,0.12))'
-            : 'drop-shadow(0 2px 6px rgba(22,22,26,0.10))',
+            ? 'drop-shadow(0 -1.5px 6px rgba(0,212,71,0.3)) drop-shadow(0 1.5px 4px rgba(22,22,26,0.1))'
+            : 'drop-shadow(0 1px 3px rgba(22,22,26,0.08))',
           transitionTimingFunction: EASE,
         }}
       />
@@ -149,7 +157,7 @@ export function BottomNav() {
           into HILL_RISE/the logo's own translateY below. */}
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
-        style={{ top: -HILL_RISE, width: '40%', height: HILL_RISE }}
+        style={{ top: -HILL_RISE, width: HILL_WIDTH, height: HILL_RISE }}
         viewBox={`0 0 100 ${FY}`}
         preserveAspectRatio="none"
         aria-hidden="true"
@@ -158,11 +166,14 @@ export function BottomNav() {
           d={HILL_STROKE_PATH}
           fill="none"
           stroke={signalActive ? 'var(--color-accent-bright)' : 'var(--color-line-strong)'}
-          strokeWidth={signalActive ? 2.4 : 1.4}
+          strokeWidth={signalActive ? 1.8 : 1.1}
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
           style={{
-            filter: signalActive ? 'drop-shadow(0 0 5px rgba(0,212,71,0.8))' : 'none',
+            // Proportionally smaller glow to match the smaller line/shape —
+            // the original 5px blur was sized for a hill roughly twice as
+            // tall as this one.
+            filter: signalActive ? 'drop-shadow(0 0 3px rgba(0,212,71,0.75))' : 'none',
             transition: `stroke 0.3s ${EASE}, stroke-width 0.3s ${EASE}, filter 0.3s ${EASE}`,
           }}
         />
@@ -205,20 +216,22 @@ export function BottomNav() {
                     // overflows it symmetrically without this slot needing
                     // to grow (which would otherwise stretch the whole
                     // shared grid row and nudge every other label).
-                    // The lift (-19/-28) is tuned against HILL_RISE above
-                    // to always clear the raised section's rim with real
-                    // visible margin — never flush with it, let alone
-                    // behind it. The small translateX/extra translateY are
-                    // a deliberate optical correction, not arbitrary: the
-                    // artwork's own visual weight (the solid glyph vs. the
-                    // sparser radiating arcs) sits measurably right-and-
-                    // down of the image's geometric center (~5%/~9% of its
-                    // own size), so centering the bounding box alone reads
-                    // as faintly off-balance — this nudges the actual mass
-                    // back onto the column's true center.
+                    // The lift (-9/-13) is tuned against HILL_RISE above to
+                    // clear the raised section's rim with a small,
+                    // deliberate gap — scaled down together with the hill
+                    // itself (both cut to roughly 45% of an earlier, much
+                    // taller pass) so the logo sits close to the small bump
+                    // rather than floating high above it. The X offset is a
+                    // separate, unrelated optical correction: the artwork's
+                    // own visual weight (the solid glyph vs. the sparser
+                    // radiating arcs) sits measurably right-and-down of the
+                    // image's geometric center (~5%/~9% of its own size), so
+                    // centering the bounding box alone reads as faintly
+                    // off-balance — this nudges the actual mass back onto
+                    // the column's true center, independent of hill size.
                     width: 23,
                     height: 23,
-                    transform: active ? 'translate(-3px, -28px) scale(1.08)' : 'translate(-2.5px, -19px)',
+                    transform: active ? 'translate(-3px, -13px) scale(1.08)' : 'translate(-2.5px, -9px)',
                     filter: active
                       ? 'drop-shadow(0 0 10px rgba(0,212,71,0.55)) drop-shadow(0 2px 5px rgba(0,0,0,0.22))'
                       : 'drop-shadow(0 1px 3px rgba(0,0,0,0.16))',
@@ -236,7 +249,7 @@ export function BottomNav() {
                       built into SignalLogo itself now (always on, every
                       instance app-wide), not re-declared per call site. */}
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <SignalLogo size={active ? 36 : 30} />
+                    <SignalLogo size={active ? 32 : 27} />
                   </span>
                   {signalUnread.count > 0 && (
                     <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent-bright px-0.5 text-[9px] font-bold leading-none text-noir">

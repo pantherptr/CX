@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import {
-  createEmpireStory, addEmpireStorySlide, uploadEmpireStoryMedia, deleteEmpireStory,
-  fetchAllEmpireStoriesAdmin, type EmpireStory,
+  createEmpireStory, addEmpireStorySlide, uploadEmpireStoryMedia, uploadEmpireStoryPoster, deleteEmpireStory,
+  fetchAllEmpireStoriesAdmin, type EmpireStory, type StoryMediaType,
 } from '../../lib/data/empireStories';
 import {
   useEmpireHighlights, createEmpireHighlight, deleteEmpireHighlight, saveEmpireStoryToHighlight,
   uploadEmpireHighlightMedia, addEmpireHighlightSlide, type EmpireHighlight,
 } from '../../lib/data/empireHighlights';
+import { validateVideoFile, captureVideoPosterBlob, VIDEO_MIME_TYPES } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
@@ -16,11 +17,18 @@ import { useAuth } from '../../lib/auth';
 
 const MAX_SLIDES = 10;
 const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+const MAX_VIDEO_DURATION_SEC = 60; // Stories stay short — a 10-minute clip defeats the format.
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 interface PendingSlide {
   file: File;
   preview: string;
+  mediaType: StoryMediaType;
+  /** Video slides only — the client-captured first-frame thumbnail,
+   *  generated at staging time so publish doesn't need to re-decode the
+   *  video just to get a poster. */
+  posterBlob: Blob | null;
   caption: string;
   ctaLabel: string;
   ctaUrl: string;
@@ -61,7 +69,9 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
     }
   }, [view, allStories]);
 
-  const addFiles = (list: FileList | null) => {
+  const [validatingVideo, setValidatingVideo] = useState(false);
+
+  const addImageFiles = (list: FileList | null) => {
     if (!list) return;
     const accepted: PendingSlide[] = [];
     let firstError: string | null = null;
@@ -80,10 +90,46 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
       }
       const preview = URL.createObjectURL(file);
       objectUrls.current.push(preview);
-      accepted.push({ file, preview, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
+      accepted.push({ file, preview, mediaType: 'image', posterBlob: null, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
     }
     if (accepted.length) setSlides((s) => [...s, ...accepted]);
     setError(firstError);
+  };
+
+  // Separate from addImageFiles (rather than one function branching on
+  // file.type) because validating a video is async — reading its real
+  // duration and capturing a poster frame both need to await the file
+  // actually loading, unlike an image's synchronous checks.
+  const addVideoFiles = async (list: FileList | null) => {
+    if (!list) return;
+    setValidatingVideo(true);
+    setError(null);
+    const accepted: PendingSlide[] = [];
+    let firstError: string | null = null;
+    for (const file of Array.from(list)) {
+      if (slides.length + accepted.length >= MAX_SLIDES) {
+        firstError ??= `A Story can have up to ${MAX_SLIDES} slides.`;
+        break;
+      }
+      const result = await validateVideoFile(file, { maxBytes: MAX_VIDEO_BYTES, maxDurationSec: MAX_VIDEO_DURATION_SEC });
+      if (!result.ok) {
+        firstError ??= result.error ?? `"${file.name}" could not be used.`;
+        continue;
+      }
+      let posterBlob: Blob | null = null;
+      try {
+        posterBlob = await captureVideoPosterBlob(file);
+      } catch {
+        // A missing poster isn't fatal — the viewer falls back to
+        // decoding the video's own first frame with no `poster` set.
+      }
+      const preview = URL.createObjectURL(file);
+      objectUrls.current.push(preview);
+      accepted.push({ file, preview, mediaType: 'video', posterBlob, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
+    }
+    if (accepted.length) setSlides((s) => [...s, ...accepted]);
+    setError(firstError);
+    setValidatingVideo(false);
   };
 
   const removeSlide = (i: number) => {
@@ -110,7 +156,7 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
 
   const handlePublish = async () => {
     if (slides.length === 0) {
-      setError('Add at least one image.');
+      setError('Add at least one image or video.');
       return;
     }
     setPublishing(true);
@@ -124,10 +170,19 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
     for (const slide of slides) {
       try {
         const { path } = await uploadEmpireStoryMedia(slide.file);
-        await addEmpireStorySlide(storyId, path, 'image', {
+        let posterPath: string | undefined;
+        if (slide.mediaType === 'video' && slide.posterBlob) {
+          try {
+            posterPath = (await uploadEmpireStoryPoster(slide.posterBlob)).path;
+          } catch {
+            // A missing poster isn't fatal — see addVideoFiles.
+          }
+        }
+        await addEmpireStorySlide(storyId, path, slide.mediaType, {
           caption: slide.caption.trim() || undefined,
           ctaLabel: slide.ctaLabel.trim() || undefined,
           ctaUrl: slide.ctaUrl.trim() || undefined,
+          posterPath,
         });
       } catch {
         // one slide failing shouldn't abandon the rest already uploaded
@@ -235,23 +290,48 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
                 className="input mt-4 !py-2.5"
               />
 
-              <label className="pressable mt-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
-                <Icon name="image" size={17} /> Add images
-                <input
-                  type="file"
-                  accept={ACCEPTED_TYPES.join(',')}
-                  multiple
-                  className="hidden"
-                  onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
-                />
-              </label>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
+                  <Icon name="image" size={17} /> Add images
+                  <input
+                    type="file"
+                    accept={ACCEPTED_TYPES.join(',')}
+                    multiple
+                    className="hidden"
+                    onChange={(e) => { addImageFiles(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
+                  {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={17} />}
+                  Add video
+                  <input
+                    type="file"
+                    accept={VIDEO_MIME_TYPES.join(',')}
+                    multiple
+                    disabled={validatingVideo}
+                    className="hidden"
+                    onChange={(e) => { void addVideoFiles(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+              </div>
 
               {error && <p className="mt-2 text-caption font-medium text-danger">{error}</p>}
 
               <div className="mt-4 flex flex-col gap-3">
                 {slides.map((slide, i) => (
                   <div key={slide.preview} className="flex items-start gap-3 rounded-xl border border-line p-2.5">
-                    <img src={slide.preview} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                    <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-panel">
+                      {slide.mediaType === 'video' ? (
+                        <>
+                          <video src={slide.preview} className="h-full w-full object-cover" muted playsInline />
+                          <span className="absolute inset-0 grid place-items-center bg-black/25">
+                            <Icon name="play" size={16} className="text-white" fill />
+                          </span>
+                        </>
+                      ) : (
+                        <img src={slide.preview} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <span className="text-caption font-semibold text-ink-soft">Slide {i + 1}</span>
