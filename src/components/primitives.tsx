@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useAuth } from '../lib/auth';
@@ -204,52 +204,86 @@ export function Modal({
  * little further apart each time a new one got copy-pasted. One
  * component now, sized per context rather than reinvented per page. */
 /* --------------------------- Verified badge ---------------------------
- * One badge system for every tier that can appear in a conversation or
- * anywhere else identity matters — small and consistent rather than
- * reinvented per screen. Colors are deliberate, not decorative: Owner is
- * red (the one account with full authority), Owner Assistant/Admin are
- * gold — explicitly never purple — Host and Client are both the app's
- * own green, matching the brand accent already used for "verified"
- * elsewhere (Rating, Stars).
+ * One badge system for every tier that can appear in a conversation, a
+ * SIGNAL post/comment/Story, a Host listing, or anywhere else identity
+ * matters — small and consistent rather than reinvented per screen.
+ * Redesigned as a flat, original CX Rent mark (no borrowed silhouette
+ * from any other platform's badge, no crown/shield/headphone/logo, no
+ * 3D) built from exactly one geometry — a plain circle and one checkmark
+ * path, both plain SVG so they stay crisp at 12–24px — differentiated
+ * only by material per tier, using just the brand's four colors:
  *
- * The mark itself is a solid-filled circle with a plain white check —
- * the same construction Instagram/X use for their own verified badges —
- * rather than a tinted circle with a colored icon, which read closer to
- * a status pill than an actual verification mark. */
+ *   Owner              premium black base, a green→gold gradient ring
+ *                       and checkmark — the one tier that combines all
+ *                       three accent colors, deliberately the most
+ *                       visually complex of the five and therefore the
+ *                       most exclusive-reading at a glance.
+ *   Owner Assistant     solid gold, black check — gold alone, no black
+ *                       base, so it never reads as "Owner but dimmer."
+ *   Admin               black base, green check — black paired with
+ *                       green (not gold) keeps it clearly distinct from
+ *                       both Owner and Assistant.
+ *   Host                solid CX green, white check — the brand's own
+ *                       accent color, unmixed.
+ *   Verified Client     solid neutral grey, white check — deliberately
+ *                       the plainest mark, the least exclusive tier.
+ */
 export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client';
 
-const VERIFIED_ROLE_META: Record<VerifiedRole, { solid: string; fg: string; bg: string; label: string }> = {
-  owner: { solid: 'bg-danger', fg: 'text-danger', bg: 'bg-danger/10', label: 'Owner' },
-  owner_assistant: { solid: 'bg-[#c9971c]', fg: 'text-[#8a6d1f]', bg: 'bg-[#c9971c]/15', label: 'Owner Assistant' },
-  admin: { solid: 'bg-[#c9971c]', fg: 'text-[#8a6d1f]', bg: 'bg-[#c9971c]/15', label: 'Admin' },
-  host: { solid: 'bg-accent', fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Host' },
-  client: { solid: 'bg-accent', fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Verified' },
+const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: string }> = {
+  owner: { fg: 'text-[#8a6d1f]', bg: 'bg-noir/5', label: 'Owner' },
+  owner_assistant: { fg: 'text-[#8a6d1f]', bg: 'bg-[#c9971c]/15', label: 'Owner Assistant' },
+  admin: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Admin' },
+  host: { fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Host' },
+  client: { fg: 'text-muted', bg: 'bg-panel-2', label: 'Verified' },
 };
 
-/** The Owner's mark: the plain red verified checkmark every tier's badge
- *  is built from, plus the red-glow knight emblem (public/owner-badge.png,
- *  its black backing keyed out to transparent — see the asset's own
- *  history for why only the glow survives that) right next to it at the
- *  exact same size. */
-function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {
-  const meta = VERIFIED_ROLE_META[role];
-  if (role === 'owner') {
-    return (
-      <span className="inline-flex shrink-0 items-center gap-1">
-        <span className="inline-grid place-items-center rounded-full bg-danger text-white shadow-sm" style={{ width: size, height: size }}>
-          <Icon name="check" size={Math.round(size * 0.6)} strokeWidth={3.2} />
-        </span>
-        <img src="/owner-badge.png" alt="" className="inline-block object-contain" style={{ width: size, height: size }} />
-      </span>
-    );
-  }
+// One checkmark, hand-drawn to sit slightly off-center-low in a 24x24
+// box (a plain centered tick reads as clipped once the circle's own
+// stroke is added) — shared by every tier so the only thing that ever
+// changes between them is color, never shape.
+const CHECK_PATH = 'M7.4 12.6 L10.6 15.8 L16.7 9.2';
+
+/** Owner alone gets a two-stop gradient (green -> gold) for its ring and
+ *  check — `useId()` keeps the `<linearGradient>` id collision-free when
+ *  several Owner badges render on the same page (e.g. a feed of their
+ *  own posts), which a hardcoded id would not. */
+function OwnerBadgeMark({ size }: { size: number }) {
+  const gradientId = `owner-badge-${useId()}`;
   return (
-    <span
-      className={`inline-grid shrink-0 place-items-center rounded-full shadow-sm ${meta.solid} text-white`}
-      style={{ width: size, height: size }}
-    >
-      <Icon name="check" size={Math.round(size * 0.6)} strokeWidth={3.2} />
-    </span>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+      <defs>
+        <linearGradient id={gradientId} x1="3" y1="21" x2="21" y2="3" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--color-accent-bright)" />
+          <stop offset="1" stopColor="#e3b23a" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10.4" fill="var(--color-noir)" stroke={`url(#${gradientId})`} strokeWidth="1.3" />
+      <path d={CHECK_PATH} fill="none" stroke={`url(#${gradientId})`} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const BADGE_FILL: Record<Exclude<VerifiedRole, 'owner'>, string> = {
+  owner_assistant: '#c9971c',
+  admin: 'var(--color-noir)',
+  host: 'var(--color-accent-bright)',
+  client: 'var(--color-muted)',
+};
+const BADGE_CHECK: Record<Exclude<VerifiedRole, 'owner'>, string> = {
+  owner_assistant: 'var(--color-noir)',
+  admin: 'var(--color-accent-bright)',
+  host: '#ffffff',
+  client: '#ffffff',
+};
+
+function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {
+  if (role === 'owner') return <OwnerBadgeMark size={size} />;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+      <circle cx="12" cy="12" r="10.4" fill={BADGE_FILL[role]} />
+      <path d={CHECK_PATH} fill="none" stroke={BADGE_CHECK[role]} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

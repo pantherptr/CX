@@ -1,6 +1,17 @@
 import { Icon } from '../Icon';
-import { VerifiedBadge } from '../primitives';
+import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import type { SignalIdentity } from '../../lib/data/signalIdentity';
+
+/** Maps SIGNAL's own identity union onto the one shared badge system
+ *  (primitives.tsx) — 'assistant' (the CX Assistant AI voice) reuses the
+ *  same gold mark as a human Owner Assistant (both mean "speaking in a
+ *  support capacity, not personally"); 'cx' (the official brand account,
+ *  not a real person) reuses Admin's black-and-green mark rather than
+ *  inventing a sixth tier — both represent CX Rent acting institutionally
+ *  rather than as one named individual. */
+function officialRole(type: 'cx' | 'assistant'): VerifiedRole {
+  return type === 'assistant' ? 'owner_assistant' : 'admin';
+}
 
 /** The avatar half of a resolved SIGNAL identity — a real photo for
  *  Owner, the site's one official mark for CX, and a headset-icon circle
@@ -59,9 +70,5 @@ export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalI
     // SIGNAL-only mark, since this IS their real identity, not a voice.
     return <VerifiedBadge role={identity.selfRole === 'host' ? 'host' : 'client'} size={size} />;
   }
-  return (
-    <span title="Official" className="inline-grid shrink-0 place-items-center rounded-full bg-accent-bright text-noir shadow-sm" style={{ width: size, height: size }}>
-      <Icon name="check" size={Math.round(size * 0.6)} strokeWidth={3.2} />
-    </span>
-  );
+  return <VerifiedBadge role={officialRole(identity.type as 'cx' | 'assistant')} size={size} />;
 }
