@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { fetchEmpireAnalytics, type EmpireAnalytics } from '../../lib/data/empireFeed';
+import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar } from './SignalIdentityBadge';
+import { useAuth } from '../../lib/auth';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -29,6 +32,7 @@ function TopPostRow({ label, item }: { label: string; item: { title: string; cou
  *  route. One RPC round trip (fetch_empire_analytics), admin-gated
  *  server-side same as every other Signal write/read that matters. */
 export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
+  const { profile } = useAuth();
   const [data, setData] = useState<EmpireAnalytics | 'error' | null>(null);
 
   useEffect(() => {
@@ -76,6 +80,28 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
                 {!data.mostViewed && !data.mostLiked && !data.mostCommented && !data.mostSaved && (
                   <p className="py-6 text-center text-detail text-muted">No engagement yet.</p>
                 )}
+              </div>
+
+              <div className="mt-5">
+                <h3 className="mb-2 text-caption font-semibold uppercase tracking-wide text-muted">By publisher</h3>
+                <div className="flex flex-col gap-2">
+                  {(['owner', 'assistant', 'cx'] as const).map((type) => {
+                    const identity = resolveSignalIdentity(type, profile?.full_name || 'Owner', profile?.avatar_url ?? null);
+                    const stats = data.byPublisher[type];
+                    return (
+                      <div key={type} className="flex items-center gap-3 rounded-xl border border-line p-2.5">
+                        <SignalIdentityAvatar identity={identity} size={30} />
+                        <span className="w-20 shrink-0 truncate text-detail font-semibold text-ink">{identity.name}</span>
+                        <div className="grid flex-1 grid-cols-4 gap-1 text-center">
+                          <div><p className="text-detail font-semibold text-ink">{stats.views}</p><p className="text-[10px] text-muted">Views</p></div>
+                          <div><p className="text-detail font-semibold text-ink">{stats.likes}</p><p className="text-[10px] text-muted">Likes</p></div>
+                          <div><p className="text-detail font-semibold text-ink">{stats.comments}</p><p className="text-[10px] text-muted">Comments</p></div>
+                          <div><p className="text-detail font-semibold text-ink">{stats.saves}</p><p className="text-[10px] text-muted">Saves</p></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </>
           )}

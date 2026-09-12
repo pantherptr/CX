@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
-import { VerifiedBadge } from '../primitives';
 import { useApp } from '../../lib/store';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
   setEmpirePostFeatured, markEmpirePostViewed, updateEmpirePost, type EmpirePost,
 } from '../../lib/data/empireFeed';
+import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
@@ -85,6 +86,7 @@ export function SignalPostCard({
   const [likeBounce, setLikeBounce] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl);
 
   // Fire-and-forget — dedup'd server-side (empire_post_views is keyed on
   // post_id + user_id), so a re-render or refresh never inflates the count.
@@ -174,6 +176,7 @@ export function SignalPostCard({
       body: post.body,
       mediaPaths: post.mediaPaths,
       commentsDisabled: !post.commentsDisabled,
+      publisherType: post.publisherType,
     });
     setBusy(false);
     if (error) toast({ title: 'Could not update comments', desc: error, icon: 'info' });
@@ -213,18 +216,13 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-3 p-4 pb-3 sm:px-5">
-        {post.authorAvatarUrl ? (
-          <img src={post.authorAvatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-noir text-white">
-            <Icon name="verified" size={18} />
-          </span>
-        )}
+        <SignalIdentityAvatar identity={identity} size={40} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="truncate font-display font-semibold text-ink">{post.authorName}</span>
-            <VerifiedBadge role={post.authorRole} />
+            <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
+            <SignalIdentityBadge identity={identity} />
           </div>
+          <p className="truncate text-caption text-muted">{identity.subtitle}</p>
           <p className="text-caption text-muted">
             {categoryLabel(post.category)} · {timeAgo(post.createdAt)}
             {post.editedAt && ' · Edited'}

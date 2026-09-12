@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
-import { SignalLogo } from '../SignalLogo';
 import { useActiveEmpireStories } from '../../lib/data/empireStories';
+import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalStoryComposer } from './SignalStoryComposer';
 
@@ -42,26 +43,27 @@ export function SignalStoriesBar({ canManage }: { canManage: boolean }) {
             <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">Add Story</span>
           </button>
         )}
-        {stories.map((story, i) => (
-          <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
-            <span
-              className={`grid h-16 w-16 place-items-center rounded-full p-[2.5px] transition-opacity ${
-                story.viewedByMe ? 'bg-line-strong opacity-70' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
-              }`}
-            >
-              <span className="h-full w-full overflow-hidden rounded-full border-2 border-surface bg-panel">
-                {story.slides[0] ? (
-                  <img src={story.slides[0].mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
-                ) : (
-                  <span className="grid h-full w-full place-items-center">
-                    <SignalLogo size={22} />
-                  </span>
-                )}
+        {stories.map((story, i) => {
+          // The bubble shows WHO is speaking (Owner/CX Assistant/CX),
+          // not a preview of the Story's own content — matches how the
+          // identity system's own examples present the bar, and reads
+          // as a broadcast channel rather than a personal-content ring.
+          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl);
+          return (
+            <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1.5">
+              <span
+                className={`grid h-16 w-16 place-items-center rounded-full p-[2.5px] transition-opacity ${
+                  story.viewedByMe ? 'bg-line-strong opacity-70' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
+                }`}
+              >
+                <span className="grid h-full w-full place-items-center overflow-hidden rounded-full border-2 border-surface bg-panel">
+                  <SignalIdentityAvatar identity={identity} size={58} />
+                </span>
               </span>
-            </span>
-            {story.title && <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">{story.title}</span>}
-          </button>
-        ))}
+              <span className="max-w-[68px] truncate text-[11px] font-medium text-ink-soft">{identity.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {openIndex !== null && (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import type { SignalPublisherType } from './signalIdentity';
 
 /**
  * SIGNAL Stories (renamed from "Empire" — see empireFeed.ts's header for
@@ -27,12 +28,21 @@ export interface EmpireStorySlide {
 export interface EmpireStory {
   id: string;
   authorId: string;
+  /** The real Owner/Admin account that clicked publish — used to
+   *  resolve the 'owner' voice's live name/photo (see
+   *  resolveSignalIdentity). Independent of `publisherType`. */
+  authorName: string;
+  authorAvatarUrl: string | null;
   title: string | null;
   createdAt: string;
   expiresAt: string;
   viewCount: number;
   viewedByMe: boolean;
   slides: EmpireStorySlide[];
+  /** Which of SIGNAL's three voices this Story session was published
+   *  under — chosen once at creation, applies to every slide in it. See
+   *  signalIdentity.ts. */
+  publisherType: SignalPublisherType;
 }
 
 interface StorySlideJson {
@@ -48,12 +58,15 @@ interface StorySlideJson {
 interface StoryRow {
   id: string;
   author_id: string;
+  author_name: string | null;
+  author_avatar_url: string | null;
   title: string | null;
   created_at: string;
   expires_at: string;
   view_count: number;
   viewed_by_me: boolean;
   slides: StorySlideJson[];
+  publisher_type: SignalPublisherType;
 }
 
 const MEDIA_BUCKET = 'empire-post-media';
@@ -79,12 +92,15 @@ function mapStory(row: StoryRow): EmpireStory {
   return {
     id: row.id,
     authorId: row.author_id,
+    authorName: row.author_name ?? 'CX Rent',
+    authorAvatarUrl: row.author_avatar_url,
     title: row.title,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     viewCount: row.view_count,
     viewedByMe: row.viewed_by_me,
     slides: (row.slides ?? []).slice().sort((a, b) => a.sort_order - b.sort_order).map(mapSlide),
+    publisherType: row.publisher_type,
   };
 }
 
@@ -116,8 +132,11 @@ export async function fetchAllEmpireStoriesAdmin(): Promise<EmpireStory[]> {
   return (data as StoryRow[]).map(mapStory);
 }
 
-export async function createEmpireStory(title?: string): Promise<{ storyId: string | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('create_empire_story', { p_title: title ?? null });
+export async function createEmpireStory(
+  title: string | undefined,
+  publisherType: SignalPublisherType
+): Promise<{ storyId: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('create_empire_story', { p_title: title ?? null, p_publisher_type: publisherType });
   if (error) return { storyId: null, error: error.message };
   return { storyId: (data as { id: string }).id, error: null };
 }

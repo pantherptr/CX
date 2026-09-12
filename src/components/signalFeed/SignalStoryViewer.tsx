@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { markEmpireStoryViewed, deleteEmpireStory, type EmpireStory } from '../../lib/data/empireStories';
+import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -73,6 +75,8 @@ export function SignalStoryViewer({
   }, [storyIndex, slideIndex]);
 
   if (!story || !slide) return null;
+
+  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl);
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {
@@ -169,8 +173,15 @@ export function SignalStoryViewer({
       </div>
 
       <div className="relative z-10 flex h-14 items-center gap-2.5 px-4 pt-safe">
-        <span className="text-detail font-semibold text-white">{story.title || 'CX Rent'}</span>
-        <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+        <SignalIdentityAvatar identity={identity} size={32} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
+            <SignalIdentityBadge identity={identity} size={13} />
+            <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+          </div>
+          {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
+        </div>
         <div className="ml-auto flex items-center gap-1">
           {canManage && (
             <button

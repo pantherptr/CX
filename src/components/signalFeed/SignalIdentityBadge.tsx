@@ -1,0 +1,51 @@
+import { Icon } from '../Icon';
+import { VerifiedBadge } from '../primitives';
+import type { SignalIdentity } from '../../lib/data/signalIdentity';
+
+/** The avatar half of a resolved SIGNAL identity — a real photo for
+ *  Owner, the site's one official mark for CX, and a headset-icon circle
+ *  for CX Assistant (no avatar image exists for it, and one wasn't
+ *  needed: Concierge.tsx already uses this exact icon for the same AI). */
+export function SignalIdentityAvatar({ identity, size = 40 }: { identity: SignalIdentity; size?: number }) {
+  const style = { height: size, width: size };
+  if (identity.type === 'cx') {
+    // cx-logo-symbol.png is a tall lockup with a lot of transparent
+    // margin around the actual mark (~37% pixel coverage of its own
+    // bounding box) — object-cover on a circle scales it up to fill the
+    // box and crops most of that margin away, cutting the mark itself
+    // off at odd points. Showing it via object-contain, shrunk with real
+    // padding inside its own backing circle, keeps the whole logo intact
+    // and legible instead.
+    return (
+      <span className="grid shrink-0 place-items-center rounded-full bg-white ring-1 ring-line" style={style}>
+        <img src={identity.avatarUrl!} alt="" className="object-contain" style={{ height: size * 0.6, width: size * 0.6 }} />
+      </span>
+    );
+  }
+  if (identity.avatarUrl) {
+    return <img src={identity.avatarUrl} alt="" className="shrink-0 rounded-full object-cover" style={style} />;
+  }
+  return (
+    <span className="grid shrink-0 place-items-center rounded-full bg-noir text-accent-bright" style={style}>
+      <Icon name="headset" size={Math.round(size * 0.45)} />
+    </span>
+  );
+}
+
+/** The badge half — Owner reuses the exact sitewide red Owner mark
+ *  (`VerifiedBadge`, primitives.tsx), since that IS the same Owner tier
+ *  used everywhere else. Assistant/CX get their own solid mark in
+ *  Signal's own accent-bright green — same solid-circle-plus-check
+ *  construction as `BadgeMark`, just not folded into the global
+ *  `VerifiedRole` union, which is specifically about conversation-
+ *  participant tiers, not SIGNAL's broadcast voices. */
+export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalIdentity; size?: number }) {
+  if (identity.type === 'owner') {
+    return <VerifiedBadge role="owner" size={size} />;
+  }
+  return (
+    <span title="Official" className="inline-grid shrink-0 place-items-center rounded-full bg-accent-bright text-noir shadow-sm" style={{ width: size, height: size }}>
+      <Icon name="check" size={Math.round(size * 0.6)} strokeWidth={3.2} />
+    </span>
+  );
+}

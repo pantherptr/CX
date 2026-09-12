@@ -4,6 +4,9 @@ import {
   EMPIRE_CATEGORIES, createEmpirePost, updateEmpirePost, uploadEmpirePostMedia,
   type EmpireCategory, type EmpirePost,
 } from '../../lib/data/empireFeed';
+import type { SignalPublisherType } from '../../lib/data/signalIdentity';
+import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
+import { useAuth } from '../../lib/auth';
 
 const MAX_IMAGES = 4;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -31,7 +34,9 @@ export function SignalPostComposer({
   onDone: (post: EmpirePost) => void;
   onCancel?: () => void;
 }) {
+  const { profile } = useAuth();
   const objectUrls = useRef<string[]>([]);
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(editing?.publisherType ?? lastSignalPublisherType());
   const [category, setCategory] = useState<EmpireCategory>(editing?.category ?? 'news');
   const [title, setTitle] = useState(editing?.title ?? '');
   const [body, setBody] = useState(editing?.body ?? '');
@@ -105,7 +110,7 @@ export function SignalPostComposer({
         uploaded.push(path);
       }
       const mediaPaths = [...existingPaths, ...uploaded];
-      const input = { category, title: title.trim() || undefined, body: body.trim(), mediaPaths, commentsDisabled };
+      const input = { category, title: title.trim() || undefined, body: body.trim(), mediaPaths, commentsDisabled, publisherType };
       const result = editing ? await updateEmpirePost(editing.id, input) : await createEmpirePost(input);
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
@@ -119,7 +124,14 @@ export function SignalPostComposer({
 
   return (
     <div className="card mb-5 p-4 sm:p-5">
-      <div className="flex flex-wrap gap-1.5">
+      <SignalPublisherPicker
+        value={publisherType}
+        onChange={setPublisherType}
+        ownerName={profile?.full_name || 'Owner'}
+        ownerAvatarUrl={profile?.avatar_url ?? null}
+      />
+
+      <div className="mt-4 flex flex-wrap gap-1.5">
         {EMPIRE_CATEGORIES.map((c) => (
           <button
             key={c.value}

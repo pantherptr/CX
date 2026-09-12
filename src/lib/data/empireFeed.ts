@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { roleFromFlags, type ParticipantRole } from './messages';
+import type { SignalPublisherType } from './signalIdentity';
 
 /**
  * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
@@ -58,6 +59,11 @@ export interface EmpirePost {
   viewCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
+  /** Which of SIGNAL's three voices this post is permanently recorded
+   *  as speaking under — see signalIdentity.ts. Independent of
+   *  `authorId`/`authorName`, which stay the real audit trail of which
+   *  admin account clicked publish. */
+  publisherType: SignalPublisherType;
 }
 
 interface EmpirePostRow {
@@ -83,6 +89,7 @@ interface EmpirePostRow {
   view_count: number;
   liked_by_me: boolean;
   saved_by_me: boolean;
+  publisher_type: SignalPublisherType;
 }
 
 function mediaUrlFor(path: string): string {
@@ -113,6 +120,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     viewCount: row.view_count,
     likedByMe: row.liked_by_me,
     savedByMe: row.saved_by_me,
+    publisherType: row.publisher_type,
   };
 }
 
@@ -215,6 +223,7 @@ export interface CreateEmpirePostInput {
   body: string;
   mediaPaths?: string[];
   commentsDisabled?: boolean;
+  publisherType: SignalPublisherType;
 }
 
 export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ post: EmpirePost | null; error: string | null }> {
@@ -224,6 +233,7 @@ export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ 
     p_body: input.body,
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
+    p_publisher_type: input.publisherType,
   });
   if (error) return { post: null, error: error.message };
   return { post: mapCreatedPost(data), error: null };
@@ -240,6 +250,7 @@ export async function updateEmpirePost(
     p_body: input.body,
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
+    p_publisher_type: input.publisherType,
   });
   if (error) return { post: null, error: error.message };
   return { post: mapCreatedPost(data), error: null };
@@ -252,7 +263,7 @@ export async function updateEmpirePost(
 function mapCreatedPost(row: {
   id: string; author_id: string; category: EmpireCategory; title: string | null; body: string;
   media_paths: string[]; is_pinned: boolean; is_featured: boolean; comments_disabled: boolean;
-  created_at: string; updated_at: string; edited_at: string | null;
+  created_at: string; updated_at: string; edited_at: string | null; publisher_type: SignalPublisherType;
 }): EmpirePost {
   return {
     id: row.id,
@@ -277,6 +288,7 @@ function mapCreatedPost(row: {
     viewCount: 0,
     likedByMe: false,
     savedByMe: false,
+    publisherType: row.publisher_type,
   };
 }
 
@@ -511,6 +523,13 @@ export async function fetchEmpirePostById(postId: string): Promise<EmpirePost | 
 // ---- Owner/Admin analytics — one compact aggregate object, not a
 // dashboard's worth of separate queries. ----
 
+export interface EmpirePublisherStats {
+  views: number;
+  likes: number;
+  comments: number;
+  saves: number;
+}
+
 export interface EmpireAnalytics {
   totalPostViews: number;
   totalStoryViews: number;
@@ -522,6 +541,9 @@ export interface EmpireAnalytics {
   mostLiked: { id: string; title: string; count: number } | null;
   mostCommented: { id: string; title: string; count: number } | null;
   mostSaved: { id: string; title: string; count: number } | null;
+  /** Which of the three SIGNAL voices is performing best — real counts
+   *  grouped by `empire_posts.publisher_type`, computed server-side. */
+  byPublisher: Record<SignalPublisherType, EmpirePublisherStats>;
 }
 
 export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
@@ -534,7 +556,9 @@ export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
     most_liked: { id: string; title: string; count: number } | null;
     most_commented: { id: string; title: string; count: number } | null;
     most_saved: { id: string; title: string; count: number } | null;
+    by_publisher: Partial<Record<SignalPublisherType, { views: number; likes: number; comments: number; saves: number }>> | null;
   };
+  const emptyStats: EmpirePublisherStats = { views: 0, likes: 0, comments: 0, saves: 0 };
   return {
     totalPostViews: d.total_post_views,
     totalStoryViews: d.total_story_views,
@@ -546,5 +570,10 @@ export async function fetchEmpireAnalytics(): Promise<EmpireAnalytics> {
     mostLiked: d.most_liked,
     mostCommented: d.most_commented,
     mostSaved: d.most_saved,
+    byPublisher: {
+      owner: d.by_publisher?.owner ?? emptyStats,
+      assistant: d.by_publisher?.assistant ?? emptyStats,
+      cx: d.by_publisher?.cx ?? emptyStats,
+    },
   };
 }

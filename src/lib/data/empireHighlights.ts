@@ -76,7 +76,13 @@ function mapHighlight(row: HighlightRow): EmpireHighlight {
  *  on (it only calls `onMarkViewed`/`onDeleteStory`, both overridden by
  *  the Highlights bar rather than left at their Story-specific defaults). */
 export function highlightAsStory(h: EmpireHighlight): EmpireStory {
-  return { id: h.id, authorId: '', title: h.title, createdAt: h.createdAt, expiresAt: '', viewCount: 0, viewedByMe: true, slides: h.slides };
+  // Highlights don't carry their own publisher identity (out of scope —
+  // see signalIdentity.ts's header); 'cx' is the neutral default for a
+  // permanent, Owner-curated collection with no single publish moment.
+  return {
+    id: h.id, authorId: '', authorName: 'CX Rent', authorAvatarUrl: null, title: h.title, createdAt: h.createdAt,
+    expiresAt: '', viewCount: 0, viewedByMe: true, slides: h.slides, publisherType: 'cx',
+  };
 }
 
 export async function fetchEmpireHighlights(): Promise<EmpireHighlight[]> {

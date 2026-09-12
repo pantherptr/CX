@@ -8,6 +8,11 @@ import {
   useEmpireHighlights, createEmpireHighlight, deleteEmpireHighlight, saveEmpireStoryToHighlight,
   uploadEmpireHighlightMedia, addEmpireHighlightSlide, type EmpireHighlight,
 } from '../../lib/data/empireHighlights';
+import type { SignalPublisherType } from '../../lib/data/signalIdentity';
+import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
+import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar } from './SignalIdentityBadge';
+import { useAuth } from '../../lib/auth';
 
 const MAX_SLIDES = 10;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -29,8 +34,10 @@ interface PendingSlide {
  *  one sheet with three views rather than a separate admin-dashboard
  *  route, so management stays integrated into the Signal experience. */
 export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => void; onPublished: () => void }) {
+  const { profile } = useAuth();
   const [view, setView] = useState<'create' | 'manage' | 'highlights'>('create');
   const objectUrls = useRef<string[]>([]);
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(lastSignalPublisherType());
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<PendingSlide[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +115,7 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
     }
     setPublishing(true);
     setError(null);
-    const { storyId, error: createError } = await createEmpireStory(title.trim() || undefined);
+    const { storyId, error: createError } = await createEmpireStory(title.trim() || undefined, publisherType);
     if (createError || !storyId) {
       setError(createError ?? 'Could not create the Story — try again.');
       setPublishing(false);
@@ -214,11 +221,18 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
         <div className="flex-1 overflow-y-auto p-5">
           {view === 'create' && (
             <>
+              <SignalPublisherPicker
+                value={publisherType}
+                onChange={setPublisherType}
+                ownerName={profile?.full_name || 'Owner'}
+                ownerAvatarUrl={profile?.avatar_url ?? null}
+              />
+
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Story title (optional)"
-                className="input !py-2.5"
+                className="input mt-4 !py-2.5"
               />
 
               <label className="pressable mt-3 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
@@ -294,6 +308,7 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
               ) : (
                 allStories.map((s) => {
                   const expired = new Date(s.expiresAt).getTime() < Date.now();
+                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl);
                   return (
                     <div key={s.id} className="flex flex-col gap-2 rounded-xl border border-line p-2.5">
                       <div className="flex items-center gap-3">
@@ -305,6 +320,7 @@ export function SignalStoryComposer({ onClose, onPublished }: { onClose: () => v
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-detail font-semibold text-ink">{s.title || 'Untitled Story'}</p>
                           <p className="flex items-center gap-2 text-caption text-muted">
+                            <span className="inline-flex items-center gap-1"><SignalIdentityAvatar identity={identity} size={14} /> {identity.name}</span>
                             <span className={expired ? 'text-danger' : 'text-accent-700'}>{expired ? 'Expired' : 'Active'}</span>
                             <span className="inline-flex items-center gap-1"><Icon name="eye" size={12} /> {s.viewCount}</span>
                             <span>{s.slides.length} slide{s.slides.length === 1 ? '' : 's'}</span>
