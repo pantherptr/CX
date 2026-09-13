@@ -42,11 +42,15 @@ export interface EmpirePost {
    *  — but typed as the same union messages.ts uses so `<VerifiedBadge>`
    *  takes it directly with no cast. */
   authorRole: ParticipantRole;
-  /** Only meaningful for a `publisherType === 'self'` post (a Host or
-   *  Verified Client publishing under their own real identity) — used by
-   *  `resolveSignalIdentity` to pick the right badge. Sourced live from
-   *  the author's own current profile flags on every fetch, never stored
-   *  on the post itself. */
+  /** Only meaningful for a `publisherType === 'self'` post (any signed-in
+   *  user publishing under their own real identity) — used by
+   *  `resolveSignalIdentity` to pick the right badge, so an Owner/Admin
+   *  posting as themselves (not the fixed 'owner' voice) still shows
+   *  their real tier instead of falling through to a plain Client mark.
+   *  Sourced live from the author's own current profile flags on every
+   *  fetch, never stored on the post itself. */
+  authorIsOwner: boolean;
+  authorIsAdmin: boolean;
   authorIsHost: boolean;
   authorIsVerifiedClient: boolean;
   category: EmpireCategory;
@@ -166,6 +170,8 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     authorName: row.author_name ?? 'CX Rent',
     authorAvatarUrl: row.author_avatar_url,
     authorRole: roleFromFlags({ is_owner: row.author_is_owner, is_admin: row.author_is_admin, is_host: row.author_is_host }),
+    authorIsOwner: row.author_is_owner,
+    authorIsAdmin: row.author_is_admin,
     authorIsHost: row.author_is_host,
     authorIsVerifiedClient: row.author_is_verified_client,
     category: row.category,
@@ -365,6 +371,8 @@ function mapCreatedPost(row: {
     authorName: '',
     authorAvatarUrl: null,
     authorRole: 'admin',
+    authorIsOwner: false,
+    authorIsAdmin: false,
     authorIsHost: false,
     authorIsVerifiedClient: false,
     category: row.category,

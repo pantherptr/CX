@@ -203,6 +203,7 @@ export function SignalPostComposer({
         ...result.post,
         likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount,
         viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe,
+        authorIsOwner: editing.authorIsOwner, authorIsAdmin: editing.authorIsAdmin,
         authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
         vehicle: canAttachVehicle ? selectedVehicle : editing.vehicle,
       } : { ...result.post, vehicle: canAttachVehicle ? selectedVehicle : null });

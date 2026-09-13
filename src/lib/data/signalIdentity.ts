@@ -41,8 +41,12 @@ export interface SignalIdentity {
   avatarUrl: string | null;
   /** Only meaningful when `type === 'self'` — which real-identity badge
    *  to show. Absent for the three fixed official voices (their badge is
-   *  derived from `type` directly). */
-  selfRole?: 'host' | 'verified_client' | 'client';
+   *  derived from `type` directly). Includes 'owner'/'admin' alongside
+   *  the two Community tiers — since Community publishing opened up to
+   *  everyone (0053), the Owner or an Admin posting under their own real
+   *  identity ('self', not the fixed 'owner' voice) needs their real
+   *  platform tier recognized too, not silently downgraded to 'client'. */
+  selfRole?: 'owner' | 'admin' | 'host' | 'verified_client' | 'client';
 }
 
 export function resolveSignalIdentity(
@@ -51,6 +55,8 @@ export function resolveSignalIdentity(
   authorAvatarUrl: string | null,
   authorIsHost?: boolean,
   authorIsVerifiedClient?: boolean,
+  authorIsOwner?: boolean,
+  authorIsAdmin?: boolean,
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
@@ -58,8 +64,18 @@ export function resolveSignalIdentity(
     case 'cx':
       return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/cx-logo-symbol.png' };
     case 'self': {
-      const selfRole: 'host' | 'verified_client' | 'client' = authorIsHost ? 'host' : authorIsVerifiedClient ? 'verified_client' : 'client';
-      const subtitle = selfRole === 'host' ? 'Host' : selfRole === 'verified_client' ? 'Verified Client' : 'Client';
+      const selfRole: 'owner' | 'admin' | 'host' | 'verified_client' | 'client' =
+        authorIsOwner ? 'owner'
+        : authorIsAdmin ? 'admin'
+        : authorIsHost ? 'host'
+        : authorIsVerifiedClient ? 'verified_client'
+        : 'client';
+      const subtitle =
+        selfRole === 'owner' ? 'Owner'
+        : selfRole === 'admin' ? 'Admin'
+        : selfRole === 'host' ? 'Host'
+        : selfRole === 'verified_client' ? 'Verified Client'
+        : 'Client';
       return { type: 'self', name: authorName, subtitle, avatarUrl: authorAvatarUrl, selfRole };
     }
     case 'owner':

@@ -83,7 +83,7 @@ export function SignalStoriesBar({
           // not a preview of the Story's own content — matches how the
           // identity system's own examples present the bar, and reads
           // as a broadcast channel rather than a personal-content ring.
-          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
+          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin);
           // Three distinct, original ring treatments (never the raw
           // gradient Instagram itself uses): your own Story gets a solid
           // brand-green ring regardless of viewed state (it's yours,

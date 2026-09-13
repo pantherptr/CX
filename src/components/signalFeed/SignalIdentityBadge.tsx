@@ -65,10 +65,17 @@ export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalI
     return <VerifiedBadge role="owner" size={size} />;
   }
   if (identity.type === 'self') {
-    // A real Host/Verified Client's own account tier — the same badges
-    // used everywhere else in the app for those tiers, not a separate
-    // SIGNAL-only mark, since this IS their real identity, not a voice.
-    return <VerifiedBadge role={identity.selfRole === 'host' ? 'host' : 'client'} size={size} />;
+    // A real account's own tier — the same badges used everywhere else
+    // in the app, not a separate SIGNAL-only mark, since this IS their
+    // real identity, not a voice. Owner/Admin posting under their own
+    // real identity (not the fixed 'owner' voice) still get their real
+    // mark, not a downgrade to 'client'.
+    const role: VerifiedRole =
+      identity.selfRole === 'owner' ? 'owner'
+      : identity.selfRole === 'admin' ? 'admin'
+      : identity.selfRole === 'host' ? 'host'
+      : 'client';
+    return <VerifiedBadge role={role} size={size} />;
   }
   return <VerifiedBadge role={officialRole(identity.type as 'cx' | 'assistant')} size={size} />;
 }

@@ -89,7 +89,7 @@ export function highlightAsStory(h: EmpireHighlight): EmpireStory {
   // permanent, Owner-curated collection with no single publish moment.
   return {
     id: h.id, authorId: '', authorName: 'CX Rent', authorAvatarUrl: null,
-    authorIsHost: false, authorIsVerifiedClient: false, title: h.title, createdAt: h.createdAt,
+    authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false, title: h.title, createdAt: h.createdAt,
     expiresAt: '', viewCount: 0, viewedByMe: true, slides: h.slides, publisherType: 'cx',
   };
 }

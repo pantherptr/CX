@@ -116,7 +116,7 @@ export function SignalStoryViewer({
 
   if (!story || !slide) return null;
 
-  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
+  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin);
   // Same real-account routing SignalPostCard's signalProfileHref uses —
   // "cx"/"assistant" get the static official info block, everyone else
   // (Owner's real row, or a Host/Verified Client's own Story) opens their

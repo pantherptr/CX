@@ -553,7 +553,7 @@ export function SignalStoryComposer({
               ) : (
                 allStories.map((s) => {
                   const expired = new Date(s.expiresAt).getTime() < Date.now();
-                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl, s.authorIsHost, s.authorIsVerifiedClient);
+                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl, s.authorIsHost, s.authorIsVerifiedClient, s.authorIsOwner, s.authorIsAdmin);
                   return (
                     <div key={s.id} className="flex flex-col gap-2 rounded-xl border border-line p-2.5">
                       <div className="flex items-center gap-3">
