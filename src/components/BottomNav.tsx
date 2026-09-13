@@ -310,40 +310,27 @@ export function BottomNav() {
                     transitionTimingFunction: EASE,
                   }}
                 >
-                  {/* An ambient glow BEHIND the mark, never a filter ON it —
-                      `drop-shadow` used to sit directly on this whole
-                      composited layer, and at this icon's actual ~30px
-                      size a 10px saturated-green blur blooms clean through
-                      the artwork's own semi-transparent edges, reading as
-                      "the logo turned a different green" between active/
-                      inactive rather than as a light source behind it. This
-                      radial-gradient span paints strictly behind CxsLogo
-                      (lower in DOM order, no shared stacking context with
-                      it), so cxs.png itself never carries any filter/blend
-                      in any state — see CxsLogo.tsx's own header comment. */}
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-[width,height,opacity] duration-300"
-                    style={{
-                      width: active ? 30 : 22,
-                      height: active ? 30 : 22,
-                      background: active
-                        ? 'radial-gradient(circle, rgba(0,212,71,0.5) 0%, rgba(0,212,71,0) 72%)'
-                        : 'radial-gradient(circle, rgba(22,22,26,0.16) 0%, rgba(22,22,26,0) 72%)',
-                      filter: 'blur(3px)',
-                      transitionTimingFunction: EASE,
-                    }}
-                  />
-                  {/* Absolute + translate(-50%,-50%), not CSS Grid's
-                      place-items:center — Grid's auto-centering of an
-                      oversized item turns out to only behave reliably for
-                      genuine replaced elements (a bare <img>); CxsLogo's
-                      own root is a plain span, and place-items-center
-                      silently left it start-aligned instead of centered.
-                      Absolute positioning centers unambiguously regardless
-                      of the child's type or size. The live glint effect is
-                      built into CxsLogo itself (always on, every instance),
-                      not re-declared per call site. */}
+                  {/* Deliberately NOTHING else lives in this box besides
+                      CxsLogo itself. An earlier pass put a green radial-
+                      gradient "ambient glow" span behind the mark for the
+                      active state, reasoning it was strictly BEHIND the
+                      artwork so cxs.png's own pixels were never touched —
+                      true in isolation, but it was permanently present
+                      the entire time the tab was active, not a brief
+                      effect, so the logo still visibly read as "a
+                      different, greener asset" whenever active vs.
+                      inactive. Removed outright: active vs. inactive here
+                      differ ONLY in size/position (scale 1.08 + a few px
+                      of lift, set above), never in color, tint, glow, or
+                      any layer touching the mark's own appearance. The
+                      one effect that remains is CxsLogo's own internal
+                      glint sweep (`.cxs-glint-a/b` in index.css) — a
+                      separate, non-blocking overlay that sits at
+                      opacity:0 (i.e. contributes nothing at all) well
+                      over 95% of the time and briefly passes a highlight
+                      across the mark the rest, always fully reverting —
+                      not a permanent recolor, and identical in every
+                      nav state since it isn't parameterized by `active`. */}
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     <CxsLogo size={active ? 32 : 27} />
                   </span>
