@@ -12,22 +12,36 @@ import type { SignalPublisherType } from './signalIdentity';
  * inserts/updates/deletes a table directly.
  */
 
-export type StoryMediaType = 'image' | 'video';
+export type StoryMediaType = 'image' | 'video' | 'text';
+export type StoryTextAlign = 'left' | 'center' | 'right';
+export type StoryTextSize = 'sm' | 'md' | 'lg';
+/** A small fixed set of original CX Rent-branded backgrounds for a text
+ *  Story — see StoryBackgroundPicker.tsx for the actual color values.
+ *  Deliberately not a free color picker (see the migration's own
+ *  comment) — five choices, no more. */
+export type StoryBgStyle = 'noir' | 'accent' | 'gold' | 'gradient-signal' | 'gradient-gold';
 
 export interface EmpireStorySlide {
   id: string;
-  mediaPath: string;
+  /** `null` for a text slide — see `mediaType`. */
+  mediaPath: string | null;
   mediaType: StoryMediaType;
+  /** Empty string for a text slide (no file to resolve a URL for). */
   mediaUrl: string;
   /** A client-captured first-frame thumbnail for a video slide (see
-   *  captureVideoPosterBlob in lib/media.ts) — `null` for image slides,
-   *  used as the `<video poster>` for instant perceived load in the
-   *  viewer. */
+   *  captureVideoPosterBlob in lib/media.ts) — `null` for image/text
+   *  slides, used as the `<video poster>` for instant perceived load in
+   *  the viewer. */
   posterUrl: string | null;
   caption: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
   sortOrder: number;
+  /** Text-slide-only fields — all `null` for an image/video slide. */
+  textContent: string | null;
+  textAlign: StoryTextAlign | null;
+  textSize: StoryTextSize | null;
+  bgStyle: StoryBgStyle | null;
 }
 
 export interface EmpireStory {
@@ -57,13 +71,17 @@ export interface EmpireStory {
 
 interface StorySlideJson {
   id: string;
-  media_path: string;
+  media_path: string | null;
   media_type: StoryMediaType;
   poster_path: string | null;
   caption: string | null;
   cta_label: string | null;
   cta_url: string | null;
   sort_order: number;
+  text_content: string | null;
+  text_align: StoryTextAlign | null;
+  text_size: StoryTextSize | null;
+  bg_style: StoryBgStyle | null;
 }
 
 interface StoryRow {
@@ -93,12 +111,16 @@ function mapSlide(row: StorySlideJson): EmpireStorySlide {
     id: row.id,
     mediaPath: row.media_path,
     mediaType: row.media_type,
-    mediaUrl: mediaUrlFor(row.media_path),
+    mediaUrl: row.media_path ? mediaUrlFor(row.media_path) : '',
     posterUrl: row.poster_path ? mediaUrlFor(row.poster_path) : null,
     caption: row.caption,
     ctaLabel: row.cta_label,
     ctaUrl: row.cta_url,
     sortOrder: row.sort_order,
+    textContent: row.text_content,
+    textAlign: row.text_align,
+    textSize: row.text_size,
+    bgStyle: row.bg_style,
   };
 }
 
@@ -159,9 +181,13 @@ export async function createEmpireStory(
 
 export async function addEmpireStorySlide(
   storyId: string,
-  mediaPath: string,
+  /** `null` for a text slide — see `mediaType`. */
+  mediaPath: string | null,
   mediaType: StoryMediaType,
-  options?: { caption?: string; ctaLabel?: string; ctaUrl?: string; posterPath?: string }
+  options?: {
+    caption?: string; ctaLabel?: string; ctaUrl?: string; posterPath?: string;
+    textContent?: string; textAlign?: StoryTextAlign; textSize?: StoryTextSize; bgStyle?: StoryBgStyle;
+  }
 ): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('add_empire_story_slide', {
     p_story_id: storyId,
@@ -171,6 +197,10 @@ export async function addEmpireStorySlide(
     p_cta_label: options?.ctaLabel ?? null,
     p_cta_url: options?.ctaUrl ?? null,
     p_poster_path: options?.posterPath ?? null,
+    p_text_content: options?.textContent ?? null,
+    p_text_align: options?.textAlign ?? null,
+    p_text_size: options?.textSize ?? null,
+    p_bg_style: options?.bgStyle ?? null,
   });
   if (error) return { error: error.message };
   return { error: null };

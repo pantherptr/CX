@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import {
   createEmpireStory, addEmpireStorySlide, uploadEmpireStoryMedia, uploadEmpireStoryPoster, deleteEmpireStory,
-  fetchAllEmpireStoriesAdmin, type EmpireStory, type StoryMediaType,
+  fetchAllEmpireStoriesAdmin, type EmpireStory, type StoryMediaType, type StoryTextAlign, type StoryTextSize, type StoryBgStyle,
 } from '../../lib/data/empireStories';
 import {
   useEmpireHighlights, createEmpireHighlight, deleteEmpireHighlight, saveEmpireStoryToHighlight,
@@ -13,6 +13,7 @@ import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
+import { StoryTextSlide, STORY_BG_STYLES } from './StoryTextSlide';
 import { useAuth } from '../../lib/auth';
 
 const MAX_SLIDES = 10;
@@ -22,7 +23,13 @@ const MAX_VIDEO_DURATION_SEC = 60; // Stories stay short — a 10-minute clip de
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 interface PendingSlide {
-  file: File;
+  /** Stable identity for React's `key` and for removeSlide/moveSlide/
+   *  patchSlide to address the right row — `preview` alone can't serve
+   *  this (every text slide's `preview` is the same empty string, so two
+   *  text slides would collide on it). */
+  key: string;
+  /** `null` for a text slide — see `mediaType`. */
+  file: File | null;
   preview: string;
   mediaType: StoryMediaType;
   /** Video slides only — the client-captured first-frame thumbnail,
@@ -33,6 +40,11 @@ interface PendingSlide {
   ctaLabel: string;
   ctaUrl: string;
   showDetails: boolean;
+  /** Text-slide-only fields — unset for image/video slides. */
+  textContent?: string;
+  textAlign?: StoryTextAlign;
+  textSize?: StoryTextSize;
+  bgStyle?: StoryBgStyle;
 }
 
 /** Create a new Story (staged-then-upload-on-submit, same pattern as
@@ -101,7 +113,7 @@ export function SignalStoryComposer({
       }
       const preview = URL.createObjectURL(file);
       objectUrls.current.push(preview);
-      accepted.push({ file, preview, mediaType: 'image', posterBlob: null, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
+      accepted.push({ key: crypto.randomUUID(), file, preview, mediaType: 'image', posterBlob: null, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
     }
     if (accepted.length) setSlides((s) => [...s, ...accepted]);
     setError(firstError);
@@ -136,17 +148,37 @@ export function SignalStoryComposer({
       }
       const preview = URL.createObjectURL(file);
       objectUrls.current.push(preview);
-      accepted.push({ file, preview, mediaType: 'video', posterBlob, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
+      accepted.push({ key: crypto.randomUUID(), file, preview, mediaType: 'video', posterBlob, caption: '', ctaLabel: '', ctaUrl: '', showDetails: false });
     }
     if (accepted.length) setSlides((s) => [...s, ...accepted]);
     setError(firstError);
     setValidatingVideo(false);
   };
 
+  /** Appends a new text Story slide with sensible defaults — the user
+   *  edits its content/alignment/size/background inline in the slide
+   *  list below, the same "staged, edited, then published" flow every
+   *  other slide type already uses, not a separate creation path. */
+  const addTextSlide = () => {
+    if (slides.length >= MAX_SLIDES) {
+      setError(`A Story can have up to ${MAX_SLIDES} slides.`);
+      return;
+    }
+    setError(null);
+    setSlides((s) => [
+      ...s,
+      {
+        key: crypto.randomUUID(), file: null, preview: '', mediaType: 'text', posterBlob: null,
+        caption: '', ctaLabel: '', ctaUrl: '', showDetails: false,
+        textContent: '', textAlign: 'center', textSize: 'md', bgStyle: 'noir',
+      },
+    ]);
+  };
+
   const removeSlide = (i: number) => {
     setSlides((s) => {
       const target = s[i];
-      if (target) URL.revokeObjectURL(target.preview);
+      if (target?.file) URL.revokeObjectURL(target.preview);
       return s.filter((_, idx) => idx !== i);
     });
   };
@@ -167,7 +199,11 @@ export function SignalStoryComposer({
 
   const handlePublish = async () => {
     if (slides.length === 0) {
-      setError('Add at least one image or video.');
+      setError('Add at least one image, video, or text slide.');
+      return;
+    }
+    if (slides.some((s) => s.mediaType === 'text' && !s.textContent?.trim())) {
+      setError('Add some text to your text Story.');
       return;
     }
     setPublishing(true);
@@ -181,7 +217,19 @@ export function SignalStoryComposer({
     let succeeded = 0;
     for (const slide of slides) {
       try {
-        const { path } = await uploadEmpireStoryMedia(slide.file);
+        if (slide.mediaType === 'text') {
+          const { error: slideError } = await addEmpireStorySlide(storyId, null, 'text', {
+            textContent: slide.textContent?.trim(),
+            textAlign: slide.textAlign,
+            textSize: slide.textSize,
+            bgStyle: slide.bgStyle,
+            ctaLabel: slide.ctaLabel.trim() || undefined,
+            ctaUrl: slide.ctaUrl.trim() || undefined,
+          });
+          if (!slideError) succeeded++;
+          continue;
+        }
+        const { path } = await uploadEmpireStoryMedia(slide.file!);
         let posterPath: string | undefined;
         if (slide.mediaType === 'video' && slide.posterBlob) {
           try {
@@ -317,9 +365,26 @@ export function SignalStoryComposer({
                 className="input mt-4 !py-2.5"
               />
 
+              {/* Four equal, real entry points — no fake buttons. Camera
+                  jumps straight to the device camera via `capture` where
+                  the browser honors it (most mobile browsers; desktop
+                  and unsupported browsers just fall back to the normal
+                  file picker, never an error). Photos/Video reuse the
+                  exact same staging pipeline without `capture`, so they
+                  open the library instead. Text needs no file at all. */}
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
-                  <Icon name="image" size={17} /> Add images
+                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-5 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
+                  <Icon name="camera" size={17} /> Camera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => { addImageFiles(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-5 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
+                  <Icon name="image" size={17} /> Photos
                   <input
                     type="file"
                     accept={ACCEPTED_TYPES.join(',')}
@@ -328,9 +393,9 @@ export function SignalStoryComposer({
                     onChange={(e) => { addImageFiles(e.target.files); e.target.value = ''; }}
                   />
                 </label>
-                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-6 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
+                <label className="pressable flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-5 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink">
                   {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={17} />}
-                  Add video
+                  Video
                   <input
                     type="file"
                     accept={VIDEO_MIME_TYPES.join(',')}
@@ -340,13 +405,20 @@ export function SignalStoryComposer({
                     onChange={(e) => { void addVideoFiles(e.target.files); e.target.value = ''; }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={addTextSlide}
+                  className="pressable flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong py-5 text-detail font-semibold text-ink-soft hover:border-line-strong hover:text-ink"
+                >
+                  <Icon name="edit" size={17} /> Text
+                </button>
               </div>
 
               {error && <p className="mt-2 text-caption font-medium text-danger">{error}</p>}
 
               <div className="mt-4 flex flex-col gap-3">
                 {slides.map((slide, i) => (
-                  <div key={slide.preview} className="flex items-start gap-3 rounded-xl border border-line p-2.5">
+                  <div key={slide.key} className="flex items-start gap-3 rounded-xl border border-line p-2.5">
                     <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-panel">
                       {slide.mediaType === 'video' ? (
                         <>
@@ -355,6 +427,14 @@ export function SignalStoryComposer({
                             <Icon name="play" size={16} className="text-white" fill />
                           </span>
                         </>
+                      ) : slide.mediaType === 'text' ? (
+                        <StoryTextSlide
+                          content={slide.textContent || 'Aa'}
+                          align={slide.textAlign}
+                          size="sm"
+                          bg={slide.bgStyle}
+                          className="!p-1.5 !gap-0"
+                        />
                       ) : (
                         <img src={slide.preview} alt="" className="h-full w-full object-cover" />
                       )}
@@ -368,36 +448,94 @@ export function SignalStoryComposer({
                         <button onClick={() => moveSlide(i, 1)} disabled={i === slides.length - 1} aria-label="Move later" className="grid h-6 w-6 place-items-center rounded-full text-muted hover:bg-panel disabled:opacity-30">
                           <Icon name="chevronRight" size={13} />
                         </button>
-                        <button onClick={() => patchSlide(i, { showDetails: !slide.showDetails })} className="ml-auto text-caption font-medium text-accent-700">
-                          {slide.showDetails ? 'Hide details' : 'Caption & link'}
-                        </button>
-                        <button onClick={() => removeSlide(i)} aria-label="Remove slide" className="text-muted hover:text-danger">
+                        {slide.mediaType !== 'text' && (
+                          <button onClick={() => patchSlide(i, { showDetails: !slide.showDetails })} className="ml-auto text-caption font-medium text-accent-700">
+                            {slide.showDetails ? 'Hide details' : 'Caption & link'}
+                          </button>
+                        )}
+                        <button onClick={() => removeSlide(i)} aria-label="Remove slide" className={`text-muted hover:text-danger ${slide.mediaType === 'text' ? 'ml-auto' : ''}`}>
                           <Icon name="x" size={15} />
                         </button>
                       </div>
-                      {slide.showDetails && (
-                        <div className="mt-2 flex flex-col gap-1.5">
-                          <input
-                            value={slide.caption}
-                            onChange={(e) => patchSlide(i, { caption: e.target.value })}
-                            placeholder="Caption (optional)"
-                            className="input !py-1.5 text-detail"
+
+                      {slide.mediaType === 'text' ? (
+                        <div className="mt-2 flex flex-col gap-2">
+                          <textarea
+                            value={slide.textContent ?? ''}
+                            onChange={(e) => patchSlide(i, { textContent: e.target.value })}
+                            placeholder="Type your Story…"
+                            rows={2}
+                            maxLength={280}
+                            className="input resize-none !py-1.5 text-detail"
                           />
+                          <div className="flex items-center gap-3">
+                            <div className="flex gap-1 rounded-full bg-panel p-0.5">
+                              {(['left', 'center', 'right'] as const).map((a) => (
+                                <button
+                                  key={a}
+                                  type="button"
+                                  onClick={() => patchSlide(i, { textAlign: a })}
+                                  aria-label={`Align ${a}`}
+                                  aria-pressed={slide.textAlign === a}
+                                  className={`grid h-7 w-7 place-items-center rounded-full transition-colors ${slide.textAlign === a ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel-2'}`}
+                                >
+                                  <Icon name={a === 'left' ? 'chevronLeft' : a === 'right' ? 'chevronRight' : 'minus'} size={13} />
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-1 rounded-full bg-panel p-0.5">
+                              {(['sm', 'md', 'lg'] as const).map((sz) => (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  onClick={() => patchSlide(i, { textSize: sz })}
+                                  aria-label={`Text size ${sz}`}
+                                  aria-pressed={slide.textSize === sz}
+                                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${slide.textSize === sz ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel-2'}`}
+                                >
+                                  {sz}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                           <div className="flex gap-1.5">
-                            <input
-                              value={slide.ctaLabel}
-                              onChange={(e) => patchSlide(i, { ctaLabel: e.target.value })}
-                              placeholder="Button text"
-                              className="input !py-1.5 flex-1 text-detail"
-                            />
-                            <input
-                              value={slide.ctaUrl}
-                              onChange={(e) => patchSlide(i, { ctaUrl: e.target.value })}
-                              placeholder="Link URL"
-                              className="input !py-1.5 flex-1 text-detail"
-                            />
+                            {STORY_BG_STYLES.map((bg) => (
+                              <button
+                                key={bg.value}
+                                type="button"
+                                onClick={() => patchSlide(i, { bgStyle: bg.value })}
+                                aria-label={bg.label}
+                                aria-pressed={slide.bgStyle === bg.value}
+                                className={`h-7 w-7 shrink-0 rounded-full ${bg.className} ${slide.bgStyle === bg.value ? 'ring-2 ring-accent-700 ring-offset-2 ring-offset-surface' : ''}`}
+                              />
+                            ))}
                           </div>
                         </div>
+                      ) : (
+                        slide.showDetails && (
+                          <div className="mt-2 flex flex-col gap-1.5">
+                            <input
+                              value={slide.caption}
+                              onChange={(e) => patchSlide(i, { caption: e.target.value })}
+                              placeholder="Caption (optional)"
+                              className="input !py-1.5 text-detail"
+                            />
+                            <div className="flex gap-1.5">
+                              <input
+                                value={slide.ctaLabel}
+                                onChange={(e) => patchSlide(i, { ctaLabel: e.target.value })}
+                                placeholder="Button text"
+                                className="input !py-1.5 flex-1 text-detail"
+                              />
+                              <input
+                                value={slide.ctaUrl}
+                                onChange={(e) => patchSlide(i, { ctaUrl: e.target.value })}
+                                placeholder="Link URL"
+                                className="input !py-1.5 flex-1 text-detail"
+                              />
+                            </div>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
@@ -419,7 +557,17 @@ export function SignalStoryComposer({
                   return (
                     <div key={s.id} className="flex flex-col gap-2 rounded-xl border border-line p-2.5">
                       <div className="flex items-center gap-3">
-                        {s.slides[0] ? (
+                        {s.slides[0]?.mediaType === 'text' ? (
+                          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                            <StoryTextSlide
+                              content={s.slides[0].textContent || 'Aa'}
+                              align={s.slides[0].textAlign}
+                              size="sm"
+                              bg={s.slides[0].bgStyle}
+                              className="!p-1 !gap-0"
+                            />
+                          </span>
+                        ) : s.slides[0] ? (
                           <img src={s.slides[0].mediaUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
                         ) : (
                           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>
@@ -442,7 +590,11 @@ export function SignalStoryComposer({
                           <Icon name="trash" size={16} />
                         </button>
                       </div>
-                      {highlights && highlights.length > 0 && s.slides.length > 0 && (
+                      {/* Highlights don't support text slides (see
+                          empireHighlights.ts) — a Story with one would
+                          fail this bulk copy server-side, so it's hidden
+                          rather than offered and erroring. */}
+                      {highlights && highlights.length > 0 && s.slides.length > 0 && !s.slides.some((sl) => sl.mediaType === 'text') && (
                         <label className="flex items-center gap-2 text-caption text-ink-soft">
                           <Icon name="bookmark" size={13} />
                           <select

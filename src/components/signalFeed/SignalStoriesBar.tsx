@@ -5,6 +5,7 @@ import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalStoryComposer } from './SignalStoryComposer';
+import { useAuth } from '../../lib/auth';
 
 /** The permanent Stories row at the top of Signal — self-contained: owns
  *  its own fetch, viewer, and (for authorized publishers) composer
@@ -43,6 +44,7 @@ export function SignalStoriesBar({
   onOpenComposer: () => void;
   onCloseComposer: () => void;
 }) {
+  const { session } = useAuth();
   const { stories: allStories, refresh } = useActiveEmpireStories();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -82,18 +84,26 @@ export function SignalStoriesBar({
           // identity system's own examples present the bar, and reads
           // as a broadcast channel rather than a personal-content ring.
           const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
+          // Three distinct, original ring treatments (never the raw
+          // gradient Instagram itself uses): your own Story gets a solid
+          // brand-green ring regardless of viewed state (it's yours,
+          // "unseen" doesn't apply to you); everyone else's unseen Story
+          // gets the existing live-gradient ring; a Story you've already
+          // seen fades to a quiet neutral ring.
+          const isMine = story.authorId === session?.user.id;
+          const ringClass = isMine
+            ? 'bg-accent-700'
+            : story.viewedByMe
+              ? 'bg-line-strong opacity-70'
+              : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700';
           return (
             <button key={story.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1">
-              <span
-                className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] transition-opacity ${
-                  story.viewedByMe ? 'bg-line-strong opacity-70' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
-                }`}
-              >
+              <span className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] transition-opacity ${ringClass}`}>
                 <span className="grid h-full w-full place-items-center overflow-hidden rounded-full border-2 border-surface bg-panel">
                   <SignalIdentityAvatar identity={identity} size={50} />
                 </span>
               </span>
-              <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{identity.name}</span>
+              <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{isMine ? 'You' : identity.name}</span>
             </button>
           );
         })}

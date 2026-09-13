@@ -59,6 +59,12 @@ function mapSlide(row: HighlightSlideJson): EmpireStorySlide {
     ctaLabel: row.cta_label,
     ctaUrl: row.cta_url,
     sortOrder: row.sort_order,
+    // Highlights don't support text slides — a curated, admin-managed
+    // shelf of real media, not a Story-composer feature.
+    textContent: null,
+    textAlign: null,
+    textSize: null,
+    bgStyle: null,
   };
 }
 

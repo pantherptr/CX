@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { markEmpireStoryViewed, deleteEmpireStory, type EmpireStory } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
+import { StoryTextSlide } from './StoryTextSlide';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
 const SWIPE_THRESHOLD_PX = 60;
+const CLOSE_SWIPE_THRESHOLD_PX = 90;
 
 /** A video slide's progress bar (see below) tracks real playback via
  *  `timeupdate` instead of this fixed duration — an image slide has no
@@ -43,6 +46,8 @@ export function SignalStoryViewer({
   onDeleteStory?: (id: string) => Promise<{ error: string | null }>;
   deleteConfirmMessage?: string;
 }) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [storyIndex, setStoryIndex] = useState(startIndex);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -52,15 +57,24 @@ export function SignalStoryViewer({
   // the brief.
   const [videoProgress, setVideoProgress] = useState(0);
   const [muted, setMuted] = useState(true);
+  // Live vertical drag offset for the "pull down to close" gesture —
+  // 0 when at rest; the whole viewer follows the finger 1:1 via
+  // `translateY` for direct-manipulation feel, then either completes the
+  // close or snaps back on release (see handleTouchEnd).
+  const [dragY, setDragY] = useState(0);
+  const [closing, setClosing] = useState(false);
   const viewedRef = useRef<Set<string>>(new Set());
   const holdTimerRef = useRef<number | null>(null);
   const heldRef = useRef(false);
   const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const draggingVerticalRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const story = stories[storyIndex];
   const slide = story?.slides[slideIndex];
   const isVideo = slide?.mediaType === 'video';
+  const isText = slide?.mediaType === 'text';
 
   useEffect(() => {
     setVideoProgress(0);
@@ -103,6 +117,20 @@ export function SignalStoryViewer({
   if (!story || !slide) return null;
 
   const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient);
+  // Same real-account routing SignalPostCard's signalProfileHref uses —
+  // "cx"/"assistant" get the static official info block, everyone else
+  // (Owner's real row, or a Host/Verified Client's own Story) opens their
+  // real profile by id. Space-aware (Official vs Community) via the
+  // current pathname, same pattern used throughout Signal.
+  const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
+  const profileHref =
+    story.publisherType === 'cx' ? `${profileBase}/profile/cx`
+    : story.publisherType === 'assistant' ? `${profileBase}/profile/assistant`
+    : `${profileBase}/profile/${story.authorId}`;
+  const openProfile = () => {
+    onClose();
+    navigate(profileHref);
+  };
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {
@@ -147,12 +175,44 @@ export function SignalStoryViewer({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    draggingVerticalRef.current = false;
     startHold();
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const startX = touchStartXRef.current;
+    const startY = touchStartYRef.current;
+    if (startX === null || startY === null) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    // Once a gesture reads as "mostly downward," commit to the close-drag
+    // for the rest of this touch — a hold-to-pause no longer makes sense
+    // once the Story is visibly being dragged away, and a mixed
+    // diagonal gesture should pick one behavior, not both at once.
+    if (!draggingVerticalRef.current && dy > 12 && dy > Math.abs(dx)) {
+      draggingVerticalRef.current = true;
+      endHold();
+    }
+    if (draggingVerticalRef.current) {
+      setDragY(Math.max(0, dy));
+    }
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     endHold();
     const startX = touchStartXRef.current;
     touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    if (draggingVerticalRef.current) {
+      draggingVerticalRef.current = false;
+      heldRef.current = true; // suppress the tap-nav click that follows
+      if (dragY > CLOSE_SWIPE_THRESHOLD_PX) {
+        setClosing(true);
+        window.setTimeout(onClose, 200);
+      } else {
+        setDragY(0);
+      }
+      return;
+    }
     if (startX === null) return;
     const dx = e.changedTouches[0].clientX - startX;
     if (Math.abs(dx) > SWIPE_THRESHOLD_PX) {
@@ -173,7 +233,16 @@ export function SignalStoryViewer({
   };
 
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col bg-black animate-fade-in" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[300] flex flex-col bg-black animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      style={{
+        transform: `translateY(${closing ? '100%' : `${dragY}px`})`,
+        opacity: closing ? 0 : dragY > 0 ? Math.max(0.4, 1 - dragY / 400) : 1,
+        transition: dragY === 0 || closing ? 'transform 220ms ease-out, opacity 220ms ease-out' : 'none',
+      }}
+    >
       <div className="absolute inset-x-0 top-0 z-10 flex gap-1 px-2 pt-safe">
         {story.slides.map((s, i) => (
           <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
@@ -206,15 +275,17 @@ export function SignalStoryViewer({
       </div>
 
       <div className="relative z-10 flex h-14 items-center gap-2.5 px-4 pt-safe">
-        <SignalIdentityAvatar identity={identity} size={32} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
-            <SignalIdentityBadge identity={identity} size={13} />
-            <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+        <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
+          <SignalIdentityAvatar identity={identity} size={32} />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
+              <SignalIdentityBadge identity={identity} size={13} />
+              <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+            </div>
+            {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
           </div>
-          {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
-        </div>
+        </button>
         <div className="ml-auto flex items-center gap-1">
           {canManage && (
             <button
@@ -242,6 +313,7 @@ export function SignalStoryViewer({
         onMouseUp={endHold}
         onMouseLeave={endHold}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         {isVideo ? (
@@ -263,6 +335,15 @@ export function SignalStoryViewer({
             }}
             onEnded={goNextSlide}
             className="max-h-full max-w-full animate-fade-in object-contain"
+          />
+        ) : isText ? (
+          <StoryTextSlide
+            key={slide.id}
+            content={slide.textContent ?? ''}
+            align={slide.textAlign}
+            size={slide.textSize}
+            bg={slide.bgStyle}
+            className="animate-fade-in"
           />
         ) : (
           <img key={slide.id} src={slide.mediaUrl} alt="" className="max-h-full max-w-full animate-fade-in object-contain" />
