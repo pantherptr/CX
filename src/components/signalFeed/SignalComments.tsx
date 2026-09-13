@@ -139,11 +139,15 @@ export function SignalComments({
                   </div>
                   <p className="whitespace-pre-wrap break-words text-detail leading-snug text-ink-soft">{c.body}</p>
                 </div>
-                <div className="relative shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* Always visible at a quiet opacity, not hover-only — a
+                    `group-hover`-gated reveal never appears at all on a
+                    touch device, which made a comment's own Delete/Report
+                    effectively unreachable there. */}
+                <div className="relative shrink-0 opacity-60 transition-opacity hover:opacity-100">
                   <button
                     onClick={() => setOpenMenuId((v) => (v === c.id ? null : c.id))}
                     aria-label="Comment options"
-                    className="grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-panel"
+                    className="pressable grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-panel"
                   >
                     <Icon name="moreHorizontal" size={14} />
                   </button>
@@ -152,11 +156,11 @@ export function SignalComments({
                       <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
                       <div className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-lg border border-line bg-surface shadow-pop">
                         {isMine || canModerateAll ? (
-                          <button onClick={() => handleDelete(c.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-caption text-danger hover:bg-danger/5">
+                          <button onClick={() => handleDelete(c.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-caption text-danger transition-colors hover:bg-danger/5 active:bg-danger/5">
                             <Icon name="trash" size={13} /> Delete
                           </button>
                         ) : (
-                          <button onClick={() => handleReport(c.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-caption text-ink hover:bg-panel">
+                          <button onClick={() => handleReport(c.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-caption text-ink transition-colors hover:bg-panel active:bg-panel">
                             <Icon name="info" size={13} /> Report
                           </button>
                         )}

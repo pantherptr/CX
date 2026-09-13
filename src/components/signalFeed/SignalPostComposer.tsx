@@ -393,7 +393,7 @@ export function SignalPostComposer({
           <span className="min-w-0 flex-1 truncate text-detail font-medium text-ink">
             {selectedVehicle.make} {selectedVehicle.model} · {selectedVehicle.year}
           </span>
-          <button onClick={() => setSelectedVehicle(null)} aria-label="Remove vehicle" className="text-muted hover:text-danger">
+          <button onClick={() => setSelectedVehicle(null)} aria-label="Remove vehicle" className="pressable grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-danger">
             <Icon name="x" size={15} />
           </button>
         </div>

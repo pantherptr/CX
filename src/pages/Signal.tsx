@@ -115,7 +115,19 @@ export default function Signal() {
     refresh();
   };
 
-  const closeOverlay = () => navigate(base);
+  // Closing a post/profile/Story overlay reveals the feed that was already
+  // sitting, unanimated, underneath it (Signal.tsx never remounts on this
+  // navigation — see App.tsx's `pageKey`) — today that's an instant cut,
+  // the one real gap in this page's motion since every *entrance* already
+  // has `animate-scale-in`. `viewTransition` asks the browser to crossfade
+  // the outgoing detail view into that already-there feed for free (a
+  // no-op, not a double-animation, on browsers without the API — React
+  // Router falls back to a plain navigate). Deliberately not used on the
+  // *opening* Links (Trending, notifications, avatars) — those already get
+  // `animate-scale-in`'s entrance, and layering a second whole-page
+  // crossfade under it would be exactly the "double animation" the motion
+  // brief calls out to avoid.
+  const closeOverlay = () => navigate(base, { viewTransition: true });
 
   if (!session) {
     return (

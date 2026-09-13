@@ -341,7 +341,7 @@ export function SignalStoryComposer({
           ) : (
             <span className="font-display font-semibold text-ink">New Story</span>
           )}
-          <button onClick={onClose} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <button onClick={onClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
         </div>
@@ -442,18 +442,18 @@ export function SignalStoryComposer({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <span className="text-caption font-semibold text-ink-soft">Slide {i + 1}</span>
-                        <button onClick={() => moveSlide(i, -1)} disabled={i === 0} aria-label="Move earlier" className="grid h-6 w-6 place-items-center rounded-full text-muted hover:bg-panel disabled:opacity-30">
+                        <button onClick={() => moveSlide(i, -1)} disabled={i === 0} aria-label="Move earlier" className="pressable grid h-8 w-8 place-items-center rounded-full text-muted transition-colors hover:bg-panel disabled:opacity-30">
                           <Icon name="chevronLeft" size={13} />
                         </button>
-                        <button onClick={() => moveSlide(i, 1)} disabled={i === slides.length - 1} aria-label="Move later" className="grid h-6 w-6 place-items-center rounded-full text-muted hover:bg-panel disabled:opacity-30">
+                        <button onClick={() => moveSlide(i, 1)} disabled={i === slides.length - 1} aria-label="Move later" className="pressable grid h-8 w-8 place-items-center rounded-full text-muted transition-colors hover:bg-panel disabled:opacity-30">
                           <Icon name="chevronRight" size={13} />
                         </button>
                         {slide.mediaType !== 'text' && (
-                          <button onClick={() => patchSlide(i, { showDetails: !slide.showDetails })} className="ml-auto text-caption font-medium text-accent-700">
+                          <button onClick={() => patchSlide(i, { showDetails: !slide.showDetails })} className="pressable ml-auto text-caption font-medium text-accent-700">
                             {slide.showDetails ? 'Hide details' : 'Caption & link'}
                           </button>
                         )}
-                        <button onClick={() => removeSlide(i)} aria-label="Remove slide" className={`text-muted hover:text-danger ${slide.mediaType === 'text' ? 'ml-auto' : ''}`}>
+                        <button onClick={() => removeSlide(i)} aria-label="Remove slide" className={`pressable grid h-8 w-8 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-danger ${slide.mediaType === 'text' ? 'ml-auto' : ''}`}>
                           <Icon name="x" size={15} />
                         </button>
                       </div>

@@ -15,6 +15,7 @@ import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalPostComposer } from './SignalPostComposer';
 import { SignalComments } from './SignalComments';
+import { vibrateTap } from '../motion';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -265,6 +266,7 @@ export function SignalPostCard({
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
+  const [savePop, setSavePop] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
   const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient);
@@ -294,6 +296,7 @@ export function SignalPostCard({
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     if (!post.likedByMe) {
       setLikeBounce(true);
+      vibrateTap();
       window.setTimeout(() => setLikeBounce(false), 300);
     }
     const { error } = await toggleEmpirePostLike(post.id);
@@ -302,6 +305,11 @@ export function SignalPostCard({
 
   const handleSave = async () => {
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
+    if (!post.savedByMe) {
+      setSavePop(true);
+      vibrateTap();
+      window.setTimeout(() => setSavePop(false), 220);
+    }
     const { error } = await toggleEmpirePostSave(post.id);
     if (error) onChanged(post);
   };
@@ -406,11 +414,11 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-2.5 p-3 pb-2 sm:px-4">
-        <Link to={signalProfileHref(post, profileBase)} className="shrink-0">
+        <Link to={signalProfileHref(post, profileBase)} viewTransition className="shrink-0">
           <SignalIdentityAvatar identity={identity} size={36} />
         </Link>
         <div className="min-w-0 flex-1">
-          <Link to={signalProfileHref(post, profileBase)} className="flex items-center gap-1.5 hover:underline">
+          <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex items-center gap-1.5 hover:underline">
             <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
             <SignalIdentityBadge identity={identity} />
           </Link>
@@ -439,25 +447,25 @@ export function SignalPostCard({
                       copy-link already lives on the always-visible Share
                       button below, this is specifically the "send it to
                       a real CX Rent conversation" path from the brief. */}
-                  <button onClick={() => { setMenuOpen(false); setShareSheetOpen(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                  <button onClick={() => { setMenuOpen(false); setShareSheetOpen(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                     <Icon name="send" size={15} /> Share to Messages
                   </button>
                   {canModerate ? (
                     <>
-                      <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                      <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                         <Icon name="edit" size={15} /> Edit post
                       </button>
                       {canManage && (
                         <>
-                          <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                          <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                             <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
                           </button>
-                          <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                          <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                             <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
                           </button>
                         </>
                       )}
-                      <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger hover:bg-danger/5">
+                      <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger transition-colors hover:bg-danger/5 active:bg-danger/5">
                         <Icon name="trash" size={15} /> Delete post
                       </button>
                     </>
@@ -467,7 +475,7 @@ export function SignalPostCard({
                     // the action row below, so the only thing left to
                     // offer here is Report (same RPC/pattern
                     // SignalComments.tsx already uses for a comment).
-                    <button onClick={handleReport} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                    <button onClick={handleReport} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                       <Icon name="info" size={15} /> Report post
                     </button>
                   )}
@@ -579,7 +587,7 @@ export function SignalPostCard({
             post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
           }`}
         >
-          <Icon name="bookmark" size={17} fill={post.savedByMe} />
+          <Icon name="bookmark" size={17} fill={post.savedByMe} className={savePop ? 'animate-save-pop' : ''} />
           {post.savedByMe ? 'Saved' : 'Save'}
         </button>
         <button onClick={handleShare} className="pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">

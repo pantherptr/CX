@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toggleProfileFollow } from '../../lib/data/signalProfile';
+import { vibrateTap } from '../motion';
 
 /** Follow/Following toggle for a Community profile (Host or Verified
  *  Client) — the one new piece of social graph this brief asks for, on
@@ -20,11 +21,17 @@ export function FollowButton({
 }) {
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
+  const [justFollowed, setJustFollowed] = useState(false);
 
   const handleClick = async () => {
     if (busy) return;
     const next = !following;
     setFollowing(next);
+    if (next) {
+      vibrateTap();
+      setJustFollowed(true);
+      window.setTimeout(() => setJustFollowed(false), 200);
+    }
     setBusy(true);
     const { following: confirmed, error } = await toggleProfileFollow(userId);
     setBusy(false);
@@ -41,13 +48,14 @@ export function FollowButton({
       onClick={handleClick}
       disabled={busy}
       aria-pressed={following}
-      className={`pressable group rounded-full font-semibold transition-colors duration-200 disabled:opacity-60 ${
+      className={`pressable group rounded-full font-semibold disabled:opacity-60 ${
         size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'
       } ${
         following
           ? 'border border-line text-ink-soft hover:border-danger/40 hover:bg-danger/5 hover:text-danger'
           : 'bg-ink text-white hover:bg-ink/90'
-      }`}
+      } ${justFollowed ? 'scale-[1.08]' : 'scale-100'}`}
+      style={{ transition: 'transform 200ms var(--ease-out-expo), background-color 200ms, color 200ms, border-color 200ms' }}
     >
       {following ? (
         <>

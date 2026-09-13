@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
+import { useSheetDrag } from '../motion';
 import {
   useConversations, sendMessage, findOrCreateConversation, searchUsersForMessaging,
   type MessagingSearchResult,
@@ -20,6 +21,7 @@ import { incrementEmpirePostShare, type EmpirePost } from '../../lib/data/empire
 export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onClose: () => void }) {
   const { toast } = useApp();
   const { session } = useAuth();
+  const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
   const { conversations } = useConversations(session?.user.id);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MessagingSearchResult[] | null>(null);
@@ -53,7 +55,7 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
     }
     void incrementEmpirePostShare(post.id);
     toast({ title: 'Post sent', icon: 'check' });
-    onClose();
+    requestClose();
   };
 
   const sendToConversation = async (rowId: string, conversationId: string) => {
@@ -85,11 +87,22 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
   const showingSearch = query.trim().length >= 2;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center" role="dialog" aria-modal="true">
-      <div className="flex max-h-[75vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface sm:max-w-sm sm:rounded-2xl">
-        <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+    <div
+      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
+      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="flex max-h-[75vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:max-w-sm sm:rounded-2xl"
+        style={dragStyle}
+      >
+        <div {...dragHandlers} className="flex flex-col items-center pt-2 sm:hidden">
+          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
+        </div>
+        <div {...dragHandlers} className="flex items-center gap-2 border-b border-line px-5 py-4">
           <span className="font-display font-semibold text-ink">Share Post</span>
-          <button onClick={onClose} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
         </div>

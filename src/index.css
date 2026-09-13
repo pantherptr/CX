@@ -70,6 +70,17 @@
   /* Easing */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Motion durations — one shared scale so every new interaction picks
+     from the same table instead of a fresh hand-picked number. Existing,
+     already-tuned animations (respect-pop, the Story viewer, pull-to-
+     refresh, etc.) are left on their own hard-coded values rather than
+     retrofitted onto these — this scale is for new work going forward. */
+  --dur-micro: 150ms;   /* tap feedback, small icon pops */
+  --dur-button: 160ms;  /* button state changes */
+  --dur-nav: 220ms;     /* nav/tab switches */
+  --dur-page: 260ms;    /* page/overlay transitions, view-transition root */
+  --dur-story: 300ms;   /* Story-scale immersive transitions */
+
   /* Type scale — the named steps this UI actually uses. Before these
      existed the codebase carried 21 distinct arbitrary sizes, including
      half-pixel values (13.5px, 14.5px…) that no system would specify;
@@ -403,6 +414,28 @@
     100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0, 212, 71, 0)); }
   }
   .animate-respect-pop { animation: respect-pop 0.26s var(--ease-out-expo, ease-out); }
+
+  /* Save's own tap — deliberately a different shape from Respect's smooth
+     balloon pop (both share the same accent color, so the motion itself
+     has to carry the distinction): a quick "tuck" — overshoot small,
+     overshoot big, settle — like a bookmark snapping into a slot. */
+  @keyframes save-pop {
+    0% { transform: scale(1) rotate(0deg); }
+    35% { transform: scale(0.82) rotate(-6deg); }
+    70% { transform: scale(1.18) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .animate-save-pop { animation: save-pop var(--dur-button) var(--ease-out-expo, ease-out); }
+
+  /* Shared bottom-sheet entrance — slide up + fade, for any action sheet
+     (Share, Analytics, …) that wants the native "sheet" feel instead of a
+     plain fade/scale. Exit is handled in JS (a `closing` flag driving an
+     inline transform), this class only ever plays forward on mount. */
+  @keyframes sheet-in {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-sheet-in { animation: sheet-in var(--dur-page) var(--ease-out-expo) backwards; }
 
   /* The Signal nav icon's "live signal" effect (BottomNav.tsx, active tab
      only) — a soft highlight sweeping through the logo's own silhouette.
@@ -1383,6 +1416,29 @@
   @keyframes vehicle-sparkle-twinkle {
     0%, 100% { opacity: 0; transform: scale(0.5); }
     50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* React Router's native View Transitions integration (navigate(to,
+     { viewTransition: true }) / <Link viewTransition>) — used for Signal's
+     Official<->Community switch and post/profile overlay open+close so
+     they crossfade+scale as one connected motion instead of an abrupt
+     cut. No per-element view-transition-name is assigned anywhere (the
+     feed stays mounted under these overlays, and duplicate names across
+     many simultaneously-mounted cards would silently break the
+     transition) — this is deliberately the safe, whole-view treatment,
+     not a per-element shared-element morph. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--dur-page);
+    animation-timing-function: var(--ease-out-expo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

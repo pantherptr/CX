@@ -29,9 +29,9 @@ export function SignalSearchOverlay({ onClose }: { onClose: () => void }) {
   }, [query]);
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col bg-bg" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[250] flex flex-col bg-bg animate-scale-in" role="dialog" aria-modal="true">
       <div className="flex items-center gap-2 border-b border-line px-4 py-3 pt-safe">
-        <button onClick={onClose} aria-label="Close search" className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
+        <button onClick={onClose} aria-label="Close search" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
           <Icon name="chevronLeft" size={20} />
         </button>
         <div className="relative flex-1">

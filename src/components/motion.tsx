@@ -3,14 +3,85 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ImgHTMLAttributes,
   type ReactNode,
   type RefObject,
+  type TouchEvent as ReactTouchEvent,
 } from 'react';
 
 const prefersReduced = () =>
   typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** Subtle, optional haptic tap — Follow/Respect/Save's "it landed" cue on
+ *  devices that support the Vibration API (most Android browsers; Safari
+ *  never does). Always feature-detected and wrapped, never load-bearing:
+ *  every one of these actions already has a visual confirmation, this is
+ *  just an extra touch of polish where the hardware allows it. */
+export function vibrateTap(pattern: number | number[] = 8) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(pattern);
+  } catch {
+    // Vibration API can throw in some embedded/iframe contexts — never
+    // worth surfacing to the user over a haptic nicety.
+  }
+}
+
+/**
+ * Vertical drag-to-dismiss for a bottom sheet — the same direct-
+ * manipulation idea `SignalStoryViewer`'s pull-down-to-close already
+ * proved out, generalized so every action sheet doesn't hand-roll its
+ * own copy. Attach `handlers` to the sheet's drag zone (its header/handle,
+ * not the whole scrollable body — a drag must never fight the sheet's own
+ * scroll), and `style` to the sheet panel itself. Call `requestClose`
+ * instead of the raw close callback from a button so it plays the same
+ * exit motion a completed swipe does, instead of vanishing instantly.
+ */
+export function useSheetDrag(onClose: () => void, opts?: { closeThreshold?: number }) {
+  const threshold = opts?.closeThreshold ?? 90;
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const startYRef = useRef<number | null>(null);
+
+  const requestClose = useCallback(() => {
+    setDragging(false);
+    setClosing(true);
+    window.setTimeout(onClose, 200);
+  }, [onClose]);
+
+  const onTouchStart = (e: ReactTouchEvent) => {
+    startYRef.current = e.touches[0].clientY;
+  };
+  const onTouchMove = (e: ReactTouchEvent) => {
+    if (startYRef.current === null) return;
+    const dy = e.touches[0].clientY - startYRef.current;
+    if (dy <= 0) return;
+    setDragging(true);
+    setDragY(dy);
+  };
+  const onTouchEnd = () => {
+    startYRef.current = null;
+    if (!dragging) return;
+    setDragging(false);
+    if (dragY > threshold) requestClose();
+    else setDragY(0);
+  };
+
+  const style: CSSProperties = {
+    transform: closing ? 'translateY(100%)' : `translateY(${dragY}px)`,
+    opacity: closing ? 0 : undefined,
+    transition: dragging ? 'none' : 'transform 220ms var(--ease-out-expo), opacity 220ms var(--ease-out-expo)',
+  };
+
+  return {
+    handlers: { onTouchStart, onTouchMove, onTouchEnd },
+    style,
+    closing,
+    requestClose,
+  };
+}
 
 /**
  * Scroll-reveal wrapper. Children start hidden and ease up into place the

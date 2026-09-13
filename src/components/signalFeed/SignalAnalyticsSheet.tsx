@@ -4,6 +4,7 @@ import { fetchEmpireAnalytics, type EmpireAnalytics } from '../../lib/data/empir
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
+import { useSheetDrag } from '../motion';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -33,6 +34,7 @@ function TopPostRow({ label, item }: { label: string; item: { title: string; cou
  *  server-side same as every other Signal write/read that matters. */
 export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
   const { profile } = useAuth();
+  const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
   const [data, setData] = useState<EmpireAnalytics | 'error' | null>(null);
 
   useEffect(() => {
@@ -42,12 +44,23 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
   const trendDelta = data && data !== 'error' ? data.engagementLast7d - data.engagementPrev7d : 0;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center" role="dialog" aria-modal="true">
-      <div className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface sm:max-w-md sm:rounded-2xl">
-        <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+    <div
+      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
+      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:max-w-md sm:rounded-2xl"
+        style={dragStyle}
+      >
+        <div {...dragHandlers} className="flex flex-col items-center pt-2 sm:hidden">
+          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
+        </div>
+        <div {...dragHandlers} className="flex items-center gap-2 border-b border-line px-5 py-4">
           <Icon name="chart" size={18} className="text-ink-soft" />
           <span className="font-display font-semibold text-ink">Signal Analytics</span>
-          <button onClick={onClose} aria-label="Close" className="ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
         </div>
