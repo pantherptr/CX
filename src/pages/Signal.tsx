@@ -9,7 +9,6 @@ import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer'
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalCategoryFilter } from '../components/signalFeed/SignalCategoryFilter';
-import { SignalCommunityDiscoveryFilter, type CommunityDiscoveryFilter } from '../components/signalFeed/SignalCommunityDiscoveryFilter';
 import { SignalTrendingSection } from '../components/signalFeed/SignalTrendingSection';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
@@ -20,7 +19,7 @@ import { SignalQuickControl } from '../components/signalFeed/SignalQuickControl'
 import { SignalStoryViewer } from '../components/signalFeed/SignalStoryViewer';
 import { useAuth } from '../lib/auth';
 import {
-  useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, useEmpireTrendingPosts, markEmpireFeedSeen,
+  useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, markEmpireFeedSeen,
   fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpireCategory,
 } from '../lib/data/empireFeed';
 import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '../lib/data/empireHighlights';
@@ -32,9 +31,11 @@ import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '..
  *  - **Official** (`/signal`, the default) — "CX Rent speaks": Owner/CX
  *    Assistant/CX only, editorial ordering, Pinned/Featured/Highlights.
  *  - **Community** (`/signal/community`) — "the CX Rent community
- *    speaks": real Hosts/Verified Clients under their own identity,
- *    plain-recency feed, a Discovery filter row instead of Pinned/
- *    Featured/Highlights (which stay Official-only editorial tools).
+ *    speaks": real Hosts/Verified Clients under their own identity, one
+ *    plain-recency feed, no filters/tabs — Stories, an eligible-user
+ *    composer, then every Community post in order. Pinned/Featured/
+ *    Highlights stay Official-only editorial tools; Community
+ *    deliberately has no equivalent — it's a feed, not a dashboard.
  *
  *  `publisher_type` already encodes this split (`owner`/`assistant`/`cx`
  *  = Official, `self` = Community) — see
@@ -66,21 +67,17 @@ export default function Signal() {
   const canPostHere = space === 'official' ? canManage : canPublishSelf;
 
   const [category, setCategory] = useState<EmpireCategory | null>(null);
-  const [communityFilter, setCommunityFilter] = useState<CommunityDiscoveryFilter>('new');
-  const communityCategory = communityFilter === 'vehicles' ? 'new_car' : null;
-  const communityAuthorKind = communityFilter === 'hosts' ? 'host' : communityFilter === 'verified_clients' ? 'verified_client' : undefined;
 
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
-  const communityFeed = useEmpireFeed(communityCategory, { scope: 'community', authorKind: communityAuthorKind });
+  const communityFeed = useEmpireFeed(null, { scope: 'community' });
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost } =
     space === 'official' ? officialFeed : communityFeed;
-
-  const popular = useEmpireTrendingPosts({ scope: 'community' }, 20);
 
   const pinned = useEmpirePinnedPost();
   const featured = useEmpireFeaturedPosts();
   const { highlights } = useEmpireHighlights();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [storyComposerOpen, setStoryComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [myPostsOpen, setMyPostsOpen] = useState(false);
@@ -123,9 +120,6 @@ export default function Signal() {
   }
 
   const highlightIndex = highlightId && highlights ? highlights.findIndex((h) => h.id === highlightId) : -1;
-  const communityPosts = communityFilter === 'popular' ? popular.posts : posts;
-  const communityPatchPost = communityFilter === 'popular' ? popular.patchPost : communityFeed.patchPost;
-  const communityRemovePost = communityFilter === 'popular' ? popular.removePost : communityFeed.removePost;
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
@@ -147,7 +141,19 @@ export default function Signal() {
           scope={space}
           canCreate={canPostHere}
           canManage={canManage}
+          composerOpen={storyComposerOpen}
+          onOpenComposer={() => setStoryComposerOpen(true)}
+          onCloseComposer={() => setStoryComposerOpen(false)}
         />
+        {/* Keyed by `space` alone (not the fuller `pathname`, which also
+            changes for every post/profile overlay) — Signal.tsx itself
+            no longer remounts on any internal navigation (see App.tsx's
+            `pageKey`), so switching Official<->Community now needs its
+            own small, scoped animation to still read as a deliberate
+            transition rather than an abrupt content swap. Reuses the
+            same fade+rise every post card already animates in with —
+            one motion vocabulary, not a second one invented for this. */}
+        <div key={space} className="animate-fade-up">
         {space === 'official' && <SignalHighlightsBar canManage={canManage} />}
 
         {space === 'official' && pinned.post && (
@@ -199,19 +205,15 @@ export default function Signal() {
           )
         )}
 
-        {space === 'official' ? (
-          <SignalCategoryFilter value={category} onChange={setCategory} />
-        ) : (
-          <SignalCommunityDiscoveryFilter value={communityFilter} onChange={setCommunityFilter} />
-        )}
+        {space === 'official' && <SignalCategoryFilter value={category} onChange={setCategory} />}
 
-        {(space === 'official' ? posts : communityPosts) === null ? (
+        {posts === null ? (
           <>
             <SignalPostSkeleton />
             <SignalPostSkeleton />
             <SignalPostSkeleton />
           </>
-        ) : (space === 'official' ? posts! : communityPosts!).length === 0 ? (
+        ) : posts.length === 0 ? (
           <div className="py-24 text-center">
             <SignalLogo size={48} className="mx-auto opacity-50" />
             <p className="mt-4 text-body text-muted">
@@ -220,27 +222,18 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {(space === 'official' ? posts! : communityPosts!).map((post) => (
+            {posts.map((post) => (
               <SignalPostCard
                 key={post.id}
                 post={post}
                 canManage={canManage}
-                onChanged={(updated) => (space === 'official' ? patchPost(post.id, updated) : communityPatchPost(post.id, updated))}
-                onDeleted={(id) => (space === 'official' ? removePost(id) : communityRemovePost(id))}
+                onChanged={(updated) => patchPost(post.id, updated)}
+                onDeleted={(id) => removePost(id)}
                 onPinToggled={resyncAfterPin}
                 onFeaturedToggled={resyncAfterFeature}
               />
             ))}
-            {space === 'official' && hasMore && (
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="btn btn-secondary btn-block disabled:opacity-50"
-              >
-                {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
-            )}
-            {space === 'community' && communityFilter !== 'popular' && hasMore && (
+            {hasMore && (
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
@@ -253,6 +246,7 @@ export default function Signal() {
         )}
 
         {space === 'official' && category === null && <SignalTrendingSection scope="official" />}
+        </div>
       </main>
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}
@@ -283,10 +277,32 @@ export default function Signal() {
         items={[
           { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
           { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
+          // A Host/Verified Client gets one-tap Create Post/Add Story from
+          // anywhere in Signal — both jump to Community first (Community
+          // is the only space they can publish into) then open the same
+          // composer the feed's own inline trigger uses, never a second
+          // creation flow. Owner/Admin keep their existing Official
+          // composer entry point inline in the feed, unchanged — this menu
+          // isn't where they publish today, so it isn't where this adds
+          // shortcuts either. A plain Client (can't publish anywhere) gets
+          // neither row, and no "My Posts" (nothing to list).
+          ...(canPublishSelf
+            ? [
+                {
+                  label: 'Create Post', icon: 'plus' as const,
+                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setComposerOpen(true); },
+                },
+                {
+                  label: 'Add Story', icon: 'camera' as const, groupEnd: true,
+                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setStoryComposerOpen(true); },
+                },
+              ]
+            : []),
+          ...(canManage || canPublishSelf
+            ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
+            : []),
           { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
-          { label: 'My Posts', icon: 'image', onSelect: () => setMyPostsOpen(true) },
           { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
-          { label: 'Explore', icon: 'search', onSelect: () => setSearchOpen(true) },
         ]}
       />
 

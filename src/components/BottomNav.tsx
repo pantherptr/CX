@@ -307,12 +307,33 @@ export function BottomNav() {
                     width: 23,
                     height: 23,
                     transform: active ? 'translate(0, -13px) scale(1.08)' : 'translate(0, -9px)',
-                    filter: active
-                      ? 'drop-shadow(0 0 10px rgba(0,212,71,0.55)) drop-shadow(0 2px 5px rgba(0,0,0,0.22))'
-                      : 'drop-shadow(0 1px 3px rgba(0,0,0,0.16))',
                     transitionTimingFunction: EASE,
                   }}
                 >
+                  {/* An ambient glow BEHIND the mark, never a filter ON it —
+                      `drop-shadow` used to sit directly on this whole
+                      composited layer, and at this icon's actual ~30px
+                      size a 10px saturated-green blur blooms clean through
+                      the artwork's own semi-transparent edges, reading as
+                      "the logo turned a different green" between active/
+                      inactive rather than as a light source behind it. This
+                      radial-gradient span paints strictly behind CxsLogo
+                      (lower in DOM order, no shared stacking context with
+                      it), so cxs.png itself never carries any filter/blend
+                      in any state — see CxsLogo.tsx's own header comment. */}
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-[width,height,opacity] duration-300"
+                    style={{
+                      width: active ? 30 : 22,
+                      height: active ? 30 : 22,
+                      background: active
+                        ? 'radial-gradient(circle, rgba(0,212,71,0.5) 0%, rgba(0,212,71,0) 72%)'
+                        : 'radial-gradient(circle, rgba(22,22,26,0.16) 0%, rgba(22,22,26,0) 72%)',
+                      filter: 'blur(3px)',
+                      transitionTimingFunction: EASE,
+                    }}
+                  />
                   {/* Absolute + translate(-50%,-50%), not CSS Grid's
                       place-items:center — Grid's auto-centering of an
                       oversized item turns out to only behave reliably for

@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, useLocation, Navigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -52,9 +52,28 @@ const SignalMetricsPreview = import.meta.env.DEV
   ? lazy(() => import('./pages/dev/SignalMetricsPreview'))
   : null;
 
+// Every /signal* path (Official, Community, and both spaces' post/profile/
+// highlight overlays) renders the same <Signal/> shell — see the `pageKey`
+// use below and SIGNAL_ROUTE's twin in BottomNav.tsx.
+const SIGNAL_ROUTE = /^\/signal(\/|$)/;
+// Which of the two spaces a Signal path belongs to, or null outside Signal
+// entirely — used to tell "opened/closed an overlay, same space" (keep
+// scroll — Signal.tsx owns one scrollable feed underneath any overlay,
+// and resetting it here would throw away the reader's place every time
+// they open then close a post) apart from "switched Official<->Community"
+// (a genuinely different feed — scroll to top like any tab switch).
+function signalSpaceOf(pathname: string): 'official' | 'community' | null {
+  if (!SIGNAL_ROUTE.test(pathname)) return null;
+  return pathname.startsWith('/signal/community') ? 'community' : 'official';
+}
+
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
+  const prevPathname = useRef(pathname);
   useEffect(() => {
+    const prevSpace = signalSpaceOf(prevPathname.current);
+    prevPathname.current = pathname;
+    if (prevSpace && prevSpace === signalSpaceOf(pathname)) return;
     if (!hash) {
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       return;
@@ -176,12 +195,23 @@ export default function App() {
   const location = useLocation();
   const splash = useSplash();
   const bottomNavVisible = useBottomNavVisible();
+  // One stable key for the whole /signal* family instead of the raw
+  // pathname — every variant (Official, Community, and both spaces' post/
+  // profile/highlight overlays) renders the same <Signal/> shell, and
+  // keying by the exact pathname forced React to fully unmount and
+  // remount it — refetching the feed, Stories, pinned/featured, and
+  // resetting scroll — on every single overlay open/close or space
+  // switch. Signal.tsx already derives everything it needs (space, which
+  // overlay if any) reactively from useLocation()/useParams(), so it
+  // never needed a fresh mount for any of this in the first place. Every
+  // other route keeps its exact previous per-pathname remount behavior.
+  const pageKey = SIGNAL_ROUTE.test(location.pathname) ? '/signal' : location.pathname;
   return (
     <>
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} />}
       <ScrollToTop />
       <MaintenanceGate>
-      <div key={location.pathname} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
+      <div key={pageKey} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
           deliberately quiet — a centred marque rather than a full-screen
           splash — because these chunks resolve in a few hundred ms on a

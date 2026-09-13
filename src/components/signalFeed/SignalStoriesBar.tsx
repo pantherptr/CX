@@ -22,19 +22,29 @@ import { SignalStoryComposer } from './SignalStoryComposer';
  *  *this* space may start a Story in it. `canManage` is the separate,
  *  always-admin moderation flag (deleting a Story inside the viewer) —
  *  Story deletion stays Owner/Admin-only in both spaces for now, even
- *  though Community's own `canCreate` is a broader, non-admin flag. */
+ *  though Community's own `canCreate` is a broader, non-admin flag.
+ *  `composerOpen`/`onOpenComposer`/`onCloseComposer` are controlled by
+ *  the parent (Signal.tsx), not local state — the Quick Control's own
+ *  "Add Story" shortcut needs to open this exact same composer instance,
+ *  not a second one, so whichever trigger fires first must share state
+ *  with the other. */
 export function SignalStoriesBar({
   scope,
   canCreate,
   canManage,
+  composerOpen,
+  onOpenComposer,
+  onCloseComposer,
 }: {
   scope: 'official' | 'community';
   canCreate: boolean;
   canManage: boolean;
+  composerOpen: boolean;
+  onOpenComposer: () => void;
+  onCloseComposer: () => void;
 }) {
   const { stories: allStories, refresh } = useActiveEmpireStories();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [composerOpen, setComposerOpen] = useState(false);
 
   const stories = allStories?.filter((s) =>
     scope === 'official' ? s.publisherType !== 'self' : s.publisherType === 'self'
@@ -59,7 +69,7 @@ export function SignalStoriesBar({
     <>
       <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
         {canCreate && (
-          <button onClick={() => setComposerOpen(true)} className="pressable flex shrink-0 flex-col items-center gap-1">
+          <button onClick={onOpenComposer} className="pressable flex shrink-0 flex-col items-center gap-1">
             <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-accent hover:text-accent-700">
               <Icon name="plus" size={20} />
             </span>
@@ -102,8 +112,8 @@ export function SignalStoriesBar({
       {composerOpen && (
         <SignalStoryComposer
           mode={scope === 'community' ? 'self' : 'official'}
-          onClose={() => setComposerOpen(false)}
-          onPublished={() => { setComposerOpen(false); refresh(); }}
+          onClose={onCloseComposer}
+          onPublished={() => { onCloseComposer(); refresh(); }}
         />
       )}
     </>

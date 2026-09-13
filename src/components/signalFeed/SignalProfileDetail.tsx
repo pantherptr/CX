@@ -70,7 +70,7 @@ export function SignalProfileDetail({
   }, [authorId, isOfficialVoice]);
 
   return (
-    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg">
+    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-4 py-3 backdrop-blur-md pt-safe">
         <button onClick={onClose} aria-label="Back to Signal" className="grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
           <Icon name="chevronLeft" size={20} />
