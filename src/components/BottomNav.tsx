@@ -36,34 +36,99 @@ const items: Item[] = [
 const SIGNAL_INDEX = items.findIndex((it) => it.label === 'Signal');
 const EASE = 'cubic-bezier(0.16,1,0.3,1)';
 
-// Signal's raised section is a real shaped piece of the bar's own surface
-// (clip-path on a solid glass layer), not an icon floating on a separate
-// blob — this is what makes it read as "the navbar rises here" rather than
-// a button glued on top. Geometry lives in a narrow, short box centered on
-// Signal's column; everything left/right of it is the bar's own untouched
-// flat top edge and border. Deliberately a small architectural lift, not a
-// hill — HILL_RISE/HILL_WIDTH were both cut roughly in half from an earlier,
-// much taller/wider pass that read as an oversized bump rather than an
-// integrated part of the bar.
+// Signal's raised section is a real shaped piece of the bar's own surface —
+// not an icon floating on a separate blob, and (see below) not a separate
+// glass panel floating over the flat bar either. Geometry lives in a
+// narrow band centered on Signal's column; everything left/right of it is
+// the bar's own untouched flat top edge and border. Deliberately a small
+// architectural lift, not a hill — HILL_RISE/HILL_WIDTH_FRACTION were both
+// cut roughly in half from an earlier, much taller/wider pass that read as
+// an oversized bump rather than an integrated part of the bar.
 const HILL_RISE = 18; // px the plateau sits above the bar's flat top edge — just enough for
 // the logo (see the Link below) to clear it with a small, deliberate gap, not the large
 // clearance a bigger hill needed.
-const HILL_WIDTH = '24%'; // narrow enough to read as "a small bump around the logo", not a
-// shape bulging into the neighboring Explore/Messages columns.
-const HILL_BOX_HEIGHT = 27; // px — extends 9px back down into the bar for a seamless join
-const HILL_FLAT_Y = HILL_RISE / HILL_BOX_HEIGHT; // fraction: where the flat sides sit (≈0.667)
+const HILL_WIDTH_FRACTION = 0.24; // 24% of the bar's own width — narrow enough to read as "a
+// small bump around the logo", not a shape bulging into the neighboring Explore/Messages columns.
+const HILL_LEFT = (1 - HILL_WIDTH_FRACTION) / 2; // 0.38 — centers the bump on the bar
+const HILL_RIGHT = HILL_LEFT + HILL_WIDTH_FRACTION; // 0.62
+// The four x-breakpoints from the original small-hill curve (0, 0.175,
+// 0.265, 0.3275, 0.3875, 0.6125, 0.6725, 0.735, 0.825, 1 — fractions
+// *within the bump's own span*) remapped into fractions of the FULL bar
+// width, so the exact same curve shape now sits inside one single surface
+// instead of a separately-clipped panel. `t` -> `HILL_LEFT + t * HILL_WIDTH_FRACTION`.
+const X = {
+  left: HILL_LEFT,
+  upStart: HILL_LEFT + 0.175 * HILL_WIDTH_FRACTION,
+  upCp1: HILL_LEFT + 0.265 * HILL_WIDTH_FRACTION,
+  upCp2: HILL_LEFT + 0.3275 * HILL_WIDTH_FRACTION,
+  peakStart: HILL_LEFT + 0.3875 * HILL_WIDTH_FRACTION,
+  peakEnd: HILL_LEFT + 0.6125 * HILL_WIDTH_FRACTION,
+  downCp1: HILL_LEFT + 0.6725 * HILL_WIDTH_FRACTION,
+  downCp2: HILL_LEFT + 0.735 * HILL_WIDTH_FRACTION,
+  downEnd: HILL_RIGHT,
+};
+const round4 = (n: number) => Math.round(n * 10000) / 10000;
 
-// Flat -> smooth S-curve up -> flat plateau (where the logo sits) -> S-curve down -> flat.
-// The same top contour is authored twice at two scales so the visible rim (stroke) lines up
-// exactly with the fill's own edge — the "line" the user sees really is the edge of the raised
-// section, not a separate floating shape. Fill uses objectBoundingBox fractions (0-1) closed
-// down to the box's bottom; the stroke is the open top contour only, scaled ×100 for its
-// viewBox, so both trace the identical curve.
-const HILL_CLIP_PATH =
-  `M0,${HILL_FLAT_Y} L0.175,${HILL_FLAT_Y} C0.265,${HILL_FLAT_Y} 0.3275,0 0.3875,0 ` +
-  `L0.6125,0 C0.6725,0 0.735,${HILL_FLAT_Y} 0.825,${HILL_FLAT_Y} L1,${HILL_FLAT_Y} L1,1 L0,1 Z`;
-const FY = Math.round(HILL_FLAT_Y * 1000) / 10; // same fraction, ×100 for the 0-100 viewBox
-const HILL_STROKE_PATH = `M0,${FY} L17.5,${FY} C26.5,${FY} 32.75,0 38.75,0 L61.25,0 C67.25,0 73.5,${FY} 82.5,${FY} L100,${FY}`;
+/** The whole bar's one and only background fill — flat everywhere except
+ *  a smooth S-curve rise over the Signal column — as a single
+ *  objectBoundingBox clip-path on ONE element the full height of the bar
+ *  plus `HILL_RISE`. This used to be two separately-clipped `.glass`
+ *  panels (the flat bar, and a small independently-blurred hill panel
+ *  floating above it): each one individually looked right, but two
+ *  distinct backdrop-blur regions never actually compose into one
+ *  continuous surface — the hill panel sampled slightly different page
+ *  content behind it than the flat bar did, so it rendered visibly
+ *  brighter/whiter with a hard seam at its edge, reading as a separate
+ *  white button glued on top rather than part of the bar. One shared
+ *  element with one shared blur instance can't have that seam by
+ *  construction. `flatY` (the fraction of this taller box's own height
+ *  where the flat sides sit) depends on the bar's real rendered height,
+ *  which varies with the safe-area inset — measured live via
+ *  `useMeasuredHeight` below rather than assumed, so the bump's
+ *  proportions stay correct on every device instead of guessing one
+ *  fixed number. */
+function buildNavClipPath(flatY: number): string {
+  const f = round4(flatY);
+  return (
+    `M0,${f} L${round4(X.left)},${f} ` +
+    `C${round4(X.upCp1)},${f} ${round4(X.upCp2)},0 ${round4(X.peakStart)},0 ` +
+    `L${round4(X.peakEnd)},0 ` +
+    `C${round4(X.downCp1)},0 ${round4(X.downCp2)},${f} ${round4(X.downEnd)},${f} ` +
+    `L1,${f} L1,1 L0,1 Z`
+  );
+}
+
+// The visible rim (stroke) traces the identical curve, scaled ×100 for its
+// own 0-100 viewBox — unaffected by the fill's unification above, since it
+// was always drawn as its own thin decorative line over the same geometry,
+// never the source of the white-panel seam.
+const HILL_STROKE_FY = 66.7; // (HILL_RISE / the rim's own fixed 27px box) × 100 — a fixed
+// decorative line height independent of the bar's real height, unlike the fill.
+const HILL_STROKE_PATH =
+  `M0,${HILL_STROKE_FY} L17.5,${HILL_STROKE_FY} C26.5,${HILL_STROKE_FY} 32.75,0 38.75,0 ` +
+  `L61.25,0 C67.25,0 73.5,${HILL_STROKE_FY} 82.5,${HILL_STROKE_FY} L100,${HILL_STROKE_FY}`;
+
+/** Measures an element's rendered height live (initial mount + any
+ *  resize — orientation change, a browser chrome bar showing/hiding,
+ *  etc.), used to compute the fill's exact bump proportions above. */
+function useMeasuredHeight(ref: React.RefObject<HTMLElement | null>): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setHeight(el.getBoundingClientRect().height);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return height;
+}
+
+// A reasonable guess for the very first paint, before useMeasuredHeight's
+// ResizeObserver reports the bar's real height — close enough that the
+// bump's proportions never visibly jump once the real measurement lands.
+const FALLBACK_NAV_HEIGHT = 68;
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
@@ -174,11 +239,19 @@ export function BottomNav() {
   const signalActive = activeIndex === SIGNAL_INDEX;
   const normalActiveIndex = signalActive ? -1 : activeIndex;
 
+  const navRef = useRef<HTMLElement>(null);
+  const measuredNavHeight = useMeasuredHeight(navRef);
+  const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
+  const backdropHeight = navHeight + HILL_RISE;
+  const navFlatY = HILL_RISE / backdropHeight;
+  const navClipPath = useMemo(() => buildNavClipPath(navFlatY), [navFlatY]);
+
   if (!visible) return null;
 
   return (
     <nav
-      className="glass fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
+      ref={navRef}
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
       style={{
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's
@@ -194,36 +267,37 @@ export function BottomNav() {
       aria-hidden={scrollHidden || undefined}
       aria-label="Primary"
     >
-      {/* Reusable shape definition for Signal's raised section — referenced
-          by clip-path below. objectBoundingBox units so the same silhouette
-          scales to whatever width the hill box actually renders at. */}
+      {/* Reusable shape definition for the whole bar's one fill — see
+          buildNavClipPath's own comment for why this is a single shape
+          instead of the bar's flat rectangle plus a separately-clipped
+          hill panel. objectBoundingBox units so it scales to this
+          specific bar's real measured width/height. */}
       <svg width="0" height="0" className="absolute" aria-hidden="true">
         <defs>
-          <clipPath id="signal-hill-clip" clipPathUnits="objectBoundingBox">
-            <path d={HILL_CLIP_PATH} />
+          <clipPath id="signal-nav-clip" clipPathUnits="objectBoundingBox">
+            <path d={navClipPath} />
           </clipPath>
         </defs>
       </svg>
 
-      {/* The raised section itself — a piece of the bar's own glass surface,
-          clipped to a smooth plateau, sitting centered over Signal's column.
-          Present at rest (Signal is permanently shaped differently from the
-          other four) and just deepens in glow when Signal is active. */}
+      {/* The bar's ONLY background surface — one `.glass` panel, one blur
+          instance, shaped to be flat everywhere except the smooth rise
+          over Signal's column. Sits behind the content grid below (that
+          grid's own items are `relative z-10`; this needs no explicit
+          z-index of its own, only to come first in DOM order) and pokes
+          `HILL_RISE`px above the bar's own flat top edge — visible
+          because `<nav>` has no `overflow` set (initial value: visible).
+          Deliberately no `filter` here: a `drop-shadow` is computed from
+          this element's own rendered silhouette, which is now the WHOLE
+          bar, not just the bump — putting the bump's old glow filter here
+          would cast it around the bar's entire outline (left/right/bottom
+          edges too), a real regression. The bump's own glow lives purely
+          on the rim stroke below, which already traces just the bump's
+          own contour; the bar's ordinary top shadow is the separate
+          `shadow-[...]` utility on `<nav>` itself, untouched. */}
       <div
-        className="glass pointer-events-none absolute left-1/2 -translate-x-1/2 transition-[filter] duration-300"
-        style={{
-          top: -HILL_RISE,
-          height: HILL_BOX_HEIGHT,
-          width: HILL_WIDTH,
-          clipPath: 'url(#signal-hill-clip)',
-          // Blur/offsets scaled down with the shape itself — the original
-          // values were tuned for a hill roughly twice this size and read
-          // as an oversized glow once the shape shrank without them.
-          filter: signalActive
-            ? 'drop-shadow(0 -1.5px 6px rgba(0,212,71,0.3)) drop-shadow(0 1.5px 4px rgba(22,22,26,0.1))'
-            : 'drop-shadow(0 1px 3px rgba(22,22,26,0.08))',
-          transitionTimingFunction: EASE,
-        }}
+        className="glass pointer-events-none absolute inset-x-0 bottom-0"
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
@@ -235,8 +309,8 @@ export function BottomNav() {
           into HILL_RISE/the logo's own translateY below. */}
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
-        style={{ top: -HILL_RISE, width: HILL_WIDTH, height: HILL_RISE }}
-        viewBox={`0 0 100 ${FY}`}
+        style={{ top: -HILL_RISE, width: `${HILL_WIDTH_FRACTION * 100}%`, height: HILL_RISE }}
+        viewBox={`0 0 100 ${HILL_STROKE_FY}`}
         preserveAspectRatio="none"
         aria-hidden="true"
       >
