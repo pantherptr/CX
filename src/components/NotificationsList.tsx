@@ -14,11 +14,16 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-const COPY: Record<NotificationType, { icon: IconName; verb: string }> = {
-  follow: { icon: 'user', verb: 'started following you' },
-  post_respect: { icon: 'like', verb: 'respected your post' },
-  post_comment: { icon: 'message', verb: 'commented on your post' },
-  post_share: { icon: 'share', verb: 'shared your post' },
+// The two "big" interactions get their own color instead of a uniform
+// grey chip — Follow ties to FollowButton's own solid-ink treatment,
+// Respect ties to the post action's own accent green. Comment/Share stay
+// neutral so the two colored ones read as the emotionally significant
+// events, not a rainbow of every type.
+const COPY: Record<NotificationType, { icon: IconName; verb: string; chip: string }> = {
+  follow: { icon: 'user', verb: 'started following you', chip: 'bg-ink text-white' },
+  post_respect: { icon: 'like', verb: 'respected your post', chip: 'bg-accent-bright text-white' },
+  post_comment: { icon: 'message', verb: 'commented on your post', chip: 'bg-panel text-ink-soft' },
+  post_share: { icon: 'share', verb: 'shared your post', chip: 'bg-panel text-ink-soft' },
 };
 
 /** The actual notification rows — pulled out of the full `/notifications`
@@ -100,7 +105,7 @@ export function NotificationsList({
               {n.postPreview && <p className="mt-0.5 truncate text-caption text-muted">{n.postPreview}</p>}
               <p className="mt-1 text-caption text-faint">{timeAgo(n.createdAt)}</p>
             </div>
-            <span className="mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+            <span className={`mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full ${copy.chip}`}>
               <Icon name={copy.icon} size={14} />
             </span>
             {!n.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-bright" />}
