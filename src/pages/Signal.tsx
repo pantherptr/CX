@@ -59,11 +59,17 @@ export default function Signal() {
   const base = space === 'community' ? '/signal/community' : '/signal';
 
   const canManage = Boolean(profile?.is_admin || profile?.is_owner);
-  // A Host or Verified Client publishes under their own real identity
-  // ('self', never one of the three official voices — see
-  // signalIdentity.ts). Distinct from canManage, which is about
-  // moderating everyone's content, not just being allowed to post at all.
-  const canPublishSelf = Boolean(profile?.is_host || profile?.is_verified_client);
+  // Any signed-in user can publish in Community under their own real
+  // identity ('self', never one of the three official voices — see
+  // signalIdentity.ts) — a deliberate policy choice (Host/Verified
+  // Client/plain Client all get the same right to post; the badge next
+  // to their name is what actually distinguishes them, resolved live by
+  // resolveSignalIdentity's own 'self' case). Server-side enforcement
+  // lives in can_publish_signal_content() (0053_signal_open_community_
+  // publishing.sql), not here — this only gates the UI. Distinct from
+  // canManage, which is about moderating everyone's content, not being
+  // allowed to post at all.
+  const canPublishSelf = Boolean(session);
   const canPostHere = space === 'official' ? canManage : canPublishSelf;
 
   const [category, setCategory] = useState<EmpireCategory | null>(null);
