@@ -41,28 +41,28 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
       aria-modal="true"
     >
       <div
-        className="relative flex h-[90vh] w-full flex-col overflow-hidden rounded-t-[28px] bg-surface animate-sheet-in sm:h-auto sm:max-h-[82vh] sm:max-w-md sm:rounded-3xl"
+        className="relative flex h-[97vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:h-[88vh] sm:max-w-lg sm:rounded-3xl"
         style={dragStyle}
       >
         <div {...dragHandlers} className="relative shrink-0 overflow-hidden bg-gradient-to-b from-accent-050 to-transparent">
           <div className="flex flex-col items-center pt-2.5 sm:hidden">
             <span className="h-1 w-9 rounded-full bg-ink/15" aria-hidden="true" />
           </div>
-          <div className="flex items-center gap-3 px-5 pb-5 pt-4">
-            <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-bright text-white shadow-[0_6px_18px_-6px_rgba(0,212,71,0.55)]">
-              <Icon name="bell" size={19} />
+          <div className="flex items-center gap-3.5 px-6 pb-6 pt-5">
+            <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-full bg-accent-bright text-white shadow-[0_8px_24px_-6px_rgba(0,212,71,0.55)]">
+              <Icon name="bell" size={24} />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="font-display text-lead font-bold text-ink">Notifications</h2>
-              <p className="text-caption text-muted">Everything happening around your SIGNAL activity</p>
+              <h2 className="font-display text-feature font-bold text-ink">Notifications</h2>
+              <p className="text-detail text-muted">Everything happening around your SIGNAL activity</p>
             </div>
-            <button onClick={requestClose} aria-label="Close" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
-              <Icon name="x" size={19} />
+            <button onClick={requestClose} aria-label="Close" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
+              <Icon name="x" size={21} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto border-t border-line p-4">
+        <div className="flex-1 overflow-y-auto border-t border-line p-4 sm:p-5">
           <NotificationsList
             notifications={notifications}
             loadMore={loadMore}
