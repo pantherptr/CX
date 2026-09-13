@@ -26,6 +26,9 @@ export interface SignalProfile {
   responseTime: string | null;
   responseRate: number | null;
   joined: string | null;
+  followersCount: number;
+  followingCount: number;
+  followedByMe: boolean;
 }
 
 interface SignalProfileJson {
@@ -44,6 +47,9 @@ interface SignalProfileJson {
   response_time: string | null;
   response_rate: number | null;
   joined: string | null;
+  followers_count: number;
+  following_count: number;
+  followed_by_me: boolean;
 }
 
 export async function fetchSignalProfile(userId: string): Promise<SignalProfile | null> {
@@ -69,5 +75,17 @@ export async function fetchSignalProfile(userId: string): Promise<SignalProfile 
     responseTime: row.response_time,
     responseRate: row.response_rate,
     joined: row.joined,
+    followersCount: row.followers_count,
+    followingCount: row.following_count,
+    followedByMe: row.followed_by_me,
   };
+}
+
+/** Toggles the caller following `userId` — returns the new state (true =
+ *  now following). Real server-side enforcement lives in the RPC itself
+ *  (no self-follow, target must exist); this is a thin wrapper only. */
+export async function toggleProfileFollow(userId: string): Promise<{ following: boolean | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('toggle_profile_follow', { p_followee_id: userId });
+  if (error) return { following: null, error: error.message };
+  return { following: data as boolean, error: null };
 }

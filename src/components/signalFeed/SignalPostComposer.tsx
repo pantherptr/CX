@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import {
   EMPIRE_CATEGORIES, createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
-  type EmpireCategory, type EmpirePost,
+  type EmpireCategory, type EmpirePost, type EmpireVehicleRef,
 } from '../../lib/data/empireFeed';
 import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { useAuth } from '../../lib/auth';
+import { fetchHostCars } from '../../lib/data/cars';
+import type { Car } from '../../data/types';
 
 const MAX_MEDIA = 4;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -64,6 +66,32 @@ export function SignalPostComposer({
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Vehicle attachment — Hosts only (the picker only ever lists the
+  // caller's own cars; ownership is re-checked server-side regardless).
+  // `hostCars` loads lazily the first time the picker opens, not on
+  // every composer mount, since most posts never touch it.
+  const [vehiclePickerOpen, setVehiclePickerOpen] = useState(false);
+  const [hostCars, setHostCars] = useState<Car[] | null>(null);
+  const [loadingCars, setLoadingCars] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<EmpireVehicleRef | null>(editing?.vehicle ?? null);
+  const canAttachVehicle = mode === 'self' && Boolean(profile?.is_host);
+
+  const carToVehicleRef = (car: Car): EmpireVehicleRef => ({
+    id: car.id, slug: car.slug, make: car.make, model: car.model, year: car.year,
+    city: car.city, pricePerDay: car.pricePerDay, imageUrl: car.images[0] ?? null,
+  });
+
+  const openVehiclePicker = () => {
+    setVehiclePickerOpen((v) => !v);
+    if (!hostCars && !loadingCars && profile?.id) {
+      setLoadingCars(true);
+      fetchHostCars(profile.id)
+        .then(setHostCars)
+        .catch(() => setHostCars([]))
+        .finally(() => setLoadingCars(false));
+    }
+  };
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
@@ -154,7 +182,10 @@ export function SignalPostComposer({
         uploaded.push(path);
       }
       const mediaPaths = [...existingPaths, ...uploaded];
-      const input = { category, title: title.trim() || undefined, body: body.trim(), mediaPaths, publisherType };
+      const input = {
+        category, title: title.trim() || undefined, body: body.trim(), mediaPaths, publisherType,
+        vehicleId: canAttachVehicle ? (selectedVehicle?.id ?? null) : undefined,
+      };
       const result = editing ? await updateEmpirePost(editing.id, input) : await createEmpirePost(input);
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
@@ -163,13 +194,18 @@ export function SignalPostComposer({
       // update_empire_post returns a bare row with no joined counts (see
       // mapCreatedPost) — carry the real, already-known engagement
       // numbers over from the pre-edit post rather than letting them
-      // flash to zero until the next full refetch.
+      // flash to zero until the next full refetch. Same reasoning for
+      // `vehicle`: the bare row only has a `vehicle_id` uuid, but this
+      // component already has the full picked vehicle's details from
+      // building the picker, so it's cheaper and simpler to attach them
+      // here than to have the server resolve and return them again.
       onDone(editing ? {
         ...result.post,
         likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount,
         viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe,
         authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
-      } : result.post);
+        vehicle: canAttachVehicle ? selectedVehicle : editing.vehicle,
+      } : { ...result.post, vehicle: canAttachVehicle ? selectedVehicle : null });
     } finally {
       setSubmitting(false);
     }
@@ -300,7 +336,68 @@ export function SignalPostComposer({
             onChange={(e) => { addVideoFiles(e.target.files); e.target.value = ''; }}
           />
         </label>
+
+        {canAttachVehicle && (
+          <button
+            type="button"
+            onClick={openVehiclePicker}
+            aria-expanded={vehiclePickerOpen}
+            className={`pressable inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-detail font-semibold transition-colors ${
+              selectedVehicle ? 'border-accent bg-accent-050 text-accent-700' : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
+            }`}
+          >
+            <Icon name="car" size={16} />
+            {selectedVehicle ? `${selectedVehicle.make} ${selectedVehicle.model}` : 'Vehicle'}
+          </button>
+        )}
       </div>
+
+      {/* The vehicle picker — a compact horizontal strip of the Host's
+          own cars only (fetchHostCars is already scoped to `profile.id`;
+          the RPC re-checks ownership again regardless). Tapping the
+          already-selected car deselects it — a post attaches at most
+          one vehicle. */}
+      {canAttachVehicle && vehiclePickerOpen && (
+        <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto rounded-xl border border-line bg-panel p-2">
+          {loadingCars ? (
+            <p className="px-2 py-3 text-detail text-muted">Loading your vehicles…</p>
+          ) : !hostCars || hostCars.length === 0 ? (
+            <p className="px-2 py-3 text-detail text-muted">You don't have any listed vehicles yet.</p>
+          ) : (
+            hostCars.map((car) => {
+              const isSelected = selectedVehicle?.id === car.id;
+              return (
+                <button
+                  key={car.id}
+                  type="button"
+                  onClick={() => { setSelectedVehicle(isSelected ? null : carToVehicleRef(car)); setVehiclePickerOpen(false); }}
+                  className={`pressable flex shrink-0 flex-col overflow-hidden rounded-lg border text-left transition-colors ${
+                    isSelected ? 'border-accent ring-2 ring-accent-100' : 'border-line hover:border-line-strong'
+                  }`}
+                  style={{ width: 108 }}
+                >
+                  <span className="block h-16 w-full bg-surface">
+                    {car.images[0] && <img src={car.images[0]} alt="" className="h-full w-full object-cover" />}
+                  </span>
+                  <span className="truncate px-1.5 py-1 text-[11px] font-semibold text-ink">{car.make} {car.model}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {selectedVehicle && !vehiclePickerOpen && (
+        <div className="mt-2 flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+          {selectedVehicle.imageUrl && <img src={selectedVehicle.imageUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />}
+          <span className="min-w-0 flex-1 truncate text-detail font-medium text-ink">
+            {selectedVehicle.make} {selectedVehicle.model} · {selectedVehicle.year}
+          </span>
+          <button onClick={() => setSelectedVehicle(null)} aria-label="Remove vehicle" className="text-muted hover:text-danger">
+            <Icon name="x" size={15} />
+          </button>
+        </div>
+      )}
 
       {error && <p className="mt-3 text-detail font-medium text-danger">{error}</p>}
 

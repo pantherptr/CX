@@ -9,6 +9,8 @@ import { fetchHostCars } from '../../lib/data/cars';
 import { fetchEmpirePostsByAuthor, type EmpirePost } from '../../lib/data/empireFeed';
 import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
+import { FollowButton } from './FollowButton';
+import { useAuth } from '../../lib/auth';
 
 /** The `/signal/profile/:authorId` deep-link target — same overlay-on-
  *  top-of-the-live-feed pattern as `SignalPostDetail` (fixed inset-0,
@@ -35,6 +37,7 @@ export function SignalProfileDetail({
   canManage: boolean;
   onClose: () => void;
 }) {
+  const { session } = useAuth();
   const isOfficialVoice = authorId === 'cx' || authorId === 'assistant';
   const [profile, setProfile] = useState<SignalProfile | null | 'error'>(null);
   const [loaded, setLoaded] = useState(isOfficialVoice);
@@ -98,7 +101,7 @@ export function SignalProfileDetail({
             <p className="mt-4 text-body text-muted">This profile no longer exists.</p>
           </div>
         ) : (
-          <ProfileHeader profile={profile} />
+          <ProfileHeader profile={profile} isMe={session?.user.id === profile.id} />
         )}
 
         {!isOfficialVoice && profile && profile !== 'error' && cars && cars.length > 0 && (
@@ -159,13 +162,18 @@ function OfficialVoiceHeader({ type }: { type: 'cx' | 'assistant' }) {
   );
 }
 
-function ProfileHeader({ profile }: { profile: SignalProfile }) {
+function ProfileHeader({ profile, isMe }: { profile: SignalProfile; isMe: boolean }) {
   const role: 'owner' | 'admin' | 'host' | 'client' | null =
     profile.isOwner ? 'owner' : profile.isAdmin ? 'admin' : profile.isHost ? 'host' : profile.isVerifiedClient ? 'client' : null;
+  // Follow only makes sense for the two Community creator roles — see
+  // the brief's own "Users can follow: Hosts, Verified Clients."
+  // Following Owner/Admin's real account isn't a Community concept.
+  const canBeFollowed = !isMe && (profile.isHost || profile.isVerifiedClient);
+  const [followersCount, setFollowersCount] = useState(profile.followersCount);
 
   return (
     <div className="card p-5">
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         {profile.avatarUrl ? (
           <img src={profile.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
         ) : (
@@ -173,14 +181,32 @@ function ProfileHeader({ profile }: { profile: SignalProfile }) {
             <Icon name="user" size={28} />
           </span>
         )}
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate font-display text-lead font-semibold text-ink">{profile.fullName}</span>
-            {role && <VerifiedBadge role={role} size={16} />}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate font-display text-lead font-semibold text-ink">{profile.fullName}</span>
+                {role && <VerifiedBadge role={role} size={16} />}
+              </div>
+              {profile.isHost && (
+                <p className="text-caption text-muted">
+                  {compact(profile.rating)} ★ · {compact(profile.trips)} trips
+                </p>
+              )}
+            </div>
+            {canBeFollowed && (
+              <FollowButton
+                userId={profile.id}
+                initialFollowing={profile.followedByMe}
+                size="sm"
+                onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
+              />
+            )}
           </div>
-          {profile.isHost && (
-            <p className="text-caption text-muted">
-              {compact(profile.rating)} ★ · {compact(profile.trips)} trips
+          {(profile.isHost || profile.isVerifiedClient) && (
+            <p className="mt-1.5 flex items-center gap-3 text-caption text-ink-soft">
+              <span><span className="font-semibold text-ink">{compact(followersCount)}</span> Followers</span>
+              <span><span className="font-semibold text-ink">{compact(profile.followingCount)}</span> Following</span>
             </p>
           )}
         </div>

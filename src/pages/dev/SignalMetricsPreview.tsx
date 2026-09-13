@@ -50,6 +50,7 @@ function mockPost(overrides: Partial<EmpirePost>): EmpirePost {
     likedByMe: false,
     savedByMe: false,
     publisherType: 'cx',
+    vehicle: null,
     ...overrides,
   };
 }

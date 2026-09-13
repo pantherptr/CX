@@ -76,6 +76,41 @@ export interface EmpirePost {
    *  `authorId`/`authorName`, which stay the real audit trail of which
    *  admin account clicked publish. */
   publisherType: SignalPublisherType;
+  /** A reference to one of the author's own real CX Rent vehicle
+   *  listings — resolved live from `cars`/`car_images` at read time
+   *  (see 0052_signal_follow_and_vehicle_posts.sql), never a copy of
+   *  vehicle data. `null` for every ordinary post. */
+  vehicle: EmpireVehicleRef | null;
+}
+
+export interface EmpireVehicleRef {
+  id: string;
+  slug: string;
+  make: string;
+  model: string;
+  year: number;
+  city: string;
+  pricePerDay: number;
+  imageUrl: string | null;
+}
+
+interface EmpireVehicleRefRow {
+  id: string;
+  slug: string;
+  make: string;
+  model: string;
+  year: number;
+  city: string;
+  price_per_day: number;
+  image_url: string | null;
+}
+
+function mapVehicleRef(row: EmpireVehicleRefRow | null | undefined): EmpireVehicleRef | null {
+  if (!row) return null;
+  return {
+    id: row.id, slug: row.slug, make: row.make, model: row.model, year: row.year,
+    city: row.city, pricePerDay: row.price_per_day, imageUrl: row.image_url,
+  };
 }
 
 interface EmpirePostRow {
@@ -105,6 +140,7 @@ interface EmpirePostRow {
   liked_by_me: boolean;
   saved_by_me: boolean;
   publisher_type: SignalPublisherType;
+  vehicle: EmpireVehicleRefRow | null;
 }
 
 function mediaUrlFor(path: string): string {
@@ -151,6 +187,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     likedByMe: row.liked_by_me,
     savedByMe: row.saved_by_me,
     publisherType: row.publisher_type,
+    vehicle: mapVehicleRef(row.vehicle),
   };
 }
 
@@ -271,6 +308,9 @@ export interface CreateEmpirePostInput {
   mediaPaths?: string[];
   commentsDisabled?: boolean;
   publisherType: SignalPublisherType;
+  /** One of the caller's own real `cars` rows — ownership is re-checked
+   *  server-side regardless of what's sent (see the RPC). */
+  vehicleId?: string | null;
 }
 
 export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ post: EmpirePost | null; error: string | null }> {
@@ -281,6 +321,7 @@ export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ 
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
     p_publisher_type: input.publisherType,
+    p_vehicle_id: input.vehicleId ?? null,
   });
   if (error) return { post: null, error: error.message };
   return { post: mapCreatedPost(data), error: null };
@@ -298,15 +339,21 @@ export async function updateEmpirePost(
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
     p_publisher_type: input.publisherType,
+    p_vehicle_id: input.vehicleId ?? null,
   });
   if (error) return { post: null, error: error.message };
   return { post: mapCreatedPost(data), error: null };
 }
 
 // create_empire_post/update_empire_post return a bare `empire_posts` row
-// (no joined author/count columns, unlike fetch_empire_feed) — map just
-// enough to patch the feed's local state; callers already know the
-// author (themselves) and starting counts (all zero) for a fresh post.
+// (no joined author/count/vehicle columns, unlike fetch_empire_feed) —
+// map just enough to patch the feed's local state; callers already know
+// the author (themselves) and starting counts (all zero) for a fresh
+// post. `vehicle` is always mapped to `null` here even when `vehicle_id`
+// was set — the composer already holds the full picked vehicle's details
+// locally (it fetched them to build the picker) and merges them into the
+// returned post itself rather than this function re-deriving them from a
+// bare id, which would need a second round trip for no real benefit.
 function mapCreatedPost(row: {
   id: string; author_id: string; category: EmpireCategory; title: string | null; body: string;
   media_paths: string[]; is_pinned: boolean; is_featured: boolean; comments_disabled: boolean;
@@ -339,6 +386,7 @@ function mapCreatedPost(row: {
     likedByMe: false,
     savedByMe: false,
     publisherType: row.publisher_type,
+    vehicle: null,
   };
 }
 

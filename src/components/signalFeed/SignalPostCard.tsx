@@ -7,7 +7,7 @@ import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
   setEmpirePostFeatured, markEmpirePostViewed, incrementEmpirePostImpression, incrementEmpirePostShare,
-  mediaKindFromPath, type EmpirePost,
+  reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -333,6 +333,12 @@ export function SignalPostCard({
     else onDeleted(post.id);
   };
 
+  const handleReport = async () => {
+    setMenuOpen(false);
+    const { error } = await reportEmpireContent({ postId: post.id }, 'Reported from Signal');
+    toast(error ? { title: 'Could not send report', desc: error, icon: 'info' } : { title: 'Post reported', icon: 'check' });
+  };
+
   const handlePinToggle = async () => {
     setMenuOpen(false);
     setBusy(true);
@@ -412,7 +418,7 @@ export function SignalPostCard({
             {post.editedAt && ' · Edited'}
           </p>
         </div>
-        {canModerate && (
+        {Boolean(session?.user.id) && (
           <div className="relative shrink-0">
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -426,22 +432,35 @@ export function SignalPostCard({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-9 z-20 w-52 overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
-                  <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                    <Icon name="edit" size={15} /> Edit post
-                  </button>
-                  {canManage && (
+                  {canModerate ? (
                     <>
-                      <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                        <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
+                      <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                        <Icon name="edit" size={15} /> Edit post
                       </button>
-                      <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
-                        <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
+                      {canManage && (
+                        <>
+                          <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                            <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
+                          </button>
+                          <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                            <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
+                          </button>
+                        </>
+                      )}
+                      <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger hover:bg-danger/5">
+                        <Icon name="trash" size={15} /> Delete post
                       </button>
                     </>
+                  ) : (
+                    // A regular viewer, not the author or a moderator —
+                    // Share/Save already have their own always-visible
+                    // buttons in the action row below, so the only thing
+                    // this menu needs to offer is Report (same RPC/pattern
+                    // SignalComments.tsx already uses for a comment).
+                    <button onClick={handleReport} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                      <Icon name="info" size={15} /> Report post
+                    </button>
                   )}
-                  <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger hover:bg-danger/5">
-                    <Icon name="trash" size={15} /> Delete post
-                  </button>
                 </div>
               </>
             )}
@@ -455,6 +474,32 @@ export function SignalPostCard({
       <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
         {post.body}
       </p>
+
+      {post.vehicle && (
+        <Link
+          to={`/cars/${post.vehicle.slug}`}
+          className="pressable mx-3 mb-2 flex items-center gap-3 rounded-xl border border-line bg-panel p-2 sm:mx-4"
+        >
+          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
+            {post.vehicle.imageUrl ? (
+              <img src={post.vehicle.imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-detail font-semibold text-ink">
+              {post.vehicle.year} {post.vehicle.make} {post.vehicle.model}
+            </span>
+            <span className="block truncate text-caption text-muted">
+              {post.vehicle.city} · €{compact(post.vehicle.pricePerDay)}/day
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-caption font-semibold text-accent-700">
+            View Vehicle <Icon name="chevronRight" size={14} />
+          </span>
+        </Link>
+      )}
 
       {post.mediaUrls.length > 0 && (
         featured ? (
