@@ -12,6 +12,7 @@ import {
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
+import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalPostComposer } from './SignalPostComposer';
 import { SignalComments } from './SignalComments';
 
@@ -261,6 +262,7 @@ export function SignalPostCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
 
@@ -432,6 +434,14 @@ export function SignalPostCard({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 top-9 z-20 w-52 overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
+                  {/* Share-to-Messages is the one entry every viewer gets
+                      regardless of ownership — the native share sheet/
+                      copy-link already lives on the always-visible Share
+                      button below, this is specifically the "send it to
+                      a real CX Rent conversation" path from the brief. */}
+                  <button onClick={() => { setMenuOpen(false); setShareSheetOpen(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
+                    <Icon name="send" size={15} /> Share to Messages
+                  </button>
                   {canModerate ? (
                     <>
                       <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
@@ -453,9 +463,9 @@ export function SignalPostCard({
                     </>
                   ) : (
                     // A regular viewer, not the author or a moderator —
-                    // Share/Save already have their own always-visible
-                    // buttons in the action row below, so the only thing
-                    // this menu needs to offer is Report (same RPC/pattern
+                    // Save already has its own always-visible button in
+                    // the action row below, so the only thing left to
+                    // offer here is Report (same RPC/pattern
                     // SignalComments.tsx already uses for a comment).
                     <button onClick={handleReport} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink hover:bg-panel">
                       <Icon name="info" size={15} /> Report post
@@ -605,6 +615,8 @@ export function SignalPostCard({
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}
+
+      {shareSheetOpen && <SignalSharePostSheet post={post} onClose={() => setShareSheetOpen(false)} />}
     </article>
   );
 }

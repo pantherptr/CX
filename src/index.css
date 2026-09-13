@@ -564,9 +564,21 @@
     from { opacity: 0; transform: translateX(-24px); }
     to { opacity: 1; transform: translateX(0); }
   }
-  .animate-fade-up { animation: fade-up 0.7s var(--ease-out-expo) both; }
+  /* `backwards`, not `both` — same reasoning as `.animate-page`'s own
+     comment elsewhere in this file: the end keyframe's `transform` (even
+     a no-op `translateY(0)`/`scale(1)`) is a non-`none` value, and any
+     element with a non-`none` transform becomes a containing block for
+     `position: fixed` descendants. `both` would leave that transform on
+     permanently once the animation finished, silently breaking any
+     `fixed inset-0` overlay rendered inside a card using this class
+     (confirmed: this exact bug shrank a share sheet down to a Signal
+     post card's own small box instead of the full viewport, and would
+     have done the same to that card's media lightbox). `backwards` only
+     needs the first keyframe's styles before the animation starts, so
+     the element reverts to its real (transform: none) styles once done. */
+  .animate-fade-up { animation: fade-up 0.7s var(--ease-out-expo) backwards; }
   .animate-fade-in { animation: fade-in 0.6s ease both; }
-  .animate-scale-in { animation: scale-in 0.4s var(--ease-out-expo) both; }
+  .animate-scale-in { animation: scale-in 0.4s var(--ease-out-expo) backwards; }
 
   /* CX Concierge's assistant "typing" indicator — three dots, staggered
      via inline animation-delay at the call site rather than three
