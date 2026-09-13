@@ -17,6 +17,7 @@ import { SignalProfileDetail } from '../components/signalFeed/SignalProfileDetai
 import { SignalPostListOverlay } from '../components/signalFeed/SignalPostListOverlay';
 import { SignalQuickControl } from '../components/signalFeed/SignalQuickControl';
 import { SignalStoryViewer } from '../components/signalFeed/SignalStoryViewer';
+import { SignalPullToRefresh } from '../components/signalFeed/SignalPullToRefresh';
 import { useAuth } from '../lib/auth';
 import {
   useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, markEmpireFeedSeen,
@@ -81,6 +82,18 @@ export default function Signal() {
 
   const pinned = useEmpirePinnedPost();
   const featured = useEmpireFeaturedPosts();
+  // One pull-to-refresh for both spaces — `refresh` above already
+  // resolves to whichever feed (official/community) is current; Pinned/
+  // Featured are Official-only and refreshed alongside it there. Not
+  // awaited (both fire-and-forget internally) since the feed's own
+  // refresh is the one the indicator actually waits on.
+  const handleRefresh = async () => {
+    if (space === 'official') {
+      pinned.refresh();
+      featured.refresh();
+    }
+    await refresh();
+  };
   const { highlights } = useEmpireHighlights();
   const [composerOpen, setComposerOpen] = useState(false);
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
@@ -137,6 +150,7 @@ export default function Signal() {
       />
 
       <main className="mx-auto w-full max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4">
+      <SignalPullToRefresh onRefresh={handleRefresh}>
         {space === 'community' && (
           <p className="mb-2.5 flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-accent-700">
             <Icon name="users" size={13} /> Community
@@ -253,6 +267,7 @@ export default function Signal() {
 
         {space === 'official' && category === null && <SignalTrendingSection scope="official" />}
         </div>
+      </SignalPullToRefresh>
       </main>
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}

@@ -580,6 +580,22 @@
   .animate-fade-in { animation: fade-in 0.6s ease both; }
   .animate-scale-in { animation: scale-in 0.4s var(--ease-out-expo) backwards; }
 
+  /* SIGNAL pull-to-refresh's spinning S (SignalPullToRefresh.tsx) — a
+     continuous rotation needs `linear` timing, not an eased curve: any
+     ease-in/ease-out has a different velocity at 0deg than at 360deg, so
+     the loop point between repeats reads as a small stutter/pause. The
+     "soft" feel instead comes from how the indicator is revealed (a
+     quick scale/opacity ease-out as it appears, handled inline at the
+     call site) and from the spin's own moderate 1s duration — no bounce,
+     no easing tricks on the rotation itself. */
+  @keyframes signal-refresh-spin {
+    to { transform: rotate(360deg); }
+  }
+  .animate-signal-refresh-spin { animation: signal-refresh-spin 1s linear infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-signal-refresh-spin { animation: none; }
+  }
+
   /* CX Concierge's assistant "typing" indicator — three dots, staggered
      via inline animation-delay at the call site rather than three
      separate keyframes. */
