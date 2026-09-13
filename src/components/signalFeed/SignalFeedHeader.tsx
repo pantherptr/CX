@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
+import { useAuth } from '../../lib/auth';
+import { useUnreadNotificationCount } from '../../lib/data/notifications';
 
 /** SIGNAL's entire chrome — a sticky minimal header, nothing else. A
  *  single feed doesn't need the old game's HUD/multi-tab nav, so this
@@ -33,6 +35,8 @@ export function SignalFeedHeader({
   onAnalyticsClick?: () => void;
 }) {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -86,8 +90,11 @@ export function SignalFeedHeader({
           </button>
         )}
         {signedIn && (
-          <Link to="/notifications" aria-label="Notifications" className={iconButton}>
+          <Link to="/notifications" aria-label="Notifications" className={`relative ${iconButton}`}>
             <Icon name="bell" size={17} />
+            {unreadNotifications > 0 && (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright" />
+            )}
           </Link>
         )}
         <button onClick={() => navigate(signedIn ? '/dashboard' : '/')} aria-label="Exit Signal" className={iconButton}>

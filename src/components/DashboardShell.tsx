@@ -6,6 +6,7 @@ import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
+import { useUnreadNotificationCount } from '../lib/data/notifications';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
 
 export function greeting(): string {
@@ -28,9 +29,9 @@ const hostOnlyMobileLinks: NavItem[] = [
   { label: 'Reviews', to: '/host#reviews', icon: 'reviews' },
 ];
 
-const secondaryMobileLinks = (unreadCount: number): NavItem[] => [
+const secondaryMobileLinks = (unreadCount: number, unreadNotifications: number): NavItem[] => [
   { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
-  { label: 'Notifications', to: '/notifications', icon: 'bell' },
+  { label: 'Notifications', to: '/notifications', icon: 'bell', badge: unreadNotifications || undefined },
   { label: 'Payments', to: '/settings#payments', icon: 'card' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
   { label: 'Help & Support', to: '/help', icon: 'headset' },
@@ -51,6 +52,7 @@ export function DashboardShell({
   const { signOut, session, profile } = useAuth();
   const isHost = !!profile?.is_host;
   const unreadCount = useUnreadMessageCount(session?.user.id);
+  const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const nav = variant === 'customer' ? customerNav(unreadCount) : hostNav(unreadCount);
 
   const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
@@ -198,7 +200,9 @@ export function DashboardShell({
   // Mobile drawer: Home/Explore/Trips/Saved/Profile already live in the
   // bottom tab bar on mobile (BottomNav.tsx) — this only needs what that
   // bar doesn't cover.
-  const mobileLinks = variant === 'host' ? [...hostOnlyMobileLinks, ...secondaryMobileLinks(unreadCount)] : secondaryMobileLinks(unreadCount);
+  const mobileLinks = variant === 'host'
+    ? [...hostOnlyMobileLinks, ...secondaryMobileLinks(unreadCount, unreadNotifications)]
+    : secondaryMobileLinks(unreadCount, unreadNotifications);
   const MobileDrawerInner = (
     <div className="flex h-full flex-col">
       <div className="flex h-[68px] items-center justify-between px-5">
@@ -327,8 +331,11 @@ export function DashboardShell({
               </Link>
             ) : null}
             <Link to="/browse" className="btn btn-secondary btn-sm hidden sm:inline-flex">Find a car</Link>
-            <Link to="/notifications" className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
+            <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
               <Icon name="bell" size={20} />
+              {unreadNotifications > 0 && (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright" />
+              )}
             </Link>
             <Link to="/settings">
               {displayAvatar ? (
