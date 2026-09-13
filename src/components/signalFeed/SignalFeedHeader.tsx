@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
 import { useAuth } from '../../lib/auth';
@@ -28,11 +28,13 @@ export function SignalFeedHeader({
   onSearchClick,
   canManage = false,
   onAnalyticsClick,
+  onNotificationsClick,
 }: {
   signedIn: boolean;
   onSearchClick?: () => void;
   canManage?: boolean;
   onAnalyticsClick?: () => void;
+  onNotificationsClick?: () => void;
 }) {
   const navigate = useNavigate();
   const { session } = useAuth();
@@ -90,12 +92,12 @@ export function SignalFeedHeader({
           </button>
         )}
         {signedIn && (
-          <Link to="/notifications" aria-label="Notifications" className={`relative ${iconButton}`}>
+          <button onClick={onNotificationsClick} aria-label="Notifications" className={`relative ${iconButton}`}>
             <Icon name="bell" size={17} />
             {unreadNotifications > 0 && (
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright" />
             )}
-          </Link>
+          </button>
         )}
         <button onClick={() => navigate(signedIn ? '/dashboard' : '/')} aria-label="Exit Signal" className={iconButton}>
           <Icon name="x" size={18} />

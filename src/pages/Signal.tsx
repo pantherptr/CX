@@ -15,6 +15,7 @@ import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSh
 import { SignalPostDetail } from '../components/signalFeed/SignalPostDetail';
 import { SignalProfileDetail } from '../components/signalFeed/SignalProfileDetail';
 import { SignalPostListOverlay } from '../components/signalFeed/SignalPostListOverlay';
+import { SignalNotificationsSheet } from '../components/signalFeed/SignalNotificationsSheet';
 import { SignalQuickControl } from '../components/signalFeed/SignalQuickControl';
 import { SignalStoryViewer } from '../components/signalFeed/SignalStoryViewer';
 import { SignalPullToRefresh } from '../components/signalFeed/SignalPullToRefresh';
@@ -99,6 +100,7 @@ export default function Signal() {
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [myPostsOpen, setMyPostsOpen] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
 
@@ -159,6 +161,7 @@ export default function Signal() {
         onSearchClick={() => setSearchOpen(true)}
         canManage={canManage}
         onAnalyticsClick={() => setAnalyticsOpen(true)}
+        onNotificationsClick={() => setNotificationsOpen(true)}
       />
 
       <main className="mx-auto w-full max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4">
@@ -354,6 +357,7 @@ export default function Signal() {
 
       {searchOpen && <SignalSearchOverlay onClose={() => setSearchOpen(false)} />}
       {analyticsOpen && <SignalAnalyticsSheet onClose={() => setAnalyticsOpen(false)} />}
+      {notificationsOpen && <SignalNotificationsSheet base={base} onClose={() => setNotificationsOpen(false)} />}
     </div>
   );
 }
