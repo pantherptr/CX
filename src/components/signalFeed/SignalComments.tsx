@@ -51,6 +51,11 @@ export function SignalComments({
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // Comment CREATION is CX-team-only (Owner/Admin — is_admin() covers
+  // both) across Official and Community alike; add_empire_post_comment
+  // enforces this server-side regardless, this just keeps the UI honest
+  // about it instead of showing an input that would always be rejected.
+  const canComment = Boolean(profile?.is_owner || profile?.is_admin);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,7 +127,7 @@ export function SignalComments({
           <div className="skeleton h-10 rounded-xl" />
         </div>
       ) : comments.length === 0 ? (
-        <p className="py-2 text-caption text-muted">Be the first to comment.</p>
+        <p className="py-2 text-caption text-muted">{canComment ? 'Be the first to comment.' : 'No comments yet.'}</p>
       ) : (
         <div className="flex flex-col gap-3">
           {comments.map((c) => {
@@ -174,24 +179,26 @@ export function SignalComments({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
-        <Avatar url={profile?.avatar_url ?? null} size={26} />
-        <input
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-          placeholder="Add a comment…"
-          className="input !py-2 flex-1 text-detail"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={!body.trim() || submitting}
-          aria-label="Post comment"
-          className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
-        >
-          <Icon name="send" size={15} />
-        </button>
-      </div>
+      {canComment && (
+        <div className="mt-3 flex items-center gap-2">
+          <Avatar url={profile?.avatar_url ?? null} size={26} />
+          <input
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+            placeholder="Add a comment…"
+            className="input !py-2 flex-1 text-detail"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={!body.trim() || submitting}
+            aria-label="Post comment"
+            className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
+          >
+            <Icon name="send" size={15} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

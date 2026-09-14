@@ -17,7 +17,13 @@ import type { SignalPublisherType } from './signalIdentity';
  * calls `.rpc(...)`, matching the rest of the app's data-access convention.
  */
 
-export type EmpireCategory = 'news' | 'update' | 'new_car' | 'feature' | 'event' | 'offer' | 'announcement' | 'exclusive';
+// 'community' is never user-chosen — the server forces it on every
+// self-published post (see create_empire_post/update_empire_post) since
+// Community has no editorial category system at all; it exists purely
+// so the column keeps a real, honest value instead of a borrowed
+// official one. EMPIRE_CATEGORIES below (the Official composer/filter's
+// own options) deliberately excludes it.
+export type EmpireCategory = 'news' | 'update' | 'new_car' | 'feature' | 'event' | 'offer' | 'announcement' | 'exclusive' | 'community';
 
 export const EMPIRE_CATEGORIES: { value: EmpireCategory; label: string }[] = [
   { value: 'news', label: 'News' },

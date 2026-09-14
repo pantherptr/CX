@@ -13,8 +13,8 @@ import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
+import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalPostComposer } from './SignalPostComposer';
-import { SignalComments } from './SignalComments';
 import { vibrateTap } from '../motion';
 
 /** Where tapping a post's identity block should go — the two official-
@@ -237,7 +237,6 @@ export function SignalPostCard({
   post,
   canManage,
   featured = false,
-  showComments = false,
   onChanged,
   onDeleted,
   onPinToggled,
@@ -246,11 +245,6 @@ export function SignalPostCard({
   post: EmpirePost;
   canManage: boolean;
   featured?: boolean;
-  /** Only the detail view (`SignalPostDetail`) passes this — comments
-   *  stay out of the scrolling feed's cards to keep the feed as clean as
-   *  the no-public-counters redesign already made it; they're reachable
-   *  the moment you open a post. */
-  showComments?: boolean;
   onChanged: (post: EmpirePost) => void;
   onDeleted: (postId: string) => void;
   onPinToggled?: () => void;
@@ -264,6 +258,7 @@ export function SignalPostCard({
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
   const [savePop, setSavePop] = useState(false);
@@ -424,7 +419,12 @@ export function SignalPostCard({
           </Link>
           <p className="truncate text-caption text-muted">{identity.subtitle}</p>
           <p className="text-caption text-muted">
-            {categoryLabel(post.category)} · {timeAgo(post.createdAt)}
+            {/* Community posts carry no real editorial category (the
+                server forces a hidden 'community' placeholder value —
+                see create_empire_post) — only Official's own News/
+                Update/etc. content ever shows one. */}
+            {post.publisherType !== 'self' && `${categoryLabel(post.category)} · `}
+            {timeAgo(post.createdAt)}
             {post.editedAt && ' · Edited'}
           </p>
         </div>
@@ -555,12 +555,12 @@ export function SignalPostCard({
       )}
 
       {/* No numbers anywhere in this row, deliberately — Views/Likes/
-          Saves/Shares are all still tracked for real underneath (see the
-          mount effect above and each handler below), but a regular user
-          only ever sees the three actions themselves. Evenly split three
-          ways so every touch target is equally large on mobile, rather
-          than clustering left with Share pushed to the far edge. */}
-      <div className="grid grid-cols-3 gap-1 px-2 py-1 sm:px-3">
+          Saves/Shares/Comments are all still tracked for real underneath
+          (see the mount effect above and each handler below), but a
+          regular user only ever sees the four actions themselves.
+          Evenly split so every touch target is equally large on mobile,
+          rather than clustering left with Share pushed to the far edge. */}
+      <div className="grid grid-cols-4 gap-1 px-2 py-1 sm:px-3">
         {/* SIGNAL's signature interaction — "Respect", not "Like": same
             thumbs-up throughout both states (never swapped for a heart
             or checkmark), just filled + CX green + a quick scale/glow
@@ -580,6 +580,17 @@ export function SignalPostCard({
             className={likeBounce ? 'animate-respect-pop' : ''}
           />
           {post.likedByMe ? 'Respected' : 'Respect'}
+        </button>
+        {/* Always openable to read — SignalCommentsSheet/SignalComments
+            decide on their own whether the write composer renders
+            (CX-team-only; add_empire_post_comment enforces this
+            server-side regardless of what this button does). */}
+        <button
+          onClick={() => setCommentsSheetOpen(true)}
+          className="pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel"
+        >
+          <Icon name="message" size={17} />
+          Comment
         </button>
         <button
           onClick={handleSave}
@@ -610,21 +621,20 @@ export function SignalPostCard({
         </div>
       )}
 
-      {showComments && !post.commentsDisabled && (
-        <div className="border-t border-line">
-          <SignalComments
-            postId={post.id}
-            canModerateAll={canManage}
-            onCountChanged={(delta) => onChanged({ ...post, commentCount: post.commentCount + delta })}
-          />
-        </div>
-      )}
-
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}
 
       {shareSheetOpen && <SignalSharePostSheet post={post} onClose={() => setShareSheetOpen(false)} />}
+
+      {commentsSheetOpen && (
+        <SignalCommentsSheet
+          post={post}
+          canModerateAll={canManage}
+          onCountChanged={(delta) => onChanged({ ...post, commentCount: post.commentCount + delta })}
+          onClose={() => setCommentsSheetOpen(false)}
+        />
+      )}
     </article>
   );
 }

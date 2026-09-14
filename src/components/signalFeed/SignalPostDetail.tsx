@@ -86,7 +86,6 @@ export function SignalPostDetail({
             <SignalPostCard
               post={post}
               canManage={canManage}
-              showComments
               onChanged={(updated) => setPost(updated)}
               onDeleted={onClose}
             />

@@ -166,12 +166,6 @@ export default function Signal() {
 
       <main className="mx-auto w-full max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4">
       <SignalPullToRefresh onRefresh={handleRefresh}>
-        {space === 'community' && (
-          <p className="mb-2.5 flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-accent-700">
-            <Icon name="users" size={13} /> Community
-          </p>
-        )}
-
         <SignalStoriesBar
           scope={space}
           canCreate={canPostHere}
@@ -232,10 +226,22 @@ export default function Signal() {
               onClick={() => setComposerOpen(true)}
               className="card mb-3 flex w-full items-center gap-3 p-3.5 text-left text-ink-soft transition-colors hover:border-line-strong"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink">
-                <Icon name="plus" size={18} />
-              </span>
-              {space === 'official' ? 'Share news, an announcement, a new car…' : 'Share a photo, video, or update…'}
+              {/* Official's trigger stays a generic "+" (it's publishing a
+                  voice, not necessarily "yourself") — Community's shows
+                  the real signed-in user's own avatar, since every
+                  Community post always speaks as them. */}
+              {space === 'official' ? (
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink">
+                  <Icon name="plus" size={18} />
+                </span>
+              ) : profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+                  <Icon name="user" size={18} />
+                </span>
+              )}
+              {space === 'official' ? 'Share news, an announcement, a new car…' : 'Share something with the community…'}
             </button>
           )
         )}

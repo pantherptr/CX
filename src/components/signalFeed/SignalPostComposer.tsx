@@ -53,7 +53,11 @@ export function SignalPostComposer({
   const { profile } = useAuth();
   const objectUrls = useRef<string[]>([]);
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : (editing?.publisherType ?? lastSignalPublisherType()));
-  const [category, setCategory] = useState<EmpireCategory>(editing?.category ?? 'news');
+  // Community has no editorial category system — the server forces
+  // 'community' on every self-published post regardless of what's sent
+  // here (see create_empire_post), this is just a harmless placeholder
+  // for a field Official's category picker never even renders for it.
+  const [category, setCategory] = useState<EmpireCategory>(mode === 'self' ? 'community' : (editing?.category ?? 'news'));
   const [title, setTitle] = useState(editing?.title ?? '');
   const [body, setBody] = useState(editing?.body ?? '');
   // Existing (already-uploaded) media paths, kept unless removed; newly
@@ -223,32 +227,39 @@ export function SignalPostComposer({
         />
       )}
 
-      <div className={`flex flex-wrap gap-1.5 ${mode === 'official' ? 'mt-4' : ''}`}>
-        {EMPIRE_CATEGORIES.map((c) => (
-          <button
-            key={c.value}
-            onClick={() => setCategory(c.value)}
-            className={`rounded-full px-3 py-1.5 text-caption font-semibold uppercase tracking-wide transition-colors ${
-              category === c.value ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+      {/* Official's structured editorial categories — never shown for
+          Community, which has no category system of its own at all
+          (see the `category` state comment above). */}
+      {mode === 'official' && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {EMPIRE_CATEGORIES.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => setCategory(c.value)}
+              className={`rounded-full px-3 py-1.5 text-caption font-semibold uppercase tracking-wide transition-colors ${
+                category === c.value ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title (optional)"
-        className="input mt-3 !py-2.5 font-display font-semibold"
-      />
+      {mode === 'official' && (
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="input mt-3 !py-2.5 font-display font-semibold"
+        />
+      )}
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Share news, an announcement, a new car…"
-        rows={4}
-        className="input mt-2 resize-none !py-2.5"
+        placeholder={mode === 'official' ? 'Share news, an announcement, a new car…' : 'Share something with the community…'}
+        rows={mode === 'official' ? 4 : 3}
+        className={`input resize-none !py-2.5 ${mode === 'official' ? 'mt-2' : ''}`}
       />
 
       {(existingUrls.length > 0 || pending.length > 0) && (
@@ -313,7 +324,7 @@ export function SignalPostComposer({
           } ${totalMedia >= MAX_MEDIA ? 'pointer-events-none opacity-40' : ''}`}
         >
           <Icon name="image" size={16} />
-          Add images
+          {mode === 'official' ? 'Add images' : 'Photo'}
           <input
             type="file"
             accept={ACCEPTED_TYPES.join(',')}
@@ -329,7 +340,7 @@ export function SignalPostComposer({
           }`}
         >
           {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={16} />}
-          {validatingVideo ? 'Checking…' : 'Add video'}
+          {validatingVideo ? 'Checking…' : mode === 'official' ? 'Add video' : 'Video'}
           <input
             type="file"
             accept={VIDEO_MIME_TYPES.join(',')}
