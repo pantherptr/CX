@@ -211,6 +211,67 @@ function PostVideo({
   );
 }
 
+/** A multi-image/video post — a native horizontal scroll-snap carousel
+ *  (one real swipe per finger movement, no custom gesture code) instead
+ *  of the old static 2-column grid, with small pagination dots so it
+ *  reads as one swipeable gallery the way a single-image post already
+ *  reads as one photo. `active` is derived from the scroller's own
+ *  scroll position (rAF-throttled), not tracked separately, so it can
+ *  never drift out of sync with what's actually on screen. */
+function MediaCarousel({
+  urls,
+  onOpenViewer,
+}: {
+  urls: string[];
+  onOpenViewer: (index: number) => void;
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const rafRef = useRef(0);
+
+  const handleScroll = () => {
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const el = scrollerRef.current;
+      if (!el || el.clientWidth === 0) return;
+      setActive(Math.round(el.scrollLeft / el.clientWidth));
+    });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth"
+      >
+        {urls.map((url, i) => (
+          <div key={url} className="w-full shrink-0 snap-center">
+            {mediaKindFromPath(url) === 'video' ? (
+              <PostVideo src={url} onClick={() => onOpenViewer(i)} className="aspect-square" fixedAspect />
+            ) : (
+              <PostImage src={url} onClick={() => onOpenViewer(i)} className="aspect-square" />
+            )}
+          </div>
+        ))}
+      </div>
+      {/* A dark drop-shadow (not a backing pill) keeps the dots legible
+          against light AND dark media alike without adding a visible
+          chrome element over the image itself. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
+        {urls.map((_, i) => (
+          <span
+            key={i}
+            className="h-1.5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-all duration-200"
+            style={{ width: i === active ? 14 : 6, opacity: i === active ? 1 : 0.6 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** One post in the feed. Author badge, category chip, body, media grid,
  *  a clean Respect/Save/Share action row with NO public numbers at all
  *  ("Respect" is SIGNAL's own branded label for what's still, underneath,
@@ -572,31 +633,14 @@ export function SignalPostCard({
           ) : (
             <PostImage src={post.mediaUrls[0]} className="aspect-[16/10] w-full" onClick={() => setViewerIndex(0)} />
           )
+        ) : post.mediaUrls.length === 1 ? (
+          mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
+            <PostVideo src={post.mediaUrls[0]} onClick={() => setViewerIndex(0)} className="aspect-video" />
+          ) : (
+            <PostImage src={post.mediaUrls[0]} onClick={() => setViewerIndex(0)} className="aspect-[4/5]" dynamicAspect />
+          )
         ) : (
-          <div className={`grid gap-0.5 px-0 ${post.mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {post.mediaUrls.map((url, i) =>
-              mediaKindFromPath(url) === 'video' ? (
-                <PostVideo
-                  key={url}
-                  src={url}
-                  onClick={() => setViewerIndex(i)}
-                  // A single video keeps its own composition; a mixed
-                  // multi-media grid still needs every cell the same
-                  // square shape so the grid itself stays tidy.
-                  className={post.mediaUrls.length === 1 ? 'aspect-video' : 'aspect-square'}
-                  fixedAspect={post.mediaUrls.length > 1}
-                />
-              ) : (
-                <PostImage
-                  key={url}
-                  src={url}
-                  onClick={() => setViewerIndex(i)}
-                  className={post.mediaUrls.length === 1 ? 'aspect-[4/5]' : 'aspect-square'}
-                  dynamicAspect={post.mediaUrls.length === 1}
-                />
-              ),
-            )}
-          </div>
+          <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} />
         )
       )}
 

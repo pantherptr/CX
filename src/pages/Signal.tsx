@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { SignalLogo } from '../components/SignalLogo';
@@ -95,6 +95,31 @@ export default function Signal() {
     }
     await refresh();
   };
+
+  // Infinite scroll — a sentinel just past the last post triggers
+  // loadMore itself once it's within 600px of the viewport, well before
+  // the user actually reaches the bottom, so the next page is already
+  // in by the time they'd notice a gap. Replaces the old manual "Load
+  // more" tap entirely; `hasMore`/`loadingMore` still guard it exactly
+  // as the button did. `loadMore`'s own identity changes on nearly every
+  // render (it's memoized on `posts`) — reading it through a ref instead
+  // of a direct dependency keeps the observer from tearing down and
+  // reconnecting on every single post that loads.
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const loadMoreFnRef = useRef(loadMore);
+  loadMoreFnRef.current = loadMore;
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loadingMore) loadMoreFnRef.current();
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadingMore, space, category]);
   const { highlights } = useEmpireHighlights();
   const [composerOpen, setComposerOpen] = useState(false);
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
@@ -275,13 +300,9 @@ export default function Signal() {
               />
             ))}
             {hasMore && (
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="btn btn-secondary btn-block disabled:opacity-50"
-              >
-                {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
+              <div ref={loadMoreRef} className="flex justify-center py-4">
+                {loadingMore && <SignalPostSkeleton />}
+              </div>
             )}
           </>
         )}
