@@ -14,6 +14,7 @@ import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
+import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
 import { vibrateTap } from '../motion';
 
@@ -617,17 +618,20 @@ export function SignalPostCard({
         </button>
       </div>
 
-      {/* A non-Owner has no "Comment" action to tap (see isOwnerViewer
-          above) but section 11's own rule still lets them read — a
-          plain text link, not a button that implies they could write
-          one, appears only once real comments actually exist. */}
-      {!isOwnerViewer && post.commentCount > 0 && (
-        <button
-          onClick={() => setCommentsSheetOpen(true)}
-          className="pressable block w-full px-3 pb-2 text-left text-caption font-medium text-muted hover:text-ink sm:px-4"
-        >
-          View {post.commentCount === 1 ? '1 comment' : `${compact(post.commentCount)} comments`}
-        </button>
+      {/* Owner/CX-team comments are public — they render right here,
+          automatically, for every viewer the moment at least one exists,
+          no tap required. SignalComments itself still only shows the
+          write composer to the Owner (isOwnerViewer above already keeps
+          the dedicated "Comment" action Owner-only for actually writing
+          one via the sheet). */}
+      {post.commentCount > 0 && !post.commentsDisabled && (
+        <div className="border-t border-line">
+          <SignalComments
+            postId={post.id}
+            canModerateAll={canManage}
+            onCountChanged={(delta) => onChanged({ ...post, commentCount: post.commentCount + delta })}
+          />
+        </div>
       )}
 
       {/* Owner/Admin only — the real numbers behind the three actions
