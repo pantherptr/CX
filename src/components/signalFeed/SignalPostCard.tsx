@@ -6,8 +6,8 @@ import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import {
   EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
-  setEmpirePostFeatured, markEmpirePostViewed, incrementEmpirePostImpression, incrementEmpirePostShare,
-  reportEmpireContent, mediaKindFromPath, type EmpirePost,
+  setEmpirePostFeatured, setEmpirePostProfilePin, setEmpirePostArchived, markEmpirePostViewed,
+  incrementEmpirePostImpression, incrementEmpirePostShare, reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -369,6 +369,34 @@ export function SignalPostCard({
     onPinToggled?.();
   };
 
+  const handleProfilePinToggle = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    const { error } = await setEmpirePostProfilePin(post.id, !post.pinnedToProfile);
+    setBusy(false);
+    if (error) {
+      toast({ title: 'Could not update pin', desc: error, icon: 'info' });
+      return;
+    }
+    onChanged({ ...post, pinnedToProfile: !post.pinnedToProfile });
+  };
+
+  const handleArchiveToggle = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    const nextArchived = !post.isArchived;
+    const { error } = await setEmpirePostArchived(post.id, nextArchived);
+    setBusy(false);
+    if (error) {
+      toast({ title: 'Could not update archive', desc: error, icon: 'info' });
+      return;
+    }
+    // Archiving also clears the profile pin server-side (a hidden post
+    // can't stay pinned) — reflect that locally rather than waiting on
+    // a refetch to notice.
+    onChanged({ ...post, isArchived: nextArchived, pinnedToProfile: nextArchived ? false : post.pinnedToProfile });
+  };
+
   const handleFeatureToggle = async () => {
     setMenuOpen(false);
     setBusy(true);
@@ -433,6 +461,7 @@ export function SignalPostCard({
             {post.publisherType !== 'self' && `${categoryLabel(post.category)} · `}
             {timeAgo(post.createdAt)}
             {post.editedAt && ' · Edited'}
+            {post.isArchived && ' · Archived'}
           </p>
         </div>
         {Boolean(session?.user.id) && (
@@ -462,6 +491,16 @@ export function SignalPostCard({
                       <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
                         <Icon name="edit" size={15} /> Edit post
                       </button>
+                      {isOwnPost && (
+                        <>
+                          <button onClick={handleProfilePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
+                            <Icon name="pinned" size={15} fill={post.pinnedToProfile} /> {post.pinnedToProfile ? 'Unpin from profile' : 'Pin to my profile'}
+                          </button>
+                          <button onClick={handleArchiveToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
+                            <Icon name="package" size={15} /> {post.isArchived ? 'Unarchive' : 'Archive'}
+                          </button>
+                        </>
+                      )}
                       {canManage && (
                         <>
                           <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
 import { CarCard } from '../CarCard';
@@ -7,8 +7,11 @@ import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
 import { fetchHostCars } from '../../lib/data/cars';
 import { fetchEmpirePostsByAuthor, type EmpirePost } from '../../lib/data/empireFeed';
+import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empireStories';
 import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
+import { SignalStoryViewer } from './SignalStoryViewer';
+import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { FollowButton } from './FollowButton';
 import { useAuth } from '../../lib/auth';
 
@@ -43,6 +46,22 @@ export function SignalProfileDetail({
   const [loaded, setLoaded] = useState(isOfficialVoice);
   const [cars, setCars] = useState<Car[] | null>(null);
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const isMe = !isOfficialVoice && session?.user.id === authorId;
+
+  // Reuses the exact same active-Stories fetch SignalStoriesBar already
+  // does, just filtered down to this one identity — no separate
+  // "this author's story" query. `publisherType` matches the same
+  // 'cx'/'assistant'/real-author-id distinction resolveSignalIdentity
+  // uses everywhere else.
+  const { stories: activeStories, refresh: refreshStories } = useActiveEmpireStories();
+  const myStory = useMemo(() => {
+    if (!activeStories) return null;
+    if (authorId === 'cx') return activeStories.find((s) => s.publisherType === 'cx') ?? null;
+    if (authorId === 'assistant') return activeStories.find((s) => s.publisherType === 'assistant') ?? null;
+    return activeStories.find((s) => s.authorId === authorId && s.publisherType !== 'cx' && s.publisherType !== 'assistant') ?? null;
+  }, [activeStories, authorId]);
 
   useEffect(() => {
     if (isOfficialVoice) return;
@@ -83,7 +102,11 @@ export function SignalProfileDetail({
 
       <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-6">
         {isOfficialVoice ? (
-          <OfficialVoiceHeader type={authorId as 'cx' | 'assistant'} />
+          <OfficialVoiceHeader
+            type={authorId as 'cx' | 'assistant'}
+            hasActiveStory={Boolean(myStory)}
+            onOpenStory={() => setStoryViewerOpen(true)}
+          />
         ) : !loaded ? (
           <div className="card animate-pulse p-5">
             <div className="skeleton mb-3 h-16 w-16 rounded-full" />
@@ -101,7 +124,13 @@ export function SignalProfileDetail({
             <p className="mt-4 text-body text-muted">This profile no longer exists.</p>
           </div>
         ) : (
-          <ProfileHeader profile={profile} isMe={session?.user.id === profile.id} />
+          <ProfileHeader
+            profile={profile}
+            isMe={isMe}
+            hasActiveStory={Boolean(myStory)}
+            onOpenStory={() => setStoryViewerOpen(true)}
+            onEditProfile={() => setEditProfileOpen(true)}
+          />
         )}
 
         {!isOfficialVoice && profile && profile !== 'error' && cars && cars.length > 0 && (
@@ -117,8 +146,25 @@ export function SignalProfileDetail({
 
         {!isOfficialVoice && posts && posts.length > 0 && (
           <div className="mt-6">
-            <h2 className="mb-3 text-detail font-semibold uppercase tracking-wide text-muted">SIGNAL Posts</h2>
-            {posts.map((post) => (
+            {/* fetch_empire_posts_by_author already orders pinned_to_
+                profile first — at most one, so this is always either
+                empty or a single post. Shown once, separately, so it
+                never also repeats in the plain list below it. */}
+            {posts[0]?.pinnedToProfile && (
+              <div className="mb-4">
+                <p className="mb-2 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-muted">
+                  <Icon name="pinned" size={12} fill /> Pinned
+                </p>
+                <SignalPostCard
+                  post={posts[0]}
+                  canManage={canManage}
+                  onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
+                  onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
+                />
+              </div>
+            )}
+            <h2 className="mb-3 text-detail font-semibold uppercase tracking-wide text-muted">Posts</h2>
+            {posts.filter((p) => !p.pinnedToProfile).map((post) => (
               <SignalPostCard
                 key={post.id}
                 post={post}
@@ -130,22 +176,60 @@ export function SignalProfileDetail({
           </div>
         )}
       </div>
+
+      {storyViewerOpen && myStory && (
+        <SignalStoryViewer
+          stories={[myStory]}
+          startIndex={0}
+          canManage={canManage || isMe}
+          onClose={() => setStoryViewerOpen(false)}
+          onStoryDeleted={() => { setStoryViewerOpen(false); refreshStories(); }}
+          onDeleteStory={deleteEmpireStory}
+        />
+      )}
+
+      {editProfileOpen && (
+        <SignalEditProfileSheet
+          onClose={() => setEditProfileOpen(false)}
+          onSaved={(updates) =>
+            setProfile((prev) => (prev && prev !== 'error' ? { ...prev, ...updates } : prev))
+          }
+        />
+      )}
     </div>
   );
 }
 
-function OfficialVoiceHeader({ type }: { type: 'cx' | 'assistant' }) {
+function OfficialVoiceHeader({
+  type,
+  hasActiveStory,
+  onOpenStory,
+}: {
+  type: 'cx' | 'assistant';
+  hasActiveStory: boolean;
+  onOpenStory: () => void;
+}) {
   const isCx = type === 'cx';
+  const avatar = isCx ? (
+    <span className="grid h-16 w-16 place-items-center rounded-full bg-white ring-1 ring-line">
+      <img src="/cx-logo-symbol.png" alt="" className="h-10 w-10 object-contain" />
+    </span>
+  ) : (
+    <span className="grid h-16 w-16 place-items-center rounded-full bg-noir text-accent-bright">
+      <Icon name="headset" size={28} />
+    </span>
+  );
   return (
     <div className="card flex flex-col items-center gap-3 p-6 text-center">
-      {isCx ? (
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-white ring-1 ring-line">
-          <img src="/cx-logo-symbol.png" alt="" className="h-10 w-10 object-contain" />
-        </span>
+      {/* Same ring-around-the-avatar treatment SignalStoriesBar already
+          uses for an unviewed Story — reused, not reinvented, for the
+          one case here (Owner-published-as-CX/Assistant Story). */}
+      {hasActiveStory ? (
+        <button onClick={onOpenStory} aria-label="View Story" className="pressable inline-grid place-items-center rounded-full bg-gradient-to-tr from-accent-bright via-accent to-accent-700 p-[3px]">
+          <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
+        </button>
       ) : (
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-noir text-accent-bright">
-          <Icon name="headset" size={28} />
-        </span>
+        avatar
       )}
       <div>
         <div className="flex items-center justify-center gap-1.5">
@@ -166,7 +250,19 @@ function OfficialVoiceHeader({ type }: { type: 'cx' | 'assistant' }) {
   );
 }
 
-function ProfileHeader({ profile, isMe }: { profile: SignalProfile; isMe: boolean }) {
+function ProfileHeader({
+  profile,
+  isMe,
+  hasActiveStory,
+  onOpenStory,
+  onEditProfile,
+}: {
+  profile: SignalProfile;
+  isMe: boolean;
+  hasActiveStory: boolean;
+  onOpenStory: () => void;
+  onEditProfile: () => void;
+}) {
   const role: 'owner' | 'admin' | 'host' | 'client' | null =
     profile.isOwner ? 'owner' : profile.isAdmin ? 'admin' : profile.isHost ? 'host' : profile.isVerifiedClient ? 'client' : null;
   // Follow only makes sense for the two Community creator roles — see
@@ -175,15 +271,33 @@ function ProfileHeader({ profile, isMe }: { profile: SignalProfile; isMe: boolea
   const canBeFollowed = !isMe && (profile.isHost || profile.isVerifiedClient);
   const [followersCount, setFollowersCount] = useState(profile.followersCount);
 
+  const avatar = profile.avatarUrl ? (
+    <img src={profile.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+  ) : (
+    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+      <Icon name="user" size={28} />
+    </span>
+  );
+
   return (
     <div className="card p-5">
       <div className="flex items-start gap-4">
-        {profile.avatarUrl ? (
-          <img src={profile.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+        {/* Same ring-around-the-avatar treatment SignalStoriesBar already
+            uses — a solid accent ring for your own active Story, the
+            gradient "unviewed" ring for someone else's, reused as-is
+            rather than a new visual invented for this one spot. */}
+        {hasActiveStory ? (
+          <button
+            onClick={onOpenStory}
+            aria-label="View Story"
+            className={`pressable inline-grid shrink-0 place-items-center rounded-full p-[3px] ${
+              isMe ? 'bg-accent-700' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
+            }`}
+          >
+            <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
+          </button>
         ) : (
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-            <Icon name="user" size={28} />
-          </span>
+          avatar
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
@@ -198,7 +312,11 @@ function ProfileHeader({ profile, isMe }: { profile: SignalProfile; isMe: boolea
                 </p>
               )}
             </div>
-            {canBeFollowed && (
+            {isMe ? (
+              <button onClick={onEditProfile} className="pressable rounded-full border border-line px-3.5 py-1.5 text-caption font-semibold text-ink transition-colors hover:border-line-strong">
+                Edit Profile
+              </button>
+            ) : canBeFollowed && (
               <FollowButton
                 userId={profile.id}
                 initialFollowing={profile.followedByMe}

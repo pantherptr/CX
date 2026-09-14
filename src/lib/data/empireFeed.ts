@@ -66,6 +66,16 @@ export interface EmpirePost {
   mediaUrls: string[];
   isPinned: boolean;
   isFeatured: boolean;
+  /** A regular publisher's own "pin to my profile" — distinct from
+   *  `isPinned` (the single, global, Owner/Admin "Pinned Announcement").
+   *  At most one true per author, enforced server-side. Only returned by
+   *  the RPCs that actually need it (feed, post-by-id, posts-by-author);
+   *  falls back to `false` elsewhere — see mapEmpirePost. */
+  pinnedToProfile: boolean;
+  /** Hidden from the public feed/other viewers' view of the profile, but
+   *  still visible to its own author (fetch_empire_posts_by_author's own
+   *  author-scoped exception) — never deleted. */
+  isArchived: boolean;
   commentsDisabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -138,6 +148,13 @@ interface EmpirePostRow {
   media_paths: string[];
   is_pinned: boolean;
   is_featured: boolean;
+  /** Only actually present on rows from RPCs that select it — absent
+   *  (undefined at runtime) from the older pinned/featured/trending/
+   *  saved/search functions, same as `vehicle` below; mapEmpirePost
+   *  defaults both to false/null rather than assuming every RPC has
+   *  caught up. */
+  pinned_to_profile?: boolean;
+  is_archived?: boolean;
   comments_disabled: boolean;
   created_at: string;
   updated_at: string;
@@ -187,6 +204,8 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,
     isFeatured: row.is_featured,
+    pinnedToProfile: row.pinned_to_profile ?? false,
+    isArchived: row.is_archived ?? false,
     commentsDisabled: row.comments_disabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -388,6 +407,8 @@ function mapCreatedPost(row: {
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,
     isFeatured: row.is_featured,
+    pinnedToProfile: false,
+    isArchived: false,
     commentsDisabled: row.comments_disabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -419,6 +440,25 @@ export async function deleteEmpirePost(postId: string): Promise<{ error: string 
 
 export async function setEmpirePostPinned(postId: string, pinned: boolean): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('set_empire_post_pinned', { p_post_id: postId, p_pinned: pinned });
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+/** A regular publisher's own "pin to my profile" — see set_empire_post_
+ *  profile_pin's own comment for how this stays distinct from the
+ *  Owner/Admin-only `setEmpirePostPinned` above. Author-only server-side;
+ *  at most one true per author. */
+export async function setEmpirePostProfilePin(postId: string, pinned: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_empire_post_profile_pin', { p_post_id: postId, p_pinned: pinned });
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+/** Hides a post from the public feed/other viewers without deleting it
+ *  — the author can still see it themselves (fetch_empire_posts_by_
+ *  author's own exception). Author-only server-side. */
+export async function setEmpirePostArchived(postId: string, archived: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_empire_post_archived', { p_post_id: postId, p_archived: archived });
   if (error) return { error: error.message };
   return { error: null };
 }

@@ -89,3 +89,32 @@ export async function toggleProfileFollow(userId: string): Promise<{ following: 
   if (error) return { following: null, error: error.message };
   return { following: data as boolean, error: null };
 }
+
+/** Uploads a new photo to the exact same `avatars` bucket/path convention
+ *  Settings.tsx's own `handleAvatarChange` already uses — this is not a
+ *  second avatar system, it's the same one, just reachable from inside
+ *  Signal's own profile. Returns the new public URL to pass to
+ *  `updateSignalProfile`. */
+export async function uploadSignalAvatar(userId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/avatar-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
+  if (uploadError) return { url: null, error: uploadError.message };
+  const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+  return { url: pub.publicUrl, error: null };
+}
+
+/** Updates the real `profiles` row directly — the exact same table
+ *  Settings.tsx's own personal-info form and avatar upload already
+ *  write to (no RPC exists for this today; Settings.tsx doesn't use one
+ *  either). A photo or bio changed here is the SAME photo/bio shown on
+ *  the main CX Rent profile, Messages, Bookings, everywhere — there is
+ *  only ever one `profiles` row per user. RLS already lets a user update
+ *  their own row (Settings.tsx relies on the same policy). */
+export async function updateSignalProfile(userId: string, updates: { bio?: string; avatarUrl?: string }): Promise<{ error: string | null }> {
+  const payload: Record<string, string> = {};
+  if (updates.bio !== undefined) payload.bio = updates.bio;
+  if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
+  const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+  return { error: error?.message ?? null };
+}

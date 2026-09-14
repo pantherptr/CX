@@ -209,6 +209,7 @@ export function SignalPostComposer({
         viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe,
         authorIsOwner: editing.authorIsOwner, authorIsAdmin: editing.authorIsAdmin,
         authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
+        pinnedToProfile: editing.pinnedToProfile, isArchived: editing.isArchived,
         vehicle: canAttachVehicle ? selectedVehicle : editing.vehicle,
       } : { ...result.post, vehicle: canAttachVehicle ? selectedVehicle : null });
     } finally {

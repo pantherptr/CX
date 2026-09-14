@@ -40,6 +40,8 @@ function mockPost(overrides: Partial<EmpirePost>): EmpirePost {
     mediaUrls: [],
     isPinned: false,
     isFeatured: false,
+    pinnedToProfile: false,
+    isArchived: false,
     commentsDisabled: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
