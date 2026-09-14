@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Host } from '../data/types';
 import { Icon } from './Icon';
+import { Img } from './motion';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { findOrCreateConversation } from '../lib/data/messages';
@@ -36,7 +37,16 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
               upload one — rendering src="" would fire a real browser
               request for the whole page again. */}
           {host.avatar ? (
-            <img src={host.avatar} alt={host.name} className="h-16 w-16 rounded-full object-cover" />
+            <Img
+              src={host.avatar}
+              alt={host.name}
+              className="h-16 w-16 rounded-full object-cover"
+              fallback={
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={26} />
+                </span>
+              }
+            />
           ) : (
             <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
               <Icon name="user" size={26} />

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher } from '../components/Concierge';
-import { Reveal, useCountUp } from '../components/motion';
+import { Img, Reveal, useCountUp } from '../components/motion';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SectionHead } from '../components/primitives';
 import { useAuth } from '../lib/auth';
@@ -114,7 +114,12 @@ function GarageCarCard({ booking }: { booking: Booking }) {
   return (
     <div className="card overflow-hidden">
       <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
-        <img src={booking.car.image} alt={`${booking.car.make} ${booking.car.model}`} className="h-full w-full object-cover" />
+        <Img
+          src={booking.car.image}
+          alt={`${booking.car.make} ${booking.car.model}`}
+          className="h-full w-full object-cover"
+          fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={28} /></span>}
+        />
         <span className="absolute left-3 top-3 badge badge-glass capitalize">{classifyBooking(booking)}</span>
       </div>
       <div className="p-4">
@@ -272,7 +277,7 @@ export default function Garage() {
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden bg-noir">
         {heroImage && (
-          <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+          <Img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" fallback={null} />
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir via-noir/75 to-noir/40" />
         <div
@@ -360,10 +365,11 @@ export default function Garage() {
                   <div key={car.id} className="card overflow-hidden">
                     <Link to={`/cars/${car.slug}?build=1&view=${build.view}`} className="block">
                       <div className="aspect-[4/3] overflow-hidden bg-panel-2">
-                        <img
+                        <Img
                           src={unsplash(car.images[Math.min(build.view, car.images.length - 1)] ?? car.images[0], 500)}
                           alt={`${car.make} ${car.model}`}
                           className="h-full w-full object-cover"
+                          fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={24} /></span>}
                         />
                       </div>
                     </Link>
@@ -486,10 +492,11 @@ export default function Garage() {
               <SectionHead eyebrow="Featured" title="Car of the Week" />
               <div className="mt-6 card overflow-hidden lg:flex">
                 <div className="lg:w-3/5">
-                  <img
+                  <Img
                     src={unsplash(carOfTheWeek.images[0], 1200)}
                     alt={`${carOfTheWeek.make} ${carOfTheWeek.model}`}
                     className="h-64 w-full object-cover lg:h-full"
+                    fallback={<span className="grid h-64 w-full place-items-center bg-panel text-muted lg:h-full"><Icon name="car" size={32} /></span>}
                   />
                 </div>
                 <div className="flex flex-1 flex-col justify-center p-6 sm:p-8">

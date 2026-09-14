@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { markEmpireStoryViewed, deleteEmpireStory, type EmpireStory } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { StoryTextSlide } from './StoryTextSlide';
+import { useAuth } from '../../lib/auth';
+import { SharedAvatar, useHideForNavigation } from '../motionKit';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -48,7 +51,13 @@ export function SignalStoryViewer({
 }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { session } = useAuth();
   const [storyIndex, setStoryIndex] = useState(startIndex);
+  // Story -> Profile -> Story: opening a profile from here must not
+  // unmount (and lose) this viewer's position — see useHideForNavigation's
+  // own comment for the mechanics. `hidingForProfile` hides the output but
+  // keeps every hook's state (storyIndex/slideIndex/paused/dragY) alive.
+  const { hidden: hidingForProfile, hideForNavigation } = useHideForNavigation(pathname);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -72,6 +81,14 @@ export function SignalStoryViewer({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const story = stories[storyIndex];
+  // The shared-element morph (see SignalStoriesBar's matching comment)
+  // only ever connects to the ONE tile that was actually tapped —
+  // `startIndex` is stable for this viewer instance's whole lifetime, so
+  // this is fixed once, not recomputed as `storyIndex` changes underneath
+  // it. Swiping to a different Story inside the viewer just stops
+  // sharing the id (falls back to a plain avatar) rather than trying to
+  // reconnect to a different bar tile in real time.
+  const initialStoryId = stories[startIndex]?.id;
   const slide = story?.slides[slideIndex];
   const isVideo = slide?.mediaType === 'video';
   const isText = slide?.mediaType === 'text';
@@ -114,9 +131,9 @@ export function SignalStoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyIndex, slideIndex]);
 
-  if (!story || !slide) return null;
+  if (!story || !slide || hidingForProfile) return null;
 
-  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin);
+  const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin, story.authorUsername);
   // Same real-account routing SignalPostCard's signalProfileHref uses —
   // "cx"/"assistant" get the static official info block, everyone else
   // (Owner's real row, or a Host/Verified Client's own Story) opens their
@@ -128,9 +145,19 @@ export function SignalStoryViewer({
     : story.publisherType === 'assistant' ? `${profileBase}/profile/assistant`
     : `${profileBase}/profile/${story.authorId}`;
   const openProfile = () => {
-    onClose();
+    // Already on this exact profile (this viewer is itself embedded in
+    // that profile screen, e.g. viewing your own Story from your own
+    // profile) — navigating is a no-op, so there's nothing that will
+    // ever cover us; hiding here would just get stuck forever since
+    // pathname would never actually change away and back.
+    if (profileHref === pathname) return;
+    hideForNavigation();
     navigate(profileHref);
   };
+  // Mirrors delete_empire_story's own real rule (author-or-admin, see
+  // 0058's own comment) — `canManage` alone under-reports what a Host/
+  // Verified Client is actually allowed to do to their own Story.
+  const canDelete = canManage || (session != null && story.authorId === session.user.id);
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {
@@ -233,152 +260,172 @@ export function SignalStoryViewer({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex flex-col bg-black animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-      style={{
-        transform: `translateY(${closing ? '100%' : `${dragY}px`})`,
-        opacity: closing ? 0 : dragY > 0 ? Math.max(0.4, 1 - dragY / 400) : 1,
-        transition: dragY === 0 || closing ? 'transform 220ms ease-out, opacity 220ms ease-out' : 'none',
-      }}
-    >
-      <div className="absolute inset-x-0 top-0 z-10 flex gap-1 px-2 pt-safe">
-        {story.slides.map((s, i) => (
-          <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
-            {i < slideIndex ? (
-              <div className="h-full w-full bg-white" />
-            ) : i === slideIndex ? (
-              isVideo ? (
-                // Driven by the video's own timeupdate below, not a
-                // fixed-duration CSS animation — an image slide has no
-                // natural "done" signal of its own, a video already does.
-                <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
-              ) : (
-                <div
-                  key={`${storyIndex}-${slideIndex}`}
-                  className="h-full bg-white"
-                  style={{
-                    width: '0%',
-                    animationName: 'signal-story-progress',
-                    animationDuration: `${SLIDE_DURATION_MS}ms`,
-                    animationTimingFunction: 'linear',
-                    animationFillMode: 'forwards',
-                    animationPlayState: paused ? 'paused' : 'running',
-                  }}
-                  onAnimationEnd={goNextSlide}
-                />
-              )
-            ) : null}
-          </div>
-        ))}
-      </div>
-
-      <div className="relative z-10 flex h-14 items-center gap-2.5 px-4 pt-safe">
-        <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
-          <SignalIdentityAvatar identity={identity} size={32} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
-              <SignalIdentityBadge identity={identity} size={13} />
-              <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+    // On mobile this stage fills the whole screen exactly as before; from
+    // `sm:` up it becomes a centered, phone-proportioned card over a dim
+    // backdrop instead of stretching full-bleed across a wide desktop
+    // viewport — the brief's own "do not stretch the Story experience
+    // unnecessarily" ask, without a second/different viewer implementation.
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black animate-fade-in sm:bg-black/90 sm:p-6">
+      <div
+        className="relative flex h-full w-full flex-col overflow-hidden bg-black sm:h-[min(88vh,900px)] sm:w-auto sm:aspect-[9/16] sm:rounded-2xl sm:shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        style={{
+          transform: `translateY(${closing ? '100%' : `${dragY}px`})`,
+          opacity: closing ? 0 : dragY > 0 ? Math.max(0.4, 1 - dragY / 400) : 1,
+          transition: dragY === 0 || closing ? 'transform 220ms ease-out, opacity 220ms ease-out' : 'none',
+        }}
+      >
+        <div className="absolute inset-x-0 top-0 z-10 flex gap-1 px-2 pt-safe">
+          {story.slides.map((s, i) => (
+            <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+              {i < slideIndex ? (
+                <div className="h-full w-full bg-white" />
+              ) : i === slideIndex ? (
+                isVideo ? (
+                  // Driven by the video's own timeupdate below, not a
+                  // fixed-duration CSS animation — an image slide has no
+                  // natural "done" signal of its own, a video already does.
+                  <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
+                ) : (
+                  <div
+                    key={`${storyIndex}-${slideIndex}`}
+                    className="h-full bg-white"
+                    style={{
+                      width: '0%',
+                      animationName: 'signal-story-progress',
+                      animationDuration: `${SLIDE_DURATION_MS}ms`,
+                      animationTimingFunction: 'linear',
+                      animationFillMode: 'forwards',
+                      animationPlayState: paused ? 'paused' : 'running',
+                    }}
+                    onAnimationEnd={goNextSlide}
+                  />
+                )
+              ) : null}
             </div>
-            {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
-          </div>
-        </button>
-        <div className="ml-auto flex items-center gap-1">
-          {canManage && (
+          ))}
+        </div>
+
+        <div className="relative z-10 flex h-14 items-center gap-2.5 px-4 pt-safe">
+          <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
+            <SharedAvatar id={`story-avatar-${initialStoryId}`} active={story.id === initialStoryId}>
+              <SignalIdentityAvatar identity={identity} size={32} />
+            </SharedAvatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
+                <SignalIdentityBadge identity={identity} size={13} />
+                <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+              </div>
+              {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
+            </div>
+          </button>
+          <div className="ml-auto flex items-center gap-1">
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                aria-label="Delete story"
+                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Icon name="trash" size={18} />
+              </button>
+            )}
             <button
-              onClick={handleDelete}
-              disabled={deleting}
-              aria-label="Delete story"
+              onClick={onClose}
+              aria-label="Close"
               className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             >
-              <Icon name="trash" size={18} />
+              <Icon name="x" size={22} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="relative flex flex-1 items-center justify-center overflow-hidden"
+          onMouseDown={startHold}
+          onMouseUp={endHold}
+          onMouseLeave={endHold}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {isVideo ? (
+            <video
+              key={slide.id}
+              ref={videoRef}
+              src={slide.mediaUrl}
+              poster={slide.posterUrl ?? undefined}
+              autoPlay
+              muted={muted}
+              playsInline
+              // Stopping playback on leave is free: this element unmounts
+              // the moment `slide`/`story` changes or the viewer closes —
+              // that's what actually stops a video in a real browser, no
+              // manual cleanup needed.
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                if (v.duration) setVideoProgress((v.currentTime / v.duration) * 100);
+              }}
+              onEnded={goNextSlide}
+              className="max-h-full max-w-full animate-fade-in object-contain"
+            />
+          ) : isText ? (
+            <StoryTextSlide
+              key={slide.id}
+              content={slide.textContent ?? ''}
+              align={slide.textAlign}
+              size={slide.textSize}
+              bg={slide.bgStyle}
+              className="animate-fade-in"
+            />
+          ) : (
+            <Img
+              key={slide.id}
+              src={slide.mediaUrl}
+              alt=""
+              className="max-h-full max-w-full animate-fade-in object-contain"
+              fallback={
+                <div className="flex flex-col items-center gap-2 text-white/60">
+                  <Icon name="image" size={32} />
+                  <span className="text-detail">Image unavailable</span>
+                </div>
+              }
+            />
+          )}
+
+          {isVideo && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+              aria-label={muted ? 'Unmute' : 'Mute'}
+              className="absolute bottom-4 right-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+            >
+              <Icon name={muted ? 'volumeOff' : 'volume'} size={17} />
             </button>
           )}
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            <Icon name="x" size={22} />
-          </button>
+
+          <button onClick={() => handleZoneClick('prev')} aria-label="Previous" className="absolute inset-y-0 left-0 w-1/3" />
+          <button onClick={() => handleZoneClick('next')} aria-label="Next" className="absolute inset-y-0 right-0 w-1/3" />
+
+          {slide.caption && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-16">
+              <p className="text-body leading-relaxed text-white">{slide.caption}</p>
+            </div>
+          )}
+
+          {slide.ctaLabel && slide.ctaUrl && (
+            <a
+              href={slide.ctaUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="btn btn-accent-bright btn-sm absolute bottom-8 left-1/2 -translate-x-1/2"
+            >
+              {slide.ctaLabel}
+            </a>
+          )}
         </div>
-      </div>
-
-      <div
-        className="relative flex flex-1 items-center justify-center overflow-hidden"
-        onMouseDown={startHold}
-        onMouseUp={endHold}
-        onMouseLeave={endHold}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {isVideo ? (
-          <video
-            key={slide.id}
-            ref={videoRef}
-            src={slide.mediaUrl}
-            poster={slide.posterUrl ?? undefined}
-            autoPlay
-            muted={muted}
-            playsInline
-            // Stopping playback on leave is free: this element unmounts
-            // the moment `slide`/`story` changes or the viewer closes —
-            // that's what actually stops a video in a real browser, no
-            // manual cleanup needed.
-            onTimeUpdate={(e) => {
-              const v = e.currentTarget;
-              if (v.duration) setVideoProgress((v.currentTime / v.duration) * 100);
-            }}
-            onEnded={goNextSlide}
-            className="max-h-full max-w-full animate-fade-in object-contain"
-          />
-        ) : isText ? (
-          <StoryTextSlide
-            key={slide.id}
-            content={slide.textContent ?? ''}
-            align={slide.textAlign}
-            size={slide.textSize}
-            bg={slide.bgStyle}
-            className="animate-fade-in"
-          />
-        ) : (
-          <img key={slide.id} src={slide.mediaUrl} alt="" className="max-h-full max-w-full animate-fade-in object-contain" />
-        )}
-
-        {isVideo && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
-            aria-label={muted ? 'Unmute' : 'Mute'}
-            className="absolute bottom-4 right-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
-          >
-            <Icon name={muted ? 'volumeOff' : 'volume'} size={17} />
-          </button>
-        )}
-
-        <button onClick={() => handleZoneClick('prev')} aria-label="Previous" className="absolute inset-y-0 left-0 w-1/3" />
-        <button onClick={() => handleZoneClick('next')} aria-label="Next" className="absolute inset-y-0 right-0 w-1/3" />
-
-        {slide.caption && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-16">
-            <p className="text-body leading-relaxed text-white">{slide.caption}</p>
-          </div>
-        )}
-
-        {slide.ctaLabel && slide.ctaUrl && (
-          <a
-            href={slide.ctaUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="btn btn-accent-bright btn-sm absolute bottom-8 left-1/2 -translate-x-1/2"
-          >
-            {slide.ctaLabel}
-          </a>
-        )}
       </div>
     </div>
   );

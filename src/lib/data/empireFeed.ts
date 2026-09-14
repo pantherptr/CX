@@ -44,6 +44,12 @@ export interface EmpirePost {
   authorId: string;
   authorName: string;
   authorAvatarUrl: string | null;
+  /** `null` until the real author has chosen one — see
+   *  setSignalUsername in signalProfile.ts. Not returned by every read
+   *  RPC yet (pinned/featured/trending/saved/search still predate this);
+   *  mapEmpirePost defaults those to null, same pattern already used for
+   *  `vehicle`. */
+  authorUsername: string | null;
   /** Always 'owner' or 'admin' in practice — only they can author a post
    *  — but typed as the same union messages.ts uses so `<VerifiedBadge>`
    *  takes it directly with no cast. */
@@ -138,6 +144,7 @@ interface EmpirePostRow {
   author_id: string;
   author_name: string | null;
   author_avatar_url: string | null;
+  author_username?: string | null;
   author_is_owner: boolean;
   author_is_admin: boolean;
   author_is_host: boolean;
@@ -192,6 +199,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     authorId: row.author_id,
     authorName: row.author_name ?? 'CX Rent',
     authorAvatarUrl: row.author_avatar_url,
+    authorUsername: row.author_username ?? null,
     authorRole: roleFromFlags({ is_owner: row.author_is_owner, is_admin: row.author_is_admin, is_host: row.author_is_host }),
     authorIsOwner: row.author_is_owner,
     authorIsAdmin: row.author_is_admin,
@@ -243,25 +251,45 @@ export async function fetchEmpireFeed(
   return (data as EmpirePostRow[]).map(mapEmpirePost);
 }
 
+// How often to quietly check for newer content while the feed is already
+// loaded — a "peek" (one row, no cursor), not a re-fetch of the whole
+// page. Frequent enough that new posts show up promptly, infrequent
+// enough to be a non-event on the network/battery.
+const NEW_POSTS_POLL_MS = 30_000;
+
 /** Paginated feed — a plain `useX` hook isn't enough here since the list
  *  grows via `loadMore`, not a single re-fetch; `refresh` still resets it
  *  to the first page the same way every other hook's `refresh` re-runs
  *  its initial fetch. Pinned posts are never included here (fetched
  *  separately via `useEmpirePinnedPost` for the Featured section) — the
  *  feed RPC excludes `is_pinned` rows unconditionally. Re-fetches from
- *  the first page whenever `category`/`scope`/`authorKind` changes. */
+ *  the first page whenever `category`/`scope`/`authorKind` changes.
+ *
+ *  Also owns the "New posts" indicator: a quiet background poll compares
+ *  the real current newest post against what's already on screen and
+ *  flips `newPostsAvailable` when they diverge — never auto-prepended
+ *  (that would yank the feed out from under someone mid-scroll, exactly
+ *  what the brief calls out not to do); `loadNewPosts` is the one thing
+ *  that actually merges them in, only ever called from a real tap. */
 export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?: EmpireFeedScope) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [newPostsAvailable, setNewPostsAvailable] = useState(false);
   const scope = scopeOpts?.scope;
   const authorKind = scopeOpts?.authorKind;
+  // Read inside the poll without making the effect below re-run (and thus
+  // re-arm its interval) on every single post that loads — same ref
+  // indirection Signal.tsx's own infinite-scroll observer already uses.
+  const postsRef = useRef(posts);
+  postsRef.current = posts;
 
   const loadInitial = useCallback(async () => {
     try {
       const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
       setPosts(rows);
       setHasMore(rows.length === FEED_PAGE_SIZE);
+      setNewPostsAvailable(false);
     } catch {
       setPosts([]);
       setHasMore(false);
@@ -289,6 +317,52 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, loadingMore, hasMore, category, scope, authorKind]);
 
+  // Keyed on primitives, not `posts` itself (which gets a new identity on
+  // every page load/patch) — the interval is armed once per feed/filter
+  // and left alone, exactly the same reasoning as `loadMoreFnRef` in
+  // Signal.tsx. Only polls once a first page has actually landed, and
+  // skips a beat while the tab is backgrounded (no point spending a
+  // request on a peek nobody can see the result of yet).
+  const hasPosts = Boolean(posts && posts.length > 0);
+  useEffect(() => {
+    if (!hasPosts) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const current = postsRef.current;
+      if (!current || current.length === 0) return;
+      try {
+        const [latest] = await fetchEmpireFeed(1, undefined, category, { scope, authorKind });
+        if (!cancelled && latest && latest.id !== current[0]?.id) setNewPostsAvailable(true);
+      } catch {
+        // a failed background peek is silent — it just tries again next tick
+      }
+    };
+    const id = window.setInterval(tick, NEW_POSTS_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [hasPosts, category, scope, authorKind]);
+
+  /** Merges in whatever's actually new since the feed last loaded —
+   *  refetches the first page and prepends only the rows not already
+   *  present (by id), so a slow tap after more than one post landed still
+   *  never duplicates anything already on screen. */
+  const loadNewPosts = useCallback(async () => {
+    try {
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
+      setPosts((prev) => {
+        const existingIds = new Set((prev ?? []).map((p) => p.id));
+        const fresh = rows.filter((r) => !existingIds.has(r.id));
+        return [...fresh, ...(prev ?? [])];
+      });
+    } finally {
+      setNewPostsAvailable(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, scope, authorKind]);
+
   /** Replaces one post in place (e.g. after a like/save toggle or an
    *  edit) without a full re-fetch. */
   const patchPost = useCallback((id: string, patch: Partial<EmpirePost>) => {
@@ -299,7 +373,10 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     setPosts((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
   }, []);
 
-  return { posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost };
+  return {
+    posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost,
+    newPostsAvailable, loadNewPosts,
+  };
 }
 
 export async function fetchEmpirePinnedPost(): Promise<EmpirePost | null> {
@@ -395,6 +472,7 @@ function mapCreatedPost(row: {
     authorId: row.author_id,
     authorName: '',
     authorAvatarUrl: null,
+    authorUsername: null,
     authorRole: 'admin',
     authorIsOwner: false,
     authorIsAdmin: false,
@@ -490,6 +568,7 @@ export interface EmpireComment {
   userId: string;
   authorName: string;
   authorAvatarUrl: string | null;
+  authorUsername: string | null;
   authorIsOwner: boolean;
   authorIsAdmin: boolean;
   authorIsHost: boolean;
@@ -514,6 +593,7 @@ interface EmpireCommentRow {
   author: {
     full_name: string | null;
     avatar_url: string | null;
+    username: string | null;
     is_owner: boolean;
     is_admin: boolean;
     is_host: boolean;
@@ -528,6 +608,7 @@ function mapEmpireComment(row: EmpireCommentRow): EmpireComment {
     userId: row.user_id,
     authorName: row.author?.full_name ?? 'CX Rent user',
     authorAvatarUrl: row.author?.avatar_url ?? null,
+    authorUsername: row.author?.username ?? null,
     authorIsOwner: row.author?.is_owner ?? false,
     authorIsAdmin: row.author?.is_admin ?? false,
     authorIsHost: row.author?.is_host ?? false,
@@ -541,7 +622,7 @@ function mapEmpireComment(row: EmpireCommentRow): EmpireComment {
 export async function fetchEmpirePostComments(postId: string): Promise<EmpireComment[]> {
   const { data, error } = await supabase
     .from('empire_post_comments')
-    .select('id, post_id, user_id, body, created_at, publisher_type, author:profiles!empire_post_comments_user_id_fkey(full_name, avatar_url, is_owner, is_admin, is_host, is_verified_client)')
+    .select('id, post_id, user_id, body, created_at, publisher_type, author:profiles!empire_post_comments_user_id_fkey(full_name, avatar_url, username, is_owner, is_admin, is_host, is_verified_client)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -562,7 +643,7 @@ export async function addEmpireComment(postId: string, body: string, publisherTy
   return {
     comment: {
       id: row.id, postId: row.post_id, userId: row.user_id, body: row.body, createdAt: row.created_at,
-      authorName: '', authorAvatarUrl: null, authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false,
+      authorName: '', authorAvatarUrl: null, authorUsername: null, authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false,
       publisherType: row.publisher_type,
     },
     error: null,

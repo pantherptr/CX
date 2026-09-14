@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { useEmpireTrendingPosts, type EmpireFeedScope } from '../../lib/data/empireFeed';
 
 /** A quiet "Trending" strip — real engagement only (see
@@ -37,7 +38,13 @@ export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {
           >
             <div className="relative aspect-[4/3] w-full bg-panel">
               {p.mediaUrls[0] ? (
-                <img src={p.mediaUrls[0]} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <Img
+                  src={p.mediaUrls[0]}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>}
+                />
               ) : (
                 <span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>
               )}

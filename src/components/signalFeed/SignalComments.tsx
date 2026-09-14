@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
@@ -8,6 +9,15 @@ import {
   fetchEmpirePostComments, addEmpireComment, deleteEmpireComment, reportEmpireContent,
   type EmpireComment,
 } from '../../lib/data/empireFeed';
+
+/** Same official-voice-vs-real-account routing as SignalPostCard's own
+ *  signalProfileHref — a comment's identity block should open the exact
+ *  same profile a post's would. */
+function commentProfileHref(c: EmpireComment, base: string): string {
+  if (c.publisherType === 'cx') return `${base}/profile/cx`;
+  if (c.publisherType === 'assistant') return `${base}/profile/assistant`;
+  return `${base}/profile/${c.userId}`;
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -40,6 +50,8 @@ export function SignalComments({
 }) {
   const { profile, session } = useAuth();
   const { toast } = useApp();
+  const { pathname } = useLocation();
+  const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const [comments, setComments] = useState<EmpireComment[] | null>(null);
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +84,7 @@ export function SignalComments({
       userId: session?.user.id ?? '',
       authorName: profile?.full_name || 'Owner',
       authorAvatarUrl: profile?.avatar_url ?? null,
+      authorUsername: profile?.username ?? null,
       authorIsOwner: Boolean(profile?.is_owner),
       authorIsAdmin: Boolean(profile?.is_admin),
       authorIsHost: false,
@@ -129,14 +142,23 @@ export function SignalComments({
         <div className="flex flex-col gap-3">
           {comments.map((c) => {
             const isMine = c.userId === session?.user.id;
-            const identity = resolveSignalIdentity(c.publisherType, c.authorName, c.authorAvatarUrl, c.authorIsHost, c.authorIsVerifiedClient, c.authorIsOwner, c.authorIsAdmin);
+            const identity = resolveSignalIdentity(c.publisherType, c.authorName, c.authorAvatarUrl, c.authorIsHost, c.authorIsVerifiedClient, c.authorIsOwner, c.authorIsAdmin, c.authorUsername);
             return (
               <div key={c.id} className="group flex items-start gap-2.5">
-                <SignalIdentityAvatar identity={identity} size={28} />
+                <Link to={commentProfileHref(c, profileBase)} viewTransition className="shrink-0">
+                  <SignalIdentityAvatar identity={identity} size={28} />
+                </Link>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-detail font-semibold text-ink">{identity.name}</span>
-                    <SignalIdentityBadge identity={identity} size={12} />
+                    <Link to={commentProfileHref(c, profileBase)} viewTransition className="flex items-center gap-1 hover:underline">
+                      <span className="text-detail font-semibold text-ink">{identity.name}</span>
+                      <SignalIdentityBadge identity={identity} size={12} />
+                    </Link>
+                    {identity.username && (
+                      <Link to={commentProfileHref(c, profileBase)} viewTransition className="text-caption text-faint hover:underline">
+                        @{identity.username}
+                      </Link>
+                    )}
                     <span className="text-caption text-muted">{timeAgo(c.createdAt)}</span>
                   </div>
                   <p className="whitespace-pre-wrap break-words text-detail leading-snug text-ink-soft">{c.body}</p>

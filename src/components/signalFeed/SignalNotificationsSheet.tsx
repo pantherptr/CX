@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { NotificationsList } from '../NotificationsList';
 import { useSheetDrag } from '../motion';
+import { useHideForNavigation } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useMyNotifications, type SignalNotification } from '../../lib/data/notifications';
 
@@ -18,7 +19,13 @@ import { useMyNotifications, type SignalNotification } from '../../lib/data/noti
 export function SignalNotificationsSheet({ onClose, base }: { onClose: () => void; base: string }) {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
+  // Opening a notification's post/profile must not throw away this
+  // panel's already-loaded, already-marked-read list — same "hide, don't
+  // unmount" primitive SignalSearchOverlay and SignalStoryViewer use for
+  // their own version of this exact problem.
+  const { hidden, hideForNavigation } = useHideForNavigation(pathname);
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
 
   useEffect(() => {
@@ -26,9 +33,11 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (hidden) return null;
+
   const openNotification = (n: SignalNotification) => {
     markRead(n.id);
-    requestClose();
+    hideForNavigation();
     if (n.postId) navigate(`${base}/post/${n.postId}`, { viewTransition: true });
     else if (n.actorId) navigate(`${base}/profile/${n.actorId}`, { viewTransition: true });
   };

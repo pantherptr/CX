@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { useSheetDrag } from '../motion';
+import { MotionSheet } from '../motionKit';
+import { ProfileAvatar } from './SignalIdentityBadge';
 import { VerifiedBadge } from '../primitives';
 import { fetchProfileFollowers, fetchProfileFollowing, type FollowListUser } from '../../lib/data/signalProfile';
 
@@ -21,7 +22,8 @@ export function SignalFollowListSheet({
 }) {
   const { pathname } = useLocation();
   const base = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
-  const { handlers, style, closing, requestClose } = useSheetDrag(onClose);
+  const [closing, setClosing] = useState(false);
+  const requestClose = () => setClosing(true);
   const [users, setUsers] = useState<FollowListUser[] | null>(null);
 
   useEffect(() => {
@@ -35,27 +37,20 @@ export function SignalFollowListSheet({
   }, [userId, mode]);
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
-      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
-      role="dialog"
-      aria-modal="true"
+    <MotionSheet
+      open={!closing}
+      onClose={requestClose}
+      onExitComplete={onClose}
+      panelClassName="max-h-[75vh] rounded-t-2xl bg-surface sm:h-auto sm:max-h-[70vh] sm:max-w-sm sm:rounded-2xl"
     >
-      <div
-        className="flex max-h-[75vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:h-auto sm:max-h-[70vh] sm:max-w-sm sm:rounded-2xl"
-        style={style}
-      >
-        <div {...handlers} className="flex flex-col items-center pt-2 sm:hidden">
-          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
-        </div>
-        <div {...handlers} className="flex items-center gap-2 border-b border-line px-5 py-4">
-          <span className="font-display font-semibold capitalize text-ink">{mode}</span>
-          <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
-            <Icon name="x" size={19} />
-          </button>
-        </div>
+      <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+        <span className="font-display font-semibold capitalize text-ink">{mode}</span>
+        <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <Icon name="x" size={19} />
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto p-2">
           {users === null ? (
             <div className="space-y-1 p-2">
               {[0, 1, 2].map((i) => (
@@ -80,13 +75,7 @@ export function SignalFollowListSheet({
                   onClick={requestClose}
                   className="pressable flex items-center gap-3 rounded-xl p-2.5 transition-colors hover:bg-panel"
                 >
-                  {u.avatarUrl ? (
-                    <img src={u.avatarUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                  ) : (
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-                      <Icon name="user" size={18} />
-                    </span>
-                  )}
+                  <ProfileAvatar src={u.avatarUrl} size={40} />
                   <span className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate text-detail font-semibold text-ink">{u.fullName}</span>
                     {role && <VerifiedBadge role={role} size={13} />}
@@ -96,7 +85,6 @@ export function SignalFollowListSheet({
             })
           )}
         </div>
-      </div>
-    </div>
+    </MotionSheet>
   );
 }

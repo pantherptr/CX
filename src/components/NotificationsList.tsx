@@ -1,6 +1,17 @@
-import { EmptyState } from './primitives';
+import { EmptyState, VerifiedBadge, type VerifiedRole } from './primitives';
 import { Icon, type IconName } from './Icon';
+import { Img } from './motion';
+import { Tap, motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from './motionKit';
 import type { SignalNotification, NotificationType } from '../lib/data/notifications';
+
+/** Same precedence every other SIGNAL identity surface (posts, comments,
+ *  search) already uses — Owner outranks Admin outranks Host outranks
+ *  Verified Client, `null` (no badge) for a plain client. Keeps official/
+ *  verified actors clearly recognizable here too, without a second
+ *  identity system — this reads the exact same profile flags. */
+function actorRole(n: SignalNotification): VerifiedRole | null {
+  return n.actorIsOwner ? 'owner' : n.actorIsAdmin ? 'admin' : n.actorIsHost ? 'host' : n.actorIsVerifiedClient ? 'client' : null;
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -80,36 +91,51 @@ export function NotificationsList({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 animate-fade-up">
       {notifications.map((n) => {
         const copy = COPY[n.type];
+        const role = actorRole(n);
         return (
-          <button
+          <Tap
             key={n.id}
+            as="button"
             onClick={() => onOpen(n)}
-            className={`pressable flex w-full items-start gap-3 rounded-2xl border text-left transition-colors ${
+            scale={0.98}
+            className={`flex w-full items-start gap-3 rounded-2xl border text-left transition-colors ${
               compact ? 'p-3' : 'p-4'
             } ${n.readAt ? 'border-line bg-surface' : 'border-accent-100 bg-accent-050'}`}
           >
             {n.actorAvatarUrl ? (
-              <img src={n.actorAvatarUrl} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+              <Img
+                src={n.actorAvatarUrl}
+                alt=""
+                className="h-11 w-11 shrink-0 rounded-full object-cover"
+                fallback={
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+                    <Icon name="user" size={20} />
+                  </span>
+                }
+              />
             ) : (
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
                 <Icon name="user" size={20} />
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-body text-ink">
-                <span className="font-semibold">{n.actorName}</span> {copy.verb}
+              <p className="flex flex-wrap items-center gap-1 text-body text-ink">
+                <span className="font-semibold">{n.actorName}</span>
+                {role && <VerifiedBadge role={role} size={13} />}
+                <span>{copy.verb}</span>
               </p>
+              {n.actorUsername && <p className="truncate text-caption text-faint">@{n.actorUsername}</p>}
               {n.postPreview && <p className="mt-0.5 truncate text-caption text-muted">{n.postPreview}</p>}
               <p className="mt-1 text-caption text-faint">{timeAgo(n.createdAt)}</p>
             </div>
             <span className={`mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-full ${copy.chip}`}>
               <Icon name={copy.icon} size={14} />
             </span>
-            {!n.readAt && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-bright" />}
-          </button>
+            <UnreadDot show={!n.readAt} />
+          </Tap>
         );
       })}
       {hasMore && (
@@ -118,5 +144,27 @@ export function NotificationsList({
         </button>
       )}
     </div>
+  );
+}
+
+/** The small unread marker — a real Motion pop on the way in, and (the
+ *  more important direction) a quiet scale-out the instant a notification
+ *  is marked read, rather than an abrupt disappearance. Its own tiny
+ *  component so `AnimatePresence` can track its mount/unmount per row
+ *  without wrapping every row's much larger layout in a presence group. */
+function UnreadDot({ show }: { show: boolean }) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.span
+          className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-bright"
+          initial={reduceMotion ? undefined : { scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={reduceMotion ? undefined : { scale: 0, opacity: 0 }}
+          transition={SPRING_SNAPPY}
+        />
+      )}
+    </AnimatePresence>
   );
 }

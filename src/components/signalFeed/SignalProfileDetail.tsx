@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
 import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
@@ -14,6 +15,8 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
+import { ProfileAvatar } from './SignalIdentityBadge';
+import { Tap, SharedAvatar } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 
 const ROLE_LABEL: Record<'owner' | 'admin' | 'host' | 'client', string> = {
@@ -163,6 +166,7 @@ export function SignalProfileDetail({
             isMe={isMe}
             hasActiveStory={Boolean(myStory)}
             compress={compress}
+            editProfileOpen={editProfileOpen}
             onOpenStory={() => setStoryViewerOpen(true)}
             onEditProfile={() => setEditProfileOpen(true)}
             onOpenFollowers={() => setFollowListMode('followers')}
@@ -181,7 +185,14 @@ export function SignalProfileDetail({
                   className="pressable flex w-[168px] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong"
                 >
                   <span className="block h-24 w-full bg-panel">
-                    {car.images[0] && <img src={car.images[0]} alt="" className="h-full w-full object-cover" />}
+                    {car.images[0] && (
+                      <Img
+                        src={car.images[0]}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>}
+                      />
+                    )}
                   </span>
                   <span className="flex flex-col gap-0.5 p-2.5">
                     <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
@@ -276,7 +287,12 @@ function OfficialVoiceHeader({
   const isCx = type === 'cx';
   const avatar = isCx ? (
     <span className="grid h-20 w-20 place-items-center rounded-full bg-white ring-1 ring-line">
-      <img src="/cx-logo-symbol.png" alt="" className="h-12 w-12 object-contain" />
+      <Img
+        src="/cx-logo-symbol.png"
+        alt=""
+        className="h-12 w-12 object-contain"
+        fallback={<span className="text-lg font-semibold text-ink">CX</span>}
+      />
     </span>
   ) : (
     <span className="grid h-20 w-20 place-items-center rounded-full bg-noir text-accent-bright">
@@ -316,6 +332,7 @@ function ProfileHeader({
   isMe,
   hasActiveStory,
   compress,
+  editProfileOpen,
   onOpenStory,
   onEditProfile,
   onOpenFollowers,
@@ -325,6 +342,11 @@ function ProfileHeader({
   isMe: boolean;
   hasActiveStory: boolean;
   compress: number;
+  /** Whether the Edit Profile sheet is currently open — hands the shared
+   *  avatar id over to the sheet's own copy (see `SharedAvatar`'s own
+   *  contract) so opening it reads as "this exact photo moved down into
+   *  the sheet," not a fresh fade-in of a second one. */
+  editProfileOpen: boolean;
   onOpenStory: () => void;
   onEditProfile: () => void;
   onOpenFollowers: () => void;
@@ -345,16 +367,10 @@ function ProfileHeader({
   // below already implies verification just by who can publish one.
   const isVerifiedIdentity = Boolean(role);
 
-  const avatar = profile.avatarUrl ? (
-    <img
-      src={profile.avatarUrl}
-      alt=""
-      className={`h-20 w-20 shrink-0 rounded-full object-cover ${isVerifiedIdentity ? 'ring-1 ring-accent-bright/30' : ''}`}
-    />
-  ) : (
-    <span className={`grid h-20 w-20 shrink-0 place-items-center rounded-full bg-panel text-ink-soft ${isVerifiedIdentity ? 'ring-1 ring-accent-bright/30' : ''}`}>
-      <Icon name="user" size={32} />
-    </span>
+  const avatar = (
+    <SharedAvatar id="profile-avatar" active={isMe && !editProfileOpen}>
+      <ProfileAvatar src={profile.avatarUrl} size={80} ring={isVerifiedIdentity} />
+    </SharedAvatar>
   );
 
   return (
@@ -382,6 +398,7 @@ function ProfileHeader({
           <span className="font-display text-feature font-semibold text-ink">{profile.fullName}</span>
           {role && <VerifiedBadge role={role} size={15} />}
         </div>
+        {profile.username && <p className="mt-0.5 text-caption text-faint">@{profile.username}</p>}
         {role && <p className="mt-0.5 text-caption text-muted">{ROLE_LABEL[role]}</p>}
       </div>
 
@@ -407,9 +424,9 @@ function ProfileHeader({
       )}
 
       {isMe ? (
-        <button onClick={onEditProfile} className="pressable rounded-full border border-line px-5 py-1.5 text-detail font-semibold text-ink transition-colors hover:border-line-strong">
+        <Tap onClick={onEditProfile} scale={0.96} className="rounded-full border border-line px-5 py-1.5 text-detail font-semibold text-ink transition-colors hover:border-line-strong">
           Edit Profile
-        </button>
+        </Tap>
       ) : (
         canBeFollowed && (
           <FollowButton

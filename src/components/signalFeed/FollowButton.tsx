@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toggleProfileFollow } from '../../lib/data/signalProfile';
 import { vibrateTap } from '../motion';
+import { Tap, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
 
 /** Follow/Following toggle for a Community profile (Host or Verified
  *  Client) — the one new piece of social graph this brief asks for, on
@@ -22,6 +23,7 @@ export function FollowButton({
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
   const [justFollowed, setJustFollowed] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const handleClick = async () => {
     if (busy) return;
@@ -44,18 +46,26 @@ export function FollowButton({
   };
 
   return (
-    <button
+    <Tap
       onClick={handleClick}
       disabled={busy}
       aria-pressed={following}
-      className={`pressable group rounded-full font-semibold disabled:opacity-60 ${
+      scale={0.93}
+      // The "just followed" confirmation bump is its own `animate` target
+      // (a real Motion-driven transform), not a Tailwind `scale-*` class —
+      // once this element is a motion component, Motion owns `transform`
+      // continuously, so a CSS class fighting over the same property
+      // would just be silently overridden the whole time.
+      animate={{ scale: justFollowed ? 1.08 : 1 }}
+      transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
+      className={`group rounded-full font-semibold disabled:opacity-60 ${
         size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'
       } ${
         following
           ? 'border border-line text-ink-soft hover:border-danger/40 hover:bg-danger/5 hover:text-danger'
           : 'bg-ink text-white hover:bg-ink/90'
-      } ${justFollowed ? 'scale-[1.08]' : 'scale-100'}`}
-      style={{ transition: 'transform 200ms var(--ease-out-expo), background-color 200ms, color 200ms, border-color 200ms' }}
+      }`}
+      style={{ transition: 'background-color 200ms, color 200ms, border-color 200ms' }}
     >
       {following ? (
         <>
@@ -65,6 +75,6 @@ export function FollowButton({
       ) : (
         'Follow'
       )}
-    </button>
+    </Tap>
   );
 }

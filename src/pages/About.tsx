@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { SectionHead } from '../components/primitives';
 import { unsplash, avatar } from '../lib/img';
 
@@ -33,7 +34,12 @@ export default function About() {
           </p>
         </div>
         <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-line">
-          <img src={unsplash('photo-1503376780353-7e6692767b70', 1600)} alt="" className="aspect-[21/9] w-full object-cover" />
+          <Img
+            src={unsplash('photo-1503376780353-7e6692767b70', 1600)}
+            alt=""
+            className="aspect-[21/9] w-full object-cover"
+            fallback={<div className="aspect-[21/9] w-full bg-panel" />}
+          />
         </div>
       </section>
 
@@ -77,7 +83,12 @@ export default function About() {
         <div className="mt-9 grid grid-cols-2 gap-5 lg:grid-cols-4">
           {team.map((t) => (
             <div key={t.name} className="card overflow-hidden text-center">
-              <img src={avatar(t.n)} alt={t.name} className="aspect-square w-full object-cover" />
+              <Img
+                src={avatar(t.n)}
+                alt={t.name}
+                className="aspect-square w-full object-cover"
+                fallback={<span className="grid aspect-square w-full place-items-center bg-panel text-muted"><Icon name="user" size={28} /></span>}
+              />
               <div className="p-4">
                 <p className="font-medium text-ink">{t.name}</p>
                 <p className="text-detail text-muted">{t.role}</p>

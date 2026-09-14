@@ -28,6 +28,7 @@ function mockPost(overrides: Partial<EmpirePost>): EmpirePost {
     authorId: 'preview',
     authorName: 'CX Rent',
     authorAvatarUrl: null,
+    authorUsername: null,
     authorRole: 'owner',
     authorIsOwner: true,
     authorIsAdmin: false,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { Img } from './motion';
 import { PremiumPageLoader } from './PremiumLoader';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
@@ -111,7 +112,12 @@ function ConciergeAvatar({ size = 30 }: { size?: number }) {
       className="grid shrink-0 place-items-center rounded-full bg-accent-050 ring-1 ring-accent-100"
       style={{ width: size, height: size }}
     >
-      <img src="/cx-logo-symbol.png" alt="" className="h-[58%] w-[58%] object-contain" />
+      <Img
+        src="/cx-logo-symbol.png"
+        alt=""
+        className="h-[58%] w-[58%] object-contain"
+        fallback={<span className="text-[10px] font-semibold text-ink">CX</span>}
+      />
     </span>
   );
 }
@@ -685,7 +691,12 @@ function TopMatch({
   return (
     <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-line bg-white shadow-[0_10px_36px_-12px_rgba(22,22,26,0.14)]">
       <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
-        <img src={unsplash(car.images[0], 1400)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
+        <Img
+          src={unsplash(car.images[0], 1400)}
+          alt={`${car.make} ${car.model}`}
+          className="h-full w-full object-cover"
+          fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
         <span className="absolute right-4 top-4 rounded-full border border-accent-bright/40 bg-black/50 px-3 py-1.5 text-detail font-bold text-accent-bright backdrop-blur-md">
           {match}% MATCH
@@ -766,7 +777,12 @@ function AltCard({
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_6px_20px_-10px_rgba(22,22,26,0.12)]">
       <div className="relative aspect-[16/10] overflow-hidden">
-        <img src={unsplash(car.images[0], 700)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
+        <Img
+          src={unsplash(car.images[0], 700)}
+          alt={`${car.make} ${car.model}`}
+          className="h-full w-full object-cover"
+          fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={26} /></span>}
+        />
         <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-label font-bold text-accent-bright backdrop-blur-md">
           {match}%
         </span>

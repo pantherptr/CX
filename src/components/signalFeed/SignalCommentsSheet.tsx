@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Icon } from '../Icon';
-import { useSheetDrag } from '../motion';
+import { MotionSheet } from '../motionKit';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { SignalComments } from './SignalComments';
@@ -24,42 +25,35 @@ export function SignalCommentsSheet({
   onCountChanged: (delta: number) => void;
   onClose: () => void;
 }) {
-  const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
-  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin);
+  const [closing, setClosing] = useState(false);
+  const requestClose = () => setClosing(true);
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
-      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
-      role="dialog"
-      aria-modal="true"
+    <MotionSheet
+      open={!closing}
+      onClose={requestClose}
+      onExitComplete={onClose}
+      panelClassName="max-h-[80vh] rounded-t-2xl bg-surface sm:max-h-[70vh] sm:max-w-md sm:rounded-2xl"
     >
-      <div
-        className="flex max-h-[80vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:max-h-[70vh] sm:max-w-md sm:rounded-2xl"
-        style={dragStyle}
-      >
-        <div {...dragHandlers} className="flex flex-col items-center pt-2 sm:hidden">
-          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
+      <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
+        <SignalIdentityAvatar identity={identity} size={30} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-detail font-semibold text-ink">{identity.name}</p>
+          <p className="truncate text-caption text-muted">{post.body}</p>
         </div>
-        <div {...dragHandlers} className="flex items-center gap-2.5 border-b border-line px-4 py-3">
-          <SignalIdentityAvatar identity={identity} size={30} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-detail font-semibold text-ink">{identity.name}</p>
-            <p className="truncate text-caption text-muted">{post.body}</p>
-          </div>
-          <button onClick={requestClose} aria-label="Close" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
-            <Icon name="x" size={19} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {post.commentsDisabled ? (
-            <p className="px-4 py-8 text-center text-detail text-muted">Comments are turned off for this post.</p>
-          ) : (
-            <SignalComments postId={post.id} canModerateAll={canModerateAll} onCountChanged={onCountChanged} />
-          )}
-        </div>
+        <button onClick={requestClose} aria-label="Close" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <Icon name="x" size={19} />
+        </button>
       </div>
-    </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {post.commentsDisabled ? (
+          <p className="px-4 py-8 text-center text-detail text-muted">Comments are turned off for this post.</p>
+        ) : (
+          <SignalComments postId={post.id} canModerateAll={canModerateAll} onCountChanged={onCountChanged} />
+        )}
+      </div>
+    </MotionSheet>
   );
 }

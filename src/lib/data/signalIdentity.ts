@@ -34,6 +34,11 @@ export interface SignalIdentity {
   type: SignalPublisherType;
   name: string;
   subtitle: string;
+  /** Real for 'owner' and 'self' (whichever real account this is) —
+   *  `null` for 'cx'/'assistant', which aren't real accounts and never
+   *  have one. Displayed as `@username` wherever a post/comment/Story
+   *  shows an identity; absent (not yet chosen) just shows nothing. */
+  username: string | null;
   /** Real photo for 'owner' and 'self', the site's one official mark for
    *  'cx', and `null` for 'assistant' — rendered as an icon glyph instead
    *  of an image (see SignalIdentityAvatar), matching Concierge.tsx's own
@@ -57,12 +62,13 @@ export function resolveSignalIdentity(
   authorIsVerifiedClient?: boolean,
   authorIsOwner?: boolean,
   authorIsAdmin?: boolean,
+  authorUsername?: string | null,
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
-      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: null };
+      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: null, username: null };
     case 'cx':
-      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/cx-logo-symbol.png' };
+      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/cx-logo-symbol.png', username: null };
     case 'self': {
       const selfRole: 'owner' | 'admin' | 'host' | 'verified_client' | 'client' =
         authorIsOwner ? 'owner'
@@ -76,10 +82,10 @@ export function resolveSignalIdentity(
         : selfRole === 'host' ? 'Host'
         : selfRole === 'verified_client' ? 'Verified Client'
         : 'Client';
-      return { type: 'self', name: authorName, subtitle, avatarUrl: authorAvatarUrl, selfRole };
+      return { type: 'self', name: authorName, subtitle, avatarUrl: authorAvatarUrl, selfRole, username: authorUsername ?? null };
     }
     case 'owner':
     default:
-      return { type: 'owner', name: authorName, subtitle: 'Owner', avatarUrl: authorAvatarUrl };
+      return { type: 'owner', name: authorName, subtitle: 'Owner', avatarUrl: authorAvatarUrl, username: authorUsername ?? null };
   }
 }

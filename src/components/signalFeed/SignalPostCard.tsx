@@ -16,7 +16,8 @@ import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
-import { vibrateTap } from '../motion';
+import { Img, vibrateTap } from '../motion';
+import { Tap, SharedAvatar } from '../motionKit';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -57,6 +58,8 @@ function PostImage({
   className,
   onClick,
   dynamicAspect = false,
+  sharedId,
+  sharedActive = true,
 }: {
   src: string;
   className: string;
@@ -66,16 +69,30 @@ function PostImage({
    *  utility. Multi-image grids and the Featured/Pinned hero keep their
    *  fixed crop, unchanged. */
   dynamicAspect?: boolean;
+  /** Opts this exact box into the shared-element morph with
+   *  SignalMediaViewer's fullscreen image (see the viewer's own matching
+   *  comment) — omit entirely for media that shouldn't participate
+   *  (videos, carousel tiles beyond the first). `sharedActive` mirrors
+   *  SharedAvatar's own contract: false while the viewer showing this
+   *  exact image is open, so the two instances never both claim the id. */
+  sharedId?: string;
+  sharedActive?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const [aspect, setAspect] = useState<number | null>(null);
+  const fallback = (
+    <div className="grid h-full w-full place-items-center bg-panel text-ink-soft">
+      <Icon name="image" size={28} />
+    </div>
+  );
   const content = (
     <>
       {!loaded && <div className="skeleton absolute inset-0" />}
-      <img
+      <Img
         src={src}
         alt=""
         loading="lazy"
+        fallback={fallback}
         onLoad={(e) => {
           setLoaded(true);
           if (dynamicAspect) {
@@ -91,11 +108,20 @@ function PostImage({
   );
   const dynamicClass = dynamicAspect ? `w-full ${MEDIA_MAX_HEIGHT_CLASS}` : className;
   const style = dynamicAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5' } : undefined;
-  return onClick ? (
+  const box = onClick ? (
     <button onClick={onClick} style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
   ) : (
     <div style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</div>
   );
+  // The shared-element morph only ever wraps the tappable box (never the
+  // plain, non-interactive `div` branch — there's nothing to open from a
+  // media grid tile with no `onClick`), and only when the caller actually
+  // opts this image in via `sharedId`.
+  return sharedId && onClick ? (
+    <SharedAvatar as="div" id={sharedId} active={sharedActive} className={dynamicAspect ? 'w-full' : undefined}>
+      {box}
+    </SharedAvatar>
+  ) : box;
 }
 
 /** A post's inline video — autoplays muted only while genuinely visible
@@ -332,7 +358,7 @@ export function SignalPostCard({
   const [savePop, setSavePop] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
-  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin);
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
   // Real ownership (not just admin moderation) — a Host/Verified Client
   // can edit/delete their own post even without canManage's broader
   // pin/feature/Performance-line privileges. Admin keeps everything.
@@ -513,8 +539,14 @@ export function SignalPostCard({
             <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
             <SignalIdentityBadge identity={identity} />
           </Link>
-          <p className="truncate text-caption text-muted">{identity.subtitle}</p>
-          <p className="text-caption text-muted">
+          {identity.username && (
+            <Link to={signalProfileHref(post, profileBase)} viewTransition className="block truncate text-caption text-faint hover:underline">
+              @{identity.username}
+            </Link>
+          )}
+          <p className="truncate text-caption text-muted">
+            {identity.subtitle}
+            {' · '}
             {/* Community posts carry no real editorial category (the
                 server forces a hidden 'community' placeholder value —
                 see create_empire_post) — only Official's own News/
@@ -607,7 +639,12 @@ export function SignalPostCard({
         >
           <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
             {post.vehicle.imageUrl ? (
-              <img src={post.vehicle.imageUrl} alt="" className="h-full w-full object-cover" />
+              <Img
+                src={post.vehicle.imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>}
+              />
             ) : (
               <span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>
             )}
@@ -631,13 +668,26 @@ export function SignalPostCard({
           mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
             <PostVideo src={post.mediaUrls[0]} className="aspect-[16/10] w-full" fixedAspect onClick={() => setViewerIndex(0)} />
           ) : (
-            <PostImage src={post.mediaUrls[0]} className="aspect-[16/10] w-full" onClick={() => setViewerIndex(0)} />
+            <PostImage
+              src={post.mediaUrls[0]}
+              className="aspect-[16/10] w-full"
+              onClick={() => setViewerIndex(0)}
+              sharedId={`post-media-${post.mediaUrls[0]}`}
+              sharedActive={viewerIndex === null}
+            />
           )
         ) : post.mediaUrls.length === 1 ? (
           mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
             <PostVideo src={post.mediaUrls[0]} onClick={() => setViewerIndex(0)} className="aspect-video" />
           ) : (
-            <PostImage src={post.mediaUrls[0]} onClick={() => setViewerIndex(0)} className="aspect-[4/5]" dynamicAspect />
+            <PostImage
+              src={post.mediaUrls[0]}
+              onClick={() => setViewerIndex(0)}
+              className="aspect-[4/5]"
+              dynamicAspect
+              sharedId={`post-media-${post.mediaUrls[0]}`}
+              sharedActive={viewerIndex === null}
+            />
           )
         ) : (
           <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} />
@@ -659,9 +709,10 @@ export function SignalPostCard({
             pop when it lands. `whitespace-nowrap` keeps "Respected" (the
             longer of the two labels) from ever wrapping to a second
             line and shifting the row's height. */}
-        <button
+        <Tap
           onClick={handleRespect}
-          className={`pressable flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
+          scale={0.95}
+          className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
             post.likedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
           }`}
         >
@@ -672,33 +723,35 @@ export function SignalPostCard({
             className={likeBounce ? 'animate-respect-pop' : ''}
           />
           {post.likedByMe ? 'Respected' : 'Respect'}
-        </button>
+        </Tap>
         {/* Owner-only — see isOwnerViewer above. add_empire_post_comment
             enforces this server-side regardless of what this button
             does; hiding it for everyone else isn't the real security
             boundary, just honest UI. */}
         {isOwnerViewer && (
-          <button
+          <Tap
             onClick={() => setCommentsSheetOpen(true)}
-            className="pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel"
+            scale={0.95}
+            className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel"
           >
             <Icon name="message" size={17} />
             Comment
-          </button>
+          </Tap>
         )}
-        <button
+        <Tap
           onClick={handleSave}
-          className={`pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold transition-colors ${
+          scale={0.95}
+          className={`flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold transition-colors ${
             post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
           }`}
         >
           <Icon name="bookmark" size={17} fill={post.savedByMe} className={savePop ? 'animate-save-pop' : ''} />
           {post.savedByMe ? 'Saved' : 'Save'}
-        </button>
-        <button onClick={handleShare} className="pressable flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
+        </Tap>
+        <Tap onClick={handleShare} scale={0.95} className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
           <Icon name="share" size={17} />
           Share
-        </button>
+        </Tap>
       </div>
 
       {/* Owner/CX-team comments are public — they render right here,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { Logo, Modal, EmptyState, VerifiedBadge, RoleLabel, type VerifiedRole } from '../components/primitives';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../lib/auth';
@@ -544,7 +545,12 @@ function ManageVehicleModal({ carId, onClose, onSaved }: { carId: string; onClos
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {images.map((img, i) => (
               <div key={img.id} className="group relative overflow-hidden rounded-lg border border-line">
-                <img src={img.url} alt="" className="aspect-square w-full object-cover" />
+                <Img
+                  src={img.url}
+                  alt=""
+                  className="aspect-square w-full object-cover"
+                  fallback={<span className="grid aspect-square w-full place-items-center bg-panel text-muted"><Icon name="image" size={20} /></span>}
+                />
                 {i === 0 && <span className="absolute left-1 top-1 badge badge-accent">Cover</span>}
                 <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-ink/70 p-1 opacity-0 transition-opacity group-hover:opacity-100">
                   {i > 0 && (

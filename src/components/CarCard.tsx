@@ -88,11 +88,12 @@ export function CarCard({
         className="card card-hover pressable group flex overflow-hidden"
       >
         <div className="relative w-36 shrink-0 overflow-hidden sm:w-44">
-          <img
+          <Img
             src={unsplash(car.images[0], 500)}
             alt={`${car.make} ${car.model}`}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={24} /></span>}
           />
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between p-3.5">
@@ -134,6 +135,7 @@ export function CarCard({
               alt={`${car.year} ${car.make} ${car.model}`}
               loading={priority ? 'eager' : 'lazy'}
               className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
+              fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={28} /></span>}
             />
             <div className="absolute left-3 top-3 flex gap-2">
               {car.instantBook && (

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
+import { Img } from './motion';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
@@ -142,7 +143,12 @@ function PublicNavbar() {
                 }`}
               >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  <Img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<Icon name="user" size={16} />}
+                  />
                 ) : (
                   <Icon name="user" size={16} />
                 )}
@@ -351,7 +357,16 @@ function AppNavbar() {
           </Link>
           <Link to="/settings" aria-label="Profile">
             {displayAvatar ? (
-              <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+              <Img
+                src={displayAvatar}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover"
+                fallback={
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                    <Icon name="user" size={16} />
+                  </span>
+                }
+              />
             ) : (
               <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
                 <Icon name="user" size={16} />
@@ -479,7 +494,16 @@ function AppNavbar() {
             <div className="border-t border-line p-3">
               <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
                 {displayAvatar ? (
-                  <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+                  <Img
+                    src={displayAvatar}
+                    alt=""
+                    className="h-9 w-9 rounded-full object-cover"
+                    fallback={
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                        <Icon name="user" size={16} />
+                      </span>
+                    }
+                  />
                 ) : (
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
                     <Icon name="user" size={16} />

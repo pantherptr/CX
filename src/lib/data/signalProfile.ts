@@ -13,6 +13,8 @@ export interface SignalProfile {
   fullName: string;
   avatarUrl: string | null;
   bio: string | null;
+  /** `null` until the user has chosen one — see setSignalUsername. */
+  username: string | null;
   isHost: boolean;
   isVerifiedClient: boolean;
   isOwner: boolean;
@@ -36,6 +38,7 @@ interface SignalProfileJson {
   full_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  username: string | null;
   is_host: boolean;
   is_verified_client: boolean;
   is_owner: boolean;
@@ -64,6 +67,7 @@ export async function fetchSignalProfile(userId: string): Promise<SignalProfile 
     fullName: row.full_name ?? 'CX Rent user',
     avatarUrl: row.avatar_url,
     bio: row.bio,
+    username: row.username,
     isHost: row.is_host,
     isVerifiedClient: row.is_verified_client,
     isOwner: row.is_owner,
@@ -167,4 +171,72 @@ export async function updateSignalProfile(userId: string, updates: { bio?: strin
   if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
   return { error: error?.message ?? null };
+}
+
+/** A quick, live-typing check — the RPC never throws (catches its own
+ *  validation internally and just returns false), so this is safe to
+ *  call on every keystroke without try/catch at the call site. The real
+ *  authority is still `setSignalUsername`'s own atomic claim — this is
+ *  purely a fast UX hint, per the brief's own "frontend is not the only
+ *  protection" rule. */
+export async function checkUsernameAvailable(username: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('check_signal_username_available', { p_username: username });
+  if (error) return false;
+  return Boolean(data);
+}
+
+/** The actual claim — atomic via the database's own unique index (see
+ *  0059's own comment on the RPC), not a check-then-write race. Returns
+ *  the normalized username actually stored, or a friendly error message
+ *  (reserved / invalid format / already taken) straight from the RPC's
+ *  own validation. */
+export async function setSignalUsername(username: string): Promise<{ username: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('set_signal_username', { p_username: username });
+  if (error) return { username: null, error: error.message };
+  return { username: data as string, error: null };
+}
+
+export interface SignalPeopleResult {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  username: string | null;
+  isOwner: boolean;
+  isAdmin: boolean;
+  isHost: boolean;
+  isVerifiedClient: boolean;
+  followedByMe: boolean;
+}
+
+interface SignalPeopleResultRow {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+  is_owner: boolean;
+  is_admin: boolean;
+  is_host: boolean;
+  is_verified_client: boolean;
+  followed_by_me: boolean;
+}
+
+/** Ranked people search — exact username, username starts-with, name
+ *  starts-with, username contains, name contains, in that order (see
+ *  search_signal_people's own comment). `@` is optional search syntax,
+ *  stripped server-side. Empty query returns no rows (no "browse
+ *  everyone" behavior). */
+export async function searchSignalPeople(query: string, limit = 20): Promise<SignalPeopleResult[]> {
+  const { data, error } = await supabase.rpc('search_signal_people', { p_query: query, p_limit: limit });
+  if (error) throw error;
+  return (data as SignalPeopleResultRow[]).map((row) => ({
+    id: row.id,
+    fullName: row.full_name ?? 'CX Rent user',
+    avatarUrl: row.avatar_url,
+    username: row.username,
+    isOwner: row.is_owner,
+    isAdmin: row.is_admin,
+    isHost: row.is_host,
+    isVerifiedClient: row.is_verified_client,
+    followedByMe: row.followed_by_me,
+  }));
 }

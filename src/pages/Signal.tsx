@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
+import { Img } from '../components/motion';
 import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
@@ -260,7 +261,16 @@ export default function Signal() {
                   <Icon name="plus" size={18} />
                 </span>
               ) : profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                <Img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  fallback={
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+                      <Icon name="user" size={18} />
+                    </span>
+                  }
+                />
               ) : (
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
                   <Icon name="user" size={18} />
@@ -340,6 +350,14 @@ export default function Signal() {
         items={[
           { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
           { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
+          // My Profile leads the personal-shortcuts section — the one row
+          // every signed-in visitor has, regardless of publishing rights,
+          // so it's the first thing under the Official/Community divider
+          // rather than sitting below the publish-only rows.
+          { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
+          ...(canManage || canPublishSelf
+            ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
+            : []),
           // A Host/Verified Client gets one-tap Create Post/Add Story from
           // anywhere in Signal — both jump to Community first (Community
           // is the only space they can publish into) then open the same
@@ -348,7 +366,7 @@ export default function Signal() {
           // composer entry point inline in the feed, unchanged — this menu
           // isn't where they publish today, so it isn't where this adds
           // shortcuts either. A plain Client (can't publish anywhere) gets
-          // neither row, and no "My Posts" (nothing to list).
+          // neither row.
           ...(canPublishSelf
             ? [
                 {
@@ -361,10 +379,6 @@ export default function Signal() {
                 },
               ]
             : []),
-          ...(canManage || canPublishSelf
-            ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
-            : []),
-          { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
           { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
         ]}
       />

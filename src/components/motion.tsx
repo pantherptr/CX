@@ -426,19 +426,90 @@ export function useParallax(factor = 0.12, max = 60) {
   return offset;
 }
 
-/** <img> that fades in once decoded (handles cached images too). */
-export function Img({ className = '', ...rest }: ImgHTMLAttributes<HTMLImageElement>) {
+/**
+ * <img> that fades in once decoded (handles cached images too) — and the
+ * one shared resilience layer for "sometimes it's just broken" across
+ * CX Rent/SIGNAL: every storage/CDN-backed image (avatars, post/Story
+ * media, vehicle photos, logos, badges) is subject to the same genuinely
+ * transient failure (a slow CDN edge, a request racing a route change
+ * and getting aborted) — and with nothing anywhere retrying or falling
+ * back, that transient blip rendered as the browser's own broken-image
+ * icon, permanently, until the next full reload. That's the actual root
+ * cause behind "images load fine... except when they don't": not a
+ * single dead URL, but zero resilience anywhere a real network hiccup
+ * could land.
+ *
+ * One silent retry (remounting the element via a bumped `key`, since
+ * re-rendering the same `src` alone doesn't reliably force the browser
+ * to re-request it) covers that transient case. If it still fails,
+ * `fallback` renders in place of the native broken-image glyph — pass
+ * one for anything production-visible; omitting it keeps the exact old
+ * behavior (fade-in only, browser's own icon on a genuine failure) for
+ * any caller that hasn't opted in yet. Either way, in dev the actual
+ * failing URL is logged to the console on the FINAL failure (never on
+ * the first, transient one) — a real dead URL (wrong path, deleted
+ * storage object, bad extension) stays loud and diagnosable, the
+ * fallback never launders it into "looks fine, just retried once."
+ * Resets and gives a fresh two-try attempt whenever `src` itself changes
+ * (a freshly uploaded photo, a different post) — a past failure is never
+ * a permanent decision baked in for that image slot.
+ */
+export function Img({
+  className = '',
+  fallback,
+  onLoad,
+  onError,
+  ...rest
+}: ImgHTMLAttributes<HTMLImageElement> & {
+  /** Rendered instead of the `<img>` once a real (post-retry) failure
+   *  happens. Omit to keep the legacy behavior — no fallback UI. */
+  fallback?: ReactNode;
+}) {
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const retriedRef = useRef(false);
 
   useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+    retriedRef.current = false;
     if (ref.current?.complete) setLoaded(true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rest.src]);
+
+  // Composed rather than left for `{...rest}` to silently clobber — a
+  // caller that needs its own onLoad/onError (e.g. PostImage reading
+  // naturalWidth/Height for its dynamic aspect ratio) still gets it
+  // called, without losing this component's own fade-in/retry tracking.
+  const handleLoad: NonNullable<ImgHTMLAttributes<HTMLImageElement>['onLoad']> = (e) => {
+    setLoaded(true);
+    onLoad?.(e);
+  };
+
+  const handleError: NonNullable<ImgHTMLAttributes<HTMLImageElement>['onError']> = (e) => {
+    if (!retriedRef.current) {
+      retriedRef.current = true;
+      window.setTimeout(() => setAttempt((a) => a + 1), 500);
+      return;
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error(`[Img] failed to load (after one retry): ${rest.src}`);
+    }
+    setFailed(true);
+    onError?.(e);
+  };
+
+  if (failed && fallback !== undefined) return <>{fallback}</>;
 
   return (
     <img
+      key={attempt}
       ref={ref}
-      onLoad={() => setLoaded(true)}
+      onLoad={handleLoad}
+      onError={handleError}
       className={`imgfade ${loaded ? 'loaded' : ''} ${className}`}
       {...rest}
     />

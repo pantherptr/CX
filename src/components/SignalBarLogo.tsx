@@ -1,3 +1,5 @@
+import { Img } from './motion';
+
 /** The SIGNAL wordmark lockup (`/SIGNALBAR.PNG`) — used only in the top
  *  SIGNAL header, where it stands in for the "SIGNAL" text entirely (see
  *  `alt` below). Distinct from `SignalLogo` (the compact icon-only crop
@@ -29,16 +31,26 @@ const ASPECT_RATIO = 1536 / 245; // SIGNALBAR.PNG's real width/height
 
 export function SignalBarLogo({ size = 22, className = '' }: { size?: number; className?: string }) {
   const width = size * ASPECT_RATIO;
+  const fallback = (
+    <span
+      className="absolute inset-0 grid place-items-center font-semibold tracking-wide text-accent-bright"
+      style={{ fontSize: size * 0.6 }}
+      aria-hidden="true"
+    >
+      SIGNAL
+    </span>
+  );
   return (
     <span
       className={`relative inline-block min-w-0 shrink ${className}`}
       style={{ width, maxWidth: '100%', aspectRatio: `${ASPECT_RATIO}` }}
     >
-      <img
+      <Img
         src="/SIGNALBAR.PNG"
         alt="SIGNAL"
         className="absolute inset-0 h-full w-full object-contain"
         style={{ maxWidth: 'none' }}
+        fallback={fallback}
       />
       <span
         aria-hidden="true"

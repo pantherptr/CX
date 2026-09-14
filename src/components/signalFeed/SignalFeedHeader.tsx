@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
+import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useUnreadNotificationCount } from '../../lib/data/notifications';
 
@@ -40,6 +41,7 @@ export function SignalFeedHeader({
   const { session } = useAuth();
   const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const [scrolled, setScrolled] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);
@@ -94,9 +96,17 @@ export function SignalFeedHeader({
         {signedIn && (
           <button onClick={onNotificationsClick} aria-label="Notifications" className={`relative ${iconButton}`}>
             <Icon name="bell" size={17} />
-            {unreadNotifications > 0 && (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright" />
-            )}
+            <AnimatePresence>
+              {unreadNotifications > 0 && (
+                <motion.span
+                  className="absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright"
+                  initial={reduceMotion ? undefined : { scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={reduceMotion ? undefined : { scale: 0, opacity: 0 }}
+                  transition={SPRING_SNAPPY}
+                />
+              )}
+            </AnimatePresence>
           </button>
         )}
         <button onClick={() => navigate(signedIn ? '/dashboard' : '/')} aria-label="Exit Signal" className={iconButton}>

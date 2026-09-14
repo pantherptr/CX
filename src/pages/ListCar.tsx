@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -244,7 +245,12 @@ export default function ListCar() {
         </div>
 
         <div className="card mt-8 overflow-hidden text-left">
-          <img src={created.images[0]} alt="" className="aspect-[16/9] w-full object-cover" />
+          <Img
+            src={created.images[0]}
+            alt=""
+            className="aspect-[16/9] w-full object-cover"
+            fallback={<span className="grid aspect-[16/9] w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
+          />
           <div className="p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="min-w-0 truncate font-medium text-ink">{created.make} {created.model}</h2>

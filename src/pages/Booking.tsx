@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -371,7 +372,12 @@ export default function Booking() {
 
         <div className="mt-9 card overflow-hidden">
           <div className="flex items-center gap-4 border-b border-line p-5">
-            <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-28 rounded-xl object-cover" />
+            <Img
+              src={unsplash(car.images[0], 240)}
+              alt=""
+              className="h-20 w-28 rounded-xl object-cover"
+              fallback={<span className="grid h-20 w-28 place-items-center rounded-xl bg-panel text-muted"><Icon name="car" size={24} /></span>}
+            />
             <div className="min-w-0">
               <p className="text-caption font-medium uppercase tracking-wide text-accent">Booking {confirmed.reference}</p>
               <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-ink">{car.year} {car.make} {car.model}</h2>
@@ -410,7 +416,16 @@ export default function Booking() {
             </div>
           )}
           <div className="flex items-center gap-3 border-t border-line bg-panel/50 p-5">
-            <img src={host.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
+            <Img
+              src={host.avatar}
+              alt=""
+              className="h-11 w-11 rounded-full object-cover"
+              fallback={
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={18} />
+                </span>
+              }
+            />
             <div className="flex-1">
               <p className="text-body font-medium text-ink">{host.name}</p>
               <p className="text-detail text-muted">Responds {host.responseTime}</p>
@@ -660,7 +675,12 @@ export default function Booking() {
           <div className="sticky top-[84px] card overflow-hidden">
             <p className="px-4 pt-4 text-label font-semibold uppercase tracking-wide text-muted">Your CX Drive</p>
             <div className="flex gap-3.5 p-4">
-              <img src={unsplash(car.images[0], 240)} alt="" className="h-20 w-24 shrink-0 rounded-xl object-cover" />
+              <Img
+                src={unsplash(car.images[0], 240)}
+                alt=""
+                className="h-20 w-24 shrink-0 rounded-xl object-cover"
+                fallback={<span className="grid h-20 w-24 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="car" size={22} /></span>}
+              />
               <div className="min-w-0">
                 <h3 className="truncate font-medium text-ink">{car.make} {car.model}</h3>
                 <p className="text-detail text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>

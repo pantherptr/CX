@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { SectionHead } from '../components/primitives';
 import { unsplash } from '../lib/img';
 
@@ -50,7 +51,12 @@ export default function HowItWorks() {
               </ul>
             </div>
             <div className={`overflow-hidden rounded-2xl ${i % 2 ? 'lg:order-1' : ''}`}>
-              <img src={unsplash(['photo-1552519507-da3b142c6e3d', 'photo-1503736334956-4c8f8e92946d', 'photo-1494976388531-d1058494cdd8'][i], 800)} alt="" className="aspect-[16/10] w-full object-cover" />
+              <Img
+                src={unsplash(['photo-1552519507-da3b142c6e3d', 'photo-1503736334956-4c8f8e92946d', 'photo-1494976388531-d1058494cdd8'][i], 800)}
+                alt=""
+                className="aspect-[16/10] w-full object-cover"
+                fallback={<div className="aspect-[16/10] w-full bg-panel" />}
+              />
             </div>
           </div>
         ))}

@@ -3,6 +3,7 @@ import type { Car } from '../data/types';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from './Icon';
+import { Img } from './motion';
 import { Modal } from './primitives';
 
 /** A fast glance at a car without leaving the grid — full detail page is one tap away. */
@@ -28,7 +29,12 @@ export function CarQuickView({
   return (
     <Modal open={open} onClose={onClose} className="max-w-lg overflow-hidden rounded-[1.75rem]" labelledBy="quick-view-title">
       <div className="relative aspect-[16/10]">
-        <img src={unsplash(car.images[0], 900)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
+        <Img
+          src={unsplash(car.images[0], 900)}
+          alt={`${car.make} ${car.model}`}
+          className="h-full w-full object-cover"
+          fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
+        />
         <button
           onClick={onClose}
           className="glass absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full text-ink shadow-hair"

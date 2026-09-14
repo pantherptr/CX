@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { EmptyState } from '../components/primitives';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
@@ -281,7 +282,16 @@ function HostBookingRow({ booking }: { booking: Booking }) {
   return (
     <div className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-panel/50">
       {booking.renter.avatar ? (
-        <img src={booking.renter.avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+        <Img
+          src={booking.renter.avatar}
+          alt=""
+          className="h-10 w-10 shrink-0 rounded-full object-cover"
+          fallback={
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+              <Icon name="user" size={16} />
+            </span>
+          }
+        />
       ) : (
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
           <Icon name="user" size={16} />
@@ -544,7 +554,12 @@ export default function HostDashboard() {
                 const cardInner = (
                   <>
                     <div className="relative aspect-[16/10]">
-                      <img src={unsplash(c.images[0], 500)} alt="" className="h-full w-full object-cover" />
+                      <Img
+                        src={unsplash(c.images[0], 500)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={28} /></span>}
+                      />
                       <span className="absolute left-2.5 top-2.5 badge badge-glass">
                         <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-accent' : 'bg-faint'}`} />
                         {published ? 'Published' : 'Draft'}

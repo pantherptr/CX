@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import {
   EMPIRE_CATEGORIES, createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpireCategory, type EmpirePost, type EmpireVehicleRef,
@@ -207,6 +208,7 @@ export function SignalPostComposer({
         ...result.post,
         likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount,
         viewCount: editing.viewCount, shareCount: editing.shareCount, likedByMe: editing.likedByMe, savedByMe: editing.savedByMe,
+        authorUsername: editing.authorUsername,
         authorIsOwner: editing.authorIsOwner, authorIsAdmin: editing.authorIsAdmin,
         authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
         pinnedToProfile: editing.pinnedToProfile, isArchived: editing.isArchived,
@@ -277,7 +279,12 @@ export function SignalPostComposer({
                     </div>
                   </>
                 ) : (
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <Img
+                    src={url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={18} /></span>}
+                  />
                 )}
                 <button
                   onClick={() => removeExisting(i)}
@@ -390,7 +397,14 @@ export function SignalPostComposer({
                   style={{ width: 108 }}
                 >
                   <span className="block h-16 w-full bg-surface">
-                    {car.images[0] && <img src={car.images[0]} alt="" className="h-full w-full object-cover" />}
+                    {car.images[0] && (
+                      <Img
+                        src={car.images[0]}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={18} /></span>}
+                      />
+                    )}
                   </span>
                   <span className="truncate px-1.5 py-1 text-[11px] font-semibold text-ink">{car.make} {car.model}</span>
                 </button>
@@ -402,7 +416,14 @@ export function SignalPostComposer({
 
       {selectedVehicle && !vehiclePickerOpen && (
         <div className="mt-2 flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
-          {selectedVehicle.imageUrl && <img src={selectedVehicle.imageUrl} alt="" className="h-9 w-9 rounded-lg object-cover" />}
+          {selectedVehicle.imageUrl && (
+            <Img
+              src={selectedVehicle.imageUrl}
+              alt=""
+              className="h-9 w-9 rounded-lg object-cover"
+              fallback={<span className="grid h-9 w-9 place-items-center rounded-lg bg-panel text-muted"><Icon name="car" size={16} /></span>}
+            />
+          )}
           <span className="min-w-0 flex-1 truncate text-detail font-medium text-ink">
             {selectedVehicle.make} {selectedVehicle.model} · {selectedVehicle.year}
           </span>

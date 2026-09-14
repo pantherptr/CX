@@ -4,7 +4,7 @@ import { fetchEmpireAnalytics, type EmpireAnalytics } from '../../lib/data/empir
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
-import { useSheetDrag } from '../motion';
+import { MotionSheet } from '../motionKit';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -34,7 +34,8 @@ function TopPostRow({ label, item }: { label: string; item: { title: string; cou
  *  server-side same as every other Signal write/read that matters. */
 export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
   const { profile } = useAuth();
-  const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
+  const [closing, setClosing] = useState(false);
+  const requestClose = () => setClosing(true);
   const [data, setData] = useState<EmpireAnalytics | 'error' | null>(null);
 
   useEffect(() => {
@@ -44,28 +45,21 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
   const trendDelta = data && data !== 'error' ? data.engagementLast7d - data.engagementPrev7d : 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
-      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
-      role="dialog"
-      aria-modal="true"
+    <MotionSheet
+      open={!closing}
+      onClose={requestClose}
+      onExitComplete={onClose}
+      panelClassName="max-h-[85vh] rounded-t-2xl bg-surface sm:max-w-md sm:rounded-2xl"
     >
-      <div
-        className="flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:max-w-md sm:rounded-2xl"
-        style={dragStyle}
-      >
-        <div {...dragHandlers} className="flex flex-col items-center pt-2 sm:hidden">
-          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
-        </div>
-        <div {...dragHandlers} className="flex items-center gap-2 border-b border-line px-5 py-4">
-          <Icon name="chart" size={18} className="text-ink-soft" />
-          <span className="font-display font-semibold text-ink">Signal Analytics</span>
-          <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
-            <Icon name="x" size={19} />
-          </button>
-        </div>
+      <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+        <Icon name="chart" size={18} className="text-ink-soft" />
+        <span className="font-display font-semibold text-ink">Signal Analytics</span>
+        <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <Icon name="x" size={19} />
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+      <div className="flex-1 overflow-y-auto p-5">
           {data === null ? (
             <div className="grid grid-cols-2 gap-2.5">
               {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
@@ -126,7 +120,6 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </MotionSheet>
   );
 }

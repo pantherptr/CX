@@ -1,3 +1,5 @@
+import { Img } from './motion';
+
 /** The SIGNAL crest — CX Rent's one official brand asset, used everywhere
  *  at whatever size a surface needs. `signal-icon.png` is a tight crop of
  *  just the icon portion (the "CX" glyph merged with radiating signal
@@ -33,13 +35,23 @@ const ASPECT_RATIO = 982 / 637; // signal-icon.png's real width/height
 
 export function SignalLogo({ size = 24, className = '' }: { size?: number; className?: string }) {
   const width = size * ASPECT_RATIO;
+  const fallback = (
+    <span
+      className="absolute inset-0 grid place-items-center font-semibold text-accent-bright"
+      style={{ fontSize: size * 0.5 }}
+      aria-hidden="true"
+    >
+      S
+    </span>
+  );
   return (
     <span className={`relative inline-block shrink-0 ${className}`} style={{ height: size, width }}>
-      <img
+      <Img
         src="/signal-icon.png"
         alt=""
         className="absolute inset-0 h-full w-full object-contain"
         style={{ maxWidth: 'none' }}
+        fallback={fallback}
       />
       <span
         aria-hidden="true"

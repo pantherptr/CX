@@ -5,6 +5,7 @@ import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import type { Car } from '../data/types';
 
@@ -110,7 +111,12 @@ export default function Compare() {
                 </button>
                 <Link to={`/cars/${car.slug}`} className="block">
                   <div className="aspect-[4/3] overflow-hidden rounded-xl bg-panel-2">
-                    <img src={unsplash(car.images[0], 400)} alt={`${car.make} ${car.model}`} className="h-full w-full object-cover" />
+                    <Img
+                      src={unsplash(car.images[0], 400)}
+                      alt={`${car.make} ${car.model}`}
+                      className="h-full w-full object-cover"
+                      fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={24} /></span>}
+                    />
                   </div>
                   <p className="mt-3 truncate font-display text-copy font-semibold text-ink">
                     {car.make} {car.model}

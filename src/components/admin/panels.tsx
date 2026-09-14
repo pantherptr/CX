@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../Icon';
+import { Img } from '../motion';
 import { EmptyState } from '../primitives';
 import { useApp } from '../../lib/store';
 import { eur } from '../../lib/format';
@@ -52,8 +53,7 @@ export const fmtDate = (s: string | null) =>
   s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export function Avatar({ url, size = 36 }: { url: string | null; size?: number }) {
-  if (url) return <img src={url} alt="" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />;
-  return (
+  const fallback = (
     <span
       className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft"
       style={{ width: size, height: size }}
@@ -61,6 +61,18 @@ export function Avatar({ url, size = 36 }: { url: string | null; size?: number }
       <Icon name="user" size={size * 0.45} />
     </span>
   );
+  if (url) {
+    return (
+      <Img
+        src={url}
+        alt=""
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size }}
+        fallback={fallback}
+      />
+    );
+  }
+  return fallback;
 }
 
 export function VerificationsPanel() {

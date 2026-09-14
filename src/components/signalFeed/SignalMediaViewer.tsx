@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { mediaKindFromPath } from '../../lib/data/empireFeed';
+import { SharedAvatar } from '../motionKit';
 
 /** A simple fullscreen image/video viewer — tap any post media to open it
  *  here. Same `fixed inset-0` full-viewport overlay pattern used
@@ -20,6 +22,13 @@ export function SignalMediaViewer({
 }) {
   const [index, setIndex] = useState(startIndex);
   const isVideo = mediaKindFromPath(images[index]) === 'video';
+  // The shared-element morph (see PostImage's own matching comment) only
+  // ever connects to the exact image that was tapped — navigating to a
+  // different image in a multi-image post just stops sharing the id
+  // (plain `<img>`, no morph), same scoped-down pattern Stories uses for
+  // swiping past the originally-opened one.
+  const sharedId = `post-media-${images[startIndex]}`;
+  const showsInitialImage = index === startIndex && !isVideo;
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col bg-black/95 animate-fade-in" role="dialog" aria-modal="true">
@@ -40,7 +49,19 @@ export function SignalMediaViewer({
         {isVideo ? (
           <video key={images[index]} src={images[index]} controls autoPlay playsInline className="max-h-full max-w-full object-contain" />
         ) : (
-          <img src={images[index]} alt="" className="max-h-full max-w-full object-contain" />
+          <SharedAvatar id={sharedId} active={showsInitialImage}>
+            <Img
+              src={images[index]}
+              alt=""
+              className="max-h-full max-w-full object-contain"
+              fallback={
+                <div className="flex flex-col items-center gap-2 text-white/60">
+                  <Icon name="image" size={32} />
+                  <span className="text-detail">Image unavailable</span>
+                </div>
+              }
+            />
+          </SharedAvatar>
         )}
 
         {images.length > 1 && (

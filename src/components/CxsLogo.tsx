@@ -1,3 +1,5 @@
+import { Img } from './motion';
+
 /** The `cxs.png` "S" mark — SIGNAL's navigation identity, used only in
  *  the two navigation contexts that share it: the bottom-nav SIGNAL tab
  *  (BottomNav.tsx) and the SIGNAL side Quick Control (SignalQuickControl.tsx).
@@ -18,7 +20,14 @@
  *  Carries its own "live" effect (`.cxs-glint-a/b` in index.css) — two
  *  independent, non-aligning long-quiet/brief-pass cycles, not the
  *  bottom nav's old continuous `.signal-sweep-bar` loop and not a copy
- *  of the header wordmark's own glint (different asset, tuned fresh). */
+ *  of the header wordmark's own glint (different asset, tuned fresh).
+ *
+ *  Wrapped in the shared `Img` primitive so a dropped request on this
+ *  every-page asset self-heals with one silent retry instead of leaving
+ *  the nav's SIGNAL tab permanently broken until a full reload — on a
+ *  genuine failure (the file itself missing from the deploy) it falls
+ *  back to a plain "S" glyph in the same crop box, never the browser's
+ *  broken-image icon. */
 const FULL_W = 1536;
 const FULL_H = 1024;
 const BBOX = { left: 107, top: 20, width: 1238, height: 987 };
@@ -32,14 +41,24 @@ export function CxsLogo({ size = 24, className = '' }: { size?: number; classNam
   const width = BBOX.width * scale;
   const maskSize = `${imgW}px ${imgH}px`;
   const maskPosition = `${imgLeft}px ${imgTop}px`;
+  const fallback = (
+    <span
+      className="absolute inset-0 grid place-items-center font-semibold text-accent-bright"
+      style={{ fontSize: size * 0.6 }}
+      aria-hidden="true"
+    >
+      S
+    </span>
+  );
 
   return (
     <span className={`relative inline-block shrink-0 overflow-hidden ${className}`} style={{ height: size, width }}>
-      <img
+      <Img
         src="/cxs.png"
         alt=""
         className="absolute"
         style={{ left: imgLeft, top: imgTop, width: imgW, height: imgH, maxWidth: 'none' }}
+        fallback={fallback}
       />
       <span
         aria-hidden="true"

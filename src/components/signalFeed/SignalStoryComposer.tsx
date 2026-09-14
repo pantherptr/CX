@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import {
   createEmpireStory, addEmpireStorySlide, uploadEmpireStoryMedia, uploadEmpireStoryPoster, deleteEmpireStory,
   fetchAllEmpireStoriesAdmin, type EmpireStory, type StoryMediaType, type StoryTextAlign, type StoryTextSize, type StoryBgStyle,
@@ -553,7 +554,7 @@ export function SignalStoryComposer({
               ) : (
                 allStories.map((s) => {
                   const expired = new Date(s.expiresAt).getTime() < Date.now();
-                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl, s.authorIsHost, s.authorIsVerifiedClient, s.authorIsOwner, s.authorIsAdmin);
+                  const identity = resolveSignalIdentity(s.publisherType, s.authorName, s.authorAvatarUrl, s.authorIsHost, s.authorIsVerifiedClient, s.authorIsOwner, s.authorIsAdmin, s.authorUsername);
                   return (
                     <div key={s.id} className="flex flex-col gap-2 rounded-xl border border-line p-2.5">
                       <div className="flex items-center gap-3">
@@ -568,7 +569,12 @@ export function SignalStoryComposer({
                             />
                           </span>
                         ) : s.slides[0] ? (
-                          <img src={s.slides[0].mediaUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                          <Img
+                            src={s.slides[0].mediaUrl}
+                            alt=""
+                            className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                            fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>}
+                          />
                         ) : (
                           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>
                         )}
@@ -646,7 +652,12 @@ export function SignalStoryComposer({
                   highlights.map((h) => (
                     <div key={h.id} className="flex items-center gap-3 rounded-xl border border-line p-2.5">
                       {h.slides[0] ? (
-                        <img src={h.slides[0].mediaUrl} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        <Img
+                          src={h.slides[0].mediaUrl}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                          fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>}
+                        />
                       ) : (
                         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>
                       )}

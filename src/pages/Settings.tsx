@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
+import { Img } from '../components/motion';
 import { Modal } from '../components/primitives';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -185,7 +186,16 @@ export default function Settings() {
                   {uploadingPhoto ? (
                     <div className="skeleton h-16 w-16 rounded-full" />
                   ) : profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+                    <Img
+                      src={profile.avatar_url}
+                      alt=""
+                      className="h-16 w-16 rounded-full object-cover"
+                      fallback={
+                        <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
+                          <Icon name="user" size={26} />
+                        </span>
+                      }
+                    />
                   ) : (
                     <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-050 text-accent">
                       <Icon name="user" size={26} />

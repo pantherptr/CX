@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
 import { fetchEmpirePostById, fetchEmpireFeed, type EmpirePost } from '../../lib/data/empireFeed';
 import { SignalPostCard } from './SignalPostCard';
@@ -97,7 +98,12 @@ export function SignalPostDetail({
                   {related.map((r) => (
                     <Link key={r.id} to={`${base}/post/${r.id}`} className="pressable flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5 hover:border-line-strong">
                       {r.mediaUrls[0] ? (
-                        <img src={r.mediaUrls[0]} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                        <Img
+                          src={r.mediaUrls[0]}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                          fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>}
+                        />
                       ) : (
                         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>
                       )}

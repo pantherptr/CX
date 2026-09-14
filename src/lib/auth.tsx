@@ -59,6 +59,10 @@ export interface Profile {
   response_time: string | null;
   response_rate: number | null;
   created_at: string;
+  /** The account's one SIGNAL username (canonical case as chosen by the
+   *  user) — see supabase/migrations/0059_signal_usernames_and_search.sql.
+   *  Null until the user sets one. */
+  username: string | null;
 }
 
 interface AuthState {

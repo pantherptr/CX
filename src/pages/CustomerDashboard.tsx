@@ -7,7 +7,7 @@ import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher } from '../components/Concierge';
-import { Reveal } from '../components/motion';
+import { Img, Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
@@ -153,7 +153,12 @@ function TripRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   return (
     <Link to={`/trips/${booking.id}`} className="group flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
-      <img src={booking.car.image} alt="" className="h-16 w-24 shrink-0 rounded-lg object-cover transition-transform duration-500 group-hover:scale-105" />
+      <Img
+        src={booking.car.image}
+        alt=""
+        className="h-16 w-24 shrink-0 rounded-lg object-cover transition-transform duration-500 group-hover:scale-105"
+        fallback={<span className="grid h-16 w-24 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="car" size={22} /></span>}
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-ink">{booking.car.make} {booking.car.model}</p>
         <p className="text-detail text-muted">
@@ -300,7 +305,12 @@ export default function CustomerDashboard() {
             <h2 className="mb-4 font-display text-lg font-semibold text-ink">Your next trip</h2>
             <div className="card overflow-hidden md:flex">
               <div className="relative md:w-2/5">
-                <img src={nextTrip.car.image} alt="" className="h-52 w-full object-cover md:h-full" />
+                <Img
+                  src={nextTrip.car.image}
+                  alt=""
+                  className="h-52 w-full object-cover md:h-full"
+                  fallback={<span className="grid h-52 w-full place-items-center bg-panel text-muted md:h-full"><Icon name="car" size={32} /></span>}
+                />
                 <span className="absolute left-3 top-3 badge badge-glass">
                   <Icon name="clock" size={12} className="text-accent" />
                   {classifyBooking(nextTrip) === 'active' ? 'In progress' : `From ${fmtDate(nextTrip.startDate)}`}
@@ -332,7 +342,16 @@ export default function CustomerDashboard() {
                 </div>
                 <div className="mt-6 flex items-center gap-3 border-t border-line pt-5">
                   {nextTrip.host.avatar ? (
-                    <img src={nextTrip.host.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                    <Img
+                      src={nextTrip.host.avatar}
+                      alt=""
+                      className="h-10 w-10 rounded-full object-cover"
+                      fallback={
+                        <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent">
+                          <Icon name="user" size={16} />
+                        </span>
+                      }
+                    />
                   ) : (
                     <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent">
                       <Icon name="user" size={16} />
@@ -418,7 +437,16 @@ export default function CustomerDashboard() {
                 conversations.slice(0, 4).map((c) => (
                   <Link key={c.id} to={`/messages?c=${c.id}`} className="flex items-center gap-3 p-4 transition-colors hover:bg-panel/40">
                     {c.other.avatar ? (
-                      <img src={c.other.avatar} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                      <Img
+                        src={c.other.avatar}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-full object-cover"
+                        fallback={
+                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                            <Icon name="user" size={16} />
+                          </span>
+                        }
+                      />
                     ) : (
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
                         <Icon name="user" size={16} />

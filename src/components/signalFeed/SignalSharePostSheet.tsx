@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
-import { useSheetDrag } from '../motion';
+import { MotionSheet } from '../motionKit';
 import {
   useConversations, sendMessage, findOrCreateConversation, searchUsersForMessaging,
   type MessagingSearchResult,
@@ -21,7 +22,8 @@ import { incrementEmpirePostShare, type EmpirePost } from '../../lib/data/empire
 export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onClose: () => void }) {
   const { toast } = useApp();
   const { session } = useAuth();
-  const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
+  const [closing, setClosing] = useState(false);
+  const requestClose = () => setClosing(true);
   const { conversations } = useConversations(session?.user.id);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<MessagingSearchResult[] | null>(null);
@@ -87,25 +89,18 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
   const showingSearch = query.trim().length >= 2;
 
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 animate-fade-in sm:items-center"
-      style={{ opacity: closing ? 0 : undefined, transition: 'opacity 220ms var(--ease-out-expo)' }}
-      role="dialog"
-      aria-modal="true"
+    <MotionSheet
+      open={!closing}
+      onClose={requestClose}
+      onExitComplete={onClose}
+      panelClassName="max-h-[75vh] rounded-t-2xl bg-surface sm:max-w-sm sm:rounded-2xl"
     >
-      <div
-        className="flex max-h-[75vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:max-w-sm sm:rounded-2xl"
-        style={dragStyle}
-      >
-        <div {...dragHandlers} className="flex flex-col items-center pt-2 sm:hidden">
-          <span className="h-1 w-9 rounded-full bg-line" aria-hidden="true" />
-        </div>
-        <div {...dragHandlers} className="flex items-center gap-2 border-b border-line px-5 py-4">
-          <span className="font-display font-semibold text-ink">Share Post</span>
-          <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
-            <Icon name="x" size={19} />
-          </button>
-        </div>
+      <div className="flex items-center gap-2 border-b border-line px-5 py-4">
+        <span className="font-display font-semibold text-ink">Share Post</span>
+        <button onClick={requestClose} aria-label="Close" className="pressable ml-auto grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <Icon name="x" size={19} />
+        </button>
+      </div>
 
         <div className="p-4 pb-2">
           <button onClick={copyLink} className="pressable flex w-full items-center gap-3 rounded-xl border border-line p-3 text-left text-detail font-semibold text-ink hover:bg-panel">
@@ -135,7 +130,12 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
                   className="pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-panel disabled:opacity-50"
                 >
                   {u.avatar ? (
-                    <img src={u.avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                    <Img
+                      src={u.avatar}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-full object-cover"
+                      fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
+                    />
                   ) : (
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
                   )}
@@ -157,7 +157,12 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
                 className="pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-panel disabled:opacity-50"
               >
                 {c.other.avatar ? (
-                  <img src={c.other.avatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                  <Img
+                    src={c.other.avatar}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
+                  />
                 ) : (
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
                 )}
@@ -167,7 +172,6 @@ export function SignalSharePostSheet({ post, onClose }: { post: EmpirePost; onCl
             ))
           )}
         </div>
-      </div>
-    </div>
+    </MotionSheet>
   );
 }

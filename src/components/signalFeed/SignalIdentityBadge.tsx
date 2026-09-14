@@ -1,6 +1,49 @@
 import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import type { SignalIdentity } from '../../lib/data/signalIdentity';
+
+/** A real profile photo — built on the shared `Img` primitive (motion.tsx)
+ *  for its retry-then-fallback resilience, rather than a second, parallel
+ *  onError implementation. If `src` fails to load even after `Img`'s own
+ *  retry (a dead storage URL, not just a passing network blip), this
+ *  falls back to the exact same plain person-glyph circle every
+ *  avatar-less profile already shows, instead of the browser's native
+ *  broken-image icon. Used specifically for a REAL account's own photo
+ *  (profile headers, the edit sheet's preview) — `SignalIdentityAvatar`
+ *  above stays the one used for SIGNAL's broader 4-way identity (self/
+ *  owner/cx/assistant) rendering. */
+export function ProfileAvatar({
+  src,
+  size = 40,
+  ring = false,
+  className = '',
+}: {
+  src: string | null;
+  size?: number;
+  /** The same hairline verified-identity ring `ProfileHeader` already
+   *  applies — passed through here rather than duplicated per caller. */
+  ring?: boolean;
+  className?: string;
+}) {
+  const style = { height: size, width: size };
+  const ringClass = ring ? 'ring-1 ring-accent-bright/30' : '';
+  const fallback = (
+    <span className={`grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft ${ringClass} ${className}`} style={style}>
+      <Icon name="user" size={Math.round(size * 0.4)} />
+    </span>
+  );
+  if (!src) return fallback;
+  return (
+    <Img
+      src={src}
+      alt=""
+      fallback={fallback}
+      className={`shrink-0 rounded-full object-cover ${ringClass} ${className}`}
+      style={style}
+    />
+  );
+}
 
 /** Maps SIGNAL's own identity union onto the one shared badge system
  *  (primitives.tsx) — 'assistant' (the AI voice) gets its own solid
@@ -29,12 +72,30 @@ export function SignalIdentityAvatar({ identity, size = 40 }: { identity: Signal
     // and legible instead.
     return (
       <span className="grid shrink-0 place-items-center rounded-full bg-white ring-1 ring-line" style={style}>
-        <img src={identity.avatarUrl!} alt="" className="object-contain" style={{ height: size * 0.6, width: size * 0.6 }} />
+        <Img
+          src={identity.avatarUrl!}
+          alt=""
+          className="object-contain"
+          style={{ height: size * 0.6, width: size * 0.6 }}
+          fallback={<span className="font-semibold text-ink" style={{ fontSize: size * 0.4 }}>CX</span>}
+        />
       </span>
     );
   }
   if (identity.avatarUrl) {
-    return <img src={identity.avatarUrl} alt="" className="shrink-0 rounded-full object-cover" style={style} />;
+    return (
+      <Img
+        src={identity.avatarUrl}
+        alt=""
+        className="shrink-0 rounded-full object-cover"
+        style={style}
+        fallback={
+          <span className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft" style={style}>
+            <Icon name="user" size={Math.round(size * 0.5)} />
+          </span>
+        }
+      />
+    );
   }
   if (identity.type === 'self') {
     // A real Host/Verified Client with no profile photo set — a plain
@@ -69,13 +130,19 @@ export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalI
     // in the app, not a separate SIGNAL-only mark, since this IS their
     // real identity, not a voice. Owner/Admin posting under their own
     // real identity (not the fixed 'owner' voice) still get their real
-    // mark, not a downgrade to 'client'.
-    const role: VerifiedRole =
-      identity.selfRole === 'owner' ? 'owner'
-      : identity.selfRole === 'admin' ? 'admin'
-      : identity.selfRole === 'host' ? 'host'
-      : 'client';
-    return <VerifiedBadge role={role} size={size} />;
+    // mark, not a downgrade to 'client'. A plain client (none of the
+    // above, `selfRole` falls through to the literal string 'client' —
+    // see resolveSignalIdentity) gets NO badge at all: 'client' here
+    // means "an ordinary signed-in account," not "Verified Client," and
+    // the two must never render the same green checkmark — that would
+    // misrepresent a real, un-verified account as CX Rent-verified,
+    // exactly what `ProfileHeader` (SignalProfileDetail.tsx) already gets
+    // right by only badging owner/admin/host/verified_client.
+    if (identity.selfRole === 'owner') return <VerifiedBadge role="owner" size={size} />;
+    if (identity.selfRole === 'admin') return <VerifiedBadge role="admin" size={size} />;
+    if (identity.selfRole === 'host') return <VerifiedBadge role="host" size={size} />;
+    if (identity.selfRole === 'verified_client') return <VerifiedBadge role="client" size={size} />;
+    return null;
   }
   return <VerifiedBadge role={officialRole(identity.type as 'cx' | 'assistant')} size={size} />;
 }

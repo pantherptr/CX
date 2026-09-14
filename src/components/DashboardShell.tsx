@@ -4,7 +4,7 @@ import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
-import { useCountUp } from './motion';
+import { Img, useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useUnreadNotificationCount } from '../lib/data/notifications';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
@@ -179,7 +179,16 @@ export function DashboardShell({
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
           {displayAvatar ? (
-            <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            <Img
+              src={displayAvatar}
+              alt=""
+              className="h-9 w-9 rounded-full object-cover"
+              fallback={
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={16} />
+                </span>
+              }
+            />
           ) : (
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
               <Icon name="user" size={16} />
@@ -243,7 +252,16 @@ export function DashboardShell({
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
           {displayAvatar ? (
-            <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            <Img
+              src={displayAvatar}
+              alt=""
+              className="h-9 w-9 rounded-full object-cover"
+              fallback={
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={16} />
+                </span>
+              }
+            />
           ) : (
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
               <Icon name="user" size={16} />
@@ -339,7 +357,16 @@ export function DashboardShell({
             </Link>
             <Link to="/settings">
               {displayAvatar ? (
-                <img src={displayAvatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+                <Img
+                  src={displayAvatar}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover"
+                  fallback={
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name="user" size={16} />
+                    </span>
+                  }
+                />
               ) : (
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
                   <Icon name="user" size={16} />

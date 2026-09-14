@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { Icon } from '../components/Icon';
+import { Img } from '../components/motion';
 import { EmptyState, Modal, VerifiedBadge, RoleLabel, type VerifiedRole } from '../components/primitives';
 import { useAuth } from '../lib/auth';
 import {
@@ -61,7 +62,12 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
             className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-panel disabled:opacity-50"
           >
             {r.avatar ? (
-              <img src={r.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+              <Img
+                src={r.avatar}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                fallback={<span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent"><Icon name="user" size={14} /></span>}
+              />
             ) : (
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent"><Icon name="user" size={14} /></span>
             )}
@@ -104,7 +110,16 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
           to miss at a quick scan. */}
       {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-accent" aria-hidden="true" />}
       {c.other.avatar ? (
-        <img src={c.other.avatar} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-line" />
+        <Img
+          src={c.other.avatar}
+          alt=""
+          className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-line"
+          fallback={
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
+              <Icon name="user" size={18} />
+            </span>
+          }
+        />
       ) : (
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
           <Icon name="user" size={18} />
@@ -360,7 +375,16 @@ export default function Messages() {
               <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface/80 px-4 py-3 backdrop-blur">
                 <button onClick={() => setMobileChat(false)} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-panel md:hidden"><Icon name="chevronLeft" size={20} /></button>
                 {active.other.avatar ? (
-                  <img src={active.other.avatar} alt="" className="h-10 w-10 rounded-full object-cover ring-1 ring-line" />
+                  <Img
+                    src={active.other.avatar}
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover ring-1 ring-line"
+                    fallback={
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
+                        <Icon name="user" size={16} />
+                      </span>
+                    }
+                  />
                 ) : (
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
                     <Icon name="user" size={16} />

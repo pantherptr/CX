@@ -7,7 +7,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { Modal, Stars } from '../components/primitives';
-import { Reveal } from '../components/motion';
+import { Img, Reveal } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { HostCard } from '../components/HostCard';
 import { CarCard } from '../components/CarCard';
@@ -259,7 +259,12 @@ export default function CarDetails() {
             onClick={() => setLightbox(0)}
             className="group relative col-span-2 row-span-2 overflow-hidden rounded-2xl sm:rounded-l-2xl"
           >
-            <img src={unsplash(gallery[0], 1000)} alt={`${car.make} ${car.model}`} className="h-64 w-full object-cover transition-transform duration-700 group-hover:scale-105 sm:h-full" />
+            <Img
+              src={unsplash(gallery[0], 1000)}
+              alt={`${car.make} ${car.model}`}
+              className="h-64 w-full object-cover transition-transform duration-700 group-hover:scale-105 sm:h-full"
+              fallback={<span className="grid h-64 w-full place-items-center bg-panel text-muted sm:h-full"><Icon name="car" size={36} /></span>}
+            />
           </button>
           {gallery.slice(1, 5).map((img, i) => (
             <button
@@ -268,7 +273,12 @@ export default function CarDetails() {
               className="group relative hidden overflow-hidden sm:block"
               style={{ borderTopRightRadius: i === 1 ? 16 : 0, borderBottomRightRadius: i === 3 ? 16 : 0 }}
             >
-              <img src={unsplash(img, 600)} alt="" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <Img
+                src={unsplash(img, 600)}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={24} /></span>}
+              />
               {i === 3 && (
                 <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-detail font-medium text-ink shadow-hair backdrop-blur">
                   <Icon name="grid" size={14} /> All photos
@@ -397,7 +407,16 @@ export default function CarDetails() {
                 {car.reviews.map((r) => (
                   <div key={r.id}>
                     <div className="flex items-center gap-3">
-                      <img src={r.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
+                      <Img
+                        src={r.avatar}
+                        alt=""
+                        className="h-11 w-11 rounded-full object-cover"
+                        fallback={
+                          <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
+                            <Icon name="user" size={18} />
+                          </span>
+                        }
+                      />
                       <div>
                         <p className="font-medium text-ink">{r.author}</p>
                         <p className="text-caption text-muted">{r.location} · {r.date}</p>
@@ -475,14 +494,24 @@ export default function CarDetails() {
               <button onClick={() => setLightbox(null)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/10"><Icon name="x" size={20} /></button>
             </div>
             <div className="relative">
-              <img src={unsplash(gallery[lightbox % gallery.length], 1400)} alt="" className="max-h-[70vh] w-full object-contain" />
+              <Img
+                src={unsplash(gallery[lightbox % gallery.length], 1400)}
+                alt=""
+                className="max-h-[70vh] w-full object-contain"
+                fallback={<span className="grid h-[70vh] w-full place-items-center text-white/50"><Icon name="car" size={40} /></span>}
+              />
               <button onClick={() => setLightbox((l) => (l! - 1 + gallery.length) % gallery.length)} className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-ink hover:bg-white"><Icon name="chevronLeft" size={22} /></button>
               <button onClick={() => setLightbox((l) => (l! + 1) % gallery.length)} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-ink hover:bg-white"><Icon name="chevronRight" size={22} /></button>
             </div>
             <div className="flex gap-2 overflow-x-auto p-3 no-scrollbar">
               {gallery.map((img, i) => (
                 <button key={i} onClick={() => setLightbox(i)} className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition ${(lightbox % gallery.length) === i ? 'border-white' : 'border-transparent opacity-60'}`}>
-                  <img src={unsplash(img, 200)} alt="" className="h-full w-full object-cover" />
+                  <Img
+                    src={unsplash(img, 200)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<span className="grid h-full w-full place-items-center bg-black/40 text-white/50"><Icon name="car" size={16} /></span>}
+                  />
                 </button>
               ))}
             </div>

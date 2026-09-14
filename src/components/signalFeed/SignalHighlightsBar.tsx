@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Icon } from '../Icon';
+import { Img } from '../motion';
 import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '../../lib/data/empireHighlights';
 import { SignalStoryViewer } from './SignalStoryViewer';
 
@@ -22,7 +24,15 @@ export function SignalHighlightsBar({ canManage }: { canManage: boolean }) {
           <button key={h.id} onClick={() => setOpenIndex(i)} className="pressable flex shrink-0 flex-col items-center gap-1">
             <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-line-strong p-[2.5px]">
               <span className="h-full w-full overflow-hidden rounded-full border-2 border-surface bg-panel">
-                {h.slides[0] && <img src={h.slides[0].mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />}
+                {h.slides[0] && (
+                  <Img
+                    src={h.slides[0].mediaUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={18} /></span>}
+                  />
+                )}
               </span>
             </span>
             <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{h.title}</span>

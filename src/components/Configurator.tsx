@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { Img } from './motion';
 import { useApp } from '../lib/store';
 import { useCompare } from '../lib/compareStore';
 import { unsplash } from '../lib/img';
@@ -318,7 +319,7 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
             className="relative flex-1 cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
           >
             {gallery.map((img, i) => (
-              <img
+              <Img
                 key={img + i}
                 src={unsplash(img, 1400)}
                 alt={i === view ? `${car.make} ${car.model}` : ''}
@@ -330,6 +331,14 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
                   transform: `scale(${i === view ? zoom : 1})`,
                   transition: 'opacity 300ms ease-out, transform 200ms ease-out',
                 }}
+                fallback={
+                  <span
+                    className="absolute inset-0 grid place-items-center text-white/30"
+                    style={{ opacity: i === view ? 1 : 0 }}
+                  >
+                    <Icon name="car" size={48} />
+                  </span>
+                }
               />
             ))}
 
@@ -363,7 +372,12 @@ function ConfiguratorModal({ car, initialView, onClose }: { car: Car; initialVie
                     i === view ? 'border-accent-bright' : 'border-white/10 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={unsplash(img, 160)} alt="" className="h-full w-full object-cover" />
+                  <Img
+                    src={unsplash(img, 160)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<span className="grid h-full w-full place-items-center bg-black/30 text-white/40"><Icon name="car" size={16} /></span>}
+                  />
                 </button>
               ))}
             </div>

@@ -23,6 +23,13 @@ export interface SignalNotification {
   actorId: string | null;
   actorName: string;
   actorAvatarUrl: string | null;
+  /** `null` until the actor has chosen one — same real username every
+   *  other SIGNAL surface (posts, comments, search) already shows. */
+  actorUsername: string | null;
+  actorIsOwner: boolean;
+  actorIsAdmin: boolean;
+  actorIsHost: boolean;
+  actorIsVerifiedClient: boolean;
   postId: string | null;
   /** A short preview of the post this notification refers to, if any —
    *  `null` for a follow (no post involved) or if the post was since
@@ -39,6 +46,11 @@ interface NotificationRow {
   actor_id: string | null;
   actor_name: string | null;
   actor_avatar_url: string | null;
+  actor_username?: string | null;
+  actor_is_owner?: boolean;
+  actor_is_admin?: boolean;
+  actor_is_host?: boolean;
+  actor_is_verified_client?: boolean;
   post_id: string | null;
   post_body: string | null;
 }
@@ -52,6 +64,11 @@ function mapNotification(row: NotificationRow): SignalNotification {
     actorId: row.actor_id,
     actorName: row.actor_name ?? 'CX Rent user',
     actorAvatarUrl: row.actor_avatar_url,
+    actorUsername: row.actor_username ?? null,
+    actorIsOwner: row.actor_is_owner ?? false,
+    actorIsAdmin: row.actor_is_admin ?? false,
+    actorIsHost: row.actor_is_host ?? false,
+    actorIsVerifiedClient: row.actor_is_verified_client ?? false,
     postId: row.post_id,
     postPreview: row.post_body ? row.post_body.slice(0, 120) : null,
   };

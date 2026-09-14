@@ -3,6 +3,7 @@ import { useCompare } from '../lib/compareStore';
 import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { Icon } from './Icon';
+import { Img } from './motion';
 
 /**
  * The floating "you have cars staged for comparison" bar — mounted once
@@ -30,7 +31,12 @@ export function CompareTray() {
             return (
               <div key={id} className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border-2 border-surface bg-panel-2">
                 {car ? (
-                  <img src={unsplash(car.images[0], 120)} alt="" className="h-full w-full object-cover" />
+                  <Img
+                    src={unsplash(car.images[0], 120)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={16} /></span>}
+                  />
                 ) : (
                   <div className="skeleton h-full w-full" />
                 )}

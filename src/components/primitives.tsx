@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { Img } from './motion';
 import { useAuth } from '../lib/auth';
 
 /* --------------------------- Google sign-in ---------------------------
@@ -97,15 +98,20 @@ export function Logo({
   const { session } = useAuth();
   const imgClass =
     'h-9 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10';
+  const fallback = (
+    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
+      CX
+    </span>
+  );
   return (
     <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
       {variant === 'auto' ? (
         <>
-          <img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${imgClass}`} />
-          <img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${imgClass}`} />
+          <Img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${imgClass}`} fallback={fallback} />
+          <Img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${imgClass}`} fallback={fallback} />
         </>
       ) : (
-        <img src={LOGO_SRC[variant]} alt="CX" className={imgClass} />
+        <Img src={LOGO_SRC[variant]} alt="CX" className={imgClass} fallback={fallback} />
       )}
     </Link>
   );
@@ -266,8 +272,29 @@ const SEAL_PATH =
  *  "VERIFIED" banner) that turns to mud below ~40px, so this uses a
  *  pre-cropped, circle-masked medallion of just its shield+check core
  *  (see /tmp asset prep) rather than the full crest at inline sizes. */
+// If the raster crest genuinely fails to load, this is the same flat seal
+// construction every other tier already falls back on visually — gold to
+// keep reading as Owner's tier, never a swapped-in generic/borrowed mark.
+function OwnerBadgeFallback({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+      <path d={SEAL_PATH} fill="#c9971c" stroke="none" />
+      <path d={CHECK_PATH} fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function OwnerBadgeMark({ size }: { size: number }) {
-  return <img src="/owner-verified.png" alt="Owner" width={size} height={size} className="shrink-0 rounded-full object-cover" />;
+  return (
+    <Img
+      src="/owner-verified.png"
+      alt="Owner"
+      width={size}
+      height={size}
+      className="shrink-0 rounded-full object-cover"
+      fallback={<OwnerBadgeFallback size={size} />}
+    />
+  );
 }
 
 const BADGE_FILL: Record<Exclude<VerifiedRole, 'owner'>, string> = {

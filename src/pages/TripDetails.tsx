@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { PremiumPageLoader } from '../components/PremiumLoader';
-import { Reveal } from '../components/motion';
+import { Img, Reveal } from '../components/motion';
 import { Modal } from '../components/primitives';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
@@ -417,7 +417,12 @@ export default function TripDetails() {
 
         <Reveal delay={100}>
         <div className="mt-6 overflow-hidden rounded-2xl border border-line">
-          <img src={booking.car.image} alt="" className="aspect-[16/9] w-full object-cover" />
+          <Img
+            src={booking.car.image}
+            alt=""
+            className="aspect-[16/9] w-full object-cover"
+            fallback={<span className="grid aspect-[16/9] w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
+          />
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
@@ -492,7 +497,16 @@ export default function TripDetails() {
           <h2 className="font-display text-lg font-semibold text-ink">Your host</h2>
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-line p-4">
             {booking.host.avatar ? (
-              <img src={booking.host.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
+              <Img
+                src={booking.host.avatar}
+                alt=""
+                className="h-11 w-11 rounded-full object-cover"
+                fallback={
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
+                    <Icon name="user" size={18} />
+                  </span>
+                }
+              />
             ) : (
               <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
                 <Icon name="user" size={18} />

@@ -26,19 +26,45 @@ const HERO_IMAGE_MOBILE = '/cx-hero-mediterranean-mobile-v2.png';
 function HeroPhoto() {
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(false);
+  const retriedRef = useRef(false);
 
   useEffect(() => {
     if (ref.current?.complete) setLoaded(true);
   }, []);
 
+  // Same one-retry-then-fallback contract as the shared `Img` primitive
+  // (see motion.tsx) — duplicated here rather than reworking `Img` to
+  // support `<picture>`'s two-child, breakpoint-swapped structure for
+  // this one hero image.
+  const handleError = () => {
+    if (!retriedRef.current) {
+      retriedRef.current = true;
+      window.setTimeout(() => setAttempt((a) => a + 1), 500);
+      return;
+    }
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error(`[HeroPhoto] failed to load (after one retry): ${HERO_IMAGE}`);
+    }
+    setFailed(true);
+  };
+
+  if (failed) {
+    return <div className="absolute inset-0 bg-gradient-to-br from-noir via-noir to-accent-bright/10" />;
+  }
+
   return (
     <picture>
       <source media="(max-width: 767px)" srcSet={HERO_IMAGE_MOBILE} />
       <img
+        key={attempt}
         ref={ref}
         src={HERO_IMAGE}
         alt="A premium CX car overlooking the Mediterranean coast"
         onLoad={() => setLoaded(true)}
+        onError={handleError}
         fetchPriority="high"
         className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center`}
       />
@@ -254,7 +280,12 @@ export default function Home() {
             />
             <div className="relative max-w-xl">
               <p className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
-                <img src="/cx-logo-symbol.png" alt="" className="h-5 w-5 object-contain" /> CX Concierge
+                <Img
+                  src="/cx-logo-symbol.png"
+                  alt=""
+                  className="h-5 w-5 object-contain"
+                  fallback={<Icon name="sparkles" size={16} />}
+                /> CX Concierge
               </p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
                 Find your CX
