@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
-import { CarCard } from '../CarCard';
 import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
@@ -12,8 +12,19 @@ import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
+import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
 import { useAuth } from '../../lib/auth';
+
+const ROLE_LABEL: Record<'owner' | 'admin' | 'host' | 'client', string> = {
+  owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client',
+};
+
+// How far (px) into the scroll the header compresses — a subtle,
+// transform/opacity-only effect (never a sticky mini-header; the whole
+// header just eases smaller as it scrolls past, per the brief's own
+// "do not create a giant sticky header").
+const HEADER_COMPRESS_RANGE = 90;
 
 /** The `/signal/profile/:authorId` deep-link target — same overlay-on-
  *  top-of-the-live-feed pattern as `SignalPostDetail` (fixed inset-0,
@@ -48,6 +59,7 @@ export function SignalProfileDetail({
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [storyViewerOpen, setStoryViewerOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [followListMode, setFollowListMode] = useState<'followers' | 'following' | null>(null);
   const isMe = !isOfficialVoice && session?.user.id === authorId;
 
   // Reuses the exact same active-Stories fetch SignalStoriesBar already
@@ -62,6 +74,24 @@ export function SignalProfileDetail({
     if (authorId === 'assistant') return activeStories.find((s) => s.publisherType === 'assistant') ?? null;
     return activeStories.find((s) => s.authorId === authorId && s.publisherType !== 'cx' && s.publisherType !== 'assistant') ?? null;
   }, [activeStories, authorId]);
+
+  // Subtle scroll-linked header compression — transform/opacity only,
+  // scoped to this overlay's own scroll container (not window), so it
+  // never touches the shared feed's own scroll-hide behavior underneath.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; setScrollTop(el.scrollTop); });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+  const compress = Math.min(1, scrollTop / HEADER_COMPRESS_RANGE);
 
   useEffect(() => {
     if (isOfficialVoice) return;
@@ -91,8 +121,11 @@ export function SignalProfileDetail({
     };
   }, [authorId, isOfficialVoice]);
 
+  const pinnedPost = posts?.[0]?.pinnedToProfile ? posts[0] : null;
+  const restPosts = pinnedPost ? posts!.slice(1) : posts;
+
   return (
-    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+    <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-4 py-3 backdrop-blur-md pt-safe">
         <button onClick={onClose} aria-label="Back to Signal" className="pressable grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
           <Icon name="chevronLeft" size={20} />
@@ -100,18 +133,19 @@ export function SignalProfileDetail({
         <span className="font-display font-semibold text-ink">Profile</span>
       </div>
 
-      <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-6">
+      <div className="mx-auto w-full max-w-xl px-4 pb-10 sm:px-6">
         {isOfficialVoice ? (
           <OfficialVoiceHeader
             type={authorId as 'cx' | 'assistant'}
             hasActiveStory={Boolean(myStory)}
             onOpenStory={() => setStoryViewerOpen(true)}
+            compress={compress}
           />
         ) : !loaded ? (
-          <div className="card animate-pulse p-5">
-            <div className="skeleton mb-3 h-16 w-16 rounded-full" />
-            <div className="skeleton mb-2 h-4 w-1/2 rounded-md" />
-            <div className="skeleton h-3 w-3/4 rounded-md" />
+          <div className="flex flex-col items-center gap-3 pb-6 pt-8 text-center">
+            <div className="skeleton h-20 w-20 rounded-full" />
+            <div className="skeleton h-4 w-32 rounded-md" />
+            <div className="skeleton h-3 w-48 rounded-md" />
           </div>
         ) : profile === 'error' ? (
           <div className="py-24 text-center">
@@ -128,53 +162,77 @@ export function SignalProfileDetail({
             profile={profile}
             isMe={isMe}
             hasActiveStory={Boolean(myStory)}
+            compress={compress}
             onOpenStory={() => setStoryViewerOpen(true)}
             onEditProfile={() => setEditProfileOpen(true)}
+            onOpenFollowers={() => setFollowListMode('followers')}
+            onOpenFollowing={() => setFollowListMode('following')}
           />
         )}
 
         {!isOfficialVoice && profile && profile !== 'error' && cars && cars.length > 0 && (
-          <div className="mt-6">
-            <h2 className="mb-3 text-detail font-semibold uppercase tracking-wide text-muted">Vehicles</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="border-t border-line py-4">
+            <p className="mb-2.5 px-0.5 text-caption font-semibold uppercase tracking-[0.12em] text-faint">Vehicles</p>
+            <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
               {cars.map((car) => (
-                <CarCard key={car.id} car={car} />
+                <Link
+                  key={car.id}
+                  to={`/cars/${car.slug}`}
+                  className="pressable flex w-[168px] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong"
+                >
+                  <span className="block h-24 w-full bg-panel">
+                    {car.images[0] && <img src={car.images[0]} alt="" className="h-full w-full object-cover" />}
+                  </span>
+                  <span className="flex flex-col gap-0.5 p-2.5">
+                    <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
+                    <span className="flex items-center justify-between text-caption text-muted">
+                      €{compact(car.pricePerDay)}/day
+                      <Icon name="arrowUpRight" size={12} className="text-accent-700" />
+                    </span>
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
-        {!isOfficialVoice && posts && posts.length > 0 && (
-          <div className="mt-6">
-            {/* fetch_empire_posts_by_author already orders pinned_to_
-                profile first — at most one, so this is always either
-                empty or a single post. Shown once, separately, so it
-                never also repeats in the plain list below it. */}
-            {posts[0]?.pinnedToProfile && (
-              <div className="mb-4">
-                <p className="mb-2 flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-muted">
-                  <Icon name="pinned" size={12} fill /> Pinned
-                </p>
-                <SignalPostCard
-                  post={posts[0]}
-                  canManage={canManage}
-                  onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
-                  onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
-                />
-              </div>
-            )}
-            <h2 className="mb-3 text-detail font-semibold uppercase tracking-wide text-muted">Posts</h2>
-            {posts.filter((p) => !p.pinnedToProfile).map((post) => (
+        <div className="border-t border-line pt-4">
+          {pinnedPost && (
+            <div className="mb-3">
+              <p className="mb-2 flex items-center gap-1.5 px-0.5 text-caption font-medium text-faint">
+                <Icon name="pinned" size={11} fill /> Pinned
+              </p>
               <SignalPostCard
-                key={post.id}
-                post={post}
+                post={pinnedPost}
                 canManage={canManage}
                 onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
                 onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
               />
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+
+          {!isOfficialVoice && restPosts && restPosts.length === 0 && !pinnedPost && (
+            <div className="flex flex-col items-center gap-3 py-14 text-center">
+              <span className="h-7 w-[3px] rounded-full bg-accent-bright/50" aria-hidden="true" />
+              <p className="text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
+              {isMe && (
+                <Link to="/signal/community" className="btn btn-primary btn-sm mt-1">
+                  Create Post
+                </Link>
+              )}
+            </div>
+          )}
+
+          {!isOfficialVoice && restPosts?.map((post) => (
+            <SignalPostCard
+              key={post.id}
+              post={post}
+              canManage={canManage}
+              onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
+              onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
+            />
+          ))}
+        </div>
       </div>
 
       {storyViewerOpen && myStory && (
@@ -196,6 +254,10 @@ export function SignalProfileDetail({
           }
         />
       )}
+
+      {followListMode && profile && profile !== 'error' && (
+        <SignalFollowListSheet userId={profile.id} mode={followListMode} onClose={() => setFollowListMode(null)} />
+      )}
     </div>
   );
 }
@@ -204,26 +266,25 @@ function OfficialVoiceHeader({
   type,
   hasActiveStory,
   onOpenStory,
+  compress,
 }: {
   type: 'cx' | 'assistant';
   hasActiveStory: boolean;
   onOpenStory: () => void;
+  compress: number;
 }) {
   const isCx = type === 'cx';
   const avatar = isCx ? (
-    <span className="grid h-16 w-16 place-items-center rounded-full bg-white ring-1 ring-line">
-      <img src="/cx-logo-symbol.png" alt="" className="h-10 w-10 object-contain" />
+    <span className="grid h-20 w-20 place-items-center rounded-full bg-white ring-1 ring-line">
+      <img src="/cx-logo-symbol.png" alt="" className="h-12 w-12 object-contain" />
     </span>
   ) : (
-    <span className="grid h-16 w-16 place-items-center rounded-full bg-noir text-accent-bright">
-      <Icon name="headset" size={28} />
+    <span className="grid h-20 w-20 place-items-center rounded-full bg-noir text-accent-bright">
+      <Icon name="headset" size={32} />
     </span>
   );
   return (
-    <div className="card flex flex-col items-center gap-3 p-6 text-center">
-      {/* Same ring-around-the-avatar treatment SignalStoriesBar already
-          uses for an unviewed Story — reused, not reinvented, for the
-          one case here (Owner-published-as-CX/Assistant Story). */}
+    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
       {hasActiveStory ? (
         <button onClick={onOpenStory} aria-label="View Story" className="pressable inline-grid place-items-center rounded-full bg-gradient-to-tr from-accent-bright via-accent to-accent-700 p-[3px]">
           <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
@@ -233,7 +294,7 @@ function OfficialVoiceHeader({
       )}
       <div>
         <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-lead font-semibold text-ink">{isCx ? 'CX' : 'Assistant'}</span>
+          <span className="font-display text-feature font-semibold text-ink">{isCx ? 'CX' : 'Assistant'}</span>
           {isCx ? (
             <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-accent-bright text-noir">
               <Icon name="check" size={11} strokeWidth={3.2} />
@@ -242,7 +303,7 @@ function OfficialVoiceHeader({
             <VerifiedBadge role="assistant" size={16} />
           )}
         </div>
-        <p className="mt-1 text-detail text-muted">
+        <p style={{ opacity: 1 - compress }} className="mt-2 max-w-xs text-detail text-muted">
           {isCx ? 'The official CX Rent brand account.' : 'CX Rent’s official AI assistant.'}
         </p>
       </div>
@@ -254,14 +315,20 @@ function ProfileHeader({
   profile,
   isMe,
   hasActiveStory,
+  compress,
   onOpenStory,
   onEditProfile,
+  onOpenFollowers,
+  onOpenFollowing,
 }: {
   profile: SignalProfile;
   isMe: boolean;
   hasActiveStory: boolean;
+  compress: number;
   onOpenStory: () => void;
   onEditProfile: () => void;
+  onOpenFollowers: () => void;
+  onOpenFollowing: () => void;
 }) {
   const role: 'owner' | 'admin' | 'host' | 'client' | null =
     profile.isOwner ? 'owner' : profile.isAdmin ? 'admin' : profile.isHost ? 'host' : profile.isVerifiedClient ? 'client' : null;
@@ -269,71 +336,89 @@ function ProfileHeader({
   // the brief's own "Users can follow: Hosts, Verified Clients."
   // Following Owner/Admin's real account isn't a Community concept.
   const canBeFollowed = !isMe && (profile.isHost || profile.isVerifiedClient);
+  const showFollowCounts = profile.isHost || profile.isVerifiedClient;
   const [followersCount, setFollowersCount] = useState(profile.followersCount);
+  // A verified account (Host/Verified Client/Owner) gets a hairline
+  // accent ring on its own photo — deliberately not the Story gradient,
+  // which is reserved for "there's something new to watch," not a
+  // permanent verification cue. Never both at once: the Story ring
+  // below already implies verification just by who can publish one.
+  const isVerifiedIdentity = Boolean(role);
 
   const avatar = profile.avatarUrl ? (
-    <img src={profile.avatarUrl} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+    <img
+      src={profile.avatarUrl}
+      alt=""
+      className={`h-20 w-20 shrink-0 rounded-full object-cover ${isVerifiedIdentity ? 'ring-1 ring-accent-bright/30' : ''}`}
+    />
   ) : (
-    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-      <Icon name="user" size={28} />
+    <span className={`grid h-20 w-20 shrink-0 place-items-center rounded-full bg-panel text-ink-soft ${isVerifiedIdentity ? 'ring-1 ring-accent-bright/30' : ''}`}>
+      <Icon name="user" size={32} />
     </span>
   );
 
   return (
-    <div className="card p-5">
-      <div className="flex items-start gap-4">
-        {/* Same ring-around-the-avatar treatment SignalStoriesBar already
-            uses — a solid accent ring for your own active Story, the
-            gradient "unviewed" ring for someone else's, reused as-is
-            rather than a new visual invented for this one spot. */}
-        {hasActiveStory ? (
-          <button
-            onClick={onOpenStory}
-            aria-label="View Story"
-            className={`pressable inline-grid shrink-0 place-items-center rounded-full p-[3px] ${
-              isMe ? 'bg-accent-700' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
-            }`}
-          >
-            <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
-          </button>
-        ) : (
-          avatar
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate font-display text-lead font-semibold text-ink">{profile.fullName}</span>
-                {role && <VerifiedBadge role={role} size={16} />}
-              </div>
-              {profile.isHost && (
-                <p className="text-caption text-muted">
-                  {compact(profile.rating)} ★ · {compact(profile.trips)} trips
-                </p>
-              )}
-            </div>
-            {isMe ? (
-              <button onClick={onEditProfile} className="pressable rounded-full border border-line px-3.5 py-1.5 text-caption font-semibold text-ink transition-colors hover:border-line-strong">
-                Edit Profile
-              </button>
-            ) : canBeFollowed && (
-              <FollowButton
-                userId={profile.id}
-                initialFollowing={profile.followedByMe}
-                size="sm"
-                onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
-              />
-            )}
-          </div>
-          {(profile.isHost || profile.isVerifiedClient) && (
-            <p className="mt-1.5 flex items-center gap-3 text-caption text-ink-soft">
-              <span><span className="font-semibold text-ink">{compact(followersCount)}</span> Followers</span>
-              <span><span className="font-semibold text-ink">{compact(profile.followingCount)}</span> Following</span>
-            </p>
-          )}
+    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
+      {/* Same ring-around-the-avatar treatment SignalStoriesBar already
+          uses — a solid accent ring for your own active Story, the
+          gradient "unviewed" ring for someone else's, reused as-is
+          rather than a new visual invented for this one spot. */}
+      {hasActiveStory ? (
+        <button
+          onClick={onOpenStory}
+          aria-label="View Story"
+          className={`pressable inline-grid place-items-center rounded-full p-[3px] ${
+            isMe ? 'bg-accent-700' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
+          }`}
+        >
+          <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
+        </button>
+      ) : (
+        avatar
+      )}
+
+      <div>
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="font-display text-feature font-semibold text-ink">{profile.fullName}</span>
+          {role && <VerifiedBadge role={role} size={15} />}
         </div>
+        {role && <p className="mt-0.5 text-caption text-muted">{ROLE_LABEL[role]}</p>}
       </div>
-      {profile.bio && <p className="mt-3 whitespace-pre-wrap break-words text-body text-ink-soft">{profile.bio}</p>}
+
+      {profile.bio && (
+        <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
+          {profile.bio}
+        </p>
+      )}
+
+      {profile.isHost && (
+        <p className="-mt-1 text-caption text-faint">{compact(profile.rating)} ★ · {compact(profile.trips)} trips</p>
+      )}
+
+      {showFollowCounts && (
+        <div className="flex items-center gap-5 text-detail">
+          <button onClick={onOpenFollowers} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
+            <span className="font-semibold text-ink">{compact(followersCount)}</span> Followers
+          </button>
+          <button onClick={onOpenFollowing} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
+            <span className="font-semibold text-ink">{compact(profile.followingCount)}</span> Following
+          </button>
+        </div>
+      )}
+
+      {isMe ? (
+        <button onClick={onEditProfile} className="pressable rounded-full border border-line px-5 py-1.5 text-detail font-semibold text-ink transition-colors hover:border-line-strong">
+          Edit Profile
+        </button>
+      ) : (
+        canBeFollowed && (
+          <FollowButton
+            userId={profile.id}
+            initialFollowing={profile.followedByMe}
+            onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
+          />
+        )
+      )}
     </div>
   );
 }

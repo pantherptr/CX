@@ -90,6 +90,56 @@ export async function toggleProfileFollow(userId: string): Promise<{ following: 
   return { following: data as boolean, error: null };
 }
 
+export interface FollowListUser {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  isHost: boolean;
+  isVerifiedClient: boolean;
+}
+
+interface FollowListUserJson {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  is_host: boolean;
+  is_verified_client: boolean;
+}
+
+function mapFollowListUser(row: FollowListUserJson): FollowListUser {
+  return {
+    id: row.id,
+    fullName: row.full_name ?? 'CX Rent user',
+    avatarUrl: row.avatar_url,
+    isHost: row.is_host,
+    isVerifiedClient: row.is_verified_client,
+  };
+}
+
+/** Same direct-table-select + FK-embed pattern `fetchEmpirePostComments`
+ *  already uses for its own author join — `profile_follows` already
+ *  grants read to any signed-in user (0052's own RLS policy), no new RPC
+ *  needed just to list rows off it. */
+export async function fetchProfileFollowers(userId: string): Promise<FollowListUser[]> {
+  const { data, error } = await supabase
+    .from('profile_follows')
+    .select('follower:profiles!profile_follows_follower_id_fkey(id, full_name, avatar_url, is_host, is_verified_client)')
+    .eq('followee_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as { follower: FollowListUserJson }[]).map((row) => mapFollowListUser(row.follower));
+}
+
+export async function fetchProfileFollowing(userId: string): Promise<FollowListUser[]> {
+  const { data, error } = await supabase
+    .from('profile_follows')
+    .select('followee:profiles!profile_follows_followee_id_fkey(id, full_name, avatar_url, is_host, is_verified_client)')
+    .eq('follower_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as unknown as { followee: FollowListUserJson }[]).map((row) => mapFollowListUser(row.followee));
+}
+
 /** Uploads a new photo to the exact same `avatars` bucket/path convention
  *  Settings.tsx's own `handleAvatarChange` already uses — this is not a
  *  second avatar system, it's the same one, just reachable from inside
