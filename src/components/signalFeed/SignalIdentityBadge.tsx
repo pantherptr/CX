@@ -3,14 +3,14 @@ import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import type { SignalIdentity } from '../../lib/data/signalIdentity';
 
 /** Maps SIGNAL's own identity union onto the one shared badge system
- *  (primitives.tsx) — 'assistant' (the CX Assistant AI voice) reuses the
- *  same gold mark as a human Owner Assistant (both mean "speaking in a
- *  support capacity, not personally"); 'cx' (the official brand account,
- *  not a real person) reuses Admin's black-and-green mark rather than
- *  inventing a sixth tier — both represent CX Rent acting institutionally
- *  rather than as one named individual. */
+ *  (primitives.tsx) — 'assistant' (the AI voice) gets its own solid
+ *  green mark ('assistant' role, distinct from the human 'owner_assistant'
+ *  tier which stays gold); 'cx' (the official brand account, not a real
+ *  person) reuses Admin's black-and-green mark rather than inventing a
+ *  sixth tier for it too, since it represents CX Rent acting
+ *  institutionally rather than as one named individual. */
 function officialRole(type: 'cx' | 'assistant'): VerifiedRole {
-  return type === 'assistant' ? 'owner_assistant' : 'admin';
+  return type === 'assistant' ? 'assistant' : 'admin';
 }
 
 /** The avatar half of a resolved SIGNAL identity — a real photo for

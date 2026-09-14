@@ -60,7 +60,7 @@ export function resolveSignalIdentity(
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
-      return { type: 'assistant', name: 'CX Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: null };
+      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: null };
     case 'cx':
       return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/cx-logo-symbol.png' };
     case 'self': {

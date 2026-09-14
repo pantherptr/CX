@@ -149,10 +149,14 @@ function OfficialVoiceHeader({ type }: { type: 'cx' | 'assistant' }) {
       )}
       <div>
         <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-lead font-semibold text-ink">{isCx ? 'CX' : 'CX Assistant'}</span>
-          <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-accent-bright text-noir">
-            <Icon name="check" size={11} strokeWidth={3.2} />
-          </span>
+          <span className="font-display text-lead font-semibold text-ink">{isCx ? 'CX' : 'Assistant'}</span>
+          {isCx ? (
+            <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-accent-bright text-noir">
+              <Icon name="check" size={11} strokeWidth={3.2} />
+            </span>
+          ) : (
+            <VerifiedBadge role="assistant" size={16} />
+          )}
         </div>
         <p className="mt-1 text-detail text-muted">
           {isCx ? 'The official CX Rent brand account.' : 'CX Rent’s official AI assistant.'}

@@ -228,7 +228,11 @@ export function Modal({
  *   Verified Client     solid neutral grey, white check — deliberately
  *                       the plainest mark, the least exclusive tier.
  */
-export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client';
+// 'assistant' is SIGNAL's AI voice specifically — kept distinct from the
+// pre-existing 'owner_assistant' (a real human tier, still gold, used
+// elsewhere for conversation-participant labeling) so recoloring one
+// never touches the other.
+export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client' | 'assistant';
 
 const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: string }> = {
   owner: { fg: 'text-[#8a6d1f]', bg: 'bg-noir/5', label: 'Owner' },
@@ -236,6 +240,7 @@ const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: 
   admin: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Admin' },
   host: { fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Host' },
   client: { fg: 'text-muted', bg: 'bg-panel-2', label: 'Verified' },
+  assistant: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Assistant' },
 };
 
 // One checkmark, hand-drawn to sit slightly off-center-low in a 24x24
@@ -270,12 +275,14 @@ const BADGE_FILL: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   admin: 'var(--color-noir)',
   host: 'var(--color-accent-bright)',
   client: 'var(--color-muted)',
+  assistant: 'var(--color-accent-bright)',
 };
 const BADGE_CHECK: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   owner_assistant: 'var(--color-noir)',
   admin: 'var(--color-accent-bright)',
   host: '#ffffff',
   client: '#ffffff',
+  assistant: '#ffffff',
 };
 // Admin is the only non-Owner tier with its own ring color (green on
 // black, mirroring Owner's black-plus-ring construction one step down in
