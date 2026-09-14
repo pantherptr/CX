@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
-import { VerifiedBadge } from '../primitives';
+import { resolveSignalIdentity, SIGNAL_PUBLISHER_TYPES, type SignalPublisherType } from '../../lib/data/signalIdentity';
+import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import {
   fetchEmpirePostComments, addEmpireComment, deleteEmpireComment, reportEmpireContent,
   type EmpireComment,
@@ -18,23 +19,15 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hr / 24)}d`;
 }
 
-function Avatar({ url, size = 28 }: { url: string | null; size?: number }) {
-  const style = { height: size, width: size };
-  if (url) return <img src={url} alt="" className="shrink-0 rounded-full object-cover" style={style} />;
-  return (
-    <span className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft" style={style}>
-      <Icon name="user" size={Math.round(size * 0.5)} />
-    </span>
-  );
-}
-
-/** A compact, flat comment list — no nested replies, matching the brief's
- *  "keep comments clean and compact." Revived from scratch (the old
- *  component was deleted when comments were removed from Signal
- *  entirely) since community posts now need them back. Optimistic append
- *  on submit — the new comment shows immediately with the caller's own
- *  known identity, no spinner-blocking — with rollback if the RPC
- *  rejects it (comments_disabled flipped mid-type, etc). */
+/** A compact, flat comment list — no nested replies. Creation is
+ *  Owner-only (see 0057_signal_owner_only_comments.sql) — everyone else
+ *  reads. Each comment carries its own `publisherType` (the identity the
+ *  Owner chose at write time: Owner / CX Assistant / CX Rent, or 'self'
+ *  for anything written before this rule existed), resolved through the
+ *  exact same `resolveSignalIdentity` a post already uses — one identity
+ *  system, not a second one for comments. Optimistic append on submit,
+ *  with rollback if the RPC rejects it (comments_disabled flipped
+ *  mid-type, etc). */
 export function SignalComments({
   postId,
   canModerateAll = false,
@@ -51,11 +44,14 @@ export function SignalComments({
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  // Comment CREATION is CX-team-only (Owner/Admin — is_admin() covers
-  // both) across Official and Community alike; add_empire_post_comment
-  // enforces this server-side regardless, this just keeps the UI honest
-  // about it instead of showing an input that would always be rejected.
-  const canComment = Boolean(profile?.is_owner || profile?.is_admin);
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>('owner');
+  const [identityPickerOpen, setIdentityPickerOpen] = useState(false);
+  // Strictly the real Owner — not Admin. A comment "as CX Assistant" is
+  // still always written by the Owner's own account; there is no
+  // separate CX Assistant login that gains this permission (see the
+  // migration's own comment for why is_owner(), not is_admin()).
+  const canComment = Boolean(profile?.is_owner);
+  const selfIdentity = resolveSignalIdentity(publisherType, profile?.full_name || 'Owner', profile?.avatar_url ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,18 +70,19 @@ export function SignalComments({
       id: `pending-${crypto.randomUUID()}`,
       postId,
       userId: session?.user.id ?? '',
-      authorName: profile?.full_name || 'You',
+      authorName: profile?.full_name || 'Owner',
       authorAvatarUrl: profile?.avatar_url ?? null,
       authorIsOwner: Boolean(profile?.is_owner),
       authorIsAdmin: Boolean(profile?.is_admin),
-      authorIsHost: Boolean(profile?.is_host),
+      authorIsHost: false,
       authorIsVerifiedClient: false,
+      publisherType,
       body: text,
       createdAt: new Date().toISOString(),
     };
     setComments((prev) => [...(prev ?? []), optimistic]);
     onCountChanged?.(1);
-    const { comment, error } = await addEmpireComment(postId, text);
+    const { comment, error } = await addEmpireComment(postId, text, publisherType);
     setSubmitting(false);
     if (error || !comment) {
       setComments((prev) => (prev ?? []).filter((c) => c.id !== optimistic.id));
@@ -132,14 +129,14 @@ export function SignalComments({
         <div className="flex flex-col gap-3">
           {comments.map((c) => {
             const isMine = c.userId === session?.user.id;
-            const role = c.authorIsOwner ? 'owner' : c.authorIsAdmin ? 'admin' : c.authorIsHost ? 'host' : c.authorIsVerifiedClient ? 'client' : null;
+            const identity = resolveSignalIdentity(c.publisherType, c.authorName, c.authorAvatarUrl, c.authorIsHost, c.authorIsVerifiedClient, c.authorIsOwner, c.authorIsAdmin);
             return (
               <div key={c.id} className="group flex items-start gap-2.5">
-                <Avatar url={c.authorAvatarUrl} />
+                <SignalIdentityAvatar identity={identity} size={28} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-detail font-semibold text-ink">{c.authorName}</span>
-                    {role && <VerifiedBadge role={role} size={12} />}
+                    <span className="text-detail font-semibold text-ink">{identity.name}</span>
+                    <SignalIdentityBadge identity={identity} size={12} />
                     <span className="text-caption text-muted">{timeAgo(c.createdAt)}</span>
                   </div>
                   <p className="whitespace-pre-wrap break-words text-detail leading-snug text-ink-soft">{c.body}</p>
@@ -180,23 +177,61 @@ export function SignalComments({
       )}
 
       {canComment && (
-        <div className="mt-3 flex items-center gap-2">
-          <Avatar url={profile?.avatar_url ?? null} size={26} />
-          <input
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-            placeholder="Add a comment…"
-            className="input !py-2 flex-1 text-detail"
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!body.trim() || submitting}
-            aria-label="Post comment"
-            className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
-          >
-            <Icon name="send" size={15} />
-          </button>
+        <div className="mt-3">
+          {/* Only the Owner ever sees this — the choice of which of the
+              three official voices this comment publishes as. */}
+          <div className="relative mb-2 inline-block">
+            <button
+              onClick={() => setIdentityPickerOpen((v) => !v)}
+              aria-expanded={identityPickerOpen}
+              className="pressable flex items-center gap-1.5 rounded-full border border-line py-1 pl-1 pr-2.5 text-caption font-semibold text-ink-soft transition-colors hover:border-line-strong hover:text-ink"
+            >
+              <SignalIdentityAvatar identity={selfIdentity} size={18} />
+              Comment as {selfIdentity.name}
+              <Icon name="chevronDown" size={12} />
+            </button>
+            {identityPickerOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIdentityPickerOpen(false)} />
+                <div className="absolute left-0 top-9 z-20 w-48 overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
+                  {SIGNAL_PUBLISHER_TYPES.map((type) => {
+                    const identity = resolveSignalIdentity(type, profile?.full_name || 'Owner', profile?.avatar_url ?? null);
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => { setPublisherType(type); setIdentityPickerOpen(false); }}
+                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-detail font-medium transition-colors ${
+                          type === publisherType ? 'bg-accent-050 text-accent-700' : 'text-ink hover:bg-panel'
+                        }`}
+                      >
+                        <SignalIdentityAvatar identity={identity} size={22} />
+                        {identity.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <SignalIdentityAvatar identity={selfIdentity} size={26} />
+            <input
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+              placeholder="Add a comment…"
+              className="input !py-2 flex-1 text-detail"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!body.trim() || submitting}
+              aria-label="Post comment"
+              className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
+            >
+              <Icon name="send" size={15} />
+            </button>
+          </div>
         </div>
       )}
     </div>

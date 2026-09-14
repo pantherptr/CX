@@ -454,6 +454,12 @@ export interface EmpireComment {
   authorIsAdmin: boolean;
   authorIsHost: boolean;
   authorIsVerifiedClient: boolean;
+  /** Which identity this comment displays as — 'owner'/'assistant'/'cx'
+   *  for anything written since 0057 (Owner-only, Owner's own choice at
+   *  write time), or 'self' for anything written before it (shows
+   *  whoever the real author actually was, resolved live exactly like a
+   *  Community post's own 'self' voice — see resolveSignalIdentity). */
+  publisherType: SignalPublisherType;
   body: string;
   createdAt: string;
 }
@@ -464,6 +470,7 @@ interface EmpireCommentRow {
   user_id: string;
   body: string;
   created_at: string;
+  publisher_type: SignalPublisherType;
   author: {
     full_name: string | null;
     avatar_url: string | null;
@@ -485,6 +492,7 @@ function mapEmpireComment(row: EmpireCommentRow): EmpireComment {
     authorIsAdmin: row.author?.is_admin ?? false,
     authorIsHost: row.author?.is_host ?? false,
     authorIsVerifiedClient: row.author?.is_verified_client ?? false,
+    publisherType: row.publisher_type,
     body: row.body,
     createdAt: row.created_at,
   };
@@ -493,17 +501,21 @@ function mapEmpireComment(row: EmpireCommentRow): EmpireComment {
 export async function fetchEmpirePostComments(postId: string): Promise<EmpireComment[]> {
   const { data, error } = await supabase
     .from('empire_post_comments')
-    .select('id, post_id, user_id, body, created_at, author:profiles!empire_post_comments_user_id_fkey(full_name, avatar_url, is_owner, is_admin, is_host, is_verified_client)')
+    .select('id, post_id, user_id, body, created_at, publisher_type, author:profiles!empire_post_comments_user_id_fkey(full_name, avatar_url, is_owner, is_admin, is_host, is_verified_client)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data as unknown as EmpireCommentRow[]).map(mapEmpireComment);
 }
 
-export async function addEmpireComment(postId: string, body: string): Promise<{ comment: EmpireComment | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('add_empire_post_comment', { p_post_id: postId, p_body: body });
+/** `publisherType` — Owner's choice of which of the three official
+ *  voices this comment displays as (see 0057_signal_owner_only_comments.sql).
+ *  Defaults to 'owner'; the RPC re-validates it's one of the three
+ *  allowed values and re-checks is_owner() regardless of what's sent. */
+export async function addEmpireComment(postId: string, body: string, publisherType: SignalPublisherType = 'owner'): Promise<{ comment: EmpireComment | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_comment', { p_post_id: postId, p_body: body, p_publisher_type: publisherType });
   if (error) return { comment: null, error: error.message };
-  const row = data as { id: string; post_id: string; user_id: string; body: string; created_at: string };
+  const row = data as { id: string; post_id: string; user_id: string; body: string; created_at: string; publisher_type: SignalPublisherType };
   // The RPC returns a bare comment row (no joined author) — the caller
   // already knows their own identity to render an optimistic entry;
   // fetchEmpirePostComments' next real fetch fills in the rest.
@@ -511,6 +523,7 @@ export async function addEmpireComment(postId: string, body: string): Promise<{ 
     comment: {
       id: row.id, postId: row.post_id, userId: row.user_id, body: row.body, createdAt: row.created_at,
       authorName: '', authorAvatarUrl: null, authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false,
+      publisherType: row.publisher_type,
     },
     error: null,
   };
