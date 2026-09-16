@@ -4,7 +4,7 @@ import { useActiveEmpireStories } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { SignalStoryViewer } from './SignalStoryViewer';
-import { SignalStoryComposer } from './SignalStoryComposer';
+import { SignalStoryCreator } from './SignalStoryCreator';
 import { useAuth } from '../../lib/auth';
 import { Tap, SharedAvatar } from '../motionKit';
 
@@ -133,7 +133,7 @@ export function SignalStoriesBar({
       )}
 
       {composerOpen && (
-        <SignalStoryComposer
+        <SignalStoryCreator
           mode={scope === 'community' ? 'self' : 'official'}
           onClose={onCloseComposer}
           onPublished={() => { onCloseComposer(); refresh(); }}

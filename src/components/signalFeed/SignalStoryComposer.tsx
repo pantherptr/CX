@@ -61,13 +61,15 @@ export function SignalStoryComposer({
   onClose,
   onPublished,
   mode = 'official',
+  initialView = 'create',
 }: {
   onClose: () => void;
   onPublished: () => void;
   mode?: 'official' | 'self';
+  initialView?: 'create' | 'manage' | 'highlights';
 }) {
   const { profile } = useAuth();
-  const [view, setView] = useState<'create' | 'manage' | 'highlights'>('create');
+  const [view, setView] = useState<'create' | 'manage' | 'highlights'>(initialView);
   const objectUrls = useRef<string[]>([]);
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
   const [title, setTitle] = useState('');

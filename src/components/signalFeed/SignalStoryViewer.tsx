@@ -6,6 +6,7 @@ import { markEmpireStoryViewed, deleteEmpireStory, type EmpireStory } from '../.
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { StoryTextSlide } from './StoryTextSlide';
+import { StoryCanvas } from './StoryCanvas';
 import { useAuth } from '../../lib/auth';
 import { SharedAvatar, useHideForNavigation } from '../motionKit';
 
@@ -260,21 +261,25 @@ export function SignalStoryViewer({
   };
 
   return (
-    // On mobile this stage fills the whole screen exactly as before; from
-    // `sm:` up it becomes a centered, phone-proportioned card over a dim
-    // backdrop instead of stretching full-bleed across a wide desktop
-    // viewport — the brief's own "do not stretch the Story experience
-    // unnecessarily" ask, without a second/different viewer implementation.
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black animate-fade-in sm:bg-black/90 sm:p-6">
-      <div
-        className="relative flex h-full w-full flex-col overflow-hidden bg-black sm:h-[min(88vh,900px)] sm:w-auto sm:aspect-[9/16] sm:rounded-2xl sm:shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        style={{
+    // Every Story renders in the exact same strict 9:16 frame it was
+    // composed in (`StoryCanvas` — shared with the camera/editor), so a
+    // Story always looks the same shape it did while being made. On a
+    // phone screen taller than 9:16 that means real letterbox bars, not
+    // a stretch to fill the device; on desktop the same box just centers
+    // over a dim backdrop instead of blowing up full-bleed.
+    <div className="fixed inset-0 z-[300] bg-black animate-fade-in sm:bg-black/90 sm:p-6">
+      <StoryCanvas
+        boxClassName="shadow-2xl sm:rounded-2xl"
+        boxStyle={{
           transform: `translateY(${closing ? '100%' : `${dragY}px`})`,
           opacity: closing ? 0 : dragY > 0 ? Math.max(0.4, 1 - dragY / 400) : 1,
           transition: dragY === 0 || closing ? 'transform 220ms ease-out, opacity 220ms ease-out' : 'none',
         }}
+      >
+      <div
+        className="relative flex h-full w-full flex-col"
+        role="dialog"
+        aria-modal="true"
       >
         <div className="absolute inset-x-0 top-0 z-10 flex gap-1 px-2 pt-safe">
           {story.slides.map((s, i) => (
@@ -369,7 +374,7 @@ export function SignalStoryViewer({
                 if (v.duration) setVideoProgress((v.currentTime / v.duration) * 100);
               }}
               onEnded={goNextSlide}
-              className="max-h-full max-w-full animate-fade-in object-contain"
+              className="h-full w-full animate-fade-in object-cover"
             />
           ) : isText ? (
             <StoryTextSlide
@@ -385,7 +390,7 @@ export function SignalStoryViewer({
               key={slide.id}
               src={slide.mediaUrl}
               alt=""
-              className="max-h-full max-w-full animate-fade-in object-contain"
+              className="h-full w-full animate-fade-in object-cover"
               fallback={
                 <div className="flex flex-col items-center gap-2 text-white/60">
                   <Icon name="image" size={32} />
@@ -427,6 +432,7 @@ export function SignalStoryViewer({
           )}
         </div>
       </div>
+      </StoryCanvas>
     </div>
   );
 }
