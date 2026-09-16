@@ -211,6 +211,12 @@ export default function App() {
     <>
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} />}
       <ScrollToTop />
+      {/* Outer safety net — the inner ErrorBoundary below only covers the
+          routed page itself; MaintenanceGate, BottomNav, CompareTray and
+          Toaster all render on every single page and sit outside it, so a
+          crash in any of those would still take the whole app to a blank
+          white screen unrecovered. This one catches that case too. */}
+      <ErrorBoundary>
       <MaintenanceGate>
       <div key={pageKey} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
@@ -324,6 +330,7 @@ export default function App() {
       </MaintenanceGate>
       <CompareTray />
       <Toaster />
+      </ErrorBoundary>
     </>
   );
 }
