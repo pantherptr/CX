@@ -92,9 +92,30 @@ export function SignalStoryCamera({
         }
         streamRef.current = stream;
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
+          const video = videoRef.current;
+          video.srcObject = stream;
+          await video.play().catch(() => {});
+          // `play()` resolving doesn't guarantee `videoWidth`/`videoHeight`
+          // are populated yet on every mobile browser — capturing a frame
+          // before they are throws "Could not capture a photo" outright
+          // (`capturePhotoFromVideoElement` needs real dimensions to
+          // cover-crop against). Wait for the metadata that carries them,
+          // with a safety timeout so a stalled stream never hangs the UI.
+          if (video.videoWidth === 0) {
+            await new Promise<void>((resolve) => {
+              const onLoaded = () => {
+                video.removeEventListener('loadedmetadata', onLoaded);
+                resolve();
+              };
+              video.addEventListener('loadedmetadata', onLoaded);
+              window.setTimeout(() => {
+                video.removeEventListener('loadedmetadata', onLoaded);
+                resolve();
+              }, 2000);
+            });
+          }
         }
+        if (cancelled) return;
         setStatus('ready');
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
@@ -226,16 +247,25 @@ export function SignalStoryCamera({
           {topRightSlot}
         </div>
 
-        {status === 'ready' ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className={`absolute inset-0 h-full w-full object-cover ${facing === 'user' ? 'scale-x-[-1]' : ''}`}
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8 text-center">
+        {/* Always mounted — even before/without a live stream — so its ref
+            is already attached the instant `getUserMedia` resolves inside
+            the effect above. Gating this element's very existence on
+            `status === 'ready'` (as an earlier version did) meant the
+            stream would resolve while the element still didn't exist yet,
+            `videoRef.current` would be `null`, the `srcObject` assignment
+            would silently no-op, and the video that mounted a moment
+            later — once `status` finally flipped — would carry no stream
+            at all: a permanently black frame. The fallback UI now overlays
+            on top instead of replacing it. */}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className={`absolute inset-0 h-full w-full object-cover ${facing === 'user' ? 'scale-x-[-1]' : ''} ${status === 'ready' ? '' : 'opacity-0'}`}
+        />
+        {status !== 'ready' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-noir p-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-on-noir-muted">
               <Icon name="camera" size={24} />
             </span>
