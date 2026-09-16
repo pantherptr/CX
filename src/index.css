@@ -1251,13 +1251,19 @@
      this app's own `.input` class and several raw <input>/<textarea>
      elements (the Messages composer among them) were sized for desktop
      density, well under that floor. Scoped to phone-width viewports only
-     so desktop's sizing is completely untouched, per its own design. */
+     so desktop's sizing is completely untouched, per its own design.
+     `!important`: plenty of inputs/textareas (SIGNAL's composers among
+     them) also carry a `text-*` Tailwind size utility for their own
+     desktop sizing — a class selector outranks the bare-element
+     selectors here, so without `!important` this rule silently loses
+     and the zoom comes right back on exactly the fields most likely to
+     get focused on a phone. */
   @media (max-width: 767px) {
     .input,
     input:not([type='checkbox']):not([type='radio']):not([type='range']),
     textarea,
     select {
-      font-size: 16px;
+      font-size: 16px !important;
     }
   }
 
