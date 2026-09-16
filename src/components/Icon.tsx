@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import {
-  Search, Calendar, MapPin, Star, Heart, ChevronDown, ChevronRight, ChevronLeft,
+  Search, Calendar, MapPin, Star, Heart, ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
   ArrowRight, ArrowUpRight, Menu, X, Check, CheckCircle2, ShieldCheck, Users,
   Armchair, DoorOpen, Gauge, Fuel, Cog, Zap, Sun, Flame, Gem, Mountain, Leaf,
   Car, KeyRound, Wallet, LayoutGrid, Luggage, MessageSquare, Bell, Settings,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export type IconName =
-  | 'search' | 'calendar' | 'pin' | 'star' | 'heart' | 'chevronDown'
+  | 'search' | 'calendar' | 'pin' | 'star' | 'heart' | 'chevronDown' | 'chevronUp'
   | 'chevronRight' | 'chevronLeft' | 'arrowRight' | 'arrowUpRight' | 'menu'
   | 'x' | 'check' | 'checkCircle' | 'shield' | 'users' | 'seat' | 'door'
   | 'gauge' | 'gas' | 'gear' | 'bolt' | 'sun' | 'flame' | 'gem' | 'mountain'
@@ -40,7 +40,7 @@ export type IconName =
  */
 const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, LucideIcon> = {
   search: Search, calendar: Calendar, pin: MapPin, star: Star, heart: Heart,
-  chevronDown: ChevronDown, chevronRight: ChevronRight, chevronLeft: ChevronLeft,
+  chevronDown: ChevronDown, chevronUp: ChevronUp, chevronRight: ChevronRight, chevronLeft: ChevronLeft,
   arrowRight: ArrowRight, arrowUpRight: ArrowUpRight, menu: Menu, x: X, check: Check,
   checkCircle: CheckCircle2, shield: ShieldCheck, users: Users, seat: Armchair,
   door: DoorOpen, gauge: Gauge, gas: Fuel, gear: Cog, bolt: Zap, sun: Sun,

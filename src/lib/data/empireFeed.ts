@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { roleFromFlags, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
@@ -240,12 +240,21 @@ export interface EmpireFeedScope {
   authorKind?: 'host' | 'verified_client';
 }
 
+/** `beforeId` is the tie-break half of a real keyset cursor (see
+ *  0061_signal_community_feed_engine.sql) — two posts can share the exact
+ *  same `created_at` (bulk-seeded rows, or genuinely simultaneous
+ *  inserts), and a single-timestamp cursor either skips or repeats
+ *  whichever tied row lands on a page boundary. Optional and only ever
+ *  meaningful alongside `before` — omitting it keeps the old (still
+ *  correct for the non-tied case) behavior. */
 export async function fetchEmpireFeed(
-  limit: number = FEED_PAGE_SIZE, before?: string, category?: EmpireCategory | null, scopeOpts?: EmpireFeedScope
+  limit: number = FEED_PAGE_SIZE, before?: string, category?: EmpireCategory | null, scopeOpts?: EmpireFeedScope,
+  beforeId?: string,
 ): Promise<EmpirePost[]> {
   const { data, error } = await supabase.rpc('fetch_empire_feed', {
     p_limit: limit, p_before: before ?? null, p_category: category ?? null,
     p_publisher_scope: scopeOpts?.scope ?? null, p_author_kind: scopeOpts?.authorKind ?? null,
+    p_before_id: beforeId ?? null,
   });
   if (error) throw error;
   return (data as EmpirePostRow[]).map(mapEmpirePost);
@@ -306,7 +315,8 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, posts[posts.length - 1].createdAt, category, { scope, authorKind });
+      const last = posts[posts.length - 1];
+      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, last.createdAt, category, { scope, authorKind }, last.id);
       setPosts((prev) => [...(prev ?? []), ...rows]);
       setHasMore(rows.length === FEED_PAGE_SIZE);
     } catch {

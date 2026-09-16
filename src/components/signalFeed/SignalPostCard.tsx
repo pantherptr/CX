@@ -416,9 +416,18 @@ export function SignalPostCard({
         // user cancelled — no error toast, no share event recorded
       }
     } else {
-      await navigator.clipboard.writeText(url);
-      toast({ title: 'Link copied to clipboard', icon: 'check' });
-      void incrementEmpirePostShare(post.id);
+      // The Clipboard API can genuinely reject even in a browser that
+      // exposes it — permission denied, an insecure/non-focused context,
+      // a strict privacy setting — and this was previously unguarded: a
+      // rejection here silently killed the whole share (no toast, no
+      // recorded event, nothing the user could see happened at all).
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: 'Link copied to clipboard', icon: 'check' });
+        void incrementEmpirePostShare(post.id);
+      } catch {
+        toast({ title: 'Could not copy link', desc: url, icon: 'info' });
+      }
     }
   };
 

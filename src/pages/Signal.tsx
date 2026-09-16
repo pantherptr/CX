@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
+import { Tap } from '../components/motionKit';
 import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
@@ -79,8 +80,19 @@ export default function Signal() {
 
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
-  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost } =
+  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, newPostsAvailable, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
+
+  // "New posts" never yanks the feed out from under someone mid-scroll —
+  // it only ever flips a quiet banner (see useEmpireFeed's own poll); this
+  // is the one thing that actually merges them in, and only from a real
+  // tap. Scrolling to the top afterward is what makes the newly-prepended
+  // posts actually visible — without it they'd land above the viewport
+  // with no visible change at all.
+  const handleLoadNewPosts = async () => {
+    await loadNewPosts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const pinned = useEmpirePinnedPost();
   const featured = useEmpireFeaturedPosts();
@@ -282,6 +294,24 @@ export default function Signal() {
         )}
 
         {space === 'official' && <SignalCategoryFilter value={category} onChange={setCategory} />}
+
+        {/* Real new content, quietly detected in the background — never
+            auto-prepended (that would move the feed underneath whatever
+            the user is currently reading), just a tap-to-load pill that
+            stays out of the way until they actually want it. Sticky so
+            it's reachable from wherever they've scrolled to, not just the
+            very top. */}
+        {newPostsAvailable && posts && posts.length > 0 && (
+          <div className="sticky top-16 z-30 flex animate-fade-up justify-center py-1.5">
+            <Tap
+              onClick={handleLoadNewPosts}
+              className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-detail font-semibold text-white shadow-pop"
+            >
+              <Icon name="chevronUp" size={15} />
+              New posts
+            </Tap>
+          </div>
+        )}
 
         {posts === null ? (
           <>
