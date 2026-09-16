@@ -425,8 +425,17 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     setPosts((prev) => (prev ? prev.filter((p) => p.id !== id) : prev));
   }, []);
 
+  /** Puts a just-published post straight at the top locally — no
+   *  refetch, no scroll jump, no loading flash. Used by the Community
+   *  composer so a real successful publish shows up exactly the way a
+   *  native social app's own composer would (see SignalCommunityComposer's
+   *  own header comment). */
+  const prependPost = useCallback((post: EmpirePost) => {
+    setPosts((prev) => [post, ...(prev ?? [])]);
+  }, []);
+
   return {
-    posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost,
+    posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost, prependPost,
     newPostsAvailable, loadNewPosts,
   };
 }

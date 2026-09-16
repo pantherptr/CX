@@ -17,6 +17,7 @@ import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
+import { SignalCommunityComposer } from './SignalCommunityComposer';
 import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
 
@@ -518,10 +519,15 @@ export function SignalPostCard({
   };
 
   if (editing) {
-    return (
+    return post.publisherType === 'self' ? (
+      <SignalCommunityComposer
+        editing={post}
+        onDone={(updated) => { setEditing(false); onChanged(updated); }}
+        onCancel={() => setEditing(false)}
+      />
+    ) : (
       <SignalPostComposer
         editing={post}
-        mode={post.publisherType === 'self' ? 'self' : 'official'}
         onDone={(updated) => { setEditing(false); onChanged(updated); }}
         onCancel={() => setEditing(false)}
       />

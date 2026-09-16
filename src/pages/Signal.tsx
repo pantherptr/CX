@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { Img } from '../components/motion';
 import { Tap } from '../components/motionKit';
 import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
+import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalCategoryFilter } from '../components/signalFeed/SignalCategoryFilter';
@@ -81,7 +81,7 @@ export default function Signal() {
 
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
-  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, newPostsAvailable, loadNewPosts } =
+  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
 
   // "New posts" never yanks the feed out from under someone mid-scroll —
@@ -261,10 +261,17 @@ export default function Signal() {
           </div>
         )}
 
-        {canPostHere && (
+        {/* Official keeps its own existing collapsed-trigger ↔ full-form
+            swap — that composer (picker/categories/title) genuinely needs
+            the room a persistent inline bar doesn't have. Community's own
+            composer owns its collapsed/expanded states internally (see
+            SignalCommunityComposer's own header comment), so it's just
+            rendered directly — `composerOpen` still exists purely as the
+            one external trigger (the Quick Control's "Create Post"
+            shortcut), not as a presence toggle. */}
+        {canPostHere && space === 'official' && (
           composerOpen ? (
             <SignalPostComposer
-              mode={space === 'official' ? 'official' : 'self'}
               onDone={() => { setComposerOpen(false); refresh(); }}
               onCancel={() => setComposerOpen(false)}
             />
@@ -273,33 +280,21 @@ export default function Signal() {
               onClick={() => setComposerOpen(true)}
               className="card mb-3 flex w-full items-center gap-3 p-3.5 text-left text-ink-soft transition-colors hover:border-line-strong"
             >
-              {/* Official's trigger stays a generic "+" (it's publishing a
-                  voice, not necessarily "yourself") — Community's shows
-                  the real signed-in user's own avatar, since every
-                  Community post always speaks as them. */}
-              {space === 'official' ? (
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink">
-                  <Icon name="plus" size={18} />
-                </span>
-              ) : profile?.avatar_url ? (
-                <Img
-                  src={profile.avatar_url}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
-                  fallback={
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-                      <Icon name="user" size={18} />
-                    </span>
-                  }
-                />
-              ) : (
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-                  <Icon name="user" size={18} />
-                </span>
-              )}
-              {space === 'official' ? 'Share news, an announcement, a new car…' : 'Share something with the community…'}
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink">
+                <Icon name="plus" size={18} />
+              </span>
+              Share news, an announcement, a new car…
             </button>
           )
+        )}
+
+        {canPostHere && space === 'community' && (
+          <SignalCommunityComposer
+            expanded={composerOpen}
+            onExpand={() => setComposerOpen(true)}
+            onCollapse={() => setComposerOpen(false)}
+            onDone={(post) => { setComposerOpen(false); prependPost(post); }}
+          />
         )}
 
         {space === 'official' && <SignalCategoryFilter value={category} onChange={setCategory} />}
