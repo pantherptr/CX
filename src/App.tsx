@@ -9,6 +9,7 @@ import { HostRoute } from './components/HostRoute';
 import { AdminRoute } from './components/AdminRoute';
 import { OwnerRoute } from './components/OwnerRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
 import { CompareTray } from './components/CompareTray';
@@ -217,6 +218,13 @@ export default function App() {
           splash — because these chunks resolve in a few hundred ms on a
           warm connection and a heavy loader would read as slower than
           the navigation actually is. */}
+      {/* Wraps the Suspense/Routes tree, inside the `key={pageKey}` div
+          above — a render error on one page shows a real recovery screen
+          instead of a blank white one (see ErrorBoundary's own header
+          comment for why this app needed one at all), and navigating
+          away to a different page remounts this along with everything
+          else in that div, clearing the error automatically. */}
+      <ErrorBoundary>
       <Suspense
         fallback={
           <div className="flex min-h-[60dvh] items-center justify-center" role="status" aria-label="Loading">
@@ -310,6 +318,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </ErrorBoundary>
       </div>
       <BottomNav />
       </MaintenanceGate>
