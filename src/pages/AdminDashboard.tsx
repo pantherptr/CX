@@ -4,14 +4,16 @@ import { Icon, type IconName } from '../components/Icon';
 import { Logo } from '../components/primitives';
 import { useAuth } from '../lib/auth';
 import { VerificationsPanel, UsersPanel, BookingsPanel, CarsPanel } from '../components/admin/panels';
+import { SignalDemoPanel } from '../components/admin/SignalDemoPanel';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'signal-demo';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'users', label: 'Users', icon: 'users' },
   { id: 'bookings', label: 'Bookings', icon: 'trips' },
   { id: 'cars', label: 'Cars', icon: 'cars' },
+  { id: 'signal-demo', label: 'Signal Demo', icon: 'sparkles' },
 ];
 
 export default function AdminDashboard() {
@@ -58,6 +60,7 @@ export default function AdminDashboard() {
         {tab === 'users' && <UsersPanel />}
         {tab === 'bookings' && <BookingsPanel />}
         {tab === 'cars' && <CarsPanel />}
+        {tab === 'signal-demo' && <SignalDemoPanel />}
       </div>
     </div>
   );

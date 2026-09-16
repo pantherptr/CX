@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { roleFromFlags, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
+import { fetchSignalDemoPosts } from './signalDemo';
 
 /**
  * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
@@ -107,6 +108,13 @@ export interface EmpirePost {
    *  (see 0052_signal_follow_and_vehicle_posts.sql), never a copy of
    *  vehicle data. `null` for every ordinary post. */
   vehicle: EmpireVehicleRef | null;
+  /** True only for a row from SIGNAL's demo content engine (see
+   *  signalDemo.ts) — a fully separate table, never a real post. Absent/
+   *  false for every real post. Only ever read to route an action
+   *  (Respect/Save) to the demo-specific RPC instead of the real one;
+   *  never used to change what's rendered — a demo post must look
+   *  exactly like a real one. */
+  isDemo?: boolean;
 }
 
 export interface EmpireVehicleRef {
@@ -292,19 +300,38 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   // indirection Signal.tsx's own infinite-scroll observer already uses.
   const postsRef = useRef(posts);
   postsRef.current = posts;
+  // Demo content only ever supplements Community, and only once real
+  // content is exhausted — real content always comes first (see this
+  // hook's own header comment on the strategy). Once a page comes back
+  // short, every post after it for the life of this feed instance is
+  // demo filler, so a plain ref (not state — nothing needs to re-render
+  // off this by itself) is enough to remember which cursor `loadMore`
+  // should keep using.
+  const demoEligible = scope === 'community';
+  const realExhaustedRef = useRef(false);
 
   const loadInitial = useCallback(async () => {
+    realExhaustedRef.current = false;
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
+      const realRows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
+      let rows = realRows;
+      let more = realRows.length === FEED_PAGE_SIZE;
+      if (demoEligible && realRows.length < FEED_PAGE_SIZE) {
+        realExhaustedRef.current = true;
+        const need = FEED_PAGE_SIZE - realRows.length;
+        const demoRows = await fetchSignalDemoPosts(need);
+        rows = [...realRows, ...demoRows];
+        more = demoRows.length === need;
+      }
       setPosts(rows);
-      setHasMore(rows.length === FEED_PAGE_SIZE);
+      setHasMore(more);
       setNewPostsAvailable(false);
     } catch {
       setPosts([]);
       setHasMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, scope, authorKind]);
+  }, [category, scope, authorKind, demoEligible]);
 
   useEffect(() => {
     setPosts(null);
@@ -316,16 +343,31 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     setLoadingMore(true);
     try {
       const last = posts[posts.length - 1];
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, last.createdAt, category, { scope, authorKind }, last.id);
-      setPosts((prev) => [...(prev ?? []), ...rows]);
-      setHasMore(rows.length === FEED_PAGE_SIZE);
+      if (realExhaustedRef.current) {
+        const demoRows = await fetchSignalDemoPosts(FEED_PAGE_SIZE, last.createdAt, last.id);
+        setPosts((prev) => [...(prev ?? []), ...demoRows]);
+        setHasMore(demoRows.length === FEED_PAGE_SIZE);
+      } else {
+        const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, last.createdAt, category, { scope, authorKind }, last.id);
+        let appended = rows;
+        let more = rows.length === FEED_PAGE_SIZE;
+        if (!more && demoEligible) {
+          realExhaustedRef.current = true;
+          const need = FEED_PAGE_SIZE - rows.length;
+          const demoRows = need > 0 ? await fetchSignalDemoPosts(need) : [];
+          appended = [...rows, ...demoRows];
+          more = need > 0 && demoRows.length === need;
+        }
+        setPosts((prev) => [...(prev ?? []), ...appended]);
+        setHasMore(more);
+      }
     } catch {
       setHasMore(false);
     } finally {
       setLoadingMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, loadingMore, hasMore, category, scope, authorKind]);
+  }, [posts, loadingMore, hasMore, category, scope, authorKind, demoEligible]);
 
   // Keyed on primitives, not `posts` itself (which gets a new identity on
   // every page load/patch) — the interval is armed once per feed/filter

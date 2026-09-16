@@ -8,6 +8,7 @@ import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
 import { fetchHostCars } from '../../lib/data/cars';
 import { fetchEmpirePostsByAuthor, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchSignalDemoProfile, fetchSignalDemoPostsByAuthor, type SignalDemoProfile } from '../../lib/data/signalDemo';
 import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empireStories';
 import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
@@ -57,6 +58,7 @@ export function SignalProfileDetail({
   const { session } = useAuth();
   const isOfficialVoice = authorId === 'cx' || authorId === 'assistant';
   const [profile, setProfile] = useState<SignalProfile | null | 'error'>(null);
+  const [demoProfile, setDemoProfile] = useState<SignalDemoProfile | null>(null);
   const [loaded, setLoaded] = useState(isOfficialVoice);
   const [cars, setCars] = useState<Car[] | null>(null);
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
@@ -101,17 +103,39 @@ export function SignalProfileDetail({
     let cancelled = false;
     setLoaded(false);
     setProfile(null);
+    setDemoProfile(null);
     setCars(null);
     setPosts(null);
+    // A demo profile has no real `profiles` row at all (see
+    // signalDemo.ts's own header comment) — tried second, only once the
+    // real lookup genuinely comes back empty, same fallback order as
+    // SignalPostDetail's post lookup.
     fetchSignalProfile(authorId)
       .then((p) => {
         if (cancelled) return;
-        setProfile(p);
-        setLoaded(true);
         if (p) {
+          setProfile(p);
+          setLoaded(true);
           fetchEmpirePostsByAuthor(authorId, 6).then((rows) => !cancelled && setPosts(rows)).catch(() => !cancelled && setPosts([]));
           if (p.isHost) fetchHostCars(authorId).then((rows) => !cancelled && setCars(rows)).catch(() => !cancelled && setCars([]));
+          return;
         }
+        fetchSignalDemoProfile(authorId)
+          .then((dp) => {
+            if (cancelled) return;
+            setProfile(null);
+            setDemoProfile(dp);
+            setLoaded(true);
+            if (dp) {
+              fetchSignalDemoPostsByAuthor(dp.id, 6).then((rows) => !cancelled && setPosts(rows)).catch(() => !cancelled && setPosts([]));
+            }
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setProfile('error');
+              setLoaded(true);
+            }
+          });
       })
       .catch(() => {
         if (!cancelled) {
@@ -155,6 +179,8 @@ export function SignalProfileDetail({
             <SignalLogo size={48} className="mx-auto opacity-50" />
             <p className="mt-4 text-body text-muted">Couldn't load this profile. Check your connection and try again.</p>
           </div>
+        ) : profile === null && demoProfile ? (
+          <DemoProfileHeader profile={demoProfile} compress={compress} />
         ) : profile === null ? (
           <div className="py-24 text-center">
             <SignalLogo size={48} className="mx-auto opacity-50" />
@@ -323,6 +349,36 @@ function OfficialVoiceHeader({
           {isCx ? 'The official CX Rent brand account.' : 'CX Rent’s official AI assistant.'}
         </p>
       </div>
+    </div>
+  );
+}
+
+/** A demo profile's header — deliberately simpler than `ProfileHeader`
+ *  below, not a copy of it: no Follow button (a demo profile has no
+ *  real `profiles` row for `profile_follows` to reference — it genuinely
+ *  cannot be followed, not just hidden-for-now), no follower/following
+ *  counts (none are tracked; showing "0" would invite the same question
+ *  a missing button already answers honestly), no rating/trips/cars
+ *  (none of that exists for a fictional account either). Same avatar/
+ *  name/badge/bio treatment as the real header, so the identity itself
+ *  still reads exactly like any other Host/Verified Client at a glance. */
+function DemoProfileHeader({ profile, compress }: { profile: SignalDemoProfile; compress: number }) {
+  return (
+    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
+      <ProfileAvatar src={profile.avatarUrl} size={80} ring />
+      <div>
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="font-display text-feature font-semibold text-ink">{profile.fullName}</span>
+          <VerifiedBadge role={profile.role === 'host' ? 'host' : 'client'} size={15} />
+        </div>
+        <p className="mt-0.5 text-caption text-faint">@{profile.username}</p>
+        <p className="mt-0.5 text-caption text-muted">{profile.role === 'host' ? 'Host' : 'Verified Client'}</p>
+      </div>
+      {profile.bio && (
+        <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
+          {profile.bio}
+        </p>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
 import { fetchEmpirePostById, fetchEmpireFeed, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchSignalDemoPostById } from '../../lib/data/signalDemo';
 import { SignalPostCard } from './SignalPostCard';
 
 /** The /signal/post/:id deep-link target — a focused overlay on top of the
@@ -34,12 +35,17 @@ export function SignalPostDetail({
     let cancelled = false;
     setLoaded(false);
     setPost(null);
+    // A demo post lives in a fully separate table (see signalDemo.ts) —
+    // tried second, only when the real lookup genuinely comes back empty,
+    // so a real deleted/bad id still reads as "removed" rather than a
+    // demo post masking that distinction.
     fetchEmpirePostById(postId)
+      .then((p) => (p ? p : fetchSignalDemoPostById(postId)))
       .then((p) => {
         if (cancelled) return;
         setPost(p);
         setLoaded(true);
-        if (p) {
+        if (p && !p.isDemo) {
           fetchEmpireFeed(5, undefined, p.category, { scope })
             .then((rows) => !cancelled && setRelated(rows.filter((r) => r.id !== p.id).slice(0, 4)))
             .catch(() => !cancelled && setRelated([]));

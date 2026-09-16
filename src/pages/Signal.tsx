@@ -27,6 +27,7 @@ import {
   fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpireCategory,
 } from '../lib/data/empireFeed';
 import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '../lib/data/empireHighlights';
+import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
 
 /** SIGNAL (renamed from "Empire" — see empireFeed.ts's header for why the
  *  underlying `empire_*` data layer kept its name) — CX Rent's social/news
@@ -145,6 +146,14 @@ export default function Signal() {
   useEffect(() => {
     if (session) markEmpireFeedSeen();
   }, [session]);
+
+  // The demo content engine's lazy trigger — cheap, self-throttling, and
+  // safe to fire on every Community visit (see signal_demo_maybe_generate's
+  // own header comment). Scoped to Community specifically since that's
+  // the only space demo content ever supplements.
+  useEffect(() => {
+    if (session && space === 'community') void maybeSignalDemoGenerate();
+  }, [session, space]);
 
   const resyncAfterPin = () => {
     pinned.refresh();

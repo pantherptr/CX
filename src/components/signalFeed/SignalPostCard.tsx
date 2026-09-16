@@ -10,6 +10,7 @@ import {
   incrementEmpirePostImpression, incrementEmpirePostShare, reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
+import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
@@ -371,16 +372,24 @@ export function SignalPostCard({
   // is deliberately NOT deduped — impressions count every real render,
   // same distinction a real platform's Insights view draws between
   // unique reach and total impressions.
+  // View/impression tracking has no demo equivalent (empire_post_views
+  // has a hard FK to empire_posts — a demo post's id would fail it, not
+  // silently no-op) — matches viewCount always reading 0 for a demo
+  // post rather than pretending to track something that isn't real.
   useEffect(() => {
+    if (post.isDemo) return;
     markEmpirePostViewed(post.id);
     incrementEmpirePostImpression(post.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post.id]);
+  }, [post.id, post.isDemo]);
 
   // Internally still "like" — toggle_empire_post_like/empire_post_likes/
   // likedByMe/likeCount are unchanged on purpose (the real engagement
   // architecture this sits on, preserved exactly as the brief asks); only
-  // the visible label/icon-treatment below present it as "Respect".
+  // the visible label/icon-treatment below present it as "Respect". A
+  // demo post routes to its own real (not fabricated) engagement tables
+  // instead — see signalDemo.ts's own header comment for why those are
+  // separate from empire_post_likes/saves rather than reusing them.
   const handleRespect = async () => {
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     if (!post.likedByMe) {
@@ -388,7 +397,7 @@ export function SignalPostCard({
       vibrateTap();
       window.setTimeout(() => setLikeBounce(false), 300);
     }
-    const { error } = await toggleEmpirePostLike(post.id);
+    const { error } = post.isDemo ? await toggleSignalDemoPostLike(post.id) : await toggleEmpirePostLike(post.id);
     if (error) onChanged(post);
   };
 
@@ -399,7 +408,7 @@ export function SignalPostCard({
       vibrateTap();
       window.setTimeout(() => setSavePop(false), 220);
     }
-    const { error } = await toggleEmpirePostSave(post.id);
+    const { error } = post.isDemo ? await toggleSignalDemoPostSave(post.id) : await toggleEmpirePostSave(post.id);
     if (error) onChanged(post);
   };
 
@@ -410,8 +419,10 @@ export function SignalPostCard({
       try {
         await navigator.share(shareData);
         // Only a completed share is real activity — a cancelled system
-        // sheet throws and falls into the catch below, uncounted.
-        void incrementEmpirePostShare(post.id);
+        // sheet throws and falls into the catch below, uncounted. No
+        // share counter exists for demo posts (shareCount always reads
+        // 0 for one — never tracked, never faked).
+        if (!post.isDemo) void incrementEmpirePostShare(post.id);
       } catch {
         // user cancelled — no error toast, no share event recorded
       }
@@ -424,7 +435,7 @@ export function SignalPostCard({
       try {
         await navigator.clipboard.writeText(url);
         toast({ title: 'Link copied to clipboard', icon: 'check' });
-        void incrementEmpirePostShare(post.id);
+        if (!post.isDemo) void incrementEmpirePostShare(post.id);
       } catch {
         toast({ title: 'Could not copy link', desc: url, icon: 'info' });
       }
@@ -566,7 +577,13 @@ export function SignalPostCard({
             {post.isArchived && ' · Archived'}
           </p>
         </div>
-        {Boolean(session?.user.id) && (
+        {/* Every item here (Edit/Pin/Feature/Archive/Delete/Report) acts
+            on a real empire_posts row — none of it applies to a demo
+            post, whose id doesn't exist in that table. Respect/Save/
+            Share already work for demo posts via the always-visible
+            action row below; that's the full real-interaction surface
+            demo content gets. */}
+        {Boolean(session?.user.id) && !post.isDemo && (
           <div className="relative shrink-0">
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -711,7 +728,7 @@ export function SignalPostCard({
           clustering left with Share pushed to the far edge. Only the
           Owner gets a 4th "Comment" column — everyone else's row stays
           the original three. */}
-      <div className={`grid gap-1 px-2 py-1 sm:px-3 ${isOwnerViewer ? 'grid-cols-4' : 'grid-cols-3'}`}>
+      <div className={`grid gap-1 px-2 py-1 sm:px-3 ${isOwnerViewer && !post.isDemo ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {/* SIGNAL's signature interaction — "Respect", not "Like": same
             thumbs-up throughout both states (never swapped for a heart
             or checkmark), just filled + CX green + a quick scale/glow
@@ -736,8 +753,10 @@ export function SignalPostCard({
         {/* Owner-only — see isOwnerViewer above. add_empire_post_comment
             enforces this server-side regardless of what this button
             does; hiding it for everyone else isn't the real security
-            boundary, just honest UI. */}
-        {isOwnerViewer && (
+            boundary, just honest UI. Comments have no demo equivalent
+            (see signalDemo.ts) — commentCount stays 0 for a demo post
+            rather than opening a sheet that can't actually write one. */}
+        {isOwnerViewer && !post.isDemo && (
           <Tap
             onClick={() => setCommentsSheetOpen(true)}
             scale={0.95}
