@@ -553,7 +553,7 @@ function TextCanvas({
         placeholder="Type your Story…"
         maxLength={280}
         rows={4}
-        className={`w-full resize-none whitespace-pre-wrap break-words border-0 bg-transparent font-display font-semibold leading-tight text-white placeholder:text-white/50 focus:outline-none focus:ring-0 ${sizeClass} ${alignClass}`}
+        className={`signal-story-text-input w-full resize-none whitespace-pre-wrap break-words border-0 bg-transparent font-display font-semibold leading-tight text-white placeholder:text-white/50 focus:outline-none focus:ring-0 ${sizeClass} ${alignClass}`}
       />
     </div>
   );

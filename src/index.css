@@ -1257,11 +1257,15 @@
      desktop sizing — a class selector outranks the bare-element
      selectors here, so without `!important` this rule silently loses
      and the zoom comes right back on exactly the fields most likely to
-     get focused on a phone. */
+     get focused on a phone. `.signal-story-text-input` (the SIGNAL
+     Story creator's own text-Story canvas) is excluded: its size
+     options are already 20/30/48px, well clear of the zoom floor, and
+     this rule would otherwise clamp its deliberately large creative
+     type back down to 16px while editing. */
   @media (max-width: 767px) {
     .input,
     input:not([type='checkbox']):not([type='radio']):not([type='range']),
-    textarea,
+    textarea:not(.signal-story-text-input),
     select {
       font-size: 16px !important;
     }
