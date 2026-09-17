@@ -71,6 +71,7 @@ export function SignalStoryCreator({
 
   const [stage, setStage] = useState<'camera' | 'editor'>('camera');
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
+  const [viewOnce, setViewOnce] = useState(false);
   const [slides, setSlides] = useState<StagedSlide[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -189,7 +190,7 @@ export function SignalStoryCreator({
     }
     setPublishing(true);
     setError(null);
-    const { storyId, error: createError } = await createEmpireStory(undefined, publisherType);
+    const { storyId, error: createError } = await createEmpireStory(undefined, publisherType, viewOnce);
     if (createError || !storyId) {
       setError(createError ?? 'Could not create the Story — try again.');
       setPublishing(false);
@@ -289,6 +290,8 @@ export function SignalStoryCreator({
             mode={mode}
             publisherType={publisherType}
             onPublisherChange={setPublisherType}
+            viewOnce={viewOnce}
+            onViewOnceChange={setViewOnce}
             ownerName={profile?.full_name || 'Owner'}
             ownerAvatarUrl={profile?.avatar_url ?? null}
             slides={slides}
@@ -357,6 +360,8 @@ function EditorStage({
   mode,
   publisherType,
   onPublisherChange,
+  viewOnce,
+  onViewOnceChange,
   ownerName,
   ownerAvatarUrl,
   slides,
@@ -375,6 +380,8 @@ function EditorStage({
   mode: 'official' | 'self';
   publisherType: SignalPublisherType;
   onPublisherChange: (t: SignalPublisherType) => void;
+  viewOnce: boolean;
+  onViewOnceChange: (v: boolean) => void;
   ownerName: string;
   ownerAvatarUrl: string | null;
   slides: StagedSlide[];
@@ -505,6 +512,31 @@ function EditorStage({
               ))}
             </div>
           )}
+
+          <div className="flex items-center justify-between rounded-2xl bg-white/[0.06] px-3.5 py-2.5">
+            <span className="flex items-center gap-2 text-caption font-medium text-white/80">
+              <Icon name={viewOnce ? 'eye' : 'clock'} size={15} />
+              {viewOnce ? 'Disappears after one view' : 'Visible for 24 hours'}
+            </span>
+            <div className="flex gap-1 rounded-full bg-white/10 p-0.5">
+              <button
+                type="button"
+                onClick={() => onViewOnceChange(false)}
+                aria-pressed={!viewOnce}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${!viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+              >
+                24h
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewOnceChange(true)}
+                aria-pressed={viewOnce}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+              >
+                Once
+              </button>
+            </div>
+          </div>
 
           {mode === 'official' && (
             <div className="rounded-2xl bg-white/[0.06] p-2">

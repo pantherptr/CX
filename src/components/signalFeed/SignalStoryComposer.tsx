@@ -585,7 +585,9 @@ export function SignalStoryComposer({
                           <p className="flex items-center gap-2 text-caption text-muted">
                             <span className="inline-flex items-center gap-1"><SignalIdentityAvatar identity={identity} size={14} /> {identity.name}</span>
                             <span className={expired ? 'text-danger' : 'text-accent-700'}>{expired ? 'Expired' : 'Active'}</span>
+                            {s.isViewOnce && <span className="text-ink-soft">View once</span>}
                             <span className="inline-flex items-center gap-1"><Icon name="eye" size={12} /> {s.viewCount}</span>
+                            <span className="inline-flex items-center gap-1"><Icon name="like" size={12} /> {s.respectCount}</span>
                             <span>{s.slides.length} slide{s.slides.length === 1 ? '' : 's'}</span>
                           </p>
                         </div>

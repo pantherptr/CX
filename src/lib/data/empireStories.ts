@@ -63,13 +63,30 @@ export interface EmpireStory {
   title: string | null;
   createdAt: string;
   expiresAt: string;
+  /** Aggregate counts only — never a viewer list. The creator's own
+   *  "Story Insights" panel goes through fetchEmpireStoryInsights
+   *  instead of these, but the numbers are the same either way; nothing
+   *  in this app ever fetches or renders individual viewer identities. */
   viewCount: number;
   viewedByMe: boolean;
+  respectCount: number;
+  respectedByMe: boolean;
+  /** Once a non-author viewer has viewed it, the story simply stops
+   *  being returned to them by fetchActiveEmpireStories — enforced
+   *  server-side, not by anything client-held. */
+  isViewOnce: boolean;
   slides: EmpireStorySlide[];
   /** Which of SIGNAL's three voices this Story session was published
    *  under — chosen once at creation, applies to every slide in it. See
    *  signalIdentity.ts. */
   publisherType: SignalPublisherType;
+}
+
+/** What the creator's "Story Insights" panel shows — aggregate numbers
+ *  only, by construction (see fetch_empire_story_insights). */
+export interface EmpireStoryInsights {
+  views: number;
+  respects: number;
 }
 
 interface StorySlideJson {
@@ -102,6 +119,9 @@ interface StoryRow {
   expires_at: string;
   view_count: number;
   viewed_by_me: boolean;
+  respect_count: number;
+  respected_by_me: boolean;
+  is_view_once: boolean;
   slides: StorySlideJson[];
   publisher_type: SignalPublisherType;
 }
@@ -146,6 +166,9 @@ function mapStory(row: StoryRow): EmpireStory {
     expiresAt: row.expires_at,
     viewCount: row.view_count,
     viewedByMe: row.viewed_by_me,
+    respectCount: row.respect_count,
+    respectedByMe: row.respected_by_me,
+    isViewOnce: row.is_view_once,
     slides: (row.slides ?? []).slice().sort((a, b) => a.sort_order - b.sort_order).map(mapSlide),
     publisherType: row.publisher_type,
   };
@@ -181,11 +204,34 @@ export async function fetchAllEmpireStoriesAdmin(): Promise<EmpireStory[]> {
 
 export async function createEmpireStory(
   title: string | undefined,
-  publisherType: SignalPublisherType
+  publisherType: SignalPublisherType,
+  viewOnce = false
 ): Promise<{ storyId: string | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('create_empire_story', { p_title: title ?? null, p_publisher_type: publisherType });
+  const { data, error } = await supabase.rpc('create_empire_story', {
+    p_title: title ?? null,
+    p_publisher_type: publisherType,
+    p_view_once: viewOnce,
+  });
   if (error) return { storyId: null, error: error.message };
   return { storyId: (data as { id: string }).id, error: null };
+}
+
+/** Toggles the caller's own Respect on a Story — same shape as
+ *  toggleEmpirePostLike, one aggregate count, never a list. */
+export async function toggleEmpireStoryRespect(storyId: string): Promise<{ respected: boolean; error: string | null }> {
+  const { data, error } = await supabase.rpc('toggle_empire_story_respect', { p_story_id: storyId });
+  if (error) return { respected: false, error: error.message };
+  return { respected: data as boolean, error: null };
+}
+
+/** The creator's "Story Insights" panel — two aggregate numbers, server-
+ *  enforced to the story's own author (or admin) only. Never returns
+ *  viewer identity; see fetch_empire_story_insights's own comment. */
+export async function fetchEmpireStoryInsights(storyId: string): Promise<EmpireStoryInsights> {
+  const { data, error } = await supabase.rpc('fetch_empire_story_insights', { p_story_id: storyId });
+  if (error) throw error;
+  const row = (data as { views: number; respects: number }[])[0];
+  return { views: row?.views ?? 0, respects: row?.respects ?? 0 };
 }
 
 export async function addEmpireStorySlide(

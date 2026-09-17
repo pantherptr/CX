@@ -90,7 +90,8 @@ export function highlightAsStory(h: EmpireHighlight): EmpireStory {
   return {
     id: h.id, authorId: '', authorName: 'CX Rent', authorAvatarUrl: null, authorUsername: null,
     authorIsOwner: false, authorIsAdmin: false, authorIsHost: false, authorIsVerifiedClient: false, title: h.title, createdAt: h.createdAt,
-    expiresAt: '', viewCount: 0, viewedByMe: true, slides: h.slides, publisherType: 'cx',
+    expiresAt: '', viewCount: 0, viewedByMe: true, respectCount: 0, respectedByMe: false, isViewOnce: false,
+    slides: h.slides, publisherType: 'cx',
   };
 }
 

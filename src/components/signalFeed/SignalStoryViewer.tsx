@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { Img } from '../motion';
-import { markEmpireStoryViewed, deleteEmpireStory, type EmpireStory } from '../../lib/data/empireStories';
+import { Img, vibrateTap } from '../motion';
+import { markEmpireStoryViewed, deleteEmpireStory, toggleEmpireStoryRespect, type EmpireStory } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { StoryTextSlide } from './StoryTextSlide';
 import { StoryCanvas } from './StoryCanvas';
+import { SignalStoryInsights } from './SignalStoryInsights';
 import { useAuth } from '../../lib/auth';
 import { SharedAvatar, useHideForNavigation } from '../motionKit';
 
@@ -62,6 +63,15 @@ export function SignalStoryViewer({
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Respect is per-story (one respect_count for the whole Story, not per
+  // slide) — the `stories` prop is a fixed snapshot for this viewer's
+  // lifetime, so a toggle here is tracked locally per story id rather
+  // than mutating the prop; the aggregate count itself is never shown
+  // inline (see the header's own comment) so there's nothing to keep in
+  // sync beyond this one boolean.
+  const [respectedOverrides, setRespectedOverrides] = useState<Record<string, boolean>>({});
+  const [respecting, setRespecting] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   // Video-only: real playback progress (0-100, driven by `timeupdate`)
   // and a per-slide mute flag, muted by default on every new slide per
   // the brief.
@@ -159,6 +169,17 @@ export function SignalStoryViewer({
   // 0058's own comment) — `canManage` alone under-reports what a Host/
   // Verified Client is actually allowed to do to their own Story.
   const canDelete = canManage || (session != null && story.authorId === session.user.id);
+  // `authorId === ''` is highlightAsStory's own placeholder sentinel for
+  // "this isn't a real Story, it's a permanent Highlight" — Highlights
+  // have no live view/respect tracking of their own, so Respect and
+  // Story Insights both stay hidden for them rather than acting on IDs
+  // that don't exist in empire_stories/empire_story_respects.
+  const isRealStory = story.authorId !== '';
+  // Same author-or-admin rule fetch_empire_story_insights enforces
+  // server-side — kept here only to decide whether to show the entry
+  // point at all, never to grant anything the RPC itself wouldn't.
+  const canViewInsights = isRealStory && canDelete;
+  const isRespected = respectedOverrides[story.id] ?? story.respectedByMe;
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {
@@ -258,6 +279,19 @@ export function SignalStoryViewer({
       onStoryDeleted();
       onClose();
     }
+  };
+
+  const handleToggleRespect = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isRealStory || respecting) return;
+    const id = story.id;
+    const next = !isRespected;
+    setRespecting(true);
+    setRespectedOverrides((prev) => ({ ...prev, [id]: next }));
+    vibrateTap();
+    const { error } = await toggleEmpireStoryRespect(id);
+    if (error) setRespectedOverrides((prev) => ({ ...prev, [id]: !next })); // revert on failure
+    setRespecting(false);
   };
 
   return (
@@ -419,6 +453,19 @@ export function SignalStoryViewer({
               </div>
             </button>
             <div className="ml-auto flex items-center gap-1">
+              {/* Author-or-admin only, same rule fetch_empire_story_insights
+                  enforces server-side — opens the aggregate-only Views/
+                  Respects panel. There is deliberately no "who viewed"
+                  entry point anywhere in this viewer for anyone. */}
+              {canViewInsights && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setInsightsOpen(true); }}
+                  aria-label="Story insights"
+                  className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Icon name="chart" size={17} />
+                </button>
+              )}
               {canDelete && (
                 <button
                   onClick={handleDelete}
@@ -439,8 +486,28 @@ export function SignalStoryViewer({
             </div>
           </div>
         </div>
+
+        {/* Story-level, not per-slide (one Respect per Story, matching
+            empire_story_respects) — floats independent of the per-slide
+            caption/CTA area so it stays put across slide navigation. No
+            count shown here, same "no noisy statistics" call SIGNAL
+            already makes for a Post's Respect button — the real number
+            only ever shows up in the author's own Story Insights panel. */}
+        {isRealStory && (
+          <button
+            onClick={handleToggleRespect}
+            disabled={respecting}
+            aria-label={isRespected ? 'Remove Respect' : 'Respect this Story'}
+            aria-pressed={isRespected}
+            className={`absolute bottom-20 right-4 z-20 grid h-11 w-11 place-items-center rounded-full backdrop-blur-sm transition-colors ${isRespected ? 'bg-accent-bright text-noir' : 'bg-black/40 text-white hover:bg-black/60'}`}
+          >
+            <Icon name="like" size={19} fill={isRespected} />
+          </button>
+        )}
       </div>
       </StoryCanvas>
+
+      {insightsOpen && <SignalStoryInsights storyId={story.id} onClose={() => setInsightsOpen(false)} />}
     </div>
   );
 }
