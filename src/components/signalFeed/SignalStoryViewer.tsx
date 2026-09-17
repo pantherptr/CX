@@ -281,74 +281,8 @@ export function SignalStoryViewer({
         role="dialog"
         aria-modal="true"
       >
-        <div className="absolute inset-x-0 top-0 z-10 flex gap-1 px-2 pt-safe">
-          {story.slides.map((s, i) => (
-            <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
-              {i < slideIndex ? (
-                <div className="h-full w-full bg-white" />
-              ) : i === slideIndex ? (
-                isVideo ? (
-                  // Driven by the video's own timeupdate below, not a
-                  // fixed-duration CSS animation — an image slide has no
-                  // natural "done" signal of its own, a video already does.
-                  <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
-                ) : (
-                  <div
-                    key={`${storyIndex}-${slideIndex}`}
-                    className="h-full bg-white"
-                    style={{
-                      width: '0%',
-                      animationName: 'signal-story-progress',
-                      animationDuration: `${SLIDE_DURATION_MS}ms`,
-                      animationTimingFunction: 'linear',
-                      animationFillMode: 'forwards',
-                      animationPlayState: paused ? 'paused' : 'running',
-                    }}
-                    onAnimationEnd={goNextSlide}
-                  />
-                )
-              ) : null}
-            </div>
-          ))}
-        </div>
-
-        <div className="relative z-10 flex h-14 items-center gap-2.5 px-4 pt-safe">
-          <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
-            <SharedAvatar id={`story-avatar-${initialStoryId}`} active={story.id === initialStoryId}>
-              <SignalIdentityAvatar identity={identity} size={32} />
-            </SharedAvatar>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
-                <SignalIdentityBadge identity={identity} size={13} />
-                <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-              </div>
-              {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
-            </div>
-          </button>
-          <div className="ml-auto flex items-center gap-1">
-            {canDelete && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                aria-label="Delete story"
-                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Icon name="trash" size={18} />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <Icon name="x" size={22} />
-            </button>
-          </div>
-        </div>
-
         <div
-          className="relative flex flex-1 items-center justify-center overflow-hidden"
+          className="absolute inset-0 flex items-center justify-center overflow-hidden"
           onMouseDown={startHold}
           onMouseUp={endHold}
           onMouseLeave={endHold}
@@ -430,6 +364,80 @@ export function SignalStoryViewer({
               {slide.ctaLabel}
             </a>
           )}
+        </div>
+
+        {/* Floats directly over the media on a soft gradient, the same
+            treatment the caption already gets at the bottom — this used
+            to be its own solid-background row ahead of the media, which
+            read as a hard black bar cutting the Story in two instead of
+            the name/controls sitting over the photo the way every native
+            Story viewer does it. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/65 via-black/20 to-transparent pb-8">
+          <div className="pointer-events-auto flex gap-1 px-2 pt-safe">
+            {story.slides.map((s, i) => (
+              <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+                {i < slideIndex ? (
+                  <div className="h-full w-full bg-white" />
+                ) : i === slideIndex ? (
+                  isVideo ? (
+                    // Driven by the video's own timeupdate below, not a
+                    // fixed-duration CSS animation — an image slide has no
+                    // natural "done" signal of its own, a video already does.
+                    <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
+                  ) : (
+                    <div
+                      key={`${storyIndex}-${slideIndex}`}
+                      className="h-full bg-white"
+                      style={{
+                        width: '0%',
+                        animationName: 'signal-story-progress',
+                        animationDuration: `${SLIDE_DURATION_MS}ms`,
+                        animationTimingFunction: 'linear',
+                        animationFillMode: 'forwards',
+                        animationPlayState: paused ? 'paused' : 'running',
+                      }}
+                      onAnimationEnd={goNextSlide}
+                    />
+                  )
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          <div className="pointer-events-auto flex h-14 items-center gap-2.5 px-4">
+            <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
+              <SharedAvatar id={`story-avatar-${initialStoryId}`} active={story.id === initialStoryId}>
+                <SignalIdentityAvatar identity={identity} size={32} />
+              </SharedAvatar>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
+                  <SignalIdentityBadge identity={identity} size={13} />
+                  <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                </div>
+                {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
+              </div>
+            </button>
+            <div className="ml-auto flex items-center gap-1">
+              {canDelete && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  aria-label="Delete story"
+                  className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <Icon name="trash" size={18} />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Icon name="x" size={22} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       </StoryCanvas>
