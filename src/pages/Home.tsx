@@ -155,8 +155,17 @@ export default function Home() {
 
   return (
     <div>
-      {/* ================= HERO — real photography, edge to edge ================= */}
-      <section className="relative isolate min-h-[75rem] overflow-hidden bg-[#eaf2ef] sm:min-h-[92svh]">
+      {/* ================= HERO — real photography, edge to edge =================
+          `-mt-16`: the header is always `sticky` now (see Navbar's own
+          comment), which means it always reserves its own ~64px in
+          document flow, right above this section. Pulling the hero up by
+          that same amount puts its background back at true y=0 — visible
+          right through the header's transparent background exactly as
+          before — without the header ever changing *positioning* scheme,
+          which is what used to cause the scroll-jump. The inner content
+          keeps its own pt-24/pt-28 unchanged, so it lands in the exact
+          same visual spot it always did. */}
+      <section className="relative isolate -mt-16 min-h-[75rem] overflow-hidden bg-[#eaf2ef] sm:min-h-[92svh]">
         <HeroPhoto />
 
         {/* A light editorial wash gives the copy a calm, premium reading

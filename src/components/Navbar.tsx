@@ -55,11 +55,28 @@ function PublicNavbar() {
 
   return (
     <>
+      {/* Always `sticky top-0`, never `fixed` — this used to switch
+          positioning schemes (`fixed` while transparent-over-hero, `sticky`
+          once scrolled/on any other page), and that switch is what caused
+          the header to visibly jump: a `fixed` header reserves zero space
+          in the document, so Home's hero already carries its own top
+          padding to clear it; the instant the header became `sticky` it
+          started reserving its own ~56–64px of real flow height too, and
+          that got added ON TOP of the hero's existing padding — a sudden
+          jump down by the header's height at the exact 8px scroll
+          threshold. Positioning now never changes, only the background/
+          border/blur do (a plain CSS transition, no layout impact), and
+          Home's hero pulls itself up under the header's reserved space
+          with a matching negative margin (see its own comment) to get the
+          same "transparent bar floating over the photo" look with zero
+          layout-jump risk. */}
       <header
-        className={`z-50 border-b backdrop-blur-xl transition-all duration-300 ${
+        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300 ${
           transparent
-            ? 'fixed inset-x-0 top-0 border-transparent bg-transparent'
-            : `sticky top-0 ${scrolled ? 'border-line bg-surface/90 shadow-[0_1px_0_rgba(22,22,26,0.04)]' : 'border-transparent bg-surface/70'}`
+            ? 'border-transparent bg-transparent'
+            : scrolled
+              ? 'border-line bg-surface/90 shadow-[0_1px_0_rgba(22,22,26,0.04)]'
+              : 'border-transparent bg-surface/70'
         }`}
       >
         <nav

@@ -50,26 +50,37 @@ const socials: { icon: IconName; label: string }[] = [
   { icon: 'linkedin', label: 'LinkedIn' },
 ];
 
+/** Was a full `bg-noir` block — the same near-black as the homepage's own
+ *  "Why CX" panel, stacked right underneath it on every visit. Two solid
+ *  black sections back to back reads as repetitive rather than premium
+ *  ("black used strategically for specific sections", not the default
+ *  canvas), so this now sits on the site's ordinary light `panel` surface
+ *  instead — the CX accent still carries the brand moment (top hairline,
+ *  column headers, hover states), it just doesn't need a black backdrop
+ *  to do it. */
 export function Footer() {
   return (
-    <footer className="relative mt-24 overflow-hidden bg-noir">
+    <footer className="relative mt-24 overflow-hidden border-t border-line bg-panel">
       {/* One quiet green wash, bookending the hero's own lighting so the
-          page closes in the same register it opened in. */}
+          page closes in the same register it opened in — much lower
+          opacity than the old dark version needed, since a light surface
+          needs far less tint to read as "a touch of brand color" rather
+          than "smudged". */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{ background: 'radial-gradient(45% 60% at 12% 0%, rgba(0,212,71,0.14), transparent 62%)' }}
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{ background: 'radial-gradient(45% 60% at 12% 0%, rgba(0,212,71,0.08), transparent 62%)' }}
       />
       {/* Hairline CX accent along the top edge. */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-accent-bright/50 via-accent-bright/10 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-accent-bright/60 via-accent-bright/15 to-transparent" />
 
       <div className="container-page relative py-16 sm:py-20">
         <div className="grid gap-12 lg:grid-cols-[1.5fr_repeat(4,1fr)] lg:gap-10">
           <div className="max-w-xs">
             <Logo variant="wordmark" />
-            <p className="mt-5 text-body leading-relaxed text-on-noir-muted text-pretty">
+            <p className="mt-5 text-body leading-relaxed text-muted text-pretty">
               The premium marketplace for car rental across Europe.
             </p>
-            <p className="mt-4 font-display text-copy font-semibold text-on-noir">
+            <p className="mt-4 font-display text-copy font-semibold text-ink">
               Rent. Drive. Experience.
             </p>
             <div className="mt-6 flex gap-2.5">
@@ -78,7 +89,7 @@ export function Footer() {
                   key={s.label}
                   type="button"
                   aria-label={`CX on ${s.label}`}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-white/12 bg-white/[0.04] text-on-noir-muted transition-colors hover:border-accent-bright/40 hover:text-accent-bright"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-line-strong bg-surface text-muted transition-colors hover:border-accent-bright/50 hover:text-accent-700"
                 >
                   <Icon name={s.icon} size={18} />
                 </button>
@@ -88,7 +99,7 @@ export function Footer() {
 
           {columns.map((col) => (
             <nav key={col.title} aria-label={col.title}>
-              <h4 className="text-label font-semibold uppercase tracking-[0.16em] text-accent-bright">{col.title}</h4>
+              <h4 className="text-label font-semibold uppercase tracking-[0.16em] text-accent-700">{col.title}</h4>
               <ul className="mt-4 flex flex-col gap-1">
                 {col.links.map((l) => (
                   <li key={l.label}>
@@ -96,7 +107,7 @@ export function Footer() {
                         without visually loosening the list. */}
                     <Link
                       to={l.to}
-                      className="inline-block py-1.5 text-body text-on-noir-muted transition-colors hover:text-on-noir"
+                      className="inline-block py-1.5 text-body text-muted transition-colors hover:text-ink"
                     >
                       {l.label}
                     </Link>
@@ -107,9 +118,9 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col gap-5 border-t border-white/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
-          <LiveVisitors tone="dark" />
-          <div className="flex items-center gap-5 text-detail text-on-noir-muted">
+        <div className="mt-14 flex flex-col gap-5 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
+          <LiveVisitors tone="light" />
+          <div className="flex items-center gap-5 text-detail text-muted">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="globe" size={15} /> English (EU)
             </span>
@@ -119,7 +130,7 @@ export function Footer() {
           </div>
         </div>
 
-        <p className="mt-6 text-detail text-on-noir-muted/70">
+        <p className="mt-6 text-detail text-faint">
           © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
         </p>
       </div>
