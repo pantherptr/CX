@@ -5,9 +5,8 @@ import { Img } from './motion';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
-import { customerNav, hostNav } from '../lib/nav';
-import { useUnreadMessageCount } from '../lib/data/messages';
 import { ConciergeLauncher } from './Concierge';
+import { AppMobileDrawer } from './AppMobileDrawer';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 
 const links = [
@@ -323,34 +322,10 @@ function PublicNavbar() {
  *  sidebar of their own (Browse, car details, help, booking, list-a-car). */
 function AppNavbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [mode, setMode] = useState<'customer' | 'host'>('customer');
   const [query, setQuery] = useState('');
-  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { session, profile, signOut } = useAuth();
-  const isHost = !!profile?.is_host;
-  const unreadCount = useUnreadMessageCount(session?.user.id);
-  const nav = mode === 'host' && isHost ? hostNav(unreadCount) : customerNav(unreadCount);
-
-  const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
+  const { profile } = useAuth();
   const displayAvatar = profile?.avatar_url ?? null;
-
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    document.body.style.overflow = drawerOpen ? 'hidden' : '';
-    return () => void (document.body.style.overflow = '');
-  }, [drawerOpen]);
-
-  const handleSignOut = async () => {
-    setDrawerOpen(false);
-    await signOut();
-    // Hard navigation — see DashboardShell's handleSignOut for why a plain
-    // navigate('/') here races ProtectedRoute's own redirect and can lose.
-    window.location.assign('/');
-  };
 
   const submitSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -413,148 +388,7 @@ function AppNavbar() {
         </div>
       </header>
 
-      {drawerOpen && (
-        <div className="fixed inset-0 z-[70]">
-          <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
-          <div className="absolute right-0 top-0 flex h-full w-[84%] max-w-xs animate-[slide-in-right_0.35s_var(--ease-out-expo)] flex-col bg-surface shadow-pop">
-            <div className="flex h-[64px] items-center justify-between border-b border-line px-5">
-              <Logo variant="wordmark" />
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
-                aria-label="Close menu"
-              >
-                <Icon name="x" size={20} />
-              </button>
-            </div>
-
-            <nav className="flex-1 overflow-y-auto p-3">
-              {isHost && (
-                <div className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
-                  <button
-                    onClick={() => setMode('customer')}
-                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
-                      mode === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
-                    }`}
-                  >
-                    Driver
-                  </button>
-                  <button
-                    onClick={() => setMode('host')}
-                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
-                      mode === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
-                    }`}
-                  >
-                    Host
-                  </button>
-                </div>
-              )}
-              {profile?.is_owner ? (
-                <NavLink
-                  to="/owner"
-                  onClick={() => setDrawerOpen(false)}
-                  className="mb-3 flex items-center gap-3 rounded-xl border border-line bg-noir px-3 py-2.5 text-body font-medium text-white transition-colors hover:bg-noir-2"
-                >
-                  <Icon name="verified" size={19} className="text-accent-bright" />
-                  Owner Control Center
-                </NavLink>
-              ) : profile?.is_admin ? (
-                <NavLink
-                  to="/admin"
-                  onClick={() => setDrawerOpen(false)}
-                  className="mb-3 flex items-center gap-3 rounded-xl border border-line bg-panel/60 px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
-                >
-                  <Icon name="shield" size={19} className="text-muted" />
-                  Admin panel
-                </NavLink>
-              ) : null}
-              <NavLink
-                to="/signal"
-                onClick={() => setDrawerOpen(false)}
-                className={({ isActive }) =>
-                  `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
-                    isActive
-                      ? 'border-accent-bright bg-accent-bright/15 text-ink'
-                      : 'border-accent-bright/30 bg-accent-bright/[0.06] text-ink hover:border-accent-bright/55 hover:bg-accent-bright/10'
-                  }`
-                }
-              >
-                <span
-                  className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[12px] transition-opacity duration-300 group-hover:opacity-100"
-                  style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
-                />
-                <span className="flex items-center gap-3">
-                  <SignalLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
-                  <span className="tracking-wide">SIGNAL</span>
-                </span>
-                <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </NavLink>
-              <ul className="flex flex-col gap-0.5">
-                {nav.map((n) => {
-                  return (
-                    <li key={n.label}>
-                      <NavLink
-                        to={n.to}
-                        onClick={() => setDrawerOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
-                      >
-                        <Icon name={n.icon} size={19} className="text-muted" />
-                        <span className="flex-1">{n.label}</span>
-                        {n.badge && (
-                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
-                            {n.badge}
-                          </span>
-                        )}
-                      </NavLink>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="hairline my-3" />
-              <Link
-                to="/help"
-                onClick={() => setDrawerOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
-              >
-                <Icon name="headset" size={19} className="text-muted" />
-                Help &amp; Support
-              </Link>
-            </nav>
-
-            <div className="border-t border-line p-3">
-              <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
-                {displayAvatar ? (
-                  <Img
-                    src={displayAvatar}
-                    alt=""
-                    className="h-9 w-9 rounded-full object-cover"
-                    fallback={
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-                        <Icon name="user" size={16} />
-                      </span>
-                    }
-                  />
-                ) : (
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-                    <Icon name="user" size={16} />
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-detail font-medium text-ink">{displayName}</p>
-                  <p className="truncate text-caption text-muted">{session?.user.email}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel"
-              >
-                <Icon name="logout" size={19} />
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AppMobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
   );
 }

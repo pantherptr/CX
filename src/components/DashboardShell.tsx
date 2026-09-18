@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
@@ -7,7 +7,8 @@ import { useAuth } from '../lib/auth';
 import { Img, useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useUnreadNotificationCount } from '../lib/data/notifications';
-import { customerNav, hostNav, type NavItem } from '../lib/nav';
+import { customerNav, hostNav } from '../lib/nav';
+import { AppMobileDrawer } from './AppMobileDrawer';
 
 export function greeting(): string {
   const h = new Date().getHours();
@@ -15,27 +16,6 @@ export function greeting(): string {
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
 }
-
-// Mobile-only drawer content: on mobile, Home/Explore/Trips/Saved/Profile
-// already live in the bottom tab bar (see BottomNav.tsx), so the drawer
-// here only needs what that bar doesn't cover — host-specific sections
-// (for the host variant) plus the same secondary items the marketing
-// Navbar's hamburger shows.
-const hostOnlyMobileLinks: NavItem[] = [
-  { label: 'My Cars', to: '/host#cars', icon: 'cars' },
-  { label: 'Bookings', to: '/host#bookings', icon: 'trips' },
-  { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },
-  { label: 'Earnings', to: '/host#earnings', icon: 'euro' },
-  { label: 'Reviews', to: '/host#reviews', icon: 'reviews' },
-];
-
-const secondaryMobileLinks = (unreadCount: number, unreadNotifications: number): NavItem[] => [
-  { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
-  { label: 'Notifications', to: '/notifications', icon: 'bell', badge: unreadNotifications || undefined },
-  { label: 'Payments', to: '/settings#payments', icon: 'card' },
-  { label: 'Settings', to: '/settings', icon: 'settings' },
-  { label: 'Help & Support', to: '/help', icon: 'headset' },
-];
 
 export function DashboardShell({
   variant,
@@ -58,11 +38,6 @@ export function DashboardShell({
   const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
   const displayEmail = session?.user.email ?? '';
   const displayAvatar = profile?.avatar_url ?? null;
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => void (document.body.style.overflow = '');
-  }, [open]);
 
   const handleSignOut = async () => {
     setOpen(false);
@@ -206,80 +181,6 @@ export function DashboardShell({
     </div>
   );
 
-  // Mobile drawer: Home/Explore/Trips/Saved/Profile already live in the
-  // bottom tab bar on mobile (BottomNav.tsx) — this only needs what that
-  // bar doesn't cover.
-  const mobileLinks = variant === 'host'
-    ? [...hostOnlyMobileLinks, ...secondaryMobileLinks(unreadCount, unreadNotifications)]
-    : secondaryMobileLinks(unreadCount, unreadNotifications);
-  const MobileDrawerInner = (
-    <div className="flex h-full flex-col">
-      <div className="flex h-[68px] items-center justify-between px-5">
-        <Logo variant="wordmark" />
-        <button
-          onClick={() => setOpen(false)}
-          className="grid h-10 w-10 place-items-center rounded-xl hover:bg-panel"
-          aria-label="Close menu"
-        >
-          <Icon name="x" size={22} />
-        </button>
-      </div>
-      <div className="px-3">
-        <div className="hairline" />
-      </div>
-      <nav className="flex-1 overflow-y-auto p-3">
-        <ul className="flex flex-col gap-0.5">
-          {mobileLinks.map((n) => (
-            <li key={n.label}>
-              <NavLink
-                to={n.to}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
-              >
-                <Icon name={n.icon} size={19} className="text-muted" />
-                <span className="flex-1">{n.label}</span>
-                {n.badge && (
-                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
-                    {n.badge}
-                  </span>
-                )}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="border-t border-line p-3">
-        <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
-          {displayAvatar ? (
-            <Img
-              src={displayAvatar}
-              alt=""
-              className="h-9 w-9 rounded-full object-cover"
-              fallback={
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-                  <Icon name="user" size={16} />
-                </span>
-              }
-            />
-          ) : (
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-              <Icon name="user" size={16} />
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-detail font-medium text-ink">{displayName}</p>
-            <p className="truncate text-caption text-muted">{displayEmail}</p>
-          </div>
-        </div>
-        <button onClick={handleSignOut} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel">
-          <Icon name="logout" size={19} />
-          Sign out
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-dvh bg-bg lg:flex">
       {/* Desktop sidebar */}
@@ -287,15 +188,10 @@ export function DashboardShell({
         {SidebarInner}
       </aside>
 
-      {/* Mobile drawer */}
-      {open && (
-        <div className="fixed inset-0 z-[70] lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-[80%] max-w-xs animate-[fade-up_0.3s_ease] bg-surface shadow-pop">
-            {MobileDrawerInner}
-          </div>
-        </div>
-      )}
+      {/* Mobile drawer — the same drawer AppNavbar opens on pages with no
+          sidebar (Browse, car details, help…), so the menu doesn't change
+          shape depending on which page it was opened from. */}
+      <AppMobileDrawer open={open} onClose={() => setOpen(false)} />
 
       {/* `dvh`, not `vh` — `100vh` on iOS Safari/WKWebView is measured
           against the largest possible viewport (chrome hidden), so a
