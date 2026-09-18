@@ -130,18 +130,43 @@ function useMeasuredHeight(ref: React.RefObject<HTMLElement | null>): number {
 // bump's proportions never visibly jump once the real measurement lands.
 const FALLBACK_NAV_HEIGHT = 68;
 
-// Some mobile browsers (notably iOS Safari/WKWebView with a floating/
-// collapsed toolbar) position a `fixed; bottom: 0` element against the
-// LARGE viewport (chrome fully hidden) rather than the actual visible one,
-// so when their own toolbar floats up over the bottom of the screen, this
-// bar's `pb-safe`-measured height stops covering the real gap and a sliver
-// of the page's own white background shows through underneath it. The fix
-// isn't to reposition the bar (its content row is exactly where it should
-// be) — it's to make only the BACKGROUND overshoot past the bar's own
-// logical bottom edge, so whatever that gap reveals is still this bar's
-// surface, not the page behind it. Purely extra, harmless overflow: it
-// sits below the real viewport bottom and is naturally clipped there.
-const BOTTOM_BLEED = 60;
+// Some mobile browsers (iOS Safari especially, with its floating/compact
+// toolbar) shrink the VISUAL viewport without changing `env(safe-area-
+// inset-bottom)` at all — that constant only ever covers the home
+// indicator, never the browser's own floating chrome on top of it. A
+// `position: fixed; bottom: 0` element still docks to the LAYOUT
+// viewport's edge, so a static safe-area guess can under-cover the real
+// gap, and a fixed extra guess (an earlier version of this fix used 60px)
+// can be wrong in either direction across devices. `visualViewport` is the
+// one live signal that actually reports how much of the screen the
+// browser's own chrome is covering right now — this reads the gap between
+// the layout and visual viewports and keeps it updated as that chrome
+// shows/hides, so the bar's background always overshoots by exactly
+// enough, not a guess.
+function useViewportBottomGap(): number {
+  const [gap, setGap] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const g = window.innerHeight - vv.height - vv.offsetTop;
+      setGap(Math.max(0, Math.round(g)));
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+  return gap;
+}
+
+// A small always-on cushion on top of the live measurement above — cheap
+// insurance against the one-frame lag between the browser's chrome
+// starting to move and `visualViewport`'s event firing.
+const MIN_BOTTOM_BLEED = 24;
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
@@ -256,11 +281,13 @@ export function BottomNav() {
   const measuredNavHeight = useMeasuredHeight(navRef);
   const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
   const backdropHeight = navHeight + HILL_RISE;
+  const viewportGap = useViewportBottomGap();
+  const bottomBleed = Math.max(MIN_BOTTOM_BLEED, viewportGap + MIN_BOTTOM_BLEED);
   // The clip-path's fractions are relative to the (taller, bled) glass
   // div's own box below, not `backdropHeight` — otherwise adding the bleed
   // would squash the hill's proportions instead of just extending the flat
   // bottom further down.
-  const navFlatY = HILL_RISE / (backdropHeight + BOTTOM_BLEED);
+  const navFlatY = HILL_RISE / (backdropHeight + bottomBleed);
   const navClipPath = useMemo(() => buildNavClipPath(navFlatY), [navFlatY]);
 
   if (!visible) return null;
@@ -314,7 +341,7 @@ export function BottomNav() {
           `shadow-[...]` utility on `<nav>` itself, untouched. */}
       <div
         className="glass pointer-events-none absolute inset-x-0"
-        style={{ bottom: -BOTTOM_BLEED, height: backdropHeight + BOTTOM_BLEED, clipPath: 'url(#signal-nav-clip)' }}
+        style={{ bottom: -bottomBleed, height: backdropHeight + bottomBleed, clipPath: 'url(#signal-nav-clip)' }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
