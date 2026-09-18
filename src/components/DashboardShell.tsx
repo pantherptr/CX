@@ -305,19 +305,19 @@ export function StatCard({
   const { ref: countRef, value: animated } = useCountUp<HTMLParagraphElement>(countTo ?? 0, { duration: 900 });
   const display = countTo !== undefined ? (format ? format(animated) : String(animated)) : value;
   return (
-    <div className={`card p-4 sm:p-5 ${accent ? '!bg-ink text-white !border-ink' : ''}`}>
+    <div className={`card p-4 sm:p-5 ${accent ? '!bg-accent-050 !border-accent/25' : ''}`}>
       <div className="flex items-center justify-between">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${accent ? 'bg-white/10 text-white' : 'bg-panel text-ink-soft'}`}>
+        <span className={`grid h-10 w-10 place-items-center rounded-xl ${accent ? 'bg-accent/10 text-accent-700' : 'bg-panel text-ink-soft'}`}>
           <Icon name={icon} size={20} />
         </span>
         {trend && (
-          <span className={`inline-flex items-center gap-1 text-caption font-medium ${accent ? 'text-accent-100' : 'text-accent'}`}>
+          <span className={`inline-flex items-center gap-1 text-caption font-medium text-accent`}>
             <Icon name="trending" size={14} /> {trend}
           </span>
         )}
       </div>
-      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl ${accent ? 'text-white' : 'text-ink'}`}>{display}</p>
-      <p className={`mt-0.5 text-detail ${accent ? 'text-white/60' : 'text-muted'}`}>{label}</p>
+      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl text-ink`}>{display}</p>
+      <p className={`mt-0.5 text-detail text-muted`}>{label}</p>
     </div>
   );
 }

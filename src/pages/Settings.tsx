@@ -179,7 +179,7 @@ export default function Settings() {
           </nav>
 
           {/* Panel */}
-          <div className="card p-6 sm:p-8">
+          <div className="card p-4 sm:p-8">
             {tab === 'personal' && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-4">

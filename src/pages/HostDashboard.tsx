@@ -436,7 +436,7 @@ export default function HostDashboard() {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Earnings chart */}
-          <Reveal><section className="card scroll-mt-20 p-6" id="earnings">
+          <Reveal><section className="card scroll-mt-20 p-4 sm:p-6" id="earnings">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-display text-lg font-semibold text-ink">Earnings</h2>
@@ -477,7 +477,7 @@ export default function HostDashboard() {
           </section></Reveal>
 
           {/* Upcoming reservations */}
-          <Reveal delay={80}><section className="card scroll-mt-20 p-6" id="upcoming">
+          <Reveal delay={80}><section className="card scroll-mt-20 p-4 sm:p-6" id="upcoming">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">Upcoming</h2>
               {upcomingCount > 0 && <span className="badge badge-accent">{upcomingCount} reservation{upcomingCount === 1 ? '' : 's'}</span>}
@@ -504,7 +504,7 @@ export default function HostDashboard() {
         </div>
 
         {/* Bookings */}
-        <Reveal><section className="mt-8 scroll-mt-20 card overflow-hidden p-6" id="bookings">
+        <Reveal><section className="mt-8 scroll-mt-20 card overflow-hidden p-4 sm:p-6" id="bookings">
           <h2 className="font-display text-lg font-semibold text-ink">Bookings</h2>
           <div className="mt-4 mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
             {TABS.map((t) => {
@@ -603,7 +603,7 @@ export default function HostDashboard() {
         <section className="mt-8 scroll-mt-20" id="reviews">
           <h2 className="mb-4 font-display text-lg font-semibold text-ink">Reviews</h2>
           {allReviews.length > 0 ? (
-            <div className="card flex items-center gap-6 p-6">
+            <div className="card flex items-center gap-4 p-4 sm:gap-6 sm:p-6">
               <div className="text-center">
                 <p className="font-display text-3xl font-semibold text-ink">{avgRating!.toFixed(2)}</p>
                 <p className="mt-1 flex items-center justify-center gap-1 text-caption text-muted"><Icon name="star" size={13} className="text-star" /> Average rating</p>
@@ -636,7 +636,7 @@ export default function HostDashboard() {
             <div className="skeleton h-80 rounded-2xl" />
           ) : hostCars && hostCars.length > 0 ? (
             <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-              <div className="card p-6">
+              <div className="card p-4 sm:p-6">
                 <HostFleetCalendar cars={hostCars.map((c) => ({ id: c.id, make: c.make, model: c.model }))} />
               </div>
               <div>
