@@ -100,12 +100,12 @@ export default function About() {
 
       {/* CTA */}
       <section className="container-page mt-24">
-        <div className="flex flex-col items-center gap-6 rounded-[1.75rem] bg-ink px-6 py-16 text-center text-white">
+        <div className="flex flex-col items-center gap-6 rounded-[1.75rem] border border-line bg-panel px-6 py-14 text-center">
           <h2 className="font-display text-3xl font-semibold text-balance sm:text-4xl">Join the journey.</h2>
-          <p className="max-w-md text-copy text-white/70">Whether you’re driving or hosting, there’s a place for you at CX.</p>
+          <p className="max-w-md text-copy text-muted">Whether you’re driving or hosting, there’s a place for you at CX.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to="/browse" className="btn btn-accent btn-lg">Find a car <Icon name="arrowRight" size={17} /></Link>
-            <Link to="/list-your-car" className="btn btn-lg bg-white/10 text-white hover:bg-white/15">List your car</Link>
+            <Link to="/list-your-car" className="btn btn-secondary btn-lg">List your car</Link>
           </div>
         </div>
       </section>

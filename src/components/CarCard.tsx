@@ -165,7 +165,7 @@ export function CarCard({
                 e.preventDefault();
                 setQuickView(true);
               }}
-              className="glass pressable absolute bottom-3 left-1/2 flex -translate-x-1/2 translate-y-1 items-center gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
+              className="glass pressable absolute bottom-3 right-3 flex translate-y-1 items-center sm:left-1/2 sm:right-auto sm:-translate-x-1/2 gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
             >
               <Icon name="grid" size={13} /> Quick view
             </button>

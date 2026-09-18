@@ -350,12 +350,12 @@ export default function Browse() {
   return (
     <div className="container-page py-8">
       {/* Concierge entry — elegant, doesn't compete with the search bar below */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-line bg-noir px-5 py-4">
+      <div className="mb-6 flex flex-col items-start gap-3 rounded-2xl border border-line bg-panel px-5 py-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4">
         <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.18em] text-accent-bright">
+          <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.18em] text-accent-700">
             <Icon name="sparkles" size={13} /> CX Concierge
           </p>
-          <p className="mt-1 text-body font-medium text-on-noir">Not sure which car? Tell us how you want to drive.</p>
+          <p className="mt-1 text-body font-medium text-ink">Not sure which car? Tell us how you want to drive.</p>
         </div>
         <ConciergeLauncher className="btn btn-accent-bright shrink-0">
           Find Your CX <Icon name="arrowRight" size={16} />

@@ -143,12 +143,12 @@ export default function Help() {
       </section>
 
       <section className="container-page mt-16 mb-24">
-        <div className="mx-auto max-w-2xl rounded-[1.75rem] bg-ink px-6 py-12 text-center text-white sm:px-12">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-white/10">
+        <div className="mx-auto max-w-2xl rounded-[1.75rem] border border-line bg-panel px-6 py-12 text-center sm:px-12">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent-700">
             <Icon name="headset" size={22} />
           </span>
           <h2 className="mt-5 font-display text-2xl font-semibold">Still need help?</h2>
-          <p className="mx-auto mt-2 max-w-sm text-body leading-relaxed text-white/70">
+          <p className="mx-auto mt-2 max-w-sm text-body leading-relaxed text-muted">
             Start a conversation and we'll pick it up from there — same place you talk to hosts and
             renters, so nothing gets lost.
           </p>
