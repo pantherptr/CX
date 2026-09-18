@@ -10,6 +10,7 @@ import { useUnreadMessageCount } from '../lib/data/messages';
 // still-unrenamed backend tables/RPCs 1:1, so relabeling it here would
 // describe a rename that never actually happened underneath.
 import { useEmpireUnreadCount } from '../lib/data/empireFeed';
+import { useViewportBottomGap } from '../lib/useViewportGap';
 
 interface Item {
   label: string;
@@ -143,30 +144,12 @@ const FALLBACK_NAV_HEIGHT = 68;
 // the layout and visual viewports and keeps it updated as that chrome
 // shows/hides, so the bar's background always overshoots by exactly
 // enough, not a guess.
-function useViewportBottomGap(): number {
-  const [gap, setGap] = useState(0);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const g = window.innerHeight - vv.height - vv.offsetTop;
-      setGap(Math.max(0, Math.round(g)));
-    };
-    update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
-  return gap;
-}
 
 // A small always-on cushion on top of the live measurement above — cheap
 // insurance against the one-frame lag between the browser's chrome
 // starting to move and `visualViewport`'s event firing.
 const MIN_BOTTOM_BLEED = 24;
+const MAX_CHROME_GAP = 120;
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
@@ -283,6 +266,9 @@ export function BottomNav() {
   const backdropHeight = navHeight + HILL_RISE;
   const viewportGap = useViewportBottomGap();
   const bottomBleed = Math.max(MIN_BOTTOM_BLEED, viewportGap + MIN_BOTTOM_BLEED);
+  // Lift the bar to sit flush with the VISIBLE bottom edge. A gap this big
+  // is a keyboard, not browser chrome, so the bar stays put for those.
+  const lift = viewportGap > 0 && viewportGap <= MAX_CHROME_GAP ? viewportGap : 0;
   // The clip-path's fractions are relative to the (taller, bled) glass
   // div's own box below, not `backdropHeight` — otherwise adding the bleed
   // would squash the hill's proportions instead of just extending the flat
@@ -303,7 +289,7 @@ export function BottomNav() {
         // is relative to the bar's own rendered height, which already
         // includes its safe-area inset, so it clears the bar completely
         // on every device without a hardcoded pixel value.
-        transform: scrollHidden ? 'translateY(100%)' : 'translateY(0)',
+        transform: scrollHidden ? 'translateY(100%)' : `translateY(${-lift}px)`,
         opacity: scrollHidden ? 0 : 1,
         pointerEvents: scrollHidden ? 'none' : 'auto',
         transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`,

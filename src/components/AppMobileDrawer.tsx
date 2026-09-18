@@ -7,6 +7,7 @@ import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
+import { useViewportBottomGap } from '../lib/useViewportGap';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 
 /** The one authenticated-app mobile drawer — shared by `AppNavbar` (pages
@@ -23,6 +24,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
   const [mode, setMode] = useState<'customer' | 'host'>('customer');
   const { pathname } = useLocation();
   const reduceMotion = !!useReducedMotion();
+  const gap = useViewportBottomGap();
   const { session, profile, signOut } = useAuth();
   const isHost = !!profile?.is_host;
   const unreadCount = useUnreadMessageCount(session?.user.id);
@@ -55,7 +57,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[70] lg:hidden">
+        <div className="fixed inset-x-0 top-0 z-[70] lg:hidden" style={{ bottom: gap }}>
           <motion.div
             className="absolute inset-0 bg-ink/45 backdrop-blur-sm"
             initial={{ opacity: 0 }}

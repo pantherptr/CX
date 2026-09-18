@@ -3,6 +3,7 @@ import { Icon } from './Icon';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { ConciergeLauncher } from './Concierge';
+import { useViewportBottomGap } from '../lib/useViewportGap';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 
 /** Logged-out mobile menu. Split out of Navbar so it (and the animation
@@ -17,10 +18,11 @@ export default function PublicMobileDrawer({
   links: { to: string; label: string }[];
 }) {
   const reduceMotion = !!useReducedMotion();
+  const gap = useViewportBottomGap();
   return (
     <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-[60] lg:hidden">
+          <div className="fixed inset-x-0 top-0 z-[60] lg:hidden" style={{ bottom: gap }}>
             <motion.div
               className="absolute inset-0 bg-ink/45 backdrop-blur-sm"
               initial={{ opacity: 0 }}
