@@ -89,7 +89,7 @@ function QuickAction({ icon, label, to, onClick }: { icon: IconName; label: stri
       <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">{label}</span>
     </>
   );
-  const cls = 'card group flex flex-col items-center justify-center gap-2.5 py-5 text-center transition-transform hover:-translate-y-0.5';
+  const cls = 'card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 sm:gap-2.5 sm:py-5';
   return to ? (
     <Link to={to} className={cls}>{inner}</Link>
   ) : (
@@ -276,7 +276,7 @@ export default function CustomerDashboard() {
             <QuickAction icon="search" label="Find a Car" to="/browse" />
             <QuickAction icon="trips" label="My Bookings" to="/dashboard#trips" />
             <QuickAction icon="heart" label="Favorites" to="/dashboard#saved" />
-            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2.5 py-5 text-center transition-transform hover:-translate-y-0.5">
+            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 sm:gap-2.5 sm:py-5">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-panel text-ink-soft transition-colors group-hover:bg-ink group-hover:text-white">
                 <Icon name="sparkles" size={19} />
               </span>
@@ -494,17 +494,17 @@ export default function CustomerDashboard() {
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.3fr]">
           {/* Concierge */}
-          <section className="relative overflow-hidden rounded-2xl bg-noir p-6">
+          <section className="relative overflow-hidden rounded-2xl border border-line bg-panel p-5 sm:p-6">
             <div
-              className="pointer-events-none absolute inset-0 opacity-70"
-              style={{ background: 'radial-gradient(55% 55% at 85% 10%, rgba(0,212,71,0.16), transparent 62%)' }}
+              className="pointer-events-none absolute inset-0 opacity-60"
+              style={{ background: 'radial-gradient(55% 55% at 85% 10%, rgba(0,212,71,0.10), transparent 62%)' }}
             />
             <div className="relative">
-              <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-bright">
+              <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">
                 <Icon name="sparkles" size={14} /> CX Concierge
               </p>
-              <h2 className="mt-2 font-display text-xl font-semibold text-white">Need something specific?</h2>
-              <p className="mt-2 text-detail leading-relaxed text-white/60">
+              <h2 className="mt-2 font-display text-xl font-semibold text-ink">Need something specific?</h2>
+              <p className="mt-2 text-detail leading-relaxed text-muted">
                 Tell us how you want to drive — city, road trip, business, performance — and we'll match you to the
                 right car from the fleet in under a minute.
               </p>

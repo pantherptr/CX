@@ -202,9 +202,12 @@ export function DashboardShell({
       <div className={`flex min-w-0 flex-1 flex-col ${fullHeight ? 'h-dvh' : ''}`}>
         {/* Topbar */}
         <header className="sticky top-0 z-40 flex h-[64px] items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-xl sm:px-6">
-          <button onClick={() => setOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel lg:hidden" aria-label="Open menu">
-            <Icon name="menu" size={22} />
-          </button>
+          {/* Same header anatomy as AppNavbar on mobile: logo left, actions
+              right with the menu last — the drawer slides in from the right,
+              so its trigger belongs on the right too. */}
+          <div className="lg:hidden">
+            <Logo variant="symbol" />
+          </div>
           <div className="relative hidden max-w-sm flex-1 sm:block">
             <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input placeholder="Search trips, cars, hosts…" className="input !py-2.5 !pl-10 bg-surface" />
@@ -269,6 +272,9 @@ export function DashboardShell({
                 </span>
               )}
             </Link>
+            <button onClick={() => setOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel lg:hidden" aria-label="Open menu">
+              <Icon name="menu" size={20} />
+            </button>
           </div>
         </header>
 
@@ -299,7 +305,7 @@ export function StatCard({
   const { ref: countRef, value: animated } = useCountUp<HTMLParagraphElement>(countTo ?? 0, { duration: 900 });
   const display = countTo !== undefined ? (format ? format(animated) : String(animated)) : value;
   return (
-    <div className={`card p-5 ${accent ? '!bg-ink text-white !border-ink' : ''}`}>
+    <div className={`card p-4 sm:p-5 ${accent ? '!bg-ink text-white !border-ink' : ''}`}>
       <div className="flex items-center justify-between">
         <span className={`grid h-10 w-10 place-items-center rounded-xl ${accent ? 'bg-white/10 text-white' : 'bg-panel text-ink-soft'}`}>
           <Icon name={icon} size={20} />
@@ -310,7 +316,7 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-4 font-display text-2xl font-semibold ${accent ? 'text-white' : 'text-ink'}`}>{display}</p>
+      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl ${accent ? 'text-white' : 'text-ink'}`}>{display}</p>
       <p className={`mt-0.5 text-detail ${accent ? 'text-white/60' : 'text-muted'}`}>{label}</p>
     </div>
   );
