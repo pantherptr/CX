@@ -4,6 +4,8 @@ import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { Icon } from './Icon';
 import { Img } from './motion';
+import { useBottomNavVisible } from './BottomNav';
+import { useViewportBottomGap } from '../lib/useViewportGap';
 
 /**
  * The floating "you have cars staged for comparison" bar — mounted once
@@ -15,6 +17,9 @@ export function CompareTray() {
   const { ids, removeFromCompare, clearCompare } = useCompare();
   const { cars } = useCars();
   const { pathname } = useLocation();
+  const navVisible = useBottomNavVisible();
+  const gap = useViewportBottomGap();
+  const lift = gap > 0 && gap <= 120 ? gap : 0;
 
   // The compare page itself already shows everything this tray would —
   // surfacing it there too would just cover the table it's pointing at.
@@ -23,7 +28,12 @@ export function CompareTray() {
   const selected = ids.map((id) => cars?.find((c) => c.id === id)).filter((c): c is NonNullable<typeof c> => !!c);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 sm:bottom-6">
+    // Clears the bottom nav (~69px bar + its 18px raised Signal bump) when
+    // it's showing; otherwise sits near the edge, like it does on desktop.
+    <div
+      className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4 sm:!bottom-6"
+      style={{ bottom: `calc(${navVisible ? '5.75rem' : '1rem'} + env(safe-area-inset-bottom) + ${lift}px)` }}
+    >
       <div className="pointer-events-auto flex w-full max-w-xl items-center gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-pop backdrop-blur-xl">
         <div className="flex -space-x-2.5">
           {ids.slice(0, 4).map((id) => {
