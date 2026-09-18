@@ -10,9 +10,17 @@
     <!-- Matches the initial loading splash's own dark background so there's
          no flash of the app's usual off-white body before React mounts and
          paints the splash itself — the bundled stylesheet's own `body`
-         rule (off-white, the app's real background) loads shortly after
-         and naturally takes over once it does. -->
-    <style>body { background: #0a0d0b; }</style>
+         rule (off-white, the app's real background, inside Tailwind's own
+         `@layer base`) loads shortly after and takes over once it does.
+         MUST be declared inside the same `@layer base` here too: an
+         unlayered rule always beats a layered one regardless of source
+         order or specificity, so a plain `body { background: ... }` here
+         would permanently win over the real stylesheet's rule forever,
+         not just for this one pre-paint instant — which is exactly what
+         happened the first time this was written unlayered: the dark
+         background never actually let go, and bled through as a black
+         backdrop behind every page's own layout gaps site-wide. -->
+    <style>@layer base { body { background: #0a0d0b; } }</style>
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
