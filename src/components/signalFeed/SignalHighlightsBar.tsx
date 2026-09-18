@@ -47,7 +47,7 @@ export function SignalHighlightsBar({ canManage }: { canManage: boolean }) {
           canManage={canManage}
           onClose={() => setOpenIndex(null)}
           onStoryDeleted={refresh}
-          onMarkViewed={() => {}}
+          onMarkViewed={() => Promise.resolve(true)}
           onDeleteStory={deleteEmpireHighlight}
           deleteConfirmMessage="Delete this Highlight? This cannot be undone."
         />

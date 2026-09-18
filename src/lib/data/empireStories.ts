@@ -289,8 +289,15 @@ export async function deleteEmpireStory(storyId: string): Promise<{ error: strin
   return { error: null };
 }
 
-export async function markEmpireStoryViewed(storyId: string): Promise<void> {
-  await supabase.rpc('mark_empire_story_viewed', { p_story_id: storyId });
+/** Registers a view AND is the authorization check for View Once —
+ *  returns `false` only when this is a View Once Story a non-author
+ *  caller has already consumed (nothing gets (re-)recorded in that
+ *  case). Every other Story always resolves `true`. The caller gates
+ *  on this before ever rendering media — see SignalStoryViewer. */
+export async function markEmpireStoryViewed(storyId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('mark_empire_story_viewed', { p_story_id: storyId });
+  if (error) return true; // fail open — a network hiccup shouldn't lock a legitimate viewer out
+  return data as boolean;
 }
 
 /** Uploads one Story slide's media (image or video) — uid-prefixed

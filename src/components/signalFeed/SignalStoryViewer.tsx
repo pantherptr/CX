@@ -9,7 +9,7 @@ import { StoryTextSlide } from './StoryTextSlide';
 import { StoryCanvas } from './StoryCanvas';
 import { SignalStoryInsights } from './SignalStoryInsights';
 import { useAuth } from '../../lib/auth';
-import { SharedAvatar, useHideForNavigation } from '../motionKit';
+import { motion, SharedAvatar, useHideForNavigation, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -44,8 +44,12 @@ export function SignalStoryViewer({
   onClose: () => void;
   onStoryDeleted: () => void;
   /** Overridable so SignalHighlightsBar can reuse this same viewer for
-   *  permanent Highlights, which have no per-viewer "viewed" state. */
-  onMarkViewed?: (id: string) => void | Promise<void>;
+   *  permanent Highlights, which have no per-viewer "viewed" state (its
+   *  override always resolves `true` — a Highlight has no View Once
+   *  concept to authorize against). The boolean is the sole source of
+   *  truth for whether a View Once Story's media may render at all —
+   *  see the gating effect below. */
+  onMarkViewed?: (id: string) => Promise<boolean>;
   /** Overridable so Highlights delete through their own RPC instead of
    *  the Story-specific one. */
   onDeleteStory?: (id: string) => Promise<{ error: string | null }>;
@@ -54,6 +58,7 @@ export function SignalStoryViewer({
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { session } = useAuth();
+  const reduceMotion = !!useReducedMotion();
   const [storyIndex, setStoryIndex] = useState(startIndex);
   // Story -> Profile -> Story: opening a profile from here must not
   // unmount (and lose) this viewer's position — see useHideForNavigation's
@@ -83,6 +88,14 @@ export function SignalStoryViewer({
   // close or snaps back on release (see handleTouchEnd).
   const [dragY, setDragY] = useState(0);
   const [closing, setClosing] = useState(false);
+  // Per-story authorization result for View Once gating — `undefined`
+  // while a View Once Story's authorize call is still in flight (its
+  // media stays unrendered until this resolves), `true` once cleared to
+  // show, `false` if the server says it's already been consumed. Every
+  // non-View-Once (or author-viewing-their-own) story is set `true`
+  // synchronously, so the vast majority of Stories never show a pending
+  // state at all — see the gating effect below.
+  const [storyAuth, setStoryAuth] = useState<Record<string, boolean>>({});
   const viewedRef = useRef<Set<string>>(new Set());
   const holdTimerRef = useRef<number | null>(null);
   const heldRef = useRef(false);
@@ -119,11 +132,27 @@ export function SignalStoryViewer({
     else video.play().catch(() => {});
   }, [paused, slide?.id]);
 
+  // Authorize-then-view: a View Once Story a non-author is opening for
+  // the first time this viewer-instance-lifetime gets awaited — its
+  // media only renders once the server confirms this is legitimately
+  // the first viewing (see markEmpireStoryViewed's own comment; this is
+  // what actually stops a stale, already-fetched tile from being
+  // re-opened and replayed, not just fetch_active_empire_stories'
+  // WHERE-clause exclusion on the *next* fetch). Every other Story marks
+  // in the background exactly as before — zero added latency.
   useEffect(() => {
-    if (story && !viewedRef.current.has(story.id)) {
-      viewedRef.current.add(story.id);
+    if (!story || viewedRef.current.has(story.id)) return;
+    viewedRef.current.add(story.id);
+    const isAuthor = session != null && story.authorId === session.user.id;
+    if (!(story.isViewOnce && !isAuthor)) {
+      setStoryAuth((m) => ({ ...m, [story.id]: true }));
       onMarkViewed(story.id);
+      return;
     }
+    const id = story.id;
+    onMarkViewed(id)
+      .then((authorized) => setStoryAuth((m) => ({ ...m, [id]: authorized })))
+      .catch(() => setStoryAuth((m) => ({ ...m, [id]: true })));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story]);
 
@@ -180,6 +209,14 @@ export function SignalStoryViewer({
   // point at all, never to grant anything the RPC itself wouldn't.
   const canViewInsights = isRealStory && canDelete;
   const isRespected = respectedOverrides[story.id] ?? story.respectedByMe;
+  // See the authorize-then-view effect above — `undefined` means still
+  // waiting on the server, `false` means already consumed. Both cases
+  // keep this Story's actual media out of the DOM entirely (not just
+  // hidden behind an overlay) — a blocked or still-authorizing View Once
+  // Story never has its mediaUrl requested.
+  const authState = storyAuth[story.id];
+  const isPending = authState === undefined;
+  const isBlocked = authState === false;
 
   const goNextSlide = () => {
     if (slideIndex < story.slides.length - 1) {
@@ -324,7 +361,20 @@ export function SignalStoryViewer({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {isVideo ? (
+          {isPending ? (
+            // The authorize round trip for a View Once Story — its
+            // mediaUrl is never requested until the server clears it, so
+            // there's genuinely nothing to leak here even for a moment.
+            <div className="h-8 w-8 animate-pulse rounded-full bg-white/10" />
+          ) : isBlocked ? (
+            <div className="flex flex-col items-center gap-3 px-10 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-white/70">
+                <Icon name="eye" size={24} />
+              </span>
+              <p className="text-body font-semibold text-white">Already viewed</p>
+              <p className="text-detail text-white/60">This Story can only be viewed once.</p>
+            </div>
+          ) : isVideo ? (
             <video
               key={slide.id}
               ref={videoRef}
@@ -368,7 +418,7 @@ export function SignalStoryViewer({
             />
           )}
 
-          {isVideo && (
+          {isVideo && !isPending && !isBlocked && (
             <button
               onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
               aria-label={muted ? 'Unmute' : 'Mute'}
@@ -381,13 +431,13 @@ export function SignalStoryViewer({
           <button onClick={() => handleZoneClick('prev')} aria-label="Previous" className="absolute inset-y-0 left-0 w-1/3" />
           <button onClick={() => handleZoneClick('next')} aria-label="Next" className="absolute inset-y-0 right-0 w-1/3" />
 
-          {slide.caption && (
+          {!isPending && !isBlocked && slide.caption && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-16">
               <p className="text-body leading-relaxed text-white">{slide.caption}</p>
             </div>
           )}
 
-          {slide.ctaLabel && slide.ctaUrl && (
+          {!isPending && !isBlocked && slide.ctaLabel && slide.ctaUrl && (
             <a
               href={slide.ctaUrl}
               target="_blank"
@@ -413,7 +463,7 @@ export function SignalStoryViewer({
                 {i < slideIndex ? (
                   <div className="h-full w-full bg-white" />
                 ) : i === slideIndex ? (
-                  isVideo ? (
+                  isVideo && !isPending && !isBlocked ? (
                     // Driven by the video's own timeupdate below, not a
                     // fixed-duration CSS animation — an image slide has no
                     // natural "done" signal of its own, a video already does.
@@ -494,15 +544,18 @@ export function SignalStoryViewer({
             already makes for a Post's Respect button — the real number
             only ever shows up in the author's own Story Insights panel. */}
         {isRealStory && (
-          <button
+          <motion.button
             onClick={handleToggleRespect}
             disabled={respecting}
             aria-label={isRespected ? 'Remove Respect' : 'Respect this Story'}
             aria-pressed={isRespected}
+            whileTap={reduceMotion ? undefined : { scale: 0.85 }}
+            animate={isRespected && !reduceMotion ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+            transition={SPRING_SNAPPY}
             className={`absolute bottom-20 right-4 z-20 grid h-11 w-11 place-items-center rounded-full backdrop-blur-sm transition-colors ${isRespected ? 'bg-accent-bright text-noir' : 'bg-black/40 text-white hover:bg-black/60'}`}
           >
             <Icon name="like" size={19} fill={isRespected} />
-          </button>
+          </motion.button>
         )}
       </div>
       </StoryCanvas>
