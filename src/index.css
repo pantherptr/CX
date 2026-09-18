@@ -756,6 +756,17 @@
   .orbit-track {
     background: rgba(15, 18, 16, 0.1);
   }
+  /* The base ring/contact-shadow above are tuned for SupercarOrbit's
+     usual light-background call sites (PremiumPageLoader, dropped into
+     ordinary pages) — a dark-on-light gray ring and a black ground
+     shadow. Against the full-screen initial splash's near-black backdrop
+     both would be invisible (dark-on-dark), so PremiumInitialLoader
+     passes `dark` to swap just these two for a light ring and a soft
+     brand-green ground glow instead of touching the shared defaults
+     every other (light) call site still relies on. */
+  .orbit-stage--dark .orbit-track {
+    background: rgba(255, 255, 255, 0.09);
+  }
   .orbit-arc,
   .orbit-glow {
     animation: orbit-spin var(--orbit-duration, 4.2s) linear infinite;

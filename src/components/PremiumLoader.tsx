@@ -38,7 +38,7 @@
  *  it already points the correct tangential direction for clockwise
  *  travel — see `.orbit-car-sprite`. Each wheel gets a spinning spoke
  *  mark (`.loader-wheel`) so the wheels visibly turn while driving. */
-function TopDownCar() {
+function TopDownCar({ dark = false }: { dark?: boolean }) {
   const wheels: [number, number][] = [
     [23, 3],
     [77, 3],
@@ -63,9 +63,13 @@ function TopDownCar() {
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
+        {/* A black ground shadow reads fine on the light call sites but
+            vanishes entirely against the near-black splash background —
+            swapped for a soft brand-green glow there instead, like a
+            showroom floor light rather than a cast shadow. */}
         <radialGradient id="topCarShadow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#000" stopOpacity="0.32" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0" />
+          <stop offset="0%" stopColor={dark ? '#00d447' : '#000000'} stopOpacity={dark ? 0.22 : 0.32} />
+          <stop offset="100%" stopColor={dark ? '#00d447' : '#000000'} stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -134,6 +138,7 @@ export function SupercarOrbit({
   duration = 4.2,
   className = '',
   completing = false,
+  dark = false,
 }: {
   /** Fixed width in px. Omit to let the element fill its parent's width
    *  (e.g. a responsive wrapper class) instead. */
@@ -143,10 +148,16 @@ export function SupercarOrbit({
   /** Freezes the travel and lights the ring fully — play this for a
    *  couple hundred ms right before unmounting/hiding the loader. */
   completing?: boolean;
+  /** Swaps the base ring and the car's ground shadow for variants that
+   *  read correctly on a near-black backdrop — see `.orbit-stage--dark`
+   *  and `TopDownCar`'s own comment. Every other visual (the accent-
+   *  green arc, the car's own body paint) already has enough contrast
+   *  against either background and needs no separate variant. */
+  dark?: boolean;
 }) {
   return (
     <div
-      className={`orbit-stage relative ${completing ? 'orbit-stage--complete' : ''} ${className}`}
+      className={`orbit-stage relative ${completing ? 'orbit-stage--complete' : ''} ${dark ? 'orbit-stage--dark' : ''} ${className}`}
       style={{ width: size, aspectRatio: '1 / 1', ['--orbit-duration' as string]: `${duration}s` }}
     >
       <div className="orbit-track" />
@@ -156,7 +167,7 @@ export function SupercarOrbit({
         <div className="orbit-car-pivot">
           <div className="orbit-car-glow" />
           <div className="orbit-car-sprite">
-            <TopDownCar />
+            <TopDownCar dark={dark} />
           </div>
         </div>
       </div>
@@ -181,28 +192,39 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
 }
 
 /** Full-screen loading overlay — shown once per session while the app
- *  boots, and reused as the shared Suspense fallback while a route
- *  chunk loads. A pure white field covering the entire viewport above
- *  everything else (navbar, footer, page content, any background) with
- *  the ring animation large and centered — no card
- *  around it, no text, no progress readout, no controls. Responsive by
- *  pure CSS: `min(40vmin, 320px)` keeps it compact and centered on
- *  desktop, comfortably margined on phones, and proportionate on
- *  tablets, with no resize listener. `hiding` plays the ring's own
- *  "lap complete" flourish alongside the wrapper's fade, so the loader
- *  never just vanishes mid-travel. */
+ *  first boots. A near-black field (matching the pre-paint background
+ *  `index.html` sets inline, so there's no color jump the instant this
+ *  mounts) with a small, quiet composition centered on it: the ring
+ *  animation and a minimal wordmark underneath — no card, no progress
+ *  readout, no controls, nothing that reads as a game splash screen.
+ *
+ *  Sized deliberately small, not "as big as the viewport allows": a
+ *  premium automotive product loads quietly, it doesn't fill the screen
+ *  with a hero animation. `clamp(84px, 28vw, 150px)` holds the ring at
+ *  ~28% of viewport width on every phone size (320–430px) — squarely in
+ *  a small, centered 25–35% range — and caps it at a modest 150px from
+ *  small tablets up, so it gets *proportionally* smaller as the screen
+ *  grows rather than scaling up just because there's more room.
+ *
+ *  `hiding` plays the ring's own "lap complete" flourish alongside the
+ *  wrapper's fade, so the loader never just vanishes mid-travel — and
+ *  the fade/scale-out reads as a quiet handoff into the real app, not a
+ *  dramatic reveal. */
 export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-[200] flex items-center justify-center bg-white transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4 bg-noir transition-opacity duration-500 ${
         hiding ? 'pointer-events-none opacity-0' : 'opacity-100'
       }`}
       role="status"
       aria-label="Loading"
     >
-      <div className="animate-scale-in" style={{ width: 'min(40vmin, 320px)' }}>
-        <SupercarOrbit duration={5.2} completing={hiding} />
+      <div className="animate-scale-in" style={{ width: 'clamp(84px, 28vw, 150px)' }}>
+        <SupercarOrbit duration={5.2} completing={hiding} dark />
       </div>
+      <p className="animate-scale-in text-label font-semibold uppercase tracking-[0.3em] text-on-noir-muted">
+        CX Rent
+      </p>
     </div>
   );
 }

@@ -7,6 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#FBFBF9" />
     <meta name="description" content="CX — Rent exceptional cars from local owners, wherever the road takes you." />
+    <!-- Matches the initial loading splash's own dark background so there's
+         no flash of the app's usual off-white body before React mounts and
+         paints the splash itself — the bundled stylesheet's own `body`
+         rule (off-white, the app's real background) loads shortly after
+         and naturally takes over once it does. -->
+    <style>body { background: #0a0d0b; }</style>
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
