@@ -130,6 +130,19 @@ function useMeasuredHeight(ref: React.RefObject<HTMLElement | null>): number {
 // bump's proportions never visibly jump once the real measurement lands.
 const FALLBACK_NAV_HEIGHT = 68;
 
+// Some mobile browsers (notably iOS Safari/WKWebView with a floating/
+// collapsed toolbar) position a `fixed; bottom: 0` element against the
+// LARGE viewport (chrome fully hidden) rather than the actual visible one,
+// so when their own toolbar floats up over the bottom of the screen, this
+// bar's `pb-safe`-measured height stops covering the real gap and a sliver
+// of the page's own white background shows through underneath it. The fix
+// isn't to reposition the bar (its content row is exactly where it should
+// be) — it's to make only the BACKGROUND overshoot past the bar's own
+// logical bottom edge, so whatever that gap reveals is still this bar's
+// surface, not the page behind it. Purely extra, harmless overflow: it
+// sits below the real viewport bottom and is naturally clipped there.
+const BOTTOM_BLEED = 60;
+
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
     `/messages` is the other case: a real chat composer needs the entire
@@ -243,7 +256,11 @@ export function BottomNav() {
   const measuredNavHeight = useMeasuredHeight(navRef);
   const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
   const backdropHeight = navHeight + HILL_RISE;
-  const navFlatY = HILL_RISE / backdropHeight;
+  // The clip-path's fractions are relative to the (taller, bled) glass
+  // div's own box below, not `backdropHeight` — otherwise adding the bleed
+  // would squash the hill's proportions instead of just extending the flat
+  // bottom further down.
+  const navFlatY = HILL_RISE / (backdropHeight + BOTTOM_BLEED);
   const navClipPath = useMemo(() => buildNavClipPath(navFlatY), [navFlatY]);
 
   if (!visible) return null;
@@ -296,8 +313,8 @@ export function BottomNav() {
           own contour; the bar's ordinary top shadow is the separate
           `shadow-[...]` utility on `<nav>` itself, untouched. */}
       <div
-        className="glass pointer-events-none absolute inset-x-0 bottom-0"
-        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
+        className="glass pointer-events-none absolute inset-x-0"
+        style={{ bottom: -BOTTOM_BLEED, height: backdropHeight + BOTTOM_BLEED, clipPath: 'url(#signal-nav-clip)' }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
