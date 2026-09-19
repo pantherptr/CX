@@ -81,7 +81,7 @@ const trustRow: { icon: IconName; label: string }[] = [
 /** Real, measured facts from the catalogue — no invented numbers. */
 const trustStats: { value: number; decimals?: number; label: string }[] = [
   { value: catalogue.cities, label: 'European cities' },
-  { value: catalogue.vehicles, label: 'Cars on the platform' },
+  { value: catalogue.vehicles, label: 'Cars listed' },
   { value: catalogue.meanRating, decimals: 2, label: 'Average rating' },
 ];
 
@@ -103,6 +103,12 @@ const whyCx: { icon: IconName; title: string; description: string }[] = [
   { icon: 'headset', title: '24/7 Support', description: "We're here whenever you need us — before, during and after your journey." },
 ];
 
+const howSteps: { icon: IconName; title: string; desc: string }[] = [
+  { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type, and read real reviews from past trips.' },
+  { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. Free cancellation where available.' },
+  { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
+];
+
 /** The five categories the homepage spotlights, in display order. `key`
  *  matches the real `car_category` enum (and Browse's `?type=` filter);
  *  `label` is only the plural, marketing-friendly copy shown on the tile. */
@@ -118,10 +124,10 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
   const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
   return (
     <div className="text-center sm:text-left">
-      <p ref={ref} className="font-display text-4xl font-semibold tabular-nums text-ink sm:text-5xl">
+      <p ref={ref} className="font-display text-3xl font-semibold tabular-nums text-ink sm:text-5xl">
         {decimals ? animated.toFixed(decimals) : animated}
       </p>
-      <p className="mt-1.5 text-detail text-muted">{label}</p>
+      <p className="mt-1 text-caption text-muted sm:mt-1.5 sm:text-detail">{label}</p>
     </div>
   );
 }
@@ -146,6 +152,10 @@ export default function Home() {
       };
     }).filter((t) => t.count > 0);
   }, [allCars]);
+
+  // A real car photo for the delivery story (second-best rated so it
+  // differs from the first fleet card).
+  const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
 
   // Top-rated cars, real data — the fleet rail right after the hero.
   const fleetCars = useMemo(() => {
@@ -279,6 +289,82 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
+      <section className="container-page section-tight">
+        <SectionHead
+          eyebrow="How it works"
+          title="From search to road in three steps."
+          action={
+            <Link
+              to="/how-it-works"
+              className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
+            >
+              Learn more <Icon name="arrowRight" size={15} />
+            </Link>
+          }
+        />
+        <ol className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
+          {howSteps.map((st, i) => (
+            <Reveal key={st.title} delay={i * 80}>
+              <li className="flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                  <Icon name={st.icon} size={20} />
+                </span>
+                <div>
+                  <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">Step {i + 1}</p>
+                  <h3 className="mt-1 font-display text-lg font-semibold text-ink">{st.title}</h3>
+                  <p className="mt-1.5 text-detail leading-relaxed text-muted">{st.desc}</p>
+                </div>
+              </li>
+            </Reveal>
+          ))}
+        </ol>
+      </section>
+
+      {/* ================= DELIVERY — the emotional promise ================= */}
+      <section className="container-page section-tight">
+        <Reveal>
+          <div className="grid overflow-hidden rounded-[1.75rem] border border-line bg-surface lg:grid-cols-2">
+            <div className="relative min-h-[220px] bg-panel sm:min-h-[300px]">
+              {deliveryImage && (
+                <Img src={unsplash(deliveryImage, 1000)} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={null} />
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
+              <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+                <Icon name="pin" size={14} className="text-accent" /> Delivered to your door
+              </span>
+            </div>
+            <div className="px-6 py-9 sm:px-10 sm:py-12">
+              <p className="eyebrow">CX Delivery</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+                Your journey starts at your door.
+              </h2>
+              <p className="mt-3 text-copy leading-relaxed text-muted">
+                Land in a new city and your car is already waiting. No queues, no counters, no detours — just the
+                first mile of your trip, without the hassle.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  'Choose delivery at checkout, to the address you pick',
+                  'Hosts set their own delivery fee — you see it before you pay',
+                  'Prefer to collect? Pick up from your host instead',
+                ].map((t) => (
+                  <li key={t} className="flex items-start gap-3 text-body text-ink-soft">
+                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700">
+                      <Icon name="check" size={12} strokeWidth={3} />
+                    </span>
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/browse" className="btn btn-accent-bright btn-lg mt-8">
+                Find a car near you <Icon name="arrowRight" size={17} />
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ================= CONCIERGE — find your CX ================= */}
       <section className="container-page section">
         <Reveal>
@@ -321,7 +407,7 @@ export default function Home() {
 
           <div className="relative grid lg:grid-cols-2 lg:items-stretch">
             {/* -------- Automotive image (reuses the optimized hero photo) -------- */}
-            <div className="relative order-1 min-h-[260px] overflow-hidden sm:min-h-[340px] lg:order-none lg:min-h-full">
+            <div className="relative order-1 min-h-[200px] overflow-hidden sm:min-h-[340px] lg:order-none lg:min-h-full">
               <Img
                 src={HERO_IMAGE}
                 alt=""
@@ -332,7 +418,7 @@ export default function Home() {
             </div>
 
             {/* -------- Benefits + trust -------- */}
-            <div className="order-2 px-6 py-10 sm:px-10 sm:py-14 lg:order-none lg:px-12">
+            <div className="order-2 px-5 py-8 sm:px-10 sm:py-14 lg:order-none lg:px-12">
               <Reveal>
                 <p className="eyebrow text-accent-bright">Why CX</p>
                 <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-[2.75rem] sm:leading-[1.05]">
@@ -343,7 +429,7 @@ export default function Home() {
                 </p>
               </Reveal>
 
-              <div className="mt-8 grid gap-x-6 gap-y-7 sm:grid-cols-2">
+              <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-7">
                 {whyCx.map((b, i) => (
                   <Reveal key={b.title} delay={120 + i * 80}>
                     <div className="group flex flex-col gap-3">
@@ -351,8 +437,8 @@ export default function Home() {
                         <Icon name={b.icon} size={20} />
                       </span>
                       <div>
-                        <p className="text-label font-semibold uppercase tracking-[0.12em] text-on-noir">{b.title}</p>
-                        <p className="mt-1.5 text-detail leading-relaxed text-on-noir-muted">{b.description}</p>
+                        <p className="text-label font-semibold uppercase tracking-[0.1em] text-on-noir">{b.title}</p>
+                        <p className="mt-1.5 text-caption leading-relaxed text-on-noir-muted sm:text-detail">{b.description}</p>
                       </div>
                     </div>
                   </Reveal>
@@ -372,18 +458,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* -------- CTA band -------- */}
-          <Reveal>
-            <div className="relative flex flex-col items-start justify-between gap-5 border-t border-white/10 px-6 py-8 sm:flex-row sm:items-center sm:px-10 lg:px-12">
-              <div>
-                <p className="font-display text-xl font-semibold text-on-noir sm:text-2xl">Ready to drive?</p>
-                <p className="mt-1 text-body text-on-noir-muted">Find your next car and start your journey.</p>
-              </div>
-              <Link to="/browse" className="btn btn-accent-bright btn-lg shrink-0">
-                Explore Cars <Icon name="arrowRight" size={17} />
-              </Link>
-            </div>
-          </Reveal>
         </div>
       </section>
 
@@ -400,10 +474,10 @@ export default function Home() {
             </Link>
           }
         />
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
+        <div className="scrollbar-none -mx-5 mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-5 lg:gap-5">
           {(categoryTiles ?? Array.from({ length: 5 })).map((tile, i) =>
             tile ? (
-              <Reveal key={tile.key} delay={i * 60}>
+              <Reveal key={tile.key} delay={i * 60} className="w-[46vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
                 <Link to={`/browse?type=${encodeURIComponent(tile.key)}`} className="card card-hover group block overflow-hidden">
                   <div className="aspect-[4/3] overflow-hidden bg-panel">
                     {tile.image && (
@@ -423,7 +497,7 @@ export default function Home() {
                 </Link>
               </Reveal>
             ) : (
-              <div key={i} className="card overflow-hidden">
+              <div key={i} className="card w-[46vw] max-w-[220px] shrink-0 overflow-hidden sm:w-auto sm:max-w-none">
                 <div className="skeleton aspect-[4/3]" />
                 <div className="space-y-2 p-3.5">
                   <div className="skeleton h-4 w-3/5 rounded-md" />
@@ -435,35 +509,96 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= SIGNAL — small, elegant, one clear CTA ================= */}
+      {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
-          <div className="flex flex-col items-center gap-6 rounded-2xl border border-line bg-panel/50 px-6 py-9 text-center sm:flex-row sm:justify-between sm:px-10 sm:text-left">
-            <div className="flex items-center gap-5">
-              <span className="hidden h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-accent-050 text-accent-700 sm:flex">
-                <SignalLogo size={30} />
-              </span>
-              <div>
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-line bg-panel px-6 py-10 sm:px-12 sm:py-14">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{ background: 'radial-gradient(50% 70% at 100% 0%, rgba(0,212,71,0.12), transparent 65%)' }}
+            />
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
+                  <SignalLogo size={26} />
+                </span>
                 <p className="eyebrow">CX SIGNAL</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold text-ink text-balance sm:text-[1.75rem]">
-                  The official voice of CX Rent.
-                </h2>
-                <p className="mt-2 max-w-md text-body leading-relaxed text-muted">
-                  News, announcements and new cars — straight from the CX Rent team. One feed, no noise.
-                </p>
               </div>
+              <h2 className="mt-4 max-w-2xl font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+                Great drives deserve to be shared.
+              </h2>
+              <p className="mt-3 max-w-xl text-copy leading-relaxed text-muted">
+                SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip
+                worth remembering.
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
+                {[
+                  { icon: 'sparkles' as IconName, title: 'Straight from CX', desc: 'News, announcements and new cars from the CX Rent team. One feed, no noise.' },
+                  { icon: 'heart' as IconName, title: 'Real stories', desc: 'Verified hosts and drivers share their cars and their drives — Stories, Respect and more.' },
+                  { icon: 'trending' as IconName, title: 'A stage for your car', desc: 'Hosts can show their car to the community and put it in front of renters who care.' },
+                ].map((f) => (
+                  <div key={f.title} className="flex items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:block">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                      <Icon name={f.icon} size={19} />
+                    </span>
+                    <div className="sm:mt-4">
+                      <h3 className="font-display text-lg font-semibold text-ink">{f.title}</h3>
+                      <p className="mt-1 text-detail leading-relaxed text-muted sm:mt-1.5">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link to="/signal" className="btn btn-accent-bright btn-lg mt-8">
+                Open Signal <Icon name="arrowRight" size={17} />
+              </Link>
             </div>
-            <Link to="/signal" className="btn btn-accent-bright btn-lg shrink-0">
-              Open Signal <Icon name="arrowRight" size={17} />
-            </Link>
           </div>
         </Reveal>
       </section>
 
+      {/* ================= HOSTS — turn a parked car into income ================= */}
+      <section className="container-page section-tight">
+        <Reveal>
+          <div className="grid items-center gap-8 rounded-[1.75rem] border border-line bg-surface px-6 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <p className="eyebrow">For car owners</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+                Your car is parked. It could be earning.
+              </h2>
+              <p className="mt-3 max-w-lg text-copy leading-relaxed text-muted">
+                Share the car you love with drivers who will treat it right. Set your own price, decide how it is
+                handed over, and stay in control of every trip.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/list-your-car" className="btn btn-primary btn-lg">
+                  List your car <Icon name="arrowRight" size={17} />
+                </Link>
+                <Link to="/how-it-works" className="btn btn-secondary btn-lg">
+                  How hosting works
+                </Link>
+              </div>
+            </div>
+            <ul className="space-y-3">
+              {[
+                { icon: 'euro' as IconName, t: 'You set the daily rate — and receive it in full' },
+                { icon: 'car' as IconName, t: 'Offer pickup, delivery, or both' },
+                { icon: 'shield' as IconName, t: 'Verified renters, protection on every trip' },
+              ].map((r) => (
+                <li key={r.t} className="flex items-center gap-4 rounded-2xl border border-line bg-panel/60 p-4">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                    <Icon name={r.icon} size={19} />
+                  </span>
+                  <span className="text-body font-medium text-ink-soft">{r.t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+      </section>
 
       {/* ================= TRUST — short, measured, no cards ================= */}
       <section className="container-page section">
-        <div className="grid grid-cols-1 gap-8 border-y border-line py-10 sm:grid-cols-3 sm:gap-6 sm:py-12">
+        <div className="grid grid-cols-3 gap-3 border-y border-line py-8 sm:gap-6 sm:py-12">
           {trustStats.map((s) => (
             <StatCounter key={s.label} {...s} />
           ))}
@@ -478,7 +613,7 @@ export default function Home() {
               Ready for your next journey?
             </h2>
             <p className="max-w-md text-copy leading-relaxed text-muted">
-              Join thousands of drivers already booking premium cars across Europe with CX.
+              Premium cars from verified hosts, in {catalogue.cities} European cities.
             </p>
             <Link to="/browse" className="btn btn-accent-bright btn-lg">
               Explore Cars <Icon name="arrowRight" size={17} />

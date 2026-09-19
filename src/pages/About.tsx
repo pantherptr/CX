@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
 import { SectionHead } from '../components/primitives';
+import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
+import { Reveal } from '../components/motion';
 import { unsplash, avatar } from '../lib/img';
+import { catalogue } from '../lib/catalogue';
 
 const values: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'shield', title: 'Trust first', desc: 'Every host and vehicle is verified. Safety and transparency underpin every decision we make.' },
@@ -21,57 +23,69 @@ const team = [
 export default function About() {
   return (
     <div>
-      {/* Hero */}
-      <section className="container-page pt-14">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="eyebrow mb-3">Our story</p>
-          <h1 className="font-display text-4xl font-semibold leading-[1.04] text-ink text-balance sm:text-[3.4rem]">
-            The premium way to move across Europe.
-          </h1>
-          <p className="mt-5 text-lead leading-relaxed text-muted text-pretty">
-            CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves.
-            Today we connect tens of thousands of drivers with trusted local hosts in seven cities — and we’re just getting started.
-          </p>
-        </div>
-        <div className="mt-12 overflow-hidden rounded-[1.75rem] border border-line">
-          <Img
-            src={unsplash('photo-1503376780353-7e6692767b70', 1600)}
-            alt=""
-            className="aspect-[21/9] w-full object-cover"
-            fallback={<div className="aspect-[21/9] w-full bg-panel" />}
-          />
-        </div>
+      <PageHero
+        eyebrow="Our story"
+        title="The premium way to move across Europe."
+        lead={`CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves. Today we connect drivers with trusted local hosts across ${catalogue.cities} European cities — and we’re just getting started.`}
+      />
+      <section className="container-page -mt-8 sm:-mt-12">
+        <Reveal>
+          <div className="overflow-hidden rounded-[1.75rem] border border-line shadow-card">
+            <Img
+              src={unsplash('photo-1503376780353-7e6692767b70', 1600)}
+              alt=""
+              className="aspect-[16/9] w-full object-cover sm:aspect-[21/9]"
+              fallback={<div className="aspect-[21/9] w-full bg-panel" />}
+            />
+          </div>
+        </Reveal>
       </section>
 
       {/* Stats */}
       <section className="container-page mt-16">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { v: '40,000+', l: 'Trips completed' },
-            { v: '12,400+', l: 'Cars listed' },
-            { v: '7', l: 'European cities' },
-            { v: '4.9', l: 'Average rating', star: true },
+            { v: String(catalogue.cities), l: 'European cities' },
+            { v: String(catalogue.vehicles), l: 'Cars listed' },
+            { v: String(catalogue.hosts), l: 'Verified hosts' },
+            { v: catalogue.meanRating.toFixed(2), l: 'Average rating', star: true },
           ].map((s) => (
-            <div key={s.l} className="card p-6 text-center">
-              <p className="flex items-center justify-center gap-1.5 font-display text-3xl font-semibold text-ink sm:text-4xl">
+            <div key={s.l} className="rounded-2xl border border-line bg-surface p-5 text-center sm:p-6">
+              <p className="flex items-center justify-center gap-1.5 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
                 {s.v}
-                {s.star && <Icon name="star" size={24} className="text-star" fill />}
+                {s.star && <Icon name="star" size={22} className="text-star" fill />}
               </p>
-              <p className="mt-1 text-detail text-muted">{s.l}</p>
+              <p className="mt-1 text-caption text-muted sm:text-detail">{s.l}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* What makes CX different */}
+      <section className="container-page mt-24">
+        <SectionHead center eyebrow="The CX difference" title="A rental that feels like it was made for you." />
+        <div className="mt-9">
+          <FeatureGrid
+            items={[
+              { icon: 'verified', title: 'Curated, not crowded', desc: 'Every listing is reviewed before it goes live, so the fleet stays worth driving.' },
+              { icon: 'pin', title: 'Delivered to your door', desc: 'Hosts can bring the car to you, so your trip starts the moment you land.' },
+              { icon: 'heart', title: 'A community, not a counter', desc: 'Real hosts, real drivers, and SIGNAL to share the moments in between.' },
+            ]}
+          />
         </div>
       </section>
 
       {/* Values */}
       <section className="container-page mt-24">
         <SectionHead eyebrow="What we stand for" title="Principles that guide us" />
-        <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {values.map((v) => (
-            <div key={v.title} className="card p-6">
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent-050 text-accent"><Icon name={v.icon} size={22} /></span>
-              <h3 className="mt-4 font-medium text-ink">{v.title}</h3>
-              <p className="mt-1.5 text-detail leading-relaxed text-muted">{v.desc}</p>
+            <div key={v.title} className="flex items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-0 sm:p-6">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent-050 text-accent-700"><Icon name={v.icon} size={22} /></span>
+              <div className="sm:mt-4">
+              <h3 className="font-medium text-ink">{v.title}</h3>
+              <p className="mt-1 text-detail leading-relaxed text-muted">{v.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -99,15 +113,13 @@ export default function About() {
       </section>
 
       {/* CTA */}
-      <section className="container-page mt-24">
-        <div className="flex flex-col items-center gap-6 rounded-[1.75rem] border border-line bg-panel px-6 py-14 text-center">
-          <h2 className="font-display text-3xl font-semibold text-balance sm:text-4xl">Join the journey.</h2>
-          <p className="max-w-md text-copy text-muted">Whether you’re driving or hosting, there’s a place for you at CX.</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link to="/browse" className="btn btn-accent btn-lg">Find a car <Icon name="arrowRight" size={17} /></Link>
-            <Link to="/list-your-car" className="btn btn-secondary btn-lg">List your car</Link>
-          </div>
-        </div>
+      <section className="container-page mb-24 mt-24">
+        <CtaBand
+          title="Join the journey."
+          text="Whether you’re driving or hosting, there’s a place for you at CX."
+          primary={{ to: '/browse', label: 'Find a car' }}
+          secondary={{ to: '/list-your-car', label: 'List your car' }}
+        />
       </section>
     </div>
   );

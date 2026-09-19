@@ -31,6 +31,7 @@ const Garage = lazy(() => import('./pages/Garage'));
 const Signal = lazy(() => import('./pages/Signal'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
+const HostLanding = lazy(() => import('./pages/HostLanding'));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
@@ -130,6 +131,12 @@ function EmpireToSignalRedirect() {
   if (postId) return <Navigate to={`/signal/post/${postId}`} replace />;
   if (highlightId) return <Navigate to={`/signal/highlight/${highlightId}`} replace />;
   return <Navigate to="/signal" replace />;
+}
+
+function ListCarEntry() {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  return session ? <ListCar /> : <HostLanding />;
 }
 
 function MarketingLayout() {
@@ -259,13 +266,15 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
 
-          {/* Booking and List Your Car need a real signed-in user, but
+          {/* Signed-out visitors get the host landing page; the listing form itself needs an account. */}
+          <Route path="/list-your-car" element={<ListCarEntry />} />
+
+          {/* Booking needs a real signed-in user, but
               keep the marketing chrome (Navbar/Footer) rather than the
               dashboard shell — nest ProtectedRoute inside MarketingLayout
               for them. */}
           <Route element={<ProtectedRoute />}>
             <Route path="/book/:slug" element={<Booking />} />
-            <Route path="/list-your-car" element={<ListCar />} />
           </Route>
         </Route>
 

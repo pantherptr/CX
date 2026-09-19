@@ -6,6 +6,7 @@ import { ConciergeLauncher } from '../components/Concierge';
 import { Img, Reveal, useCountUp } from '../components/motion';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SectionHead } from '../components/primitives';
+import { PageHero, FeatureGrid } from '../components/marketing';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
 import { useCompare } from '../lib/compareStore';
@@ -243,30 +244,25 @@ export default function Garage() {
   // what's behind sign-in rather than bouncing away.
   if (!session) {
     return (
-      <div className="relative overflow-hidden bg-noir">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{ background: 'radial-gradient(70% 55% at 20% 10%, rgba(0,212,71,0.16), transparent 65%)' }}
-        />
-        <div className="container-page relative flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
-          <Reveal>
-            <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-accent-bright">
-              <Icon name="key" size={26} />
-            </span>
-          </Reveal>
-          <Reveal delay={80}>
-            <h1 className="mt-6 font-display text-3xl font-semibold text-on-noir sm:text-5xl">Your personal CX Garage</h1>
-          </Reveal>
-          <Reveal delay={140}>
-            <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted">
-              Sign in to save cars, track your drives and build your collection.
-            </p>
-          </Reveal>
-          <Reveal delay={200}>
-            <Link to="/login" state={{ from: { pathname: '/garage' } }} className="btn btn-accent-bright btn-lg mt-7">
-              Sign In <Icon name="arrowRight" size={17} />
-            </Link>
-          </Reveal>
+      <div>
+        <PageHero
+          eyebrow="CX Garage"
+          title="Every car you love, in one place."
+          lead="Your personal garage keeps the cars you save, the drives you take and the rewards you earn — so your next journey always starts with a head start."
+        >
+          <Link to="/login" state={{ from: { pathname: '/garage' } }} className="btn btn-accent-bright btn-lg">
+            Sign in <Icon name="arrowRight" size={17} />
+          </Link>
+          <Link to="/signup" className="btn btn-secondary btn-lg">Create an account</Link>
+        </PageHero>
+        <div className="container-page mb-24 mt-14 sm:mt-20">
+          <FeatureGrid
+            items={[
+              { icon: 'heart', title: 'Save the cars you love', desc: 'Tap the heart on any car and it waits for you here, ready when you are.' },
+              { icon: 'trips', title: 'Keep every drive', desc: 'Your rentals, from first booking to the last mile, all in one timeline.' },
+              { icon: 'gift', title: 'Earn rewards', desc: 'Book, drive and grow your CX Score to unlock real booking discounts.' },
+            ]}
+          />
         </div>
       </div>
     );
