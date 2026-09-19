@@ -9,21 +9,21 @@ import { unsplash } from '../lib/img';
 
 const steps: { n: string; title: string; desc: string; icon: IconName; points: string[] }[] = [
   { n: '01', title: 'Find your car', icon: 'search', desc: 'Browse cars from trusted local hosts and filter by everything that matters.', points: ['Search by city, dates and car type', 'Filter on price, brand, features and rating', 'Read real reviews from past trips'] },
-  { n: '02', title: 'Book your trip', icon: 'calendar', desc: 'Reserve instantly or send a request, then pay securely in a few taps.', points: ['Instant book on eligible cars', 'Free cancellation up to 24h before', 'Protection included on every trip'] },
+  { n: '02', title: 'Book your trip', icon: 'calendar', desc: 'Reserve instantly or send a request, then pay securely in a few taps.', points: ['Instant book on eligible cars', 'Clear cancellation policy, shown before you pay', 'Protection included on every trip'] },
   { n: '03', title: 'Hit the road', icon: 'key', desc: 'Meet your host or unlock remotely, enjoy the drive, then rate your experience.', points: ['Pick up from your host, or have the car delivered where offered', '24/7 roadside assistance', 'Rate your host after the trip'] },
 ];
 
 const faqs = [
   { q: 'What do I need to rent a car?', a: 'A valid driving licence, a payment method and a verified CX account. Most cars require drivers to be at least 21 with two years of driving experience.' },
   { q: 'Is insurance included?', a: 'Yes. Every trip includes damage protection and 24/7 roadside assistance as standard, with the option to upgrade for extra peace of mind.' },
-  { q: 'Can I cancel my booking?', a: 'Absolutely. You can cancel free of charge up to 24 hours before your trip starts, directly from your dashboard.' },
+  { q: 'Can I cancel my booking?', a: 'Yes, from your dashboard. How much you get back depends on the cancellation policy the host chose (Flexible, Moderate or Strict), which is shown before you pay. If a host cancels, you always get a full refund.' },
   { q: 'How does pick-up work?', a: 'You’ll arrange handover with your host — many offer delivery to your hotel or the airport. Details appear in your trip once booked.' },
 ];
 
 const included: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'shield', title: 'Damage protection', desc: 'Every trip includes protection as standard, with upgrades if you want more.' },
   { icon: 'headset', title: '24/7 roadside help', desc: 'Support before, during and after your trip, whenever you need it.' },
-  { icon: 'calendar', title: 'Free cancellation', desc: 'Cancel free of charge up to 24 hours before your trip starts.' },
+  { icon: 'calendar', title: 'Clear cancellation terms', desc: 'Every car shows its cancellation policy before you pay. If a host cancels, you are fully refunded.' },
   { icon: 'verified', title: 'Verified hosts', desc: 'Connect with verified hosts and transparent rental information.' },
 ];
 

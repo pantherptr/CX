@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { POLICY_INFO } from '../lib/cancellationPolicy';
+import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
@@ -27,7 +29,6 @@ import NotFound from './NotFound';
 
 const STEPS = ['Trip details', 'Extras', 'Driver details', 'Payment', 'Confirmation'];
 const CONFIRMATION_STEP = STEPS.length - 1;
-const FLEX_SURCHARGE_RATE = 0.1;
 
 function Stepper({ step }: { step: number }) {
   return (
@@ -92,7 +93,9 @@ export default function Booking() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [dateError, setDateError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
-  const [fareTier, setFareTier] = useState<FareTier>('standard');
+  // Cancellation terms now come from the host's policy; the old renter-chosen
+  // fare tier is always 'standard' (no surcharge) for new bookings.
+  const fareTier: FareTier = 'standard';
   const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
   const { extras: extrasCatalog } = useExtrasCatalog();
   const availableReward = useAvailableReward(session?.user.id);
@@ -272,12 +275,11 @@ export default function Booking() {
     (sum, e) => sum + (e.priceModel === 'per_day' ? e.price * activeDays : e.price),
     0,
   );
-  const flexSurcharge = fareTier === 'flexible' ? Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE) * activeDays : 0;
   // Preview only, same trust level as the reward discount below — the
   // real fee is computed server-side in quote_booking() from the car's
   // own stored config, never trusted from here.
   const deliveryFee = fulfillmentType === 'delivery' && car.deliveryFeeType === 'fixed' ? car.deliveryFeeAmount ?? 0 : 0;
-  const preDiscountTotal = b.total + extrasTotal + flexSurcharge + deliveryFee;
+  const preDiscountTotal = b.total + extrasTotal + deliveryFee;
   // Preview only — what actually gets charged and shown on the
   // confirmation screen comes back from the real inserted row
   // (confirmed.discountAmount), computed server-side by prepare_booking.
@@ -399,11 +401,9 @@ export default function Booking() {
               </div>
             ))}
           </dl>
-          {(confirmed.fareTier === 'flexible' || confirmed.extras.length > 0) && (
+          {(confirmed.cancellationPolicy || confirmed.extras.length > 0) && (
             <div className="flex flex-wrap gap-2 border-t border-line px-5 py-4">
-              {confirmed.fareTier === 'flexible' && (
-                <span className="badge badge-accent"><Icon name="shield" size={12} /> Flexible cancellation</span>
-              )}
+              <span className="badge badge-accent"><Icon name="shield" size={12} /> {POLICY_INFO[confirmed.cancellationPolicy].label} cancellation</span>
               {confirmed.extras.map((ex) => (
                 <span key={ex.id} className="badge bg-panel-2 text-ink-soft">{ex.name}</span>
               ))}
@@ -553,34 +553,9 @@ export default function Booking() {
                 </div>
               </div>
 
-              <h2 className="mt-8 font-display text-lg font-semibold text-ink">Choose your fare</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {(
-                  [
-                    { tier: 'standard' as FareTier, title: 'Best price', desc: 'Free cancellation up to 24 hours before pick-up.', extra: null },
-                    {
-                      tier: 'flexible' as FareTier,
-                      title: 'Stay flexible',
-                      desc: 'Free cancellation any time before pick-up.',
-                      extra: `+${eur(Math.round(car.pricePerDay * FLEX_SURCHARGE_RATE))}/day`,
-                    },
-                  ] as const
-                ).map((opt) => (
-                  <button
-                    key={opt.tier}
-                    onClick={() => setFareTier(opt.tier)}
-                    className={`rounded-xl border p-4 text-left transition-colors ${
-                      fareTier === opt.tier ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-ink">{opt.title}</span>
-                      {opt.extra && <span className="text-caption font-medium text-muted">{opt.extra}</span>}
-                    </div>
-                    <p className="mt-1 text-detail text-muted">{opt.desc}</p>
-                  </button>
-                ))}
-              </div>
+              <h2 className="mt-8 font-display text-lg font-semibold text-ink">Cancellation policy</h2>
+              <p className="mt-1 text-detail text-muted">Set by the host of this car. Read it before you pay.</p>
+              <CancellationPolicyCard policy={car.cancellationPolicy ?? 'flexible'} className="mt-3" />
             </section>
           )}
 
@@ -725,9 +700,6 @@ export default function Booking() {
               <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
               <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
-              {fareTier === 'flexible' && (
-                <div className="flex justify-between"><dt className="text-muted">Flexible cancellation</dt><dd className="text-ink">{eur(flexSurcharge)}</dd></div>
-              )}
               {selectedExtraItems.map((ex) => (
                 <div key={ex.id} className="flex justify-between">
                   <dt className="text-muted">{ex.name}</dt>
@@ -751,7 +723,7 @@ export default function Booking() {
             </dl>
             <div className="flex items-center gap-2 border-t border-line bg-panel/50 px-4 py-3 text-caption text-muted">
               <Icon name="shield" size={14} className="text-accent" />
-              {fareTier === 'flexible' ? 'Free cancellation any time before pick-up' : 'Free cancellation up to 24h before pick-up'}
+              {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].label} cancellation · {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].tagline}
             </div>
           </div>
         </aside>

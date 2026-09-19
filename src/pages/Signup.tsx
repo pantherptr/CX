@@ -122,6 +122,11 @@ export default function Signup() {
               {submitting ? 'Creating account…' : 'Create account'}
               {!submitting && <Icon name="arrowRight" size={16} />}
             </button>
+            <p className="text-center text-caption leading-relaxed text-muted">
+              By creating an account you agree to our{' '}
+              <Link to="/terms" className="font-medium text-ink underline underline-offset-2">Terms</Link> and{' '}
+              <Link to="/privacy" className="font-medium text-ink underline underline-offset-2">Privacy Policy</Link>.
+            </p>
           </form>
         </div>
         <p className="mt-5 text-center text-body text-muted">

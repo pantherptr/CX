@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
 import type { Car, Host, Review } from '../../data/types';
 
@@ -63,6 +64,7 @@ interface CarRow {
   rating: number;
   trips: number;
   status: 'draft' | 'published';
+  cancellation_policy?: string | null;
   pickup_enabled: boolean;
   delivery_enabled: boolean;
   delivery_fee_type: 'free' | 'fixed';
@@ -120,6 +122,7 @@ function mapCar(row: CarRow): Car {
     hostId: row.host_id,
     reviews: (row.reviews ?? []).map(mapReview),
     status: row.status,
+    cancellationPolicy: isPolicy(row.cancellation_policy) ? row.cancellation_policy : 'flexible',
     pickupEnabled: row.pickup_enabled,
     deliveryEnabled: row.delivery_enabled,
     deliveryFeeType: row.delivery_fee_type,
@@ -297,6 +300,7 @@ export interface CreateCarInput {
   features: string[];
   instantBook: boolean;
   status: 'draft' | 'published';
+  cancellationPolicy: CancellationPolicy;
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
   deliveryFeeType: 'free' | 'fixed';
@@ -377,6 +381,7 @@ export async function createCar(
         features: input.features,
         instant_book: input.instantBook,
         status: input.status,
+        cancellation_policy: input.cancellationPolicy,
         pickup_enabled: input.pickupEnabled,
         delivery_enabled: input.deliveryEnabled,
         delivery_fee_type: input.deliveryFeeType,

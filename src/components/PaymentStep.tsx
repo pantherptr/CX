@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
 import { eur } from '../lib/format';
 
@@ -76,7 +77,12 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
           </p>
         )}
       </div>
-      <div className="mt-6 flex items-center justify-between">
+      <p className="mt-5 text-caption leading-relaxed text-muted">
+        By paying you agree to the{' '}
+        <Link to="/terms" target="_blank" className="font-medium text-ink underline underline-offset-2">Terms</Link> and the{' '}
+        <Link to="/cancellation-policy" target="_blank" className="font-medium text-ink underline underline-offset-2">Cancellation Policy</Link>.
+      </p>
+      <div className="mt-4 flex items-center justify-between">
         <button onClick={onBack} disabled={submitting} className="btn btn-ghost text-muted hover:text-ink disabled:opacity-60">
           <Icon name="chevronLeft" size={16} /> Back
         </button>

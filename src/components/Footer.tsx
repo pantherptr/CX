@@ -36,6 +36,14 @@ const columns: { title: string; links: { label: string; to: string }[] }[] = [
     ],
   },
   {
+    title: 'Legal',
+    links: [
+      { label: 'Terms of Service', to: '/terms' },
+      { label: 'Privacy Policy', to: '/privacy' },
+      { label: 'Cancellation Policy', to: '/cancellation-policy' },
+    ],
+  },
+  {
     title: 'Account',
     links: [
       { label: 'Sign in', to: '/login' },
@@ -74,7 +82,7 @@ export function Footer() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-accent-bright/60 via-accent-bright/15 to-transparent" />
 
       <div className="container-page relative py-16 sm:py-20">
-        <div className="grid gap-12 lg:grid-cols-[1.5fr_repeat(4,1fr)] lg:gap-10">
+        <div className="grid gap-12 lg:grid-cols-[1.5fr_repeat(5,1fr)] lg:gap-10">
           <div className="max-w-xs">
             <Logo variant="wordmark" />
             <p className="mt-5 text-body leading-relaxed text-muted text-pretty">

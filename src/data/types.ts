@@ -73,6 +73,8 @@ export interface Car {
    *  when deliveryFeeType is 'fixed'; deliveryRadiusKm/deliveryInstructions/
    *  delivery hours are host-facing, informational only (this schema has
    *  no geocoding to enforce a radius against). */
+  /** Host-chosen refund rules, see src/lib/cancellationPolicy.ts. */
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
   pickupEnabled?: boolean;
   deliveryEnabled?: boolean;
   deliveryFeeType?: 'free' | 'fixed';

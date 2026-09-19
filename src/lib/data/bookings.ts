@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
 import { unsplash } from '../img';
 import { apiUrl } from '../api';
@@ -84,6 +85,9 @@ export interface Booking {
   protectionAddon: boolean;
   pickupLocation: string | null;
   fareTier: FareTier;
+  /** Snapshot of the host's policy at booking time (migration 0066). */
+  cancellationPolicy: CancellationPolicy;
+  refundAmount: number;
   /** See supabase/migrations/0027_delivery_options.sql. */
   fulfillmentType: 'pickup' | 'delivery';
   deliveryAddress: string | null;
@@ -151,6 +155,8 @@ interface BookingRow {
   protection_addon: boolean;
   pickup_location: string | null;
   fare_tier: FareTier;
+  cancellation_policy?: string | null;
+  refund_amount?: number | null;
   fulfillment_type: 'pickup' | 'delivery';
   delivery_address: string | null;
   delivery_fee: number;
@@ -204,6 +210,8 @@ function mapBooking(row: BookingRow): Booking {
     protectionAddon: row.protection_addon,
     pickupLocation: row.pickup_location,
     fareTier: row.fare_tier,
+    cancellationPolicy: isPolicy(row.cancellation_policy) ? row.cancellation_policy : 'flexible',
+    refundAmount: Number(row.refund_amount ?? 0),
     fulfillmentType: row.fulfillment_type,
     deliveryAddress: row.delivery_address,
     deliveryFee: Number(row.delivery_fee),
@@ -534,10 +542,10 @@ export async function modifyBookingDates(
 }
 
 /** Routed through api/cancel-booking.ts (not a direct table update) so
- *  the standard-fare 24h cancellation window is enforced somewhere it
- *  can't be bypassed, and so the other party actually gets notified —
+ *  the host's cancellation policy and its refund are enforced somewhere
+ *  they can't be bypassed, and so the other party actually gets notified —
  *  see that file's own comment for why this moved server-side. */
-export async function cancelBooking(id: string): Promise<{ error: string | null }> {
+export async function cancelBooking(id: string): Promise<{ error: string | null; refundAmount?: number; refundPercent?: number }> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -550,7 +558,7 @@ export async function cancelBooking(id: string): Promise<{ error: string | null 
     });
     const body = await res.json().catch(() => null);
     if (!res.ok) return { error: body?.error ?? 'Could not cancel this booking.' };
-    return { error: null };
+    return { error: null, refundAmount: Number(body?.refundAmount ?? 0), refundPercent: Number(body?.refundPercent ?? 0) };
   } catch {
     return { error: 'Could not reach the server — please try again.' };
   }

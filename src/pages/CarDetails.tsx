@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { POLICY_INFO } from '../lib/cancellationPolicy';
+import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ConfiguratorLauncher } from '../components/Configurator';
 import { fetchCarWithHost, fetchSimilarCars } from '../lib/data/cars';
@@ -366,10 +368,11 @@ export default function CarDetails() {
                     <Icon name="calendar" size={20} />
                   </span>
                   <div>
-                    <p className="font-medium text-ink">Cancellation policy</p>
+                    <p className="font-medium text-ink">
+                      Cancellation: {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].label}
+                    </p>
                     <p className="mt-1 text-detail leading-relaxed text-muted">
-                      Free cancellation up to 24 hours before pick-up. After that, the trip is
-                      confirmed with your host.
+                      {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].tagline} Details below.
                     </p>
                   </div>
                 </div>
@@ -386,6 +389,11 @@ export default function CarDetails() {
                   </div>
                 </div>
               </div>
+            </section>
+
+            <section className="mt-8 border-t border-line pt-8">
+              <h2 className="mb-5 font-display text-xl font-semibold text-ink">Cancellation policy</h2>
+              <CancellationPolicyCard policy={car.cancellationPolicy ?? 'flexible'} />
             </section>
 
             {/* Host */}

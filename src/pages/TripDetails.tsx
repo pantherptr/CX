@@ -1,4 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import { refundFor, POLICY_INFO } from '../lib/cancellationPolicy';
+import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
@@ -199,11 +201,13 @@ export default function TripDetails() {
   const protection = Math.round(booking.car.pricePerDay * 0.18) * days;
   const flexSurcharge = booking.fareTier === 'flexible' ? Math.round(booking.car.pricePerDay * 0.1) * days : 0;
 
-  // Flexible-tier bookings can be cancelled any time before the trip
-  // starts; standard-tier keeps the 24h-ahead rule.
-  const canCancel =
-    (phase === 'upcoming' || phase === 'active') &&
-    (booking.fareTier === 'flexible' ? daysUntil(booking.startDate) >= 0 : daysUntil(booking.startDate) >= 1);
+  // Renters can cancel any time before the trip starts; how much comes back
+  // is decided by the host's policy on this booking (see cancel-booking API).
+  const hoursUntilStart = (parseISO(booking.startDate).getTime() - Date.now()) / 3_600_000;
+  const canCancel = phase === 'upcoming' && hoursUntilStart >= 0;
+  const refundPreview = refundFor(booking.cancellationPolicy, booking.startDate, booking.totalPrice, {
+    anytime: booking.fareTier === 'flexible',
+  });
   const canModify = phase === 'upcoming';
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     booking.fulfillmentType === 'delivery' ? booking.deliveryAddress || '' : booking.pickupLocation || booking.car.location,
@@ -265,16 +269,24 @@ export default function TripDetails() {
   };
 
   const handleCancel = async () => {
-    if (!confirm('Cancel this trip? This cannot be undone.')) return;
+    const summary =
+      refundPreview.amount > 0
+        ? `You will be refunded ${eur(refundPreview.amount)} (${refundPreview.percent}%) to your original payment method.`
+        : 'Under this trip\'s cancellation policy you will not receive a refund.';
+    if (!confirm(`Cancel this trip?\n\n${summary}\n\nThis cannot be undone.`)) return;
     setCancelling(true);
-    const { error } = await cancelBooking(booking.id);
+    const { error, refundAmount } = await cancelBooking(booking.id);
     setCancelling(false);
     if (error) {
       toast({ title: 'Could not cancel trip', desc: error, icon: 'info' });
       return;
     }
-    setBooking({ ...booking, status: 'cancelled' });
-    toast({ title: 'Trip cancelled', icon: 'checkCircle' });
+    setBooking({ ...booking, status: 'cancelled', refundAmount: refundAmount ?? 0 });
+    toast({
+      title: 'Trip cancelled',
+      desc: refundAmount && refundAmount > 0 ? `${eur(refundAmount)} is on its way back to your card.` : undefined,
+      icon: 'checkCircle',
+    });
   };
 
   const openModify = () => {
@@ -563,8 +575,8 @@ export default function TripDetails() {
           <p className="mt-2 text-detail leading-relaxed text-muted">
             This trip includes damage protection and 24/7 roadside assistance.{' '}
             {booking.fareTier === 'flexible'
-              ? 'Your flexible fare includes free cancellation any time before pick-up.'
-              : 'Free cancellation up to 24 hours before pick-up — after that, the booking stays confirmed with your host.'}
+              ? 'Your flexible fare includes a full refund any time before pick-up.'
+              : `Cancellation policy: ${POLICY_INFO[booking.cancellationPolicy].label}. ${POLICY_INFO[booking.cancellationPolicy].tagline}`}
           </p>
         </section>
         </Reveal>
@@ -625,6 +637,19 @@ export default function TripDetails() {
           </Reveal>
         )}
 
+        {(phase === 'upcoming' || phase === 'cancelled' || phase === 'refunded') && (
+          <Reveal>
+            <section className="mt-8">
+              {booking.refundAmount > 0 && (phase === 'cancelled' || phase === 'refunded') && (
+                <p className="mb-4 rounded-xl bg-accent-050 px-4 py-3 text-detail font-medium text-accent-700">
+                  {eur(booking.refundAmount)} was refunded to your original payment method.
+                </p>
+              )}
+              <CancellationPolicyCard policy={booking.cancellationPolicy} />
+            </section>
+          </Reveal>
+        )}
+
         {/* Support */}
         <Reveal>
         <section className="mt-8 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row">
@@ -635,7 +660,7 @@ export default function TripDetails() {
             </button>
           ) : phase === 'upcoming' || phase === 'active' ? (
             <p className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-center text-detail text-muted">
-              Cancellation window has passed — contact your host or support.
+              This trip has already started — contact your host or support.
             </p>
           ) : null}
         </section>
@@ -649,8 +674,8 @@ export default function TripDetails() {
             <p>By accepting, you confirm you'll use {booking.car.make} {booking.car.model} only as licensed and insured, return it by {new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} in the condition it was received, and report any damage to your host immediately.</p>
             <p>This trip includes damage protection and 24/7 roadside assistance, as shown in your payment breakdown.{' '}
               {booking.fareTier === 'flexible'
-                ? 'Your flexible fare allows free cancellation any time before pick-up.'
-                : 'Free cancellation applies up to 24 hours before pick-up.'}
+                ? 'Your flexible fare allows a full refund any time before pick-up.'
+                : `Your cancellation policy is ${POLICY_INFO[booking.cancellationPolicy].label}: ${POLICY_INFO[booking.cancellationPolicy].tagline}`}
             </p>
             <p>Fuel or charge should be returned at the same level as pick-up. Smoking is not permitted in the vehicle.</p>
           </div>

@@ -32,13 +32,13 @@ const faqs: { q: string; a: string; category: Category }[] = [
   },
   {
     category: 'Before you book',
-    q: 'What\'s the difference between "Best price" and "Stay flexible"?',
-    a: '"Best price" is the default fare with free cancellation up to 24 hours before pick-up. "Stay flexible" costs a small per-day surcharge but lets you cancel any time right up until pick-up.',
+    q: 'What are the cancellation policies?',
+    a: 'Every host chooses one policy for their car, and it is shown on the car page and at checkout before you pay. Flexible: full refund until 24 hours before pick-up. Moderate: full refund until 5 days before, 50% until 24 hours before. Strict: 50% refund until 7 days before pick-up. If a host cancels, you always get a full refund.',
   },
   {
     category: 'Booking & changes',
     q: 'What\'s the cancellation policy?',
-    a: 'Standard bookings include free cancellation up to 24 hours before your trip starts. Bookings on the flexible fare can cancel any time before pick-up. Cancel from your trip details page and any payment is released back to you automatically.',
+    a: 'It depends on the policy your host chose, which you saw before paying. Open your trip, choose Cancel trip, and we show exactly how much you will be refunded before you confirm. The refund goes back to the card you paid with automatically; your bank decides how long it takes to appear.',
   },
   {
     category: 'Booking & changes',

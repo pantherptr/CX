@@ -74,7 +74,7 @@ function HeroPhoto() {
 
 const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'shield', label: 'Verified hosts' },
-  { icon: 'calendar', label: 'Free cancellation' },
+  { icon: 'calendar', label: 'Clear cancellation terms' },
   { icon: 'headset', label: '24/7 support' },
 ];
 
@@ -99,13 +99,13 @@ const trustStats: { value: number; decimals?: number; label: string }[] = [
 const whyCx: { icon: IconName; title: string; description: string }[] = [
   { icon: 'verified', title: 'Verified Cars', description: 'Every vehicle is carefully reviewed and verified before being listed.' },
   { icon: 'shield', title: 'Trusted Hosts', description: 'Connect with verified hosts and transparent rental information.' },
-  { icon: 'calendar', title: 'Flexible Rentals', description: 'Flexible booking options and free cancellation where available.' },
+  { icon: 'calendar', title: 'Flexible Rentals', description: 'Every car shows its cancellation policy before you pay — and hosts who cancel always refund you in full.' },
   { icon: 'headset', title: '24/7 Support', description: "We're here whenever you need us — before, during and after your journey." },
 ];
 
 const howSteps: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type, and read real reviews from past trips.' },
-  { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. Free cancellation where available.' },
+  { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.' },
   { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
 ];
 

@@ -7,6 +7,8 @@ import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { createCar } from '../lib/data/cars';
 import { catalogue } from '../lib/catalogue';
+import { DEFAULT_POLICY, type CancellationPolicy } from '../lib/cancellationPolicy';
+import { CancellationPolicyPicker } from '../components/CancellationPolicy';
 import type { Car } from '../data/types';
 
 /**
@@ -86,6 +88,7 @@ export default function ListCar() {
   const [dragOver, setDragOver] = useState(false);
   const [price, setPrice] = useState(95);
   const [pickupEnabled, setPickupEnabled] = useState(true);
+  const [cancellationPolicy, setCancellationPolicy] = useState<CancellationPolicy>(DEFAULT_POLICY);
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [deliveryFeeType, setDeliveryFeeType] = useState<'free' | 'fixed'>('free');
   const [deliveryFeeAmount, setDeliveryFeeAmount] = useState('15');
@@ -191,6 +194,7 @@ export default function ListCar() {
         instantBook,
         status,
         pickupEnabled,
+        cancellationPolicy,
         deliveryEnabled,
         deliveryFeeType,
         deliveryFeeAmount: deliveryFeeType === 'fixed' ? Number(deliveryFeeAmount) || 0 : 0,
@@ -642,6 +646,14 @@ export default function ListCar() {
                     </Labeled>
                   </div>
                 )}
+              </div>
+
+              <div className="mt-8 border-t border-line pt-6">
+                <h3 className="font-display text-lg font-semibold text-ink">Cancellation policy</h3>
+                <p className="mt-1 text-body text-muted">
+                  Renters see this before they book. If you ever cancel a trip yourself, the renter always gets a full refund.
+                </p>
+                <CancellationPolicyPicker value={cancellationPolicy} onChange={setCancellationPolicy} />
               </div>
             </div>
           )}

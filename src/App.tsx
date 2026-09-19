@@ -32,6 +32,9 @@ const Signal = lazy(() => import('./pages/Signal'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
 const HostLanding = lazy(() => import('./pages/HostLanding'));
+const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
+const Cancellation = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Cancellation })));
 const HowItWorks = lazy(() => import('./pages/HowItWorks'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
@@ -265,6 +268,9 @@ export default function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/cancellation-policy" element={<Cancellation />} />
 
           {/* Signed-out visitors get the host landing page; the listing form itself needs an account. */}
           <Route path="/list-your-car" element={<ListCarEntry />} />

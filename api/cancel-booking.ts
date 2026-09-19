@@ -1,32 +1,30 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { refundFor, isPolicy } from './_lib/cancellationPolicy.js';
 import { applyCors } from './_lib/cors.js';
 import { sendBookingCancelledEmail } from './_lib/email.js';
 import { sendPushToUser } from './_lib/push.js';
 
 /**
- * Server-side cancellation — replaces the old direct `bookings.update()`
- * from the browser (src/lib/data/bookings.ts's old `cancelBooking`) so two
- * things that only make sense enforced centrally actually are:
+ * Server-side cancellation with an automatic, policy-based refund.
  *
- *  1. The standard-fare 24h cancellation window. It previously existed
- *     only as a disabled button in TripDetails.tsx — trivially bypassable
- *     by calling the Supabase update directly, since the RLS policy that
- *     lets a renter update their own booking has no concept of "but not
- *     this field, not this close to pick-up". A renter cancelling their
- *     own confirmed trip now has that window checked here; hosts/admins
- *     cancelling (a different, existing capability) are unaffected — that
- *     was never fare-tier-gated before, and isn't invented here either.
+ * The host's cancellation policy (snapshotted on the booking at booking
+ * time — see migration 0066) decides how much of a paid trip goes back to
+ * the renter's card: see api/_lib/cancellationPolicy.ts for the exact
+ * rules. A cancellation started by the host or by CX always refunds 100%.
+ * Everything lives here, not in the browser, because it moves real money
+ * and must not be bypassable.
  *
- *  2. A cancellation notification. Nothing fired one before because
- *     nothing server-side ever ran on cancellation.
+ * Order matters: the Stripe refund is created first, with an idempotency
+ * key, so a retry can never refund twice; only then is the booking marked
+ * cancelled. If the refund fails, the booking stays as it was.
  *
- * A 'pending'/'payment_processing' hold can also be released through
- * here (the same endpoint every "give up these dates" action goes
- * through), though the common case for that is release_payment_hold()
- * directly from the client via RLS (see src/lib/data/bookings.ts) — this
- * path exists so an admin/owner can also clear a stuck hold if needed.
+ * A 'pending'/'payment_processing' hold has not been charged, so there is
+ * nothing to refund — cancelling one just releases the dates.
  */
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (applyCors(req, res)) return;
 
@@ -67,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // shouldn't see this row at all gets a plain 404, not a permission leak.
   const { data: booking, error: fetchError } = await callerClient
     .from('bookings')
-    .select('id, renter_id, host_id, status, fare_tier, start_date')
+    .select('id, renter_id, host_id, status, fare_tier, start_date, total_price, cancellation_policy, stripe_payment_intent_id, stripe_deposit_intent_id, deposit_status')
     .eq('id', bookingId)
     .maybeSingle();
   if (fetchError || !booking) return res.status(404).json({ error: 'Booking not found.' });
@@ -84,32 +82,79 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'This booking can no longer be cancelled.' });
   }
 
-  // Only a renter's own voluntary cancellation is fare-tier-gated —
-  // matches TripDetails.tsx's existing `canCancel` intent, just enforced
-  // where it can't be bypassed. Parsed as local midnight (not UTC), so
-  // the boundary lands on the right side of midnight regardless of the
-  // server's or renter's timezone.
-  if (isRenter && !isAdmin && !isHost && booking.fare_tier !== 'flexible') {
-    const hoursUntilStart = (new Date(`${booking.start_date}T00:00:00`).getTime() - Date.now()) / 3_600_000;
-    if (hoursUntilStart < 24) {
-      return res.status(400).json({ error: 'This booking is within its non-refundable cancellation window and can no longer be cancelled.' });
-    }
+  const initiatedBy = isAdmin ? 'admin' : isHost && !isRenter ? 'host' : 'renter';
+  const policy = isPolicy(booking.cancellation_policy) ? booking.cancellation_policy : 'flexible';
+
+  // A trip that has already started can no longer be cancelled by the
+  // renter — same as before. (Host/CX cancellations are unaffected.)
+  const startsInHours = (new Date(`${booking.start_date}T00:00:00`).getTime() - Date.now()) / 3_600_000;
+  if (initiatedBy === 'renter' && booking.status === 'confirmed' && startsInHours < 0) {
+    return res.status(400).json({ error: 'This trip has already started and can no longer be cancelled here. Please contact support.' });
   }
 
-  const reason = isAdmin ? 'admin_cancelled' : isRenter ? 'renter_cancelled' : 'host_cancelled';
+  // Only a confirmed trip with a real charge has anything to refund.
+  const paid = booking.status === 'confirmed' && Boolean(booking.stripe_payment_intent_id);
+  const refund = paid
+    ? refundFor(policy, booking.start_date, Number(booking.total_price), {
+        initiatedBy,
+        // Older "Stay flexible" fares were sold as free cancellation any time before pick-up.
+        anytime: booking.fare_tier === 'flexible',
+      })
+    : { percent: 0, amount: 0, hoursUntilStart: startsInHours };
+
+  const reason = isAdmin ? 'admin_cancelled' : initiatedBy === 'renter' ? 'renter_cancelled' : 'host_cancelled';
 
   // Service-role from here — the authorization decision above is already
   // made; this just performs it and looks up who to notify.
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+
+  let stripeRefundId: string | null = null;
+  if (refund.amount > 0) {
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(500).json({ error: 'Refunds are not configured on this server yet.' });
+    try {
+      const r = await stripe.refunds.create(
+        { payment_intent: booking.stripe_payment_intent_id as string, amount: Math.round(refund.amount * 100) },
+        { idempotencyKey: `cancel-refund-${bookingId}` },
+      );
+      stripeRefundId = r.id;
+    } catch (err) {
+      console.error('[cancel-booking] Stripe refund failed for', bookingId, err);
+      const message = err instanceof Stripe.errors.StripeError ? err.message : 'Could not issue the refund.';
+      return res.status(502).json({ error: `We could not process your refund, so the booking was not cancelled. ${message}` });
+    }
+  }
+
+  // Release an uncaptured security deposit hold — never charged on a cancellation.
+  let depositStatus = booking.deposit_status;
+  if (booking.deposit_status === 'held' && booking.stripe_deposit_intent_id) {
+    try {
+      await stripe.paymentIntents.cancel(booking.stripe_deposit_intent_id);
+      depositStatus = 'released';
+    } catch (err) {
+      console.error('[cancel-booking] deposit release failed for', bookingId, err);
+    }
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from('bookings')
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: reason })
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancellation_reason: reason,
+      refund_amount: refund.amount,
+      refunded_at: refund.amount > 0 ? new Date().toISOString() : null,
+      stripe_refund_id: stripeRefundId,
+      deposit_status: depositStatus,
+    })
     .eq('id', bookingId)
     .in('status', ['pending', 'payment_processing', 'confirmed'])
     .select('id, reference, start_date, end_date, pickup_location, total_price, renter_id, host_id, car_id')
     .maybeSingle();
 
-  if (updateError) return res.status(500).json({ error: updateError.message });
+  if (updateError) {
+    if (stripeRefundId) console.error('[cancel-booking] refund', stripeRefundId, 'issued but booking update failed for', bookingId, updateError);
+    return res.status(500).json({ error: updateError.message });
+  }
   if (!updated) return res.status(409).json({ error: 'This booking was already cancelled.' });
 
   // Notify the other party — fire-and-forget, a notification failure must
@@ -162,5 +207,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[cancel-booking] notification failed for', bookingId, err);
   }
 
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, refundAmount: refund.amount, refundPercent: refund.percent });
 }
