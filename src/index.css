@@ -267,6 +267,31 @@
     .btn-glint__sweep { animation: none !important; opacity: 0 !important; }
   }
 
+  /* ---------- Photo glare sweep ----------
+     A diagonal light streak across a car photo on hover — the showroom-
+     light feel, distinct from `.btn-glint`'s looping button sweep above
+     (this one plays once per hover, not on a loop, and reads as light
+     crossing a glossy surface rather than a button's own shine). Pure
+     CSS driven by the existing `group`/`group-hover` pattern CarCard
+     already uses — no new JS, no new dependency. Ported from React
+     Bits' GlareHover (reactbits.dev) onto this app's own conventions. */
+  .card-glare__sweep {
+    position: absolute;
+    inset: -60%;
+    background: linear-gradient(115deg, transparent 45%, rgba(255, 255, 255, 0.5) 50%, transparent 55%);
+    transform: translate(-60%, -60%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 750ms var(--ease-out-expo), opacity 250ms ease;
+  }
+  .group:hover .card-glare__sweep {
+    transform: translate(60%, 60%);
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card-glare__sweep { transition: none !important; opacity: 0 !important; }
+  }
+
   /* ---------- Surfaces ---------- */
   .card {
     background: var(--color-surface);

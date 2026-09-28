@@ -137,6 +137,11 @@ export function CarCard({
               className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
               fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={28} /></span>}
             />
+            {/* A once-per-hover diagonal light sweep — the showroom-photo
+                feel, quiet until noticed. See .card-glare__sweep in
+                index.css for why this isn't the same effect as a button's
+                own glint. */}
+            <span className="card-glare__sweep" aria-hidden="true" />
             <div className="absolute left-3 top-3 flex gap-2">
               {car.instantBook && (
                 <span className="badge badge-glass">
