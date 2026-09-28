@@ -349,8 +349,9 @@ export default function TripDetails() {
         </div>
 
         {phase === 'upcoming' && (
-          <div className="mt-5 rounded-2xl bg-ink px-5 py-4 text-white">
-            <p className="text-body font-medium">
+          <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-accent/15 bg-accent-050 px-5 py-4">
+            <Icon name="clock" size={17} className="shrink-0 text-accent-700" />
+            <p className="text-body font-medium text-ink">
               Your trip starts in {daysUntil(booking.startDate)} {daysUntil(booking.startDate) === 1 ? 'day' : 'days'}
             </p>
           </div>

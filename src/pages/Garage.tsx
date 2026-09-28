@@ -540,17 +540,17 @@ export default function Garage() {
           )}
 
           {/* ================= FIND MY NEXT CX (CX Concierge) ================= */}
-          <section className="relative overflow-hidden rounded-[1.75rem] bg-noir p-6 sm:p-10">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-accent/10 bg-[#eaf7ef] p-6 shadow-card sm:p-10">
             <div
               className="pointer-events-none absolute inset-0 opacity-80"
-              style={{ background: 'radial-gradient(55% 55% at 85% 20%, rgba(0,212,71,0.16), transparent 62%)' }}
+              style={{ background: 'radial-gradient(55% 55% at 85% 20%, rgba(0,212,71,0.17), transparent 62%)' }}
             />
             <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-bright">
+              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
                 <Icon name="sparkles" size={14} /> CX Concierge
               </p>
-              <h2 className="mt-3 font-display text-2xl font-semibold text-on-noir sm:text-3xl">Find my next CX</h2>
-              <p className="mt-2 text-copy leading-relaxed text-on-noir-muted">
+              <h2 className="mt-3 font-display text-2xl font-semibold text-ink sm:text-3xl">Find my next CX</h2>
+              <p className="mt-2 text-copy leading-relaxed text-ink-soft">
                 Tell us how you want to drive — we'll match you to the right car from your fleet, personalised to your Garage.
               </p>
               <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-6" {...startScramble}>
