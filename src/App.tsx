@@ -32,6 +32,7 @@ const Signal = lazy(() => import('./pages/Signal'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
 const HostLanding = lazy(() => import('./pages/HostLanding'));
+const ManageCar = lazy(() => import('./pages/ManageCar'));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Cancellation = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Cancellation })));
@@ -293,6 +294,7 @@ export default function App() {
 
           <Route element={<HostRoute />}>
             <Route path="/host" element={<HostDashboard />} />
+            <Route path="/host/cars/:carId" element={<ManageCar />} />
           </Route>
 
           <Route element={<AdminRoute />}>

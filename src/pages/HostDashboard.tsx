@@ -577,13 +577,17 @@ export default function HostDashboard() {
                         <span>{stats?.bookings ?? 0} booking{stats?.bookings === 1 ? '' : 's'}</span>
                         <span className="font-medium text-ink">{eur(stats?.revenue ?? 0)} earned</span>
                       </div>
+                      <div className="mt-3 flex gap-2 border-t border-line pt-3">
+                        {published && (
+                          <Link to={`/cars/${c.slug}`} className="btn btn-secondary btn-sm flex-1 !py-1.5">View</Link>
+                        )}
+                        <Link to={`/host/cars/${c.id}`} className={`btn btn-secondary btn-sm !py-1.5 ${published ? 'flex-1' : 'w-full'}`}>Manage</Link>
+                      </div>
                     </div>
                   </>
                 );
-                return published ? (
-                  <Link key={c.id} to={`/cars/${c.slug}`} className="card overflow-hidden">{cardInner}</Link>
-                ) : (
-                  <div key={c.id} className="card overflow-hidden opacity-80">{cardInner}</div>
+                return (
+                  <div key={c.id} className={`card overflow-hidden ${published ? '' : 'opacity-80'}`}>{cardInner}</div>
                 );
               })}
             </div>

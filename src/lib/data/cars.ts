@@ -438,6 +438,42 @@ export async function createCar(
   };
 }
 
+export interface UpdateCarInput {
+  pricePerDay: number;
+  /** Omit to leave status untouched — used when it's an Owner Control
+   *  Center state (suspended/removed) the host shouldn't be able to flip
+   *  back to published from this form. */
+  status?: 'draft' | 'published';
+  cancellationPolicy: CancellationPolicy;
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  deliveryFeeType: 'free' | 'fixed';
+  deliveryFeeAmount: number;
+}
+
+/** Host-facing edit of an already-listed car — price, cancellation
+ *  policy, pickup/delivery, and publish/pause. RLS ("Hosts can update own
+ *  cars", 0001_init.sql) already scopes this to the caller's own rows;
+ *  nothing here needs a service-role bypass. Deliberately a narrower
+ *  surface than `createCar`'s full input — the rest of a listing (make,
+ *  model, photos, features…) has no edit UI yet, so it stays untouched
+ *  rather than silently overwritten with stale form state. */
+export async function updateCar(carId: string, input: UpdateCarInput): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('cars')
+    .update({
+      price_per_day: input.pricePerDay,
+      ...(input.status ? { status: input.status } : {}),
+      cancellation_policy: input.cancellationPolicy,
+      pickup_enabled: input.pickupEnabled,
+      delivery_enabled: input.deliveryEnabled,
+      delivery_fee_type: input.deliveryFeeType,
+      delivery_fee_amount: input.deliveryFeeAmount,
+    })
+    .eq('id', carId);
+  return { error: error?.message ?? null };
+}
+
 /** Loads once on mount; `null` while loading, `[]`/data once resolved. */
 export function useCars() {
   const [cars, setCars] = useState<Car[] | null>(null);
