@@ -232,6 +232,41 @@
   .btn-sm { padding: 0.55rem 0.85rem; font-size: 0.85rem; border-radius: 0.65rem; }
   .btn-block { width: 100%; }
 
+  /* ---------- Scramble/glint hover buttons ----------
+     Pairs with `useScramble` (src/lib/useScramble.ts), which handles the
+     letter-scramble text itself — this only owns the light sweep behind
+     it. `isolation: isolate` + the sweep's `z-index: -1` keeps it exactly
+     one layer above the button's own solid background and one layer
+     below its (unpositioned, in-flow) text/icon — no extra wrapper span
+     needed at each call site for that stacking to hold. */
+  .btn-glint {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .btn-glint__sweep {
+    position: absolute;
+    inset: -25% -10%;
+    z-index: -1;
+    background: linear-gradient(to top, transparent 0%, rgba(255, 255, 255, 0.4) 45%, transparent 75%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(100%);
+    transition: opacity 0.2s ease;
+  }
+  .btn-glint:hover .btn-glint__sweep,
+  .btn-glint:focus-visible .btn-glint__sweep {
+    opacity: 1;
+    animation: btn-glint-move 1.1s linear infinite alternate;
+  }
+  @keyframes btn-glint-move {
+    from { transform: translateY(100%); }
+    to { transform: translateY(-100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-glint__sweep { animation: none !important; opacity: 0 !important; }
+  }
+
   /* ---------- Surfaces ---------- */
   .card {
     background: var(--color-surface);

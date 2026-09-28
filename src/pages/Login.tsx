@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, type Location } from 'react-router-dom'
 import { Icon } from '../components/Icon';
 import { Logo, GoogleSignInButton, AuthDivider } from '../components/primitives';
 import { useAuth } from '../lib/auth';
+import { useScramble } from '../lib/useScramble';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -14,6 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const signInScramble = useScramble('Sign in');
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,8 +77,9 @@ export default function Login() {
             {error && (
               <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
             )}
-            <button type="submit" disabled={submitting} className="btn btn-primary btn-block btn-lg">
-              {submitting ? 'Signing in…' : 'Sign in'}
+            <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : signInScramble)}>
+              <span className="btn-glint__sweep" aria-hidden="true" />
+              {submitting ? 'Signing in…' : signInScramble.display}
               {!submitting && <Icon name="arrowRight" size={16} />}
             </button>
           </form>

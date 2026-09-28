@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher } from '../components/Concierge';
+import { useScramble } from '../lib/useScramble';
 import { Img, Reveal, useCountUp } from '../components/motion';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SectionHead } from '../components/primitives';
@@ -142,6 +143,7 @@ function GarageCarCard({ booking }: { booking: Booking }) {
 }
 
 export default function Garage() {
+  const startScramble = useScramble('Start');
   const navigate = useNavigate();
   const { session } = useAuth();
   const { favorites } = useApp();
@@ -551,8 +553,9 @@ export default function Garage() {
               <p className="mt-2 text-copy leading-relaxed text-on-noir-muted">
                 Tell us how you want to drive — we'll match you to the right car from your fleet, personalised to your Garage.
               </p>
-              <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-6">
-                Start <Icon name="arrowRight" size={17} />
+              <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-6" {...startScramble}>
+                <span className="btn-glint__sweep" aria-hidden="true" />
+                {startScramble.display} <Icon name="arrowRight" size={17} />
               </ConciergeLauncher>
             </div>
           </section>

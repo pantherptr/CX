@@ -4,6 +4,7 @@ import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { ConciergeLauncher } from './Concierge';
 import { useViewportBottomGap } from '../lib/useViewportGap';
+import { useScramble } from '../lib/useScramble';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 
 /** Logged-out mobile menu. Split out of Navbar so it (and the animation
@@ -19,6 +20,9 @@ export default function PublicMobileDrawer({
 }) {
   const reduceMotion = !!useReducedMotion();
   const gap = useViewportBottomGap();
+  const findDriveScramble = useScramble('Find your next drive');
+  const signInScramble = useScramble('Sign in');
+  const createAccountScramble = useScramble('Create an account');
   return (
     <AnimatePresence>
         {open && (
@@ -52,8 +56,9 @@ export default function PublicMobileDrawer({
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
                 {/* -------- The one primary CTA — compact, single line -------- */}
-                <ConciergeLauncher className="btn btn-accent-bright btn-lg btn-block !justify-between mb-6">
-                  Find your next drive <Icon name="arrowRight" size={17} />
+                <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg btn-block !justify-between mb-6" {...findDriveScramble}>
+                  <span className="btn-glint__sweep" aria-hidden="true" />
+                  {findDriveScramble.display} <Icon name="arrowRight" size={17} />
                 </ConciergeLauncher>
 
                 {/* -------- Nav — plain rows + hairline dividers, no cards.
@@ -103,11 +108,13 @@ export default function PublicMobileDrawer({
 
               {/* -------- Account actions -------- */}
               <div className="flex shrink-0 flex-col gap-2.5 border-t border-line p-5 pb-safe">
-                <Link to="/login" className="btn btn-block border border-line-strong bg-surface text-ink hover:bg-panel">
-                  Sign in
+                <Link to="/login" className="btn btn-glint btn-block border border-line-strong bg-surface text-ink hover:bg-panel" {...signInScramble}>
+                  <span className="btn-glint__sweep" aria-hidden="true" />
+                  {signInScramble.display}
                 </Link>
-                <Link to="/signup" className="btn btn-accent-bright btn-block">
-                  Create an account
+                <Link to="/signup" className="btn btn-glint btn-accent-bright btn-block" {...createAccountScramble}>
+                  <span className="btn-glint__sweep" aria-hidden="true" />
+                  {createAccountScramble.display}
                 </Link>
               </div>
             </motion.div>

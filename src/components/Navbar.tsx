@@ -5,6 +5,7 @@ import { Img } from './motion';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
+import { useScramble } from '../lib/useScramble';
 
 const PublicMobileDrawer = lazy(() => import('./PublicMobileDrawer'));
 const AppMobileDrawer = lazy(() => import('./AppMobileDrawer').then((m) => ({ default: m.AppMobileDrawer })));
@@ -23,6 +24,8 @@ function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const [menuEverOpened, setMenuEverOpened] = useState(false);
+  const createAccountScramble = useScramble('Create account');
+  const signInScramble = useScramble('Sign in');
   // PublicNavbar only ever renders for a logged-out session (see `Navbar`
   // below), but the auth-button slot still branches on it directly rather
   // than assuming — correct if that routing rule ever changes, free
@@ -145,8 +148,9 @@ function PublicNavbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/signup" className="btn btn-accent-bright btn-sm hidden sm:inline-flex">
-              Create account
+            <Link to="/signup" className="btn btn-glint btn-accent-bright btn-sm hidden sm:inline-flex" {...createAccountScramble}>
+              <span className="btn-glint__sweep" aria-hidden="true" />
+              {createAccountScramble.display}
             </Link>
 
             {session ? (
@@ -182,13 +186,15 @@ function PublicNavbar() {
                 </Link>
                 <Link
                   to="/login"
-                  className={`pressable inline-flex h-9 items-center rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
+                  className={`pressable btn-glint inline-flex h-9 items-center rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
                     transparent
                       ? 'border-ink/15 bg-white/55 text-ink backdrop-blur-md hover:border-ink/35 hover:bg-white/75'
                       : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'
                   }`}
+                  {...signInScramble}
                 >
-                  Sign in
+                  <span className="btn-glint__sweep" aria-hidden="true" />
+                  {signInScramble.display}
                 </Link>
               </>
             )}

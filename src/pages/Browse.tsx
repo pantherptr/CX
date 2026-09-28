@@ -6,6 +6,7 @@ import { CarCard } from '../components/CarCard';
 import { Icon } from '../components/Icon';
 import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher } from '../components/Concierge';
+import { useScramble } from '../lib/useScramble';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -265,6 +266,7 @@ function CarCardSkeleton() {
 }
 
 export default function Browse() {
+  const findCxScramble = useScramble('Find Your CX');
   const [params, setParams] = useSearchParams();
   const { cars, loading, error } = useCars();
   const [filters, setFilters] = useState<Filters>(() => ({
@@ -357,8 +359,9 @@ export default function Browse() {
           </p>
           <p className="mt-1 text-body font-medium text-ink">Not sure which car? Tell us how you want to drive.</p>
         </div>
-        <ConciergeLauncher className="btn btn-accent-bright shrink-0">
-          Find Your CX <Icon name="arrowRight" size={16} />
+        <ConciergeLauncher className="btn btn-glint btn-accent-bright shrink-0" {...findCxScramble}>
+          <span className="btn-glint__sweep" aria-hidden="true" />
+          {findCxScramble.display} <Icon name="arrowRight" size={16} />
         </ConciergeLauncher>
       </div>
 

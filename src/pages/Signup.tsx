@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Logo, GoogleSignInButton, AuthDivider } from '../components/primitives';
 import { useAuth } from '../lib/auth';
+import { useScramble } from '../lib/useScramble';
 
 export default function Signup() {
   const { signUp } = useAuth();
@@ -13,6 +14,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const createAccountScramble = useScramble('Create account');
   const [confirmSent, setConfirmSent] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
@@ -118,8 +120,9 @@ export default function Signup() {
             {error && (
               <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
             )}
-            <button type="submit" disabled={submitting} className="btn btn-primary btn-block btn-lg">
-              {submitting ? 'Creating account…' : 'Create account'}
+            <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : createAccountScramble)}>
+              <span className="btn-glint__sweep" aria-hidden="true" />
+              {submitting ? 'Creating account…' : createAccountScramble.display}
               {!submitting && <Icon name="arrowRight" size={16} />}
             </button>
             <p className="text-center text-caption leading-relaxed text-muted">

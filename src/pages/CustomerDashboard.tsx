@@ -7,6 +7,7 @@ import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher } from '../components/Concierge';
+import { useScramble } from '../lib/useScramble';
 import { Img, Reveal } from '../components/motion';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
@@ -176,6 +177,7 @@ function TripRow({ booking }: { booking: Booking }) {
 }
 
 export default function CustomerDashboard() {
+  const askConciergeScramble = useScramble('Ask the Concierge');
   const navigate = useNavigate();
   const { favorites, toast } = useApp();
   const { profile, session } = useAuth();
@@ -508,8 +510,9 @@ export default function CustomerDashboard() {
                 Tell us how you want to drive — city, road trip, business, performance — and we'll match you to the
                 right car from the fleet in under a minute.
               </p>
-              <ConciergeLauncher className="btn btn-accent-bright btn-sm mt-5">
-                Ask the Concierge <Icon name="arrowRight" size={15} />
+              <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-sm mt-5" {...askConciergeScramble}>
+                <span className="btn-glint__sweep" aria-hidden="true" />
+                {askConciergeScramble.display} <Icon name="arrowRight" size={15} />
               </ConciergeLauncher>
             </div>
           </section>

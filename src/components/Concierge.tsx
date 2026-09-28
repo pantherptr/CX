@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
@@ -94,11 +94,15 @@ function answerFor(s: Exclude<Step, 'results'>, prefs: Preferences): string {
 /** The trigger button — pass whatever styling the placement wants via
  *  `className`, so the homepage, Cars page and Garage each style their
  *  own entry point but share this one modal implementation. */
-export function ConciergeLauncher({ className, children }: { className?: string; children: ReactNode }) {
+export function ConciergeLauncher({
+  className,
+  children,
+  ...rest
+}: { className?: string; children: ReactNode } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'children' | 'onClick'>) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)} className={className}>
+      <button onClick={() => setOpen(true)} className={className} {...rest}>
         {children}
       </button>
       {open && <ConciergeModal onClose={() => setOpen(false)} />}

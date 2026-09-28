@@ -7,6 +7,7 @@ import { SectionHead } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher } from '../components/Concierge';
+import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
@@ -133,6 +134,7 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
 }
 
 export default function Home() {
+  const startScramble = useScramble('Start');
   const { cars: allCars } = useCars();
 
   // Real per-category stats (count, starting price, a real photo) computed
@@ -388,8 +390,9 @@ export default function Home() {
               <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
                 Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
               </p>
-              <ConciergeLauncher className="btn btn-accent-bright btn-lg mt-7">
-                Start <Icon name="arrowRight" size={17} />
+              <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-7" {...startScramble}>
+                <span className="btn-glint__sweep" aria-hidden="true" />
+                {startScramble.display} <Icon name="arrowRight" size={17} />
               </ConciergeLauncher>
             </div>
           </div>
