@@ -9,6 +9,7 @@ import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { useAuth } from '../../lib/auth';
+import { fireConfetti } from '../../lib/confetti';
 
 // Shared with SignalCommunityComposer (the compact native composer used
 // for Community) — one source of truth for these limits rather than two
@@ -167,6 +168,7 @@ export function SignalPostComposer({
       // mapCreatedPost) — carry the real, already-known engagement
       // numbers over from the pre-edit post rather than letting them
       // flash to zero until the next full refetch.
+      if (!editing) void fireConfetti();
       onDone(editing ? {
         ...result.post,
         likeCount: editing.likeCount, commentCount: editing.commentCount, saveCount: editing.saveCount,

@@ -17,6 +17,7 @@ import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
 import { SignalPostComposer } from './SignalPostComposer';
+import { BorderBeam } from '../BorderBeam';
 import { SignalCommunityComposer } from './SignalCommunityComposer';
 import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
@@ -536,7 +537,7 @@ export function SignalPostCard({
 
   return (
     <article
-      className={`card mb-2.5 animate-fade-up overflow-hidden p-0 ${
+      className={`card relative mb-2.5 animate-fade-up overflow-hidden p-0 ${
         featured
           ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
           : isExclusive
@@ -544,6 +545,10 @@ export function SignalPostCard({
             : ''
       }`}
     >
+      {/* The one card on the whole feed that should read as "CX's own" —
+          same restraint as the rest of the app's green accent, not a
+          treatment every card gets. */}
+      {featured && <BorderBeam size={110} duration={8} borderWidth={1.5} />}
       {featured && (
         <div className="flex items-center gap-1.5 border-b border-line bg-accent-bright/10 px-4 py-1.5 text-caption font-semibold text-accent-700">
           <Icon name={post.isPinned ? 'pinned' : 'sparkles'} size={12} fill={post.isPinned} />

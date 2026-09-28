@@ -5,11 +5,20 @@ import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
 import { MotionSheet } from '../motionKit';
+import { useCountUp } from '../motion';
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+/** `countTo` opts into the same count-up-on-scroll-into-view animation
+ *  DashboardShell's own StatCard uses — this sheet's numbers are only
+ *  ever plain integers, so animating them costs nothing in complexity;
+ *  the one pre-signed value (the trend delta, "+3"/"-1") stays static
+ *  since a count-up can't animate through a sign change cleanly. */
+function StatCard({ label, value, countTo }: { label: string; value: string | number; countTo?: number }) {
+  const { ref, value: animated } = useCountUp<HTMLParagraphElement>(countTo ?? 0, { duration: 900 });
   return (
     <div className="rounded-xl border border-line bg-surface p-3">
-      <p className="text-[20px] font-bold leading-none text-ink">{value}</p>
+      <p ref={countTo !== undefined ? ref : undefined} className="text-[20px] font-bold leading-none text-ink">
+        {countTo !== undefined ? animated : value}
+      </p>
       <p className="mt-1 text-caption text-muted">{label}</p>
     </div>
   );
@@ -69,16 +78,16 @@ export function SignalAnalyticsSheet({ onClose }: { onClose: () => void }) {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2.5">
-                <StatCard label="Total post views" value={data.totalPostViews} />
+                <StatCard label="Total post views" value={data.totalPostViews} countTo={data.totalPostViews} />
                 {/* Impressions (every real render) sits right next to Views
                     (unique real viewers) so the Reach-vs-Impressions
                     distinction reads at a glance — the same pairing a real
                     platform's Insights view shows, and the honest
                     foundation a future promoted-post feature would build
                     on (see incrementEmpirePostImpression). */}
-                <StatCard label="Total impressions" value={data.totalImpressions} />
-                <StatCard label="Total Story views" value={data.totalStoryViews} />
-                <StatCard label="Posts this week" value={data.postsLast7d} />
+                <StatCard label="Total impressions" value={data.totalImpressions} countTo={data.totalImpressions} />
+                <StatCard label="Total Story views" value={data.totalStoryViews} countTo={data.totalStoryViews} />
+                <StatCard label="Posts this week" value={data.postsLast7d} countTo={data.postsLast7d} />
                 <StatCard
                   label="Engagement trend"
                   value={`${trendDelta >= 0 ? '+' : ''}${trendDelta}`}

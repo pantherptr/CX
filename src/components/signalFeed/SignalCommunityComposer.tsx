@@ -10,6 +10,7 @@ import {
   MAX_MEDIA, MAX_BYTES, MAX_VIDEO_BYTES, MAX_VIDEO_DURATION_SEC, ACCEPTED_TYPES, type PendingMedia,
 } from './SignalPostComposer';
 import { useAuth } from '../../lib/auth';
+import { fireConfetti } from '../../lib/confetti';
 import { fetchHostCars } from '../../lib/data/cars';
 import type { Car } from '../../data/types';
 import { ProfileAvatar } from './SignalIdentityBadge';
@@ -295,6 +296,7 @@ export function SignalCommunityComposer({
       };
       if (!editing) {
         vibrateTap();
+        void fireConfetti();
         setJustPublished(true);
         window.setTimeout(() => setJustPublished(false), 260);
         resetDraft();
