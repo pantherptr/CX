@@ -73,6 +73,7 @@ export function SignalEditProfileSheet({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url ?? null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const originalUsername = profile?.username ?? '';
@@ -180,7 +181,12 @@ export function SignalEditProfileSheet({
     onSaved({ ...(savedUsername ? { username: savedUsername } : {}), ...(bioChanged ? { bio: bio.trim() } : {}) });
     await refreshProfile();
     toast({ title: 'Profile updated', icon: 'check' });
-    requestClose();
+    // A quiet confirmation bump on the button itself — same "just X"
+    // language FollowButton's own justFollowed already uses — before the
+    // sheet closes, so the save doesn't just silently vanish.
+    setJustSaved(true);
+    window.setTimeout(() => setJustSaved(false), 220);
+    window.setTimeout(requestClose, 220);
   };
 
   return (
@@ -204,11 +210,13 @@ export function SignalEditProfileSheet({
           onClick={handleSave}
           disabled={saving}
           scale={0.94}
+          animate={{ scale: justSaved ? 1.12 : 1 }}
+          transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
           className={`shrink-0 rounded-full px-3 py-1.5 text-detail font-semibold transition-colors ${
             hasChanges ? 'text-accent-700 hover:bg-accent-050' : 'text-faint'
           }`}
         >
-          {saving ? 'Saving…' : 'Save'}
+          {justSaved ? <Icon name="check" size={15} strokeWidth={3} /> : saving ? 'Saving…' : 'Save'}
         </Tap>
       </div>
 

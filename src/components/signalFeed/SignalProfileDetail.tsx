@@ -18,6 +18,7 @@ import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
 import { ProfileAvatar } from './SignalIdentityBadge';
 import { Tap, SharedAvatar } from '../motionKit';
+import { useCountUp } from '../motion';
 import { useAuth } from '../../lib/auth';
 
 const ROLE_LABEL: Record<'owner' | 'admin' | 'host' | 'client', string> = {
@@ -161,6 +162,15 @@ export function SignalProfileDetail({
       </div>
 
       <div className="mx-auto w-full max-w-xl px-4 pb-10 sm:px-6">
+        {/* A quiet cover — the same radial CX-green glow the CTA bands
+            elsewhere already use, not a new look invented for this one
+            spot. Purely a backdrop for the header below; it does not
+            compress/fade with scroll the way the header content does. */}
+        <div
+          className="pointer-events-none -mx-4 -mt-px h-24 sm:-mx-6 sm:h-28"
+          style={{ background: 'radial-gradient(65% 100% at 30% 0%, rgba(0,212,71,0.12), transparent 70%)' }}
+          aria-hidden="true"
+        />
         {isOfficialVoice ? (
           <OfficialVoiceHeader
             type={authorId as 'cx' | 'assistant'}
@@ -383,6 +393,20 @@ function DemoProfileHeader({ profile, compress }: { profile: SignalDemoProfile; 
   );
 }
 
+/** Followers/Following counts, animated up on first view — reuses the
+ *  same useCountUp the Analytics sheet's stats already use. `compact()`
+ *  still formats the final resting value (1.2k etc.); mid-count-up this
+ *  shows the real integer, same tradeoff DashboardShell's own StatCard
+ *  already accepts for its formatted values. */
+function CountLabel({ value }: { value: number }) {
+  const { ref, value: animated } = useCountUp<HTMLSpanElement>(value, { duration: 700 });
+  return (
+    <span ref={ref} className="font-semibold text-ink">
+      {animated === value ? compact(value) : animated}
+    </span>
+  );
+}
+
 function ProfileHeader({
   profile,
   isMe,
@@ -471,10 +495,10 @@ function ProfileHeader({
       {showFollowCounts && (
         <div className="flex items-center gap-5 text-detail">
           <button onClick={onOpenFollowers} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
-            <span className="font-semibold text-ink">{compact(followersCount)}</span> Followers
+            <CountLabel value={followersCount} /> Followers
           </button>
           <button onClick={onOpenFollowing} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
-            <span className="font-semibold text-ink">{compact(profile.followingCount)}</span> Following
+            <CountLabel value={profile.followingCount} /> Following
           </button>
         </div>
       )}
