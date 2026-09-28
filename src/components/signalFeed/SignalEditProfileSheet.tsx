@@ -47,6 +47,36 @@ function FieldRow({
  *  the main Settings page, every other SIGNAL surface) the moment
  *  `refreshProfile()` resolves — there's nothing SIGNAL-specific to
  *  re-sync. Reached only from the signed-in user's own profile. */
+const BIO_RING_R = 8;
+const BIO_RING_CIRCUMFERENCE = 2 * Math.PI * BIO_RING_R;
+
+/** A small filling ring next to the bio counter — the same idea as
+ *  Twitter/X's compose-box character ring, sized down to sit inline
+ *  next to a field label instead of floating over a whole textarea.
+ *  Ported from Magic UI's AnimatedCircularProgressBar concept (its own
+ *  version is a large 100px+ dashboard gauge) down to this field row's
+ *  actual scale — pure SVG, no dependency either way. */
+function BioRing({ value, max }: { value: number; max: number }) {
+  const ratio = Math.min(1, value / max);
+  const nearLimit = ratio >= 0.9;
+  return (
+    <svg width={20} height={20} viewBox="0 0 20 20" className="shrink-0 -rotate-90">
+      <circle cx={10} cy={10} r={BIO_RING_R} fill="none" strokeWidth={2.5} className="stroke-line" />
+      <circle
+        cx={10}
+        cy={10}
+        r={BIO_RING_R}
+        fill="none"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeDasharray={BIO_RING_CIRCUMFERENCE}
+        strokeDashoffset={BIO_RING_CIRCUMFERENCE * (1 - ratio)}
+        className={`transition-[stroke-dashoffset,stroke] duration-200 ease-out ${nearLimit ? 'stroke-danger' : 'stroke-accent'}`}
+      />
+    </svg>
+  );
+}
+
 export function SignalEditProfileSheet({
   onClose,
   onSaved,
@@ -262,7 +292,15 @@ export function SignalEditProfileSheet({
           )}
         </FieldRow>
 
-        <FieldRow label="Bio" trailing={<span className="text-micro text-faint">{bio.length}/{BIO_MAX}</span>}>
+        <FieldRow
+          label="Bio"
+          trailing={
+            <span className="flex items-center gap-1.5">
+              <span className="text-micro text-faint">{bio.length}/{BIO_MAX}</span>
+              <BioRing value={bio.length} max={BIO_MAX} />
+            </span>
+          }
+        >
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}

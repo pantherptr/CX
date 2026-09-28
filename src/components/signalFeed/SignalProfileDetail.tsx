@@ -218,9 +218,9 @@ export function SignalProfileDetail({
                 <Link
                   key={car.id}
                   to={`/cars/${car.slug}`}
-                  className="pressable flex w-[168px] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong"
+                  className="group pressable flex w-[168px] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong"
                 >
-                  <span className="block h-24 w-full bg-panel">
+                  <span className="relative block h-24 w-full overflow-hidden bg-panel">
                     {car.images[0] && (
                       <Img
                         src={car.images[0]}
@@ -229,6 +229,7 @@ export function SignalProfileDetail({
                         fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>}
                       />
                     )}
+                    <span className="card-glare__sweep" aria-hidden="true" />
                   </span>
                   <span className="flex flex-col gap-0.5 p-2.5">
                     <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
