@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../Icon';
 import { CxsLogo } from '../CxsLogo';
+import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
+
+/** This edge tab is a real but non-obvious affordance — worth one quiet
+ *  hint, not a nag. A soft ring pulses around it for a few seconds the
+ *  first time SIGNAL ever loads in this browser, then never again
+ *  (tracked in localStorage, same durability as other one-time UI
+ *  flags in this app). Skipped entirely under reduced motion. */
+const SEEN_KEY = 'cx-signal-quickcontrol-seen';
 
 interface QuickControlItem {
   label: string;
@@ -23,16 +31,17 @@ interface QuickControlItem {
  *  the feed), the bottom nav (`z-50`, full-width, bottom), and any post's
  *  action row/video controls, so it can never overlap them by
  *  construction rather than by z-index luck. Tapping it grows a small
- *  fixed panel from the tab (`scale`+`opacity`, ~220ms, the same
- *  `--ease-out-expo` easing already used for the Navbar drawer — reusing
- *  the app's one "premium" easing rather than inventing a new one);
- *  collapsing reverses it with no bounce. The panel is always mounted
- *  (visibility/opacity toggled, not conditionally rendered) specifically
- *  so the collapse direction gets a real transition too, not just the
- *  open one. */
+ *  panel from the tab on the same spring (`SPRING_SNAPPY`) the app's
+ *  other sheets/drawers already use — real `AnimatePresence` exit, not a
+ *  hand-rolled CSS transition with `pointer-events` doing the hiding. A
+ *  quiet one-time ring (see `SEEN_KEY` above) hints at the tab's
+ *  existence on someone's very first SIGNAL visit, since an edge tab
+ *  with no label is easy to miss entirely otherwise. */
 export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
   const [open, setOpen] = useState(false);
+  const [hint, setHint] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = !!useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
@@ -43,17 +52,56 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  useEffect(() => {
+    if (reduceMotion) return;
+    try {
+      if (localStorage.getItem(SEEN_KEY)) return;
+    } catch {
+      return;
+    }
+    const showTimer = window.setTimeout(() => setHint(true), 600);
+    const hideTimer = window.setTimeout(() => {
+      setHint(false);
+      try {
+        localStorage.setItem(SEEN_KEY, '1');
+      } catch {
+        /* private browsing etc. — worst case the hint just replays next visit */
+      }
+    }, 4000);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const select = (fn: () => void) => {
     setOpen(false);
     fn();
+  };
+
+  const dismissHint = () => {
+    setHint(false);
+    try {
+      localStorage.setItem(SEEN_KEY, '1');
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
     <div ref={rootRef} className="fixed left-0 top-1/2 z-40 -translate-y-1/2">
       {open && <div className="fixed inset-0 z-0" onClick={() => setOpen(false)} />}
 
+      {hint && !open && (
+        <span className="pointer-events-none absolute left-0 top-1/2 h-14 w-7 -translate-y-1/2 animate-quick-control-pulse rounded-r-xl ring-2 ring-accent-bright/60" />
+      )}
+
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          dismissHint();
+          setOpen((v) => !v);
+        }}
         aria-label={open ? 'Close Signal quick menu' : 'Open Signal quick menu'}
         aria-expanded={open}
         className="pressable relative z-10 flex h-14 w-7 items-center justify-center overflow-hidden rounded-r-xl border border-l-0 border-line bg-surface/85 shadow-hair backdrop-blur-md transition-colors hover:bg-surface"
@@ -62,30 +110,36 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
         <CxsLogo size={open ? 16 : 13} className="transition-[width,height] duration-200" />
       </button>
 
-      <div
-        role="menu"
-        className={`absolute left-0 top-1/2 z-10 w-44 origin-left -translate-y-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop transition-[transform,opacity] duration-[220ms] ${
-          open ? 'pointer-events-auto scale-100 opacity-100' : 'pointer-events-none scale-90 opacity-0'
-        }`}
-        style={{ marginLeft: '2rem', transitionTimingFunction: open ? 'var(--ease-out-expo, ease-out)' : 'ease-in' }}
-      >
-        <p className="px-4 pb-1.5 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-faint">Signal</p>
-        {items.map((item) => (
-          <div key={item.label}>
-            <button
-              role="menuitem"
-              onClick={() => select(item.onSelect)}
-              className={`pressable flex w-full items-center gap-2.5 px-4 py-3 text-left text-detail font-medium transition-colors ${
-                item.active ? 'bg-accent-050 text-accent-700' : 'text-ink hover:bg-panel'
-              }`}
-            >
-              <Icon name={item.icon} size={17} className={item.active ? 'text-accent-700' : 'text-ink-soft'} />
-              {item.label}
-            </button>
-            {item.groupEnd && <div className="mx-4 border-t border-line" />}
-          </div>
-        ))}
-      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            className="absolute left-0 top-1/2 z-10 w-44 origin-left overflow-hidden rounded-2xl border border-line bg-surface shadow-pop"
+            style={{ marginLeft: '2rem' }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: '-50%' }}
+            animate={{ opacity: 1, scale: 1, y: '-50%' }}
+            exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9, y: '-50%' }}
+            transition={reduceMotion ? { duration: 0 } : SPRING_SNAPPY}
+          >
+            <p className="px-4 pb-1.5 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-faint">Signal</p>
+            {items.map((item) => (
+              <div key={item.label}>
+                <button
+                  role="menuitem"
+                  onClick={() => select(item.onSelect)}
+                  className={`pressable flex w-full items-center gap-2.5 px-4 py-3 text-left text-detail font-medium transition-colors ${
+                    item.active ? 'bg-accent-050 text-accent-700' : 'text-ink hover:bg-panel'
+                  }`}
+                >
+                  <Icon name={item.icon} size={17} className={item.active ? 'text-accent-700' : 'text-ink-soft'} />
+                  {item.label}
+                </button>
+                {item.groupEnd && <div className="mx-4 border-t border-line" />}
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
