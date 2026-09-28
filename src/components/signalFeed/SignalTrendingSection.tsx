@@ -34,7 +34,7 @@ export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {
           <Link
             key={p.id}
             to={`${base}/post/${p.id}`}
-            className="pressable flex w-40 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface"
+            className="group pressable flex w-40 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface"
           >
             <div className="relative aspect-[4/3] w-full bg-panel">
               {p.mediaUrls[0] ? (
@@ -48,6 +48,7 @@ export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {
               ) : (
                 <span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>
               )}
+              <span className="card-glare__sweep" aria-hidden="true" />
             </div>
             <div className="p-2.5">
               <p className="line-clamp-2 text-caption font-semibold text-ink">{p.title || p.body}</p>
