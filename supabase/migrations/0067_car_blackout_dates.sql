@@ -53,9 +53,14 @@ language plpgsql
 security definer set search_path = public
 as $$
 begin
+  -- `cars` is aliased and every column qualified here because this
+  -- function's own RETURNS TABLE(id uuid, ...) implicitly declares `id`
+  -- as a plpgsql variable visible through the whole body — a bare `id`
+  -- below would be ambiguous with `cars.id` (caught via a live 400:
+  -- "column reference \"id\" is ambiguous").
   if not exists (
-    select 1 from public.cars
-    where id = p_car_id and (host_id = auth.uid() or public.is_admin() or public.is_owner())
+    select 1 from public.cars c
+    where c.id = p_car_id and (c.host_id = auth.uid() or public.is_admin() or public.is_owner())
   ) then
     raise exception 'You do not have access to this car''s calendar.';
   end if;

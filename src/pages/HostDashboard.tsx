@@ -293,7 +293,7 @@ function HostFleetCalendar({
  *  once blocked, the same dates fall out of `car_booked_ranges` and show
  *  as booked on the calendar to the left with zero extra wiring. */
 function HostBlackoutManager({ carId }: { carId: string | null }) {
-  const { dates, refresh } = useCarBlackoutDates(carId);
+  const { dates, error: loadError, refresh } = useCarBlackoutDates(carId);
   const { toast } = useApp();
   const [adding, setAdding] = useState(false);
   const [start, setStart] = useState('');
@@ -386,7 +386,9 @@ function HostBlackoutManager({ carId }: { carId: string | null }) {
         </div>
       )}
 
-      {dates === null ? (
+      {loadError ? (
+        <p className="text-caption text-danger">{loadError}</p>
+      ) : dates === null ? (
         <div className="skeleton h-16 rounded-2xl" />
       ) : dates.length > 0 ? (
         <div className="card divide-y divide-line">
