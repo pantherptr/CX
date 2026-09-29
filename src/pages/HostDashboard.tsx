@@ -7,12 +7,14 @@ import { EmptyState } from '../components/primitives';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
 import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
+import { useCarBlackoutDates, createCarBlackoutDate, deleteCarBlackoutDate } from '../lib/data/blackoutDates';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useVerification } from '../lib/data/verification';
 import { WEEKDAYS, MONTH_NAMES, toISO, startOfMonth, addMonths, buildMonthGrid } from '../lib/calendarGrid';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
+import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
 
 const TABS: { id: TripPhase; label: string }[] = [
@@ -190,8 +192,15 @@ function buildActionItems({
  *  equivalent of `AvailabilityCalendar`, backed by the same real
  *  `useBookedRanges` data, but without the renter-facing click-to-select
  *  range interaction (a host is reviewing availability, not booking). */
-function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: string }[] }) {
-  const [carId, setCarId] = useState(cars[0]?.id ?? null);
+function HostFleetCalendar({
+  cars,
+  carId,
+  onCarIdChange,
+}: {
+  cars: { id: string; make: string; model: string }[];
+  carId: string | null;
+  onCarIdChange: (id: string) => void;
+}) {
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(new Date()));
   const { ranges, loading } = useBookedRanges(carId);
 
@@ -206,7 +215,7 @@ function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: 
           {cars.map((c) => (
             <button
               key={c.id}
-              onClick={() => setCarId(c.id)}
+              onClick={() => onCarIdChange(c.id)}
               className={`chip shrink-0 ${carId === c.id ? '!bg-ink !text-white !border-ink' : ''}`}
             >
               {c.make} {c.model}
@@ -277,6 +286,137 @@ function HostFleetCalendar({ cars }: { cars: { id: string; make: string; model: 
   );
 }
 
+/** A host can take their own car off the market — maintenance, personal
+ *  use, an off-platform booking — without a fake reservation to hold the
+ *  dates. Writes go through `create_car_blackout_date`/`delete_car_blackout_date`
+ *  (migration 0067), which validate against existing bookings server-side;
+ *  once blocked, the same dates fall out of `car_booked_ranges` and show
+ *  as booked on the calendar to the left with zero extra wiring. */
+function HostBlackoutManager({ carId }: { carId: string | null }) {
+  const { dates, refresh } = useCarBlackoutDates(carId);
+  const { toast } = useApp();
+  const [adding, setAdding] = useState(false);
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const todayISO = toISO(new Date());
+
+  const resetForm = () => {
+    setAdding(false);
+    setStart('');
+    setEnd('');
+    setReason('');
+  };
+
+  const handleAdd = async () => {
+    if (!carId || !start || !end) return;
+    setSaving(true);
+    const { error } = await createCarBlackoutDate(carId, start, end, reason.trim() || undefined);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not block these dates', desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Dates blocked', icon: 'checkCircle' });
+    resetForm();
+    refresh();
+  };
+
+  const handleRemove = async (id: string) => {
+    setRemovingId(id);
+    const { error } = await deleteCarBlackoutDate(id);
+    setRemovingId(null);
+    if (error) {
+      toast({ title: 'Could not remove block', desc: error, icon: 'info' });
+      return;
+    }
+    refresh();
+  };
+
+  if (!carId) return null;
+
+  return (
+    <div className="mt-6">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-detail font-medium text-ink-soft">Blocked dates</p>
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 text-detail font-medium text-accent-700 transition-colors hover:text-accent-800"
+          >
+            <Icon name="plus" size={15} /> Block dates
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="card mb-3 space-y-3 p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <label>
+              <span className="field-label">From</span>
+              <input type="date" min={todayISO} value={start} onChange={(e) => setStart(e.target.value)} className="input" />
+            </label>
+            <label>
+              <span className="field-label">To</span>
+              <input type="date" min={start || todayISO} value={end} onChange={(e) => setEnd(e.target.value)} className="input" />
+            </label>
+          </div>
+          <label>
+            <span className="field-label">Reason (optional)</span>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Maintenance, personal use"
+              maxLength={140}
+              className="input"
+            />
+          </label>
+          <div className="flex gap-2">
+            <button type="button" onClick={handleAdd} disabled={!start || !end || saving} className="btn-primary flex-1 disabled:opacity-50">
+              {saving ? 'Blocking…' : 'Block dates'}
+            </button>
+            <button type="button" onClick={resetForm} className="btn-secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {dates === null ? (
+        <div className="skeleton h-16 rounded-2xl" />
+      ) : dates.length > 0 ? (
+        <div className="card divide-y divide-line">
+          {dates.map((b) => (
+            <div key={b.id} className="flex items-center justify-between gap-3 p-4">
+              <div className="min-w-0">
+                <p className="text-detail font-medium text-ink">
+                  {fmtDate(b.startDate)} → {fmtDate(b.endDate)}
+                </p>
+                {b.reason && <p className="truncate text-caption text-muted">{b.reason}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemove(b.id)}
+                disabled={removingId === b.id}
+                aria-label="Remove block"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-danger disabled:opacity-50"
+              >
+                <Icon name="trash" size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : !adding ? (
+        <p className="text-caption text-faint">No dates blocked for this car.</p>
+      ) : null}
+    </div>
+  );
+}
+
 function HostBookingRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   return (
@@ -317,6 +457,7 @@ export default function HostDashboard() {
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const { verification, loading: verificationLoading } = useVerification(session?.user.id);
   const [tab, setTab] = useState<TripPhase>('upcoming');
+  const [calendarCarId, setCalendarCarId] = useState<string | null>(null);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
   const loading = carsLoading || bookingsLoading;
 
@@ -641,7 +782,11 @@ export default function HostDashboard() {
           ) : hostCars && hostCars.length > 0 ? (
             <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
               <div className="card p-4 sm:p-6">
-                <HostFleetCalendar cars={hostCars.map((c) => ({ id: c.id, make: c.make, model: c.model }))} />
+                <HostFleetCalendar
+                  cars={hostCars.map((c) => ({ id: c.id, make: c.make, model: c.model }))}
+                  carId={calendarCarId ?? hostCars[0]?.id ?? null}
+                  onCarIdChange={setCalendarCarId}
+                />
               </div>
               <div>
                 <p className="mb-3 text-detail font-medium text-ink-soft">Upcoming pickups &amp; returns</p>
@@ -665,7 +810,7 @@ export default function HostDashboard() {
                     <p className="mt-1 font-medium text-ink">No dates booked yet</p>
                   </div>
                 )}
-                <p className="mt-3 text-caption text-faint">Manually blocking dates is coming soon.</p>
+                <HostBlackoutManager carId={calendarCarId ?? hostCars[0]?.id ?? null} />
               </div>
             </div>
           ) : (
