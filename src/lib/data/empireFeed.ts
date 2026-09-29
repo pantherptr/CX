@@ -288,6 +288,84 @@ const NEW_POSTS_POLL_MS = 30_000;
  *  (that would yank the feed out from under someone mid-scroll, exactly
  *  what the brief calls out not to do); `loadNewPosts` is the one thing
  *  that actually merges them in, only ever called from a real tap. */
+interface StreamCursor {
+  createdAt: string;
+  id: string;
+}
+
+/** One paginated source (real posts, or Community's demo filler) as a
+ *  small read-ahead buffer — never more than one page deep — plus enough
+ *  state to resume it later. `cursor` always tracks the last row this
+ *  source has ever actually returned, independent of how much of the
+ *  buffer has since been consumed by the merge below, so re-topping-up
+ *  never re-fetches or skips a row. */
+interface FeedSourceStream {
+  buffer: EmpirePost[];
+  exhausted: boolean;
+  cursor: StreamCursor | undefined;
+}
+
+function createFeedSourceStream(): FeedSourceStream {
+  return { buffer: [], exhausted: false, cursor: undefined };
+}
+
+function isStreamDrained(stream: FeedSourceStream): boolean {
+  return stream.exhausted && stream.buffer.length === 0;
+}
+
+/** Refills a stream's buffer from its own last cursor, only when it's
+ *  genuinely run dry (never tops up early — the merge below only ever
+ *  needs to see each source's next-oldest row to make its next
+ *  decision). A short page back means this source is exhausted. */
+async function topUpFeedSourceStream(
+  stream: FeedSourceStream,
+  fetchPage: (cursor: StreamCursor | undefined) => Promise<EmpirePost[]>,
+): Promise<void> {
+  if (stream.exhausted || stream.buffer.length > 0) return;
+  const rows = await fetchPage(stream.cursor);
+  stream.buffer = rows;
+  const last = rows[rows.length - 1];
+  if (last) stream.cursor = { createdAt: last.createdAt, id: last.id };
+  if (rows.length < FEED_PAGE_SIZE) stream.exhausted = true;
+}
+
+/** One real+demo merge stream for the lifetime of a single `useEmpireFeed`
+ *  instance — created fresh on every filter change (see `loadInitial`). */
+function createMergedStream() {
+  return { real: createFeedSourceStream(), demo: createFeedSourceStream() };
+}
+
+/** Pulls the next `pageSize` posts genuinely newest-first across real and
+ *  (for Community) demo content — a true merge by `createdAt`, not real
+ *  content bucketed entirely ahead of demo filler. Each call only ever
+ *  fetches as many pages from each source as it actually needs to decide
+ *  the next row, so a feed with plenty of real activity barely touches
+ *  the demo source at all, while a quiet one blends in exactly as much
+ *  demo content as there are real gaps for it to fill. */
+async function pullMergedPage(
+  stream: ReturnType<typeof createMergedStream>,
+  pageSize: number,
+  demoEligible: boolean,
+  fetchRealPage: (cursor: StreamCursor | undefined) => Promise<EmpirePost[]>,
+): Promise<{ rows: EmpirePost[]; more: boolean }> {
+  const rows: EmpirePost[] = [];
+  while (rows.length < pageSize) {
+    await topUpFeedSourceStream(stream.real, fetchRealPage);
+    if (demoEligible) {
+      await topUpFeedSourceStream(stream.demo, (cursor) => fetchSignalDemoPosts(FEED_PAGE_SIZE, cursor?.createdAt, cursor?.id));
+    }
+
+    const realHead = stream.real.buffer[0];
+    const demoHead = demoEligible ? stream.demo.buffer[0] : undefined;
+    if (!realHead && !demoHead) break;
+
+    const takeReal = Boolean(realHead) && (!demoHead || realHead.createdAt >= demoHead.createdAt);
+    rows.push(takeReal ? stream.real.buffer.shift()! : stream.demo.buffer.shift()!);
+  }
+  const more = !isStreamDrained(stream.real) || (demoEligible && !isStreamDrained(stream.demo));
+  return { rows, more };
+}
+
 export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?: EmpireFeedScope) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -300,29 +378,28 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   // indirection Signal.tsx's own infinite-scroll observer already uses.
   const postsRef = useRef(posts);
   postsRef.current = posts;
-  // Demo content only ever supplements Community, and only once real
-  // content is exhausted — real content always comes first (see this
-  // hook's own header comment on the strategy). Once a page comes back
-  // short, every post after it for the life of this feed instance is
-  // demo filler, so a plain ref (not state — nothing needs to re-render
-  // off this by itself) is enough to remember which cursor `loadMore`
-  // should keep using.
+  // Demo content only ever supplements Community. Real and demo posts
+  // are two entirely separate sources (see this file's own header
+  // comment, and signalDemo.ts's) that each page by their own createdAt
+  // cursor — so "mixed, newest first" means a genuine merge-by-recency
+  // between them, not real-then-demo bucketing. The old bucketed version
+  // showed demo content only once real posts ran dry for the WHOLE feed
+  // instance, which meant a demo post from minutes ago could sit behind
+  // a real post from days ago, and — once real content did run out —
+  // every demo post after that point regardless of age, oldest included.
+  // `useMergedStream` below keeps one small read-ahead buffer per source
+  // (never more than a page) so the merge always compares real, honest
+  // "what's the next-oldest thing from each source" before deciding
+  // which one is actually more recent.
   const demoEligible = scope === 'community';
-  const realExhaustedRef = useRef(false);
+  const streamRef = useRef(createMergedStream());
 
   const loadInitial = useCallback(async () => {
-    realExhaustedRef.current = false;
+    streamRef.current = createMergedStream();
     try {
-      const realRows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
-      let rows = realRows;
-      let more = realRows.length === FEED_PAGE_SIZE;
-      if (demoEligible && realRows.length < FEED_PAGE_SIZE) {
-        realExhaustedRef.current = true;
-        const need = FEED_PAGE_SIZE - realRows.length;
-        const demoRows = await fetchSignalDemoPosts(need);
-        rows = [...realRows, ...demoRows];
-        more = demoRows.length === need;
-      }
+      const { rows, more } = await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, () =>
+        fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }),
+      );
       setPosts(rows);
       setHasMore(more);
       setNewPostsAvailable(false);
@@ -342,25 +419,11 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const last = posts[posts.length - 1];
-      if (realExhaustedRef.current) {
-        const demoRows = await fetchSignalDemoPosts(FEED_PAGE_SIZE, last.createdAt, last.id);
-        setPosts((prev) => [...(prev ?? []), ...demoRows]);
-        setHasMore(demoRows.length === FEED_PAGE_SIZE);
-      } else {
-        const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, last.createdAt, category, { scope, authorKind }, last.id);
-        let appended = rows;
-        let more = rows.length === FEED_PAGE_SIZE;
-        if (!more && demoEligible) {
-          realExhaustedRef.current = true;
-          const need = FEED_PAGE_SIZE - rows.length;
-          const demoRows = need > 0 ? await fetchSignalDemoPosts(need) : [];
-          appended = [...rows, ...demoRows];
-          more = need > 0 && demoRows.length === need;
-        }
-        setPosts((prev) => [...(prev ?? []), ...appended]);
-        setHasMore(more);
-      }
+      const { rows, more } = await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, (cursor) =>
+        fetchEmpireFeed(FEED_PAGE_SIZE, cursor?.createdAt, category, { scope, authorKind }, cursor?.id),
+      );
+      setPosts((prev) => [...(prev ?? []), ...rows]);
+      setHasMore(more);
     } catch {
       setHasMore(false);
     } finally {
@@ -400,13 +463,24 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   /** Merges in whatever's actually new since the feed last loaded —
    *  refetches the first page and prepends only the rows not already
    *  present (by id), so a slow tap after more than one post landed still
-   *  never duplicates anything already on screen. */
+   *  never duplicates anything already on screen. This bypasses the
+   *  real/demo merge stream entirely (there's no "new demo posts"
+   *  banner, only real ones), so a freshly-prepended real post also
+   *  needs scrubbing out of `streamRef`'s own still-unconsumed real
+   *  buffer — otherwise a real post that was fetched-but-not-yet-shown
+   *  (buffered behind a more recent demo post, waiting its turn in the
+   *  merge) could get shown here now AND still be sitting in that buffer
+   *  for a later `loadMore` to emit a second time. */
   const loadNewPosts = useCallback(async () => {
     try {
       const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
       setPosts((prev) => {
         const existingIds = new Set((prev ?? []).map((p) => p.id));
         const fresh = rows.filter((r) => !existingIds.has(r.id));
+        if (fresh.length > 0) {
+          const freshIds = new Set(fresh.map((r) => r.id));
+          streamRef.current.real.buffer = streamRef.current.real.buffer.filter((p) => !freshIds.has(p.id));
+        }
         return [...fresh, ...(prev ?? [])];
       });
     } finally {
