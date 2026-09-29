@@ -1,7 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
-import { useBookedRanges, rangesOverlap } from '../lib/data/bookings';
+import { motion, AnimatePresence, useReducedMotion } from './motionKit';
+import { useBookedRanges, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 import { WEEKDAYS, MONTH_NAMES, toISO, parseISO, startOfMonth, addMonths, buildMonthGrid as buildGrid } from '../lib/calendarGrid';
+
+interface FlightPath {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+}
 
 /**
  * A real month-view date-range picker backed by actual booked dates for
@@ -11,21 +17,41 @@ import { WEEKDAYS, MONTH_NAMES, toISO, parseISO, startOfMonth, addMonths, buildM
  * start day, then an end day; clicking before the start or across a
  * booked date restarts the selection rather than erroring, matching how
  * every real booking calendar behaves.
+ *
+ * The one signature flourish: completing a range (the second click) races
+ * a small car glyph from the pick-up cell to the return cell, accelerating
+ * in and fading out on arrival — purely decorative, skipped entirely
+ * under reduced motion or when either cell isn't in the currently
+ * rendered month (nothing sensible to fly from/to in that case).
  */
 export function AvailabilityCalendar({
   carId,
   startDate,
   endDate,
   onSelect,
+  excludeRange,
 }: {
   carId: string;
   startDate: string | null;
   endDate: string | null;
   onSelect: (start: string, end: string) => void;
+  /** Drops a single real range matching these exact dates before
+   *  computing booked/disabled cells — used when modifying an existing
+   *  booking's own dates, which would otherwise show as "booked" against
+   *  itself (`car_booked_ranges` has no per-caller exclusion). */
+  excludeRange?: { start: string; end: string };
 }) {
-  const { ranges, loading } = useBookedRanges(carId);
+  const { ranges: rawRanges, loading } = useBookedRanges(carId);
+  const ranges = useMemo<BookedRange[] | null>(() => {
+    if (!rawRanges || !excludeRange) return rawRanges;
+    return rawRanges.filter((r) => !(r.startDate === excludeRange.start && r.endDate === excludeRange.end));
+  }, [rawRanges, excludeRange]);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(startDate ? parseISO(startDate) : new Date()));
   const [draftStart, setDraftStart] = useState<string | null>(null);
+  const [flight, setFlight] = useState<FlightPath | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef(new Map<string, HTMLButtonElement>());
+  const reduceMotion = !!useReducedMotion();
 
   const todayISO = toISO(new Date());
   const effectiveStart = draftStart ?? startDate;
@@ -54,6 +80,19 @@ export function AvailabilityCalendar({
     if (iso <= draftStart || hasBookedBetween(draftStart, iso)) {
       setDraftStart(iso);
       return;
+    }
+    if (!reduceMotion && gridRef.current) {
+      const fromEl = cellRefs.current.get(draftStart);
+      const toEl = cellRefs.current.get(iso);
+      if (fromEl && toEl) {
+        const gridRect = gridRef.current.getBoundingClientRect();
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = toEl.getBoundingClientRect();
+        setFlight({
+          from: { x: fromRect.left + fromRect.width / 2 - gridRect.left, y: fromRect.top + fromRect.height / 2 - gridRect.top },
+          to: { x: toRect.left + toRect.width / 2 - gridRect.left, y: toRect.top + toRect.height / 2 - gridRect.top },
+        });
+      }
     }
     onSelect(draftStart, iso);
     setDraftStart(null);
@@ -87,7 +126,7 @@ export function AvailabilityCalendar({
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-7 gap-y-1">
+      <div ref={gridRef} className="relative mt-3 grid grid-cols-7 gap-y-1">
         {WEEKDAYS.map((w) => (
           <span key={w} className="py-1 text-center text-label font-semibold uppercase tracking-wide text-faint">
             {w}
@@ -111,6 +150,10 @@ export function AvailabilityCalendar({
               {(inRange || isStart) && <div className="absolute inset-y-0 left-1/2 right-0 bg-accent-050" />}
               <button
                 type="button"
+                ref={(el) => {
+                  if (el) cellRefs.current.set(iso, el);
+                  else cellRefs.current.delete(iso);
+                }}
                 onClick={() => handleDayClick(iso)}
                 disabled={disabled}
                 aria-label={iso}
@@ -132,6 +175,21 @@ export function AvailabilityCalendar({
             </div>
           );
         })}
+
+        <AnimatePresence>
+          {flight && (
+            <motion.div
+              key="car-flight"
+              className="pointer-events-none absolute left-0 top-0 z-20 text-accent-bright"
+              initial={{ x: flight.from.x - 9, y: flight.from.y - 9, opacity: 1 }}
+              animate={{ x: flight.to.x - 9, y: flight.to.y - 9, opacity: [1, 1, 0] }}
+              transition={{ duration: 0.55, ease: 'easeIn', opacity: { duration: 0.55, times: [0, 0.7, 1] } }}
+              onAnimationComplete={() => setFlight(null)}
+            >
+              <Icon name="car" size={18} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-caption text-muted">

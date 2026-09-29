@@ -7,6 +7,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { Img, Reveal } from '../components/motion';
 import { Modal } from '../components/primitives';
+import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -25,8 +26,6 @@ import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
 import { parseISO } from '../lib/calendarGrid';
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const phaseBadge: Record<TripPhase, string> = {
   pending: 'bg-panel-2 text-ink-soft',
@@ -596,16 +595,16 @@ export default function TripDetails() {
             </div>
             {modifying && (
               <div className="mt-3 rounded-xl border border-line p-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label>
-                    <span className="field-label">Pick-up date</span>
-                    <input type="date" min={todayISO()} value={modStart} onChange={(e) => setModStart(e.target.value)} className="input" />
-                  </label>
-                  <label>
-                    <span className="field-label">Return date</span>
-                    <input type="date" min={modStart || todayISO()} value={modEnd} onChange={(e) => setModEnd(e.target.value)} className="input" />
-                  </label>
-                </div>
+                <AvailabilityCalendar
+                  carId={booking.car.id}
+                  startDate={modStart || null}
+                  endDate={modEnd || null}
+                  excludeRange={{ start: booking.startDate, end: booking.endDate }}
+                  onSelect={(start, end) => {
+                    setModStart(start);
+                    setModEnd(end);
+                  }}
+                />
                 {modAvailability === 'checking' && <p className="mt-3 text-detail text-muted">Checking availability…</p>}
                 {modAvailability === 'unavailable' && (
                   <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
