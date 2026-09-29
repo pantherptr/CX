@@ -17,6 +17,12 @@ import { sendPushToUser } from './_lib/push.js';
  *     ended — the "trattenuta e rilasciata automaticamente" half of the
  *     deposit feature; placing the hold itself happens at booking time,
  *     in api/stripe-webhook.ts.
+ *  3. Paying out hosts for completed trips (see
+ *     supabase/migrations/0068_stripe_connect_payouts.sql) — a Stripe
+ *     Transfer of the base rental price to the host's Connect account,
+ *     once a trip has ended. Same trip-ended query shape as the deposit
+ *     release right above it, so a payout lands within the same ~24h
+ *     window a deposit does.
  *
  * "Tomorrow"/"ended" are computed in UTC — a booking's start_date/
  * end_date are plain calendar dates with no timezone of their own, so
@@ -153,5 +159,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  return res.status(200).json({ date: tomorrowISO, pickupSent, returnSent, depositsReleased });
+  // --- Pay out hosts for trips that have ended -------------------------
+  // 'blocked' is retried every run too — a host who finishes Connect
+  // onboarding a day or two after their trip ended still gets paid on
+  // the next sweep, rather than being stuck forever for missing the
+  // original window.
+  let payoutsSent = 0;
+  let payoutsBlocked = 0;
+  const { data: payoutDue, error: payoutError } = await supabase
+    .from('bookings')
+    .select('id, host_id, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')
+    .eq('status', 'confirmed')
+    .in('payout_status', ['pending', 'blocked'])
+    .lt('end_date', todayISO);
+
+  if (payoutError) {
+    console.error('[send-pickup-reminders] payout query failed', payoutError);
+  } else {
+    for (const row of (payoutDue ?? []) as unknown as {
+      id: string;
+      host_id: string;
+      host_payout_amount: number | null;
+      host: { stripe_connect_account_id: string | null; stripe_connect_payouts_enabled: boolean } | null;
+    }[]) {
+      const amount = Number(row.host_payout_amount ?? 0);
+      if (amount <= 0) {
+        await supabase.from('bookings').update({ payout_status: 'not_required' }).eq('id', row.id);
+        continue;
+      }
+      if (!row.host?.stripe_connect_account_id || !row.host.stripe_connect_payouts_enabled) {
+        await supabase.from('bookings').update({ payout_status: 'blocked' }).eq('id', row.id);
+        payoutsBlocked++;
+        continue;
+      }
+      try {
+        const transfer = await stripe.transfers.create(
+          {
+            amount: Math.round(amount * 100),
+            currency: 'eur',
+            destination: row.host.stripe_connect_account_id,
+            transfer_group: row.id,
+            metadata: { bookingId: row.id },
+          },
+          { idempotencyKey: `payout-${row.id}` },
+        );
+        await supabase
+          .from('bookings')
+          .update({ payout_status: 'paid', stripe_transfer_id: transfer.id, payout_paid_at: new Date().toISOString() })
+          .eq('id', row.id);
+        payoutsSent++;
+      } catch (err) {
+        console.error('[send-pickup-reminders] payout failed for booking', row.id, err);
+        await supabase.from('bookings').update({ payout_status: 'failed' }).eq('id', row.id);
+      }
+    }
+  }
+
+  return res.status(200).json({ date: tomorrowISO, pickupSent, returnSent, depositsReleased, payoutsSent, payoutsBlocked });
 }

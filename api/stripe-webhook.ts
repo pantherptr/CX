@@ -256,6 +256,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           reward_id: meta.rewardId || null,
           status: 'confirmed',
           stripe_payment_intent_id: paymentIntent.id,
+          payout_status: 'pending',
         })
         .select('id, host_id, reference, total_price, start_date, end_date, pickup_location, fulfillment_type, delivery_address, delivery_fee')
         .single();

@@ -64,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
   const { data: booking, error: fetchError } = await supabase
     .from('bookings')
-    .select('id, reference, status, total_price, stripe_payment_intent_id, stripe_deposit_intent_id, deposit_status, start_date, end_date, pickup_location, renter_id, host_id, car_id')
+    .select('id, reference, status, total_price, stripe_payment_intent_id, stripe_deposit_intent_id, deposit_status, payout_status, stripe_transfer_id, start_date, end_date, pickup_location, renter_id, host_id, car_id')
     .eq('id', bookingId)
     .maybeSingle();
   if (fetchError || !booking) return res.status(404).json({ error: 'Booking not found.' });
@@ -85,6 +85,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Same clawback as api/cancel-booking.ts — a manual admin refund can
+    // just as easily land on a trip whose payout already went out.
+    let payoutStatus = booking.payout_status;
+    if (booking.payout_status === 'paid' && booking.stripe_transfer_id) {
+      try {
+        await stripe.transfers.createReversal(booking.stripe_transfer_id);
+        payoutStatus = 'reversed';
+      } catch (err) {
+        console.error('[refund-booking] payout reversal failed for', bookingId, err);
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('bookings')
       .update({
@@ -94,6 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cancelled_at: new Date().toISOString(),
         cancellation_reason: 'refunded',
         deposit_status: booking.deposit_status === 'held' ? 'released' : booking.deposit_status,
+        payout_status: payoutStatus,
       })
       .eq('id', bookingId);
     if (updateError) {

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
@@ -8,6 +8,7 @@ import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
 import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useCarBlackoutDates, createCarBlackoutDate, deleteCarBlackoutDate } from '../lib/data/blackoutDates';
+import { useConnectStatus, fetchConnectOnboardingLink, refreshConnectStatus, type ConnectStatus } from '../lib/data/payouts';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useVerification } from '../lib/data/verification';
 import { WEEKDAYS, MONTH_NAMES, toISO, startOfMonth, addMonths, buildMonthGrid } from '../lib/calendarGrid';
@@ -137,11 +138,13 @@ function buildActionItems({
   soonPickups,
   unreadCount,
   verificationMissing,
+  payoutsMissing,
 }: {
   draftCars: { id: string; make: string; model: string }[];
   soonPickups: Booking[];
   unreadCount: number;
   verificationMissing: boolean;
+  payoutsMissing: boolean;
 }): ActionItem[] {
   const items: ActionItem[] = [];
 
@@ -182,6 +185,16 @@ function buildActionItems({
       label: 'Identity verification needed',
       sub: 'Verified hosts build more trust with renters.',
       to: '/settings#security',
+    });
+  }
+
+  if (payoutsMissing) {
+    items.push({
+      id: 'payouts',
+      icon: 'card',
+      label: 'Set up payouts',
+      sub: 'Connect a payout account so you get paid when a trip ends.',
+      to: '/host#payouts',
     });
   }
 
@@ -419,6 +432,68 @@ function HostBlackoutManager({ carId }: { carId: string | null }) {
   );
 }
 
+/** Stripe Express onboarding status + entry point — see
+ *  supabase/migrations/0068_stripe_connect_payouts.sql. `status === null`
+ *  is the loading state; `accountId` set but `payoutsEnabled` false means
+ *  onboarding was started but Stripe hasn't finished verifying it yet. */
+function HostPayoutsCard({
+  status,
+  error,
+  onSetup,
+}: {
+  status: ConnectStatus | null;
+  error: string | null;
+  onSetup: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    await onSetup();
+    setLoading(false);
+  };
+
+  return (
+    <section className="mt-8 scroll-mt-20" id="payouts">
+      <h2 className="mb-4 font-display text-lg font-semibold text-ink">Payouts</h2>
+      {error ? (
+        <p className="text-caption text-danger">{error}</p>
+      ) : status === null ? (
+        <div className="skeleton h-24 rounded-2xl" />
+      ) : (
+        <div className="card p-5 sm:p-6">
+          {status.payoutsEnabled ? (
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700">
+                <Icon name="checkCircle" size={20} />
+              </span>
+              <div>
+                <p className="font-medium text-ink">Payouts are set up</p>
+                <p className="text-detail text-muted">You'll be paid automatically once each trip ends.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-muted">
+                  <Icon name="card" size={20} />
+                </span>
+                <div>
+                  <p className="font-medium text-ink">{status.accountId ? 'Finish setting up payouts' : 'Set up payouts to get paid'}</p>
+                  <p className="text-detail text-muted">Connect a payout account so you're paid automatically when a trip ends.</p>
+                </div>
+              </div>
+              <button onClick={handleClick} disabled={loading} className="btn btn-primary btn-sm shrink-0 disabled:opacity-60">
+                {loading ? 'Opening…' : status.accountId ? 'Finish setup' : 'Set up payouts'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function HostBookingRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   return (
@@ -458,6 +533,43 @@ export default function HostDashboard() {
   const { bookings: hostBookings, loading: bookingsLoading } = useHostBookings(session?.user.id);
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const { verification, loading: verificationLoading } = useVerification(session?.user.id);
+  const { status: connectStatus, error: connectError, refresh: refreshConnect } = useConnectStatus(session?.user.id);
+  const { toast } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Landed back from Stripe's hosted onboarding (see
+  // api/connect-onboarding-link.ts's return_url) — check the real status
+  // immediately rather than waiting on the Connect webhook, which can lag
+  // a few seconds behind the redirect.
+  useEffect(() => {
+    if (searchParams.get('onboarded') !== '1' || !session) return;
+    refreshConnectStatus(session.access_token).then((result) => {
+      if ('error' in result) {
+        toast({ title: 'Could not confirm payout status', desc: result.error, icon: 'info' });
+      } else {
+        toast({
+          title: result.payoutsEnabled ? 'Payouts are set up' : 'Payout setup in progress',
+          desc: result.payoutsEnabled ? "You'll be paid automatically once each trip ends." : "We'll let you know once Stripe finishes verifying your account.",
+          icon: result.payoutsEnabled ? 'checkCircle' : 'info',
+        });
+      }
+      refreshConnect();
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete('onboarded');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
+
+  const handleSetupPayouts = async () => {
+    if (!session) return;
+    const result = await fetchConnectOnboardingLink(session.access_token);
+    if ('error' in result) {
+      toast({ title: 'Could not start payout setup', desc: result.error, icon: 'info' });
+      return;
+    }
+    window.location.href = result.url;
+  };
   const [tab, setTab] = useState<TripPhase>('upcoming');
   const [calendarCarId, setCalendarCarId] = useState<string | null>(null);
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
@@ -523,8 +635,9 @@ export default function HostDashboard() {
         .map((c) => c.booking),
       unreadCount,
       verificationMissing: !verificationLoading && (!verification || verification.status === 'rejected'),
+      payoutsMissing: !connectError && connectStatus !== null && !connectStatus.payoutsEnabled,
     });
-  }, [hostCars, classified, unreadCount, verification, verificationLoading]);
+  }, [hostCars, classified, unreadCount, verification, verificationLoading, connectStatus, connectError]);
 
   return (
     <DashboardShell variant="host" active="Overview">
@@ -822,6 +935,10 @@ export default function HostDashboard() {
             </div>
           )}
         </section>
+        </Reveal>
+
+        <Reveal>
+          <HostPayoutsCard status={connectStatus} error={connectError} onSetup={handleSetupPayouts} />
         </Reveal>
       </div>
     </DashboardShell>

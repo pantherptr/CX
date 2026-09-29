@@ -65,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // shouldn't see this row at all gets a plain 404, not a permission leak.
   const { data: booking, error: fetchError } = await callerClient
     .from('bookings')
-    .select('id, renter_id, host_id, status, fare_tier, start_date, total_price, cancellation_policy, stripe_payment_intent_id, stripe_deposit_intent_id, deposit_status')
+    .select('id, renter_id, host_id, status, fare_tier, start_date, total_price, cancellation_policy, stripe_payment_intent_id, stripe_deposit_intent_id, deposit_status, payout_status, stripe_transfer_id')
     .eq('id', bookingId)
     .maybeSingle();
   if (fetchError || !booking) return res.status(404).json({ error: 'Booking not found.' });
@@ -135,6 +135,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // Claw back a payout that already reached the host — only possible for
+  // a trip that completed and was paid out days ago, then got cancelled
+  // after the fact (e.g. a late goodwill case). The platform should never
+  // be left covering a refund out of its own pocket for money it already
+  // sent on.
+  let payoutStatus = booking.payout_status;
+  if (booking.payout_status === 'paid' && booking.stripe_transfer_id) {
+    try {
+      await stripe.transfers.createReversal(booking.stripe_transfer_id);
+      payoutStatus = 'reversed';
+    } catch (err) {
+      console.error('[cancel-booking] payout reversal failed for', bookingId, err);
+    }
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from('bookings')
     .update({
@@ -145,6 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       refunded_at: refund.amount > 0 ? new Date().toISOString() : null,
       stripe_refund_id: stripeRefundId,
       deposit_status: depositStatus,
+      payout_status: payoutStatus,
     })
     .eq('id', bookingId)
     .in('status', ['pending', 'payment_processing', 'confirmed'])
