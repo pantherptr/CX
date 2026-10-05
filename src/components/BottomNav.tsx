@@ -295,7 +295,7 @@ export function BottomNav() {
   return (
     <nav
       ref={navRef}
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line pb-safe shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
       style={{
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's
@@ -379,7 +379,17 @@ export function BottomNav() {
           solid pill baseline-underline. Signal never uses this: its own
           indicator is the raised section's rim above (drawn separately, not
           on this shared baseline), so this one fades out under Signal. */}
-      <div className="relative grid grid-cols-5">
+      {/* `pb-safe` lives here, not on `<nav>` itself — the glass background
+          below is an absolutely positioned child measured from `<nav>`'s
+          padding box, and giving `<nav>` its own bottom padding shifts that
+          padding box up by the safe-area inset without the glass's own
+          `bottomBleed` math knowing about it, leaving an unpainted sliver of
+          the page's background exposed right under the bar on every phone
+          with a home indicator. Keeping `<nav>` itself unpadded means its
+          padding box always coincides with its real bottom edge, so the
+          glass's bleed fully covers it; this div still gets pushed up clear
+          of the home indicator exactly as before. */}
+      <div className="relative grid grid-cols-5 pb-safe">
         <span
           className="pointer-events-none absolute top-1.5 h-1 w-6 -translate-x-1/2 rounded-full bg-accent transition-all duration-300"
           style={{
