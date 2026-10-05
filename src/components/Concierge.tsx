@@ -10,7 +10,7 @@ import { useCompare } from '../lib/compareStore';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings } from '../lib/data/bookings';
 import { fetchSupportAccountId, findOrCreateConversation } from '../lib/data/messages';
-import { unsplash } from '../lib/img';
+import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import {
   matchCars,
@@ -110,42 +110,63 @@ export function ConciergeLauncher({
   );
 }
 
-function ConciergeAvatar({ size = 30 }: { size?: number }) {
+/** The Concierge's face — the CX key on a noir disc. The key is chrome-on-
+ *  black artwork (glossy black half, neon-green half): on the old pale-
+ *  green chip its black half went muddy and it rendered at a ~17px
+ *  smudge; on noir it reads the way it was drawn, with a thin green ring
+ *  and a soft glow carrying the brand light. `live` adds the "online"
+ *  dot used in the header — the Concierge is always instantly available,
+ *  which is genuinely true of a guided matcher. Exported so entry points
+ *  (Browse's banner, the homepage card) wear the exact same mark. */
+export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-full bg-accent-050 ring-1 ring-accent-100"
+      className={`relative inline-grid shrink-0 place-items-center rounded-full bg-noir ring-1 ring-accent-bright/40 shadow-[0_0_0_3px_rgba(0,212,71,0.07),0_6px_18px_-6px_rgba(0,212,71,0.55)] ${className}`}
       style={{ width: size, height: size }}
     >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full"
+        style={{ background: 'radial-gradient(circle at 50% 35%, rgba(0,212,71,0.22), transparent 62%)' }}
+      />
       <Img
         src="/cx-logo-symbol.png"
         alt=""
-        className="h-[58%] w-[58%] object-contain"
-        fallback={<span className="text-[10px] font-semibold text-ink">CX</span>}
+        className="relative h-[64%] w-auto object-contain drop-shadow-[0_0_6px_rgba(0,212,71,0.35)]"
+        fallback={<span className="relative text-[10px] font-semibold text-white">CX</span>}
       />
+      {live && (
+        <span className="absolute -bottom-px -right-px flex h-[30%] min-h-2.5 w-[30%] min-w-2.5">
+          <span className="absolute inset-0 animate-ping rounded-full bg-accent-bright/60" />
+          <span className="relative h-full w-full rounded-full border-2 border-noir bg-accent-bright" />
+        </span>
+      )}
     </span>
   );
 }
 
 /** Left-aligned "assistant is speaking" message — the CX mark plus a
- *  soft panel bubble, reused for every question, lead-in and empty state
- *  so the whole flow reads as one conversation rather than a form. */
+ *  white bubble on the chat's soft neutral ground, reused for every
+ *  question, lead-in and empty state so the whole flow reads as one
+ *  conversation rather than a form. */
 function AssistantBubble({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return (
     <div className="flex items-start gap-3 animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
-      <ConciergeAvatar />
-      <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-line bg-panel px-4 py-3 text-copy leading-relaxed text-ink-soft sm:max-w-[75%]">
+      <ConciergeMark />
+      <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3 text-copy leading-relaxed text-ink-soft shadow-[0_1px_2px_rgba(22,22,26,0.04),0_6px_16px_-12px_rgba(22,22,26,0.18)] sm:max-w-[75%]">
         {children}
       </div>
     </div>
   );
 }
 
-/** Right-aligned recap of the user's own answer — accent-tinted so the
- *  transcript reads as a real back-and-forth, not just a log. */
+/** Right-aligned recap of the user's own answer — ink, like the user's
+ *  own messages everywhere else in CX (Messages uses the same), so the
+ *  transcript reads as a real back-and-forth. */
 function UserBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex justify-end animate-fade-up">
-      <div className="max-w-[80%] rounded-2xl rounded-tr-sm border border-accent-100 bg-accent-050 px-4 py-2.5 text-body font-medium text-ink sm:max-w-[70%]">
+      <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-ink px-4 py-2.5 text-body font-medium text-white shadow-[0_6px_16px_-10px_rgba(22,22,26,0.45)] sm:max-w-[70%]">
         {children}
       </div>
     </div>
@@ -158,20 +179,57 @@ function UserBubble({ children }: { children: ReactNode }) {
 function TypingBubble() {
   return (
     <div className="flex items-center gap-3 animate-fade-up">
-      <ConciergeAvatar />
-      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-line bg-panel px-4 py-3.5">
+      <ConciergeMark />
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3.5 shadow-hair">
         {[0, 150, 300].map((d) => (
-          <span key={d} className="h-1.5 w-1.5 animate-typing-dot rounded-full bg-faint" style={{ animationDelay: `${d}ms` }} />
+          <span key={d} className="h-1.5 w-1.5 animate-typing-dot rounded-full bg-accent" style={{ animationDelay: `${d}ms` }} />
         ))}
       </div>
     </div>
   );
 }
 
-/** A quick-reply chip — the chat-native replacement for the old option
- *  cards. Compact, wraps naturally on mobile, and still carries the
- *  icon + optional blurb that made each choice legible. */
+/** A quick-reply chip — for the short answers (priorities, passengers,
+ *  city). Selected turns ink with a bright-green icon; `multi` choices
+ *  also swap their icon for a check, so a multi-select reads as "these
+ *  are ticked", not "this one was the answer". */
 function QuickReply({
+  active,
+  icon,
+  label,
+  multi = false,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  label: string;
+  multi?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-200 active:scale-95 ${
+        active
+          ? 'border-ink bg-ink text-white shadow-[0_8px_20px_-8px_rgba(22,22,26,0.5)]'
+          : 'border-line bg-white text-ink-soft shadow-hair hover:-translate-y-0.5 hover:border-accent/40 hover:text-ink'
+      }`}
+    >
+      <span className={`transition-colors ${active ? 'text-accent-bright' : 'text-muted group-hover:text-accent-600'}`}>
+        {multi && active ? <Icon name="check" size={17} strokeWidth={2.6} /> : icon}
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/** A richer answer card — for the questions whose options carry a blurb
+ *  (the kind of drive, the budget bands). The blurb is half the decision
+ *  ("Road Trip — long-haul comfort"), and the old chip hid it entirely
+ *  below `sm:`, so on a phone you picked from labels alone. Two-up grid,
+ *  a ~68px target each, icon in its own tile. */
+function OptionCard({
   active,
   icon,
   label,
@@ -188,15 +246,23 @@ function QuickReply({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-all duration-200 ${
+      className={`group flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] ${
         active
-          ? 'border-accent bg-accent text-white shadow-[0_8px_20px_rgba(0,133,54,0.22)]'
-          : 'border-line bg-white text-ink-soft hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent-050/50'
+          ? 'border-ink bg-ink text-white shadow-[0_12px_28px_-12px_rgba(22,22,26,0.55)]'
+          : 'border-line bg-white text-ink shadow-hair hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-soft'
       }`}
     >
-      <span className={active ? 'text-white' : 'text-muted group-hover:text-accent-600'}>{icon}</span>
-      <span>{label}</span>
-      {sub && <span className={`hidden text-caption sm:inline ${active ? 'text-white/75' : 'text-faint'}`}>· {sub}</span>}
+      <span
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
+          active ? 'bg-accent-bright text-noir' : 'bg-accent-050 text-accent-700 group-hover:bg-accent-100'
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-body font-semibold leading-tight">{label}</span>
+        {sub && <span className={`mt-0.5 block text-caption leading-snug ${active ? 'text-white/65' : 'text-muted'}`}>{sub}</span>}
+      </span>
     </button>
   );
 }
@@ -206,7 +272,10 @@ function QuickReply({
  *  represent a choice, it moves the conversation forward. */
 function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick: () => void; icon?: IconName }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 text-body font-medium text-muted transition-colors hover:text-ink">
+    <button
+      onClick={onClick}
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-1 text-body font-semibold text-accent-700 transition-colors hover:text-accent"
+    >
       {children} {icon && <Icon name={icon} size={15} />}
     </button>
   );
@@ -214,24 +283,39 @@ function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick:
 
 function BackLink({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="mb-2.5 inline-flex items-center gap-1 text-detail font-medium text-faint transition-colors hover:text-muted">
+    <button onClick={onClick} className="mb-2.5 inline-flex min-h-8 items-center gap-1 text-detail font-medium text-faint transition-colors hover:text-muted">
       <Icon name="chevronLeft" size={14} /> Back
     </button>
   );
 }
 
-function StepDots({ current, total }: { current: number; total: number }) {
+/** Match score as a ring rather than a bare "92% MATCH" label — the arc
+ *  says "how close" at a glance before the number is even read. */
+function MatchRing({ value, size = 56 }: { value: number; size?: number }) {
+  const r = 16;
+  const c = 2 * Math.PI * r;
   return (
-    <div className="relative flex shrink-0 items-center justify-center gap-1.5 pb-3.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`h-1.5 rounded-full transition-all duration-300 ${
-            i < current ? 'w-1.5 bg-accent/45' : i === current ? 'w-5 bg-accent' : 'w-1.5 bg-line-strong'
-          }`}
+    <span className="relative grid place-items-center" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 40 40" className="absolute inset-0 -rotate-90" aria-hidden="true">
+        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="3" />
+        <circle
+          cx="20"
+          cy="20"
+          r={r}
+          fill="none"
+          stroke="var(--color-accent-bright)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - Math.min(100, Math.max(0, value)) / 100)}
+          style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,71,0.6))' }}
         />
-      ))}
-    </div>
+      </svg>
+      <span className="relative text-center leading-none">
+        <span className="block text-[0.95rem] font-bold tabular-nums text-white">{value}%</span>
+        <span className="mt-0.5 block text-[0.5rem] font-semibold uppercase tracking-[0.14em] text-white/60">match</span>
+      </span>
+    </span>
   );
 }
 
@@ -372,74 +456,98 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
   const top = match?.results[0] ?? null;
   const alternates = match?.results.slice(1, 5) ?? [];
 
+  // Header progress: a sliver at the very start (so the bar visibly
+  // exists before the first answer), then one fifth per answered question.
+  const progress = step === 'results' ? 100 : Math.max(4, (answeredCount / QUIZ_STEPS.length) * 100);
+  const stepLabel =
+    step === 'results'
+      ? 'Your match is ready'
+      : thinking
+        ? 'Matching you with the fleet…'
+        : `Step ${Math.min(answeredCount + 1, QUIZ_STEPS.length)} of ${QUIZ_STEPS.length}`;
+
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-white">
-      {/* Ambient CX wash — a whisper of the brand green, not a glow;
-          "premium" here means restraint, not atmosphere. */}
+    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-[#f6f7f3] animate-fade-in">
+      {/* Ambient CX light — a quiet green bloom high on the chat ground,
+          the same brand light the header's progress bar carries. */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-80"
-        style={{ background: 'radial-gradient(60% 45% at 15% 0%, rgba(0,133,54,0.06), transparent 62%)' }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(55% 38% at 12% 6%, rgba(0,212,71,0.09), transparent 64%), radial-gradient(45% 30% at 100% 100%, rgba(0,133,54,0.05), transparent 70%)' }}
       />
 
-      {/* Chrome */}
-      <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-line bg-white/90 px-4 backdrop-blur-xl sm:px-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="flex items-center gap-2.5">
-          <ConciergeAvatar size={34} />
-          <div>
-            <p className="text-detail font-semibold uppercase tracking-[0.14em] leading-none text-ink">CX Concierge</p>
-            <p className="mt-1 text-micro uppercase leading-none tracking-[0.18em] text-faint">
-              {step === 'results' ? 'Your match is ready' : 'Guided car match'}
-            </p>
+      {/* Chrome — noir, so the CX key reads the way it was drawn and the
+          whole experience wears the brand rather than a generic white bar. */}
+      <div data-surface="noir" className="relative shrink-0 bg-noir text-on-noir" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(50% 120% at 0% 0%, rgba(0,212,71,0.16), transparent 60%)' }}
+        />
+        <div className="relative flex h-16 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <ConciergeMark size={38} live />
+            <div>
+              <p className="font-display text-[1.0625rem] font-semibold leading-none tracking-tight text-white">CX Concierge</p>
+              <p className="mt-1.5 text-caption leading-none text-on-noir-muted" aria-live="polite">
+                {stepLabel}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {session && (
+              <button
+                onClick={talkToHuman}
+                disabled={escalating}
+                className="hidden items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-2 text-detail font-medium text-on-noir transition-colors hover:border-accent-bright/40 hover:bg-white/10 disabled:opacity-50 sm:inline-flex"
+              >
+                <Icon name="headset" size={15} className="text-accent-bright" />
+                {escalating ? 'Connecting…' : 'Talk to a real person'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="grid h-11 w-11 place-items-center rounded-full text-on-noir-muted transition-colors hover:bg-white/10 hover:text-white active:bg-white/10"
+            >
+              <Icon name="x" size={20} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          {session && (
-            <button
-              onClick={talkToHuman}
-              disabled={escalating}
-              className="hidden items-center gap-1.5 rounded-full border border-line px-3 py-2 text-detail font-medium text-ink-soft transition-colors hover:border-accent/40 hover:bg-accent-050/50 disabled:opacity-50 sm:inline-flex"
-            >
-              <Icon name="headset" size={15} className="text-accent-600" />
-              {escalating ? 'Connecting…' : 'Talk to a real person'}
-            </button>
-          )}
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="grid h-10 w-10 place-items-center rounded-xl text-muted transition-colors hover:bg-panel hover:text-ink"
-          >
-            <Icon name="x" size={20} />
-          </button>
+        {/* Progress — fills one fifth per answer, glowing at its leading edge. */}
+        <div className="relative h-[3px] bg-white/[0.07]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Concierge progress">
+          <div
+            className="h-full rounded-r-full bg-accent-bright shadow-[0_0_12px_rgba(0,212,71,0.75)] transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
-      {step !== 'results' && <StepDots current={answeredCount} total={QUIZ_STEPS.length} />}
-
       <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-          {/* Welcome — always the first message, even once questions are
+          {/* Welcome — always at the top, even once questions are
               answered, so the transcript reads like a real conversation
-              from the top rather than resetting per step. */}
-          <AssistantBubble>
-            Hi, I&apos;m your CX Concierge. Answer a few quick questions and I&apos;ll match you with the right car from the fleet.
-            {hasPersonalData && (
-              <span className="mt-1.5 block text-muted">I&apos;ll also factor in your saved cars and rental history.</span>
+              from the start rather than resetting per step. */}
+          <div className="flex flex-col items-center px-2 pb-1 pt-7 text-center animate-fade-up">
+            <ConciergeMark size={68} />
+            <h2 className="mt-4 font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-ink text-balance sm:text-3xl">
+              Let&apos;s find your CX.
+            </h2>
+            <p className="mt-2 max-w-sm text-body leading-relaxed text-muted text-pretty">
+              Five quick questions, then I&apos;ll match you with the right car from the fleet.
+              {hasPersonalData && ' I’ll factor in your saved cars and past trips too.'}
+            </p>
+            {/* Mobile-only escalation — the header button is hidden below sm:. */}
+            {session && (
+              <button
+                onClick={talkToHuman}
+                disabled={escalating}
+                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3.5 text-detail font-medium text-ink-soft shadow-hair transition-colors hover:text-accent-600 disabled:opacity-50 sm:hidden"
+              >
+                <Icon name="headset" size={14} className="text-accent" />
+                {escalating ? 'Connecting…' : 'Prefer a real person?'}
+              </button>
             )}
-          </AssistantBubble>
-
-          {/* Mobile-only escalation link — the header button above is
-              hidden below sm:, this is its equivalent, kept out of the
-              way of the quiz itself. */}
-          {session && (
-            <button
-              onClick={talkToHuman}
-              disabled={escalating}
-              className="inline-flex items-center gap-1.5 self-start pl-[42px] text-detail font-medium text-muted transition-colors hover:text-accent-600 disabled:opacity-50 sm:hidden"
-            >
-              <Icon name="headset" size={14} />
-              {escalating ? 'Connecting…' : 'Prefer a real person? Message our team'}
-            </button>
-          )}
+          </div>
 
           {/* Already-answered questions, derived straight from `prefs` —
               never a separate log, so a Back + re-answer can't leave a
@@ -463,16 +571,19 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
             <div key={step} className="flex flex-col gap-3">
               <AssistantBubble>{questionFor(step)}</AssistantBubble>
 
-              <div className="pl-[42px]">
+              {/* Answers span the full width on phones (the 42px indent
+                  that lines them up under the bubble costs a quarter of a
+                  narrow screen); from sm: up they sit under the bubble. */}
+              <div className="sm:pl-[42px]">
                 {quizIndex > 0 && <BackLink onClick={back} />}
 
                 {step === 'drive' && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                     {DRIVE_TYPES.map((d) => (
-                      <QuickReply
+                      <OptionCard
                         key={d.id}
                         active={prefs.driveType === d.id}
-                        icon={<Icon name={d.icon} size={17} />}
+                        icon={<Icon name={d.icon} size={18} />}
                         label={d.label}
                         sub={d.blurb}
                         onClick={() => {
@@ -491,6 +602,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                       {PRIORITIES.map((p) => (
                         <QuickReply
                           key={p.id}
+                          multi
                           active={prefs.priorities.includes(p.id as Priority)}
                           icon={<Icon name={p.icon} size={17} />}
                           label={p.label}
@@ -530,12 +642,12 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
                 {step === 'budget' && (
                   <>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {BUDGET_BANDS.map((b) => (
-                        <QuickReply
+                        <OptionCard
                           key={b.id}
                           active={prefs.budget === b.id}
-                          icon={<Icon name="wallet" size={17} />}
+                          icon={<Icon name={b.id === 'flexible' ? 'sparkles' : 'wallet'} size={18} />}
                           label={b.label}
                           sub={b.note}
                           onClick={() => {
@@ -547,7 +659,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                     </div>
 
                     <p className="mb-2 mt-4 text-detail text-faint">Or tell me an exact daily maximum</p>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-white py-1.5 pl-4 pr-1.5 transition-colors focus-within:border-accent/50">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-white py-1.5 pl-4 pr-1.5 shadow-hair transition-colors focus-within:border-accent/50 focus-within:shadow-[0_0_0_3px_var(--color-accent-100)]">
                       <span className="text-faint">€</span>
                       <input
                         type="number"
@@ -633,14 +745,14 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                     </button>
                   </div>
 
-                  <div className="pl-[42px]">
+                  <div className="sm:pl-[42px]">
                     <TopMatch scored={top} prefs={prefs} onRent={rentNow} onClose={onClose} favToggle={toggleFavorite} isFav={isFavorite} onCompare={toggleCompare} />
                   </div>
 
                   {alternates.length > 0 && (
-                    <div className="mt-8 pl-[42px]">
+                    <div className="mt-8">
                       <AssistantBubble delay={80}>A few more options you might like:</AssistantBubble>
-                      <div className="mt-4 grid grid-cols-1 gap-4 pl-[42px] sm:grid-cols-2">
+                      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:pl-[42px]">
                         {alternates.map((s) => (
                           <AltCard key={s.car.id} scored={s} onRent={rentNow} onClose={onClose} onCompare={toggleCompare} />
                         ))}
@@ -655,7 +767,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                     I couldn&apos;t find a perfect match with those preferences. Want me to widen the search? I&apos;ll relax the budget and
                     location to show the closest cars in the fleet.
                   </AssistantBubble>
-                  <div className="pl-[42px]">
+                  <div className="sm:pl-[42px]">
                     <button onClick={() => setRelaxed(true)} className="btn btn-accent-bright btn-lg">
                       Expand My Options <Icon name="arrowRight" size={17} />
                     </button>
@@ -693,17 +805,24 @@ function TopMatch({
   const { car, match } = scored;
   const fav = isFav(car.id);
   return (
-    <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-line bg-white shadow-[0_10px_36px_-12px_rgba(22,22,26,0.14)]">
+    <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-line bg-white shadow-[0_18px_44px_-18px_rgba(22,22,26,0.28)] animate-scale-in">
       <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
         <Img
           src={unsplash(car.images[0], 1400)}
+          srcSet={unsplashSrcSet(car.images[0], [800, 1200, 1600])}
+          sizes="(min-width: 768px) 720px, 100vw"
           alt={`${car.make} ${car.model}`}
           className="h-full w-full object-cover"
           fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-        <span className="absolute right-4 top-4 rounded-full border border-accent-bright/40 bg-black/50 px-3 py-1.5 text-detail font-bold text-accent-bright backdrop-blur-md">
-          {match}% MATCH
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/25" />
+        {/* The Concierge's own pick, signed with its mark — distinct from
+            a generic "Top rated" badge any listing could carry. */}
+        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 py-1 pl-1 pr-3 text-label font-bold uppercase tracking-[0.12em] text-white backdrop-blur-md">
+          <ConciergeMark size={22} /> CX Pick
+        </span>
+        <span className="absolute right-3 top-3 rounded-full bg-black/45 p-1 backdrop-blur-md">
+          <MatchRing value={match} />
         </span>
         <div className="absolute bottom-4 left-5 right-5">
           <h3 className="font-display text-2xl font-semibold text-white sm:text-3xl">

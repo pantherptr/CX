@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
-import { ConciergeLauncher } from '../components/Concierge';
+import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { Img, Reveal, useCountUp } from '../components/motion';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -546,8 +546,8 @@ export default function Garage() {
               style={{ background: 'radial-gradient(55% 55% at 85% 20%, rgba(0,212,71,0.17), transparent 62%)' }}
             />
             <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
-                <Icon name="sparkles" size={14} /> CX Concierge
+              <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
+                <ConciergeMark size={40} live /> CX Concierge
               </p>
               <h2 className="mt-3 font-display text-2xl font-semibold text-ink sm:text-3xl">Find my next CX</h2>
               <p className="mt-2 text-copy leading-relaxed text-ink-soft">

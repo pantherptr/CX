@@ -11,6 +11,20 @@ import { useUnreadMessageCount } from '../lib/data/messages';
 // describe a rename that never actually happened underneath.
 import { useEmpireUnreadCount } from '../lib/data/empireFeed';
 import { useViewportBottomGap } from '../lib/useViewportGap';
+import { haptics } from '../lib/native';
+
+/** Re-tapping the tab you're already on scrolls that screen back to the
+ *  top — the convention every native tab bar follows (and the fastest way
+ *  back up a long SIGNAL feed). A fresh tab switch just gets a light tick. */
+function onTabClick(e: React.MouseEvent, active: boolean) {
+  if (active) {
+    e.preventDefault();
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    return;
+  }
+  haptics.tick();
+}
 
 interface Item {
   label: string;
@@ -384,6 +398,7 @@ export function BottomNav() {
               <Link
                 key={it.label}
                 to={it.to}
+                onClick={(e) => onTabClick(e, active)}
                 className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
                 aria-current={active ? 'page' : undefined}
               >
@@ -462,6 +477,7 @@ export function BottomNav() {
             <Link
               key={it.label}
               to={it.to}
+              onClick={(e) => onTabClick(e, active)}
               className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
               aria-current={active ? 'page' : undefined}
             >

@@ -6,6 +6,7 @@ import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
 import { EmptyState, Modal, VerifiedBadge, RoleLabel, type VerifiedRole } from '../components/primitives';
 import { useAuth } from '../lib/auth';
+import { haptics } from '../lib/native';
 import {
   useConversations,
   useConversation,
@@ -190,6 +191,7 @@ export default function Messages() {
   // under. Not persisted; defaults back to their real identity each visit.
   const [sendAsRole, setSendAsRole] = useState<SendAsRole>('owner');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages } = useConversation(activeId);
   const active = (conversations ?? []).find((c) => c.id === activeId) ?? null;
@@ -267,6 +269,9 @@ export default function Messages() {
     const body = text.trim();
     if (!body || !activeId || !session) return;
     setText('');
+    // Collapse the auto-grown composer back to one line with the text.
+    if (composerRef.current) composerRef.current.style.height = 'auto';
+    haptics.tick();
     const localId = crypto.randomUUID();
     setPending((prev) => [...prev, { localId, conversationId: activeId, body, status: 'sending' }]);
     void attemptSend(localId, activeId, body);
@@ -462,7 +467,7 @@ export default function Messages() {
                           <div className="max-w-[78%] sm:max-w-[65%]">
                             {showHead && <RoleLabel role={badgeRole} align={mine ? 'right' : 'left'} />}
                             <div
-                              className={`rounded-2xl px-4 py-2.5 text-body leading-snug shadow-[0_1px_2px_rgba(22,22,26,0.06)] ${
+                              className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-body leading-snug shadow-[0_1px_2px_rgba(22,22,26,0.06)] [overflow-wrap:anywhere] ${
                                 mine ? 'bg-ink text-white rounded-br-md' : 'bg-surface text-ink border border-line rounded-bl-md'
                               }`}
                             >
@@ -487,9 +492,9 @@ export default function Messages() {
                     distinct, dismissible bubble with its own retry. */}
                 {pendingForActive.map((p) => (
                   <div key={p.localId} className="mt-3 flex justify-end">
-                    <div className="max-w-[78%] sm:max-w-[65%]">
+                    <div className="max-w-[78%] origin-bottom-right animate-scale-in sm:max-w-[65%]">
                       <div
-                        className={`rounded-2xl rounded-br-md px-4 py-2.5 text-body leading-snug ${
+                        className={`whitespace-pre-wrap rounded-2xl rounded-br-md px-4 py-2.5 text-body leading-snug [overflow-wrap:anywhere] ${
                           p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/70 text-white'
                         }`}
                       >
@@ -539,15 +544,39 @@ export default function Messages() {
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-2 rounded-2xl border border-line-strong bg-bg px-2 py-1.5 focus-within:border-accent">
-                  <input
+                <div className="flex items-end gap-2 rounded-2xl border border-line-strong bg-bg px-2 py-1.5 transition-colors focus-within:border-accent">
+                  {/* Grows with the message (up to ~5 lines, then scrolls)
+                      instead of a one-line input that couldn't hold a line
+                      break at all. Enter sends where there's a hardware
+                      keyboard; on touch keyboards it's a newline and the
+                      button sends, like every phone chat app. Never sends
+                      mid-IME-composition (Enter there confirms a Japanese/
+                      Chinese/Korean candidate, it isn't "send"). */}
+                  <textarea
+                    ref={composerRef}
+                    rows={1}
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !sending && send()}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      const el = e.currentTarget;
+                      el.style.height = 'auto';
+                      el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+                      if (window.matchMedia('(hover: none)').matches) return;
+                      e.preventDefault();
+                      if (!sending) send();
+                    }}
                     placeholder="Write a message…"
-                    className="min-w-0 flex-1 bg-transparent px-2 text-body text-ink outline-none placeholder:text-faint"
+                    className="max-h-[132px] min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-body leading-snug text-ink outline-none placeholder:text-faint"
                   />
-                  <button onClick={send} disabled={!text.trim() || sending} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white transition-opacity disabled:opacity-40" aria-label="Send">
+                  <button
+                    onClick={send}
+                    disabled={!text.trim() || sending}
+                    className="mb-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
+                    aria-label="Send"
+                  >
                     <Icon name="send" size={17} />
                   </button>
                 </div>

@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { mediaKindFromPath } from '../../lib/data/empireFeed';
 import { SharedAvatar } from '../motionKit';
+
+/** Horizontal travel that commits to the next/previous item. */
+const SWIPE_NAV_PX = 60;
+/** Downward travel that closes the viewer on release. */
+const SWIPE_CLOSE_PX = 110;
 
 /** A simple fullscreen image/video viewer — tap any post media to open it
  *  here. Same `fixed inset-0` full-viewport overlay pattern used
@@ -10,7 +15,12 @@ import { SharedAvatar } from '../motionKit';
  *  CSS escapes any parent's layout regardless of DOM nesting). A video
  *  slide is `key`ed by its own URL so navigating to the next/previous
  *  item fully remounts the element — the only way to guarantee the
- *  previous video actually stops rather than keeps playing off-screen. */
+ *  previous video actually stops rather than keeps playing off-screen.
+ *
+ *  Touch: swipe sideways between items, swipe down to dismiss (the media
+ *  follows the finger and the backdrop fades with it, then the shared-
+ *  element morph carries it home into the card). Keyboard: arrows and
+ *  Escape. The page underneath can't scroll while it's open. */
 export function SignalMediaViewer({
   images,
   startIndex,
@@ -21,6 +31,15 @@ export function SignalMediaViewer({
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(startIndex);
+  const [drag, setDrag] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const gesture = useRef<{ x: number; y: number; axis: 'x' | 'y' | null } | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  const many = images.length > 1;
   const isVideo = mediaKindFromPath(images[index]) === 'video';
   // The shared-element morph (see PostImage's own matching comment) only
   // ever connects to the exact image that was tapped — navigating to a
@@ -30,59 +49,144 @@ export function SignalMediaViewer({
   const sharedId = `post-media-${images[startIndex]}`;
   const showsInitialImage = index === startIndex && !isVideo;
 
+  const step = (delta: number) => setIndex((i) => (i + delta + images.length) % images.length);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current();
+      else if (e.key === 'ArrowRight' && many) setIndex((i) => (i + 1) % images.length);
+      else if (e.key === 'ArrowLeft' && many) setIndex((i) => (i - 1 + images.length) % images.length);
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [many, images.length]);
+
+  const onTouchStart = (e: ReactTouchEvent) => {
+    gesture.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: null };
+  };
+  const onTouchMove = (e: ReactTouchEvent) => {
+    const g = gesture.current;
+    if (!g) return;
+    const dx = e.touches[0].clientX - g.x;
+    const dy = e.touches[0].clientY - g.y;
+    if (!g.axis && Math.hypot(dx, dy) > 8) g.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (!g.axis) return;
+    setDragging(true);
+    // A single item still gives a little under a sideways pull — resists
+    // rather than going dead, so the gesture never feels ignored.
+    setDrag(g.axis === 'x' ? { x: many ? dx : dx / 4, y: 0 } : { x: 0, y: Math.max(0, dy) });
+  };
+  const onTouchEnd = () => {
+    const axis = gesture.current?.axis;
+    gesture.current = null;
+    if (!dragging) return;
+    setDragging(false);
+    if (axis === 'y' && drag.y > SWIPE_CLOSE_PX) {
+      onCloseRef.current();
+      return;
+    }
+    if (axis === 'x' && many && Math.abs(drag.x) > SWIPE_NAV_PX) step(drag.x < 0 ? 1 : -1);
+    setDrag({ x: 0, y: 0 });
+  };
+
+  const closeProgress = Math.min(1, drag.y / 300);
+
   return (
-    <div className="fixed inset-0 z-[300] flex flex-col bg-black/95 animate-fade-in" role="dialog" aria-modal="true">
-      <div className="flex h-14 shrink-0 items-center justify-between px-4 pt-safe">
-        <span className="text-detail font-medium text-white/70">
-          {images.length > 1 ? `${index + 1} / ${images.length}` : ''}
+    <div
+      className="fixed inset-0 z-[300] flex flex-col animate-fade-in"
+      style={{
+        backgroundColor: `rgba(0,0,0,${0.95 * (1 - closeProgress * 0.7)})`,
+        transition: dragging ? 'none' : 'background-color 200ms ease',
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="flex h-14 shrink-0 items-center justify-between px-4 pt-safe transition-opacity duration-200"
+        style={{ opacity: drag.y > 0 ? 0 : 1 }}
+      >
+        <span className="text-detail font-medium tabular-nums text-white/70">
+          {many ? `${index + 1} / ${images.length}` : ''}
         </span>
         <button
           onClick={onClose}
           aria-label="Close"
-          className="grid h-10 w-10 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          className="grid h-11 w-11 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
         >
           <Icon name="x" size={22} />
         </button>
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 pb-safe">
-        {isVideo ? (
-          <video key={images[index]} src={images[index]} controls autoPlay playsInline className="max-h-full max-w-full object-contain" />
-        ) : (
-          <SharedAvatar id={sharedId} active={showsInitialImage}>
-            <Img
-              src={images[index]}
-              alt=""
-              className="max-h-full max-w-full object-contain"
-              fallback={
-                <div className="flex flex-col items-center gap-2 text-white/60">
-                  <Icon name="image" size={32} />
-                  <span className="text-detail">Image unavailable</span>
-                </div>
-              }
-            />
-          </SharedAvatar>
-        )}
+      <div
+        className="relative flex flex-1 touch-none items-center justify-center overflow-hidden px-4 pb-safe"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        <div
+          key={index}
+          className="flex h-full w-full items-center justify-center animate-fade-in"
+          style={{
+            transform: `translate(${drag.x}px, ${drag.y}px) scale(${1 - closeProgress * 0.15})`,
+            transition: dragging ? 'none' : 'transform 240ms var(--ease-out-expo)',
+          }}
+        >
+          {isVideo ? (
+            <video key={images[index]} src={images[index]} controls autoPlay playsInline className="max-h-full max-w-full object-contain" />
+          ) : (
+            <SharedAvatar id={sharedId} active={showsInitialImage}>
+              <Img
+                src={images[index]}
+                alt=""
+                className="max-h-full max-w-full select-none object-contain"
+                fallback={
+                  <div className="flex flex-col items-center gap-2 text-white/60">
+                    <Icon name="image" size={32} />
+                    <span className="text-detail">Image unavailable</span>
+                  </div>
+                }
+              />
+            </SharedAvatar>
+          )}
+        </div>
 
-        {images.length > 1 && (
+        {many && (
           <>
             <button
-              onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+              onClick={() => step(-1)}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 sm:left-4"
+              className="absolute left-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 sm:left-4"
             >
               <Icon name="chevronLeft" size={22} />
             </button>
             <button
-              onClick={() => setIndex((i) => (i + 1) % images.length)}
+              onClick={() => step(1)}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 sm:right-4"
+              className="absolute right-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 sm:right-4"
             >
               <Icon name="chevronRight" size={22} />
             </button>
           </>
         )}
       </div>
+
+      {many && (
+        <div className="flex shrink-0 justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2" aria-hidden="true">
+          {images.map((_, i) => (
+            <span
+              key={i}
+              className="h-1.5 rounded-full bg-white transition-all duration-200"
+              style={{ width: i === index ? 16 : 6, opacity: i === index ? 1 : 0.4 }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

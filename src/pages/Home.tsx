@@ -6,10 +6,10 @@ import { SearchBar } from '../components/SearchBar';
 import { SectionHead } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
 import { CarCard } from '../components/CarCard';
-import { ConciergeLauncher } from '../components/Concierge';
+import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
-import { unsplash } from '../lib/img';
+import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { CarCategory } from '../data/types';
@@ -121,6 +121,54 @@ const SPOTLIGHT_CATEGORIES: { key: CarCategory; label: string }[] = [
   { key: 'Convertible', label: 'Convertibles' },
 ];
 
+/** Prev/next for a horizontal card rail, for mouse users only (`can-hover`)
+ *  — touch already swipes it natively, but a rail with its scrollbar
+ *  hidden otherwise gives a mouse no way to move it at all. Each press
+ *  pages by ~one viewport of cards; the rail's own scroll-snap lands it
+ *  cleanly on a card edge. Disabled at either end so it never "does
+ *  nothing" silently. */
+function RailArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | null> }) {
+  const [edges, setEdges] = useState({ start: true, end: false });
+
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const update = () =>
+      setEdges({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, [railRef]);
+
+  const page = (dir: 1 | -1) => {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="hidden items-center gap-2 can-hover:flex">
+      {([-1, 1] as const).map((dir) => (
+        <button
+          key={dir}
+          type="button"
+          onClick={() => page(dir)}
+          disabled={dir === -1 ? edges.start : edges.end}
+          aria-label={dir === -1 ? 'Previous cars' : 'More cars'}
+          className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-surface text-ink shadow-hair transition hover:border-ink/30 hover:shadow-soft active:scale-95 disabled:cursor-default disabled:opacity-35 disabled:shadow-none"
+        >
+          <Icon name={dir === -1 ? 'chevronLeft' : 'chevronRight'} size={18} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function StatCounter({ value, decimals, label }: { value: number; decimals?: number; label: string }) {
   const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
   return (
@@ -136,6 +184,7 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
 export default function Home() {
   const startScramble = useScramble('Start');
   const { cars: allCars } = useCars();
+  const fleetRailRef = useRef<HTMLDivElement>(null);
 
   // Real per-category stats (count, starting price, a real photo) computed
   // from the actual catalogue — no hand-authored counts or stock photos.
@@ -177,19 +226,31 @@ export default function Home() {
           which is what used to cause the scroll-jump. The inner content
           keeps its own pt-24/pt-28 unchanged, so it lands in the exact
           same visual spot it always did. */}
-      <section className="relative isolate -mt-16 min-h-[75rem] overflow-hidden bg-[#eaf2ef] sm:min-h-[92svh]">
-        <HeroPhoto />
+      <section className="relative isolate -mt-16 overflow-hidden bg-bg sm:min-h-[92svh] sm:bg-[#eaf2ef]">
+        {/* Media layer. On phones it's exactly one screen tall: the
+            mobile photo is a 9:16 portrait, and stretching it over the old
+            1200px hero blew it up ~1.8x and cropped the car out of frame —
+            at one screen it shows its whole composition, car included,
+            and fades into the page where the search card overlaps it.
+            Wider screens keep the full-bleed photo behind everything. */}
+        <div className="absolute inset-x-0 top-0 h-[100svh] sm:inset-0 sm:h-auto">
+          <HeroPhoto />
 
-        {/* A light editorial wash gives the copy a calm, premium reading
-            surface while keeping the blue sky, architecture and car vivid. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-[#0b2618]/30" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f8faf4]/[0.97] via-[#f8faf4]/75 to-transparent sm:via-[#f8faf4]/45" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{ background: 'radial-gradient(42% 42% at 16% 10%, rgba(0,212,71,0.10), transparent 70%)' }}
-        />
+          {/* A light editorial wash gives the copy a calm, premium reading
+              surface while keeping the blue sky, architecture and car vivid. */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-[#0b2618]/30" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f8faf4]/[0.97] via-[#f8faf4]/75 to-transparent sm:via-[#f8faf4]/45" />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{ background: 'radial-gradient(42% 42% at 16% 10%, rgba(0,212,71,0.10), transparent 70%)' }}
+          />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-bg sm:hidden" />
+        </div>
 
-        <div className="relative z-10 flex min-h-[75rem] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
+        {/* Phones: tall enough that the search card starts just above the
+            photo's bottom edge (one screen, minus a ~70px overlap) rather
+            than a screen and a half further down. */}
+        <div className="relative z-10 flex min-h-[calc(100svh+19rem)] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
           {/* -------- Headline column -------- */}
           <div className="max-w-xl">
             <Reveal>
@@ -263,19 +324,29 @@ export default function Home() {
             eyebrow="Explore the CX Fleet"
             title="Choose the car that fits your journey."
             action={
-              <Link
-                to="/browse"
-                className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
-              >
-                View all cars <Icon name="arrowRight" size={15} />
-              </Link>
+              <div className="flex items-center gap-4">
+                <Link
+                  to="/browse"
+                  className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
+                >
+                  View all cars <Icon name="arrowRight" size={15} />
+                </Link>
+                <RailArrows railRef={fleetRailRef} />
+              </div>
             }
           />
         </div>
-        <div className="scrollbar-none mt-8 flex gap-4 overflow-x-auto px-5 pb-2 sm:px-8 xl:container-page xl:px-0">
+        {/* Snap so a swipe always settles on a whole card instead of
+            leaving one sliced in half at the edge; `overscroll-x-contain`
+            stops a hard swipe at the end from turning into the browser's
+            own back/forward navigation gesture. */}
+        <div
+          ref={fleetRailRef}
+          className="scrollbar-none mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-2 sm:scroll-pl-8 sm:px-8 xl:container-page xl:scroll-pl-0 xl:px-0"
+        >
           {(fleetCars ?? Array.from({ length: 4 })).map((car, i) =>
             car ? (
-              <Reveal key={car.id} delay={i * 60} className="w-[78vw] shrink-0 sm:w-[320px]">
+              <Reveal key={car.id} delay={i * 60} className="w-[78vw] shrink-0 snap-start sm:w-[320px]">
                 <CarCard car={car} priority={i < 2} />
               </Reveal>
             ) : (
@@ -308,7 +379,17 @@ export default function Home() {
         <ol className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
           {howSteps.map((st, i) => (
             <Reveal key={st.title} delay={i * 80}>
-              <li className="flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
+              <li className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
+                {/* A thread from this step's icon to the next card — the
+                    three really are one sequence, so they shouldn't read
+                    as three unrelated boxes. Down the gap on phones,
+                    across it on wider screens. */}
+                {i < howSteps.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-[2.625rem] top-full h-3 w-px bg-accent/35 sm:left-full sm:top-[2.875rem] sm:h-px sm:w-5"
+                  />
+                )}
                 <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
                   <Icon name={st.icon} size={20} />
                 </span>
@@ -329,7 +410,15 @@ export default function Home() {
           <div className="grid overflow-hidden rounded-[1.75rem] border border-line bg-surface lg:grid-cols-2">
             <div className="relative min-h-[220px] bg-panel sm:min-h-[300px]">
               {deliveryImage && (
-                <Img src={unsplash(deliveryImage, 1000)} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={null} />
+                <Img
+                  src={unsplash(deliveryImage, 1000)}
+                  srcSet={unsplashSrcSet(deliveryImage, [600, 1000, 1400])}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  fallback={null}
+                />
               )}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
               <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
@@ -375,25 +464,63 @@ export default function Home() {
               className="pointer-events-none absolute inset-0 opacity-80"
               style={{ background: 'radial-gradient(45% 75% at 88% 12%, rgba(0,212,71,0.17), transparent 62%)' }}
             />
-            <div className="relative max-w-xl">
-              <p className="inline-flex items-center gap-2 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
-                <Img
-                  src="/cx-logo-symbol.png"
-                  alt=""
-                  className="h-5 w-5 object-contain"
-                  fallback={<Icon name="sparkles" size={16} />}
-                /> CX Concierge
-              </p>
-              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                Find your CX
-              </h2>
-              <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
-                Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
-              </p>
-              <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-7" {...startScramble}>
-                <span className="btn-glint__sweep" aria-hidden="true" />
-                {startScramble.display} <Icon name="arrowRight" size={17} />
-              </ConciergeLauncher>
+            <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
+              <div className="max-w-xl">
+                <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
+                  <ConciergeMark size={44} live /> CX Concierge
+                </p>
+                <h2 className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+                  Find your CX
+                </h2>
+                <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
+                  Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
+                </p>
+                <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-7" {...startScramble}>
+                  <span className="btn-glint__sweep" aria-hidden="true" />
+                  {startScramble.display} <Icon name="arrowRight" size={17} />
+                </ConciergeLauncher>
+              </div>
+
+              {/* A glimpse of the real conversation — the same bubble,
+                  answer cards and selected state the Concierge opens into,
+                  so the card shows what it does instead of only saying it.
+                  Decorative only; the button above is the way in. */}
+              <div aria-hidden="true" className="hidden w-[300px] rotate-[1.5deg] md:block">
+                <div className="rounded-[1.5rem] border border-white/80 bg-white/70 p-4 shadow-[0_24px_50px_-24px_rgba(0,80,30,0.35)] backdrop-blur-md">
+                  <div className="flex items-start gap-2.5">
+                    <ConciergeMark size={28} />
+                    <span className="rounded-2xl rounded-tl-md border border-line bg-white px-3.5 py-2 text-detail text-ink-soft shadow-hair">
+                      What&apos;s the drive?
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {[
+                      { icon: 'route' as IconName, label: 'Road Trip', sub: 'Long-haul comfort', on: true },
+                      { icon: 'gem' as IconName, label: 'Luxury', sub: 'The finest ride', on: false },
+                      { icon: 'pin' as IconName, label: 'City', sub: 'Nimble around town', on: false },
+                      { icon: 'gauge' as IconName, label: 'Performance', sub: 'Pure thrill', on: false },
+                    ].map((o) => (
+                      <span
+                        key={o.label}
+                        className={`flex items-center gap-2 rounded-xl border p-2 ${
+                          o.on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink'
+                        }`}
+                      >
+                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${o.on ? 'bg-accent-bright text-noir' : 'bg-accent-050 text-accent-700'}`}>
+                          <Icon name={o.icon} size={14} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-caption font-semibold leading-tight">{o.label}</span>
+                          <span className={`block truncate text-[0.625rem] leading-tight ${o.on ? 'text-white/60' : 'text-muted'}`}>{o.sub}</span>
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <span className="rounded-2xl rounded-tr-md bg-ink px-3.5 py-2 text-detail font-medium text-white">Road Trip</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>
@@ -486,16 +613,27 @@ export default function Home() {
                     {tile.image && (
                       <Img
                         src={unsplash(tile.image, 500)}
+                        srcSet={unsplashSrcSet(tile.image, [300, 500, 800])}
+                        sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 46vw"
                         alt={tile.label}
+                        loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     )}
                   </div>
-                  <div className="p-3.5">
-                    <p className="font-display text-copy font-semibold text-ink">{tile.label}</p>
-                    {tile.fromPrice !== undefined && (
-                      <p className="mt-0.5 text-detail text-muted">From {eur(tile.fromPrice)}/day</p>
-                    )}
+                  <div className="flex items-end justify-between gap-2 p-3.5">
+                    <div className="min-w-0">
+                      <p className="font-display text-copy font-semibold text-ink">{tile.label}</p>
+                      {tile.fromPrice !== undefined && (
+                        <p className="mt-0.5 text-detail text-muted">From {eur(tile.fromPrice)}/day</p>
+                      )}
+                      <p className="mt-0.5 text-caption text-faint">
+                        {tile.count} {tile.count === 1 ? 'car' : 'cars'}
+                      </p>
+                    </div>
+                    <span className="mb-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-panel text-ink-soft transition-[background-color,color,transform] duration-300 group-hover:translate-x-0.5 group-hover:bg-accent group-hover:text-white">
+                      <Icon name="arrowRight" size={14} />
+                    </span>
                   </div>
                 </Link>
               </Reveal>

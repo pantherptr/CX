@@ -6,9 +6,10 @@ import { CarCard } from '../components/CarCard';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/primitives';
-import { ConciergeLauncher } from '../components/Concierge';
+import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { Img, Reveal } from '../components/motion';
+import { ActivePill } from '../components/motionKit';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
@@ -278,10 +279,8 @@ export default function CustomerDashboard() {
             <QuickAction icon="search" label="Find a Car" to="/browse" />
             <QuickAction icon="trips" label="My Bookings" to="/dashboard#trips" />
             <QuickAction icon="heart" label="Favorites" to="/dashboard#saved" />
-            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 sm:gap-2.5 sm:py-5">
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-panel text-ink-soft transition-colors group-hover:bg-ink group-hover:text-white">
-                <Icon name="sparkles" size={19} />
-              </span>
+            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 active:scale-[0.97] sm:gap-2.5 sm:py-5">
+              <ConciergeMark size={44} className="transition-transform duration-300 group-hover:scale-105" />
               <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">Concierge</span>
             </ConciergeLauncher>
           </div>
@@ -386,11 +385,16 @@ export default function CustomerDashboard() {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setTab(t.id)}
-                    className={`chip shrink-0 ${tab === t.id ? '!bg-ink !text-white !border-ink' : ''}`}
+                    onClick={(e) => {
+                      setTab(t.id);
+                      e.currentTarget.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+                    }}
+                    aria-pressed={tab === t.id}
+                    className={`chip relative shrink-0 ${tab === t.id ? '!border-transparent !bg-transparent !text-white' : ''}`}
                   >
-                    {t.label}
-                    {count > 0 && <span className="text-faint">· {count}</span>}
+                    {tab === t.id && <ActivePill layoutId="my-trips-tab" className="rounded-full bg-ink" />}
+                    <span className="relative">{t.label}</span>
+                    {count > 0 && <span className={`relative ${tab === t.id ? 'text-white/60' : 'text-faint'}`}>· {count}</span>}
                   </button>
                 );
               })}
@@ -502,8 +506,8 @@ export default function CustomerDashboard() {
               style={{ background: 'radial-gradient(55% 55% at 85% 10%, rgba(0,212,71,0.10), transparent 62%)' }}
             />
             <div className="relative">
-              <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">
-                <Icon name="sparkles" size={14} /> CX Concierge
+              <p className="inline-flex items-center gap-2.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">
+                <ConciergeMark size={30} live /> CX Concierge
               </p>
               <h2 className="mt-2 font-display text-xl font-semibold text-ink">Need something specific?</h2>
               <p className="mt-2 text-detail leading-relaxed text-muted">

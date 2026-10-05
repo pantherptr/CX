@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
-import { Modal } from '../components/primitives';
+import { ActivePill } from '../components/motionKit';
+import { Modal, Switch } from '../components/primitives';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -31,14 +32,6 @@ function Field({ label, children, full }: { label: string; children: ReactNode; 
   );
 }
 
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${on ? 'bg-accent' : 'bg-panel-2'}`} role="switch" aria-checked={on}>
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-    </button>
-  );
-}
-
 export default function Settings() {
   const { toast } = useApp();
   const { session, profile, refreshProfile, signOut } = useAuth();
@@ -46,7 +39,7 @@ export default function Settings() {
   const tier = renterTier((bookings ?? []).filter((b) => classifyBooking(b) === 'completed').length);
   const { hash } = useLocation();
   const [tab, setTab] = useState('personal');
-  const [toggles, setToggles] = useState({ trip: true, promo: false, host: true, sms: true, push: true });
+  const [toggles, setToggles] = useState({ trip: true, promo: false, host: true, sms: true, push: true, twoFactor: false });
   const flip = (k: keyof typeof toggles) => setToggles((t) => ({ ...t, [k]: !t[k] }));
 
   const [fullName, setFullName] = useState('');
@@ -167,13 +160,18 @@ export default function Settings() {
             {TABS.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-body font-medium transition-colors ${
-                  tab === t.id ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
+                onClick={(e) => {
+                  setTab(t.id);
+                  e.currentTarget.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+                }}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`relative flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-body font-medium transition-[color,background-color,transform] duration-200 active:scale-[0.97] ${
+                  tab === t.id ? 'text-white' : 'text-ink-soft hover:bg-panel'
                 }`}
               >
-                <Icon name={t.icon} size={18} className={tab === t.id ? 'text-white' : 'text-muted'} />
-                <span className="whitespace-nowrap">{t.label}</span>
+                {tab === t.id && <ActivePill layoutId="settings-section" className="rounded-xl bg-ink" />}
+                <Icon name={t.icon} size={18} className={`relative ${tab === t.id ? 'text-white' : 'text-muted'}`} />
+                <span className="relative whitespace-nowrap">{t.label}</span>
               </button>
             ))}
           </nav>
@@ -268,13 +266,13 @@ export default function Settings() {
                   { k: 'sms' as const, t: 'SMS notifications', d: 'Time-sensitive alerts by text message.' },
                   { k: 'push' as const, t: 'Push notifications', d: 'Real-time alerts on your devices.' },
                 ].map((r) => (
-                  <div key={r.k} className="flex items-center justify-between py-4 first:pt-0">
+                  <label key={r.k} className="flex cursor-pointer items-center justify-between py-4 first:pt-0">
                     <div className="pr-4">
                       <p className="text-body font-medium text-ink">{r.t}</p>
                       <p className="text-detail text-muted">{r.d}</p>
                     </div>
-                    <Toggle on={toggles[r.k]} onClick={() => flip(r.k)} />
-                  </div>
+                    <Switch checked={toggles[r.k]} onChange={() => flip(r.k)} label={r.t} />
+                  </label>
                 ))}
               </div>
             )}
@@ -309,13 +307,13 @@ export default function Settings() {
                   <Field label="New password"><input type="password" placeholder="••••••••" className="input" /></Field>
                   <Field label="Confirm new password"><input type="password" placeholder="••••••••" className="input" /></Field>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-line p-4">
-                  <div>
+                <label className="flex cursor-pointer items-center justify-between rounded-xl border border-line p-4">
+                  <div className="pr-4">
                     <p className="text-body font-medium text-ink">Two-factor authentication</p>
                     <p className="text-detail text-muted">Add an extra layer of security to your account.</p>
                   </div>
-                  <Toggle on={toggles.push} onClick={() => flip('push')} />
-                </div>
+                  <Switch checked={toggles.twoFactor} onChange={() => flip('twoFactor')} label="Two-factor authentication" />
+                </label>
 
                 <div className="rounded-xl border border-danger/25 bg-danger/[0.03] p-4">
                   <p className="text-body font-medium text-danger">Delete account</p>

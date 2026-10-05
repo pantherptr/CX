@@ -5,10 +5,36 @@ import { Img } from './motion';
 import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
-import { customerNav, hostNav } from '../lib/nav';
+import { customerNav, hostNav, type NavItem } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useViewportBottomGap } from '../lib/useViewportGap';
-import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
+import { haptics } from '../lib/native';
+import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, ActivePill } from './motionKit';
+
+/** A flick or a drag past this far to the right closes the drawer — the
+ *  same direction it slid in from, so the gesture undoes the entrance. */
+const DRAG_CLOSE_PX = 90;
+const DRAG_CLOSE_VELOCITY = 500;
+
+const linkClass = (isActive: boolean) =>
+  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-body transition-colors active:bg-panel ${
+    isActive ? 'bg-panel font-semibold text-ink' : 'font-medium text-ink-soft hover:bg-panel'
+  }`;
+
+/** Which single item is "you are here". NavLink alone can't decide this:
+ *  it ignores the hash (so Overview, My Trips, Saved and Rewards — all
+ *  `/dashboard#…` — would light up together) and the nav repeats a target
+ *  (Profile and Settings are both `/settings`). Exact path+hash wins;
+ *  otherwise the first hash-less item for the path (so an unlisted
+ *  `/settings#notifications` still marks Profile, not nothing). */
+function activeNavLabel(items: NavItem[], pathname: string, hash: string): string | null {
+  const exact = items.find((n) => {
+    const [path, frag] = n.to.split('#');
+    return path === pathname && (frag ? `#${frag}` : '') === hash;
+  });
+  if (exact) return exact.label;
+  return items.find((n) => !n.to.includes('#') && n.to === pathname)?.label ?? null;
+}
 
 /** The one authenticated-app mobile drawer — shared by `AppNavbar` (pages
  *  with no sidebar: Browse, car details, help, booking, list-a-car) and
@@ -22,13 +48,14 @@ import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './moti
  *  exact same drawer. */
 export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [mode, setMode] = useState<'customer' | 'host'>('customer');
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const reduceMotion = !!useReducedMotion();
   const gap = useViewportBottomGap();
   const { session, profile, signOut } = useAuth();
   const isHost = !!profile?.is_host;
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const nav = mode === 'host' && isHost ? hostNav(unreadCount) : customerNav(unreadCount);
+  const activeLabel = activeNavLabel(nav, pathname, hash);
 
   const displayName = profile?.full_name || session?.user.email?.split('@')[0] || 'Your account';
   const displayAvatar = profile?.avatar_url ?? null;
@@ -45,6 +72,28 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
     document.body.style.overflow = open ? 'hidden' : '';
     return () => void (document.body.style.overflow = '');
   }, [open]);
+
+  // Open on the side of the app you're actually in — a host opening the
+  // menu from their Host dashboard shouldn't land on the Driver list.
+  useEffect(() => {
+    if (open) setMode(isHost && pathname.startsWith('/host') ? 'host' : 'customer');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  const switchMode = (next: 'customer' | 'host') => {
+    if (next === mode) return;
+    haptics.tick();
+    setMode(next);
+  };
 
   const handleSignOut = async () => {
     onClose();
@@ -67,11 +116,26 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
             onClick={onClose}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
             className="absolute right-0 top-0 flex h-full w-[85%] max-w-sm flex-col overflow-hidden bg-surface text-ink shadow-pop"
             initial={reduceMotion ? false : { x: '100%' }}
             animate={{ x: 0 }}
             exit={reduceMotion ? undefined : { x: '100%' }}
             transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
+            // Swipe right to dismiss. Constrained at 0 on both sides but
+            // fully elastic to the right, so the panel follows the finger
+            // 1:1 outward, resists inward, and springs home on a short
+            // drag. Motion sets `touch-action: pan-y` for an x-drag, so the
+            // nav list's own vertical scroll is untouched.
+            drag={reduceMotion ? false : 'x'}
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={{ left: 0.04, right: 1 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.x > DRAG_CLOSE_PX || info.velocity.x > DRAG_CLOSE_VELOCITY) onClose();
+            }}
           >
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
               <Logo variant="wordmark" />
@@ -86,23 +150,27 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
 
             <nav className="flex-1 overflow-y-auto p-3">
               {isHost && (
-                <div className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
-                  <button
-                    onClick={() => setMode('customer')}
-                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
-                      mode === 'customer' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
-                    }`}
-                  >
-                    Driver
-                  </button>
-                  <button
-                    onClick={() => setMode('host')}
-                    className={`flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors ${
-                      mode === 'host' ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
-                    }`}
-                  >
-                    Host
-                  </button>
+                <div role="tablist" aria-label="Menu for" className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
+                  {(
+                    [
+                      ['customer', 'Driver'],
+                      ['host', 'Host'],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === id}
+                      onClick={() => switchMode(id)}
+                      className={`relative flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors duration-200 ${
+                        mode === id ? 'text-white' : 'text-ink-soft'
+                      }`}
+                    >
+                      {mode === id && <ActivePill layoutId="app-drawer-mode" className="rounded-lg bg-ink shadow-hair" />}
+                      <span className="relative">{label}</span>
+                    </button>
+                  ))}
                 </div>
               )}
               {profile?.is_owner ? (
@@ -146,29 +214,33 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                 <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
               </NavLink>
               <ul className="flex flex-col gap-0.5">
-                {nav.map((n) => (
-                  <li key={n.label}>
-                    <NavLink
-                      to={n.to}
-                      onClick={onClose}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
-                    >
-                      <Icon name={n.icon} size={19} className="text-muted" />
-                      <span className="flex-1">{n.label}</span>
-                      {n.badge && (
-                        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
-                          {n.badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  </li>
-                ))}
+                {nav.map((n) => {
+                  const isActive = n.label === activeLabel;
+                  return (
+                    <li key={n.label}>
+                      <Link
+                        to={n.to}
+                        onClick={onClose}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={linkClass(isActive)}
+                      >
+                        <Icon name={n.icon} size={19} className={isActive ? 'text-accent' : 'text-muted'} />
+                        <span className="flex-1">{n.label}</span>
+                        {n.badge && (
+                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
+                            {n.badge}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
               <div className="hairline my-3" />
               <Link
                 to="/help"
                 onClick={onClose}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel active:bg-panel"
               >
                 <Icon name="headset" size={19} className="text-muted" />
                 Help &amp; Support

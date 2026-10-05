@@ -22,6 +22,23 @@ export const haptics = {
   error: () => {
     if (isNative()) void Haptics.notification({ type: NotificationType.Error });
   },
+  /** One light tick for a discrete UI change — a switch flipping, a tab
+   *  changing, a photo snapping to the next slide. Native haptics inside
+   *  the app; the Vibration API on Android browsers; nothing on iOS
+   *  Safari, which exposes no haptics to the web at all. Never both: a
+   *  native Android shell also exposes `navigator.vibrate`, and firing
+   *  both would double the buzz. */
+  tick: () => {
+    if (isNative()) {
+      void Haptics.impact({ style: ImpactStyle.Light });
+      return;
+    }
+    try {
+      navigator.vibrate?.(6);
+    } catch {
+      // Throws in some embedded/iframe contexts — never worth surfacing.
+    }
+  },
 };
 
 /**

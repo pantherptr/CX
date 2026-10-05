@@ -4,8 +4,8 @@ import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { CarCard } from '../components/CarCard';
 import { Icon } from '../components/Icon';
-import { EmptyState } from '../components/primitives';
-import { ConciergeLauncher } from '../components/Concierge';
+import { EmptyState, Modal } from '../components/primitives';
+import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
@@ -67,7 +67,7 @@ function Check({ label, checked, onChange, note }: { label: string; checked: boo
     <label className="flex cursor-pointer items-center justify-between py-1.5 group">
       <span className="flex items-center gap-2.5">
         <span
-          className={`grid h-[18px] w-[18px] place-items-center rounded-[6px] border transition-all ${
+          className={`grid h-[18px] w-[18px] place-items-center rounded-[6px] border transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-active:scale-90 ${
             checked ? 'border-accent bg-accent text-white' : 'border-line-strong bg-surface group-hover:border-faint'
           }`}
         >
@@ -78,6 +78,67 @@ function Check({ label, checked, onChange, note }: { label: string; checked: boo
       {note && <span className="text-caption text-faint">{note}</span>}
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
     </label>
+  );
+}
+
+/** One track, two thumbs, the chosen band filled in — replaces two
+ *  separate full-width native sliders sitting side by side, where neither
+ *  showed the range they formed together. Built on two real
+ *  `<input type="range">`s stacked over one painted track, so keyboard,
+ *  screen-reader and touch support stay native; only the thumbs accept
+ *  pointer input (see `.range-dual` in index.css). */
+function PriceRange({
+  min,
+  max,
+  step,
+  low,
+  high,
+  onLow,
+  onHigh,
+}: {
+  min: number;
+  max: number;
+  step: number;
+  low: number;
+  high: number;
+  onLow: (v: number) => void;
+  onHigh: (v: number) => void;
+}) {
+  const pct = (v: number) => ((v - min) / (max - min)) * 100;
+  // When both thumbs sit at the far right, the "max" input (on top) would
+  // be the only grabbable one and it can't move left past "min" — a dead
+  // end. Lift "min" above it whenever it's pushed up near the end.
+  const lowOnTop = low > max - step * 5;
+  return (
+    <div className="relative h-8">
+      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-line-strong" />
+      <div
+        className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent"
+        style={{ left: `${pct(low)}%`, right: `${100 - pct(high)}%` }}
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={low}
+        onChange={(e) => onLow(+e.target.value)}
+        className="range-dual absolute inset-0 w-full"
+        style={{ zIndex: lowOnTop ? 3 : 1 }}
+        aria-label="Minimum price per day"
+      />
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={high}
+        onChange={(e) => onHigh(+e.target.value)}
+        className="range-dual absolute inset-0 w-full"
+        style={{ zIndex: 2 }}
+        aria-label="Maximum price per day"
+      />
+    </div>
   );
 }
 
@@ -133,26 +194,15 @@ function FilterPanel({
           <span className="text-muted">to</span>
           <span className="font-semibold">{eur(f.priceMax)}{f.priceMax >= 800 ? '+' : ''}</span>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            type="range"
+        <div className="mt-2">
+          <PriceRange
             min={30}
             max={800}
             step={10}
-            value={f.priceMin}
-            onChange={(e) => set((p) => ({ ...p, priceMin: Math.min(+e.target.value, p.priceMax) }))}
-            className="w-full accent-[var(--color-accent)]"
-            aria-label="Minimum price per day"
-          />
-          <input
-            type="range"
-            min={30}
-            max={800}
-            step={10}
-            value={f.priceMax}
-            onChange={(e) => set((p) => ({ ...p, priceMax: Math.max(+e.target.value, p.priceMin) }))}
-            className="w-full accent-[var(--color-accent)]"
-            aria-label="Maximum price per day"
+            low={f.priceMin}
+            high={f.priceMax}
+            onLow={(v) => set((p) => ({ ...p, priceMin: Math.min(v, p.priceMax) }))}
+            onHigh={(v) => set((p) => ({ ...p, priceMax: Math.max(v, p.priceMin) }))}
           />
         </div>
         <div className="mt-1 flex justify-between text-caption text-faint">
@@ -351,15 +401,26 @@ export default function Browse() {
 
   return (
     <div className="container-page py-8">
-      {/* Concierge entry — elegant, doesn't compete with the search bar below */}
-      <div className="mb-6 flex flex-col items-start gap-3 rounded-2xl border border-line bg-panel px-5 py-4 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-label font-semibold uppercase tracking-[0.18em] text-accent-700">
-            <Icon name="sparkles" size={13} /> CX Concierge
-          </p>
-          <p className="mt-1 text-body font-medium text-ink">Not sure which car? Tell us how you want to drive.</p>
+      {/* Concierge entry — the same noir-and-key identity the Concierge
+          itself opens into, so the banner and the experience read as one
+          thing; compact enough not to compete with the search bar below. */}
+      <div
+        data-surface="noir"
+        className="relative mb-6 flex flex-col items-start gap-3.5 overflow-hidden rounded-2xl bg-noir px-5 py-4 shadow-card min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(60% 140% at 0% 0%, rgba(0,212,71,0.2), transparent 62%)' }}
+        />
+        <div className="relative flex min-w-0 items-center gap-3.5">
+          <ConciergeMark size={44} live />
+          <div className="min-w-0">
+            <p className="font-display text-copy font-semibold leading-tight text-white">CX Concierge</p>
+            <p className="mt-0.5 text-detail leading-snug text-on-noir-muted">Not sure which car? Tell us how you want to drive.</p>
+          </div>
         </div>
-        <ConciergeLauncher className="btn btn-glint btn-accent-bright shrink-0" {...findCxScramble}>
+        <ConciergeLauncher className="btn btn-glint btn-accent-bright relative shrink-0" {...findCxScramble}>
           <span className="btn-glint__sweep" aria-hidden="true" />
           {findCxScramble.display} <Icon name="arrowRight" size={16} />
         </ConciergeLauncher>
@@ -483,37 +544,35 @@ export default function Browse() {
         </div>
       </div>
 
-      {/* Mobile filter drawer */}
-      {drawer && (
-        <div className="fixed inset-0 z-[70] lg:hidden">
-          <div className="absolute inset-0 bg-ink/40 animate-fade-in" onClick={() => setDrawer(false)} />
-          <div className="absolute inset-x-0 bottom-0 flex max-h-[88vh] flex-col rounded-t-[1.75rem] bg-surface shadow-pop animate-[fade-up_0.3s_ease]">
-            <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h2 className="font-display text-lg font-semibold text-ink">Filters</h2>
-              <button onClick={() => setDrawer(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-panel" aria-label="Close">
-                <Icon name="x" size={20} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-2">
-              <FilterPanel
-              f={filters}
-              set={setFilters}
-              reset={reset}
-              brands={brands}
-              pickupDate={pickupDate}
-              returnDate={returnDate}
-              setPickupDate={setPickupDate}
-              setReturnDate={setReturnDate}
-            />
-            </div>
-            <div className="border-t border-line p-4">
-              <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
-                Show {results.length} cars
-              </button>
-            </div>
-          </div>
+      {/* Mobile filter sheet — the shared Modal gives it the drag handle,
+          scroll lock, Escape, focus handling and home-indicator clearance
+          under the "Show N cars" button that the old hand-rolled sheet
+          lacked. */}
+      <Modal open={drawer} onClose={() => setDrawer(false)} className="flex max-h-[88dvh] flex-col" labelledBy="filters-sheet-title">
+        <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
+          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">Filters</h2>
+          <button onClick={() => setDrawer(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-panel active:bg-panel" aria-label="Close">
+            <Icon name="x" size={20} />
+          </button>
         </div>
-      )}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2">
+          <FilterPanel
+            f={filters}
+            set={setFilters}
+            reset={reset}
+            brands={brands}
+            pickupDate={pickupDate}
+            returnDate={returnDate}
+            setPickupDate={setPickupDate}
+            setReturnDate={setReturnDate}
+          />
+        </div>
+        <div className="shrink-0 border-t border-line p-4">
+          <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
+            Show {results.length} {results.length === 1 ? 'car' : 'cars'}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

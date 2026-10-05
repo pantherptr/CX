@@ -508,6 +508,13 @@ export function Img({
     <img
       key={attempt}
       ref={ref}
+      // Defaults, overridable per call site via `rest`: decode off the
+      // main thread so a feed/grid full of photos never stutters the
+      // scroll while each one decodes; and no native drag — click-
+      // dragging a car photo on desktop otherwise lifts a ghost copy of it
+      // instead of doing nothing (or swiping a carousel).
+      decoding="async"
+      draggable={false}
       onLoad={handleLoad}
       onError={handleError}
       className={`imgfade ${loaded ? 'loaded' : ''} ${className}`}

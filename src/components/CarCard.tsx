@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Car } from '../data/types';
-import { unsplash } from '../lib/img';
+import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
+import { haptics } from '../lib/native';
 import { useCompare } from '../lib/compareStore';
 import { Icon } from './Icon';
 import { Img, useTilt } from './motion';
@@ -27,7 +28,7 @@ function CompareToggle({ carId }: { carId: string }) {
       className={`pressable absolute bottom-3 left-3 flex min-h-9 items-center gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium shadow-hair transition-all duration-300 ${
         active
           ? 'bg-ink text-white opacity-100'
-          : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0'
+          : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 can-hover:opacity-0'
       }`}
     >
       <Icon name={active ? 'check' : 'compare'} size={13} /> {active ? 'Comparing' : 'Compare'}
@@ -43,13 +44,17 @@ function FavButton({ carId }: { carId: string }) {
     <button
       onClick={(e) => {
         e.preventDefault();
+        haptics.tick();
         toggleFavorite(carId);
         setPopping(true);
       }}
       onAnimationEnd={() => setPopping(false)}
       aria-label={fav ? 'Remove from saved' : 'Save car'}
       aria-pressed={fav}
-      className={`pressable grid h-9 w-9 place-items-center rounded-full bg-white/90 backdrop-blur shadow-hair transition-transform duration-200 hover:scale-110 ${
+      // The visible disc stays a compact 36px; the invisible ring brings
+      // the actual touch target to 44px, so a thumb doesn't miss and open
+      // the car instead.
+      className={`pressable relative grid h-9 w-9 place-items-center rounded-full bg-white/90 backdrop-blur shadow-hair transition-transform duration-200 before:absolute before:-inset-1 before:content-[''] hover:scale-110 ${
         popping ? 'animate-heart-pop' : ''
       }`}
     >
@@ -90,6 +95,8 @@ export function CarCard({
         <div className="relative w-36 shrink-0 overflow-hidden sm:w-44">
           <Img
             src={unsplash(car.images[0], 500)}
+            srcSet={unsplashSrcSet(car.images[0], [240, 360, 520])}
+            sizes="176px"
             alt={`${car.make} ${car.model}`}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -132,8 +139,11 @@ export function CarCard({
           <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
             <Img
               src={unsplash(car.images[0], 700)}
+              srcSet={unsplashSrcSet(car.images[0], [400, 700, 1000, 1400])}
+              sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
               alt={`${car.year} ${car.make} ${car.model}`}
               loading={priority ? 'eager' : 'lazy'}
+              fetchPriority={priority ? 'high' : undefined}
               className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
               fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={28} /></span>}
             />
@@ -164,13 +174,16 @@ export function CarCard({
             </div>
             <CompareToggle carId={car.id} />
 
-            {/* Quick view — hover-revealed on desktop, always faintly present on touch. */}
+            {/* Quick view — hover-revealed where hover exists, always
+                faintly present on touch (phones *and* tablets — an iPad is
+                `sm:` wide but can't hover, which used to leave this
+                permanently invisible there). */}
             <button
               onClick={(e) => {
                 e.preventDefault();
                 setQuickView(true);
               }}
-              className="glass pressable absolute bottom-3 right-3 flex translate-y-1 items-center sm:left-1/2 sm:right-auto sm:-translate-x-1/2 gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:opacity-0"
+              className="glass pressable absolute bottom-3 right-3 flex min-h-9 translate-y-1 items-center sm:left-1/2 sm:right-auto sm:-translate-x-1/2 gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 can-hover:opacity-0"
             >
               <Icon name="grid" size={13} /> Quick view
             </button>

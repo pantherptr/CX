@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { useAuth } from '../lib/auth';
+import { haptics } from '../lib/native';
 
 /* --------------------------- Google sign-in ---------------------------
  * The real Supabase-hosted Google OAuth flow — `signInWithGoogle` (see
@@ -157,45 +158,206 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
   );
 }
 
-/* ------------------------------ Modal ------------------------------- */
+/* ------------------------------ Switch ------------------------------
+ * The one on/off control for the whole app — Settings and the admin SIGNAL
+ * demo panel each used to hand-roll their own copy (24px-tall tap target,
+ * linear easing, and no `type="button"`, so one dropped inside a <form>
+ * would have submitted it). Built to feel physical: the thumb stretches
+ * toward its destination while held, the way a real switch resists before
+ * it flips, then springs across on the same expo curve as the rest of the
+ * app. The visual track stays a compact 46x26, but an invisible ring
+ * around it brings the actual touch target to 44px tall. */
+export function Switch({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  /** Accessible name — required unless a visible <label> already wraps it. */
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => {
+        haptics.tick();
+        onChange(!checked);
+      }}
+      className={`group/switch relative inline-flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-200 ease-out before:absolute before:-inset-[9px] before:content-[''] disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-accent' : 'bg-line-strong'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(22,22,26,0.28),0_1px_1px_rgba(22,22,26,0.08)] transition-[width,transform] duration-[260ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-active/switch:w-[26px] ${
+          checked ? 'translate-x-5 group-active/switch:translate-x-[14px]' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}
+
+/* ------------------------------ Modal -------------------------------
+ * Phone: a real bottom sheet — slides up, flat bottom edge flush with the
+ * screen, extends its own surface under the home indicator, and a grab
+ * handle that can be dragged down to dismiss (the handle strip only, so a
+ * drag can never fight the sheet's own scrolling content). Desktop: the
+ * same centered card it always was. Either way focus moves into the
+ * dialog on open and back to whatever opened it on close, and dragging on
+ * the backdrop no longer scrolls the page behind it on iOS (where body
+ * `overflow: hidden` alone doesn't stop touch scrolling). */
+const SHEET_CLOSE_THRESHOLD = 90;
+
+/** Open modals, oldest first. Every open Modal listens for Escape, so
+ *  without this one keypress closed every stacked modal at once (a
+ *  date-picker sheet opened from inside the booking sheet took the
+ *  booking sheet down with it) — now only the topmost one answers. */
+const openModalStack: symbol[] = [];
+
 export function Modal({
   open,
   onClose,
   children,
   className = '',
   labelledBy,
+  safeArea = true,
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   className?: string;
   labelledBy?: string;
+  /** Pad the sheet's bottom past the iPhone home indicator. Turn off only
+   *  for a modal whose own content already does it (e.g. a pinned
+   *  composer footer), or the gap doubles. */
+  safeArea?: boolean;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  // Kept in a ref so the open/close effect below depends on `open` alone —
+  // most callers pass an inline `onClose`, and re-running the focus logic
+  // on every parent re-render would yank focus out of a text field inside
+  // the dialog on each keystroke.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [settling, setSettling] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const startYRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+    setDragY(0);
+    setDragging(false);
+    setSettling(false);
+    setClosing(false);
+
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const stackId = Symbol('modal');
+    openModalStack.push(stackId);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openModalStack[openModalStack.length - 1] === stackId) onCloseRef.current();
     };
-  }, [open, onClose]);
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // After paint, so a child with its own autoFocus wins.
+    const raf = requestAnimationFrame(() => {
+      const el = dialogRef.current;
+      if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey);
+      openModalStack.splice(openModalStack.indexOf(stackId), 1);
+      document.body.style.overflow = prevOverflow;
+      // Only if it's still in the page — the opener can unmount with
+      // whatever closed this (a parent sheet, a route change).
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
+    };
+  }, [open]);
 
   if (!open) return null;
+
+  const requestClose = () => {
+    setDragging(false);
+    setClosing(true);
+    window.setTimeout(() => onCloseRef.current(), 200);
+  };
+
+  const onHandleTouchStart = (e: ReactTouchEvent) => {
+    startYRef.current = e.touches[0].clientY;
+  };
+  const onHandleTouchMove = (e: ReactTouchEvent) => {
+    if (startYRef.current === null) return;
+    const dy = e.touches[0].clientY - startYRef.current;
+    setDragging(true);
+    // Resistance past the top instead of a hard stop — the sheet gives a
+    // little under an upward pull, the way a native sheet does.
+    setDragY(dy > 0 ? dy : dy / 6);
+  };
+  const onHandleTouchEnd = () => {
+    startYRef.current = null;
+    if (!dragging) return;
+    setDragging(false);
+    if (dragY > SHEET_CLOSE_THRESHOLD) {
+      requestClose();
+    } else {
+      setDragY(0);
+      setSettling(true);
+      window.setTimeout(() => setSettling(false), 240);
+    }
+  };
+
+  // Only ever set while a drag/close is in flight: a permanent inline
+  // transform would turn this panel into a containing block for any
+  // `position: fixed` child (see `.animate-page`'s note in index.css).
+  const panelStyle: CSSProperties | undefined =
+    dragging || settling || closing
+      ? {
+          transform: closing ? 'translateY(110%)' : `translateY(${dragY}px)`,
+          transition: dragging ? 'none' : 'transform 220ms var(--ease-out-expo)',
+        }
+      : undefined;
+
   return (
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-ink/45 backdrop-blur-[3px] animate-fade-in"
-        onClick={onClose}
+        className="absolute inset-0 touch-none bg-ink/45 backdrop-blur-[3px] animate-fade-in transition-opacity duration-200"
+        style={closing ? { opacity: 0 } : undefined}
+        onClick={() => onCloseRef.current()}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`relative z-10 w-full animate-scale-in bg-surface shadow-pop ${className}`}
+        tabIndex={-1}
+        style={panelStyle}
+        className={`modal-panel relative z-10 w-full overscroll-contain bg-surface shadow-pop focus:outline-none max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none ${className}`}
       >
+        <div
+          className="absolute left-1/2 top-0 z-20 flex h-7 w-28 -translate-x-1/2 touch-none justify-center pt-2 sm:hidden"
+          onTouchStart={onHandleTouchStart}
+          onTouchMove={onHandleTouchMove}
+          onTouchEnd={onHandleTouchEnd}
+          onTouchCancel={onHandleTouchEnd}
+          aria-hidden="true"
+        >
+          <span className="h-1 w-9 rounded-full bg-faint/60" />
+        </div>
         {children}
+        {safeArea && <div aria-hidden="true" className="h-[env(safe-area-inset-bottom,0px)] shrink-0 sm:hidden" />}
       </div>
     </div>
   );

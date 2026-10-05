@@ -411,7 +411,7 @@ function ManageVehicleModal({ carId, onClose, onSaved }: { carId: string; onClos
   };
 
   return (
-    <Modal open onClose={onClose} className="max-h-[90dvh] max-w-2xl overflow-y-auto overscroll-contain rounded-2xl pt-6 pr-6 pl-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]" labelledBy="manage-vehicle-title">
+    <Modal open onClose={onClose} safeArea={false} className="max-h-[90dvh] max-w-2xl overflow-y-auto overscroll-contain rounded-2xl pt-6 pr-6 pl-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]" labelledBy="manage-vehicle-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="manage-vehicle-title" className="font-display text-lg font-semibold text-ink">
           {car.make} {car.model} · {car.hostName}
@@ -769,7 +769,7 @@ function ConversationMonitorModal({ conv, onClose, onChanged }: { conv: MonitorC
   };
 
   return (
-    <Modal open onClose={onClose} className="flex h-[85dvh] max-w-2xl flex-col overflow-hidden rounded-2xl" labelledBy="monitor-title">
+    <Modal open onClose={onClose} safeArea={false} className="flex h-[85dvh] max-w-2xl flex-col overflow-hidden rounded-2xl" labelledBy="monitor-title">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line p-4">
         <div className="min-w-0">
           <h2 id="monitor-title" className="flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-body font-semibold text-ink">

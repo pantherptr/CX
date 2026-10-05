@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
+import { Switch } from '../primitives';
 import { useApp } from '../../lib/store';
 import {
   fetchSignalDemoSettings, setSignalDemoSettings, fetchSignalDemoStats,
   generateSignalDemoContentNow, clearSignalDemoContent, regenerateSignalDemoContent,
   type SignalDemoSettings,
 } from '../../lib/data/signalDemo';
-
-function Toggle({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? 'bg-accent' : 'bg-panel-2'}`}
-      role="switch"
-      aria-checked={on}
-    >
-      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${on ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-    </button>
-  );
-}
 
 function NumberField({ label, value, onChange, min = 0 }: { label: string; value: number; onChange: (v: number) => void; min?: number }) {
   return (
@@ -130,7 +117,12 @@ export function SignalDemoPanel() {
         </div>
         <div className="flex items-center gap-2.5">
           <span className="text-detail font-medium text-ink-soft">{settings.enabled ? 'Enabled' : 'Disabled'}</span>
-          <Toggle on={settings.enabled} disabled={saving} onClick={() => setSettings({ ...settings, enabled: !settings.enabled })} />
+          <Switch
+            checked={settings.enabled}
+            disabled={saving}
+            onChange={(enabled) => setSettings({ ...settings, enabled })}
+            label="SIGNAL Community demo content"
+          />
         </div>
       </div>
 

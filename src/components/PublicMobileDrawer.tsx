@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Logo } from './primitives';
@@ -23,6 +24,16 @@ export default function PublicMobileDrawer({
   const findDriveScramble = useScramble('Find your next drive');
   const signInScramble = useScramble('Sign in');
   const createAccountScramble = useScramble('Create an account');
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   return (
     <AnimatePresence>
         {open && (
@@ -36,11 +47,23 @@ export default function PublicMobileDrawer({
               onClick={() => onClose()}
             />
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
               className="absolute right-0 top-0 flex h-full w-[85%] max-w-sm flex-col overflow-hidden bg-surface text-ink shadow-pop"
               initial={reduceMotion ? false : { x: '100%' }}
               animate={{ x: 0 }}
               exit={reduceMotion ? undefined : { x: '100%' }}
               transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
+              // Swipe right to dismiss — see AppMobileDrawer for the
+              // constraint/elastic reasoning; identical gesture on both menus.
+              drag={reduceMotion ? false : 'x'}
+              dragDirectionLock
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={{ left: 0.04, right: 1 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.x > 90 || info.velocity.x > 500) onClose();
+              }}
             >
               {/* -------- Compact header: logo + close, nothing else -------- */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
@@ -72,7 +95,7 @@ export default function PublicMobileDrawer({
                         key={l.to}
                         to={l.to}
                         className={({ isActive }) =>
-                          `flex items-center justify-between border-b border-line py-3.5 text-body font-medium transition-colors ${
+                          `flex items-center justify-between border-b border-line py-3.5 text-body font-medium transition-[color,opacity] active:opacity-55 ${
                             isActive ? 'text-ink' : isListCar ? 'text-accent-700 hover:text-accent' : 'text-ink-soft hover:text-ink'
                           }`
                         }
@@ -89,7 +112,7 @@ export default function PublicMobileDrawer({
                   <NavLink
                     to="/signal"
                     className={({ isActive }) =>
-                      `flex items-center justify-between border-b border-line py-3.5 transition-colors ${
+                      `flex items-center justify-between border-b border-line py-3.5 transition-[color,opacity] active:opacity-55 ${
                         isActive ? 'text-ink' : 'text-ink-soft hover:text-ink'
                       }`
                     }

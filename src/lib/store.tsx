@@ -4,8 +4,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
+  type TouchEvent as ReactTouchEvent,
 } from 'react';
 import { Icon, type IconName } from '../components/Icon';
 import { useAuth } from './auth';
@@ -30,6 +32,9 @@ interface AppState {
 const Ctx = createContext<AppState | null>(null);
 
 let toastId = 0;
+const MAX_TOASTS = 3;
+const TOAST_MS = 3600;
+const SWIPE_DISMISS_PX = 80;
 
 /**
  * Nested inside AuthProvider (see main.tsx), so it can read the signed-in
@@ -45,14 +50,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts((t) => t.filter((x) => x.id !== id));
   }, []);
 
-  const toast = useCallback(
-    (t: Omit<Toast, 'id'>) => {
-      const id = ++toastId;
-      setToasts((prev) => [...prev, { ...t, id }]);
-      setTimeout(() => dismiss(id), 3600);
-    },
-    [dismiss],
-  );
+  // Auto-dismiss lives in each <ToastItem> (so it can pause while being
+  // read/touched), not here. A burst of toasts keeps only the newest few —
+  // the oldest is dropped rather than stacking a wall up the screen.
+  const toast = useCallback((t: Omit<Toast, 'id'>) => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { ...t, id }].slice(-MAX_TOASTS));
+  }, []);
 
   useEffect(() => {
     if (!session || !isSupabaseConfigured) {
@@ -139,31 +143,124 @@ export function useApp() {
   return ctx;
 }
 
+const SUCCESS_ICONS: ReadonlySet<IconName> = new Set(['checkCircle', 'check']);
+
+/** One toast: owns its own auto-dismiss timer so it can pause while the
+ *  pointer rests on it or a finger is on it (a long error message is
+ *  readable instead of racing away), swipes sideways to dismiss, and
+ *  animates out instead of vanishing mid-frame. */
+function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void }) {
+  const [leaving, setLeaving] = useState<false | 'fade' | 'left' | 'right'>(false);
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startXRef = useRef<number | null>(null);
+  const timerRef = useRef<number | undefined>(undefined);
+  const remainingRef = useRef(TOAST_MS);
+  const startedAtRef = useRef(0);
+
+  const leave = useCallback(
+    (how: 'fade' | 'left' | 'right') => {
+      window.clearTimeout(timerRef.current);
+      setLeaving(how);
+      window.setTimeout(() => onDismiss(t.id), 200);
+    },
+    [onDismiss, t.id],
+  );
+
+  const resume = useCallback(() => {
+    window.clearTimeout(timerRef.current);
+    startedAtRef.current = Date.now();
+    timerRef.current = window.setTimeout(() => leave('fade'), Math.max(600, remainingRef.current));
+  }, [leave]);
+
+  const pause = () => {
+    window.clearTimeout(timerRef.current);
+    remainingRef.current -= Date.now() - startedAtRef.current;
+  };
+
+  useEffect(() => {
+    resume();
+    return () => window.clearTimeout(timerRef.current);
+  }, [resume]);
+
+  const onTouchStart = (e: ReactTouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    pause();
+  };
+  const onTouchMove = (e: ReactTouchEvent) => {
+    if (startXRef.current === null) return;
+    setDragging(true);
+    setDx(e.touches[0].clientX - startXRef.current);
+  };
+  const onTouchEnd = () => {
+    startXRef.current = null;
+    setDragging(false);
+    if (Math.abs(dx) > SWIPE_DISMISS_PX) {
+      leave(dx < 0 ? 'left' : 'right');
+      return;
+    }
+    setDx(0);
+    resume();
+  };
+
+  const transform =
+    leaving === 'left'
+      ? 'translateX(-120%)'
+      : leaving === 'right'
+        ? 'translateX(120%)'
+        : leaving === 'fade'
+          ? 'translateY(10px) scale(0.96)'
+          : dx !== 0
+            ? `translateX(${dx}px)`
+            : undefined;
+
+  const success = SUCCESS_ICONS.has(t.icon ?? 'checkCircle');
+
+  return (
+    <div
+      role="status"
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
+      style={{
+        transform,
+        opacity: leaving ? 0 : dx !== 0 ? Math.max(0.35, 1 - Math.abs(dx) / 220) : undefined,
+        transition: dragging ? 'none' : 'transform 220ms var(--ease-out-expo), opacity 200ms ease',
+      }}
+      className="pointer-events-auto flex w-full touch-pan-y select-none items-start gap-3 rounded-2xl bg-ink px-4 py-3.5 text-white shadow-pop animate-toast-in"
+    >
+      <span
+        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+          success ? 'bg-accent-bright/20 text-accent-bright' : 'bg-white/12 text-white'
+        }`}
+      >
+        <Icon name={t.icon ?? 'checkCircle'} size={17} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium leading-snug">{t.title}</p>
+        {t.desc && <p className="mt-0.5 text-detail leading-snug text-white/65">{t.desc}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={() => leave('fade')}
+        className="-m-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+        aria-label="Dismiss"
+      >
+        <Icon name="x" size={16} />
+      </button>
+    </div>
+  );
+}
+
 export function Toaster() {
   const { toasts, dismiss } = useApp();
   return (
-    <div className="fixed z-[100] bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 w-[calc(100%-2rem)] max-w-sm sm:left-auto sm:right-6 sm:bottom-6 sm:translate-x-0 sm:items-end">
+    <div className="pointer-events-none fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col items-center gap-2.5 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0 sm:items-end">
       {toasts.map((t) => (
-        <div
-          key={t.id}
-          role="status"
-          className="animate-scale-in w-full flex items-start gap-3 bg-ink text-white rounded-2xl px-4 py-3.5 shadow-pop"
-        >
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/12 text-white">
-            <Icon name={t.icon ?? 'checkCircle'} size={17} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium leading-snug">{t.title}</p>
-            {t.desc && <p className="text-detail text-white/65 mt-0.5 leading-snug">{t.desc}</p>}
-          </div>
-          <button
-            onClick={() => dismiss(t.id)}
-            className="text-white/50 hover:text-white transition-colors"
-            aria-label="Dismiss"
-          >
-            <Icon name="x" size={16} />
-          </button>
-        </div>
+        <ToastItem key={t.id} t={t} onDismiss={dismiss} />
       ))}
     </div>
   );

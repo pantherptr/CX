@@ -56,10 +56,43 @@ const categoryLabel = (c: EmpirePost['category']) => EMPIRE_CATEGORIES.find((x) 
 const MIN_MEDIA_ASPECT = 4 / 5;
 const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
 
+/** Two taps inside this window read as a double-tap. Short enough that a
+ *  single tap still opens the photo almost immediately. */
+const DOUBLE_TAP_MS = 260;
+
+/** Single tap vs double tap on the same target — the single action waits
+ *  out the double-tap window before firing, so a double-tap never also
+ *  opens the viewer underneath it. With no `onDouble`, single taps fire
+ *  instantly (no delay is added anywhere double-tap isn't offered). */
+function useTapGesture(onSingle?: () => void, onDouble?: () => void) {
+  const lastTapRef = useRef(0);
+  const timerRef = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+  return () => {
+    if (!onDouble) {
+      onSingle?.();
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+      window.clearTimeout(timerRef.current);
+      lastTapRef.current = 0;
+      onDouble();
+      return;
+    }
+    lastTapRef.current = now;
+    timerRef.current = window.setTimeout(() => {
+      lastTapRef.current = 0;
+      onSingle?.();
+    }, DOUBLE_TAP_MS);
+  };
+}
+
 function PostImage({
   src,
   className,
   onClick,
+  onDoubleTap,
   dynamicAspect = false,
   sharedId,
   sharedActive = true,
@@ -67,6 +100,9 @@ function PostImage({
   src: string;
   className: string;
   onClick?: () => void;
+  /** Double-tap the photo to Respect the post — the feed's signature
+   *  gesture. Plays the burst here, over the photo itself. */
+  onDoubleTap?: () => void;
   /** True only for a single, standalone image post — reads the image's
    *  own natural size instead of using `className`'s fixed aspect
    *  utility. Multi-image grids and the Featured/Pinned hero keep their
@@ -83,6 +119,16 @@ function PostImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   const [aspect, setAspect] = useState<number | null>(null);
+  const [burstKey, setBurstKey] = useState(0);
+  const handleTap = useTapGesture(
+    onClick,
+    onDoubleTap
+      ? () => {
+          setBurstKey((k) => k + 1);
+          onDoubleTap();
+        }
+      : undefined,
+  );
   const fallback = (
     <div className="grid h-full w-full place-items-center bg-panel text-ink-soft">
       <Icon name="image" size={28} />
@@ -105,14 +151,27 @@ function PostImage({
             }
           }
         }}
-        className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${onClick ? 'hover:scale-[1.03]' : ''} transition-transform`}
+        // One combined transition list — two separate `transition-*`
+        // utilities each set `transition-property`, so only one of them
+        // ever applied and the load fade-in silently didn't animate.
+        className={`h-full w-full object-cover transition-[opacity,transform] duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${onClick ? 'hover:scale-[1.03]' : ''}`}
       />
+      {burstKey > 0 && (
+        <span
+          key={burstKey}
+          aria-hidden="true"
+          onAnimationEnd={() => setBurstKey(0)}
+          className="pointer-events-none absolute inset-0 grid place-items-center"
+        >
+          <Icon name="like" size={88} fill className="text-white animate-respect-burst" />
+        </span>
+      )}
     </>
   );
   const dynamicClass = dynamicAspect ? `w-full ${MEDIA_MAX_HEIGHT_CLASS}` : className;
   const style = dynamicAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5' } : undefined;
   const box = onClick ? (
-    <button onClick={onClick} style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
+    <button onClick={handleTap} style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
   ) : (
     <div style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</div>
   );
@@ -250,9 +309,11 @@ function PostVideo({
 function MediaCarousel({
   urls,
   onOpenViewer,
+  onDoubleTap,
 }: {
   urls: string[];
   onOpenViewer: (index: number) => void;
+  onDoubleTap?: () => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -280,7 +341,7 @@ function MediaCarousel({
             {mediaKindFromPath(url) === 'video' ? (
               <PostVideo src={url} onClick={() => onOpenViewer(i)} className="aspect-square" fixedAspect />
             ) : (
-              <PostImage src={url} onClick={() => onOpenViewer(i)} className="aspect-square" />
+              <PostImage src={url} onClick={() => onOpenViewer(i)} onDoubleTap={onDoubleTap} className="aspect-square" />
             )}
           </div>
         ))}
@@ -402,6 +463,20 @@ export function SignalPostCard({
     const { error } = post.isDemo ? await toggleSignalDemoPostLike(post.id) : await toggleEmpirePostLike(post.id);
     if (error) onChanged(post);
   };
+
+  // Double-tap only ever *gives* Respect, never takes it back — a second
+  // double-tap on an already-respected photo just replays the burst, the
+  // same one-way behavior people already expect from this gesture.
+  // Signed-in only: there's no anonymous Respect to record.
+  const handleDoubleTapRespect = session
+    ? () => {
+        if (post.likedByMe) {
+          vibrateTap();
+          return;
+        }
+        void handleRespect();
+      }
+    : undefined;
 
   const handleSave = async () => {
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
@@ -607,7 +682,7 @@ export function SignalPostCard({
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-9 z-20 w-52 overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
+                <div className="absolute right-0 top-9 z-20 w-52 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
                   {/* Share-to-Messages is the one entry every viewer gets
                       regardless of ownership — the native share sheet/
                       copy-link already lives on the always-visible Share
@@ -709,6 +784,7 @@ export function SignalPostCard({
               src={post.mediaUrls[0]}
               className="aspect-[16/10] w-full"
               onClick={() => setViewerIndex(0)}
+              onDoubleTap={handleDoubleTapRespect}
               sharedId={`post-media-${post.mediaUrls[0]}`}
               sharedActive={viewerIndex === null}
             />
@@ -720,6 +796,7 @@ export function SignalPostCard({
             <PostImage
               src={post.mediaUrls[0]}
               onClick={() => setViewerIndex(0)}
+              onDoubleTap={handleDoubleTapRespect}
               className="aspect-[4/5]"
               dynamicAspect
               sharedId={`post-media-${post.mediaUrls[0]}`}
@@ -727,7 +804,7 @@ export function SignalPostCard({
             />
           )
         ) : (
-          <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} />
+          <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} onDoubleTap={handleDoubleTapRespect} />
         )
       )}
 

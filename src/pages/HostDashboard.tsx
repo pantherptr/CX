@@ -17,6 +17,7 @@ import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
+import { ActivePill } from '../components/motionKit';
 
 const TABS: { id: TripPhase; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
@@ -768,11 +769,16 @@ export default function HostDashboard() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`chip shrink-0 ${tab === t.id ? '!bg-ink !text-white !border-ink' : ''}`}
+                  onClick={(e) => {
+                    setTab(t.id);
+                    e.currentTarget.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+                  }}
+                  aria-pressed={tab === t.id}
+                  className={`chip relative shrink-0 ${tab === t.id ? '!border-transparent !bg-transparent !text-white' : ''}`}
                 >
-                  {t.label}
-                  {count > 0 && <span className="text-faint">· {count}</span>}
+                  {tab === t.id && <ActivePill layoutId="host-bookings-tab" className="rounded-full bg-ink" />}
+                  <span className="relative">{t.label}</span>
+                  {count > 0 && <span className={`relative ${tab === t.id ? 'text-white/60' : 'text-faint'}`}>· {count}</span>}
                 </button>
               );
             })}
