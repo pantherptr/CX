@@ -160,6 +160,19 @@ export function SignalStoryViewer({
     setSlideIndex(0);
   }, [storyIndex]);
 
+  // Without this, iOS Safari lets the page behind this `fixed inset-0`
+  // overlay keep scrolling under touch/swipe gestures — the overlay stays
+  // pinned to the layout viewport while the visual viewport shifts, which
+  // exposes the page's own background (white) below the Story for an
+  // instant. Every other fullscreen viewer in this codebase already locks
+  // body scroll the same way (see SignalMediaViewer.tsx); this one just
+  // never had it.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => void (document.body.style.overflow = prevOverflow);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
