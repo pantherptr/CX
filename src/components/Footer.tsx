@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
-import { LiveVisitors } from './LiveVisitors';
 
 /**
  * Every link here resolves to a route that actually exists (see App.tsx).
@@ -127,7 +126,9 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-5 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
-          <LiveVisitors tone="light" />
+          <p className="text-detail text-faint">
+            © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
+          </p>
           <div className="flex items-center gap-5 text-detail text-muted">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="globe" size={15} /> English (EU)
@@ -137,10 +138,6 @@ export function Footer() {
             </span>
           </div>
         </div>
-
-        <p className="mt-6 text-detail text-faint">
-          © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
-        </p>
       </div>
     </footer>
   );
