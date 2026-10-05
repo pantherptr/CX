@@ -110,37 +110,34 @@ export function ConciergeLauncher({
   );
 }
 
-/** The Concierge's face — the CX key on a noir disc. The key is chrome-on-
- *  black artwork (glossy black half, neon-green half): on the old pale-
- *  green chip its black half went muddy and it rendered at a ~17px
- *  smudge; on noir it reads the way it was drawn, with a thin green ring
- *  and a soft glow carrying the brand light. `live` adds the "online"
- *  dot used in the header — the Concierge is always instantly available,
- *  which is genuinely true of a guided matcher. Exported so entry points
- *  (Browse's banner, the homepage card) wear the exact same mark. */
+/** The Concierge's face — the CX key on a plain noir disc with a single
+ *  thin ring. Kept deliberately simple: this mark shows up small all over
+ *  the product (Browse's banner, the homepage card, the dashboards) as the
+ *  one consistent brand badge, so it stays a clean, instantly-legible
+ *  signature rather than a miniature hero graphic. `live` adds the
+ *  "online" dot used in the header — the Concierge is always instantly
+ *  available, which is genuinely true of a guided matcher. Exported so
+ *  every entry point wears the exact same mark. */
 export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
   return (
     <span
-      className={`relative inline-grid shrink-0 place-items-center rounded-full bg-noir ring-1 ring-accent-bright/40 shadow-[0_0_0_3px_rgba(0,212,71,0.07),0_6px_18px_-6px_rgba(0,212,71,0.55)] ${className}`}
+      className={`relative inline-grid shrink-0 place-items-center ${className}`}
       style={{ width: size, height: size }}
     >
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-full"
-        style={{ background: 'radial-gradient(circle at 50% 35%, rgba(0,212,71,0.22), transparent 62%)' }}
-      />
-      <Img
-        src="/cx-logo-symbol.png"
-        alt=""
-        className="relative h-[64%] w-auto object-contain drop-shadow-[0_0_6px_rgba(0,212,71,0.35)]"
-        fallback={<span className="relative text-[10px] font-semibold text-white">CX</span>}
-      />
-      {live && (
-        <span className="absolute -bottom-px -right-px flex h-[30%] min-h-2.5 w-[30%] min-w-2.5">
-          <span className="absolute inset-0 animate-ping rounded-full bg-accent-bright/60" />
-          <span className="relative h-full w-full rounded-full border-2 border-noir bg-accent-bright" />
-        </span>
-      )}
+      <span className="relative h-[62%] w-[62%]">
+        <Img
+          src="/cx-concierge-mark.png"
+          alt=""
+          className="h-full w-full object-contain"
+          fallback={<span className="text-[10px] font-semibold text-accent-700">CX</span>}
+        />
+        {live && (
+          <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
+            <span className="absolute inset-0 animate-ping rounded-full bg-accent/55" />
+            <span className="relative h-full w-full rounded-full border-2 border-white bg-accent" />
+          </span>
+        )}
+      </span>
     </span>
   );
 }
@@ -173,17 +170,27 @@ function UserBubble({ children }: { children: ReactNode }) {
   );
 }
 
-/** The "concierge is thinking" beat before results land — three dots
- *  instead of a bare spinner, so the pause itself feels like part of the
- *  conversation rather than a loading screen. */
+/** The "concierge is thinking" beat before results land — a tiny
+ *  equalizer plus a terminal-style "scanning…" readout instead of a bare
+ *  spinner, so the pause reads as the engine actively working the fleet
+ *  data rather than a generic loading screen. */
 function TypingBubble() {
   return (
     <div className="flex items-center gap-3 animate-fade-up">
       <ConciergeMark />
-      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3.5 shadow-hair">
-        {[0, 150, 300].map((d) => (
-          <span key={d} className="h-1.5 w-1.5 animate-typing-dot rounded-full bg-accent" style={{ animationDelay: `${d}ms` }} />
-        ))}
+      <div className="flex items-center gap-3 rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3.5 shadow-hair">
+        <div className="flex h-3.5 items-end gap-[3px]" aria-hidden="true">
+          {[0, 110, 220, 330, 440].map((d) => (
+            <span
+              key={d}
+              className="h-full w-[3px] animate-concierge-eq rounded-full bg-accent"
+              style={{ animationDelay: `${d}ms` }}
+            />
+          ))}
+        </div>
+        <span className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
+          Scanning fleet<span className="animate-concierge-cursor">_</span>
+        </span>
       </div>
     </div>
   );
@@ -228,14 +235,17 @@ function QuickReply({
  *  (the kind of drive, the budget bands). The blurb is half the decision
  *  ("Road Trip — long-haul comfort"), and the old chip hid it entirely
  *  below `sm:`, so on a phone you picked from labels alone. Two-up grid,
- *  a ~68px target each, icon in its own tile. */
+ *  a ~68px target each, icon in its own tile, a monospace index tag
+ *  reading it as a panel in a selectable array rather than a plain list. */
 function OptionCard({
+  index,
   active,
   icon,
   label,
   sub,
   onClick,
 }: {
+  index: number;
   active: boolean;
   icon: ReactNode;
   label: string;
@@ -246,12 +256,20 @@ function OptionCard({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] ${
+      className={`group relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] ${
         active
-          ? 'border-ink bg-ink text-white shadow-[0_12px_28px_-12px_rgba(22,22,26,0.55)]'
+          ? 'border-accent-bright/60 bg-ink text-white shadow-[0_12px_28px_-12px_rgba(22,22,26,0.55),0_0_0_1px_rgba(0,212,71,0.3)]'
           : 'border-line bg-white text-ink shadow-hair hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-soft'
       }`}
     >
+      <span
+        aria-hidden="true"
+        className={`absolute right-2.5 top-2 font-mono text-[0.6rem] tracking-wide transition-colors ${
+          active ? 'text-accent-bright/80' : 'text-faint/70'
+        }`}
+      >
+        {String(index).padStart(2, '0')}
+      </span>
       <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
           active ? 'bg-accent-bright text-noir' : 'bg-accent-050 text-accent-700 group-hover:bg-accent-100'
@@ -289,31 +307,46 @@ function BackLink({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** Match score as a ring rather than a bare "92% MATCH" label — the arc
- *  says "how close" at a glance before the number is even read. */
+/** Match score as a HUD gauge rather than a bare "92% MATCH" label — tick
+ *  marks around the rim plus a monospace arc-fill readout, so it reads as
+ *  an instrument reading the engine took, not a decorative badge. */
 function MatchRing({ value, size = 56 }: { value: number; size?: number }) {
   const r = 16;
   const c = 2 * Math.PI * r;
+  const clamped = Math.min(100, Math.max(0, value));
+  const ticks = Array.from({ length: 24 });
   return (
     <span className="relative grid place-items-center" style={{ width: size, height: size }}>
       <svg viewBox="0 0 40 40" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="3" />
+        {ticks.map((_, i) => (
+          <line
+            key={i}
+            x1="20"
+            y1="2"
+            x2="20"
+            y2="3.6"
+            stroke="rgba(255,255,255,0.28)"
+            strokeWidth="0.6"
+            transform={`rotate(${(i / ticks.length) * 360} 20 20)`}
+          />
+        ))}
+        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="2.5" />
         <circle
           cx="20"
           cy="20"
           r={r}
           fill="none"
           stroke="var(--color-accent-bright)"
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeDasharray={c}
-          strokeDashoffset={c * (1 - Math.min(100, Math.max(0, value)) / 100)}
+          strokeDashoffset={c * (1 - clamped / 100)}
           style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,71,0.6))' }}
         />
       </svg>
       <span className="relative text-center leading-none">
-        <span className="block text-[0.95rem] font-bold tabular-nums text-white">{value}%</span>
-        <span className="mt-0.5 block text-[0.5rem] font-semibold uppercase tracking-[0.14em] text-white/60">match</span>
+        <span className="block font-mono text-[0.9rem] font-bold tabular-nums text-white">{clamped}</span>
+        <span className="mt-0.5 block text-[0.45rem] font-semibold uppercase tracking-[0.16em] text-white/55">match</span>
       </span>
     </span>
   );
@@ -456,12 +489,15 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
   const top = match?.results[0] ?? null;
   const alternates = match?.results.slice(1, 5) ?? [];
 
-  // Header progress: a sliver at the very start (so the bar visibly
-  // exists before the first answer), then one fifth per answered question.
-  const progress = step === 'results' ? 100 : Math.max(4, (answeredCount / QUIZ_STEPS.length) * 100);
+  // Header progress: which of the 5 gauge segments are filled, lit, or
+  // still dark — a HUD readout rather than a smooth continuous bar.
+  const progress = step === 'results' ? 100 : Math.round((answeredCount / QUIZ_STEPS.length) * 100);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const bracketLabel =
+    step === 'results' ? '[OK]' : thinking ? '[••]' : `[${pad(Math.min(answeredCount + 1, QUIZ_STEPS.length))}/${pad(QUIZ_STEPS.length)}]`;
   const stepLabel =
     step === 'results'
-      ? 'Your match is ready'
+      ? 'Match complete'
       : thinking
         ? 'Matching you with the fleet…'
         : `Step ${Math.min(answeredCount + 1, QUIZ_STEPS.length)} of ${QUIZ_STEPS.length}`;
@@ -469,26 +505,30 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-[#f6f7f3] animate-fade-in">
       {/* Ambient CX light — a quiet green bloom high on the chat ground,
-          the same brand light the header's progress bar carries. */}
+          the same brand light the header's gauge carries. */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{ background: 'radial-gradient(55% 38% at 12% 6%, rgba(0,212,71,0.09), transparent 64%), radial-gradient(45% 30% at 100% 100%, rgba(0,133,54,0.05), transparent 70%)' }}
       />
 
-      {/* Chrome — noir, so the CX key reads the way it was drawn and the
-          whole experience wears the brand rather than a generic white bar. */}
-      <div data-surface="noir" className="relative shrink-0 bg-noir text-on-noir" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Chrome — a plain white bar, same as every other header in the
+          product, so the Concierge opens like it belongs to CX rather than
+          announcing itself with a dark panel. A thin scanline still loops
+          the header strip only — a constant, quiet "the system is live"
+          signal that never reaches into the chat body the user is actually
+          reading. */}
+      <div className="relative shrink-0 overflow-hidden border-b border-line bg-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(50% 120% at 0% 0%, rgba(0,212,71,0.16), transparent 60%)' }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-px animate-concierge-scan bg-gradient-to-r from-transparent via-accent/70 to-transparent"
         />
         <div className="relative flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <ConciergeMark size={38} live />
             <div>
-              <p className="font-display text-[1.0625rem] font-semibold leading-none tracking-tight text-white">CX Concierge</p>
-              <p className="mt-1.5 text-caption leading-none text-on-noir-muted" aria-live="polite">
+              <p className="font-display text-[1.0625rem] font-semibold leading-none tracking-tight text-ink">CX Concierge</p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-caption leading-none text-muted" aria-live="polite">
+                <span className="font-mono text-[0.6rem] tracking-wide text-accent-700">{bracketLabel}</span>
                 {stepLabel}
               </p>
             </div>
@@ -498,38 +538,61 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={talkToHuman}
                 disabled={escalating}
-                className="hidden items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-2 text-detail font-medium text-on-noir transition-colors hover:border-accent-bright/40 hover:bg-white/10 disabled:opacity-50 sm:inline-flex"
+                className="hidden items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-detail font-medium text-ink-soft transition-colors hover:border-accent/40 hover:bg-panel disabled:opacity-50 sm:inline-flex"
               >
-                <Icon name="headset" size={15} className="text-accent-bright" />
+                <Icon name="headset" size={15} className="text-accent" />
                 {escalating ? 'Connecting…' : 'Talk to a real person'}
               </button>
             )}
             <button
               onClick={onClose}
               aria-label="Close"
-              className="grid h-11 w-11 place-items-center rounded-full text-on-noir-muted transition-colors hover:bg-white/10 hover:text-white active:bg-white/10"
+              className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-ink active:bg-panel"
             >
               <Icon name="x" size={20} />
             </button>
           </div>
         </div>
-        {/* Progress — fills one fifth per answer, glowing at its leading edge. */}
-        <div className="relative h-[3px] bg-white/[0.07]" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Concierge progress">
-          <div
-            className="h-full rounded-r-full bg-accent-bright shadow-[0_0_12px_rgba(0,212,71,0.75)] transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
-            style={{ width: `${progress}%` }}
-          />
+        {/* Progress gauge — 5 discrete segments instead of one smooth bar,
+            each lighting up as its question is answered. bg-line (#e8e7e1)
+            reads as invisible at hairline weight on a white header, so the
+            track needs real contrast of its own, and a lit segment needs a
+            glow to actually read as "lit" rather than just a color swap. */}
+        <div
+          className="relative flex h-[5px] gap-[4px] px-4 pb-2.5 sm:px-6"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress}
+          aria-label="Concierge progress"
+        >
+          {QUIZ_STEPS.map((s, i) => {
+            const filled = step === 'results' || i < answeredCount;
+            return (
+              <span
+                key={s}
+                className={`h-full flex-1 rounded-full transition-all duration-500 ${filled ? 'bg-accent-bright shadow-[0_0_6px_rgba(0,212,71,0.55)]' : 'bg-line-strong'}`}
+              />
+            );
+          })}
         </div>
       </div>
 
-      <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
+      <div className="concierge-grid relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           {/* Welcome — always at the top, even once questions are
               answered, so the transcript reads like a real conversation
               from the start rather than resetting per step. */}
           <div className="flex flex-col items-center px-2 pb-1 pt-7 text-center animate-fade-up">
             <ConciergeMark size={68} />
-            <h2 className="mt-4 font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-ink text-balance sm:text-3xl">
+            <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-accent-700">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-accent-bright/60" />
+                <span className="relative h-full w-full rounded-full bg-accent-bright" />
+              </span>
+              Engine online
+            </p>
+            <h2 className="mt-2 font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-ink text-balance sm:text-3xl">
               Let&apos;s find your CX.
             </h2>
             <p className="mt-2 max-w-sm text-body leading-relaxed text-muted text-pretty">
@@ -579,9 +642,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
                 {step === 'drive' && (
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                    {DRIVE_TYPES.map((d) => (
+                    {DRIVE_TYPES.map((d, i) => (
                       <OptionCard
                         key={d.id}
+                        index={i + 1}
                         active={prefs.driveType === d.id}
                         icon={<Icon name={d.icon} size={18} />}
                         label={d.label}
@@ -643,9 +707,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                 {step === 'budget' && (
                   <>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {BUDGET_BANDS.map((b) => (
+                      {BUDGET_BANDS.map((b, i) => (
                         <OptionCard
                           key={b.id}
+                          index={i + 1}
                           active={prefs.budget === b.id}
                           icon={<Icon name={b.id === 'flexible' ? 'sparkles' : 'wallet'} size={18} />}
                           label={b.label}
@@ -818,10 +883,10 @@ function TopMatch({
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/25" />
         {/* The Concierge's own pick, signed with its mark — distinct from
             a generic "Top rated" badge any listing could carry. */}
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 py-1 pl-1 pr-3 text-label font-bold uppercase tracking-[0.12em] text-white backdrop-blur-md">
-          <ConciergeMark size={22} /> CX Pick
+        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-accent-bright/25 bg-black/45 py-1 pl-1 pr-3 font-mono text-[0.65rem] font-bold uppercase tracking-[0.14em] text-accent-bright backdrop-blur-md">
+          <ConciergeMark size={22} /> [ CX Pick ]
         </span>
-        <span className="absolute right-3 top-3 rounded-full bg-black/45 p-1 backdrop-blur-md">
+        <span className="absolute right-3 top-3 rounded-2xl border border-accent-bright/20 bg-black/45 p-1 backdrop-blur-md">
           <MatchRing value={match} />
         </span>
         <div className="absolute bottom-4 left-5 right-5">

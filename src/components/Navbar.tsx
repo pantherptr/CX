@@ -74,7 +74,7 @@ function PublicNavbar() {
           same "transparent bar floating over the photo" look with zero
           layout-jump risk. */}
       <header
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300 ${
+        className={`pt-safe sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-300 ${
           transparent
             ? 'border-transparent bg-transparent'
             : scrolled
@@ -178,7 +178,7 @@ function PublicNavbar() {
               <>
                 <Link
                   to="/login"
-                  className={`pressable hidden text-detail font-medium transition-colors min-[420px]:inline-flex ${
+                  className={`pressable inline-flex text-detail font-medium transition-colors ${
                     transparent ? 'text-ink-soft hover:text-ink' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
@@ -209,7 +209,7 @@ function PublicNavbar() {
               }`}
               aria-label="Open menu"
             >
-              <Icon name="menu" size={22} />
+              <Icon name="menu" size={24} />
             </button>
           </div>
         </nav>
@@ -247,60 +247,62 @@ function AppNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex h-[64px] items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur-xl sm:px-6">
-        <Logo variant="symbol" />
-        <form onSubmit={submitSearch} className="relative ml-2 hidden max-w-sm flex-1 sm:block">
-          <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search cars, cities…"
-            className="input !py-2.5 !pl-10 bg-panel/60"
-          />
-        </form>
-        <div className="ml-auto flex items-center gap-1.5">
-          <Link
-            to="/browse"
-            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel sm:hidden"
-            aria-label="Browse cars"
-          >
-            <Icon name="search" size={19} />
-          </Link>
-          <Link
-            to="/notifications"
-            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
-            aria-label="Notifications"
-          >
-            <Icon name="bell" size={19} />
-          </Link>
-          <Link to="/settings" aria-label="Profile">
-            {displayAvatar ? (
-              <Img
-                src={displayAvatar}
-                alt=""
-                className="h-9 w-9 rounded-full object-cover"
-                fallback={
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
-                    <Icon name="user" size={16} />
-                  </span>
-                }
-              />
-            ) : (
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
-                <Icon name="user" size={16} />
-              </span>
-            )}
-          </Link>
-          <button
-            onClick={() => {
-              setDrawerEverOpened(true);
-              setDrawerOpen(true);
-            }}
-            className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
-            aria-label="Open menu"
-          >
-            <Icon name="menu" size={20} />
-          </button>
+      <header className="pt-safe sticky top-0 z-50 border-b border-line bg-surface/90 backdrop-blur-xl">
+        <div className="flex h-[64px] items-center gap-3 px-4 sm:px-6">
+          <Logo variant="symbol" />
+          <form onSubmit={submitSearch} className="relative ml-2 hidden max-w-sm flex-1 sm:block">
+            <Icon name="search" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search cars, cities…"
+              className="input !py-2.5 !pl-10 bg-panel/60"
+            />
+          </form>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Link
+              to="/browse"
+              className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel sm:hidden"
+              aria-label="Browse cars"
+            >
+              <Icon name="search" size={19} />
+            </Link>
+            <Link
+              to="/notifications"
+              className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
+              aria-label="Notifications"
+            >
+              <Icon name="bell" size={19} />
+            </Link>
+            <Link to="/settings" aria-label="Profile">
+              {displayAvatar ? (
+                <Img
+                  src={displayAvatar}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover"
+                  fallback={
+                    <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                      <Icon name="user" size={16} />
+                    </span>
+                  }
+                />
+              ) : (
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-accent-050 text-accent">
+                  <Icon name="user" size={16} />
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={() => {
+                setDrawerEverOpened(true);
+                setDrawerOpen(true);
+              }}
+              className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
+              aria-label="Open menu"
+            >
+              <Icon name="menu" size={20} />
+            </button>
+          </div>
         </div>
       </header>
 

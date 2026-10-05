@@ -873,14 +873,65 @@
     .animate-signal-refresh-spin { animation: none; }
   }
 
-  /* CX Concierge's assistant "typing" indicator — three dots, staggered
-     via inline animation-delay at the call site rather than three
-     separate keyframes. */
-  @keyframes typing-dot {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
-    30% { transform: translateY(-3px); opacity: 1; }
+  /* ---- CX Concierge: HUD/tech chrome ---- */
+
+  /* Header scanline — a thin light band drifting down the noir header on
+     a slow loop, reused nowhere else. Confined to the header strip only
+     (not the chat body) so it reads as "the system is live" without ever
+     competing with text the user is reading. */
+  @keyframes concierge-scan {
+    0% { transform: translateY(-100%); opacity: 0; }
+    15%, 85% { opacity: 1; }
+    100% { transform: translateY(2400%); opacity: 0; }
   }
-  .animate-typing-dot { animation: typing-dot 1.1s ease-in-out infinite; }
+  .animate-concierge-scan { animation: concierge-scan 3.6s linear infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-concierge-scan { animation: none; opacity: 0; }
+  }
+
+  /* "Thinking" indicator — a tiny equalizer instead of three bouncing
+     dots, each bar a separate element staggered via inline
+     animation-delay at the call site. Reads as the concierge actively
+     processing fleet data, not just a generic loading state. */
+  @keyframes concierge-eq {
+    0%, 100% { transform: scaleY(0.28); }
+    50% { transform: scaleY(1); }
+  }
+  .animate-concierge-eq { transform-origin: bottom; animation: concierge-eq 0.85s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-concierge-eq { animation: none; transform: scaleY(0.7); }
+  }
+
+  /* Terminal-style blinking cursor, appended after "scanning…" copy. */
+  @keyframes concierge-cursor {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  .animate-concierge-cursor { display: inline-block; animation: concierge-cursor 1s steps(1, end) infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-concierge-cursor { animation: none; opacity: 1; }
+  }
+
+  /* Faint dot-grid field for the chat ground — a HUD surface rather than
+     flat color. Kept to a whisper of opacity so it never fights legibility.
+     Painted on a `::before` layer (not the container itself) because
+     `mask-image` clips the whole element it's set on, children included —
+     putting it directly on the scrollable content container was fading the
+     actual chat text out toward the edges of the mask. */
+  .concierge-grid {
+    position: relative;
+  }
+  .concierge-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(0, 212, 71, 0.16) 1px, transparent 1px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 75%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 0%, transparent 75%);
+  }
 
   /* Route transition: quick fade + rise, driven by App.tsx remounting on
      `key={location.pathname}` — no router-transition library needed. */
