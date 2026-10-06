@@ -30,7 +30,8 @@ import {
 import type { CarCategory } from '../data/types';
 
 /**
- * CX Concierge — a white, premium identity. Every color below reuses the
+ * CX Concierge — a calm, professional vehicle advisor: white surfaces, one
+ * brand green, plain labels (no terminal/HUD styling). Every color below reuses the
  * same light-theme tokens the rest of the product already builds on
  * (CarDetails, Browse, the dashboards) rather than inventing a new
  * palette: this is the same "exclusive, quiet, expensive" surface, not a
@@ -58,15 +59,15 @@ const QUIZ_STEPS = STEP_ORDER.filter((s): s is Exclude<Step, 'results'> => s !==
 function questionFor(s: Exclude<Step, 'results'>): string {
   switch (s) {
     case 'drive':
-      return "What's the drive?";
+      return 'What kind of trip is this?';
     case 'priority':
-      return 'What matters most to you?';
+      return 'What matters most to you in a car?';
     case 'passengers':
-      return 'How many people are riding?';
+      return 'How many people are travelling?';
     case 'budget':
-      return "What's your daily budget?";
+      return 'What is your daily budget?';
     case 'location':
-      return 'Where are you driving?';
+      return 'Where will you be driving?';
   }
 }
 
@@ -160,8 +161,8 @@ export function ConciergeMark({ size = 30, live = false, className = '' }: { siz
 function AssistantBubble({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return (
     <div className="flex items-start gap-3 animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
-      <ConciergeMark />
-      <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3 text-copy leading-relaxed text-ink-soft shadow-[0_1px_2px_rgba(22,22,26,0.04),0_6px_16px_-12px_rgba(22,22,26,0.18)] sm:max-w-[75%]">
+      <ConciergeMark size={32} />
+      <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3 text-copy font-medium leading-relaxed text-ink shadow-hair sm:max-w-[75%]">
         {children}
       </div>
     </div>
@@ -174,43 +175,32 @@ function AssistantBubble({ children, delay = 0 }: { children: ReactNode; delay?:
 function UserBubble({ children }: { children: ReactNode }) {
   return (
     <div className="flex justify-end animate-fade-up">
-      <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-ink px-4 py-2.5 text-body font-medium text-white shadow-[0_6px_16px_-10px_rgba(22,22,26,0.45)] sm:max-w-[70%]">
+      <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-ink px-4 py-2.5 text-body font-medium text-white sm:max-w-[70%]">
         {children}
       </div>
     </div>
   );
 }
 
-/** The "concierge is thinking" beat before results land — a tiny
- *  equalizer plus a terminal-style "scanning…" readout instead of a bare
- *  spinner, so the pause reads as the engine actively working the fleet
- *  data rather than a generic loading screen. */
+/** The brief "reviewing the fleet" beat before results land — three quiet
+ *  dots, the universal "typing" signal, rather than a technical readout. */
 function TypingBubble() {
   return (
     <div className="flex items-center gap-3 animate-fade-up">
-      <ConciergeMark />
-      <div className="flex items-center gap-3 rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3.5 shadow-hair">
-        <div className="flex h-3.5 items-end gap-[3px]" aria-hidden="true">
-          {[0, 110, 220, 330, 440].map((d) => (
-            <span
-              key={d}
-              className="h-full w-[3px] animate-concierge-eq rounded-full bg-accent"
-              style={{ animationDelay: `${d}ms` }}
-            />
-          ))}
-        </div>
-        <span className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-          Scanning fleet<span className="animate-concierge-cursor">_</span>
-        </span>
+      <ConciergeMark size={32} />
+      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-md border border-line bg-white px-4 py-3.5 shadow-hair" aria-hidden="true">
+        {[0, 160, 320].map((d) => (
+          <span key={d} className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" style={{ animationDelay: `${d}ms` }} />
+        ))}
       </div>
     </div>
   );
 }
 
 /** A quick-reply chip — for the short answers (priorities, passengers,
- *  city). Selected turns ink with a bright-green icon; `multi` choices
- *  also swap their icon for a check, so a multi-select reads as "these
- *  are ticked", not "this one was the answer". */
+ *  city). A selected chip gets the brand-green outline and tint; `multi`
+ *  choices also swap their icon for a check, so a multi-select reads as
+ *  "these are ticked", not "this one was the answer". */
 function QuickReply({
   active,
   icon,
@@ -228,13 +218,13 @@ function QuickReply({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-200 active:scale-95 ${
+      className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-[background-color,border-color,color] duration-200 active:scale-[0.98] ${
         active
-          ? 'border-ink bg-ink text-white shadow-[0_8px_20px_-8px_rgba(22,22,26,0.5)]'
-          : 'border-line bg-white text-ink-soft shadow-hair hover:-translate-y-0.5 hover:border-accent/40 hover:text-ink'
+          ? 'border-accent bg-accent-050 text-ink'
+          : 'border-line bg-white text-ink-soft shadow-hair hover:border-line-strong hover:text-ink'
       }`}
     >
-      <span className={`transition-colors ${active ? 'text-accent-bright' : 'text-muted group-hover:text-accent-600'}`}>
+      <span className={`transition-colors ${active ? 'text-accent' : 'text-muted group-hover:text-ink-soft'}`}>
         {multi && active ? <Icon name="check" size={17} strokeWidth={2.6} /> : icon}
       </span>
       <span>{label}</span>
@@ -244,19 +234,15 @@ function QuickReply({
 
 /** A richer answer card — for the questions whose options carry a blurb
  *  (the kind of drive, the budget bands). The blurb is half the decision
- *  ("Road Trip — long-haul comfort"), and the old chip hid it entirely
- *  below `sm:`, so on a phone you picked from labels alone. Two-up grid,
- *  a ~68px target each, icon in its own tile, a monospace index tag
- *  reading it as a panel in a selectable array rather than a plain list. */
+ *  ("Road Trip — long-haul comfort"), so it stays visible on phones too:
+ *  two-up grid, a ~68px target each, the icon in its own tile. */
 function OptionCard({
-  index,
   active,
   icon,
   label,
   sub,
   onClick,
 }: {
-  index: number;
   active: boolean;
   icon: ReactNode;
   label: string;
@@ -267,30 +253,22 @@ function OptionCard({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow,transform] duration-200 active:scale-[0.97] ${
+      className={`group relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow] duration-200 active:scale-[0.98] ${
         active
-          ? 'border-accent-bright/60 bg-ink text-white shadow-[0_12px_28px_-12px_rgba(22,22,26,0.55),0_0_0_1px_rgba(0,212,71,0.3)]'
-          : 'border-line bg-white text-ink shadow-hair hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-soft'
+          ? 'border-accent bg-accent-050 shadow-[0_0_0_1px_var(--color-accent)]'
+          : 'border-line bg-white shadow-hair hover:border-line-strong hover:shadow-soft'
       }`}
     >
       <span
-        aria-hidden="true"
-        className={`absolute right-2.5 top-2 font-mono text-[0.6rem] tracking-wide transition-colors ${
-          active ? 'text-accent-bright/80' : 'text-faint/70'
-        }`}
-      >
-        {String(index).padStart(2, '0')}
-      </span>
-      <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
-          active ? 'bg-accent-bright text-noir' : 'bg-accent-050 text-accent-700 group-hover:bg-accent-100'
+          active ? 'bg-accent text-white' : 'bg-panel text-ink-soft group-hover:bg-accent-050 group-hover:text-accent-700'
         }`}
       >
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block text-body font-semibold leading-tight">{label}</span>
-        {sub && <span className={`mt-0.5 block text-caption leading-snug ${active ? 'text-white/65' : 'text-muted'}`}>{sub}</span>}
+        <span className="block text-body font-semibold leading-tight text-ink">{label}</span>
+        {sub && <span className="mt-0.5 block text-caption leading-snug text-muted">{sub}</span>}
       </span>
     </button>
   );
@@ -303,7 +281,7 @@ function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick:
   return (
     <button
       onClick={onClick}
-      className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-1 text-body font-semibold text-accent-700 transition-colors hover:text-accent"
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-1 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600"
     >
       {children} {icon && <Icon name={icon} size={15} />}
     </button>
@@ -312,53 +290,19 @@ function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick:
 
 function BackLink({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="mb-2.5 inline-flex min-h-8 items-center gap-1 text-detail font-medium text-faint transition-colors hover:text-muted">
+    <button onClick={onClick} className="mb-2.5 inline-flex min-h-8 items-center gap-1 text-detail font-medium text-muted transition-colors hover:text-ink">
       <Icon name="chevronLeft" size={14} /> Back
     </button>
   );
 }
 
-/** Match score as a HUD gauge rather than a bare "92% MATCH" label — tick
- *  marks around the rim plus a monospace arc-fill readout, so it reads as
- *  an instrument reading the engine took, not a decorative badge. */
-function MatchRing({ value, size = 56 }: { value: number; size?: number }) {
-  const r = 16;
-  const c = 2 * Math.PI * r;
+/** Match score as a plain, legible pill ("92% match"). */
+function MatchBadge({ value }: { value: number }) {
   const clamped = Math.min(100, Math.max(0, value));
-  const ticks = Array.from({ length: 24 });
   return (
-    <span className="relative grid place-items-center" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 40 40" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        {ticks.map((_, i) => (
-          <line
-            key={i}
-            x1="20"
-            y1="2"
-            x2="20"
-            y2="3.6"
-            stroke="rgba(255,255,255,0.28)"
-            strokeWidth="0.6"
-            transform={`rotate(${(i / ticks.length) * 360} 20 20)`}
-          />
-        ))}
-        <circle cx="20" cy="20" r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="2.5" />
-        <circle
-          cx="20"
-          cy="20"
-          r={r}
-          fill="none"
-          stroke="var(--color-accent-bright)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - clamped / 100)}
-          style={{ filter: 'drop-shadow(0 0 4px rgba(0,212,71,0.6))' }}
-        />
-      </svg>
-      <span className="relative text-center leading-none">
-        <span className="block font-mono text-[0.9rem] font-bold tabular-nums text-white">{clamped}</span>
-        <span className="mt-0.5 block text-[0.45rem] font-semibold uppercase tracking-[0.16em] text-white/55">match</span>
-      </span>
+    <span className="inline-flex items-baseline gap-1 rounded-full bg-white/95 px-3 py-1.5 shadow-hair backdrop-blur">
+      <span className="font-display text-lg font-semibold leading-none tabular-nums text-ink">{clamped}%</span>
+      <span className="text-caption font-medium leading-none text-muted">match</span>
     </span>
   );
 }
@@ -500,46 +444,23 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
   const top = match?.results[0] ?? null;
   const alternates = match?.results.slice(1, 5) ?? [];
 
-  // Header progress: which of the 5 gauge segments are filled, lit, or
-  // still dark — a HUD readout rather than a smooth continuous bar.
   const progress = step === 'results' ? 100 : Math.round((answeredCount / QUIZ_STEPS.length) * 100);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const bracketLabel =
-    step === 'results' ? '[OK]' : thinking ? '[••]' : `[${pad(Math.min(answeredCount + 1, QUIZ_STEPS.length))}/${pad(QUIZ_STEPS.length)}]`;
   const stepLabel =
     step === 'results'
-      ? 'Match complete'
+      ? 'Your recommendation'
       : thinking
-        ? 'Matching you with the fleet…'
+        ? 'Reviewing the fleet…'
         : `Step ${Math.min(answeredCount + 1, QUIZ_STEPS.length)} of ${QUIZ_STEPS.length}`;
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-[#f6f7f3] animate-fade-in">
-      {/* Ambient CX light — a quiet green bloom high on the chat ground,
-          the same brand light the header's gauge carries. */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(55% 38% at 12% 6%, rgba(0,212,71,0.09), transparent 64%), radial-gradient(45% 30% at 100% 100%, rgba(0,133,54,0.05), transparent 70%)' }}
-      />
-
-      {/* Chrome — a plain white bar, same as every other header in the
-          product, so the Concierge opens like it belongs to CX rather than
-          announcing itself with a dark panel. A thin scanline still loops
-          the header strip only — a constant, quiet "the system is live"
-          signal that never reaches into the chat body the user is actually
-          reading. */}
-      <div className="relative shrink-0 overflow-hidden border-b border-line bg-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-px animate-concierge-scan bg-gradient-to-r from-transparent via-accent/70 to-transparent"
-        />
-        <div className="relative flex h-16 items-center justify-between px-4 sm:px-6">
+      <div className="relative shrink-0 border-b border-line bg-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <ConciergeMark size={38} live />
             <div>
               <p className="font-display text-[1.0625rem] font-semibold leading-none tracking-tight text-ink">CX Concierge</p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-caption leading-none text-muted" aria-live="polite">
-                <span className="font-mono text-[0.6rem] tracking-wide text-accent-700">{bracketLabel}</span>
+              <p className="mt-1.5 text-caption leading-none text-muted" aria-live="polite">
                 {stepLabel}
               </p>
             </div>
@@ -549,10 +470,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={talkToHuman}
                 disabled={escalating}
-                className="hidden items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-detail font-medium text-ink-soft transition-colors hover:border-accent/40 hover:bg-panel disabled:opacity-50 sm:inline-flex"
+                className="hidden items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-2 text-detail font-medium text-ink-soft transition-colors hover:border-line-strong hover:bg-panel disabled:opacity-50 sm:inline-flex"
               >
                 <Icon name="headset" size={15} className="text-accent" />
-                {escalating ? 'Connecting…' : 'Talk to a real person'}
+                {escalating ? 'Connecting…' : 'Talk to a person'}
               </button>
             )}
             <button
@@ -564,61 +485,41 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         </div>
-        {/* Progress gauge — 5 discrete segments instead of one smooth bar,
-            each lighting up as its question is answered. bg-line (#e8e7e1)
-            reads as invisible at hairline weight on a white header, so the
-            track needs real contrast of its own, and a lit segment needs a
-            glow to actually read as "lit" rather than just a color swap. */}
         <div
-          className="relative flex h-[5px] gap-[4px] px-4 pb-2.5 sm:px-6"
+          className="h-[3px] w-full bg-line"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress}
           aria-label="Concierge progress"
         >
-          {QUIZ_STEPS.map((s, i) => {
-            const filled = step === 'results' || i < answeredCount;
-            return (
-              <span
-                key={s}
-                className={`h-full flex-1 rounded-full transition-all duration-500 ${filled ? 'bg-accent-bright shadow-[0_0_6px_rgba(0,212,71,0.55)]' : 'bg-line-strong'}`}
-              />
-            );
-          })}
+          <div className="h-full bg-accent transition-[width] duration-500 ease-out" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      <div className="concierge-grid relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
+      <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-2 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           {/* Welcome — always at the top, even once questions are
               answered, so the transcript reads like a real conversation
               from the start rather than resetting per step. */}
-          <div className="flex flex-col items-center px-2 pb-1 pt-7 text-center animate-fade-up">
-            <ConciergeMark size={68} />
-            <p className="mt-3 inline-flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-accent-700">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inset-0 animate-ping rounded-full bg-accent-bright/60" />
-                <span className="relative h-full w-full rounded-full bg-accent-bright" />
-              </span>
-              Engine online
-            </p>
+          <div className="px-1 pb-1 pt-8 animate-fade-up">
+            <p className="text-label font-semibold uppercase tracking-[0.14em] text-accent-700">Personal vehicle advisor</p>
             <h2 className="mt-2 font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-ink text-balance sm:text-3xl">
-              Let&apos;s find your CX.
+              Find the right car in five questions.
             </h2>
-            <p className="mt-2 max-w-sm text-body leading-relaxed text-muted text-pretty">
-              Five quick questions, then I&apos;ll match you with the right car from the fleet.
-              {hasPersonalData && ' I’ll factor in your saved cars and past trips too.'}
+            <p className="mt-2 max-w-lg text-body leading-relaxed text-muted text-pretty">
+              Tell me about your trip and I&apos;ll recommend the best match from the CX fleet.
+              {hasPersonalData && ' I’ll also take your saved cars and past trips into account.'}
             </p>
             {/* Mobile-only escalation — the header button is hidden below sm:. */}
             {session && (
               <button
                 onClick={talkToHuman}
                 disabled={escalating}
-                className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-white px-3.5 text-detail font-medium text-ink-soft shadow-hair transition-colors hover:text-accent-600 disabled:opacity-50 sm:hidden"
+                className="mt-4 inline-flex min-h-9 items-center gap-1.5 text-detail font-medium text-ink-soft transition-colors hover:text-accent-700 disabled:opacity-50 sm:hidden"
               >
                 <Icon name="headset" size={14} className="text-accent" />
-                {escalating ? 'Connecting…' : 'Prefer a real person?'}
+                {escalating ? 'Connecting…' : 'Prefer to talk to a person?'}
               </button>
             )}
           </div>
@@ -636,7 +537,6 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
           {thinking && (
             <div>
               <TypingBubble />
-              <p className="ml-[42px] mt-2 text-detail text-faint">Matching you with the CX fleet…</p>
             </div>
           )}
 
@@ -653,10 +553,9 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
                 {step === 'drive' && (
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                    {DRIVE_TYPES.map((d, i) => (
+                    {DRIVE_TYPES.map((d) => (
                       <OptionCard
                         key={d.id}
-                        index={i + 1}
                         active={prefs.driveType === d.id}
                         icon={<Icon name={d.icon} size={18} />}
                         label={d.label}
@@ -718,11 +617,10 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                 {step === 'budget' && (
                   <>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {BUDGET_BANDS.map((b, i) => (
+                      {BUDGET_BANDS.map((b) => (
                         <OptionCard
                           key={b.id}
-                          index={i + 1}
-                          active={prefs.budget === b.id}
+                            active={prefs.budget === b.id}
                           icon={<Icon name={b.id === 'flexible' ? 'sparkles' : 'wallet'} size={18} />}
                           label={b.label}
                           sub={b.note}
@@ -810,14 +708,16 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
               ) : top ? (
                 <>
                   <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
                     <AssistantBubble>
-                      Here&apos;s my top pick for you{relaxed ? ', with the search widened to find the closest match' : ''}:
+                      My recommendation for you{relaxed ? ' (closest matches)' : ''}:
                     </AssistantBubble>
+                    </div>
                     <button
                       onClick={startOver}
                       className="mt-1 inline-flex shrink-0 items-center gap-1.5 text-detail font-medium text-muted transition-colors hover:text-ink"
                     >
-                      <Icon name="sort" size={13} /> Start over
+                      <Icon name="sort" size={13} /> Restart
                     </button>
                   </div>
 
@@ -827,7 +727,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
                   {alternates.length > 0 && (
                     <div className="mt-8">
-                      <AssistantBubble delay={80}>A few more options you might like:</AssistantBubble>
+                      <AssistantBubble delay={80}>Other options worth considering:</AssistantBubble>
                       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:pl-[42px]">
                         {alternates.map((s) => (
                           <AltCard key={s.car.id} scored={s} onRent={rentNow} onClose={onClose} onCompare={toggleCompare} />
@@ -840,12 +740,12 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                 /* No match */
                 <div className="flex flex-col gap-4">
                   <AssistantBubble>
-                    I couldn&apos;t find a perfect match with those preferences. Want me to widen the search? I&apos;ll relax the budget and
-                    location to show the closest cars in the fleet.
+                    I couldn&apos;t find an exact match for those preferences. I can widen the search by relaxing the budget and location
+                    to show the closest cars in the fleet.
                   </AssistantBubble>
                   <div className="sm:pl-[42px]">
                     <button onClick={() => setRelaxed(true)} className="btn btn-accent-bright btn-lg">
-                      Expand My Options <Icon name="arrowRight" size={17} />
+                      Widen the search <Icon name="arrowRight" size={17} />
                     </button>
                   </div>
                 </div>
@@ -881,7 +781,7 @@ function TopMatch({
   const { car, match } = scored;
   const fav = isFav(car.id);
   return (
-    <div className="mt-3 overflow-hidden rounded-[1.75rem] border border-line bg-white shadow-[0_18px_44px_-18px_rgba(22,22,26,0.28)] animate-scale-in">
+    <div className="mt-3 overflow-hidden rounded-3xl border border-line bg-white shadow-soft animate-scale-in">
       <div className="relative aspect-[16/10] w-full overflow-hidden sm:aspect-[21/9]">
         <Img
           src={unsplash(car.images[0], 1400)}
@@ -891,20 +791,18 @@ function TopMatch({
           className="h-full w-full object-cover"
           fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/25" />
-        {/* The Concierge's own pick, signed with its mark — distinct from
-            a generic "Top rated" badge any listing could carry. */}
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-accent-bright/25 bg-black/45 py-1 pl-1 pr-3 font-mono text-[0.65rem] font-bold uppercase tracking-[0.14em] text-accent-bright backdrop-blur-md">
-          <ConciergeMark size={22} /> [ CX Pick ]
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
+        <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+          <Icon name="checkCircle" size={14} className="text-accent" /> Recommended for you
         </span>
-        <span className="absolute right-3 top-3 rounded-2xl border border-accent-bright/20 bg-black/45 p-1 backdrop-blur-md">
-          <MatchRing value={match} />
+        <span className="absolute right-4 top-4">
+          <MatchBadge value={match} />
         </span>
         <div className="absolute bottom-4 left-5 right-5">
           <h3 className="font-display text-2xl font-semibold text-white sm:text-3xl">
             {car.make} {car.model}
           </h3>
-          <p className="text-body text-white/70">
+          <p className="text-body text-white/80">
             {car.trim ? `${car.trim} · ` : ''}
             {car.year} · {car.category}
           </p>
@@ -974,7 +872,7 @@ function AltCard({
 }) {
   const { car, match } = scored;
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_6px_20px_-10px_rgba(22,22,26,0.12)]">
+    <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-hair">
       <div className="relative aspect-[16/10] overflow-hidden">
         <Img
           src={unsplash(car.images[0], 700)}
@@ -982,8 +880,8 @@ function AltCard({
           className="h-full w-full object-cover"
           fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={26} /></span>}
         />
-        <span className="absolute right-3 top-3 rounded-full border border-white/20 bg-black/55 px-2.5 py-1 text-label font-bold text-accent-bright backdrop-blur-md">
-          {match}%
+        <span className="absolute right-3 top-3">
+          <MatchBadge value={match} />
         </span>
       </div>
       <div className="p-4">
