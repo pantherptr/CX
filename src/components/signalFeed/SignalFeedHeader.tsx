@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
-import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
+import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY, SPRING_SMOOTH } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useUnreadNotificationCount } from '../../lib/data/notifications';
 
@@ -29,12 +29,21 @@ export function SignalFeedHeader({
   canManage = false,
   onAnalyticsClick,
   onNotificationsClick,
+  searchOpen = false,
+  query = '',
+  onQueryChange,
+  onSearchClose,
 }: {
   signedIn: boolean;
   onSearchClick?: () => void;
   canManage?: boolean;
   onAnalyticsClick?: () => void;
   onNotificationsClick?: () => void;
+  /** The search dock: the lens opens into a field that takes over the header. */
+  searchOpen?: boolean;
+  query?: string;
+  onQueryChange?: (q: string) => void;
+  onSearchClose?: () => void;
 }) {
   const { session } = useAuth();
   const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
@@ -64,6 +73,8 @@ export function SignalFeedHeader({
   // shrinkable SignalBarLogo inside it) give way rather than force the
   // header wider than the viewport.
   const iconSlots = (signedIn ? 1 : 0) + (canManage ? 1 : 0) + (signedIn ? 1 : 0);
+  // The lens sits left of the other icons; the dock starts there and grows out.
+  const dockOffset = ((canManage ? 1 : 0) + 1) * 34;
   const iconButton = 'pressable grid h-8 w-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink';
 
   return (
@@ -72,15 +83,55 @@ export function SignalFeedHeader({
         scrolled ? 'border-b border-line bg-surface/92' : 'border-b border-transparent bg-surface/55'
       }`}
     >
+      {/* Search dock — grows out of the lens and takes over the whole bar */}
+      <AnimatePresence>
+        {searchOpen && (
+          <div className="absolute inset-x-4 inset-y-0 flex items-center justify-end pt-safe sm:inset-x-6">
+            <motion.div
+              className="flex h-10 items-center overflow-hidden rounded-full border border-line-strong bg-surface shadow-soft"
+              initial={reduceMotion ? { width: '100%', x: 0 } : { width: 32, x: -dockOffset }}
+              animate={{ width: '100%', x: 0 }}
+              exit={reduceMotion ? { width: '100%', x: 0 } : { width: 32, x: -dockOffset }}
+              transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
+            >
+              <span className="grid h-10 w-8 shrink-0 place-items-center text-ink-soft">
+                <Icon name="search" size={17} />
+              </span>
+              {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => onQueryChange?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') onSearchClose?.();
+                }}
+                placeholder="Search people, news, cars, offers…"
+                aria-label="Search Signal"
+                className="min-w-0 flex-1 bg-transparent px-1.5 text-body text-ink outline-none placeholder:text-faint"
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="search"
+              />
+              <button
+                onClick={onSearchClose}
+                aria-label="Close search"
+                className="pressable mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
+              >
+                <Icon name="x" size={17} />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       <div aria-hidden="true" className="pointer-events-none invisible flex items-center gap-0.5">
         {Array.from({ length: iconSlots }, (_, i) => (
           <span key={i} className="h-8 w-8" />
         ))}
       </div>
-      <div className="flex min-w-0 justify-center overflow-hidden">
+      <div className={`flex min-w-0 justify-center overflow-hidden transition-opacity duration-200 ${searchOpen ? 'opacity-0' : ''}`}>
         <SignalBarLogo size={20} />
       </div>
-      <div className="flex items-center justify-self-end gap-0.5">
+      <div className={`flex items-center justify-self-end gap-0.5 transition-opacity duration-200 ${searchOpen ? 'pointer-events-none opacity-0' : ''}`}>
         {signedIn && (
           <button onClick={onSearchClick} aria-label="Search Signal" className={iconButton}>
             <Icon name="search" size={17} />

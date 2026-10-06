@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
-import { Tap } from '../components/motionKit';
+import { Tap, AnimatePresence } from '../components/motionKit';
 import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
@@ -138,6 +138,7 @@ export default function Signal() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [myPostsOpen, setMyPostsOpen] = useState(false);
@@ -205,7 +206,11 @@ export default function Signal() {
     <div className="flex min-h-dvh flex-col bg-bg">
       <SignalFeedHeader
         signedIn
-        onSearchClick={() => setSearchOpen(true)}
+        onSearchClick={() => { setSearchQuery(''); setSearchOpen(true); }}
+        searchOpen={searchOpen}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onSearchClose={() => setSearchOpen(false)}
         canManage={canManage}
         onAnalyticsClick={() => setAnalyticsOpen(true)}
         onNotificationsClick={() => setNotificationsOpen(true)}
@@ -430,7 +435,7 @@ export default function Signal() {
         />
       )}
 
-      {searchOpen && <SignalSearchOverlay onClose={() => setSearchOpen(false)} />}
+      <AnimatePresence>{searchOpen && <SignalSearchOverlay query={searchQuery} />}</AnimatePresence>
       {analyticsOpen && <SignalAnalyticsSheet onClose={() => setAnalyticsOpen(false)} />}
       {notificationsOpen && <SignalNotificationsSheet base={base} onClose={() => setNotificationsOpen(false)} />}
     </div>

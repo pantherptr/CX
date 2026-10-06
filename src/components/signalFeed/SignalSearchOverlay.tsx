@@ -6,7 +6,7 @@ import { searchEmpirePosts, type EmpirePost } from '../../lib/data/empireFeed';
 import { searchSignalPeople, type SignalPeopleResult } from '../../lib/data/signalProfile';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import { FollowButton } from './FollowButton';
-import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD, SPRING_SMOOTH } from '../motionKit';
+import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD } from '../motionKit';
 
 const ROLE_LABEL: Record<VerifiedRole, string> = {
   owner: 'Owner', owner_assistant: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client', assistant: 'Assistant', cx: 'CX',
@@ -81,17 +81,11 @@ function ResultsFade({ stateKey, children }: { stateKey: string; children: React
  *  all still exactly there when the user backs out of whatever they
  *  opened. The explicit close button (top-left) is the only thing that
  *  actually unmounts it. */
-export function SignalSearchOverlay({ onClose }: { onClose: () => void }) {
+export function SignalSearchOverlay({ query }: { query: string }) {
   const reduceMotion = useReducedMotion();
-  // The dock folds back into its small button before the overlay goes away:
-  // `closing` flips first, the exit animation plays, and only then does
-  // AnimatePresence report back so the real `onClose` can unmount us.
-  const [closing, setClosing] = useState(false);
-  const requestClose = () => setClosing(true);
   const { pathname } = useLocation();
   const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const { hidden, hideForNavigation } = useHideForNavigation(pathname);
-  const [query, setQuery] = useState('');
   const [people, setPeople] = useState<SignalPeopleResult[] | null>(null);
   const [peopleSearching, setPeopleSearching] = useState(false);
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
@@ -147,57 +141,16 @@ export function SignalSearchOverlay({ onClose }: { onClose: () => void }) {
   const postsState = postsSearching ? 'loading' : !posts ? 'idle' : posts.length === 0 ? 'empty' : 'results';
 
   return (
-    <AnimatePresence onExitComplete={onClose}>
-      {!closing && (
-        <motion.div
-          className="fixed inset-0 z-[250] flex flex-col bg-bg"
-          role="dialog"
-          aria-modal="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.22 }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') requestClose();
-          }}
-        >
-          {/* The search dock: a small round button that opens into a full
-              field, and folds back into the button when closed. */}
-          <div className="pt-safe">
-          <div className="mx-auto flex w-full max-w-xl justify-end px-4 pb-1 pt-3">
-            <motion.div
-              className="flex h-11 items-center overflow-hidden rounded-full border border-line-strong bg-surface shadow-soft"
-              initial={reduceMotion ? { width: '100%' } : { width: 44 }}
-              animate={{ width: '100%' }}
-              exit={reduceMotion ? { width: '100%' } : { width: 44 }}
-              transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center text-ink-soft">
-                <Icon name="search" size={17} />
-              </span>
-              {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search people, news, cars, offers…"
-                aria-label="Search Signal"
-                className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-faint"
-                autoCapitalize="none"
-                autoCorrect="off"
-                enterKeyHint="search"
-              />
-              <button
-                onClick={requestClose}
-                aria-label="Close search"
-                className="pressable mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
-              >
-                <Icon name="x" size={17} />
-              </button>
-            </motion.div>
-          </div>
-          </div>
-
+    <motion.div
+      className="fixed inset-x-0 bottom-0 top-14 z-[250] flex flex-col bg-bg"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search results"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+    >
       <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto px-4 py-3">
         {!trimmed ? (
           recent.length > 0 ? (
@@ -340,8 +293,6 @@ export function SignalSearchOverlay({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </motion.div>
   );
 }
