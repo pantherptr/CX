@@ -5,6 +5,7 @@ import { eur } from '../lib/format';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { Modal } from './primitives';
+import { Ugc } from '../lib/i18n/ugc';
 
 /** A fast glance at a car without leaving the grid — full detail page is one tap away. */
 export function CarQuickView({
@@ -72,7 +73,7 @@ export function CarQuickView({
           ))}
         </div>
 
-        <p className="mt-4 line-clamp-2 text-body leading-relaxed text-muted text-pretty">{car.description}</p>
+        <p className="mt-4 line-clamp-2 text-body leading-relaxed text-muted text-pretty"><Ugc text={car.description} /></p>
 
         <div className="mt-5 flex items-center justify-between border-t border-line pt-5">
           <p className="text-ink">

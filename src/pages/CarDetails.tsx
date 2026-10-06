@@ -19,6 +19,7 @@ import { useCompare } from '../lib/compareStore';
 import { shareLink, haptics } from '../lib/native';
 import { createReport } from '../lib/data/reports';
 import NotFound from './NotFound';
+import { Ugc } from '../lib/i18n/ugc';
 
 const REPORT_REASONS = ['Misleading listing', 'Suspicious pricing', 'Inappropriate photos', 'Safety concern', 'Other'];
 
@@ -279,7 +280,7 @@ export default function CarDetails() {
             {/* About */}
             <section className="mt-8 border-t border-line pt-8">
               <h2 className="font-display text-xl font-semibold text-ink">About this car</h2>
-              <p className="mt-3 text-copy leading-relaxed text-ink-soft text-pretty">{car.description}</p>
+              <p className="mt-3 text-copy leading-relaxed text-ink-soft text-pretty"><Ugc text={car.description} /></p>
             </section>
 
             {/* Specifications */}
@@ -399,7 +400,7 @@ export default function CarDetails() {
                       </div>
                     </div>
                     <div className="mt-3"><Stars value={r.rating} /></div>
-                    <p className="mt-2 text-body leading-relaxed text-ink-soft text-pretty">{r.body}</p>
+                    <p className="mt-2 text-body leading-relaxed text-ink-soft text-pretty"><Ugc text={r.body} /></p>
                   </div>
                 ))}
               </div>

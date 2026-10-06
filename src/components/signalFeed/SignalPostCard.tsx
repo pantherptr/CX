@@ -21,6 +21,7 @@ import { BorderBeam } from '../BorderBeam';
 import { SignalCommunityComposer } from './SignalCommunityComposer';
 import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
+import { Ugc } from '../../lib/i18n/ugc';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -738,10 +739,10 @@ export function SignalPostCard({
       </div>
 
       {post.title && (
-        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{post.title}</h3>
+        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}><Ugc text={post.title} /></h3>
       )}
       <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
-        {post.body}
+        <Ugc text={post.body} />
       </p>
 
       {post.vehicle && (

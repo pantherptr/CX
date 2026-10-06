@@ -20,6 +20,7 @@ import { ProfileAvatar } from './SignalIdentityBadge';
 import { Tap, SharedAvatar } from '../motionKit';
 import { useCountUp } from '../motion';
 import { useAuth } from '../../lib/auth';
+import { Ugc } from '../../lib/i18n/ugc';
 
 const ROLE_LABEL: Record<'owner' | 'admin' | 'host' | 'client', string> = {
   owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client',
@@ -387,7 +388,7 @@ function DemoProfileHeader({ profile, compress }: { profile: SignalDemoProfile; 
       </div>
       {profile.bio && (
         <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
-          {profile.bio}
+          <Ugc text={profile.bio} />
         </p>
       )}
     </div>
@@ -485,7 +486,7 @@ function ProfileHeader({
 
       {profile.bio && (
         <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
-          {profile.bio}
+          <Ugc text={profile.bio} />
         </p>
       )}
 

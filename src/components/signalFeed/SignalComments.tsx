@@ -9,6 +9,7 @@ import {
   fetchEmpirePostComments, addEmpireComment, deleteEmpireComment, reportEmpireContent,
   type EmpireComment,
 } from '../../lib/data/empireFeed';
+import { Ugc } from '../../lib/i18n/ugc';
 
 /** Same official-voice-vs-real-account routing as SignalPostCard's own
  *  signalProfileHref — a comment's identity block should open the exact
@@ -161,7 +162,7 @@ export function SignalComments({
                     )}
                     <span className="text-caption text-muted">{timeAgo(c.createdAt)}</span>
                   </div>
-                  <p className="whitespace-pre-wrap break-words text-detail leading-snug text-ink-soft">{c.body}</p>
+                  <p className="whitespace-pre-wrap break-words text-detail leading-snug text-ink-soft"><Ugc text={c.body} /></p>
                 </div>
                 {/* Always visible at a quiet opacity, not hover-only — a
                     `group-hover`-gated reveal never appears at all on a

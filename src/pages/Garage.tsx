@@ -19,6 +19,7 @@ import { daysBetween } from '../components/BookingCard';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import type { Car, CarCategory } from '../data/types';
+import { Ugc } from '../lib/i18n/ugc';
 
 /**
  * CX Garage — a personal automotive space built entirely from data that
@@ -501,7 +502,7 @@ export default function Garage() {
                   <h3 className="font-display text-2xl font-semibold text-ink">
                     {carOfTheWeek.make} {carOfTheWeek.model}
                   </h3>
-                  <p className="mt-2 text-body leading-relaxed text-muted line-clamp-3">{carOfTheWeek.description}</p>
+                  <p className="mt-2 text-body leading-relaxed text-muted line-clamp-3"><Ugc text={carOfTheWeek.description} /></p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {[
                       { icon: 'seat' as IconName, v: `${carOfTheWeek.seats} seats` },

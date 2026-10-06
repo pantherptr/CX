@@ -10,6 +10,7 @@ import { StoryCanvas } from './StoryCanvas';
 import { SignalStoryInsights } from './SignalStoryInsights';
 import { useAuth } from '../../lib/auth';
 import { motion, SharedAvatar, useHideForNavigation, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
+import { Ugc } from '../../lib/i18n/ugc';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -451,7 +452,7 @@ export function SignalStoryViewer({
 
           {!isPending && !isBlocked && slide.caption && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-16">
-              <p className="text-body leading-relaxed text-white">{slide.caption}</p>
+              <p className="text-body leading-relaxed text-white"><Ugc text={slide.caption} /></p>
             </div>
           )}
 

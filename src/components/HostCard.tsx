@@ -6,6 +6,7 @@ import { Img } from './motion';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { findOrCreateConversation } from '../lib/data/messages';
+import { Ugc } from '../lib/i18n/ugc';
 
 export function HostCard({ host, carId }: { host: Host; carId: string }) {
   const { toast } = useApp();
@@ -83,7 +84,7 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
       <p className="mt-4 flex items-center gap-1.5 text-detail text-muted">
         <Icon name="clock" size={15} className="text-accent" /> Typically responds {host.responseTime}
       </p>
-      <p className="mt-3 text-body leading-relaxed text-ink-soft text-pretty">{host.bio}</p>
+      <p className="mt-3 text-body leading-relaxed text-ink-soft text-pretty"><Ugc text={host.bio} /></p>
 
       <button
         onClick={contactHost}
