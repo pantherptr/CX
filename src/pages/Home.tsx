@@ -717,44 +717,115 @@ export default function Home() {
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-line bg-panel px-6 py-10 sm:px-12 sm:py-14">
+          <div className="relative overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-[#f3faf5] via-panel to-[#eaf7ef] px-6 py-10 shadow-card sm:px-12 sm:py-14">
             <div
-              className="pointer-events-none absolute inset-0 opacity-70"
-              style={{ background: 'radial-gradient(50% 70% at 100% 0%, rgba(0,212,71,0.12), transparent 65%)' }}
+              className="pointer-events-none absolute inset-0 opacity-80"
+              style={{ background: 'radial-gradient(45% 70% at 92% 8%, rgba(0,212,71,0.16), transparent 62%), radial-gradient(40% 50% at 0% 100%, rgba(0,212,71,0.07), transparent 65%)' }}
             />
-            <div className="relative">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
-                  <SignalLogo size={26} />
-                </span>
-                <p className="eyebrow">{t('CX SIGNAL')}</p>
+            <div className="relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-accent-700 shadow-hair ring-1 ring-accent/15">
+                    <SignalLogo size={26} />
+                  </span>
+                  <p className="eyebrow">{t('CX SIGNAL')}</p>
+                </div>
+                <h2 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-ink text-balance sm:text-5xl">
+                  {t('Great drives deserve to be shared.')}
+                </h2>
+                <p className="mt-4 max-w-lg text-copy leading-relaxed text-muted sm:text-lead">
+                  {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
+                </p>
+
+                <ul className="mt-7 space-y-3">
+                  {[
+                    { icon: 'sparkles' as IconName, title: 'Straight from CX', desc: 'News, announcements and new cars from the CX Rent team. One feed, no noise.' },
+                    { icon: 'heart' as IconName, title: 'Real stories', desc: 'Verified hosts and drivers share their cars and their drives — Stories, Respect and more.' },
+                    { icon: 'trending' as IconName, title: 'A stage for your car', desc: 'Hosts can show their car to the community and put it in front of renters who care.' },
+                  ].map((f) => (
+                    <li key={f.title} className="flex items-start gap-4 rounded-2xl border border-white/70 bg-white/70 p-4 shadow-hair backdrop-blur-sm">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                        <Icon name={f.icon} size={19} />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="font-display text-copy font-semibold text-ink">{t(f.title)}</h3>
+                        <p className="mt-0.5 text-detail leading-relaxed text-muted">{t(f.desc)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link to="/signal" className="btn btn-accent-bright btn-lg mt-8">
+                  {t('Open Signal')} <Icon name="arrowRight" size={17} />
+                </Link>
               </div>
-              <h2 className="mt-4 max-w-2xl font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                {t('Great drives deserve to be shared.')}
-              </h2>
-              <p className="mt-3 max-w-xl text-copy leading-relaxed text-muted">
-                {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
-              </p>
-              <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
-                {[
-                  { icon: 'sparkles' as IconName, title: 'Straight from CX', desc: 'News, announcements and new cars from the CX Rent team. One feed, no noise.' },
-                  { icon: 'heart' as IconName, title: 'Real stories', desc: 'Verified hosts and drivers share their cars and their drives — Stories, Respect and more.' },
-                  { icon: 'trending' as IconName, title: 'A stage for your car', desc: 'Hosts can show their car to the community and put it in front of renters who care.' },
-                ].map((f) => (
-                  <div key={f.title} className="flex items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:block">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
-                      <Icon name={f.icon} size={19} />
-                    </span>
-                    <div className="sm:mt-4">
-                      <h3 className="font-display text-lg font-semibold text-ink">{t(f.title)}</h3>
-                      <p className="mt-1 text-detail leading-relaxed text-muted sm:mt-1.5">{t(f.desc)}</p>
+
+              {/* A glimpse of the real feed — Stories row and an official
+                  post, built from the same pieces SIGNAL itself uses.
+                  Decorative only; the button is the way in. */}
+              <div aria-hidden="true" className="relative mx-auto w-full max-w-[22rem] lg:max-w-none">
+                <div className="mx-auto w-full max-w-[22rem] lg:rotate-[1.5deg]">
+                  <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-3 shadow-[0_30px_60px_-28px_rgba(0,80,30,0.45)] backdrop-blur-md">
+                    <div className="flex items-center justify-between px-2 pb-3 pt-1">
+                      <span className="flex items-center gap-2 font-display text-copy font-semibold text-ink">
+                        <SignalLogo size={20} /> SIGNAL
+                      </span>
+                      <span className="h-1.5 w-10 rounded-full bg-line-strong" />
+                    </div>
+
+                    <div className="flex gap-3 overflow-hidden px-1 pb-3">
+                      {['CX', 'MI', 'RO', 'FI', 'PA'].map((l, i) => (
+                        <span key={l} className="flex shrink-0 flex-col items-center gap-1.5">
+                          <span className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] ${i === 0 ? 'bg-gradient-to-tr from-accent-bright to-accent' : i < 3 ? 'bg-gradient-to-tr from-accent/70 to-accent-bright/70' : 'bg-line-strong'}`}>
+                            <span className="grid h-full w-full place-items-center rounded-full bg-white text-label font-bold text-ink-soft">{l}</span>
+                          </span>
+                          <span className="h-1.5 w-8 rounded-full bg-line" />
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="overflow-hidden rounded-[1.4rem] border border-line bg-white">
+                      <div className="flex items-center gap-2.5 p-3">
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-label font-bold text-white">CX</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1 text-detail font-semibold text-ink">
+                            CX Rent <Icon name="verified" size={13} className="text-accent" />
+                          </span>
+                          <span className="block text-caption text-faint">{t('Official')}</span>
+                        </span>
+                        <span className="rounded-full bg-accent-050 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.08em] text-accent-700">{t('New Car')}</span>
+                      </div>
+                      <div className="relative aspect-[16/10] bg-panel">
+                        {fleetCars?.[1] && (
+                          <Img
+                            src={unsplash(fleetCars[1].images[0], 600)}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                            fallback={null}
+                          />
+                        )}
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+                        {fleetCars?.[1] && (
+                          <span className="absolute bottom-3 left-3 font-display text-copy font-semibold text-white">
+                            {fleetCars[1].make} {fleetCars[1].model}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 px-3.5 py-3 text-ink-soft">
+                        <span className="inline-flex items-center gap-1.5 text-detail font-medium">
+                          <Icon name="like" size={16} className="text-accent" /> {t('Respect')}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-detail font-medium">
+                          <Icon name="message" size={16} /> {t('Comment')}
+                        </span>
+                        <span className="ml-auto inline-flex items-center gap-1.5 text-detail font-medium">
+                          <Icon name="bookmark" size={16} />
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-              <Link to="/signal" className="btn btn-accent-bright btn-lg mt-8">
-                {t('Open Signal')} <Icon name="arrowRight" size={17} />
-              </Link>
             </div>
           </div>
         </Reveal>
