@@ -17,7 +17,7 @@ const ROWS: Row[] = [
   ['Create account', 'Crea account', 'Creează cont', 'Crear cuenta'],
   ['Create an account', 'Crea un account', 'Creează un cont', 'Crear una cuenta'],
   ['Sign in', 'Accedi', 'Autentificare', 'Iniciar sesión'],
-  ['Log in', 'Accedi', 'Conectare', 'Entrar'],
+  ['Log in', 'Entra', 'Conectare', 'Entrar'],
   ['Find your next drive', 'Trova il tuo prossimo viaggio', 'Găsește următoarea călătorie', 'Encuentra tu próximo viaje'],
   ['Community', 'Community', 'Comunitate', 'Comunidad'],
   ['Menu', 'Menu', 'Meniu', 'Menú'],
