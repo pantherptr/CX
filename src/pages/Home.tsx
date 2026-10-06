@@ -251,7 +251,9 @@ export default function Home() {
             and fades into the page where the search card overlaps it.
             Wider screens keep the full-bleed photo behind everything. */}
         <div className="absolute inset-x-0 top-0 h-[100svh] sm:inset-0 sm:h-auto">
-          <HeroPhoto />
+          <div className="animate-ken-burns absolute inset-0 origin-[70%_60%]">
+            <HeroPhoto />
+          </div>
 
           {/* A light editorial wash gives the copy a calm, premium reading
               surface while keeping the blue sky, architecture and car vivid. */}
@@ -268,6 +270,41 @@ export default function Home() {
             photo's bottom edge (one screen, minus a ~70px overlap) rather
             than a screen and a half further down. */}
         <div className="relative z-10 flex min-h-[calc(100svh+19rem)] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
+          {/* -------- Featured car — a floating glass card over the photo
+              (desktop only; real top-rated listing) -------- */}
+          {fleetCars?.[0] && (
+            <Reveal delay={420} className="absolute right-10 top-32 hidden w-64 xl:right-16 lg:block">
+              <Link
+                to={`/cars/${fleetCars[0].slug}`}
+                className="group block overflow-hidden rounded-2xl border border-white/40 bg-white/55 p-2 shadow-[0_20px_50px_-20px_rgba(11,38,24,0.45)] backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-panel">
+                  <Img
+                    src={unsplash(fleetCars[0].images[0], 500)}
+                    alt={`${fleetCars[0].make} ${fleetCars[0].model}`}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.1em] text-ink-soft backdrop-blur">
+                    Top rated
+                  </span>
+                </div>
+                <div className="flex items-end justify-between gap-2 px-2 pb-1.5 pt-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-copy font-semibold text-ink">
+                      {fleetCars[0].make} {fleetCars[0].model}
+                    </p>
+                    <p className="mt-0.5 text-detail text-ink-soft">
+                      ★ {fleetCars[0].rating.toFixed(1)} · {fleetCars[0].city}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-right text-detail text-ink-soft">
+                    <span className="font-display text-lead font-semibold text-ink">{eur(fleetCars[0].pricePerDay)}</span>/day
+                  </p>
+                </div>
+              </Link>
+            </Reveal>
+          )}
+
           {/* -------- Headline column -------- */}
           <div className="max-w-xl">
             <Reveal className="reveal-blur">
