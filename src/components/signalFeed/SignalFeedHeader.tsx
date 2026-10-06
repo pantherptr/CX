@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
@@ -37,7 +36,6 @@ export function SignalFeedHeader({
   onAnalyticsClick?: () => void;
   onNotificationsClick?: () => void;
 }) {
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const [scrolled, setScrolled] = useState(false);
@@ -65,7 +63,7 @@ export function SignalFeedHeader({
   // little room, and `minmax(0, …)` lets that middle column (and the
   // shrinkable SignalBarLogo inside it) give way rather than force the
   // header wider than the viewport.
-  const iconSlots = (signedIn ? 1 : 0) + (canManage ? 1 : 0) + (signedIn ? 1 : 0) + 1;
+  const iconSlots = (signedIn ? 1 : 0) + (canManage ? 1 : 0) + (signedIn ? 1 : 0);
   const iconButton = 'pressable grid h-8 w-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink';
 
   return (
@@ -109,9 +107,6 @@ export function SignalFeedHeader({
             </AnimatePresence>
           </button>
         )}
-        <button onClick={() => navigate(signedIn ? '/dashboard' : '/')} aria-label="Exit Signal" className={iconButton}>
-          <Icon name="x" size={18} />
-        </button>
       </div>
     </header>
   );
