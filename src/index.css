@@ -995,6 +995,10 @@
      which pinned modals opened inside a revealed section (a car card's
      Quick view, for one) to that card's own box instead of the screen. */
   .reveal.in { opacity: 1; transform: none; will-change: auto; }
+  /* Hero copy: the same ease-up plus a soft blur-in. `filter` goes back to
+     `none` (not blur(0)) once revealed, for the same containing-block reason. */
+  .reveal-blur { filter: blur(6px); transition-property: opacity, transform, filter; }
+  .reveal-blur.in { filter: none; }
 
   /* Images fade in as they decode, so nothing pops. Uses an animation
      (not a transition) so it never competes with transform transitions. */
@@ -1804,6 +1808,7 @@
       scroll-behavior: auto !important;
     }
     .reveal { opacity: 1 !important; transform: none !important; }
+    .reveal-blur { filter: none !important; }
     .imgfade { opacity: 1 !important; }
     .animate-core, .animate-ring, .animate-ring-rev, .animate-blink,
     .animate-scan, .animate-caret, .animate-orbit, .flow-line,

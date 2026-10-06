@@ -270,7 +270,7 @@ export default function Home() {
         <div className="relative z-10 flex min-h-[calc(100svh+19rem)] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
           {/* -------- Headline column -------- */}
           <div className="max-w-xl">
-            <Reveal>
+            <Reveal className="reveal-blur">
               <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
@@ -280,7 +280,7 @@ export default function Home() {
               </span>
             </Reveal>
 
-            <Reveal delay={80}>
+            <Reveal delay={80} className="reveal-blur">
               <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
                 <span className="text-ink">
                   I own the keys
@@ -292,13 +292,13 @@ export default function Home() {
               </h1>
             </Reveal>
 
-            <Reveal delay={140}>
+            <Reveal delay={140} className="reveal-blur">
               <p className="mt-5 max-w-md text-lead leading-relaxed text-ink-soft text-pretty sm:text-feature">
                 Premium cars. Verified hosts. Ready for the road.
               </p>
             </Reveal>
 
-            <Reveal delay={200}>
+            <Reveal delay={200} className="reveal-blur">
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link to="/browse" className="btn btn-accent-bright btn-lg">
                   Explore Cars <Icon name="arrowRight" size={17} />
@@ -312,8 +312,8 @@ export default function Home() {
               </div>
             </Reveal>
 
-            <Reveal delay={260}>
-              <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5">
+            <Reveal delay={260} className="reveal-blur">
+              <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 shadow-hair backdrop-blur-md">
                 {trustRow.map((t) => (
                   <span key={t.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
                     <Icon name={t.icon} size={15} className="text-accent" />
