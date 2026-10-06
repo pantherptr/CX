@@ -1,6 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { COUNTRIES, type Country, type Lang } from './countries';
 import { DICT } from './dict';
+import { startDomTranslator, type Dictionary } from './domTranslate';
+
+/** The sentence-by-sentence translations for the rest of the site, loaded only for the chosen language. */
+const loadAuto = (lang: Exclude<Lang, 'en'>): Promise<Dictionary> =>
+  lang === 'it' ? import('./auto/it.json').then((m) => m.default as Dictionary)
+  : lang === 'ro' ? import('./auto/ro.json').then((m) => m.default as Dictionary)
+  : import('./auto/es.json').then((m) => m.default as Dictionary);
 
 const STORAGE_KEY = 'cx-country';
 
@@ -31,6 +38,22 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = lang;
+  }, [lang]);
+
+  // Everything the explicit t() calls don't cover is translated in place.
+  useEffect(() => {
+    if (lang === 'en') return;
+    let stop: (() => void) | undefined;
+    let cancelled = false;
+    loadAuto(lang)
+      .catch(() => ({}) as Dictionary)
+      .then((auto) => {
+        if (!cancelled) stop = startDomTranslator({ ...auto, ...DICT[lang] });
+      });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
   }, [lang]);
 
   const chooseCountry = useCallback((code: string) => {
