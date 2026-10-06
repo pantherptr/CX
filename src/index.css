@@ -900,6 +900,26 @@
     100% { transform: translateY(2400%); opacity: 0; }
   }
   .animate-concierge-scan { animation: concierge-scan 3.6s linear infinite; }
+
+  /* The Concierge mark is "alive": its green eye breathes and the eye
+     blinks every few seconds. */
+  @keyframes concierge-mark-breathe {
+    0%, 100% { opacity: 0.72; }
+    50% { opacity: 1; }
+  }
+  @keyframes concierge-mark-blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    94% { transform: scaleY(0.12); }
+  }
+  .concierge-mark-green { animation: concierge-mark-breathe 2.4s ease-in-out infinite; }
+  .concierge-mark-eye {
+    transform-box: fill-box;
+    transform-origin: 50% 35%;
+    animation: concierge-mark-blink 5s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .concierge-mark-green, .concierge-mark-eye { animation: none; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .animate-concierge-scan { animation: none; opacity: 0; }
   }

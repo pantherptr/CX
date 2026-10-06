@@ -124,21 +124,28 @@ const CONCIERGE_MARK_PATHS = [
  *  available, which is genuinely true of a guided matcher. Exported so
  *  every entry point wears the exact same mark. */
 export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
+  // Black mark with the logo's own green (#009646) showing through its eye
+  // cut-outs, on a white disc so it reads on both the dark banners and the
+  // white chat header. The green breathes and the whole eye blinks now and
+  // then, so the assistant looks alive (both stop for reduced-motion users).
   return (
     <span
-      className={`relative inline-grid shrink-0 place-items-center ${className}`}
+      className={`relative inline-grid shrink-0 place-items-center rounded-full bg-white shadow-[0_0_0_1px_rgba(14,20,17,0.12)] ${className}`}
       style={{ width: size, height: size }}
     >
-      <span className="relative h-[62%] w-[62%]">
-        <svg viewBox={CONCIERGE_MARK_VIEWBOX} className="h-full w-full text-accent-bright" fill="currentColor" aria-hidden="true">
-          {CONCIERGE_MARK_PATHS.map((d) => (
-            <path key={d.slice(0, 24)} d={d} />
-          ))}
+      <span className="relative h-[64%] w-[64%]">
+        <svg viewBox={CONCIERGE_MARK_VIEWBOX} className="concierge-mark h-full w-full" aria-hidden="true">
+          <g className="concierge-mark-eye">
+            <rect className="concierge-mark-green" x="2.5" y="2.2" width="13.4" height="6.2" fill="#009646" />
+            {CONCIERGE_MARK_PATHS.map((d) => (
+              <path key={d.slice(0, 24)} d={d} fill="#0e1411" />
+            ))}
+          </g>
         </svg>
         {live && (
           <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
-            <span className="absolute inset-0 animate-ping rounded-full bg-accent/55" />
-            <span className="relative h-full w-full rounded-full border-2 border-white bg-accent" />
+            <span className="absolute inset-0 animate-ping rounded-full bg-[#009646]/55" />
+            <span className="relative h-full w-full rounded-full border-2 border-white bg-[#009646]" />
           </span>
         )}
       </span>
