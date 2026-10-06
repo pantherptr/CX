@@ -103,7 +103,7 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
   return (
     <button
       onClick={onClick}
-      className={`relative flex w-full items-center gap-3 border-b border-line px-4 py-3.5 text-left transition-colors ${active ? 'bg-panel/60' : 'hover:bg-panel/30'}`}
+      className={`relative flex w-full items-center gap-3 border-b border-line px-4 py-3.5 text-left transition-colors active:bg-panel/70 ${active ? 'bg-panel/60' : '[@media(hover:hover)]:hover:bg-panel/30'}`}
     >
       {/* A colored rail on the active row reads as "this is the open thread"
           at a glance, the same language Slack/Linear use for a selected
@@ -242,6 +242,14 @@ export default function Messages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, session?.user.id, messages?.length]);
 
+  const closeConvo = () => {
+    setMobileChat(false);
+    setParams((p) => {
+      p.delete('c');
+      return p;
+    });
+  };
+
   const openConvo = (id: string) => {
     setActiveId(id);
     setMobileChat(true);
@@ -291,19 +299,7 @@ export default function Messages() {
         {/* Conversation list */}
         <div className={`flex w-full flex-col border-r border-line bg-surface md:w-[340px] md:shrink-0 ${mobileChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="border-b border-line">
-            {/* Desktop already has this one tap away via the sidebar's own
-                "Overview" link — this is specifically the mobile fix: the
-                bottom tab bar hides itself on /messages (a chat composer
-                needs the full screen edge, see BottomNav's OWNS_BOTTOM_BAR),
-                which otherwise leaves no way back to the dashboard at all. */}
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-1 px-3 pt-3 text-detail font-medium text-muted transition-colors hover:text-ink lg:hidden"
-            >
-              <Icon name="chevronLeft" size={16} />
-              Dashboard
-            </Link>
-            <div className="flex items-center justify-between px-4 pb-4 pt-2 lg:pt-4">
+            <div className="flex items-center justify-between px-4 pb-4 pt-4">
               <div>
                 <h1 className="font-display text-xl font-semibold text-ink">Messages</h1>
                 <p className="mt-0.5 text-caption text-muted">
@@ -339,7 +335,7 @@ export default function Messages() {
               </div>
             </div>
           )}
-          <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
+          <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:pb-safe">
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center">
                 <PremiumPageLoader size={70} />
@@ -378,7 +374,7 @@ export default function Messages() {
                   keep its full height and let the message list absorb
                   the change instead. */}
               <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface/80 px-4 py-3 backdrop-blur">
-                <button onClick={() => setMobileChat(false)} className="grid h-9 w-9 place-items-center rounded-lg text-ink hover:bg-panel md:hidden"><Icon name="chevronLeft" size={20} /></button>
+                <button onClick={closeConvo} aria-label="Back to conversations" className="grid h-9 w-9 place-items-center rounded-lg text-ink active:bg-panel md:hidden"><Icon name="chevronLeft" size={20} /></button>
                 {active.other.avatar ? (
                   <Img
                     src={active.other.avatar}

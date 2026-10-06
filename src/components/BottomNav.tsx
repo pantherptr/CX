@@ -165,7 +165,7 @@ const MAX_CHROME_GAP = 120;
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
-    `/messages` is the other case: a real chat composer needs the entire
+    An open `/messages` chat (`?c=`) is the other case: a real chat composer needs the entire
     bottom edge of the screen to itself (its own safe-area padding, no
     tab bar between it and the keyboard) the same way Messages/WhatsApp/
     Telegram hide their own tab chrome inside a conversation. `/signal`
@@ -173,15 +173,19 @@ const MAX_CHROME_GAP = 120;
     too, back when that game supplied its own full bottom nav — SIGNAL is
     a single feed with no nav of its own, so the site's tab bar is the
     only way back on mobile and must stay visible there. */
-const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/messages/];
+const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//];
 
 /** Single source of truth for "is the bottom tab bar showing right now" —
     shared with App.tsx so it can reserve matching scroll padding. */
 export function useBottomNavVisible() {
   const { session } = useAuth();
   const isMobile = useMediaQuery('(max-width: 1023px)');
-  const { pathname } = useLocation();
-  const suppressed = OWNS_BOTTOM_BAR.some((re) => re.test(pathname));
+  const { pathname, search } = useLocation();
+  // `/messages` shows the tab bar on the conversation list like every other
+  // tab, and only hides it inside an open chat (`?c=`), where the composer
+  // needs the whole bottom edge — see Messages.tsx's openConvo/closeConvo.
+  const inChat = /^\/messages/.test(pathname) && new URLSearchParams(search).has('c');
+  const suppressed = inChat || OWNS_BOTTOM_BAR.some((re) => re.test(pathname));
   return Boolean(session) && isMobile && !suppressed;
 }
 
