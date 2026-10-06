@@ -1584,5 +1584,8 @@
 "Mark as handled": "Marchează ca rezolvată",
 "All handled.": "Totul rezolvat.",
 "Nothing left to review.": "Nu a mai rămas nimic de verificat.",
-"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplică migrarea 0071 în Supabase pentru a le putea marca ca rezolvate."
+"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplică migrarea 0071 în Supabase pentru a le putea marca ca rezolvate.",
+"Edit profile": "Editează profilul",
+"Make changes to your profile here. Click save when you’re done.": "Modifică aici profilul tău. Apasă salvează când ai terminat.",
+"Photo": "Fotografie"
 }

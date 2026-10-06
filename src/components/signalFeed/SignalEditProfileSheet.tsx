@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { MotionSheet, Tap, SharedAvatar, motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 import { ProfileAvatar } from './SignalIdentityBadge';
@@ -15,31 +15,6 @@ const BIO_MAX = 200;
 const USERNAME_RE = /^(?!.*__)[a-z0-9](?:[a-z0-9_]{1,18}[a-z0-9])?$/;
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
-
-/** One native-feeling field row — a label, a value, and a bottom hairline
- *  standing in for the field's own boundary instead of a bordered box.
- *  Both Username and Bio are built on this so the two read as one
- *  continuous, integrated form rather than two floating input cards. */
-function FieldRow({
-  label,
-  trailing,
-  children,
-}: {
-  label: string;
-  /** Right-aligned status/counter next to the label — kept tiny and quiet. */
-  trailing?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="border-b border-line py-3 first:pt-0">
-      <div className="flex items-center justify-between">
-        <p className="text-micro font-semibold uppercase tracking-wide text-faint">{label}</p>
-        {trailing}
-      </div>
-      {children}
-    </div>
-  );
-}
 
 /** Editing here writes directly to the same `profiles` row Settings.tsx
  *  already edits — the exact same avatar bucket/path convention, the
@@ -62,7 +37,7 @@ function BioRing({ value, max }: { value: number; max: number }) {
   const nearLimit = ratio >= 0.9;
   return (
     <svg width={20} height={20} viewBox="0 0 20 20" className="shrink-0 -rotate-90">
-      <circle cx={10} cy={10} r={BIO_RING_R} fill="none" strokeWidth={2.5} className="stroke-line" />
+      <circle cx={10} cy={10} r={BIO_RING_R} fill="none" strokeWidth={2.5} className="stroke-white/20" />
       <circle
         cx={10}
         cy={10}
@@ -72,7 +47,7 @@ function BioRing({ value, max }: { value: number; max: number }) {
         strokeLinecap="round"
         strokeDasharray={BIO_RING_CIRCUMFERENCE}
         strokeDashoffset={BIO_RING_CIRCUMFERENCE * (1 - ratio)}
-        className={`transition-[stroke-dashoffset,stroke] duration-200 ease-out ${nearLimit ? 'stroke-danger' : 'stroke-accent'}`}
+        className={`transition-[stroke-dashoffset,stroke] duration-200 ease-out ${nearLimit ? 'stroke-[#ff8a80]' : 'stroke-accent-bright'}`}
       />
     </svg>
   );
@@ -224,96 +199,117 @@ export function SignalEditProfileSheet({
     window.setTimeout(requestClose, 220);
   };
 
+  // One dialog, same family as the rest of the dark surfaces: a title and a
+  // line of explanation, then labelled rows (label left, field right) and a
+  // single "Save changes" at the bottom right.
+  const fieldBox =
+    'rounded-lg border border-white/15 bg-white/[0.04] transition-colors focus-within:border-white/60';
+  const labelCls = 'text-detail font-semibold text-on-noir sm:text-right';
+
   return (
     <MotionSheet
       open={!closing}
       onClose={requestClose}
       onExitComplete={onClose}
-      panelClassName="max-h-[80vh] rounded-t-3xl bg-surface sm:h-auto sm:max-h-[70vh] sm:max-w-[380px] sm:rounded-2xl"
+      panelClassName="max-h-[88vh] w-full rounded-t-3xl border border-white/10 bg-noir text-on-noir shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] sm:h-auto sm:max-w-[34rem] sm:rounded-2xl"
     >
-      {/* A compact native-style nav bar — back/close on the left, the
-          one real action (Save) on the right, nothing competing for
-          attention in between. Replaces the old full-width black button
-          at the bottom, which read as heavier than the rest of this
-          screen ever needed to be. */}
-      <div className="flex h-12 shrink-0 items-center border-b border-line px-3">
-        <Tap onClick={requestClose} aria-label="Close" scale={0.92} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
-          <Icon name="chevronLeft" size={19} />
-        </Tap>
-        <span className="flex-1 text-center text-detail font-semibold text-ink">Edit Profile</span>
+      <div data-surface="noir" className="relative flex-1 overflow-y-auto overscroll-contain px-6 pb-6 pt-4 sm:px-8 sm:pb-8 sm:pt-7">
         <Tap
-          onClick={handleSave}
-          disabled={saving}
-          scale={0.94}
-          animate={{ scale: justSaved ? 1.12 : 1 }}
-          transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
-          className={`shrink-0 rounded-full px-3 py-1.5 text-detail font-semibold transition-colors ${
-            hasChanges ? 'text-accent-700 hover:bg-accent-050' : 'text-faint'
-          }`}
+          onClick={requestClose}
+          aria-label="Close"
+          scale={0.9}
+          className="absolute right-4 top-3 grid h-9 w-9 place-items-center rounded-full text-on-noir-muted transition-colors hover:bg-white/10 hover:text-on-noir sm:top-5"
         >
-          {justSaved ? <Icon name="check" size={15} strokeWidth={3} /> : saving ? 'Saving…' : 'Save'}
+          <Icon name="x" size={18} />
         </Tap>
-      </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-        {/* Photo — smaller, quieter than before: the camera badge alone
-            carries the "tap to change" affordance, with a small factual
-            caption underneath rather than a standalone green CTA link. */}
-        <div className="flex items-center gap-3.5 pb-4">
-          <Tap onClick={handlePhotoPick} aria-label="Change profile photo" scale={0.96} className="relative shrink-0">
-            <SharedAvatar id="profile-avatar" active>
-              <ProfileAvatar src={avatarPreview} size={56} />
-            </SharedAvatar>
-            <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink text-white ring-2 ring-surface">
-              {uploadingPhoto ? <span className="skeleton h-2.5 w-2.5 rounded-full" /> : <Icon name="camera" size={10} />}
-            </span>
-          </Tap>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
-          <Tap onClick={handlePhotoPick} scale={0.97} className="min-w-0 text-detail font-semibold text-ink">
-            Change photo
-          </Tap>
+        <h2 className="pr-10 font-display text-xl font-semibold text-on-noir sm:text-2xl">Edit profile</h2>
+        <p className="mt-2 max-w-md text-detail leading-relaxed text-on-noir-muted">
+          Make changes to your profile here. Click save when you’re done.
+        </p>
+
+        <div className="mt-6 grid gap-5">
+          {/* Photo */}
+          <div className="grid items-center gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
+            <p className={labelCls}>Photo</p>
+            <div className="flex items-center gap-3.5">
+              <Tap onClick={handlePhotoPick} aria-label="Change profile photo" scale={0.96} className="relative shrink-0">
+                <SharedAvatar id="profile-avatar" active>
+                  <ProfileAvatar src={avatarPreview} size={56} />
+                </SharedAvatar>
+                <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-white text-noir ring-2 ring-noir">
+                  {uploadingPhoto ? <span className="skeleton h-2.5 w-2.5 rounded-full" /> : <Icon name="camera" size={10} />}
+                </span>
+              </Tap>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+              <Tap
+                onClick={handlePhotoPick}
+                scale={0.97}
+                className="rounded-lg border border-white/15 px-3.5 py-2 text-detail font-semibold text-on-noir transition-colors hover:border-white/40 hover:bg-white/5"
+              >
+                Change photo
+              </Tap>
+            </div>
+          </div>
+
+          {/* Username */}
+          <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:items-start sm:gap-4">
+            <label htmlFor="signal-username" className={`${labelCls} sm:pt-3`}>Username</label>
+            <div>
+              <div className={`flex items-center gap-1 px-3.5 ${fieldBox}`}>
+                <span className="text-body text-on-noir-muted">@</span>
+                <input
+                  id="signal-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}
+                  placeholder="username"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-body text-on-noir outline-none placeholder:text-on-noir-muted/60"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+                <UsernameStatusLabel status={usernameStatus} reduceMotion={Boolean(reduceMotion)} />
+              </div>
+              {usernameStatus === 'invalid' && (
+                <p className="mt-1.5 text-caption text-[#ff8a80]">3–20 characters, lowercase letters, numbers, underscore</p>
+              )}
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:items-start sm:gap-4">
+            <label htmlFor="signal-bio" className={`${labelCls} sm:pt-3`}>Bio</label>
+            <div>
+              <div className={`px-3.5 py-3 ${fieldBox}`}>
+                <textarea
+                  id="signal-bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
+                  rows={4}
+                  placeholder="Tell the community about yourself…"
+                  className="w-full resize-none bg-transparent text-body leading-relaxed text-on-noir outline-none placeholder:text-on-noir-muted/60"
+                />
+              </div>
+              <div className="mt-1.5 flex items-center justify-end gap-1.5">
+                <span className="text-micro text-on-noir-muted">{bio.length}/{BIO_MAX}</span>
+                <BioRing value={bio.length} max={BIO_MAX} />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <FieldRow
-          label="Username"
-          trailing={
-            <UsernameStatusLabel status={usernameStatus} reduceMotion={Boolean(reduceMotion)} />
-          }
-        >
-          <div className="mt-1 flex items-baseline gap-0.5">
-            <span className="text-body text-faint">@</span>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20))}
-              placeholder="username"
-              className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none placeholder:text-faint"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-          </div>
-          {usernameStatus === 'invalid' && (
-            <p className="mt-1 text-caption text-danger">3–20 characters, lowercase letters, numbers, underscore</p>
-          )}
-        </FieldRow>
-
-        <FieldRow
-          label="Bio"
-          trailing={
-            <span className="flex items-center gap-1.5">
-              <span className="text-micro text-faint">{bio.length}/{BIO_MAX}</span>
-              <BioRing value={bio.length} max={BIO_MAX} />
-            </span>
-          }
-        >
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
-            rows={3}
-            placeholder="Tell the community about yourself…"
-            className="mt-1 w-full resize-none bg-transparent text-body leading-relaxed text-ink outline-none placeholder:text-faint"
-          />
-        </FieldRow>
+        <div className="mt-6 flex justify-end">
+          <Tap
+            onClick={handleSave}
+            disabled={saving}
+            scale={0.96}
+            animate={{ scale: justSaved ? 1.06 : 1 }}
+            transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
+            className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-body font-semibold text-noir transition-colors hover:bg-white/90 disabled:opacity-70"
+          >
+            {justSaved ? <Icon name="check" size={16} strokeWidth={3} /> : saving ? 'Saving…' : 'Save changes'}
+          </Tap>
+        </div>
       </div>
     </MotionSheet>
   );
@@ -326,7 +322,7 @@ export function SignalEditProfileSheet({
 function UsernameStatusLabel({ status, reduceMotion }: { status: UsernameStatus; reduceMotion: boolean }) {
   if (status === 'idle' || status === 'invalid') return null;
   const copy = status === 'checking' ? 'Checking…' : status === 'available' ? 'Available' : 'Taken';
-  const color = status === 'available' ? 'text-accent-700' : status === 'taken' ? 'text-danger' : 'text-faint';
+  const color = status === 'available' ? 'text-accent-bright' : status === 'taken' ? 'text-[#ff8a80]' : 'text-on-noir-muted';
   return (
     <AnimatePresence mode="popLayout" initial={false}>
       <motion.span

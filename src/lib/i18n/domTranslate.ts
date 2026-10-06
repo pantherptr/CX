@@ -11,7 +11,7 @@
 export type Dictionary = Record<string, string>;
 
 const ATTRS = ['placeholder', 'aria-label', 'title', 'alt'] as const;
-const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA', 'SVG', 'CANVAS']);
+const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'SVG', 'CANVAS']);
 
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
 

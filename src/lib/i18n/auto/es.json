@@ -1584,5 +1584,8 @@
 "Mark as handled": "Marcar como gestionada",
 "All handled.": "Todo gestionado.",
 "Nothing left to review.": "No queda nada por revisar.",
-"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplica la migración 0071 en Supabase para poder marcarlas como gestionadas."
+"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplica la migración 0071 en Supabase para poder marcarlas como gestionadas.",
+"Edit profile": "Editar perfil",
+"Make changes to your profile here. Click save when you’re done.": "Haz cambios en tu perfil aquí. Pulsa guardar cuando termines.",
+"Photo": "Foto"
 }
