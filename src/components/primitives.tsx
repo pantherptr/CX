@@ -103,11 +103,12 @@ export function Logo({
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
-  // The wordmark is ~4.8:1, so it needs a much lower height than the square
-  // symbol to occupy the same width on a phone.
-  const wide = variant === 'wordmark' || variant === 'full';
-  const mobileH = wide ? (size === 'compact' ? 'h-7' : 'h-9') : 'h-11';
-  const imgClass = `${mobileH} w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10`;
+  // The wordmark is ~5:1, so it needs a much lower height than the square
+  // symbol. Its white letters get a faint neutral shadow so they still read
+  // on white surfaces without any outline.
+  const base = 'w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3';
+  const symbolClass = `h-11 ${base} sm:h-10`;
+  const wordmarkClass = `${size === 'compact' ? 'h-6' : 'h-7'} ${base} sm:h-8 drop-shadow-[0_1px_2px_rgba(10,20,15,0.35)]`;
   const fallback = (
     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
       CX
@@ -117,11 +118,11 @@ export function Logo({
     <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
       {variant === 'auto' ? (
         <>
-          <Img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${imgClass}`} fallback={fallback} />
-          <Img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${imgClass}`} fallback={fallback} />
+          <Img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${wordmarkClass}`} fallback={fallback} />
+          <Img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${symbolClass}`} fallback={fallback} />
         </>
       ) : (
-        <Img src={LOGO_SRC[variant]} alt="CX" className={imgClass} fallback={fallback} />
+        <Img src={LOGO_SRC[variant]} alt="CX" className={variant === 'symbol' ? symbolClass : wordmarkClass} fallback={fallback} />
       )}
     </Link>
   );
