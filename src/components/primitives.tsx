@@ -75,12 +75,9 @@ export function AuthDivider() {
 }
 
 /* ------------------------------- Logo -------------------------------
- * Renders the CX key mark exactly as provided (trimmed of surrounding
- * transparent margin and resized — never recolored, redistorted, or
- * redrawn). Two crops of the same source artwork: `symbol` is the square
- * icon alone (compact slots — nav bars, sidebars, favicon), `full`/
- * `wordmark` keep the key's extending tail (roomier slots — drawers,
- * footer, signup, the home header). */
+ * The site's logo is the CX wordmark (`wordmark`/`full`, dark letters + green
+ * key, for light surfaces). `symbol` is the old square badge, kept only as a
+ * square avatar image for the official CX identity in SIGNAL. */
 export const LOGO_SRC = {
   full: '/cx-logo-full.png',
   symbol: '/cx-logo-symbol.png',
@@ -88,41 +85,30 @@ export const LOGO_SRC = {
 } as const;
 
 export function Logo({
-  variant = 'full',
   className = '',
-  size = 'default',
 }: {
+  // Kept so existing call sites compile; every variant now renders the same
+  // wordmark (the square badge is retired from the site's own chrome).
   variant?: 'full' | 'symbol' | 'wordmark' | 'auto';
   className?: string;
-  // 'compact' only shrinks the *mobile* height of the wide wordmark (desktop
-  // is unchanged) so it fits beside the header's Log in / Sign in / menu
-  // on a narrow phone — used by Home's header.
-  size?: 'default' | 'compact';
 }) {
   // Authenticated users can't land on "/" (PublicOnlyRoute bounces them
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
-  // The wordmark is ~5:1, so it needs a much lower height than the square
-  // symbol. The asset has near-black letters (for light surfaces).
-  const base = 'w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3';
-  const symbolClass = `h-11 ${base} sm:h-10`;
-  const wordmarkClass = `${size === 'compact' ? 'h-6' : 'h-7'} ${base} sm:h-8`;
   const fallback = (
-    <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
+    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-panel text-xs font-semibold text-ink-soft">
       CX
     </span>
   );
   return (
     <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
-      {variant === 'auto' ? (
-        <>
-          <Img src={LOGO_SRC.full} alt="CX" className={`hidden sm:block ${wordmarkClass}`} fallback={fallback} />
-          <Img src={LOGO_SRC.symbol} alt="CX" className={`sm:hidden ${symbolClass}`} fallback={fallback} />
-        </>
-      ) : (
-        <Img src={LOGO_SRC[variant]} alt="CX" className={variant === 'symbol' ? symbolClass : wordmarkClass} fallback={fallback} />
-      )}
+      <Img
+        src={LOGO_SRC.wordmark}
+        alt="CX"
+        className="h-5 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-6"
+        fallback={fallback}
+      />
     </Link>
   );
 }

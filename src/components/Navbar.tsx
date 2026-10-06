@@ -109,7 +109,7 @@ function PublicNavbar() {
           }`}
         >
           <div className="flex items-center gap-10">
-            <Logo variant={homeLogo} size={pathname === '/' ? 'compact' : 'default'} />
+            <Logo variant={homeLogo} />
             <ul className="hidden items-center gap-0.5 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
