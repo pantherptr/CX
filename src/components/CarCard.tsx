@@ -229,7 +229,7 @@ export function CarCard({
               </p>
               <p className="text-ink">
                 <span className="text-lead font-semibold">{eur(car.pricePerDay)}</span>
-                <span className="text-detail text-muted"> / day</span>
+                <span className="text-detail text-muted"> {t('/ day')}</span>
               </p>
             </div>
           </div>

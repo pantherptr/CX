@@ -9,6 +9,7 @@ import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { Reveal, useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
+import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 
 const ALL_TYPES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -104,6 +105,7 @@ function PriceRange({
   onLow: (v: number) => void;
   onHigh: (v: number) => void;
 }) {
+  const { t } = useLocale();
   const pct = (v: number) => ((v - min) / (max - min)) * 100;
   // When both thumbs sit at the far right, the "max" input (on top) would
   // be the only grabbable one and it can't move left past "min" — a dead
@@ -125,7 +127,7 @@ function PriceRange({
         onChange={(e) => onLow(+e.target.value)}
         className="range-dual absolute inset-0 w-full"
         style={{ zIndex: lowOnTop ? 3 : 1 }}
-        aria-label="Minimum price per day"
+        aria-label={t('Minimum price per day')}
       />
       <input
         type="range"
@@ -136,7 +138,7 @@ function PriceRange({
         onChange={(e) => onHigh(+e.target.value)}
         className="range-dual absolute inset-0 w-full"
         style={{ zIndex: 2 }}
-        aria-label="Maximum price per day"
+        aria-label={t('Maximum price per day')}
       />
     </div>
   );
@@ -161,12 +163,13 @@ function FilterPanel({
   setPickupDate: (v: string) => void;
   setReturnDate: (v: string) => void;
 }) {
+  const { t } = useLocale();
   return (
     <div>
-      <FilterGroup title="Dates">
+      <FilterGroup title={t('Dates')}>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
-            <span className="text-label font-semibold uppercase tracking-wide text-muted">Pick-up</span>
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">{t('Pick-up')}</span>
             <input
               type="date"
               value={pickupDate}
@@ -176,7 +179,7 @@ function FilterPanel({
             />
           </label>
           <label className="block">
-            <span className="text-label font-semibold uppercase tracking-wide text-muted">Return</span>
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">{t('Return')}</span>
             <input
               type="date"
               value={returnDate}
@@ -188,10 +191,10 @@ function FilterPanel({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Price per day">
+      <FilterGroup title={t('Price per day')}>
         <div className="flex items-center justify-between text-body text-ink">
           <span className="font-semibold">{eur(f.priceMin)}</span>
-          <span className="text-muted">to</span>
+          <span className="text-muted">{t('to')}</span>
           <span className="font-semibold">{eur(f.priceMax)}{f.priceMax >= 800 ? '+' : ''}</span>
         </div>
         <div className="mt-2">
@@ -211,13 +214,13 @@ function FilterPanel({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Car type">
-        {ALL_TYPES.map((t) => (
-          <Check key={t} label={t} checked={f.types.includes(t)} onChange={() => set((p) => ({ ...p, types: toggle(p.types, t) }))} />
+      <FilterGroup title={t('Car type')}>
+        {ALL_TYPES.map((ty) => (
+          <Check key={ty} label={t(ty)} checked={f.types.includes(ty)} onChange={() => set((p) => ({ ...p, types: toggle(p.types, ty) }))} />
         ))}
       </FilterGroup>
 
-      <FilterGroup title="Brand">
+      <FilterGroup title={t('Brand')}>
         <div className="max-h-52 overflow-y-auto pr-1">
           {brands.map((b) => (
             <Check key={b} label={b} checked={f.brands.includes(b)} onChange={() => set((p) => ({ ...p, brands: toggle(p.brands, b) }))} />
@@ -225,28 +228,28 @@ function FilterPanel({
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Transmission">
+      <FilterGroup title={t('Transmission')}>
         <div className="flex gap-2">
-          {['any', 'Automatic', 'Manual'].map((t) => (
+          {['any', 'Automatic', 'Manual'].map((tr) => (
             <button
-              key={t}
-              onClick={() => set((p) => ({ ...p, transmission: t }))}
-              data-active={f.transmission === t}
+              key={tr}
+              onClick={() => set((p) => ({ ...p, transmission: tr }))}
+              data-active={f.transmission === tr}
               className="chip flex-1 justify-center capitalize"
             >
-              {t}
+              {tr === 'any' ? t('Any') : t(tr)}
             </button>
           ))}
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Fuel type">
-        {ALL_FUEL.map((t) => (
-          <Check key={t} label={t} checked={f.fuels.includes(t)} onChange={() => set((p) => ({ ...p, fuels: toggle(p.fuels, t) }))} />
+      <FilterGroup title={t('Fuel type')}>
+        {ALL_FUEL.map((fu) => (
+          <Check key={fu} label={t(fu)} checked={f.fuels.includes(fu)} onChange={() => set((p) => ({ ...p, fuels: toggle(p.fuels, fu) }))} />
         ))}
       </FilterGroup>
 
-      <FilterGroup title="Seats">
+      <FilterGroup title={t('Seats')}>
         <div className="flex gap-2">
           {[0, 2, 4, 5, 7].map((s) => (
             <button
@@ -255,13 +258,13 @@ function FilterPanel({
               data-active={f.seats === s}
               className="chip flex-1 justify-center"
             >
-              {s === 0 ? 'Any' : `${s}+`}
+              {s === 0 ? t('Any') : `${s}+`}
             </button>
           ))}
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Luggage">
+      <FilterGroup title={t('Luggage')}>
         <div className="flex gap-2">
           {[0, 1, 2, 3, 4].map((b) => (
             <button
@@ -270,30 +273,30 @@ function FilterPanel({
               data-active={f.bags === b}
               className="chip flex-1 justify-center"
             >
-              {b === 0 ? 'Any' : `${b}+`}
+              {b === 0 ? t('Any') : `${b}+`}
             </button>
           ))}
         </div>
       </FilterGroup>
 
-      <FilterGroup title="Features">
-        {ALL_FEATURES.map((t) => (
-          <Check key={t} label={t} checked={f.features.includes(t)} onChange={() => set((p) => ({ ...p, features: toggle(p.features, t) }))} />
+      <FilterGroup title={t('Features')}>
+        {ALL_FEATURES.map((ft) => (
+          <Check key={ft} label={t(ft)} checked={f.features.includes(ft)} onChange={() => set((p) => ({ ...p, features: toggle(p.features, ft) }))} />
         ))}
       </FilterGroup>
 
-      <FilterGroup title="Rating">
+      <FilterGroup title={t('Rating')}>
         <div className="flex gap-2">
           {[0, 4.5, 4.8, 4.9].map((r) => (
             <button key={r} onClick={() => set((p) => ({ ...p, rating: r }))} data-active={f.rating === r} className="chip flex-1 justify-center gap-1">
-              {r === 0 ? 'Any' : <><Icon name="star" size={12} className="text-star" />{r}+</>}
+              {r === 0 ? t('Any') : <><Icon name="star" size={12} className="text-star" />{r}+</>}
             </button>
           ))}
         </div>
       </FilterGroup>
 
       <button onClick={reset} className="mt-5 w-full text-body font-medium text-muted transition-colors hover:text-ink">
-        Clear all filters
+        {t('Clear all filters')}
       </button>
     </div>
   );
@@ -316,7 +319,8 @@ function CarCardSkeleton() {
 }
 
 export default function Browse() {
-  const findCxScramble = useScramble('Find Your CX');
+  const { t } = useLocale();
+  const findCxScramble = useScramble(t('Find Your CX'));
   const [params, setParams] = useSearchParams();
   const { cars, loading, error } = useCars();
   const [filters, setFilters] = useState<Filters>(() => ({
@@ -417,7 +421,7 @@ export default function Browse() {
           <ConciergeMark size={44} live />
           <div className="min-w-0">
             <p className="font-display text-copy font-semibold leading-tight text-white">CX Concierge</p>
-            <p className="mt-0.5 text-detail leading-snug text-on-noir-muted">Not sure which car? Tell us how you want to drive.</p>
+            <p className="mt-0.5 text-detail leading-snug text-on-noir-muted">{t('Not sure which car? Tell us how you want to drive.')}</p>
           </div>
         </div>
         <ConciergeLauncher className="btn btn-glint btn-accent-bright relative shrink-0" {...findCxScramble}>
@@ -428,20 +432,20 @@ export default function Browse() {
 
       {/* Top bar */}
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Browse cars</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{t('Browse cars')}</h1>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Icon name="pin" size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Search by city — Milan, Rome, Paris…"
+              placeholder={t('Search by city — Milan, Rome, Paris…')}
               className="input !pl-11"
             />
           </div>
           <div className="flex items-center gap-2.5">
             <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
-              <Icon name="sliders" size={17} /> Filters
+              <Icon name="sliders" size={17} /> {t('Filters')}
               {activeCount > 0 && (
                 <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">{activeCount}</span>
               )}
@@ -449,7 +453,7 @@ export default function Browse() {
             <div className="relative">
               <button onClick={() => setSortOpen((o) => !o)} className="btn btn-secondary" aria-haspopup="listbox">
                 <Icon name="sort" size={16} />
-                <span className="hidden sm:inline">{SORTS.find((s) => s.id === sort)!.label}</span>
+                <span className="hidden sm:inline">{t(SORTS.find((s) => s.id === sort)!.label)}</span>
                 <Icon name="chevronDown" size={15} className="text-muted" />
               </button>
               {sortOpen && (
@@ -462,7 +466,7 @@ export default function Browse() {
                         onClick={() => { setSort(s.id); setSortOpen(false); }}
                         className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
                       >
-                        {s.label}
+                        {t(s.label)}
                         {sort === s.id && <Icon name="check" size={16} className="text-accent" />}
                       </button>
                     ))}
@@ -479,8 +483,8 @@ export default function Browse() {
         <aside className="hidden w-72 shrink-0 lg:block">
           <div className="sticky top-[84px] card p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-medium text-ink">Filters</h2>
-              {activeCount > 0 && <span className="badge badge-accent">{activeCount} active</span>}
+              <h2 className="font-medium text-ink">{t('Filters')}</h2>
+              {activeCount > 0 && <span className="badge badge-accent">{t('{n} active', { n: activeCount })}</span>}
             </div>
             <FilterPanel
               f={filters}
@@ -499,8 +503,8 @@ export default function Browse() {
         <div className="min-w-0 flex-1">
           {!loading && !error && (
             <p className="mb-4 text-body text-muted">
-              <span ref={countRef} className="font-medium tabular-nums text-ink">{animatedCount}</span> cars available
-              {city && <> in <span className="font-medium text-ink">{city}</span></>}
+              <span ref={countRef} className="font-medium tabular-nums text-ink">{animatedCount}</span> {t('cars available')}
+              {city && <> {t('in')} <span className="font-medium text-ink">{city}</span></>}
             </p>
           )}
 
@@ -516,7 +520,7 @@ export default function Browse() {
                 size="lg"
                 tone="danger"
                 icon="info"
-                title="Couldn't load cars"
+                title={t("Couldn't load cars")}
                 description={error}
                 className="px-6 py-20"
               />
@@ -526,9 +530,9 @@ export default function Browse() {
               <EmptyState
                 size="lg"
                 icon="search"
-                title="No cars match your filters"
-                description="Try widening your price range or clearing a few filters to see more of the fleet."
-                action={<button onClick={reset} className="btn btn-primary">Clear all filters</button>}
+                title={t('No cars match your filters')}
+                description={t('Try widening your price range or clearing a few filters to see more of the fleet.')}
+                action={<button onClick={reset} className="btn btn-primary">{t('Clear all filters')}</button>}
                 className="px-6 py-20"
               />
             </div>
@@ -550,8 +554,8 @@ export default function Browse() {
           lacked. */}
       <Modal open={drawer} onClose={() => setDrawer(false)} className="flex max-h-[88dvh] flex-col" labelledBy="filters-sheet-title">
         <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
-          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">Filters</h2>
-          <button onClick={() => setDrawer(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-panel active:bg-panel" aria-label="Close">
+          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">{t('Filters')}</h2>
+          <button onClick={() => setDrawer(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-panel active:bg-panel" aria-label={t('Close')}>
             <Icon name="x" size={20} />
           </button>
         </div>
@@ -569,7 +573,7 @@ export default function Browse() {
         </div>
         <div className="shrink-0 border-t border-line p-4">
           <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
-            Show {results.length} {results.length === 1 ? 'car' : 'cars'}
+            {t('Show')} {results.length} {t(results.length === 1 ? 'car' : 'cars')}
           </button>
         </div>
       </Modal>
