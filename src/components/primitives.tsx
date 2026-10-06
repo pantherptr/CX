@@ -90,16 +90,22 @@ export const LOGO_SRC = {
 export function Logo({
   variant = 'full',
   className = '',
+  size = 'default',
 }: {
   variant?: 'full' | 'symbol' | 'wordmark' | 'auto';
   className?: string;
+  // 'lg' only bumps the *mobile* height (desktop is unchanged) — for the
+  // wide full/wordmark lockup, the default mobile height reads thin next
+  // to its own width, unlike the square `symbol` it shares that height
+  // with. Used by Home's header, which keeps the key's green-outlined
+  // tail on mobile instead of swapping to the compact symbol there.
+  size?: 'default' | 'lg';
 }) {
   // Authenticated users can't land on "/" (PublicOnlyRoute bounces them
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
-  const imgClass =
-    'h-11 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10';
+  const imgClass = `${size === 'lg' ? 'h-14' : 'h-11'} w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10`;
   const fallback = (
     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
       CX

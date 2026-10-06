@@ -54,14 +54,13 @@ function PublicNavbar() {
   // treatment those pages already use, so there's exactly one "scrolled"
   // look across the whole site, not two to keep in sync.
   const transparent = pathname === '/' && !scrolled;
-  // Always 'auto', even on Home: below `sm` it switches to the compact
-  // square `symbol` (the same bold, properly-sized mark every other mobile
-  // header already uses) instead of stretching the wide wordmark/key-tail
-  // lockup down to the same height, which reads thin and undersized next
-  // to the Log in / Sign in buttons on a narrow screen. Desktop is
-  // unaffected — 'auto' still renders the full lockup at `sm` and up,
-  // identical to what 'wordmark' always rendered there.
-  const homeLogo = 'auto';
+  // Home keeps the full key lockup on mobile too (not the compact `symbol`
+  // every other page's mobile header uses) — its green-outlined key tail
+  // is the whole point of the mark, and swapping to the plain square badge
+  // there hid it. `size="lg"` (Home only) gives it a taller mobile height
+  // than that shared default so it doesn't read thin at the same height as
+  // a square icon; desktop is untouched either way.
+  const homeLogo = pathname === '/' ? 'wordmark' : 'auto';
 
   return (
     <>
@@ -95,7 +94,7 @@ function PublicNavbar() {
           }`}
         >
           <div className="flex items-center gap-10">
-            <Logo variant={homeLogo} />
+            <Logo variant={homeLogo} size={pathname === '/' ? 'lg' : 'default'} />
             <ul className="hidden items-center gap-0.5 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
