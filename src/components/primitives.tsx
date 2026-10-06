@@ -94,18 +94,20 @@ export function Logo({
 }: {
   variant?: 'full' | 'symbol' | 'wordmark' | 'auto';
   className?: string;
-  // 'lg' only bumps the *mobile* height (desktop is unchanged) — for the
-  // wide full/wordmark lockup, the default mobile height reads thin next
-  // to its own width, unlike the square `symbol` it shares that height
-  // with. Used by Home's header, which keeps the key's green-outlined
-  // tail on mobile instead of swapping to the compact symbol there.
-  size?: 'default' | 'lg';
+  // 'compact' only shrinks the *mobile* height of the wide wordmark (desktop
+  // is unchanged) so it fits beside the header's Log in / Sign in / menu
+  // on a narrow phone — used by Home's header.
+  size?: 'default' | 'compact';
 }) {
   // Authenticated users can't land on "/" (PublicOnlyRoute bounces them
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
-  const imgClass = `${size === 'lg' ? 'h-12' : 'h-11'} w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10`;
+  // The wordmark is ~4.8:1, so it needs a much lower height than the square
+  // symbol to occupy the same width on a phone.
+  const wide = variant === 'wordmark' || variant === 'full';
+  const mobileH = wide ? (size === 'compact' ? 'h-8' : 'h-9') : 'h-11';
+  const imgClass = `${mobileH} w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10`;
   const fallback = (
     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
       CX

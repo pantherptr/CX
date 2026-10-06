@@ -73,9 +73,8 @@ function PublicNavbar() {
   // Home keeps the full key lockup on mobile too (not the compact `symbol`
   // every other page's mobile header uses) — its green-outlined key tail
   // is the whole point of the mark, and swapping to the plain square badge
-  // there hid it. `size="lg"` (Home only) gives it a taller mobile height
-  // than that shared default so it doesn't read thin at the same height as
-  // a square icon; desktop is untouched either way.
+  // there hid it. `size="compact"` (Home only) keeps the wide wordmark small enough
+  // to fit beside the header buttons on a phone; desktop is untouched.
   const homeLogo = pathname === '/' ? 'wordmark' : 'auto';
 
   return (
@@ -110,7 +109,7 @@ function PublicNavbar() {
           }`}
         >
           <div className="flex items-center gap-10">
-            <Logo variant={homeLogo} size={pathname === '/' ? 'lg' : 'default'} />
+            <Logo variant={homeLogo} size={pathname === '/' ? 'compact' : 'default'} />
             <ul className="hidden items-center gap-0.5 lg:flex">
               {links.map((l) => (
                 <li key={l.to}>
