@@ -77,13 +77,14 @@ export function AuthDivider() {
 /* ------------------------------- Logo -------------------------------
  * Renders the CX key mark exactly as provided (trimmed of surrounding
  * transparent margin and resized — never recolored, redistorted, or
- * redrawn). All variants point at the same symbol image — there is
- * only the one mark now, used everywhere: homepage, desktop headers,
- * mobile nav, auth pages, footer, dashboard sidebar, favicon. */
+ * redrawn). Two crops of the same source artwork: `symbol` is the square
+ * icon alone (compact slots — nav bars, sidebars, favicon), `full`/
+ * `wordmark` keep the key's extending tail (roomier slots — drawers,
+ * footer, signup, the home header). */
 export const LOGO_SRC = {
-  full: '/cx-logo-symbol.png',
+  full: '/cx-logo-full.png',
   symbol: '/cx-logo-symbol.png',
-  wordmark: '/cx-logo-symbol.png',
+  wordmark: '/cx-logo-full.png',
 } as const;
 
 export function Logo({

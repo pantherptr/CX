@@ -266,11 +266,11 @@ export default function Home() {
             <Reveal delay={80}>
               <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
                 <span className="text-ink">
-                  Your next car
+                  I own the keys
                 </span>
                 <br />
                 <span className="text-accent">
-                  is waiting.
+                  to your heart.
                 </span>
               </h1>
             </Reveal>
