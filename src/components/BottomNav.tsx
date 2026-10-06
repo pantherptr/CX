@@ -84,32 +84,53 @@ const X = {
 };
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
 
-/** The whole bar's one and only background fill — flat everywhere except
- *  a smooth S-curve rise over the Signal column — as a single
- *  objectBoundingBox clip-path on ONE element the full height of the bar
- *  plus `HILL_RISE`. This used to be two separately-clipped `.glass`
- *  panels (the flat bar, and a small independently-blurred hill panel
- *  floating above it): each one individually looked right, but two
+/** The whole bar's one and only background fill — a fully rounded
+ *  "stadium" capsule (flat top/bottom, semicircular ends) with the same
+ *  smooth S-curve rise over the Signal column cut into its flat top — as a
+ *  single objectBoundingBox clip-path on ONE element the full height of
+ *  the bar plus `HILL_RISE`. This used to be two separately-clipped
+ *  `.glass` panels (the flat bar, and a small independently-blurred hill
+ *  panel floating above it): each one individually looked right, but two
  *  distinct backdrop-blur regions never actually compose into one
  *  continuous surface — the hill panel sampled slightly different page
  *  content behind it than the flat bar did, so it rendered visibly
  *  brighter/whiter with a hard seam at its edge, reading as a separate
  *  white button glued on top rather than part of the bar. One shared
  *  element with one shared blur instance can't have that seam by
- *  construction. `flatY` (the fraction of this taller box's own height
- *  where the flat sides sit) depends on the bar's real rendered height,
- *  which varies with the safe-area inset — measured live via
- *  `useMeasuredHeight` below rather than assumed, so the bump's
- *  proportions stay correct on every device instead of guessing one
- *  fixed number. */
-function buildNavClipPath(flatY: number): string {
+ *  construction. `flatY`/`rx`/`ry` (the flat top's height fraction and the
+ *  end caps' per-axis corner radius fractions) depend on the bar's real
+ *  rendered width/height, which vary with the safe-area inset and viewport
+ *  width — measured live via `useMeasuredSize` below rather than assumed,
+ *  so both the bump's and the end caps' proportions stay correct on every
+ *  device instead of guessing fixed numbers. The hill's own curve
+ *  (`X.upCp1`…`X.downEnd`) is untouched from the original flat-sided bar —
+ *  only the two ends gained rounding either side of it. */
+const BEZIER_CIRCLE_K = 0.5522847498; // standard cubic-bezier quarter-circle approximation constant
+
+function buildNavClipPath(flatY: number, rx: number, ry: number): string {
   const f = round4(flatY);
+  const k = BEZIER_CIRCLE_K;
+  // rx/ry are chosen (see the component body) so the flat side's full
+  // height exactly equals 2*ry — i.e. the top and bottom corner arcs at
+  // each end meet with no straight segment between them, forming a true
+  // semicircular cap rather than a rounded-rectangle corner. midY is that
+  // meeting point, equal to both `f + ry` and `1 - ry`.
+  const midY = round4(f + ry);
+  const rxIn = round4(rx * (1 - k));
+  const ryIn = round4(ry * k);
   return (
-    `M0,${f} L${round4(X.left)},${f} ` +
+    `M0,${midY} ` +
+    `C0,${round4(midY - ryIn)} ${rxIn},${f} ${round4(rx)},${f} ` +
+    `L${round4(X.left)},${f} ` +
     `C${round4(X.upCp1)},${f} ${round4(X.upCp2)},0 ${round4(X.peakStart)},0 ` +
     `L${round4(X.peakEnd)},0 ` +
     `C${round4(X.downCp1)},0 ${round4(X.downCp2)},${f} ${round4(X.downEnd)},${f} ` +
-    `L1,${f} L1,1 L0,1 Z`
+    `L${round4(1 - rx)},${f} ` +
+    `C${round4(1 - rxIn)},${f} 1,${round4(midY - ryIn)} 1,${midY} ` +
+    `C1,${round4(midY + ryIn)} ${round4(1 - rxIn)},1 ${round4(1 - rx)},1 ` +
+    `L${round4(rx)},1 ` +
+    `C${rxIn},1 0,${round4(midY + ryIn)} 0,${midY} ` +
+    `Z`
   );
 }
 
@@ -123,46 +144,51 @@ const HILL_STROKE_PATH =
   `M0,${HILL_STROKE_FY} L17.5,${HILL_STROKE_FY} C26.5,${HILL_STROKE_FY} 32.75,0 38.75,0 ` +
   `L61.25,0 C67.25,0 73.5,${HILL_STROKE_FY} 82.5,${HILL_STROKE_FY} L100,${HILL_STROKE_FY}`;
 
-/** Measures an element's rendered height live (initial mount + any
+/** Measures an element's rendered width+height live (initial mount + any
  *  resize — orientation change, a browser chrome bar showing/hiding,
- *  etc.), used to compute the fill's exact bump proportions above. */
-function useMeasuredHeight(ref: React.RefObject<HTMLElement | null>): number {
-  const [height, setHeight] = useState(0);
+ *  etc.), used to compute the fill's exact bump and end-cap proportions
+ *  above (the end caps' corner radius is a fraction of each axis, so both
+ *  dimensions matter, not just height). */
+function useMeasuredSize(ref: React.RefObject<HTMLElement | null>): { width: number; height: number } {
+  const [size, setSize] = useState({ width: 0, height: 0 });
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const update = () => setHeight(el.getBoundingClientRect().height);
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      setSize({ width: r.width, height: r.height });
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
   }, [ref]);
-  return height;
+  return size;
 }
 
-// A reasonable guess for the very first paint, before useMeasuredHeight's
-// ResizeObserver reports the bar's real height — close enough that the
-// bump's proportions never visibly jump once the real measurement lands.
+// Reasonable guesses for the very first paint, before useMeasuredSize's
+// ResizeObserver reports the bar's real size — close enough that the
+// bump/end-cap proportions never visibly jump once the real measurement
+// lands.
 const FALLBACK_NAV_HEIGHT = 68;
+const FALLBACK_NAV_WIDTH = 360;
+
+// The bar floats as a capsule: inset from both sides and lifted off the
+// bottom edge by the home-indicator safe area plus this extra gap, instead
+// of docking flush to the screen's bottom with a background bled down
+// behind the home indicator. Nothing is painted below the capsule.
+const BAR_SIDE_GAP = 12; // px between the capsule and each screen edge
+const BAR_BOTTOM_GAP = 12; // px between the capsule and the safe-area edge
 
 // Some mobile browsers (iOS Safari especially, with its floating/compact
 // toolbar) shrink the VISUAL viewport without changing `env(safe-area-
 // inset-bottom)` at all — that constant only ever covers the home
 // indicator, never the browser's own floating chrome on top of it. A
-// `position: fixed; bottom: 0` element still docks to the LAYOUT
-// viewport's edge, so a static safe-area guess can under-cover the real
-// gap, and a fixed extra guess (an earlier version of this fix used 60px)
-// can be wrong in either direction across devices. `visualViewport` is the
-// one live signal that actually reports how much of the screen the
-// browser's own chrome is covering right now — this reads the gap between
-// the layout and visual viewports and keeps it updated as that chrome
-// shows/hides, so the bar's background always overshoots by exactly
-// enough, not a guess.
-
-// A small always-on cushion on top of the live measurement above — cheap
-// insurance against the one-frame lag between the browser's chrome
-// starting to move and `visualViewport`'s event firing.
-const MIN_BOTTOM_BLEED = 24;
+// `position: fixed` element still anchors to the LAYOUT viewport's edge,
+// so `visualViewport` (via `useViewportBottomGap`) is the live signal for
+// how much of the screen that chrome is covering; the bar is lifted by
+// exactly that much, up to this cap (anything larger is a keyboard, which
+// the bar deliberately ignores).
 const MAX_CHROME_GAP = 120;
 
 /** Routes that already own a bottom sticky action bar — the tab bar would
@@ -275,35 +301,45 @@ export function BottomNav() {
   const normalActiveIndex = signalActive ? -1 : activeIndex;
 
   const navRef = useRef<HTMLElement>(null);
-  const measuredNavHeight = useMeasuredHeight(navRef);
+  const { width: measuredNavWidth, height: measuredNavHeight } = useMeasuredSize(navRef);
   const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
+  const navWidth = measuredNavWidth || FALLBACK_NAV_WIDTH;
   const backdropHeight = navHeight + HILL_RISE;
   const viewportGap = useViewportBottomGap();
-  const bottomBleed = Math.max(MIN_BOTTOM_BLEED, viewportGap + MIN_BOTTOM_BLEED);
-  // Lift the bar to sit flush with the VISIBLE bottom edge. A gap this big
-  // is a keyboard, not browser chrome, so the bar stays put for those.
+  // Lift the bar above browser chrome that covers the layout viewport's
+  // bottom. A gap this big is a keyboard, not browser chrome, so the bar
+  // stays put for those.
   const lift = viewportGap > 0 && viewportGap <= MAX_CHROME_GAP ? viewportGap : 0;
-  // The clip-path's fractions are relative to the (taller, bled) glass
-  // div's own box below, not `backdropHeight` — otherwise adding the bleed
-  // would squash the hill's proportions instead of just extending the flat
-  // bottom further down.
-  const navFlatY = HILL_RISE / (backdropHeight + bottomBleed);
-  const navClipPath = useMemo(() => buildNavClipPath(navFlatY), [navFlatY]);
+  // End caps are true semicircles: radius = half the flat bar's height, so
+  // the glass is a stadium capsule. Per-axis fractions because the clip-path
+  // is in objectBoundingBox units over a non-square box.
+  const capRadius = navHeight / 2;
+  const navFlatY = HILL_RISE / backdropHeight;
+  const navClipPath = useMemo(
+    () => buildNavClipPath(navFlatY, capRadius / navWidth, capRadius / backdropHeight),
+    [navFlatY, capRadius, navWidth, backdropHeight],
+  );
 
   if (!visible) return null;
 
   return (
     <nav
       ref={navRef}
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line shadow-[0_-6px_20px_-12px_rgba(22,22,26,0.18)] lg:hidden"
+      className="fixed z-50 shadow-[0_8px_24px_-8px_rgba(22,22,26,0.22)] lg:hidden"
       style={{
+        left: BAR_SIDE_GAP,
+        right: BAR_SIDE_GAP,
+        bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP}px)`,
+        // Gives the box-shadow above the same capsule outline as the glass.
+        borderRadius: capRadius,
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's
-        // content reflows or jumps as this slides away; translateY(100%)
-        // is relative to the bar's own rendered height, which already
-        // includes its safe-area inset, so it clears the bar completely
-        // on every device without a hardcoded pixel value.
-        transform: scrollHidden ? 'translateY(100%)' : `translateY(${-lift}px)`,
+        // content reflows or jumps as this slides away; the bar's own
+        // height plus the safe-area inset and floating gap it sits above
+        // clears it completely on every device without a hardcoded value.
+        transform: scrollHidden
+          ? `translateY(calc(100% + env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP + 8}px))`
+          : `translateY(${-lift}px)`,
         opacity: scrollHidden ? 0 : 1,
         pointerEvents: scrollHidden ? 'none' : 'auto',
         transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`,
@@ -337,11 +373,11 @@ export function BottomNav() {
           would cast it around the bar's entire outline (left/right/bottom
           edges too), a real regression. The bump's own glow lives purely
           on the rim stroke below, which already traces just the bump's
-          own contour; the bar's ordinary top shadow is the separate
-          `shadow-[...]` utility on `<nav>` itself, untouched. */}
+          own contour; the bar's ordinary drop shadow is the separate
+          `shadow-[...]` utility on `<nav>` itself. */}
       <div
-        className="glass pointer-events-none absolute inset-x-0"
-        style={{ bottom: -bottomBleed, height: backdropHeight + bottomBleed, clipPath: 'url(#signal-nav-clip)' }}
+        className="glass pointer-events-none absolute inset-x-0 bottom-0"
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
@@ -379,17 +415,10 @@ export function BottomNav() {
           solid pill baseline-underline. Signal never uses this: its own
           indicator is the raised section's rim above (drawn separately, not
           on this shared baseline), so this one fades out under Signal. */}
-      {/* `pb-safe` lives here, not on `<nav>` itself — the glass background
-          below is an absolutely positioned child measured from `<nav>`'s
-          padding box, and giving `<nav>` its own bottom padding shifts that
-          padding box up by the safe-area inset without the glass's own
-          `bottomBleed` math knowing about it, leaving an unpainted sliver of
-          the page's background exposed right under the bar on every phone
-          with a home indicator. Keeping `<nav>` itself unpadded means its
-          padding box always coincides with its real bottom edge, so the
-          glass's bleed fully covers it; this div still gets pushed up clear
-          of the home indicator exactly as before. */}
-      <div className="relative grid grid-cols-5 pb-safe">
+      {/* No `pb-safe` — the whole capsule is already lifted clear of the
+          home indicator by `<nav>`'s own `bottom` offset, so padding the
+          content as well would only add dead space under the icons. */}
+      <div className="relative grid grid-cols-5">
         <span
           className="pointer-events-none absolute top-1.5 h-1 w-6 -translate-x-1/2 rounded-full bg-accent transition-all duration-300"
           style={{

@@ -229,7 +229,7 @@ export default function App() {
           white screen unrecovered. This one catches that case too. */}
       <ErrorBoundary>
       <MaintenanceGate>
-      <div key={pageKey} className={`animate-page ${bottomNavVisible ? 'pb-16' : ''}`}>
+      <div key={pageKey} className={`animate-page ${bottomNavVisible ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
           deliberately quiet — a centred marque rather than a full-screen
           splash — because these chunks resolve in a few hundred ms on a
