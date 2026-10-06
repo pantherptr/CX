@@ -132,8 +132,17 @@
     touch-action: manipulation;
   }
 
-  body {
+  /* The page colour lives on #root, not html/body: iOS Safari tints the
+     strip behind its floating toolbar from the root background, which read
+     as a solid white band under the site. With html/body transparent it
+     falls back to its own see-through glass bar instead. */
+  #root {
     background-color: var(--color-bg);
+    min-height: 100lvh;
+  }
+
+  body {
+    background-color: transparent;
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-feature-settings: 'ss01';
