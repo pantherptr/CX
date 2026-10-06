@@ -66,7 +66,11 @@ export function SignalStoryViewer({
   // keeps every hook's state (storyIndex/slideIndex/paused/dragY) alive.
   const { hidden: hidingForProfile, hideForNavigation } = useHideForNavigation(pathname);
   const [slideIndex, setSlideIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [holdPaused, setPaused] = useState(false);
+  // The header's pause/play button — separate from hold-to-pause, which
+  // releases itself on touch end and would otherwise undo a manual pause.
+  const [manualPaused, setManualPaused] = useState(false);
+  const paused = holdPaused || manualPaused;
   const [deleting, setDeleting] = useState(false);
   // Respect is per-story (one respect_count for the whole Story, not per
   // slide) — the `stories` prop is a fixed snapshot for this viewer's
@@ -120,6 +124,7 @@ export function SignalStoryViewer({
   useEffect(() => {
     setVideoProgress(0);
     setMuted(true);
+    setManualPaused(false);
   }, [slide?.id]);
 
   // Hold-to-pause already drives the image slide's CSS animation via
@@ -472,7 +477,14 @@ export function SignalStoryViewer({
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/65 via-black/20 to-transparent pb-8">
           <div className="pointer-events-auto flex gap-1 px-2 pt-safe">
             {story.slides.map((s, i) => (
-              <div key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/25">
+              <button
+                key={s.id}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setSlideIndex(i); }}
+                aria-label={`Go to slide ${i + 1}`}
+                className="group flex h-4 flex-1 items-center"
+              >
+              <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/25 transition-[height] group-hover:h-[5px]">
                 {i < slideIndex ? (
                   <div className="h-full w-full bg-white" />
                 ) : i === slideIndex ? (
@@ -498,6 +510,7 @@ export function SignalStoryViewer({
                   )
                 ) : null}
               </div>
+              </button>
             ))}
           </div>
 
@@ -516,6 +529,13 @@ export function SignalStoryViewer({
               </div>
             </button>
             <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); setManualPaused((p) => !p); }}
+                aria-label={manualPaused ? 'Play' : 'Pause'}
+                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Icon name={manualPaused ? 'play' : 'pause'} size={17} />
+              </button>
               {/* Author-or-admin only, same rule fetch_empire_story_insights
                   enforces server-side — opens the aggregate-only Views/
                   Respects panel. There is deliberately no "who viewed"
