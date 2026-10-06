@@ -483,7 +483,7 @@ export default function Home() {
             />
             <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
               <div className="max-w-xl">
-                <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.2em] text-accent-700">
+                <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
                   <ConciergeMark size={44} live /> CX Concierge
                 </p>
                 <h2 className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
@@ -507,7 +507,7 @@ export default function Home() {
                   <div className="flex items-start gap-2.5">
                     <ConciergeMark size={28} />
                     <span className="rounded-2xl rounded-tl-md border border-line bg-white px-3.5 py-2 text-detail text-ink-soft shadow-hair">
-                      What&apos;s the drive?
+                      What kind of trip is this?
                     </span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -520,15 +520,15 @@ export default function Home() {
                       <span
                         key={o.label}
                         className={`flex items-center gap-2 rounded-xl border p-2 ${
-                          o.on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink'
+                          o.on ? 'border-accent bg-accent-050 text-ink shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line bg-white text-ink'
                         }`}
                       >
-                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${o.on ? 'bg-accent-bright text-noir' : 'bg-accent-050 text-accent-700'}`}>
+                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${o.on ? 'bg-accent text-white' : 'bg-panel text-ink-soft'}`}>
                           <Icon name={o.icon} size={14} />
                         </span>
                         <span className="min-w-0">
                           <span className="block truncate text-caption font-semibold leading-tight">{o.label}</span>
-                          <span className={`block truncate text-[0.625rem] leading-tight ${o.on ? 'text-white/60' : 'text-muted'}`}>{o.sub}</span>
+                          <span className="block truncate text-[0.625rem] leading-tight text-muted">{o.sub}</span>
                         </span>
                       </span>
                     ))}
