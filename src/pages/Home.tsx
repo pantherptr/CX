@@ -217,16 +217,21 @@ export default function Home() {
   return (
     <div>
       {/* ================= HERO — real photography, edge to edge =================
-          `-mt-16`: the header is always `sticky` now (see Navbar's own
-          comment), which means it always reserves its own ~64px in
+          `-mt-[calc(4rem+safe-area-inset-top)]`: the header is always
+          `sticky` now (see Navbar's own comment), which means it always
+          reserves its own ~64px *plus* its `pt-safe` notch padding in
           document flow, right above this section. Pulling the hero up by
-          that same amount puts its background back at true y=0 — visible
-          right through the header's transparent background exactly as
-          before — without the header ever changing *positioning* scheme,
-          which is what used to cause the scroll-jump. The inner content
+          that same total amount puts its background back at true y=0 —
+          visible right through the header's transparent background
+          exactly as before — without the header ever changing
+          *positioning* scheme, which is what used to cause the
+          scroll-jump. Matching only the 64px (not the safe-area inset too)
+          left a flat strip of the plain page background showing above the
+          hero on any phone with a notch/Dynamic Island — the hero's own
+          photo and gradient never reached that far up. The inner content
           keeps its own pt-24/pt-28 unchanged, so it lands in the exact
           same visual spot it always did. */}
-      <section className="relative isolate -mt-16 overflow-hidden bg-bg sm:min-h-[92svh] sm:bg-[#eaf2ef]">
+      <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-bg sm:min-h-[92svh] sm:bg-[#eaf2ef]">
         {/* Media layer. On phones it's exactly one screen tall: the
             mobile photo is a 9:16 portrait, and stretching it over the old
             1200px hero blew it up ~1.8x and cropped the car out of frame —
