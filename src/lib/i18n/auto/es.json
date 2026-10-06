@@ -1562,5 +1562,18 @@
 "Sign in to meet your host": "Inicia sesión para conocer a tu anfitrión",
 "The host’s name, photo, bio and how fast they reply are shared with signed-in members. Your trip is always arranged through CX.": "El nombre, la foto, la bio del anfitrión y lo rápido que responde se comparten con los miembros que han iniciado sesión. Tu viaje siempre se organiza a través de CX.",
 "Keep it inside CX": "Mantenlo dentro de CX",
-"For your safety, keep contact details and payments inside CX. Phone numbers, emails, links and requests to pay outside the app can’t be shared.": "Por tu seguridad, mantén los datos de contacto y los pagos dentro de CX. No se pueden compartir números de teléfono, correos, enlaces ni peticiones de pagar fuera de la app."
+"For your safety, keep contact details and payments inside CX. Phone numbers, emails, links and requests to pay outside the app can’t be shared.": "Por tu seguridad, mantén los datos de contacto y los pagos dentro de CX. No se pueden compartir números de teléfono, correos, enlaces ni peticiones de pagar fuera de la app.",
+"Contact guard": "Protección de contactos",
+"Nothing caught yet.": "Aún no se ha detectado nada.",
+"When someone tries to share a phone number, email, link or off-app payment, it shows up here.": "Cuando alguien intenta compartir un teléfono, un correo, un enlace o un pago fuera de la app, aparece aquí.",
+"Members only ever see “••••” in place of what they wrote.": "Los miembros solo ven “••••” en lugar de lo que se escribió.",
+"Open Chat Monitor": "Abrir Monitor de chats",
+"Chat message": "Mensaje de chat",
+"Car description": "Descripción del coche",
+"Profile bio": "Bio del perfil",
+"SIGNAL post title": "Título de la publicación de SIGNAL",
+"SIGNAL post": "Publicación de SIGNAL",
+"SIGNAL comment": "Comentario de SIGNAL",
+"Story caption": "Descripción de la Historia",
+"The contact guard is not set up yet — apply migration 0070 in Supabase.": "La protección de contactos aún no está activa: aplica la migración 0070 en Supabase."
 }

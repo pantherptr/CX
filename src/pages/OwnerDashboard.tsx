@@ -55,6 +55,7 @@ import {
   type OwnerNote,
 } from '../lib/data/platform';
 import { fetchReports, resolveReport, createConversationReport, type OwnerReport } from '../lib/data/reports';
+import { fetchContactFlags, FLAG_SOURCE_LABEL, type ContactFlag } from '../lib/data/contactFlags';
 
 /**
  * The Owner's private control center — distinct from /admin (see
@@ -75,6 +76,7 @@ export type OwnerTab =
   | 'users'
   | 'verifications'
   | 'reports'
+  | 'contact'
   | 'monitor'
   | 'activity'
   | 'notes'
@@ -90,6 +92,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'users', label: 'Users', icon: 'user' },
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'reports', label: 'Reports', icon: 'info' },
+  { id: 'contact', label: 'Contact guard', icon: 'lock' },
   { id: 'monitor', label: 'Chat Monitor', icon: 'headset' },
   { id: 'activity', label: 'Activity', icon: 'clock' },
   { id: 'notes', label: 'Notes', icon: 'sparkles' },
@@ -682,6 +685,55 @@ function ReportsPanel() {
               </button>
             )}
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Everything the contact guard caught: who tried to share a number, email,
+ *  link or off-app payment, and where. The text was already hidden from the
+ *  other person — this shows what was originally written. */
+function ContactGuardPanel({ onOpenMonitor }: { onOpenMonitor: () => void }) {
+  const [items, setItems] = useState<ContactFlag[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchContactFlags()
+      .then(setItems)
+      .catch(() => setError('The contact guard is not set up yet — apply migration 0070 in Supabase.'));
+  }, []);
+
+  if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
+  if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
+  if (items.length === 0) {
+    return (
+      <div className="card">
+        <EmptyState size="md" icon="checkCircle" title="Nothing caught yet." description="When someone tries to share a phone number, email, link or off-app payment, it shows up here." className="p-10" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="px-1 text-detail text-muted">
+        Members only ever see “••••” in place of what they wrote.
+      </p>
+      {items.map((f) => (
+        <div key={f.id} className="card flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
+              {f.userName}
+              <span className="badge bg-[#f5a524]/15 text-[#a86400]">{FLAG_SOURCE_LABEL[f.source] ?? f.source}</span>
+            </p>
+            <p className="text-caption text-muted">{fmtDate(f.createdAt)}</p>
+            <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-panel px-3 py-2 text-detail text-ink-soft">{f.original}</p>
+          </div>
+          {f.source === 'messages.body' && (
+            <button onClick={onOpenMonitor} className="btn btn-secondary btn-sm shrink-0">
+              Open Chat Monitor
+            </button>
+          )}
         </div>
       ))}
     </div>
@@ -1369,6 +1421,7 @@ export default function OwnerDashboard() {
         {tab === 'users' && <UsersPanel />}
         {tab === 'verifications' && <VerificationsPanel />}
         {tab === 'reports' && <ReportsPanel />}
+        {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} />}
         {tab === 'monitor' && <MonitorPanel />}
         {tab === 'activity' && <ActivityPanel />}
         {tab === 'notes' && <NotesPanel />}

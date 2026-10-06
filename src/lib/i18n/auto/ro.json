@@ -1562,5 +1562,18 @@
 "Sign in to meet your host": "Autentifică-te pentru a-ți cunoaște gazda",
 "The host’s name, photo, bio and how fast they reply are shared with signed-in members. Your trip is always arranged through CX.": "Numele, fotografia, biografia gazdei și cât de repede răspunde sunt vizibile membrilor autentificați. Călătoria ta este mereu organizată prin CX.",
 "Keep it inside CX": "Rămâi în CX",
-"For your safety, keep contact details and payments inside CX. Phone numbers, emails, links and requests to pay outside the app can’t be shared.": "Pentru siguranța ta, păstrează contactele și plățile în CX. Numerele de telefon, e-mailurile, linkurile și cererile de plată în afara aplicației nu pot fi partajate."
+"For your safety, keep contact details and payments inside CX. Phone numbers, emails, links and requests to pay outside the app can’t be shared.": "Pentru siguranța ta, păstrează contactele și plățile în CX. Numerele de telefon, e-mailurile, linkurile și cererile de plată în afara aplicației nu pot fi partajate.",
+"Contact guard": "Protecția contactelor",
+"Nothing caught yet.": "Nimic prins încă.",
+"When someone tries to share a phone number, email, link or off-app payment, it shows up here.": "Când cineva încearcă să partajeze un număr de telefon, un e-mail, un link sau o plată în afara aplicației, apare aici.",
+"Members only ever see “••••” in place of what they wrote.": "Membrii văd mereu „••••” în locul a ce s-a scris.",
+"Open Chat Monitor": "Deschide Chat Monitor",
+"Chat message": "Mesaj în chat",
+"Car description": "Descrierea mașinii",
+"Profile bio": "Biografia profilului",
+"SIGNAL post title": "Titlul postării SIGNAL",
+"SIGNAL post": "Postare SIGNAL",
+"SIGNAL comment": "Comentariu SIGNAL",
+"Story caption": "Descrierea Poveștii",
+"The contact guard is not set up yet — apply migration 0070 in Supabase.": "Protecția contactelor nu este încă activă — aplică migrarea 0070 în Supabase."
 }
