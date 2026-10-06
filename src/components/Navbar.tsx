@@ -199,7 +199,7 @@ function PublicNavbar() {
               <>
                 <Link
                   to="/login"
-                  className={`pressable inline-flex text-detail font-medium transition-colors ${
+                  className={`pressable inline-flex shrink-0 whitespace-nowrap text-detail font-medium transition-colors ${
                     transparent ? 'text-ink-soft hover:text-ink' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
@@ -207,7 +207,7 @@ function PublicNavbar() {
                 </Link>
                 <Link
                   to="/login"
-                  className={`pressable btn-glint inline-flex h-9 items-center rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
+                  className={`pressable btn-glint inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
                     transparent
                       ? 'border-ink/15 bg-white/55 text-ink backdrop-blur-md hover:border-ink/35 hover:bg-white/75'
                       : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'

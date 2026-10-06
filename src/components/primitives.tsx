@@ -106,7 +106,7 @@ export function Logo({
   // The wordmark is ~4.8:1, so it needs a much lower height than the square
   // symbol to occupy the same width on a phone.
   const wide = variant === 'wordmark' || variant === 'full';
-  const mobileH = wide ? (size === 'compact' ? 'h-8' : 'h-9') : 'h-11';
+  const mobileH = wide ? (size === 'compact' ? 'h-7' : 'h-9') : 'h-11';
   const imgClass = `${mobileH} w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-10`;
   const fallback = (
     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
