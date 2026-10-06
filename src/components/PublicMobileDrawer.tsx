@@ -50,7 +50,7 @@ export default function PublicMobileDrawer({
               role="dialog"
               aria-modal="true"
               aria-label="Menu"
-              className="absolute right-0 top-0 flex h-full w-[85%] max-w-sm flex-col overflow-hidden bg-surface text-ink shadow-pop"
+              className="absolute inset-0 flex h-full w-full flex-col overflow-hidden bg-surface text-ink shadow-pop"
               initial={reduceMotion ? false : { x: '100%' }}
               animate={{ x: 0 }}
               exit={reduceMotion ? undefined : { x: '100%' }}
