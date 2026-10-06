@@ -115,6 +115,12 @@
   }
 
   html {
+    /* Safari tints (and fades) the strip behind its floating toolbar from
+       the root background colour, and treats a fully transparent one as
+       plain white. A 1%-opaque colour is read as a real colour but paints
+       nothing, so the toolbar area stays see-through. #root paints the
+       actual page colour. */
+    background-color: rgb(251 251 249 / 0.01);
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     /* Kills the grey/blue flash mobile WebKit/Chromium paint over every
