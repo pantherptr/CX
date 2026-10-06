@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { geoContains, geoGraticule10, geoOrthographic, geoPath } from 'd3-geo';
+import { geoContains, geoDistance, geoGraticule10, geoOrthographic, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import type { Topology, GeometryCollection } from 'topojson-specification';
 import type { Feature, Geometry } from 'geojson';
@@ -46,7 +46,6 @@ export function CountryGlobe({
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hover, setHover] = useState<Hover | null>(null);
-  const zoomRef = useRef<(factor: number) => void>(() => {});
   const onChooseRef = useRef(onChoose);
   onChooseRef.current = onChoose;
 
@@ -56,7 +55,6 @@ export function CountryGlobe({
     const ctx = canvas?.getContext('2d');
     if (!canvas || !wrap || !ctx) return;
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const projection = geoOrthographic().precision(0.5);
     const path = geoPath(projection, ctx);
     const graticule = geoGraticule10();
@@ -64,12 +62,7 @@ export function CountryGlobe({
     const accent = '#00b83c';
 
     let size = 0;
-    let zoom = 2.3;
-    let zoomTarget = zoom;
-    const applyScale = () => projection.translate([size / 2, size / 2]).scale((size / 2 - 8) * zoom);
-    zoomRef.current = (delta) => {
-      zoomTarget = Math.max(1, Math.min(4, zoomTarget * delta));
-    };
+    const applyScale = () => projection.translate([size / 2, size / 2]).scale(size / 2 - 6);
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       size = wrap.clientWidth;
@@ -83,9 +76,9 @@ export function CountryGlobe({
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    // Start turned away and swing round to Europe, centred on Italy-ish.
-    const home: [number, number] = [-11, -43];
-    let rot: [number, number] = reduce ? home : [home[0] + 70, home[1]];
+    // Same framing as the Home globe: the whole sphere, Europe facing us.
+    const home: [number, number] = [-11, -38];
+    let rot: [number, number] = home;
     let hovered: Country | null = null;
     let dragging = false;
     let moved = 0;
@@ -99,38 +92,44 @@ export function CountryGlobe({
       const y = clientY - rect.top;
       const ll = projection.invert?.([x, y]);
       if (!ll || !Number.isFinite(ll[0])) return { x, y, country: null as Country | null };
-      const hit = CHOOSABLE.find((c) => geoContains(c.feature, ll));
-      return { x, y, country: hit?.country ?? null };
+      let hit = CHOOSABLE.find((c) => geoContains(c.feature, ll))?.country ?? null;
+      if (!hit) {
+        // Small countries are hard to land on at full-globe scale: snap to the nearest live dot.
+        let best = 18;
+        for (const { country } of CHOOSABLE) {
+          if (!country.lang) continue;
+          const p = projection(country.coords);
+          if (!p || geoDistance(country.coords, [-rot[0], -rot[1]]) > Math.PI / 2) continue;
+          const d = Math.hypot(p[0] - x, p[1] - y);
+          if (d < best) {
+            best = d;
+            hit = country;
+          }
+        }
+      }
+      return { x, y, country: hit };
     };
 
     const draw = () => {
-      if (Math.abs(zoomTarget - zoom) > 0.002) {
-        zoom += (zoomTarget - zoom) * 0.15;
-        applyScale();
-      }
-      if (!dragging) {
-        const dx = home[0] - rot[0];
-        if (Math.abs(dx) > 0.05) rot = [rot[0] + dx * 0.06, rot[1] + (home[1] - rot[1]) * 0.06];
-      }
       projection.rotate(rot);
       ctx.clearRect(0, 0, size, size);
 
       ctx.strokeStyle = ink;
       ctx.beginPath();
       path({ type: 'Sphere' });
-      ctx.globalAlpha = 0.85;
-      ctx.lineWidth = 1.3;
+      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = 1.2;
       ctx.stroke();
 
       ctx.beginPath();
       path(graticule);
-      ctx.globalAlpha = 0.09;
+      ctx.globalAlpha = 0.1;
       ctx.lineWidth = 1;
       ctx.stroke();
 
       ctx.beginPath();
       path(ALL);
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.55;
       ctx.lineWidth = 0.7;
       ctx.stroke();
 
@@ -141,50 +140,47 @@ export function CountryGlobe({
         path(f);
         ctx.globalAlpha = 1;
         if (live) {
-          ctx.fillStyle = isHover ? 'rgba(0,184,60,0.62)' : 'rgba(0,184,60,0.32)';
+          ctx.fillStyle = isHover ? 'rgba(0,184,60,0.5)' : 'rgba(0,184,60,0.22)';
           ctx.fill();
           ctx.strokeStyle = accent;
-          ctx.lineWidth = isHover ? 2 : 1.2;
+          ctx.lineWidth = isHover ? 1.6 : 0.9;
           ctx.stroke();
         } else {
-          ctx.fillStyle = isHover ? 'rgba(20,30,25,0.16)' : 'rgba(20,30,25,0.07)';
-          ctx.fill();
-          ctx.strokeStyle = ink;
-          ctx.globalAlpha = 0.45;
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
+          if (isHover) {
+            ctx.fillStyle = 'rgba(20,30,25,0.12)';
+            ctx.fill();
+          }
         }
       }
 
-      // Names pinned to the live countries so they read as the way in.
+      // Live countries get the same green pulsing dot as the Home globe.
       const centre: [number, number] = [-rot[0], -rot[1]];
-      const rad = Math.PI / 180;
-      ctx.font = '600 12px "Plus Jakarta Sans", system-ui, sans-serif';
+      const now = performance.now();
+      ctx.font = '600 11px "Plus Jakarta Sans", system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (const { country } of CHOOSABLE) {
-        if (!country.lang) continue;
-        const [lng, lat] = country.coords;
-        const d = Math.acos(
-          Math.sin(centre[1] * rad) * Math.sin(lat * rad) +
-            Math.cos(centre[1] * rad) * Math.cos(lat * rad) * Math.cos((lng - centre[0]) * rad),
-        );
-        if (d > 1.2) continue;
-        const p = projection([lng, lat]);
+        if (!country.lang || geoDistance(country.coords, centre) > Math.PI / 2) continue;
+        const p = projection(country.coords);
         if (!p) continue;
-        const w = ctx.measureText(country.name).width + 18;
-        const ly = p[1] - 22;
-        ctx.globalAlpha = Math.min(1, (1.2 - d) * 4);
+        const pulse = (now / 900) % 1;
+        ctx.globalAlpha = 1;
         ctx.fillStyle = accent;
         ctx.beginPath();
         ctx.arc(p[0], p[1], 3.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.globalAlpha = 0.5 * (1 - pulse);
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(p[0] - w / 2, ly - 12, w, 24, 12);
-        ctx.fill();
+        ctx.arc(p[0], p[1], 3.5 + pulse * 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(250,250,247,0.9)';
+        ctx.strokeText(country.name, p[0], p[1] - 14);
         ctx.fillStyle = '#0d1f14';
-        ctx.fillText(country.name, p[0], ly + 0.5);
+        ctx.fillText(country.name, p[0], p[1] - 14);
       }
       ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
@@ -246,23 +242,8 @@ export function CountryGlobe({
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        className="block w-full cursor-grab touch-none rounded-full border border-line bg-white/50 shadow-soft"
-        onWheel={(e) => zoomRef.current(e.deltaY < 0 ? 1.12 : 1 / 1.12)}
+        className="block w-full cursor-grab touch-none"
       />
-      <div className="absolute bottom-3 right-3 flex flex-col gap-1.5 sm:bottom-6 sm:right-6">
-        {([['+', 1.4, 'Zoom in'], ['−', 1 / 1.4, 'Zoom out']] as const).map(([label, f, aria]) => (
-          <button
-            key={label}
-            type="button"
-            aria-label={aria}
-            onClick={() => zoomRef.current(f)}
-            className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/95 text-lead font-medium text-ink shadow-hair transition hover:border-ink/30 active:scale-95"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {hover && (
         <div
           className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-xl border border-line bg-white/95 px-3 py-1.5 text-detail font-semibold text-ink shadow-soft backdrop-blur"

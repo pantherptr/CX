@@ -29,7 +29,7 @@ export default function CountryGateway() {
       </div>
 
       <main className="relative mt-4 flex w-full flex-1 items-center justify-center">
-        <div className="w-full max-w-[min(92vw,calc(100dvh-15rem),44rem)]">
+        <div className="w-full max-w-[min(92vw,calc(100dvh-15rem),34rem)]">
           <Suspense fallback={<div className="mx-auto aspect-square w-full rounded-full skeleton" />}>
             <CountryGlobe onChoose={chooseCountry} />
           </Suspense>
