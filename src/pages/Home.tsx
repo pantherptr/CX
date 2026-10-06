@@ -621,47 +621,50 @@ export default function Home() {
             </Link>
           }
         />
-        <div className="scrollbar-none -mx-5 mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-5 lg:gap-5">
+        <div className="scrollbar-none -mx-5 mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:auto-rows-[15rem] lg:grid-cols-4 lg:gap-5">
           {(categoryTiles ?? Array.from({ length: 5 })).map((tile, i) =>
             tile ? (
-              <Reveal key={tile.key} delay={i * 60} className="w-[46vw] max-w-[220px] shrink-0 snap-start sm:w-auto sm:max-w-none">
-                <Link to={`/browse?type=${encodeURIComponent(tile.key)}`} className="card card-hover group block overflow-hidden">
-                  <div className="aspect-[4/3] overflow-hidden bg-panel">
-                    {tile.image && (
-                      <Img
-                        src={unsplash(tile.image, 500)}
-                        srcSet={unsplashSrcSet(tile.image, [300, 500, 800])}
-                        sizes="(min-width: 1024px) 240px, (min-width: 640px) 33vw, 46vw"
-                        alt={tile.label}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-end justify-between gap-2 p-3.5">
+              <Reveal
+                key={tile.key}
+                delay={i * 60}
+                className={`w-[62vw] max-w-[280px] shrink-0 snap-start sm:w-auto sm:max-w-none ${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+              >
+                <Link
+                  to={`/browse?type=${encodeURIComponent(tile.key)}`}
+                  className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-panel sm:aspect-[4/3] lg:aspect-auto lg:h-full"
+                >
+                  {tile.image && (
+                    <Img
+                      src={unsplash(tile.image, 800)}
+                      srcSet={unsplashSrcSet(tile.image, [400, 800, 1200])}
+                      sizes={i === 0 ? '(min-width: 1024px) 600px, (min-width: 640px) 50vw, 62vw' : '(min-width: 1024px) 300px, (min-width: 640px) 50vw, 62vw'}
+                      alt={tile.label}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  )}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                     <div className="min-w-0">
-                      <p className="font-display text-copy font-semibold text-ink">{tile.label}</p>
-                      {tile.fromPrice !== undefined && (
-                        <p className="mt-0.5 text-detail text-muted">From {eur(tile.fromPrice)}/day</p>
-                      )}
-                      <p className="mt-0.5 text-caption text-faint">
+                      <p className={`font-display font-semibold text-white ${i === 0 ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lead sm:text-xl'}`}>
+                        {tile.label}
+                      </p>
+                      <p className="mt-1 text-detail text-white/80">
                         {tile.count} {tile.count === 1 ? 'car' : 'cars'}
+                        {tile.fromPrice !== undefined && <> · from {eur(tile.fromPrice)}/day</>}
                       </p>
                     </div>
-                    <span className="mb-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-panel text-ink-soft transition-[background-color,color,transform] duration-300 group-hover:translate-x-0.5 group-hover:bg-accent group-hover:text-white">
-                      <Icon name="arrowRight" size={14} />
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-[background-color,transform] duration-300 group-hover:translate-x-0.5 group-hover:bg-accent">
+                      <Icon name="arrowRight" size={16} />
                     </span>
                   </div>
                 </Link>
               </Reveal>
             ) : (
-              <div key={i} className="card w-[46vw] max-w-[220px] shrink-0 overflow-hidden sm:w-auto sm:max-w-none">
-                <div className="skeleton aspect-[4/3]" />
-                <div className="space-y-2 p-3.5">
-                  <div className="skeleton h-4 w-3/5 rounded-md" />
-                  <div className="skeleton h-3 w-2/5 rounded-md" />
-                </div>
-              </div>
+              <div
+                key={i}
+                className={`skeleton aspect-[4/5] w-[62vw] max-w-[280px] shrink-0 rounded-2xl sm:aspect-[4/3] sm:w-auto sm:max-w-none lg:aspect-auto ${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+              />
             ),
           )}
         </div>
