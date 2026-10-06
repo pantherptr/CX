@@ -13,6 +13,8 @@ import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { CarCategory } from '../data/types';
+import { FaqItem } from '../components/FaqItem';
+import { faqs } from '../data/faqs';
 
 
 /** Original CX editorial hero art: created specifically with generous
@@ -180,6 +182,16 @@ function StatCounter({ value, decimals, label }: { value: number; decimals?: num
     </div>
   );
 }
+
+const HOME_FAQ_QUESTIONS = [
+  'How does booking a car work?',
+  'Is my trip insured?',
+  'What are the cancellation policies?',
+  'Can I change my trip dates after booking?',
+  'How do I coordinate pickup with my host?',
+  'How do I become a host?',
+];
+const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).filter((f): f is (typeof faqs)[number] => !!f);
 
 export default function Home() {
   const startScramble = useScramble('Start');
@@ -749,6 +761,31 @@ export default function Home() {
             <StatCounter key={s.label} {...s} />
           ))}
         </div>
+      </section>
+
+      {/* ================= FAQ — the real answers from the Help Center ================= */}
+      <section className="container-page section-tight">
+        <Reveal>
+          <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
+            <div>
+              <p className="eyebrow">Good to know</p>
+              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+                Questions, answered.
+              </h2>
+              <p className="mt-4 max-w-sm text-copy leading-relaxed text-muted text-pretty">
+                The essentials about booking, protection and cancellations — before you book.
+              </p>
+              <Link to="/help" className="mt-5 inline-flex items-center gap-1.5 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600">
+                Visit the Help Center <Icon name="arrowRight" size={16} />
+              </Link>
+            </div>
+            <div className="rounded-3xl border border-line bg-white px-5 py-2 shadow-hair sm:px-8">
+              {HOME_FAQS.map((f) => (
+                <FaqItem key={f.q} q={f.q} a={f.a} />
+              ))}
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       {/* ================= FINAL CTA — light, quiet, no glow ================= */}
