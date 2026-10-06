@@ -104,11 +104,10 @@ export function Logo({
   // rather than round-trip through a redirect.
   const { session } = useAuth();
   // The wordmark is ~5:1, so it needs a much lower height than the square
-  // symbol. Its white letters get a faint neutral shadow so they still read
-  // on white surfaces without any outline.
+  // symbol. The asset has near-black letters (for light surfaces).
   const base = 'w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3';
   const symbolClass = `h-11 ${base} sm:h-10`;
-  const wordmarkClass = `${size === 'compact' ? 'h-6' : 'h-7'} ${base} sm:h-8 drop-shadow-[0_1px_2px_rgba(10,20,15,0.35)]`;
+  const wordmarkClass = `${size === 'compact' ? 'h-6' : 'h-7'} ${base} sm:h-8`;
   const fallback = (
     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-sm font-semibold text-ink-soft sm:h-10 sm:w-10`}>
       CX
