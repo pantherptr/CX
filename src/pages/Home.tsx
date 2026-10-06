@@ -546,7 +546,7 @@ export default function Home() {
                   answer cards and selected state the Concierge opens into,
                   so the card shows what it does instead of only saying it.
                   Decorative only; the button above is the way in. */}
-              <div aria-hidden="true" className="hidden w-[300px] rotate-[1.5deg] md:block">
+              <div aria-hidden="true" className="w-full max-w-[300px] md:rotate-[1.5deg]">
                 <div className="rounded-[1.5rem] border border-white/80 bg-white/70 p-4 shadow-[0_24px_50px_-24px_rgba(0,80,30,0.35)] backdrop-blur-md">
                   <div className="flex items-start gap-2.5">
                     <ConciergeMark size={28} />
