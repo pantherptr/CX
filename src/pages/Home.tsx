@@ -79,100 +79,6 @@ function HeroPhoto() {
   );
 }
 
-/** The SIGNAL preview: three sample cards fanned side by side — two Stories
- *  and a photo post. Decorative (sample content, photos from the fleet). */
-function SignalFan({ cars }: { cars: { images: string[]; make: string; model: string }[] | null }) {
-  const { t } = useLocale();
-  const photo = (i: number, extra = '') =>
-    cars?.[i] ? (
-      <Img src={unsplash(cars[i].images[0], 600)} alt="" className={`absolute inset-0 h-full w-full object-cover ${extra}`} fallback={null} />
-    ) : null;
-  const shell = 'absolute left-1/2 top-1/2 overflow-hidden rounded-[1.4rem] border border-white/80 bg-white shadow-[0_28px_50px_-24px_rgba(0,60,25,0.5)] transition-transform duration-500 ease-out';
-  const Avatar = ({ initials, tone, ring }: { initials: string; tone: string; ring?: boolean }) => (
-    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${ring ? 'bg-gradient-to-tr from-accent-bright to-accent p-[2px]' : ''}`}>
-      <span className={`grid h-full w-full place-items-center rounded-full text-label font-bold text-white ${ring ? 'ring-2 ring-white' : ''} ${tone}`}>{initials}</span>
-    </span>
-  );
-  return (
-    <div className="relative mx-auto h-[25rem] w-full max-w-[38rem] sm:h-[29rem]">
-      {/* Left — a Story */}
-      <div
-        className={`${shell} z-10 h-[19rem] w-[8.5rem] [--dx:-5.2rem] [--r:-8deg] [--dy:1.2rem] sm:h-[24rem] sm:w-[12rem] sm:[--dx:-10.4rem]`}
-        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
-      >
-        {photo(3)}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
-        <div className="absolute inset-x-3 top-3 flex gap-1">
-          {[1, 0.55, 0].map((f, i) => (
-            <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35">
-              <span className="block h-full bg-white" style={{ width: `${f * 100}%` }} />
-            </span>
-          ))}
-        </div>
-        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
-          <Avatar initials="MB" tone="bg-amber-600" ring />
-          <span className="min-w-0">
-            <span className="block truncate text-detail font-semibold">Marco B.</span>
-            <span className="block text-caption text-white/75">{t('Verified host')}</span>
-          </span>
-        </div>
-        <p className="absolute inset-x-3 bottom-4 hidden text-detail font-medium leading-snug text-white sm:block">{t('Sunday drive through the hills — this is exactly why I share my car.')}</p>
-      </div>
-
-      {/* Right — a Story */}
-      <div
-        className={`${shell} z-10 h-[19rem] w-[8.5rem] [--dx:5.2rem] [--r:8deg] [--dy:1.2rem] sm:h-[24rem] sm:w-[12rem] sm:[--dx:10.4rem]`}
-        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
-      >
-        {photo(4)}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
-        <div className="absolute inset-x-3 top-3 flex gap-1">
-          {[1, 1, 0.3].map((f, i) => (
-            <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35">
-              <span className="block h-full bg-white" style={{ width: `${f * 100}%` }} />
-            </span>
-          ))}
-        </div>
-        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
-          <Avatar initials="AL" tone="bg-sky-600" ring />
-          <span className="min-w-0">
-            <span className="block truncate text-detail font-semibold">Anna &amp; Luca</span>
-            <span className="block text-caption text-white/75">{t('Verified driver')}</span>
-          </span>
-        </div>
-        <p className="absolute inset-x-3 bottom-4 hidden text-detail font-medium leading-snug text-white sm:block">{t('Family road trip to the Dolomites. The kids still talk about the views. 🏔️')}</p>
-      </div>
-
-      {/* Center — a photo post */}
-      <div
-        className={`${shell} z-20 flex h-[23rem] w-[11.5rem] flex-col [--dx:0rem] [--r:0deg] [--dy:-0.6rem] hover:[--dy:-1.1rem] sm:h-[27rem] sm:w-[14rem]`}
-        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
-      >
-        <div className="flex items-center gap-2 p-3">
-          <Avatar initials="GR" tone="bg-accent-700" />
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1 text-detail font-semibold text-ink">
-              <span className="truncate">Giulia R.</span>
-              <Icon name="verified" size={13} className="shrink-0 text-accent" />
-            </span>
-            <span className="block truncate text-caption text-faint">{t('Verified driver')}</span>
-          </span>
-        </div>
-        <div className="relative min-h-0 flex-1 bg-panel">
-          {photo(2)}
-          <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft backdrop-blur">{t('Amalfi Coast')}</span>
-        </div>
-        <p className="line-clamp-2 px-3.5 pt-2.5 text-detail leading-relaxed text-ink-soft">{t('Sunrise on the coast road. Seven hours, one playlist, zero regrets. 🌅')}</p>
-        <div className="flex items-center gap-4 px-3.5 py-3 text-ink-soft">
-          <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="like" size={16} className="text-accent" /> {t('Respect')}</span>
-          <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="message" size={16} /></span>
-          <span className="ml-auto inline-flex items-center"><Icon name="bookmark" size={16} /></span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'shield', label: 'Verified hosts' },
   { icon: 'calendar', label: 'Clear cancellation terms' },
@@ -854,10 +760,18 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* A glimpse of the feed — sample Stories and a photo post, fanned
-                  out. Decorative only; the button is the way in. */}
-              <div aria-hidden="true">
-                <SignalFan cars={fleetCars} />
+              {/* A glimpse of SIGNAL: a Story and two posts with real-looking
+                  community photos. Decorative; the button is the way in. */}
+              <div className="overflow-hidden rounded-[1.75rem] bg-[#0b0b0b] shadow-[0_34px_70px_-30px_rgba(0,60,25,0.55)] ring-1 ring-black/10 lg:-mr-4 lg:scale-[1.04]">
+                <img
+                  src="/signal-preview.webp"
+                  width={1536}
+                  height={1024}
+                  alt={t('Sample SIGNAL Story and posts from CX drivers and hosts')}
+                  loading="lazy"
+                  decoding="async"
+                  className="block h-auto w-full"
+                />
               </div>
             </div>
           </div>

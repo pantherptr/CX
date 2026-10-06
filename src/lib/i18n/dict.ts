@@ -259,6 +259,8 @@ const ROWS: Row[] = [
   ['Chianti, Tuscany', 'Chianti, Toscana', 'Chianti, Toscana', 'Chianti, Toscana'],
   ['Dolomites', 'Dolomiti', 'Dolomiți', 'Dolomitas'],
 
+  ['Sample SIGNAL Story and posts from CX drivers and hosts', 'Esempio di Storia e post SIGNAL di guidatori e host CX', 'Exemplu de Poveste și postări SIGNAL de la șoferi și gazde CX', 'Ejemplo de Historia y publicaciones de SIGNAL de conductores y anfitriones de CX'],
+
   // ---- Country gateway ----
   ['Choose your country', 'Scegli il tuo paese', 'Alege țara ta', 'Elige tu país'],
   ['We\'ll show CX in your language.', 'Mostreremo CX nella tua lingua.', 'Vom afișa CX în limba ta.', 'Mostraremos CX en tu idioma.'],
