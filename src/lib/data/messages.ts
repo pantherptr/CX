@@ -26,7 +26,10 @@ export interface ConversationCar {
  *  from their real profile flags, same hierarchy as everywhere else in
  *  the app (Owner > Admin > Host > Client). See VerifiedBadge in
  *  primitives.tsx for how each renders. */
-export type ParticipantRole = 'owner' | 'admin' | 'host' | 'client';
+export type ParticipantRole = 'owner' | 'admin' | 'host' | 'client' | 'cx';
+
+/** How members see the support account: as the company, never as the person behind it. */
+export const CX_PARTICIPANT = { name: 'CX', avatar: '/cx-logo-symbol.png', role: 'cx' } as const;
 
 export interface ConversationParticipant {
   id: string;
@@ -103,6 +106,10 @@ function mapMessage(conversationId: string, row: ConversationRow['messages'][num
 
 function mapConversation(row: ConversationRow, myUserId: string): Conversation {
   const otherParticipant = row.participants.find((p) => p.user_id !== myUserId)?.profile;
+  // Support (the Owner account) appears to everyone else as "CX" — the
+  // company — not under the Owner's own name, photo and badge.
+  const meProfile = row.participants.find((p) => p.user_id === myUserId)?.profile;
+  const otherIsCx = Boolean(otherParticipant?.is_owner) && !meProfile?.is_owner;
   const heroId = row.car ? [...row.car.car_images].sort((a, b) => a.position - b.position)[0]?.url ?? '' : '';
   const messages = [...row.messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
   const last = messages[messages.length - 1];
@@ -111,12 +118,14 @@ function mapConversation(row: ConversationRow, myUserId: string): Conversation {
     car: row.car
       ? { id: row.car.id, slug: row.car.slug, make: row.car.make, model: row.car.model, image: heroId ? unsplash(heroId, 240) : '' }
       : null,
-    other: {
-      id: otherParticipant?.id ?? '',
-      name: otherParticipant?.full_name ?? 'CX user',
-      avatar: otherParticipant?.avatar_url ?? '',
-      role: otherParticipant ? roleFromFlags(otherParticipant) : 'client',
-    },
+    other: otherIsCx
+      ? { id: otherParticipant?.id ?? '', ...CX_PARTICIPANT }
+      : {
+          id: otherParticipant?.id ?? '',
+          name: otherParticipant?.full_name ?? 'CX user',
+          avatar: otherParticipant?.avatar_url ?? '',
+          role: otherParticipant ? roleFromFlags(otherParticipant) : 'client',
+        },
     lastMessage: last ? mapMessage(row.id, last) : null,
     unreadCount: row.messages.filter((m) => m.sender_id !== myUserId && !m.read_at).length,
   };
@@ -425,6 +434,16 @@ export async function fetchSupportAccountId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
+/** Starts (or reopens) a conversation with CX about a car. This is what
+ *  "Contact" does before a booking exists: the member talks to CX, not
+ *  straight to the host. Resolves to `null` when there is nobody to talk
+ *  to (no support account, or the caller *is* the support account). */
+export async function findOrCreateCxConversation(carId: string | null, myUserId: string): Promise<string | null> {
+  const supportId = await fetchSupportAccountId();
+  if (!supportId || supportId === myUserId) return null;
+  return findOrCreateConversation(carId, myUserId, supportId);
+}
+
 export async function searchUsersForMessaging(query: string): Promise<MessagingSearchResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
@@ -434,10 +453,14 @@ export async function searchUsersForMessaging(query: string): Promise<MessagingS
     .ilike('full_name', `%${q}%`)
     .limit(10);
   if (error || !data) return [];
-  return data.map((p) => ({
-    id: p.id,
-    name: p.full_name || 'Unnamed user',
-    avatar: p.avatar_url ?? '',
-    role: roleFromFlags(p),
-  }));
+  return data.map((p) =>
+    p.is_owner
+      ? { id: p.id, ...CX_PARTICIPANT }
+      : {
+          id: p.id,
+          name: p.full_name || 'Unnamed user',
+          avatar: p.avatar_url ?? '',
+          role: roleFromFlags(p),
+        },
+  );
 }

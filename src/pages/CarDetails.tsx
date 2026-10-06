@@ -12,6 +12,8 @@ import { Img, Reveal } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { CarGallery, PhotoViewer } from '../components/PhotoGallery';
 import { HostCard } from '../components/HostCard';
+import { HostLocked } from '../components/HostLocked';
+import { useHasAccess } from '../lib/useAccess';
 import { CarCard } from '../components/CarCard';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -86,6 +88,7 @@ export default function CarDetails() {
   const sharedView = Number(searchParams.get('view')) || 0;
   const { isFavorite, toggleFavorite, toast } = useApp();
   const { session } = useAuth();
+  const hasAccess = useHasAccess();
   const { isComparing, toggleCompare } = useCompare();
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
@@ -202,7 +205,7 @@ export default function CarDetails() {
                 <span className="font-normal text-muted">({car.reviews.length} reviews)</span>
               </span>
               <span className="inline-flex items-center gap-1"><Icon name="route" size={15} /> {car.trips} trips</span>
-              <span className="inline-flex items-center gap-1"><Icon name="pin" size={15} /> {car.location}</span>
+              <span className="inline-flex items-center gap-1"><Icon name="pin" size={15} /> {hasAccess ? car.location : car.city}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -352,8 +355,8 @@ export default function CarDetails() {
                   <div>
                     <p className="font-medium text-ink">Pick-up</p>
                     <p className="mt-1 text-detail leading-relaxed text-muted">
-                      In {car.location}. The exact address is shared once your booking is
-                      confirmed{host.responseTime ? ` — ${host.name} typically responds ${host.responseTime}` : ''}.
+                      In {hasAccess ? car.location : car.city}. The exact address is shared once your booking is
+                      confirmed{hasAccess && host.responseTime ? ` — ${host.name} typically responds ${host.responseTime}` : ''}.
                     </p>
                   </div>
                 </div>
@@ -368,7 +371,7 @@ export default function CarDetails() {
             {/* Host */}
             <section className="mt-8 border-t border-line pt-8">
               <h2 className="mb-5 font-display text-xl font-semibold text-ink">Meet your host</h2>
-              <HostCard host={host} carId={car.id} />
+              {hasAccess ? <HostCard host={host} carId={car.id} /> : <HostLocked />}
             </section>
 
             {/* Reviews */}
@@ -384,19 +387,25 @@ export default function CarDetails() {
                 {car.reviews.map((r) => (
                   <div key={r.id}>
                     <div className="flex items-center gap-3">
-                      <Img
-                        src={r.avatar}
-                        alt=""
-                        className="h-11 w-11 rounded-full object-cover"
-                        fallback={
-                          <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
-                            <Icon name="user" size={18} />
-                          </span>
-                        }
-                      />
+                      {hasAccess ? (
+                        <Img
+                          src={r.avatar}
+                          alt=""
+                          className="h-11 w-11 rounded-full object-cover"
+                          fallback={
+                            <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
+                              <Icon name="user" size={18} />
+                            </span>
+                          }
+                        />
+                      ) : (
+                        <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
+                          <Icon name="user" size={18} />
+                        </span>
+                      )}
                       <div>
-                        <p className="font-medium text-ink">{r.author}</p>
-                        <p className="text-caption text-muted">{r.location} · {r.date}</p>
+                        <p className="font-medium text-ink">{hasAccess ? r.author : r.author.split(' ')[0]}</p>
+                        <p className="text-caption text-muted">{hasAccess ? `${r.location} · ${r.date}` : r.date}</p>
                       </div>
                     </div>
                     <div className="mt-3"><Stars value={r.rating} /></div>

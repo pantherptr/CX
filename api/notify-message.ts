@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // arbitrary conversation id for who's in it.
   const [{ data: participants }, { data: senderProfile }] = await Promise.all([
     callerClient.from('conversation_participants').select('user_id').eq('conversation_id', conversationId),
-    callerClient.from('profiles').select('full_name').eq('id', user.id).single(),
+    callerClient.from('profiles').select('full_name, is_owner').eq('id', user.id).single(),
   ]);
 
   const recipients = ((participants ?? []) as { user_id: string }[])
@@ -72,7 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-  const senderName = senderProfile?.full_name || 'Someone';
+  // Support writes under the company's name, never the Owner's own.
+  const senderName = senderProfile?.is_owner ? 'CX' : senderProfile?.full_name || 'Someone';
   const body = preview ? preview.slice(0, 120) : 'Sent you a message';
 
   await Promise.all(

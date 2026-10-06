@@ -7,6 +7,7 @@ import { useApp } from '../lib/store';
 import { haptics } from '../lib/native';
 import { useCompare } from '../lib/compareStore';
 import { useLocale } from '../lib/i18n';
+import { useHasAccess } from '../lib/useAccess';
 import { Icon } from './Icon';
 import { Img, useTilt } from './motion';
 import { CarQuickView } from './CarQuickView';
@@ -87,6 +88,7 @@ export function CarCard({
   available?: boolean;
 }) {
   const { t } = useLocale();
+  const hasAccess = useHasAccess();
   const { ref: tiltRef, style: tiltStyle } = useTilt<HTMLAnchorElement>({ max: 5, lift: 1.012 });
   const [quickView, setQuickView] = useState(false);
 
@@ -211,7 +213,7 @@ export function CarCard({
             </div>
 
             <p className="mt-2.5 flex items-center gap-1 text-detail text-muted">
-              <Icon name="pin" size={13} /> {car.location}
+              <Icon name="pin" size={13} /> {hasAccess ? car.location : car.city}
             </p>
 
             <div className="mt-2.5 flex items-center gap-3 text-caption text-muted">

@@ -395,7 +395,7 @@ export function Modal({
 // pre-existing 'owner_assistant' (a real human tier, still gold, used
 // elsewhere for conversation-participant labeling) so recoloring one
 // never touches the other.
-export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client' | 'assistant';
+export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client' | 'assistant' | 'cx';
 
 const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: string }> = {
   owner: { fg: 'text-[#8a6d1f]', bg: 'bg-noir/5', label: 'Owner' },
@@ -404,6 +404,8 @@ const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: 
   host: { fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Host' },
   client: { fg: 'text-muted', bg: 'bg-panel-2', label: 'Verified' },
   assistant: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Assistant' },
+  // The company's own voice — what members see when they talk to support.
+  cx: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'CX' },
 };
 
 // One checkmark, hand-drawn to sit slightly off-center-low in a 24x24
@@ -460,6 +462,7 @@ const BADGE_FILL: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   host: 'var(--color-accent-bright)',
   client: 'var(--color-muted)',
   assistant: 'var(--color-accent-bright)',
+  cx: 'var(--color-noir)',
 };
 const BADGE_CHECK: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   owner_assistant: 'var(--color-noir)',
@@ -467,12 +470,14 @@ const BADGE_CHECK: Record<Exclude<VerifiedRole, 'owner'>, string> = {
   host: '#ffffff',
   client: '#ffffff',
   assistant: '#ffffff',
+  cx: 'var(--color-accent-bright)',
 };
 // Admin is the only non-Owner tier with its own ring color (green on
 // black, mirroring Owner's black-plus-ring construction one step down in
 // exclusivity); the others read fine as a flat seal with no separate ring.
 const BADGE_RING: Partial<Record<Exclude<VerifiedRole, 'owner'>, string>> = {
   admin: 'var(--color-accent-bright)',
+  cx: 'var(--color-accent-bright)',
 };
 
 function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {

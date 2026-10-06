@@ -8,7 +8,9 @@ import { useMediaQuery } from './motion';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
-import { findOrCreateConversation } from '../lib/data/messages';
+import { findOrCreateCxConversation } from '../lib/data/messages';
+import { useHasAccess } from '../lib/useAccess';
+import { useLocale } from '../lib/i18n';
 
 // `new Date(iso)` parses a date-only string as UTC midnight; formatting
 // that with local-timezone methods can render a day early for negative
@@ -41,9 +43,14 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
   const navigate = useNavigate();
   const { toast } = useApp();
   const { session } = useAuth();
+  const { t } = useLocale();
+  const hasAccess = useHasAccess();
   const [pickup, setPickup] = useState(todayISO(3));
   const [ret, setRet] = useState(todayISO(6));
-  const [loc, setLoc] = useState(car.location);
+  // Visitors without an account only get the city; the neighbourhood comes with sign-in.
+  const [locEdit, setLocEdit] = useState<string | null>(null);
+  const loc = locEdit ?? (hasAccess ? car.location : car.city);
+  const setLoc = (v: string) => setLocEdit(v);
   const [messaging, setMessaging] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const isMobile = useMediaQuery('(max-width: 640px)');
@@ -70,7 +77,12 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
     }
     setMessaging(true);
     try {
-      const conversationId = await findOrCreateConversation(car.id, session.user.id, car.hostId);
+      // Before a booking, questions go to CX — not straight to the host.
+      const conversationId = await findOrCreateCxConversation(car.id, session.user.id);
+      if (!conversationId) {
+        toast({ title: 'Support is not available right now', icon: 'info' });
+        return;
+      }
       navigate(`/messages?c=${conversationId}`);
     } catch (err) {
       toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
@@ -165,7 +177,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         disabled={messaging}
         className="btn btn-ghost btn-block mt-1.5 text-muted hover:text-ink disabled:opacity-60"
       >
-        <Icon name="message" size={16} /> {messaging ? 'Opening…' : 'Contact host'}
+        <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Contact CX')}
       </button>
 
       <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-caption text-muted">

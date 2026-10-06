@@ -5,11 +5,13 @@ import { Icon } from './Icon';
 import { Img } from './motion';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
-import { findOrCreateConversation } from '../lib/data/messages';
+import { findOrCreateCxConversation } from '../lib/data/messages';
+import { useLocale } from '../lib/i18n';
 import { Ugc } from '../lib/i18n/ugc';
 
 export function HostCard({ host, carId }: { host: Host; carId: string }) {
   const { toast } = useApp();
+  const { t } = useLocale();
   const { session } = useAuth();
   const navigate = useNavigate();
   const [messaging, setMessaging] = useState(false);
@@ -21,7 +23,12 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
     }
     setMessaging(true);
     try {
-      const conversationId = await findOrCreateConversation(carId, session.user.id, host.id);
+      // Before a booking, questions about a car go to CX — not straight to the host.
+      const conversationId = await findOrCreateCxConversation(carId, session.user.id);
+      if (!conversationId) {
+        toast({ title: 'Support is not available right now', icon: 'info' });
+        return;
+      }
       navigate(`/messages?c=${conversationId}`);
     } catch (err) {
       toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
@@ -91,7 +98,7 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
         disabled={messaging}
         className="btn btn-secondary btn-block mt-5 disabled:opacity-60"
       >
-        <Icon name="message" size={16} /> {messaging ? 'Opening…' : `Contact ${host.name.split(' ')[0]}`}
+        <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Contact CX')}
       </button>
     </div>
   );

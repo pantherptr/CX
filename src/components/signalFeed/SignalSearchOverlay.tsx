@@ -9,7 +9,7 @@ import { FollowButton } from './FollowButton';
 import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD } from '../motionKit';
 
 const ROLE_LABEL: Record<VerifiedRole, string> = {
-  owner: 'Owner', owner_assistant: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client', assistant: 'Assistant',
+  owner: 'Owner', owner_assistant: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client', assistant: 'Assistant', cx: 'CX',
 };
 
 function personRole(p: SignalPeopleResult): VerifiedRole | null {

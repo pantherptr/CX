@@ -20,7 +20,7 @@ import {
   type FareTier,
 } from '../lib/data/bookings';
 import { createPaymentIntent, waitForBookingByPaymentIntent } from '../lib/data/payments';
-import { findOrCreateConversation } from '../lib/data/messages';
+import { findOrCreateCxConversation } from '../lib/data/messages';
 import { useAvailableReward } from '../lib/data/rewards';
 import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
@@ -320,7 +320,13 @@ export default function Booking() {
     if (!session) return;
     setMessaging(true);
     try {
-      const conversationId = await findOrCreateConversation(car.id, session.user.id, host.id);
+      // Until the trip is booked, questions go to CX — not straight to the host.
+      const conversationId = await findOrCreateCxConversation(car.id, session.user.id);
+      if (!conversationId) {
+        toast({ title: 'Support is not available right now', icon: 'info' });
+        setMessaging(false);
+        return;
+      }
       navigate(`/messages?c=${conversationId}`);
     } catch (err) {
       toast({ title: 'Could not open conversation', desc: err instanceof Error ? err.message : undefined, icon: 'info' });
@@ -431,7 +437,7 @@ export default function Booking() {
               <p className="text-detail text-muted">Responds {host.responseTime}</p>
             </div>
             <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
-              <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message'}
+              <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message CX'}
             </button>
           </div>
         </div>

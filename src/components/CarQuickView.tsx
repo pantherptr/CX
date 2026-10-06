@@ -6,6 +6,7 @@ import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { Modal } from './primitives';
 import { Ugc } from '../lib/i18n/ugc';
+import { useHasAccess } from '../lib/useAccess';
 
 /** A fast glance at a car without leaving the grid — full detail page is one tap away. */
 export function CarQuickView({
@@ -17,6 +18,7 @@ export function CarQuickView({
   open: boolean;
   onClose: () => void;
 }) {
+  const hasAccess = useHasAccess();
   if (!car) return null;
 
   const specs: { icon: IconName; v: string }[] = [
@@ -57,7 +59,7 @@ export function CarQuickView({
               {car.year} {car.make} {car.model}
             </h2>
             <p className="mt-0.5 flex items-center gap-1 text-detail text-muted">
-              <Icon name="pin" size={13} /> {car.location}
+              <Icon name="pin" size={13} /> {hasAccess ? car.location : car.city}
             </p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1 text-body font-medium text-ink">
