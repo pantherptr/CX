@@ -12,7 +12,7 @@ import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
-import type { Car, CarCategory } from '../data/types';
+import type { Car } from '../data/types';
 import { CITY_COORDS } from '../data/cityCoords';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
@@ -218,17 +218,6 @@ const howSteps: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
 ];
 
-/** The five categories the homepage spotlights, in display order. `key`
- *  matches the real `car_category` enum (and Browse's `?type=` filter);
- *  `label` is only the plural, marketing-friendly copy shown on the tile. */
-const SPOTLIGHT_CATEGORIES: { key: CarCategory; label: string }[] = [
-  { key: 'Economy', label: 'Economy' },
-  { key: 'Luxury', label: 'Luxury' },
-  { key: 'SUV', label: 'SUV' },
-  { key: 'Sport', label: 'Sports' },
-  { key: 'Convertible', label: 'Convertibles' },
-];
-
 function StatCounter({ value, decimals, label }: { value: number; decimals?: number; label: string }) {
   const { t } = useLocale();
   const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
@@ -257,24 +246,6 @@ export default function Home() {
   const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
   const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
-
-  // Real per-category stats (count, starting price, a real photo) computed
-  // from the actual catalogue — no hand-authored counts or stock photos.
-  const categoryTiles = useMemo(() => {
-    if (!allCars) return null;
-    return SPOTLIGHT_CATEGORIES.map(({ key, label }) => {
-      const inCategory = [...allCars]
-        .filter((c) => c.category === key)
-        .sort((a, b) => a.pricePerDay - b.pricePerDay);
-      return {
-        key,
-        label,
-        count: inCategory.length,
-        fromPrice: inCategory[0]?.pricePerDay,
-        image: inCategory[0]?.images[0],
-      };
-    }).filter((t) => t.count > 0);
-  }, [allCars]);
 
   // A real car photo for the delivery story (second-best rated so it
   // differs from the first fleet card).
@@ -661,68 +632,6 @@ export default function Home() {
             </div>
           </div>
 
-        </div>
-      </section>
-
-      {/* ================= EXPLORE BY CATEGORY ================= */}
-      <section className="container-page section-tight">
-        <SectionHead
-          title={t('Explore by category')}
-          action={
-            <Link
-              to="/browse"
-              className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
-            >
-              {t('View all cars')} <Icon name="arrowRight" size={15} />
-            </Link>
-          }
-        />
-        <div className="scrollbar-none -mx-5 mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:auto-rows-[15rem] lg:grid-cols-4 lg:gap-5">
-          {(categoryTiles ?? Array.from({ length: 5 })).map((tile, i) =>
-            tile ? (
-              <Reveal
-                key={tile.key}
-                delay={i * 60}
-                className={`w-[62vw] max-w-[280px] shrink-0 snap-start sm:w-auto sm:max-w-none ${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
-              >
-                <Link
-                  to={`/browse?type=${encodeURIComponent(tile.key)}`}
-                  className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-panel sm:aspect-[4/3] lg:aspect-auto lg:h-full"
-                >
-                  {tile.image && (
-                    <Img
-                      src={unsplash(tile.image, 800)}
-                      srcSet={unsplashSrcSet(tile.image, [400, 800, 1200])}
-                      sizes={i === 0 ? '(min-width: 1024px) 600px, (min-width: 640px) 50vw, 62vw' : '(min-width: 1024px) 300px, (min-width: 640px) 50vw, 62vw'}
-                      alt={t(tile.label)}
-                      loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  )}
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
-                    <div className="min-w-0">
-                      <p className={`font-display font-semibold text-white ${i === 0 ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lead sm:text-xl'}`}>
-                        {t(tile.label)}
-                      </p>
-                      <p className="mt-1 text-detail text-white/80">
-                        {tile.count} {t(tile.count === 1 ? 'car' : 'cars')}
-                        {tile.fromPrice !== undefined && <> · {t('from {price}/day', { price: eur(tile.fromPrice) })}</>}
-                      </p>
-                    </div>
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-[background-color,transform] duration-300 group-hover:translate-x-0.5 group-hover:bg-accent">
-                      <Icon name="arrowRight" size={16} />
-                    </span>
-                  </div>
-                </Link>
-              </Reveal>
-            ) : (
-              <div
-                key={i}
-                className={`skeleton aspect-[4/5] w-[62vw] max-w-[280px] shrink-0 rounded-2xl sm:aspect-[4/3] sm:w-auto sm:max-w-none lg:aspect-auto ${i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
-              />
-            ),
-          )}
         </div>
       </section>
 
