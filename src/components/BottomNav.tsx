@@ -316,7 +316,11 @@ export function BottomNav() {
           : `translateY(${-lift}px)`,
         opacity: scrollHidden ? 0 : 1,
         pointerEvents: scrollHidden ? 'none' : 'auto',
-        transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`,
+        // `visibility: hidden` once the slide-out finishes, so a bar that
+        // is only invisible (opacity 0) can't still be sampled by iOS
+        // Safari as a fixed element at the bottom and tint its toolbar.
+        visibility: scrollHidden ? 'hidden' : 'visible',
+        transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}, visibility 0s linear ${scrollHidden ? '220ms' : '0s'}`,
       }}
       aria-hidden={scrollHidden || undefined}
       aria-label="Primary"
