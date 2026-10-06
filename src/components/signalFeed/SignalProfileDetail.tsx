@@ -289,6 +289,7 @@ export function SignalProfileDetail({
 
       {editProfileOpen && (
         <SignalEditProfileSheet
+          initialCoverUrl={profile && profile !== 'error' ? profile.coverUrl : null}
           onClose={() => setEditProfileOpen(false)}
           onSaved={(updates) =>
             setProfile((prev) => (prev && prev !== 'error' ? { ...prev, ...updates } : prev))
@@ -418,7 +419,7 @@ function ProfileHeader({
       role={role}
       username={profile.username}
       bio={profile.bio}
-      avatarUrl={profile.avatarUrl}
+      avatarUrl={profile.coverUrl ?? profile.avatarUrl}
       hostStats={profile.isHost ? { rating: profile.rating, trips: profile.trips } : null}
       followers={showFollowCounts ? { count: followersCount, onOpen: onOpenFollowers } : undefined}
       following={showFollowCounts ? { count: profile.followingCount, onOpen: onOpenFollowing } : undefined}

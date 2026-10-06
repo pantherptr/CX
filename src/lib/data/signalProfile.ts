@@ -13,6 +13,8 @@ export interface SignalProfile {
   fullName: string;
   avatarUrl: string | null;
   bio: string | null;
+  /** The big photo on the SIGNAL card; `null` falls back to the avatar. */
+  coverUrl: string | null;
   /** `null` until the user has chosen one — see setSignalUsername. */
   username: string | null;
   isHost: boolean;
@@ -38,6 +40,7 @@ interface SignalProfileJson {
   full_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  cover_url?: string | null;
   username: string | null;
   is_host: boolean;
   is_verified_client: boolean;
@@ -67,6 +70,7 @@ export async function fetchSignalProfile(userId: string): Promise<SignalProfile 
     fullName: row.full_name ?? 'CX Rent user',
     avatarUrl: row.avatar_url,
     bio: row.bio,
+    coverUrl: row.cover_url ?? null,
     username: row.username,
     isHost: row.is_host,
     isVerifiedClient: row.is_verified_client,
@@ -158,6 +162,16 @@ export async function uploadSignalAvatar(userId: string, file: File): Promise<{ 
   return { url: pub.publicUrl, error: null };
 }
 
+/** The big photo on the SIGNAL profile card — same bucket and folder rule as the avatar. */
+export async function uploadSignalCover(userId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${userId}/cover-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
+  if (uploadError) return { url: null, error: uploadError.message };
+  const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+  return { url: pub.publicUrl, error: null };
+}
+
 /** Updates the real `profiles` row directly — the exact same table
  *  Settings.tsx's own personal-info form and avatar upload already
  *  write to (no RPC exists for this today; Settings.tsx doesn't use one
@@ -165,8 +179,9 @@ export async function uploadSignalAvatar(userId: string, file: File): Promise<{ 
  *  the main CX Rent profile, Messages, Bookings, everywhere — there is
  *  only ever one `profiles` row per user. RLS already lets a user update
  *  their own row (Settings.tsx relies on the same policy). */
-export async function updateSignalProfile(userId: string, updates: { bio?: string; avatarUrl?: string; fullName?: string }): Promise<{ error: string | null }> {
-  const payload: Record<string, string> = {};
+export async function updateSignalProfile(userId: string, updates: { bio?: string; avatarUrl?: string; fullName?: string; coverUrl?: string | null }): Promise<{ error: string | null }> {
+  const payload: Record<string, string | null> = {};
+  if (updates.coverUrl !== undefined) payload.cover_url = updates.coverUrl;
   if (updates.fullName !== undefined) payload.full_name = updates.fullName;
   if (updates.bio !== undefined) payload.bio = updates.bio;
   if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;

@@ -4,7 +4,7 @@ import { MotionSheet, Tap, SharedAvatar, motion, AnimatePresence, useReducedMoti
 import { ProfileAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
-import { uploadSignalAvatar, updateSignalProfile, checkUsernameAvailable, setSignalUsername } from '../../lib/data/signalProfile';
+import { uploadSignalAvatar, uploadSignalCover, updateSignalProfile, checkUsernameAvailable, setSignalUsername } from '../../lib/data/signalProfile';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 
 const BIO_MAX = 200;
@@ -56,14 +56,17 @@ function BioRing({ value, max }: { value: number; max: number }) {
 export function SignalEditProfileSheet({
   onClose,
   onSaved,
+  initialCoverUrl = null,
 }: {
   onClose: () => void;
+  /** The current cover photo, if the profile has one. */
+  initialCoverUrl?: string | null;
   /** Fires right after each successful write (photo saves immediately on
    *  pick, username+bio together on the header Save) so the profile page
    *  showing this sheet can patch its own already-fetched state directly
    *  — refreshProfile() alone only updates the global auth context's
    *  copy, not this page's separate fetch_signal_profile result. */
-  onSaved: (updates: { bio?: string; avatarUrl?: string; username?: string; fullName?: string }) => void;
+  onSaved: (updates: { bio?: string; avatarUrl?: string; username?: string; fullName?: string; coverUrl?: string | null }) => void;
 }) {
   const { session, profile, refreshProfile } = useAuth();
   const { toast } = useApp();
@@ -81,6 +84,9 @@ export function SignalEditProfileSheet({
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(initialCoverUrl);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const originalUsername = profile?.username ?? '';
   const originalBio = profile?.bio ?? '';
@@ -139,6 +145,41 @@ export function SignalEditProfileSheet({
     onSaved({ avatarUrl: url });
     await refreshProfile();
     toast({ title: 'Profile photo updated', icon: 'check' });
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !session) return;
+    setUploadingCover(true);
+    const { url, error } = await uploadSignalCover(session.user.id, file);
+    if (!url || error) {
+      setUploadingCover(false);
+      toast({ title: 'Could not upload photo', desc: error ?? undefined, icon: 'info' });
+      return;
+    }
+    const { error: saveError } = await updateSignalProfile(session.user.id, { coverUrl: url });
+    setUploadingCover(false);
+    if (saveError) {
+      toast({ title: 'Could not save photo', desc: saveError, icon: 'info' });
+      return;
+    }
+    setCoverPreview(url);
+    onSaved({ coverUrl: url });
+    toast({ title: 'Cover photo updated', icon: 'check' });
+  };
+
+  const handleCoverRemove = async () => {
+    if (!session || !coverPreview) return;
+    setUploadingCover(true);
+    const { error } = await updateSignalProfile(session.user.id, { coverUrl: null });
+    setUploadingCover(false);
+    if (error) {
+      toast({ title: 'Could not save changes', desc: error, icon: 'info' });
+      return;
+    }
+    setCoverPreview(null);
+    onSaved({ coverUrl: null });
   };
 
   const bioChanged = bio.trim() !== originalBio;
@@ -262,6 +303,36 @@ export function SignalEditProfileSheet({
               >
                 Change photo
               </Tap>
+            </div>
+          </div>
+
+          {/* Cover — the big photo on the SIGNAL card; without one, the profile picture is used */}
+          <div className="grid items-center gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
+            <p className={labelCls}>Cover</p>
+            <div className="flex items-center gap-3.5">
+              <Tap onClick={() => coverInputRef.current?.click()} aria-label="Change cover photo" scale={0.96} className="relative h-[4.5rem] w-14 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-white/[0.04]">
+                {coverPreview ? (
+                  <img src={coverPreview} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="grid h-full w-full place-items-center text-on-noir-muted"><Icon name="image" size={18} /></span>
+                )}
+                {uploadingCover && <span className="skeleton absolute inset-0" />}
+              </Tap>
+              <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+              <div className="flex flex-wrap gap-2">
+                <Tap
+                  onClick={() => coverInputRef.current?.click()}
+                  scale={0.97}
+                  className="rounded-lg border border-white/15 px-3.5 py-2 text-detail font-semibold text-on-noir transition-colors hover:border-white/40 hover:bg-white/5"
+                >
+                  {coverPreview ? 'Change cover' : 'Add cover'}
+                </Tap>
+                {coverPreview && (
+                  <Tap onClick={handleCoverRemove} scale={0.97} className="rounded-lg px-3 py-2 text-detail font-semibold text-on-noir-muted transition-colors hover:text-on-noir">
+                    Remove
+                  </Tap>
+                )}
+              </div>
             </div>
           </div>
 
