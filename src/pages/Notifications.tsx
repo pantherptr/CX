@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { NotificationsList } from '../components/NotificationsList';
@@ -16,11 +15,6 @@ export default function Notifications() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
-
-  useEffect(() => {
-    markAllRead();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const openNotification = (n: SignalNotification) => {
     markRead(n.id);
@@ -41,6 +35,8 @@ export default function Notifications() {
             loadingMore={loadingMore}
             hasMore={hasMore}
             onOpen={openNotification}
+            onMarkRead={markRead}
+            onMarkAllRead={markAllRead}
           />
         </div>
       </div>

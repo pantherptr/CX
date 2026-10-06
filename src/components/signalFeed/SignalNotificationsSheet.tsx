@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { NotificationsList } from '../NotificationsList';
@@ -27,11 +26,6 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
   // their own version of this exact problem.
   const { hidden, hideForNavigation } = useHideForNavigation(pathname);
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
-
-  useEffect(() => {
-    markAllRead();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (hidden) return null;
 
@@ -78,6 +72,9 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
             loadingMore={loadingMore}
             hasMore={hasMore}
             onOpen={openNotification}
+            onMarkRead={markRead}
+            onMarkAllRead={markAllRead}
+            compact
           />
         </div>
       </div>
