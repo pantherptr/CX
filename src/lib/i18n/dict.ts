@@ -261,6 +261,15 @@ const ROWS: Row[] = [
 
   ['Sample SIGNAL Story and posts from CX drivers and hosts', 'Esempio di Storia e post SIGNAL di guidatori e host CX', 'Exemplu de Poveste și postări SIGNAL de la șoferi și gazde CX', 'Ejemplo de Historia y publicaciones de SIGNAL de conductores y anfitriones de CX'],
 
+  ['Respected', 'Respected', 'Respected', 'Respected'],
+  ['Save', 'Salva', 'Salvează', 'Guardar'],
+  ['Share', 'Condividi', 'Distribuie', 'Compartir'],
+  ['View Vehicle', 'Vedi il veicolo', 'Vezi vehiculul', 'Ver vehículo'],
+  ['Golden hour on the Amalfi Coast. Good cars, better people.', 'Ora d’oro sulla Costiera Amalfitana. Buone auto, persone migliori.', 'Ora de aur pe Coasta Amalfitană. Mașini bune, oameni și mai buni.', 'Hora dorada en la Costa Amalfitana. Buenos coches, mejores personas.'],
+  ['What a car! 😍 Rented it through CX for a weekend — easy to book, super host, car in perfect shape.', 'Che macchina pazzesca! 😍 L’ho noleggiata tramite CX per un weekend: facile da prenotare, host super, auto in condizioni perfette.', 'Ce mașină! 😍 Am închiriat-o prin CX pentru un weekend — ușor de rezervat, gazdă super, mașină în stare perfectă.', '¡Qué coche! 😍 Lo alquilé con CX para un fin de semana: fácil de reservar, anfitrión genial, coche en perfecto estado.'],
+  ['Welcome to the CX family, Luca! 🙌 Thanks for sharing your experience.', 'Benvenuto nella famiglia CX, Luca! 🙌 Grazie per aver condiviso la tua esperienza.', 'Bun venit în familia CX, Luca! 🙌 Mulțumim că ți-ai împărtășit experiența.', '¡Bienvenido a la familia CX, Luca! 🙌 Gracias por compartir tu experiencia.'],
+  ['First time with this car — what an experience. Power, comfort and design, perfect for a weekend in Tuscany. Thanks @cx for making it so simple! 🔥', 'Prima volta con questa macchina e che esperienza. Potenza, comfort e design perfetti per un weekend in Toscana. Grazie @cx per aver reso tutto semplice! 🔥', 'Prima dată cu această mașină și ce experiență. Putere, confort și design perfecte pentru un weekend în Toscana. Mulțumesc @cx că ai făcut totul atât de simplu! 🔥', 'Primera vez con este coche y qué experiencia. Potencia, confort y diseño perfectos para un fin de semana en la Toscana. ¡Gracias @cx por hacerlo todo tan fácil! 🔥'],
+
   // ---- Country gateway ----
   ['Choose your country', 'Scegli il tuo paese', 'Alege țara ta', 'Elige tu país'],
   ['We\'ll show CX in your language.', 'Mostreremo CX nella tua lingua.', 'Vom afișa CX în limba ta.', 'Mostraremos CX en tu idioma.'],

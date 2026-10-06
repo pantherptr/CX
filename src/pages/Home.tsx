@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { SignalLogo } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
-import { SectionHead } from '../components/primitives';
+import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
 import { CarCard } from '../components/CarCard';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
@@ -12,7 +12,7 @@ import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
-import type { CarCategory } from '../data/types';
+import type { Car, CarCategory } from '../data/types';
 import { CITY_COORDS } from '../data/cityCoords';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
@@ -76,6 +76,108 @@ function HeroPhoto() {
         className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center`}
       />
     </picture>
+  );
+}
+
+/** The SIGNAL preview: a Story and two posts, fanned side by side, built
+ *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
+ *  Share row, CX team comment). Decorative sample content. Laid out at a
+ *  fixed design size and scaled down to fit. */
+function SignalFan({ cars }: { cars: Car[] | null }) {
+  const { t } = useLocale();
+  const amg = cars?.find((c) => /AMG/i.test(c.make) && /GT/i.test(c.model));
+  const shell = 'absolute left-1/2 top-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_30px_55px_-26px_rgba(0,50,20,0.55)]';
+  const place = (dx: number, rot: number, dy: number) => ({
+    transform: `translate(calc(-50% + ${dx}rem), calc(-50% + ${dy}rem)) rotate(${rot}deg)`,
+  });
+  const Avatar = ({ src, size = 40 }: { src: string; size?: number }) => (
+    <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover ring-1 ring-accent-bright/30" style={{ height: size, width: size }} />
+  );
+  const Actions = ({ respected }: { respected?: boolean }) => (
+    <div className="grid grid-cols-3 gap-1 px-2 py-1">
+      <span className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold ${respected ? 'bg-accent-050 text-accent-700' : 'text-ink-soft'}`}>
+        <Icon name="like" size={18} fill={respected} /> {respected ? t('Respected') : t('Respect')}
+      </span>
+      <span className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft">
+        <Icon name="bookmark" size={17} /> {t('Save')}
+      </span>
+      <span className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft">
+        <Icon name="share" size={17} /> {t('Share')}
+      </span>
+    </div>
+  );
+  return (
+    <div aria-hidden="true" className="relative mx-auto h-[16.5rem] w-full sm:h-[30rem] lg:h-[25.5rem]">
+      <div className="absolute left-1/2 top-0 -ml-[18rem] h-[30rem] w-[36rem] origin-top scale-[0.55] sm:scale-100 lg:scale-[0.85]">
+        {/* Story */}
+        <div className={`${shell} z-10 h-[24rem] w-[12rem] border-white/70 bg-noir`} style={place(-13.6, -7, 1.2)}>
+          <img src="/signal/story.webp" alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
+          <div className="absolute inset-x-3 top-3 flex gap-1">
+            {[1, 0.5, 0].map((f, i) => (
+              <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
+                <span className="block h-full bg-white" style={{ width: `${f * 100}%` }} />
+              </span>
+            ))}
+          </div>
+          <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
+            <span className="rounded-full bg-gradient-to-tr from-accent-bright to-accent p-[2px]"><Avatar src="/signal/av-marco.webp" size={34} /></span>
+            <span className="min-w-0">
+              <span className="flex items-center gap-1 text-detail font-semibold">marco.b <VerifiedBadge role="host" size={13} /></span>
+              <span className="block text-caption text-white/75">{t('Amalfi Coast')}</span>
+            </span>
+          </div>
+          <p className="absolute inset-x-3 bottom-4 text-detail font-medium leading-snug text-white">{t('Golden hour on the Amalfi Coast. Good cars, better people.')}</p>
+        </div>
+
+        {/* Post — Luca, with a CX team comment */}
+        <div className={`${shell} z-10 w-[13.5rem]`} style={place(13.6, 7, 1.4)}>
+          <div className="flex items-center gap-2.5 p-3">
+            <Avatar src="/signal/av-luca.webp" size={36} />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1 text-detail font-semibold text-ink">luca.m <VerifiedBadge role="client" size={13} /></span>
+              <span className="block text-caption text-faint">Milano</span>
+            </span>
+            <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
+          </div>
+          <p className="px-3 pb-2 text-caption leading-relaxed text-ink">{t('What a car! 😍 Rented it through CX for a weekend — easy to book, super host, car in perfect shape.')}</p>
+          <img src="/signal/luca.webp" alt="" className="aspect-[16/10] w-full object-cover" loading="lazy" />
+          <Actions />
+          <div className="flex gap-2 border-t border-line px-3 py-2.5">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white ring-1 ring-line"><img src="/cx-logo-symbol.png" alt="" className="h-3.5 w-3.5 object-contain" /></span>
+            <span className="min-w-0 text-caption leading-snug text-ink-soft">
+              <span className="flex items-center gap-1 font-semibold text-ink">CX <VerifiedBadge role="admin" size={12} /></span>
+              {t('Welcome to the CX family, Luca! 🙌 Thanks for sharing your experience.')}
+            </span>
+          </div>
+        </div>
+
+        {/* Post — Giulia, with the vehicle link (centre, on top) */}
+        <div className={`${shell} z-20 w-[17rem]`} style={place(0, 0, -0.4)}>
+          <div className="flex items-center gap-2.5 p-3">
+            <Avatar src="/signal/av-giulia.webp" size={40} />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1 text-detail font-semibold text-ink">giulia.r <VerifiedBadge role="client" size={14} /></span>
+              <span className="block text-caption text-faint">Milano · 2h</span>
+            </span>
+            <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
+          </div>
+          <p className="px-3 pb-2 text-detail leading-relaxed text-ink">{t('First time with this car — what an experience. Power, comfort and design, perfect for a weekend in Tuscany. Thanks @cx for making it so simple! 🔥')}</p>
+          {amg && (
+            <span className="mx-3 mb-2 flex items-center gap-3 rounded-xl border border-line bg-panel p-2">
+              <img src={unsplash(amg.images[0], 120)} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-caption font-semibold text-ink">{amg.year} {amg.make} {amg.model}</span>
+                <span className="block truncate text-label text-muted">{amg.city} · {eur(amg.pricePerDay)}{t('/day')}</span>
+              </span>
+              <span className="flex shrink-0 items-center text-label font-semibold text-accent-700">{t('View Vehicle')} <Icon name="chevronRight" size={12} /></span>
+            </span>
+          )}
+          <img src="/signal/giulia.webp" alt="" className="aspect-[16/10] w-full object-cover" loading="lazy" />
+          <Actions respected />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -760,19 +862,9 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* A glimpse of SIGNAL: a Story and two posts with real-looking
-                  community photos. Decorative; the button is the way in. */}
-              <div className="overflow-hidden rounded-[1.75rem] bg-[#0b0b0b] shadow-[0_34px_70px_-30px_rgba(0,60,25,0.55)] ring-1 ring-black/10 lg:-mr-4 lg:scale-[1.04]">
-                <img
-                  src="/signal-preview.webp"
-                  width={1536}
-                  height={1024}
-                  alt={t('Sample SIGNAL Story and posts from CX drivers and hosts')}
-                  loading="lazy"
-                  decoding="async"
-                  className="block h-auto w-full"
-                />
-              </div>
+              {/* A glimpse of SIGNAL — sample Story and posts. Decorative; the
+                  button is the way in. */}
+              <SignalFan cars={allCars} />
             </div>
           </div>
         </Reveal>
