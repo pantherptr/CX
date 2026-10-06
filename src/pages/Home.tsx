@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { SignalLogo } from '../components/SignalLogo';
@@ -16,6 +16,7 @@ import type { CarCategory } from '../data/types';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 
+const CityGlobe = lazy(() => import('../components/home/CityGlobe').then((m) => ({ default: m.CityGlobe })));
 
 /** Original CX editorial hero art: created specifically with generous
  * left-side copy space and a sunlit, optimistic automotive setting. */
@@ -197,6 +198,7 @@ export default function Home() {
   const startScramble = useScramble('Start');
   const { cars: allCars } = useCars();
   const fleetRailRef = useRef<HTMLDivElement>(null);
+  const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
 
   // Real per-category stats (count, starting price, a real photo) computed
   // from the actual catalogue — no hand-authored counts or stock photos.
@@ -800,6 +802,46 @@ export default function Home() {
           {trustStats.map((s) => (
             <StatCounter key={s.label} {...s} />
           ))}
+        </div>
+      </section>
+
+      {/* ================= WHERE CX IS LIVE — the globe ================= */}
+      <section className="container-page section">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <Reveal>
+            <p className="eyebrow">Where CX is live</p>
+            <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
+              {catalogue.cities} European cities, one key.
+            </h2>
+            <p className="mt-3 max-w-md text-copy leading-relaxed text-muted">
+              Pick up in {globeCity || 'your city'}, drive on to the next. Drag the globe to look around.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {catalogue.cityNames.map((c) => (
+                <Link
+                  key={c}
+                  to={`/browse?city=${encodeURIComponent(c)}`}
+                  data-active={c === globeCity}
+                  className="chip"
+                >
+                  {c}
+                </Link>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link to="/browse" className="btn btn-accent-bright btn-lg">
+                Find a car <Icon name="arrowRight" size={17} />
+              </Link>
+              <Link to="/help" className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600">
+                Help &amp; support <Icon name="arrowRight" size={15} />
+              </Link>
+            </div>
+          </Reveal>
+          <Reveal delay={120}>
+            <Suspense fallback={<div className="mx-auto aspect-square w-full max-w-[26rem] rounded-full skeleton" />}>
+              <CityGlobe cities={catalogue.cityNames} onCityChange={setGlobeCity} />
+            </Suspense>
+          </Reveal>
         </div>
       </section>
 
