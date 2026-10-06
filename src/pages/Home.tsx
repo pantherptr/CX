@@ -79,6 +79,84 @@ function HeroPhoto() {
   );
 }
 
+/** Decorative sample posts for the SIGNAL preview — what a feed looks like,
+ *  not real members' content. `car` indexes the top-rated fleet for photos. */
+const signalPosts: { author: string; initials: string; tone: string; role: string; badge?: string; text?: string; car: number; showCar: boolean; place: string }[] = [
+  { author: 'CX Rent', initials: 'CX', tone: 'bg-ink', role: 'Official', badge: 'New Car', car: 1, showCar: true, place: '' },
+  { author: 'Giulia R.', initials: 'GR', tone: 'bg-accent-700', role: 'Verified driver', text: 'Sunrise on the coast road. Seven hours, one playlist, zero regrets. 🌅', car: 2, showCar: false, place: 'Amalfi Coast' },
+  { author: 'Marco B.', initials: 'MB', tone: 'bg-amber-600', role: 'Verified host', text: 'Sunday drive through the hills — this is exactly why I share my car.', car: 3, showCar: false, place: 'Chianti, Tuscany' },
+  { author: 'Anna & Luca', initials: 'AL', tone: 'bg-sky-600', role: 'Verified driver', text: 'Family road trip to the Dolomites. The kids still talk about the views. 🏔️', car: 4, showCar: false, place: 'Dolomites' },
+];
+
+/** The SIGNAL feed preview: four sample posts take turns at the top, sliding
+ *  up one at a time. Only transform transitions (no endless animation), and
+ *  every card has the same height so each slot is a fixed offset. */
+const POST_H = 20; // rem
+const POST_GAP = 0.75; // rem
+function SignalFeedPreview({ cars }: { cars: { images: string[]; make: string; model: string }[] | null }) {
+  const { t } = useLocale();
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 4200);
+    return () => window.clearInterval(id);
+  }, []);
+  const n = signalPosts.length;
+  return (
+    <div className="relative h-[27rem] overflow-hidden rounded-[1.4rem]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-white/95 to-transparent" />
+      {signalPosts.map((post, i) => {
+        const slot = (((i - tick) % n) + n) % n;
+        const car = cars?.[post.car];
+        return (
+          <div
+            key={i}
+            className="absolute inset-x-0 top-0 flex flex-col overflow-hidden rounded-[1.4rem] border border-line bg-white"
+            style={{
+              height: `${POST_H}rem`,
+              transform: `translateY(${slot * (POST_H + POST_GAP)}rem)`,
+              // the card wrapping from the top back to the bottom jumps instead of sliding through the others
+              transition: slot === n - 1 ? 'none' : 'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
+              opacity: slot === n - 1 ? 0 : 1,
+            }}
+          >
+            <div className="flex items-center gap-2.5 p-3">
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-label font-bold text-white ${post.tone}`}>{post.initials}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1 text-detail font-semibold text-ink">
+                  <span className="truncate">{post.author}</span>
+                  <Icon name="verified" size={13} className="shrink-0 text-accent" />
+                </span>
+                <span className="block truncate text-caption text-faint">{t(post.role)}</span>
+              </span>
+              {post.badge && (
+                <span className="shrink-0 rounded-full bg-accent-050 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.08em] text-accent-700">{t(post.badge)}</span>
+              )}
+            </div>
+            {post.text && <p className="line-clamp-2 px-3.5 pb-3 text-detail leading-relaxed text-ink-soft">{t(post.text)}</p>}
+            <div className="relative min-h-0 flex-1 bg-panel">
+              {car && (
+                <Img src={unsplash(car.images[0], 600)} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={null} />
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+              {post.showCar && car ? (
+                <span className="absolute bottom-3 left-3 font-display text-copy font-semibold text-white">{car.make} {car.model}</span>
+              ) : (
+                <span className="absolute bottom-3 left-3 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft backdrop-blur">{t(post.place)}</span>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-4 px-3.5 py-3 text-ink-soft">
+              <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="like" size={16} className="text-accent" /> {t('Respect')}</span>
+              <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="message" size={16} /> {t('Comment')}</span>
+              <span className="ml-auto inline-flex items-center"><Icon name="bookmark" size={16} /></span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'shield', label: 'Verified hosts' },
   { icon: 'calendar', label: 'Clear cancellation terms' },
@@ -784,45 +862,7 @@ export default function Home() {
                       ))}
                     </div>
 
-                    <div className="overflow-hidden rounded-[1.4rem] border border-line bg-white">
-                      <div className="flex items-center gap-2.5 p-3">
-                        <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-label font-bold text-white">CX</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1 text-detail font-semibold text-ink">
-                            CX Rent <Icon name="verified" size={13} className="text-accent" />
-                          </span>
-                          <span className="block text-caption text-faint">{t('Official')}</span>
-                        </span>
-                        <span className="rounded-full bg-accent-050 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.08em] text-accent-700">{t('New Car')}</span>
-                      </div>
-                      <div className="relative aspect-[16/10] bg-panel">
-                        {fleetCars?.[1] && (
-                          <Img
-                            src={unsplash(fleetCars[1].images[0], 600)}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-cover"
-                            fallback={null}
-                          />
-                        )}
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-                        {fleetCars?.[1] && (
-                          <span className="absolute bottom-3 left-3 font-display text-copy font-semibold text-white">
-                            {fleetCars[1].make} {fleetCars[1].model}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 px-3.5 py-3 text-ink-soft">
-                        <span className="inline-flex items-center gap-1.5 text-detail font-medium">
-                          <Icon name="like" size={16} className="text-accent" /> {t('Respect')}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-detail font-medium">
-                          <Icon name="message" size={16} /> {t('Comment')}
-                        </span>
-                        <span className="ml-auto inline-flex items-center gap-1.5 text-detail font-medium">
-                          <Icon name="bookmark" size={16} />
-                        </span>
-                      </div>
-                    </div>
+                    <SignalFeedPreview cars={fleetCars} />
                   </div>
                 </div>
               </div>

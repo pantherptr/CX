@@ -1661,6 +1661,7 @@
   }
   .animate-ken-burns { animation: ken-burns 20s var(--ease-out-expo) infinite alternate; }
 
+
   /* A single soft light pass sweeping across glossy imagery. */
   @keyframes light-sweep {
     0% { transform: translateX(-130%) skewX(-14deg); opacity: 0; }

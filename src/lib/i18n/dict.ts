@@ -249,6 +249,16 @@ const ROWS: Row[] = [
   ['Close', 'Chiudi', 'Închide', 'Cerrar'],
   ['Show', 'Mostra', 'Afișează', 'Mostrar'],
 
+  // ---- Home: SIGNAL feed preview ----
+  ['Verified driver', 'Guidatore verificato', 'Șofer verificat', 'Conductor verificado'],
+  ['Verified host', 'Host verificato', 'Gazdă verificată', 'Anfitrión verificado'],
+  ['Sunrise on the coast road. Seven hours, one playlist, zero regrets. 🌅', 'Alba sulla strada costiera. Sette ore, una playlist, zero rimpianti. 🌅', 'Răsărit pe drumul de coastă. Șapte ore, un playlist, zero regrete. 🌅', 'Amanecer en la carretera de la costa. Siete horas, una playlist, cero arrepentimientos. 🌅'],
+  ['Sunday drive through the hills — this is exactly why I share my car.', 'Domenica sulle colline: è esattamente per questo che condivido la mia auto.', 'Plimbare de duminică prin dealuri — exact de aceea îmi împărtășesc mașina.', 'Paseo de domingo por las colinas: justo por esto comparto mi coche.'],
+  ['Family road trip to the Dolomites. The kids still talk about the views. 🏔️', 'Road trip in famiglia sulle Dolomiti. I bambini parlano ancora dei panorami. 🏔️', 'Road trip în familie în Dolomiți. Copiii încă vorbesc despre peisaje. 🏔️', 'Viaje en familia a los Dolomitas. Los niños aún hablan de las vistas. 🏔️'],
+  ['Amalfi Coast', 'Costiera Amalfitana', 'Coasta Amalfitană', 'Costa Amalfitana'],
+  ['Chianti, Tuscany', 'Chianti, Toscana', 'Chianti, Toscana', 'Chianti, Toscana'],
+  ['Dolomites', 'Dolomiti', 'Dolomiți', 'Dolomitas'],
+
   // ---- Country gateway ----
   ['Choose your country', 'Scegli il tuo paese', 'Alege țara ta', 'Elige tu país'],
   ['We\'ll show CX in your language.', 'Mostreremo CX nella tua lingua.', 'Vom afișa CX în limba ta.', 'Mostraremos CX en tu idioma.'],
