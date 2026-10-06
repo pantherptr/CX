@@ -4,7 +4,7 @@ import { Icon, type IconName } from '../components/Icon';
 import { SignalLogo } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
-import { Reveal, Img, useCountUp } from '../components/motion';
+import { Reveal, Img } from '../components/motion';
 import { FleetShowcase } from '../components/home/FleetShowcase';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
@@ -187,13 +187,6 @@ const trustRow: { icon: IconName; label: string }[] = [
   { icon: 'headset', label: '24/7 support' },
 ];
 
-/** Real, measured facts from the catalogue — no invented numbers. */
-const trustStats: { value: number; decimals?: number; label: string }[] = [
-  { value: catalogue.cities, label: 'European cities' },
-  { value: catalogue.vehicles, label: 'Cars listed' },
-  { value: catalogue.meanRating, decimals: 2, label: 'Average rating' },
-];
-
 /** Every claim here maps to a real, shippable feature — not aspirational
  *  copy. Booking.tsx's 5-step flow (easy booking), its editable pickup
  *  location + calendar (flexible pickup), its free-cancellation policy
@@ -217,19 +210,6 @@ const howSteps: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.' },
   { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
 ];
-
-function StatCounter({ value, decimals, label }: { value: number; decimals?: number; label: string }) {
-  const { t } = useLocale();
-  const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
-  return (
-    <div className="text-center sm:text-left">
-      <p ref={ref} className="font-display text-3xl font-semibold tabular-nums text-ink sm:text-5xl">
-        {decimals ? animated.toFixed(decimals) : animated}
-      </p>
-      <p className="mt-1 text-caption text-muted sm:mt-1.5 sm:text-detail">{t(label)}</p>
-    </div>
-  );
-}
 
 const HOME_FAQ_QUESTIONS = [
   'How does booking a car work?',
@@ -726,15 +706,6 @@ export default function Home() {
             </ul>
           </div>
         </Reveal>
-      </section>
-
-      {/* ================= TRUST — short, measured, no cards ================= */}
-      <section className="container-page section">
-        <div className="grid grid-cols-3 gap-3 border-y border-line py-8 sm:gap-6 sm:py-12">
-          {trustStats.map((s) => (
-            <StatCounter key={s.label} {...s} />
-          ))}
-        </div>
       </section>
 
       {/* ================= WHERE CX IS LIVE — the globe ================= */}
