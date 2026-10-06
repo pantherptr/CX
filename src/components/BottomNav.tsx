@@ -299,9 +299,16 @@ export function BottomNav() {
   if (!visible) return null;
 
   return (
+    // iOS Safari tints the strip behind its floating toolbar from fixed
+    // elements sitting at the bottom edge, and copied this bar's white glass
+    // there (a white band under the site name whenever the bar was showing).
+    // The only fixed element is now this transparent full-screen wrapper;
+    // the bar itself is absolutely positioned inside it, so there is no
+    // coloured fixed element at the edge to sample.
+    <div className="pointer-events-none fixed inset-0 z-50 lg:hidden">
     <nav
       ref={navRef}
-      className="fixed z-50 lg:hidden"
+      className="absolute"
       style={{
         left: BAR_SIDE_GAP,
         right: BAR_SIDE_GAP,
@@ -524,5 +531,6 @@ export function BottomNav() {
         })}
       </div>
     </nav>
+    </div>
   );
 }
