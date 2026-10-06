@@ -5,7 +5,7 @@ import { SignalLogo } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img, useCountUp } from '../components/motion';
-import { CarCard } from '../components/CarCard';
+import { FleetShowcase } from '../components/home/FleetShowcase';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
@@ -229,55 +229,6 @@ const SPOTLIGHT_CATEGORIES: { key: CarCategory; label: string }[] = [
   { key: 'Convertible', label: 'Convertibles' },
 ];
 
-/** Prev/next for a horizontal card rail, for mouse users only (`can-hover`)
- *  — touch already swipes it natively, but a rail with its scrollbar
- *  hidden otherwise gives a mouse no way to move it at all. Each press
- *  pages by ~one viewport of cards; the rail's own scroll-snap lands it
- *  cleanly on a card edge. Disabled at either end so it never "does
- *  nothing" silently. */
-function RailArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | null> }) {
-  const { t } = useLocale();
-  const [edges, setEdges] = useState({ start: true, end: false });
-
-  useEffect(() => {
-    const el = railRef.current;
-    if (!el) return;
-    const update = () =>
-      setEdges({ start: el.scrollLeft <= 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 });
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener('scroll', update);
-      ro.disconnect();
-    };
-  }, [railRef]);
-
-  const page = (dir: 1 | -1) => {
-    const el = railRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: 'smooth' });
-  };
-
-  return (
-    <div className="hidden items-center gap-2 can-hover:flex">
-      {([-1, 1] as const).map((dir) => (
-        <button
-          key={dir}
-          type="button"
-          onClick={() => page(dir)}
-          disabled={dir === -1 ? edges.start : edges.end}
-          aria-label={dir === -1 ? t('Previous cars') : t('More cars')}
-          className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-surface text-ink shadow-hair transition hover:border-ink/30 hover:shadow-soft active:scale-95 disabled:cursor-default disabled:opacity-35 disabled:shadow-none"
-        >
-          <Icon name={dir === -1 ? 'chevronLeft' : 'chevronRight'} size={18} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function StatCounter({ value, decimals, label }: { value: number; decimals?: number; label: string }) {
   const { t } = useLocale();
   const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
@@ -305,7 +256,6 @@ export default function Home() {
   const { t } = useLocale();
   const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
-  const fleetRailRef = useRef<HTMLDivElement>(null);
   const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
 
   // Real per-category stats (count, starting price, a real photo) computed
@@ -482,48 +432,8 @@ export default function Home() {
       </section>
 
       {/* ================= FLEET — the rental experience starts right here ================= */}
-      <section className="section">
-        <div className="container-page">
-          <SectionHead
-            eyebrow={t('Explore the CX Fleet')}
-            title={t('Choose the car that fits your journey.')}
-            action={
-              <div className="flex items-center gap-4">
-                <Link
-                  to="/browse"
-                  className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
-                >
-                  {t('View all cars')} <Icon name="arrowRight" size={15} />
-                </Link>
-                <RailArrows railRef={fleetRailRef} />
-              </div>
-            }
-          />
-        </div>
-        {/* Snap so a swipe always settles on a whole card instead of
-            leaving one sliced in half at the edge; `overscroll-x-contain`
-            stops a hard swipe at the end from turning into the browser's
-            own back/forward navigation gesture. */}
-        <div
-          ref={fleetRailRef}
-          className="scrollbar-none mt-8 flex snap-x snap-mandatory scroll-pl-5 gap-4 overflow-x-auto overscroll-x-contain px-5 pb-2 sm:scroll-pl-8 sm:px-8 xl:container-page xl:scroll-pl-0 xl:px-0"
-        >
-          {(fleetCars ?? Array.from({ length: 4 })).map((car, i) =>
-            car ? (
-              <Reveal key={car.id} delay={i * 60} className="w-[78vw] shrink-0 snap-start sm:w-[320px]">
-                <CarCard car={car} priority={i < 2} />
-              </Reveal>
-            ) : (
-              <div key={i} className="card w-[78vw] shrink-0 overflow-hidden sm:w-[320px]">
-                <div className="skeleton aspect-[4/3]" />
-                <div className="space-y-2 p-4">
-                  <div className="skeleton h-4 w-3/5 rounded-md" />
-                  <div className="skeleton h-3 w-2/5 rounded-md" />
-                </div>
-              </div>
-            ),
-          )}
-        </div>
+      <section className="container-page section">
+        <FleetShowcase cars={fleetCars} />
       </section>
 
       {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
