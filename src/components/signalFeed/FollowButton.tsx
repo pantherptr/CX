@@ -21,7 +21,7 @@ export function FollowButton({
   initialFollowing: boolean;
   size?: 'sm' | 'md';
   /** `card`: the full-width button on the dark profile card. */
-  variant?: 'default' | 'card';
+  variant?: 'default' | 'card' | 'wide';
   onChange?: (following: boolean) => void;
 }) {
   const [following, setFollowing] = useState(initialFollowing);
@@ -63,7 +63,13 @@ export function FollowButton({
       animate={{ scale: justFollowed ? 1.08 : 1 }}
       transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
       className={`group font-semibold disabled:opacity-60 ${
-        variant === 'card'
+        variant === 'wide'
+          ? `flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-body ${
+              following
+                ? 'border border-line-strong bg-surface text-ink-soft hover:border-danger/40 hover:text-danger'
+                : 'bg-ink text-white hover:bg-ink/90'
+            }`
+          : variant === 'card'
           ? `flex w-full items-center justify-center gap-1.5 rounded-xl py-3.5 text-body ${
               following
                 ? 'border border-white/25 bg-white/10 text-on-noir hover:border-white/50'
@@ -82,7 +88,7 @@ export function FollowButton({
           <span className="group-hover:hidden">Following</span>
           <span className="hidden group-hover:inline">Unfollow</span>
         </>
-      ) : variant === 'card' ? (
+      ) : variant === 'card' || variant === 'wide' ? (
         <>
           Follow <Icon name="plus" size={16} strokeWidth={2.5} />
         </>

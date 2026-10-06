@@ -16,9 +16,10 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
-import { SignalProfileCard } from './SignalProfileCard';
+import { SignalProfileHero } from './SignalProfileHero';
 import { Tap } from '../motionKit';
 import { useAuth } from '../../lib/auth';
+import { useApp } from '../../lib/store';
 
 // How far (px) into the scroll the header compresses — a subtle,
 // transform/opacity-only effect (never a sticky mini-header; the whole
@@ -52,6 +53,7 @@ export function SignalProfileDetail({
   onClose: () => void;
 }) {
   const { session } = useAuth();
+  const { toast } = useApp();
   const isOfficialVoice = authorId === 'cx' || authorId === 'assistant';
   const [profile, setProfile] = useState<SignalProfile | null | 'error'>(null);
   const [demoProfile, setDemoProfile] = useState<SignalDemoProfile | null>(null);
@@ -147,134 +149,211 @@ export function SignalProfileDetail({
   const pinnedPost = posts?.[0]?.pinnedToProfile ? posts[0] : null;
   const restPosts = pinnedPost ? posts!.slice(1) : posts;
 
-  return (
-    <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-4 py-3 backdrop-blur-md pt-safe">
-        <button onClick={onClose} aria-label="Back to Signal" className="pressable grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
-          <Icon name="chevronLeft" size={20} />
-        </button>
-        <span className="font-display font-semibold text-ink">Profile</span>
-      </div>
+  const realProfile = !isOfficialVoice && loaded && profile && profile !== 'error' ? profile : null;
+  const demo = !isOfficialVoice && loaded && profile === null ? demoProfile : null;
+  const heroMode = Boolean(realProfile || demo);
+  const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
+  const [tab, setTab] = useState<'posts' | 'vehicles'>('posts');
+  const activeTab = tab === 'vehicles' && hasVehicles ? 'vehicles' : 'posts';
 
-      <div className="mx-auto w-full max-w-xl px-4 pb-10 sm:px-6">
-        {/* A quiet cover — the same radial CX-green glow the CTA bands
-            elsewhere already use, not a new look invented for this one
-            spot. Purely a backdrop for the header below; it does not
-            compress/fade with scroll the way the header content does. */}
-        <div
-          className="pointer-events-none -mx-4 -mt-px h-24 sm:-mx-6 sm:h-28"
-          style={{ background: 'radial-gradient(65% 100% at 30% 0%, rgba(0,212,71,0.12), transparent 70%)' }}
-          aria-hidden="true"
+  const role: 'owner' | 'admin' | 'host' | 'client' | null = realProfile
+    ? realProfile.isOwner ? 'owner' : realProfile.isAdmin ? 'admin' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : null
+    : demo ? (demo.role === 'host' ? 'host' : 'client') : null;
+  const [followersCount, setFollowersCount] = useState(0);
+  useEffect(() => {
+    if (realProfile) setFollowersCount(realProfile.followersCount);
+  }, [realProfile?.id, realProfile?.followersCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Follow only makes sense for the two Community creator roles — see
+  // the brief's own "Users can follow: Hosts, Verified Clients."
+  const canBeFollowed = Boolean(realProfile && !isMe && (realProfile.isHost || realProfile.isVerifiedClient));
+  const showFollowCounts = Boolean(realProfile && (realProfile.isHost || realProfile.isVerifiedClient));
+
+  const share = async () => {
+    const url = window.location.href;
+    const title = realProfile?.fullName ?? demo?.fullName ?? 'CX Rent — Signal';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        /* closed without sharing */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Link copied to clipboard', icon: 'check' });
+    } catch {
+      toast({ title: 'Could not copy link', icon: 'info' });
+    }
+  };
+
+  const postsSection = (
+    <div>
+      {pinnedPost && (
+        <div className="mb-3">
+          <p className="mb-2 flex items-center gap-1.5 px-0.5 text-caption font-medium text-faint">
+            <Icon name="pinned" size={11} fill /> Pinned
+          </p>
+          <SignalPostCard
+            post={pinnedPost}
+            canManage={canManage}
+            onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
+            onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
+          />
+        </div>
+      )}
+
+      {restPosts && restPosts.length === 0 && !pinnedPost && (
+        <div className="flex flex-col items-center gap-3 py-14 text-center">
+          <span className="h-7 w-[3px] rounded-full bg-accent-bright/50" aria-hidden="true" />
+          <p className="text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
+          {isMe && (
+            <Link to="/signal/community" className="btn btn-primary btn-sm mt-1">
+              Create Post
+            </Link>
+          )}
+        </div>
+      )}
+
+      {restPosts?.map((post) => (
+        <SignalPostCard
+          key={post.id}
+          post={post}
+          canManage={canManage}
+          onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
+          onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
         />
-        {isOfficialVoice ? (
-          <OfficialVoiceHeader
-            type={authorId as 'cx' | 'assistant'}
-            hasActiveStory={Boolean(myStory)}
-            onOpenStory={() => setStoryViewerOpen(true)}
-            compress={compress}
-          />
-        ) : !loaded ? (
-          <div className="flex flex-col items-center gap-3 pb-6 pt-8 text-center">
-            <div className="skeleton h-20 w-20 rounded-full" />
-            <div className="skeleton h-4 w-32 rounded-md" />
-            <div className="skeleton h-3 w-48 rounded-md" />
-          </div>
-        ) : profile === 'error' ? (
-          <div className="py-24 text-center">
-            <SignalLogo size={48} className="mx-auto opacity-50" />
-            <p className="mt-4 text-body text-muted">Couldn't load this profile. Check your connection and try again.</p>
-          </div>
-        ) : profile === null && demoProfile ? (
-          <DemoProfileHeader profile={demoProfile} onOpenStory={() => setStoryViewerOpen(true)} hasActiveStory={Boolean(myStory)} />
-        ) : profile === null ? (
-          <div className="py-24 text-center">
-            <SignalLogo size={48} className="mx-auto opacity-50" />
-            <p className="mt-4 text-body text-muted">This profile no longer exists.</p>
-          </div>
-        ) : (
-          <ProfileHeader
-            profile={profile}
-            isMe={isMe}
-            hasActiveStory={Boolean(myStory)}
-            onOpenStory={() => setStoryViewerOpen(true)}
-            onEditProfile={() => setEditProfileOpen(true)}
-            onOpenFollowers={() => setFollowListMode('followers')}
-            onOpenFollowing={() => setFollowListMode('following')}
-          />
-        )}
+      ))}
+    </div>
+  );
 
-        {!isOfficialVoice && profile && profile !== 'error' && cars && cars.length > 0 && (
-          <div className="border-t border-line py-4">
-            <p className="mb-2.5 px-0.5 text-caption font-semibold uppercase tracking-[0.12em] text-faint">Vehicles</p>
-            <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-              {cars.map((car) => (
-                <Link
-                  key={car.id}
-                  to={`/cars/${car.slug}`}
-                  className="group pressable flex w-[168px] shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface transition-colors hover:border-line-strong"
-                >
-                  <span className="relative block h-24 w-full overflow-hidden bg-panel">
-                    {car.images[0] && (
-                      <Img
-                        src={car.images[0]}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>}
-                      />
-                    )}
-                    <span className="card-glare__sweep" aria-hidden="true" />
-                  </span>
-                  <span className="flex flex-col gap-0.5 p-2.5">
-                    <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
-                    <span className="flex items-center justify-between text-caption text-muted">
-                      €{compact(car.pricePerDay)}/day
-                      <Icon name="arrowUpRight" size={12} className="text-accent-700" />
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-line pt-4">
-          {pinnedPost && (
-            <div className="mb-3">
-              <p className="mb-2 flex items-center gap-1.5 px-0.5 text-caption font-medium text-faint">
-                <Icon name="pinned" size={11} fill /> Pinned
-              </p>
-              <SignalPostCard
-                post={pinnedPost}
-                canManage={canManage}
-                onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
-                onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
+  const vehiclesSection = (
+    <div className="grid grid-cols-2 gap-3">
+      {(cars ?? []).map((car) => (
+        <Link
+          key={car.id}
+          to={`/cars/${car.slug}`}
+          className="group pressable flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-hair transition-colors hover:border-line-strong"
+        >
+          <span className="relative block aspect-[4/3] w-full overflow-hidden bg-panel">
+            {car.images[0] && (
+              <Img
+                src={car.images[0]}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={22} /></span>}
               />
-            </div>
-          )}
+            )}
+          </span>
+          <span className="flex flex-col gap-0.5 p-3">
+            <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
+            <span className="flex items-center justify-between text-caption text-muted">
+              €{compact(car.pricePerDay)}/day
+              <Icon name="arrowUpRight" size={13} className="text-accent-700" />
+            </span>
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
 
-          {!isOfficialVoice && restPosts && restPosts.length === 0 && !pinnedPost && (
-            <div className="flex flex-col items-center gap-3 py-14 text-center">
-              <span className="h-7 w-[3px] rounded-full bg-accent-bright/50" aria-hidden="true" />
-              <p className="text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
-              {isMe && (
-                <Link to="/signal/community" className="btn btn-primary btn-sm mt-1">
-                  Create Post
-                </Link>
-              )}
-            </div>
-          )}
-
-          {!isOfficialVoice && restPosts?.map((post) => (
-            <SignalPostCard
-              key={post.id}
-              post={post}
-              canManage={canManage}
-              onChanged={(updated) => setPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
-              onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
-            />
+  const below = (
+    <>
+      {hasVehicles && (
+        <div className="mb-4 flex gap-1 rounded-xl bg-panel p-1" role="tablist">
+          {(['posts', 'vehicles'] as const).map((id) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={activeTab === id}
+              onClick={() => setTab(id)}
+              className={`flex-1 rounded-lg py-2 text-detail font-semibold transition-colors ${
+                activeTab === id ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'
+              }`}
+            >
+              {id === 'posts' ? 'Posts' : 'Vehicles'}
+            </button>
           ))}
         </div>
-      </div>
+      )}
+      {activeTab === 'posts' ? postsSection : vehiclesSection}
+    </>
+  );
+
+  return (
+    <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+      {heroMode ? (
+        <div className="mx-auto w-full max-w-2xl pb-10">
+          <SignalProfileHero
+            name={realProfile?.fullName ?? demo!.fullName}
+            role={role}
+            username={realProfile?.username ?? demo?.username}
+            bio={realProfile?.bio ?? demo?.bio}
+            coverUrl={realProfile?.coverUrl ?? null}
+            avatarUrl={realProfile?.avatarUrl ?? demo?.avatarUrl ?? null}
+            hostStats={realProfile?.isHost ? { rating: realProfile.rating, trips: realProfile.trips } : null}
+            followers={showFollowCounts && realProfile ? { count: followersCount, onOpen: () => setFollowListMode('followers') } : undefined}
+            following={showFollowCounts && realProfile ? { count: realProfile.followingCount, onOpen: () => setFollowListMode('following') } : undefined}
+            hasActiveStory={Boolean(myStory)}
+            onOpenStory={() => setStoryViewerOpen(true)}
+            onClose={onClose}
+            onShare={share}
+            scrollTop={scrollTop}
+            action={
+              realProfile && isMe ? (
+                <Tap onClick={() => setEditProfileOpen(true)} scale={0.97} className="w-full rounded-2xl bg-ink py-3.5 text-body font-semibold text-white transition-colors hover:bg-ink/90">
+                  Edit profile
+                </Tap>
+              ) : realProfile && canBeFollowed ? (
+                <FollowButton
+                  userId={realProfile.id}
+                  initialFollowing={realProfile.followedByMe}
+                  variant="wide"
+                  onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
+                />
+              ) : undefined
+            }
+          >
+            {below}
+          </SignalProfileHero>
+        </div>
+      ) : (
+        <>
+          <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-4 py-3 backdrop-blur-md pt-safe">
+            <button onClick={onClose} aria-label="Back to Signal" className="pressable grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
+              <Icon name="chevronLeft" size={20} />
+            </button>
+            <span className="font-display font-semibold text-ink">Profile</span>
+          </div>
+
+          <div className="mx-auto w-full max-w-xl px-4 pb-10 sm:px-6">
+            {isOfficialVoice ? (
+              <OfficialVoiceHeader
+                type={authorId as 'cx' | 'assistant'}
+                hasActiveStory={Boolean(myStory)}
+                onOpenStory={() => setStoryViewerOpen(true)}
+                compress={compress}
+              />
+            ) : !loaded ? (
+              <div className="flex flex-col items-center gap-3 pb-6 pt-8 text-center">
+                <div className="skeleton h-20 w-20 rounded-full" />
+                <div className="skeleton h-4 w-32 rounded-md" />
+                <div className="skeleton h-3 w-48 rounded-md" />
+              </div>
+            ) : profile === 'error' ? (
+              <div className="py-24 text-center">
+                <SignalLogo size={48} className="mx-auto opacity-50" />
+                <p className="mt-4 text-body text-muted">Couldn't load this profile. Check your connection and try again.</p>
+              </div>
+            ) : (
+              <div className="py-24 text-center">
+                <SignalLogo size={48} className="mx-auto opacity-50" />
+                <p className="mt-4 text-body text-muted">This profile no longer exists.</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {storyViewerOpen && myStory && (
         <SignalStoryViewer
@@ -355,90 +434,5 @@ function OfficialVoiceHeader({
         </p>
       </div>
     </div>
-  );
-}
-
-/** A demo profile's card — deliberately simpler than the real one: no
- *  Follow button (a demo profile has no real `profiles` row for
- *  `profile_follows` to reference — it genuinely cannot be followed, not
- *  just hidden-for-now), no follower/following counts (none are tracked;
- *  showing "0" would invite the same question a missing button already
- *  answers honestly), no rating/trips (none of that exists for a fictional
- *  account either). */
-function DemoProfileHeader({
-  profile,
-  hasActiveStory,
-  onOpenStory,
-}: {
-  profile: SignalDemoProfile;
-  hasActiveStory: boolean;
-  onOpenStory: () => void;
-}) {
-  return (
-    <SignalProfileCard
-      name={profile.fullName}
-      role={profile.role === 'host' ? 'host' : 'client'}
-      username={profile.username}
-      bio={profile.bio}
-      avatarUrl={profile.avatarUrl}
-      hasActiveStory={hasActiveStory}
-      onOpenStory={onOpenStory}
-    />
-  );
-}
-
-function ProfileHeader({
-  profile,
-  isMe,
-  hasActiveStory,
-  onOpenStory,
-  onEditProfile,
-  onOpenFollowers,
-  onOpenFollowing,
-}: {
-  profile: SignalProfile;
-  isMe: boolean;
-  hasActiveStory: boolean;
-  onOpenStory: () => void;
-  onEditProfile: () => void;
-  onOpenFollowers: () => void;
-  onOpenFollowing: () => void;
-}) {
-  const role: 'owner' | 'admin' | 'host' | 'client' | null =
-    profile.isOwner ? 'owner' : profile.isAdmin ? 'admin' : profile.isHost ? 'host' : profile.isVerifiedClient ? 'client' : null;
-  // Follow only makes sense for the two Community creator roles — see
-  // the brief's own "Users can follow: Hosts, Verified Clients."
-  // Following Owner/Admin's real account isn't a Community concept.
-  const canBeFollowed = !isMe && (profile.isHost || profile.isVerifiedClient);
-  const showFollowCounts = profile.isHost || profile.isVerifiedClient;
-  const [followersCount, setFollowersCount] = useState(profile.followersCount);
-
-  return (
-    <SignalProfileCard
-      name={profile.fullName}
-      role={role}
-      username={profile.username}
-      bio={profile.bio}
-      avatarUrl={profile.coverUrl ?? profile.avatarUrl}
-      hostStats={profile.isHost ? { rating: profile.rating, trips: profile.trips } : null}
-      followers={showFollowCounts ? { count: followersCount, onOpen: onOpenFollowers } : undefined}
-      following={showFollowCounts ? { count: profile.followingCount, onOpen: onOpenFollowing } : undefined}
-      hasActiveStory={hasActiveStory}
-      onOpenStory={onOpenStory}
-      action={
-        isMe ? (
-          <Tap onClick={onEditProfile} scale={0.97} className="w-full rounded-xl bg-white py-3.5 text-body font-semibold text-noir transition-colors hover:bg-white/90">
-            Edit profile
-          </Tap>
-        ) : canBeFollowed ? (
-          <FollowButton
-            userId={profile.id}
-            initialFollowing={profile.followedByMe}
-            variant="card"
-            onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
-          />
-        ) : undefined
-      }
-    />
   );
 }
