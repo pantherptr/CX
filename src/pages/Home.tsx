@@ -79,80 +79,96 @@ function HeroPhoto() {
   );
 }
 
-/** Decorative sample posts for the SIGNAL preview — what a feed looks like,
- *  not real members' content. `car` indexes the top-rated fleet for photos. */
-const signalPosts: { author: string; initials: string; tone: string; role: string; badge?: string; text?: string; car: number; showCar: boolean; place: string }[] = [
-  { author: 'CX Rent', initials: 'CX', tone: 'bg-ink', role: 'Official', badge: 'New Car', car: 1, showCar: true, place: '' },
-  { author: 'Giulia R.', initials: 'GR', tone: 'bg-accent-700', role: 'Verified driver', text: 'Sunrise on the coast road. Seven hours, one playlist, zero regrets. 🌅', car: 2, showCar: false, place: 'Amalfi Coast' },
-  { author: 'Marco B.', initials: 'MB', tone: 'bg-amber-600', role: 'Verified host', text: 'Sunday drive through the hills — this is exactly why I share my car.', car: 3, showCar: false, place: 'Chianti, Tuscany' },
-  { author: 'Anna & Luca', initials: 'AL', tone: 'bg-sky-600', role: 'Verified driver', text: 'Family road trip to the Dolomites. The kids still talk about the views. 🏔️', car: 4, showCar: false, place: 'Dolomites' },
-];
-
-/** The SIGNAL feed preview: four sample posts take turns at the top, sliding
- *  up one at a time. Only transform transitions (no endless animation), and
- *  every card has the same height so each slot is a fixed offset. */
-const POST_H = 20; // rem
-const POST_GAP = 0.75; // rem
-function SignalFeedPreview({ cars }: { cars: { images: string[]; make: string; model: string }[] | null }) {
+/** The SIGNAL preview: three sample cards fanned side by side — two Stories
+ *  and a photo post. Decorative (sample content, photos from the fleet). */
+function SignalFan({ cars }: { cars: { images: string[]; make: string; model: string }[] | null }) {
   const { t } = useLocale();
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 4200);
-    return () => window.clearInterval(id);
-  }, []);
-  const n = signalPosts.length;
+  const photo = (i: number, extra = '') =>
+    cars?.[i] ? (
+      <Img src={unsplash(cars[i].images[0], 600)} alt="" className={`absolute inset-0 h-full w-full object-cover ${extra}`} fallback={null} />
+    ) : null;
+  const shell = 'absolute left-1/2 top-1/2 overflow-hidden rounded-[1.4rem] border border-white/80 bg-white shadow-[0_28px_50px_-24px_rgba(0,60,25,0.5)] transition-transform duration-500 ease-out';
+  const Avatar = ({ initials, tone, ring }: { initials: string; tone: string; ring?: boolean }) => (
+    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${ring ? 'bg-gradient-to-tr from-accent-bright to-accent p-[2px]' : ''}`}>
+      <span className={`grid h-full w-full place-items-center rounded-full text-label font-bold text-white ${ring ? 'ring-2 ring-white' : ''} ${tone}`}>{initials}</span>
+    </span>
+  );
   return (
-    <div className="relative h-[27rem] overflow-hidden rounded-[1.4rem]">
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-white/95 to-transparent" />
-      {signalPosts.map((post, i) => {
-        const slot = (((i - tick) % n) + n) % n;
-        const car = cars?.[post.car];
-        return (
-          <div
-            key={i}
-            className="absolute inset-x-0 top-0 flex flex-col overflow-hidden rounded-[1.4rem] border border-line bg-white"
-            style={{
-              height: `${POST_H}rem`,
-              transform: `translateY(${slot * (POST_H + POST_GAP)}rem)`,
-              // the card wrapping from the top back to the bottom jumps instead of sliding through the others
-              transition: slot === n - 1 ? 'none' : 'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
-              opacity: slot === n - 1 ? 0 : 1,
-            }}
-          >
-            <div className="flex items-center gap-2.5 p-3">
-              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-label font-bold text-white ${post.tone}`}>{post.initials}</span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1 text-detail font-semibold text-ink">
-                  <span className="truncate">{post.author}</span>
-                  <Icon name="verified" size={13} className="shrink-0 text-accent" />
-                </span>
-                <span className="block truncate text-caption text-faint">{t(post.role)}</span>
-              </span>
-              {post.badge && (
-                <span className="shrink-0 rounded-full bg-accent-050 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.08em] text-accent-700">{t(post.badge)}</span>
-              )}
-            </div>
-            {post.text && <p className="line-clamp-2 px-3.5 pb-3 text-detail leading-relaxed text-ink-soft">{t(post.text)}</p>}
-            <div className="relative min-h-0 flex-1 bg-panel">
-              {car && (
-                <Img src={unsplash(car.images[0], 600)} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={null} />
-              )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-              {post.showCar && car ? (
-                <span className="absolute bottom-3 left-3 font-display text-copy font-semibold text-white">{car.make} {car.model}</span>
-              ) : (
-                <span className="absolute bottom-3 left-3 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft backdrop-blur">{t(post.place)}</span>
-              )}
-            </div>
-            <div className="flex shrink-0 items-center gap-4 px-3.5 py-3 text-ink-soft">
-              <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="like" size={16} className="text-accent" /> {t('Respect')}</span>
-              <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="message" size={16} /> {t('Comment')}</span>
-              <span className="ml-auto inline-flex items-center"><Icon name="bookmark" size={16} /></span>
-            </div>
-          </div>
-        );
-      })}
+    <div className="relative mx-auto h-[25rem] w-full max-w-[38rem] sm:h-[29rem]">
+      {/* Left — a Story */}
+      <div
+        className={`${shell} z-10 h-[19rem] w-[8.5rem] [--dx:-5.2rem] [--r:-8deg] [--dy:1.2rem] sm:h-[24rem] sm:w-[12rem] sm:[--dx:-10.4rem]`}
+        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
+      >
+        {photo(3)}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
+        <div className="absolute inset-x-3 top-3 flex gap-1">
+          {[1, 0.55, 0].map((f, i) => (
+            <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35">
+              <span className="block h-full bg-white" style={{ width: `${f * 100}%` }} />
+            </span>
+          ))}
+        </div>
+        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
+          <Avatar initials="MB" tone="bg-amber-600" ring />
+          <span className="min-w-0">
+            <span className="block truncate text-detail font-semibold">Marco B.</span>
+            <span className="block text-caption text-white/75">{t('Verified host')}</span>
+          </span>
+        </div>
+        <p className="absolute inset-x-3 bottom-4 hidden text-detail font-medium leading-snug text-white sm:block">{t('Sunday drive through the hills — this is exactly why I share my car.')}</p>
+      </div>
+
+      {/* Right — a Story */}
+      <div
+        className={`${shell} z-10 h-[19rem] w-[8.5rem] [--dx:5.2rem] [--r:8deg] [--dy:1.2rem] sm:h-[24rem] sm:w-[12rem] sm:[--dx:10.4rem]`}
+        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
+      >
+        {photo(4)}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
+        <div className="absolute inset-x-3 top-3 flex gap-1">
+          {[1, 1, 0.3].map((f, i) => (
+            <span key={i} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35">
+              <span className="block h-full bg-white" style={{ width: `${f * 100}%` }} />
+            </span>
+          ))}
+        </div>
+        <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
+          <Avatar initials="AL" tone="bg-sky-600" ring />
+          <span className="min-w-0">
+            <span className="block truncate text-detail font-semibold">Anna &amp; Luca</span>
+            <span className="block text-caption text-white/75">{t('Verified driver')}</span>
+          </span>
+        </div>
+        <p className="absolute inset-x-3 bottom-4 hidden text-detail font-medium leading-snug text-white sm:block">{t('Family road trip to the Dolomites. The kids still talk about the views. 🏔️')}</p>
+      </div>
+
+      {/* Center — a photo post */}
+      <div
+        className={`${shell} z-20 flex h-[23rem] w-[11.5rem] flex-col [--dx:0rem] [--r:0deg] [--dy:-0.6rem] hover:[--dy:-1.1rem] sm:h-[27rem] sm:w-[14rem]`}
+        style={{ transform: 'translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r))' }}
+      >
+        <div className="flex items-center gap-2 p-3">
+          <Avatar initials="GR" tone="bg-accent-700" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1 text-detail font-semibold text-ink">
+              <span className="truncate">Giulia R.</span>
+              <Icon name="verified" size={13} className="shrink-0 text-accent" />
+            </span>
+            <span className="block truncate text-caption text-faint">{t('Verified driver')}</span>
+          </span>
+        </div>
+        <div className="relative min-h-0 flex-1 bg-panel">
+          {photo(2)}
+          <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft backdrop-blur">{t('Amalfi Coast')}</span>
+        </div>
+        <p className="line-clamp-2 px-3.5 pt-2.5 text-detail leading-relaxed text-ink-soft">{t('Sunrise on the coast road. Seven hours, one playlist, zero regrets. 🌅')}</p>
+        <div className="flex items-center gap-4 px-3.5 py-3 text-ink-soft">
+          <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="like" size={16} className="text-accent" /> {t('Respect')}</span>
+          <span className="inline-flex items-center gap-1.5 text-detail font-medium"><Icon name="message" size={16} /></span>
+          <span className="ml-auto inline-flex items-center"><Icon name="bookmark" size={16} /></span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -838,33 +854,10 @@ export default function Home() {
                 </Link>
               </div>
 
-              {/* A glimpse of the real feed — Stories row and an official
-                  post, built from the same pieces SIGNAL itself uses.
-                  Decorative only; the button is the way in. */}
-              <div aria-hidden="true" className="relative mx-auto w-full max-w-[22rem] lg:max-w-none">
-                <div className="mx-auto w-full max-w-[22rem] lg:rotate-[1.5deg]">
-                  <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-3 shadow-[0_30px_60px_-28px_rgba(0,80,30,0.45)] backdrop-blur-md">
-                    <div className="flex items-center justify-between px-2 pb-3 pt-1">
-                      <span className="flex items-center gap-2 font-display text-copy font-semibold text-ink">
-                        <SignalLogo size={20} /> SIGNAL
-                      </span>
-                      <span className="h-1.5 w-10 rounded-full bg-line-strong" />
-                    </div>
-
-                    <div className="flex gap-3 overflow-hidden px-1 pb-3">
-                      {['CX', 'MI', 'RO', 'FI', 'PA'].map((l, i) => (
-                        <span key={l} className="flex shrink-0 flex-col items-center gap-1.5">
-                          <span className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] ${i === 0 ? 'bg-gradient-to-tr from-accent-bright to-accent' : i < 3 ? 'bg-gradient-to-tr from-accent/70 to-accent-bright/70' : 'bg-line-strong'}`}>
-                            <span className="grid h-full w-full place-items-center rounded-full bg-white text-label font-bold text-ink-soft">{l}</span>
-                          </span>
-                          <span className="h-1.5 w-8 rounded-full bg-line" />
-                        </span>
-                      ))}
-                    </div>
-
-                    <SignalFeedPreview cars={fleetCars} />
-                  </div>
-                </div>
+              {/* A glimpse of the feed — sample Stories and a photo post, fanned
+                  out. Decorative only; the button is the way in. */}
+              <div aria-hidden="true">
+                <SignalFan cars={fleetCars} />
               </div>
             </div>
           </div>
