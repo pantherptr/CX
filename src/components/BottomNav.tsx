@@ -51,37 +51,18 @@ const items: Item[] = [
 const SIGNAL_INDEX = items.findIndex((it) => it.label === 'Signal');
 const EASE = 'cubic-bezier(0.16,1,0.3,1)';
 
-// Signal's raised section is a real shaped piece of the bar's own surface —
-// not an icon floating on a separate blob, and (see below) not a separate
-// glass panel floating over the flat bar either. Geometry lives in a
-// narrow band centered on Signal's column; everything left/right of it is
-// the bar's own untouched flat top edge and border. Deliberately a small
-// architectural lift, not a hill — HILL_RISE/HILL_WIDTH_FRACTION were both
-// cut roughly in half from an earlier, much taller/wider pass that read as
-// an oversized bump rather than an integrated part of the bar.
-const HILL_RISE = 18; // px the plateau sits above the bar's flat top edge — just enough for
-// the logo (see the Link below) to clear it with a small, deliberate gap, not the large
-// clearance a bigger hill needed.
-const HILL_WIDTH_FRACTION = 0.24; // 24% of the bar's own width — narrow enough to read as "a
-// small bump around the logo", not a shape bulging into the neighboring Explore/Messages columns.
-const HILL_LEFT = (1 - HILL_WIDTH_FRACTION) / 2; // 0.38 — centers the bump on the bar
-const HILL_RIGHT = HILL_LEFT + HILL_WIDTH_FRACTION; // 0.62
-// The four x-breakpoints from the original small-hill curve (0, 0.175,
-// 0.265, 0.3275, 0.3875, 0.6125, 0.6725, 0.735, 0.825, 1 — fractions
-// *within the bump's own span*) remapped into fractions of the FULL bar
-// width, so the exact same curve shape now sits inside one single surface
-// instead of a separately-clipped panel. `t` -> `HILL_LEFT + t * HILL_WIDTH_FRACTION`.
-const X = {
-  left: HILL_LEFT,
-  upStart: HILL_LEFT + 0.175 * HILL_WIDTH_FRACTION,
-  upCp1: HILL_LEFT + 0.265 * HILL_WIDTH_FRACTION,
-  upCp2: HILL_LEFT + 0.3275 * HILL_WIDTH_FRACTION,
-  peakStart: HILL_LEFT + 0.3875 * HILL_WIDTH_FRACTION,
-  peakEnd: HILL_LEFT + 0.6125 * HILL_WIDTH_FRACTION,
-  downCp1: HILL_LEFT + 0.6725 * HILL_WIDTH_FRACTION,
-  downCp2: HILL_LEFT + 0.735 * HILL_WIDTH_FRACTION,
-  downEnd: HILL_RIGHT,
-};
+// Signal's raised section is part of the bar's own surface: one plain,
+// smooth dome (a single symmetric S-curve up and back down, horizontal
+// tangents at the base and at the peak — no plateau, no corners) centered
+// on Signal's column. Everything left/right of it is the bar's flat top.
+const HILL_RISE = 12; // px the peak sits above the bar's flat top edge
+const HILL_WIDTH_FRACTION = 0.3; // share of the bar's width the dome spans at its base
+const HILL_LEFT = (1 - HILL_WIDTH_FRACTION) / 2;
+const HILL_RIGHT = HILL_LEFT + HILL_WIDTH_FRACTION;
+const HILL_MID = 0.5;
+// Control points sit halfway along each half-span, level with the base
+// (start) and the peak (end), which is what makes the S-curve symmetric.
+const HILL_CP_OFFSET = HILL_WIDTH_FRACTION / 4;
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
 
 /** The whole bar's one and only background fill — a fully rounded
@@ -102,9 +83,7 @@ const round4 = (n: number) => Math.round(n * 10000) / 10000;
  *  rendered width/height, which vary with the safe-area inset and viewport
  *  width — measured live via `useMeasuredSize` below rather than assumed,
  *  so both the bump's and the end caps' proportions stay correct on every
- *  device instead of guessing fixed numbers. The hill's own curve
- *  (`X.upCp1`…`X.downEnd`) is untouched from the original flat-sided bar —
- *  only the two ends gained rounding either side of it. */
+ *  device instead of guessing fixed numbers. */
 const BEZIER_CIRCLE_K = 0.5522847498; // standard cubic-bezier quarter-circle approximation constant
 
 function buildNavClipPath(flatY: number, rx: number, ry: number): string {
@@ -121,10 +100,9 @@ function buildNavClipPath(flatY: number, rx: number, ry: number): string {
   return (
     `M0,${midY} ` +
     `C0,${round4(midY - ryIn)} ${rxIn},${f} ${round4(rx)},${f} ` +
-    `L${round4(X.left)},${f} ` +
-    `C${round4(X.upCp1)},${f} ${round4(X.upCp2)},0 ${round4(X.peakStart)},0 ` +
-    `L${round4(X.peakEnd)},0 ` +
-    `C${round4(X.downCp1)},0 ${round4(X.downCp2)},${f} ${round4(X.downEnd)},${f} ` +
+    `L${round4(HILL_LEFT)},${f} ` +
+    `C${round4(HILL_LEFT + HILL_CP_OFFSET)},${f} ${round4(HILL_LEFT + HILL_CP_OFFSET)},0 ${HILL_MID},0 ` +
+    `C${round4(HILL_RIGHT - HILL_CP_OFFSET)},0 ${round4(HILL_RIGHT - HILL_CP_OFFSET)},${f} ${round4(HILL_RIGHT)},${f} ` +
     `L${round4(1 - rx)},${f} ` +
     `C${round4(1 - rxIn)},${f} 1,${round4(midY - ryIn)} 1,${midY} ` +
     `C1,${round4(midY + ryIn)} ${round4(1 - rxIn)},1 ${round4(1 - rx)},1 ` +
@@ -134,15 +112,9 @@ function buildNavClipPath(flatY: number, rx: number, ry: number): string {
   );
 }
 
-// The visible rim (stroke) traces the identical curve, scaled ×100 for its
-// own 0-100 viewBox — unaffected by the fill's unification above, since it
-// was always drawn as its own thin decorative line over the same geometry,
-// never the source of the white-panel seam.
-const HILL_STROKE_FY = 66.7; // (HILL_RISE / the rim's own fixed 27px box) × 100 — a fixed
-// decorative line height independent of the bar's real height, unlike the fill.
-const HILL_STROKE_PATH =
-  `M0,${HILL_STROKE_FY} L17.5,${HILL_STROKE_FY} C26.5,${HILL_STROKE_FY} 32.75,0 38.75,0 ` +
-  `L61.25,0 C67.25,0 73.5,${HILL_STROKE_FY} 82.5,${HILL_STROKE_FY} L100,${HILL_STROKE_FY}`;
+// The visible rim (stroke) traces the same dome in its own 0-100 viewBox
+// (x across the dome's width, y from peak=0 to base=100), stretched to fit.
+const HILL_STROKE_PATH = 'M0,100 C25,100 25,0 50,0 C75,0 75,100 100,100';
 
 /** Measures an element's rendered width+height live (initial mount + any
  *  resize — orientation change, a browser chrome bar showing/hiding,
@@ -325,13 +297,11 @@ export function BottomNav() {
   return (
     <nav
       ref={navRef}
-      className="fixed z-50 shadow-[0_8px_24px_-8px_rgba(22,22,26,0.22)] lg:hidden"
+      className="fixed z-50 lg:hidden"
       style={{
         left: BAR_SIDE_GAP,
         right: BAR_SIDE_GAP,
         bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP}px)`,
-        // Gives the box-shadow above the same capsule outline as the glass.
-        borderRadius: capRadius,
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's
         // content reflows or jumps as this slides away; the bar's own
@@ -373,8 +343,7 @@ export function BottomNav() {
           would cast it around the bar's entire outline (left/right/bottom
           edges too), a real regression. The bump's own glow lives purely
           on the rim stroke below, which already traces just the bump's
-          own contour; the bar's ordinary drop shadow is the separate
-          `shadow-[...]` utility on `<nav>` itself. */}
+          own contour. */}
       <div
         className="glass pointer-events-none absolute inset-x-0 bottom-0"
         style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
@@ -390,7 +359,7 @@ export function BottomNav() {
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
         style={{ top: -HILL_RISE, width: `${HILL_WIDTH_FRACTION * 100}%`, height: HILL_RISE }}
-        viewBox={`0 0 100 ${HILL_STROKE_FY}`}
+        viewBox="0 0 100 100"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
