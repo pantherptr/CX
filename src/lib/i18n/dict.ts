@@ -270,6 +270,12 @@ const ROWS: Row[] = [
   ['Welcome to the CX family, Luca! 🙌 Thanks for sharing your experience.', 'Benvenuto nella famiglia CX, Luca! 🙌 Grazie per aver condiviso la tua esperienza.', 'Bun venit în familia CX, Luca! 🙌 Mulțumim că ți-ai împărtășit experiența.', '¡Bienvenido a la familia CX, Luca! 🙌 Gracias por compartir tu experiencia.'],
   ['First time with this car — what an experience. Power, comfort and design, perfect for a weekend in Tuscany. Thanks @cx for making it so simple! 🔥', 'Prima volta con questa macchina e che esperienza. Potenza, comfort e design perfetti per un weekend in Toscana. Grazie @cx per aver reso tutto semplice! 🔥', 'Prima dată cu această mașină și ce experiență. Putere, confort și design perfecte pentru un weekend în Toscana. Mulțumesc @cx că ai făcut totul atât de simplu! 🔥', 'Primera vez con este coche y qué experiencia. Potencia, confort y diseño perfectos para un fin de semana en la Toscana. ¡Gracias @cx por hacerlo todo tan fácil! 🔥'],
 
+  // ---- SIGNAL post translation ----
+  ['Translate', 'Traduci', 'Traduce', 'Traducir'],
+  ['See original', 'Mostra originale', 'Vezi originalul', 'Ver original'],
+  ['Translating…', 'Traduzione in corso…', 'Se traduce…', 'Traduciendo…'],
+  ['Translation unavailable', 'Traduzione non disponibile', 'Traducere indisponibilă', 'Traducción no disponible'],
+
   // ---- Country gateway ----
   ['Choose your country', 'Scegli il tuo paese', 'Alege țara ta', 'Elige tu país'],
   ['We\'ll show CX in your language.', 'Mostreremo CX nella tua lingua.', 'Vom afișa CX în limba ta.', 'Mostraremos CX en tu idioma.'],

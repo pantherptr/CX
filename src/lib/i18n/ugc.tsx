@@ -123,3 +123,50 @@ export function useTranslated(text: string | null | undefined): string {
 export function Ugc({ text }: { text: string | null | undefined }) {
   return <>{useTranslated(text)}</>;
 }
+
+/**
+ * On-demand translation for a post: nothing is sent until the reader taps
+ * "Translate", and a second tap goes back to the original. Works on several
+ * texts at once (a post's title and body).
+ */
+export function useManualTranslate(texts: (string | null | undefined)[]) {
+  const { lang } = useLocale();
+  const sources = texts.map((t) => t ?? '');
+  const sig = `${lang}|${sources.join('\u0001')}`;
+  const [on, setOn] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
+  const [, bump] = useState(0);
+
+  // A different language or different text starts over from the original.
+  useEffect(() => {
+    setOn(false);
+    setStatus('idle');
+  }, [sig]);
+
+  const toggle = () => {
+    if (on) {
+      setOn(false);
+      setStatus('idle');
+      return;
+    }
+    setOn(true);
+    const todo = sources.filter((t) => t.trim() && !memory.has(`${lang}|${t}`) && !loadStore()[`${lang}|${t}`]);
+    if (todo.length === 0) return;
+    setStatus('loading');
+    let left = todo.length;
+    let anyFailed = false;
+    todo.forEach((text) =>
+      request(lang, text, (tr) => {
+        if (!tr) anyFailed = true;
+        left -= 1;
+        if (left === 0) {
+          setStatus(anyFailed ? 'failed' : 'idle');
+          bump((n) => n + 1);
+        }
+      }),
+    );
+  };
+
+  const out = sources.map((t) => (on ? memory.get(`${lang}|${t}`) ?? loadStore()[`${lang}|${t}`] ?? t : t));
+  return { available: lang !== 'en' && sources.some((t) => t.trim()), on, status, toggle, texts: out };
+}

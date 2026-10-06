@@ -21,7 +21,8 @@ import { BorderBeam } from '../BorderBeam';
 import { SignalCommunityComposer } from './SignalCommunityComposer';
 import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
-import { Ugc } from '../../lib/i18n/ugc';
+import { useManualTranslate } from '../../lib/i18n/ugc';
+import { useLocale } from '../../lib/i18n';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -420,6 +421,8 @@ export function SignalPostCard({
   const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
+  const { t } = useLocale();
+  const tr = useManualTranslate([post.title, post.body]);
   const [savePop, setSavePop] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
@@ -738,11 +741,25 @@ export function SignalPostCard({
         )}
       </div>
 
+      {tr.available && (
+        <button
+          type="button"
+          onClick={tr.toggle}
+          disabled={tr.status === 'loading'}
+          className="mx-3 mb-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-accent-700 transition-colors hover:text-accent sm:mx-4"
+        >
+          <Icon name="globe" size={13} />
+          {tr.status === 'loading' ? t('Translating…') : tr.on ? t('See original') : t('Translate')}
+        </button>
+      )}
+      {tr.available && tr.status === 'failed' && (
+        <p className="px-3 pb-1.5 text-caption text-muted sm:px-4">{t('Translation unavailable')}</p>
+      )}
       {post.title && (
-        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}><Ugc text={post.title} /></h3>
+        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
       <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
-        <Ugc text={post.body} />
+        {tr.texts[1]}
       </p>
 
       {post.vehicle && (
