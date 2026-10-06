@@ -55,7 +55,9 @@ import {
   type OwnerNote,
 } from '../lib/data/platform';
 import { fetchReports, resolveReport, createConversationReport, type OwnerReport } from '../lib/data/reports';
-import { fetchContactFlags, FLAG_SOURCE_LABEL, type ContactFlag } from '../lib/data/contactFlags';
+import {
+  fetchContactFlags, fetchOpenContactFlagCount, setContactFlagsHandled, FLAG_SOURCE_LABEL, type ContactFlag,
+} from '../lib/data/contactFlags';
 
 /**
  * The Owner's private control center — distinct from /admin (see
@@ -693,16 +695,40 @@ function ReportsPanel() {
 
 /** Everything the contact guard caught: who tried to share a number, email,
  *  link or off-app payment, and where. The text was already hidden from the
- *  other person — this shows what was originally written. */
-function ContactGuardPanel({ onOpenMonitor }: { onOpenMonitor: () => void }) {
+ *  other person — this shows what was originally written. Entries can be
+ *  marked handled so only what still needs a look stays in front. */
+function ContactGuardPanel({ onOpenMonitor, onOpenCount }: { onOpenMonitor: () => void; onOpenCount: (n: number) => void }) {
+  const { toast } = useApp();
   const [items, setItems] = useState<ContactFlag[] | null>(null);
+  const [canHandle, setCanHandle] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'open' | 'all'>('open');
+  const [busy, setBusy] = useState(false);
+
+  const load = () =>
+    fetchContactFlags()
+      .then(({ flags, canHandle: ok }) => {
+        setItems(flags);
+        setCanHandle(ok);
+        onOpenCount(flags.filter((f) => !f.handledAt).length);
+      })
+      .catch(() => setError('The contact guard is not set up yet — apply migration 0070 in Supabase.'));
 
   useEffect(() => {
-    fetchContactFlags()
-      .then(setItems)
-      .catch(() => setError('The contact guard is not set up yet — apply migration 0070 in Supabase.'));
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const mark = async (ids: string[], handled: boolean) => {
+    setBusy(true);
+    const { error: err } = await setContactFlagsHandled(ids, handled);
+    setBusy(false);
+    if (err) {
+      toast({ title: "Couldn't update", desc: err, icon: 'info' });
+      return;
+    }
+    await load();
+  };
 
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
   if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
@@ -714,26 +740,64 @@ function ContactGuardPanel({ onOpenMonitor }: { onOpenMonitor: () => void }) {
     );
   }
 
+  const open = items.filter((f) => !f.handledAt);
+  const shown = filter === 'open' ? open : items;
+
   return (
     <div className="flex flex-col gap-2">
-      <p className="px-1 text-detail text-muted">
-        Members only ever see “••••” in place of what they wrote.
-      </p>
-      {items.map((f) => (
-        <div key={f.id} className="card flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <p className="text-detail text-muted">Members only ever see “••••” in place of what they wrote.</p>
+        <div className="flex items-center gap-2">
+          {canHandle && (
+            <>
+              <button onClick={() => setFilter('open')} data-active={filter === 'open'} className="chip">
+                To review ({open.length})
+              </button>
+              <button onClick={() => setFilter('all')} data-active={filter === 'all'} className="chip">
+                All ({items.length})
+              </button>
+              {open.length > 0 && (
+                <button onClick={() => mark(open.map((f) => f.id), true)} disabled={busy} className="btn btn-secondary btn-sm disabled:opacity-50">
+                  Mark all handled
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {!canHandle && (
+        <p className="rounded-lg bg-[#f5a524]/15 px-3 py-2 text-detail text-[#a86400]">
+          Apply migration 0071 in Supabase to be able to mark these as handled.
+        </p>
+      )}
+      {shown.length === 0 && (
+        <div className="card">
+          <EmptyState size="md" icon="checkCircle" title="All handled." description="Nothing left to review." className="p-10" />
+        </div>
+      )}
+      {shown.map((f) => (
+        <div key={f.id} className={`card flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-4 ${f.handledAt ? 'opacity-60' : ''}`}>
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
               {f.userName}
               <span className="badge bg-[#f5a524]/15 text-[#a86400]">{FLAG_SOURCE_LABEL[f.source] ?? f.source}</span>
+              {f.handledAt && <span className="badge bg-panel-2 text-ink-soft">Handled</span>}
             </p>
             <p className="text-caption text-muted">{fmtDate(f.createdAt)}</p>
             <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-panel px-3 py-2 text-detail text-ink-soft">{f.original}</p>
           </div>
-          {f.source === 'messages.body' && (
-            <button onClick={onOpenMonitor} className="btn btn-secondary btn-sm shrink-0">
-              Open Chat Monitor
-            </button>
-          )}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {f.source === 'messages.body' && (
+              <button onClick={onOpenMonitor} className="btn btn-secondary btn-sm">
+                Open Chat Monitor
+              </button>
+            )}
+            {canHandle && (
+              <button onClick={() => mark([f.id], !f.handledAt)} disabled={busy} className="btn btn-secondary btn-sm disabled:opacity-50">
+                {f.handledAt ? 'Undo' : 'Mark as handled'}
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>
@@ -1363,6 +1427,11 @@ export default function OwnerDashboard() {
   const initialTab = searchParams.get('tab');
   const [tab, setTab] = useState<Tab>(VALID_TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'overview');
   const [openVehicleId, setOpenVehicleId] = useState<string | null>(null);
+  // Contact-guard entries still waiting for a look — shown on the tab.
+  const [openFlags, setOpenFlags] = useState(0);
+  useEffect(() => {
+    void fetchOpenContactFlagCount().then(setOpenFlags);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -1410,6 +1479,9 @@ export default function OwnerDashboard() {
               }`}
             >
               <Icon name={t.icon} size={16} /> {t.label}
+              {t.id === 'contact' && openFlags > 0 && (
+                <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-label font-semibold ${tab === t.id ? 'bg-white text-noir' : 'bg-danger text-white'}`}>{openFlags}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -1421,7 +1493,7 @@ export default function OwnerDashboard() {
         {tab === 'users' && <UsersPanel />}
         {tab === 'verifications' && <VerificationsPanel />}
         {tab === 'reports' && <ReportsPanel />}
-        {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} />}
+        {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} onOpenCount={setOpenFlags} />}
         {tab === 'monitor' && <MonitorPanel />}
         {tab === 'activity' && <ActivityPanel />}
         {tab === 'notes' && <NotesPanel />}

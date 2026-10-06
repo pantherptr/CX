@@ -1575,5 +1575,14 @@
 "SIGNAL post": "Postare SIGNAL",
 "SIGNAL comment": "Comentariu SIGNAL",
 "Story caption": "Descrierea Poveștii",
-"The contact guard is not set up yet — apply migration 0070 in Supabase.": "Protecția contactelor nu este încă activă — aplică migrarea 0070 în Supabase."
+"The contact guard is not set up yet — apply migration 0070 in Supabase.": "Protecția contactelor nu este încă activă — aplică migrarea 0070 în Supabase.",
+"To review (": "De verificat (",
+"All (": "Toate (",
+"Mark all handled": "Marchează toate ca rezolvate",
+"Handled": "Rezolvată",
+"Undo": "Anulează",
+"Mark as handled": "Marchează ca rezolvată",
+"All handled.": "Totul rezolvat.",
+"Nothing left to review.": "Nu a mai rămas nimic de verificat.",
+"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplică migrarea 0071 în Supabase pentru a le putea marca ca rezolvate."
 }

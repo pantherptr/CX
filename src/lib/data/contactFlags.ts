@@ -13,6 +13,8 @@ export interface ContactFlag {
   /** The conversation id for chat messages, the row id otherwise. */
   refId: string | null;
   original: string;
+  /** When it was marked handled; null while it still needs a look. */
+  handledAt: string | null;
 }
 
 export const FLAG_SOURCE_LABEL: Record<string, string> = {
@@ -26,27 +28,62 @@ export const FLAG_SOURCE_LABEL: Record<string, string> = {
   'empire_story_slides.caption': 'Story caption',
 };
 
-export async function fetchContactFlags(limit = 100): Promise<ContactFlag[]> {
-  const { data, error } = await supabase
+/** `canHandle` is false until migration 0071 (the handled_at column) is applied. */
+export async function fetchContactFlags(limit = 150): Promise<{ flags: ContactFlag[]; canHandle: boolean }> {
+  let canHandle = true;
+  let res = await supabase
     .from('contact_guard_flags')
-    .select('id, created_at, source, user_id, ref_id, original')
+    .select('id, created_at, source, user_id, ref_id, original, handled_at')
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error) throw error;
-  const rows = data ?? [];
-  const ids = [...new Set(rows.map((r) => r.user_id).filter((v): v is string => Boolean(v)))];
+  if (res.error) {
+    // Older schema: no handled_at yet. Still show everything, read-only.
+    canHandle = false;
+    res = (await supabase
+      .from('contact_guard_flags')
+      .select('id, created_at, source, user_id, ref_id, original')
+      .order('created_at', { ascending: false })
+      .limit(limit)) as unknown as typeof res;
+  }
+  if (res.error) throw res.error;
+  const rows = (res.data ?? []) as unknown as Record<string, unknown>[];
+  const ids = [...new Set(rows.map((r) => r.user_id).filter((v): v is string => typeof v === 'string'))];
   const names = new Map<string, string>();
   if (ids.length > 0) {
     const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', ids);
     (profiles ?? []).forEach((p) => names.set(p.id as string, (p.full_name as string | null) || 'Unnamed user'));
   }
-  return rows.map((r) => ({
+  const flags = rows.map((r) => ({
     id: r.id as string,
     createdAt: r.created_at as string,
     source: r.source as string,
     userId: (r.user_id as string | null) ?? null,
-    userName: r.user_id ? names.get(r.user_id as string) ?? 'Unknown user' : 'Unknown user',
+    userName: typeof r.user_id === 'string' ? names.get(r.user_id) ?? 'Unknown user' : 'Unknown user',
     refId: (r.ref_id as string | null) ?? null,
     original: r.original as string,
+    handledAt: (r.handled_at as string | null | undefined) ?? null,
   }));
+  return { flags, canHandle };
+}
+
+/** How many flags still need a look — the number on the tab. 0 when the table or column isn't there yet. */
+export async function fetchOpenContactFlagCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('contact_guard_flags')
+    .select('id', { count: 'exact', head: true })
+    .is('handled_at', null);
+  return error ? 0 : count ?? 0;
+}
+
+/** Marks flags handled (or puts them back with `handled: false`). */
+export async function setContactFlagsHandled(ids: string[], handled: boolean): Promise<{ error: string | null }> {
+  if (ids.length === 0) return { error: null };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('contact_guard_flags')
+    .update(handled ? { handled_at: new Date().toISOString(), handled_by: user?.id ?? null } : { handled_at: null, handled_by: null })
+    .in('id', ids);
+  return { error: error?.message ?? null };
 }

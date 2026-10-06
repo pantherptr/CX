@@ -1575,5 +1575,14 @@
 "SIGNAL post": "Post SIGNAL",
 "SIGNAL comment": "Commento SIGNAL",
 "Story caption": "Didascalia della Storia",
-"The contact guard is not set up yet — apply migration 0070 in Supabase.": "La protezione contatti non è ancora attiva: applica la migrazione 0070 in Supabase."
+"The contact guard is not set up yet — apply migration 0070 in Supabase.": "La protezione contatti non è ancora attiva: applica la migrazione 0070 in Supabase.",
+"To review (": "Da rivedere (",
+"All (": "Tutte (",
+"Mark all handled": "Segna tutte come gestite",
+"Handled": "Gestita",
+"Undo": "Annulla",
+"Mark as handled": "Segna come gestita",
+"All handled.": "Tutto gestito.",
+"Nothing left to review.": "Non c’è più niente da rivedere.",
+"Apply migration 0071 in Supabase to be able to mark these as handled.": "Applica la migrazione 0071 in Supabase per poterle segnare come gestite."
 }

@@ -1575,5 +1575,14 @@
 "SIGNAL post": "Publicación de SIGNAL",
 "SIGNAL comment": "Comentario de SIGNAL",
 "Story caption": "Descripción de la Historia",
-"The contact guard is not set up yet — apply migration 0070 in Supabase.": "La protección de contactos aún no está activa: aplica la migración 0070 en Supabase."
+"The contact guard is not set up yet — apply migration 0070 in Supabase.": "La protección de contactos aún no está activa: aplica la migración 0070 en Supabase.",
+"To review (": "Por revisar (",
+"All (": "Todas (",
+"Mark all handled": "Marcar todas como gestionadas",
+"Handled": "Gestionada",
+"Undo": "Deshacer",
+"Mark as handled": "Marcar como gestionada",
+"All handled.": "Todo gestionado.",
+"Nothing left to review.": "No queda nada por revisar.",
+"Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplica la migración 0071 en Supabase para poder marcarlas como gestionadas."
 }
