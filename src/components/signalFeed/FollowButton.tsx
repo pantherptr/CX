@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toggleProfileFollow } from '../../lib/data/signalProfile';
 import { vibrateTap } from '../motion';
+import { Icon } from '../Icon';
 import { Tap, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
 
 /** Follow/Following toggle for a Community profile (Host or Verified
@@ -13,11 +14,14 @@ export function FollowButton({
   userId,
   initialFollowing,
   size = 'md',
+  variant = 'default',
   onChange,
 }: {
   userId: string;
   initialFollowing: boolean;
   size?: 'sm' | 'md';
+  /** `card`: the full-width button on the dark profile card. */
+  variant?: 'default' | 'card';
   onChange?: (following: boolean) => void;
 }) {
   const [following, setFollowing] = useState(initialFollowing);
@@ -58,12 +62,18 @@ export function FollowButton({
       // would just be silently overridden the whole time.
       animate={{ scale: justFollowed ? 1.08 : 1 }}
       transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
-      className={`group rounded-full font-semibold disabled:opacity-60 ${
-        size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'
-      } ${
-        following
-          ? 'border border-line text-ink-soft hover:border-danger/40 hover:bg-danger/5 hover:text-danger'
-          : 'bg-ink text-white hover:bg-ink/90'
+      className={`group font-semibold disabled:opacity-60 ${
+        variant === 'card'
+          ? `flex w-full items-center justify-center gap-1.5 rounded-xl py-3.5 text-body ${
+              following
+                ? 'border border-white/25 bg-white/10 text-on-noir hover:border-white/50'
+                : 'bg-white text-noir hover:bg-white/90'
+            }`
+          : `rounded-full ${size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'} ${
+              following
+                ? 'border border-line text-ink-soft hover:border-danger/40 hover:bg-danger/5 hover:text-danger'
+                : 'bg-ink text-white hover:bg-ink/90'
+            }`
       }`}
       style={{ transition: 'background-color 200ms, color 200ms, border-color 200ms' }}
     >
@@ -71,6 +81,10 @@ export function FollowButton({
         <>
           <span className="group-hover:hidden">Following</span>
           <span className="hidden group-hover:inline">Unfollow</span>
+        </>
+      ) : variant === 'card' ? (
+        <>
+          Follow <Icon name="plus" size={16} strokeWidth={2.5} />
         </>
       ) : (
         'Follow'

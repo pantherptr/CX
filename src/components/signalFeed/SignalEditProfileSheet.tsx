@@ -63,7 +63,7 @@ export function SignalEditProfileSheet({
    *  showing this sheet can patch its own already-fetched state directly
    *  — refreshProfile() alone only updates the global auth context's
    *  copy, not this page's separate fetch_signal_profile result. */
-  onSaved: (updates: { bio?: string; avatarUrl?: string; username?: string }) => void;
+  onSaved: (updates: { bio?: string; avatarUrl?: string; username?: string; fullName?: string }) => void;
 }) {
   const { session, profile, refreshProfile } = useAuth();
   const { toast } = useApp();
@@ -84,6 +84,8 @@ export function SignalEditProfileSheet({
 
   const originalUsername = profile?.username ?? '';
   const originalBio = profile?.bio ?? '';
+  const originalName = profile?.full_name ?? '';
+  const [name, setName] = useState(originalName);
   const [username, setUsername] = useState(originalUsername);
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
 
@@ -140,8 +142,9 @@ export function SignalEditProfileSheet({
   };
 
   const bioChanged = bio.trim() !== originalBio;
+  const nameChanged = name.trim() !== originalName.trim();
   const usernameReady = usernameStatus === 'available';
-  const hasChanges = bioChanged || usernameReady;
+  const hasChanges = bioChanged || nameChanged || usernameReady;
 
   // One combined Save — username (only when it's a real, checked-available
   // change) claimed first since it's the harder, uniqueness-constrained
@@ -157,8 +160,12 @@ export function SignalEditProfileSheet({
       requestClose();
       return;
     }
-    if (bioChanged && hasContactInfo(bio)) {
+    if ((bioChanged && hasContactInfo(bio)) || (nameChanged && hasContactInfo(name))) {
       toast({ title: 'Keep it inside CX', desc: CONTACT_WARNING, icon: 'shield' });
+      return;
+    }
+    if (nameChanged && (name.trim().length < 2 || name.trim().length > 60)) {
+      toast({ title: 'Please enter your name.', desc: '2–60 characters.', icon: 'info' });
       return;
     }
     setSaving(true);
@@ -174,12 +181,14 @@ export function SignalEditProfileSheet({
       setUsername(saved);
       setUsernameStatus('idle');
     }
-    if (bioChanged) {
-      const trimmed = bio.trim();
-      const { error } = await updateSignalProfile(session.user.id, { bio: trimmed });
+    if (bioChanged || nameChanged) {
+      const { error } = await updateSignalProfile(session.user.id, {
+        ...(bioChanged ? { bio: bio.trim() } : {}),
+        ...(nameChanged ? { fullName: name.trim() } : {}),
+      });
       if (error) {
         setSaving(false);
-        toast({ title: 'Could not save your bio', desc: error, icon: 'info' });
+        toast({ title: 'Could not save changes', desc: error, icon: 'info' });
         // The username half (if any) already committed for real above —
         // only bio failed, so keep the sheet open with the bio text
         // exactly as typed rather than losing it, but don't re-offer a
@@ -188,7 +197,11 @@ export function SignalEditProfileSheet({
       }
     }
     setSaving(false);
-    onSaved({ ...(savedUsername ? { username: savedUsername } : {}), ...(bioChanged ? { bio: bio.trim() } : {}) });
+    onSaved({
+      ...(savedUsername ? { username: savedUsername } : {}),
+      ...(bioChanged ? { bio: bio.trim() } : {}),
+      ...(nameChanged ? { fullName: name.trim() } : {}),
+    });
     await refreshProfile();
     toast({ title: 'Profile updated', icon: 'check' });
     // A quiet confirmation bump on the button itself — same "just X"
@@ -249,6 +262,21 @@ export function SignalEditProfileSheet({
               >
                 Change photo
               </Tap>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:items-start sm:gap-4">
+            <label htmlFor="signal-name" className={`${labelCls} sm:pt-3`}>Name</label>
+            <div className={`px-3.5 ${fieldBox}`}>
+              <input
+                id="signal-name"
+                value={name}
+                onChange={(e) => setName(e.target.value.slice(0, 60))}
+                placeholder="Your name"
+                autoComplete="name"
+                className="w-full bg-transparent py-3 text-body text-on-noir outline-none placeholder:text-on-noir-muted/60"
+              />
             </div>
           </div>
 

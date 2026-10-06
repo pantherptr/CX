@@ -1587,5 +1587,10 @@
 "Apply migration 0071 in Supabase to be able to mark these as handled.": "Aplică migrarea 0071 în Supabase pentru a le putea marca ca rezolvate.",
 "Edit profile": "Editează profilul",
 "Make changes to your profile here. Click save when you’re done.": "Modifică aici profilul tău. Apasă salvează când ai terminat.",
-"Photo": "Fotografie"
+"Photo": "Fotografie",
+"Name": "Nume",
+"Your name": "Numele tău",
+"Please enter your name.": "Introdu numele tău.",
+"2–60 characters.": "2–60 de caractere.",
+"Story": "Poveste"
 }

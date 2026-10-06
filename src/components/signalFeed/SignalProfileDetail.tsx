@@ -16,15 +16,9 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
-import { ProfileAvatar } from './SignalIdentityBadge';
-import { Tap, SharedAvatar } from '../motionKit';
-import { useCountUp } from '../motion';
+import { SignalProfileCard } from './SignalProfileCard';
+import { Tap } from '../motionKit';
 import { useAuth } from '../../lib/auth';
-import { Ugc } from '../../lib/i18n/ugc';
-
-const ROLE_LABEL: Record<'owner' | 'admin' | 'host' | 'client', string> = {
-  owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client',
-};
 
 // How far (px) into the scroll the header compresses — a subtle,
 // transform/opacity-only effect (never a sticky mini-header; the whole
@@ -191,7 +185,7 @@ export function SignalProfileDetail({
             <p className="mt-4 text-body text-muted">Couldn't load this profile. Check your connection and try again.</p>
           </div>
         ) : profile === null && demoProfile ? (
-          <DemoProfileHeader profile={demoProfile} compress={compress} />
+          <DemoProfileHeader profile={demoProfile} onOpenStory={() => setStoryViewerOpen(true)} hasActiveStory={Boolean(myStory)} />
         ) : profile === null ? (
           <div className="py-24 text-center">
             <SignalLogo size={48} className="mx-auto opacity-50" />
@@ -202,8 +196,6 @@ export function SignalProfileDetail({
             profile={profile}
             isMe={isMe}
             hasActiveStory={Boolean(myStory)}
-            compress={compress}
-            editProfileOpen={editProfileOpen}
             onOpenStory={() => setStoryViewerOpen(true)}
             onEditProfile={() => setEditProfileOpen(true)}
             onOpenFollowers={() => setFollowListMode('followers')}
@@ -365,47 +357,32 @@ function OfficialVoiceHeader({
   );
 }
 
-/** A demo profile's header — deliberately simpler than `ProfileHeader`
- *  below, not a copy of it: no Follow button (a demo profile has no
- *  real `profiles` row for `profile_follows` to reference — it genuinely
- *  cannot be followed, not just hidden-for-now), no follower/following
- *  counts (none are tracked; showing "0" would invite the same question
- *  a missing button already answers honestly), no rating/trips/cars
- *  (none of that exists for a fictional account either). Same avatar/
- *  name/badge/bio treatment as the real header, so the identity itself
- *  still reads exactly like any other Host/Verified Client at a glance. */
-function DemoProfileHeader({ profile, compress }: { profile: SignalDemoProfile; compress: number }) {
+/** A demo profile's card — deliberately simpler than the real one: no
+ *  Follow button (a demo profile has no real `profiles` row for
+ *  `profile_follows` to reference — it genuinely cannot be followed, not
+ *  just hidden-for-now), no follower/following counts (none are tracked;
+ *  showing "0" would invite the same question a missing button already
+ *  answers honestly), no rating/trips (none of that exists for a fictional
+ *  account either). */
+function DemoProfileHeader({
+  profile,
+  hasActiveStory,
+  onOpenStory,
+}: {
+  profile: SignalDemoProfile;
+  hasActiveStory: boolean;
+  onOpenStory: () => void;
+}) {
   return (
-    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
-      <ProfileAvatar src={profile.avatarUrl} size={80} ring />
-      <div>
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-feature font-semibold text-ink">{profile.fullName}</span>
-          <VerifiedBadge role={profile.role === 'host' ? 'host' : 'client'} size={15} />
-        </div>
-        <p className="mt-0.5 text-caption text-faint">@{profile.username}</p>
-        <p className="mt-0.5 text-caption text-muted">{profile.role === 'host' ? 'Host' : 'Verified Client'}</p>
-      </div>
-      {profile.bio && (
-        <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
-          <Ugc text={profile.bio} />
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** Followers/Following counts, animated up on first view — reuses the
- *  same useCountUp the Analytics sheet's stats already use. `compact()`
- *  still formats the final resting value (1.2k etc.); mid-count-up this
- *  shows the real integer, same tradeoff DashboardShell's own StatCard
- *  already accepts for its formatted values. */
-function CountLabel({ value }: { value: number }) {
-  const { ref, value: animated } = useCountUp<HTMLSpanElement>(value, { duration: 700 });
-  return (
-    <span ref={ref} className="font-semibold text-ink">
-      {animated === value ? compact(value) : animated}
-    </span>
+    <SignalProfileCard
+      name={profile.fullName}
+      role={profile.role === 'host' ? 'host' : 'client'}
+      username={profile.username}
+      bio={profile.bio}
+      avatarUrl={profile.avatarUrl}
+      hasActiveStory={hasActiveStory}
+      onOpenStory={onOpenStory}
+    />
   );
 }
 
@@ -413,8 +390,6 @@ function ProfileHeader({
   profile,
   isMe,
   hasActiveStory,
-  compress,
-  editProfileOpen,
   onOpenStory,
   onEditProfile,
   onOpenFollowers,
@@ -423,12 +398,6 @@ function ProfileHeader({
   profile: SignalProfile;
   isMe: boolean;
   hasActiveStory: boolean;
-  compress: number;
-  /** Whether the Edit Profile sheet is currently open — hands the shared
-   *  avatar id over to the sheet's own copy (see `SharedAvatar`'s own
-   *  contract) so opening it reads as "this exact photo moved down into
-   *  the sheet," not a fresh fade-in of a second one. */
-  editProfileOpen: boolean;
   onOpenStory: () => void;
   onEditProfile: () => void;
   onOpenFollowers: () => void;
@@ -442,82 +411,33 @@ function ProfileHeader({
   const canBeFollowed = !isMe && (profile.isHost || profile.isVerifiedClient);
   const showFollowCounts = profile.isHost || profile.isVerifiedClient;
   const [followersCount, setFollowersCount] = useState(profile.followersCount);
-  // A verified account (Host/Verified Client/Owner) gets a hairline
-  // accent ring on its own photo — deliberately not the Story gradient,
-  // which is reserved for "there's something new to watch," not a
-  // permanent verification cue. Never both at once: the Story ring
-  // below already implies verification just by who can publish one.
-  const isVerifiedIdentity = Boolean(role);
-
-  const avatar = (
-    <SharedAvatar id="profile-avatar" active={isMe && !editProfileOpen}>
-      <ProfileAvatar src={profile.avatarUrl} size={80} ring={isVerifiedIdentity} />
-    </SharedAvatar>
-  );
 
   return (
-    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
-      {/* Same ring-around-the-avatar treatment SignalStoriesBar already
-          uses — a solid accent ring for your own active Story, the
-          gradient "unviewed" ring for someone else's, reused as-is
-          rather than a new visual invented for this one spot. */}
-      {hasActiveStory ? (
-        <button
-          onClick={onOpenStory}
-          aria-label="View Story"
-          className={`pressable inline-grid place-items-center rounded-full p-[3px] ${
-            isMe ? 'bg-accent-700' : 'bg-gradient-to-tr from-accent-bright via-accent to-accent-700'
-          }`}
-        >
-          <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
-        </button>
-      ) : (
-        avatar
-      )}
-
-      <div>
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-feature font-semibold text-ink">{profile.fullName}</span>
-          {role && <VerifiedBadge role={role} size={15} />}
-        </div>
-        {profile.username && <p className="mt-0.5 text-caption text-faint">@{profile.username}</p>}
-        {role && <p className="mt-0.5 text-caption text-muted">{ROLE_LABEL[role]}</p>}
-      </div>
-
-      {profile.bio && (
-        <p style={{ opacity: 1 - compress }} className="max-w-xs whitespace-pre-wrap break-words text-detail leading-relaxed text-ink-soft">
-          <Ugc text={profile.bio} />
-        </p>
-      )}
-
-      {profile.isHost && (
-        <p className="-mt-1 text-caption text-faint">{compact(profile.rating)} ★ · {compact(profile.trips)} trips</p>
-      )}
-
-      {showFollowCounts && (
-        <div className="flex items-center gap-5 text-detail">
-          <button onClick={onOpenFollowers} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
-            <CountLabel value={followersCount} /> Followers
-          </button>
-          <button onClick={onOpenFollowing} className="pressable flex items-baseline gap-1 text-ink-soft transition-colors hover:text-ink">
-            <CountLabel value={profile.followingCount} /> Following
-          </button>
-        </div>
-      )}
-
-      {isMe ? (
-        <Tap onClick={onEditProfile} scale={0.96} className="rounded-full border border-line px-5 py-1.5 text-detail font-semibold text-ink transition-colors hover:border-line-strong">
-          Edit Profile
-        </Tap>
-      ) : (
-        canBeFollowed && (
+    <SignalProfileCard
+      name={profile.fullName}
+      role={role}
+      username={profile.username}
+      bio={profile.bio}
+      avatarUrl={profile.avatarUrl}
+      hostStats={profile.isHost ? { rating: profile.rating, trips: profile.trips } : null}
+      followers={showFollowCounts ? { count: followersCount, onOpen: onOpenFollowers } : undefined}
+      following={showFollowCounts ? { count: profile.followingCount, onOpen: onOpenFollowing } : undefined}
+      hasActiveStory={hasActiveStory}
+      onOpenStory={onOpenStory}
+      action={
+        isMe ? (
+          <Tap onClick={onEditProfile} scale={0.97} className="w-full rounded-xl bg-white py-3.5 text-body font-semibold text-noir transition-colors hover:bg-white/90">
+            Edit profile
+          </Tap>
+        ) : canBeFollowed ? (
           <FollowButton
             userId={profile.id}
             initialFollowing={profile.followedByMe}
+            variant="card"
             onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
           />
-        )
-      )}
-    </div>
+        ) : undefined
+      }
+    />
   );
 }

@@ -165,8 +165,9 @@ export async function uploadSignalAvatar(userId: string, file: File): Promise<{ 
  *  the main CX Rent profile, Messages, Bookings, everywhere — there is
  *  only ever one `profiles` row per user. RLS already lets a user update
  *  their own row (Settings.tsx relies on the same policy). */
-export async function updateSignalProfile(userId: string, updates: { bio?: string; avatarUrl?: string }): Promise<{ error: string | null }> {
+export async function updateSignalProfile(userId: string, updates: { bio?: string; avatarUrl?: string; fullName?: string }): Promise<{ error: string | null }> {
   const payload: Record<string, string> = {};
+  if (updates.fullName !== undefined) payload.full_name = updates.fullName;
   if (updates.bio !== undefined) payload.bio = updates.bio;
   if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
   const { error } = await supabase.from('profiles').update(payload).eq('id', userId);

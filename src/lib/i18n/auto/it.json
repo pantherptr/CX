@@ -1587,5 +1587,10 @@
 "Apply migration 0071 in Supabase to be able to mark these as handled.": "Applica la migrazione 0071 in Supabase per poterle segnare come gestite.",
 "Edit profile": "Modifica profilo",
 "Make changes to your profile here. Click save when you’re done.": "Modifica qui il tuo profilo. Premi salva quando hai finito.",
-"Photo": "Foto"
+"Photo": "Foto",
+"Name": "Nome",
+"Your name": "Il tuo nome",
+"Please enter your name.": "Inserisci il tuo nome.",
+"2–60 characters.": "Da 2 a 60 caratteri.",
+"Story": "Storia"
 }
