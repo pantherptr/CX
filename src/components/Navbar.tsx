@@ -54,6 +54,22 @@ function PublicNavbar() {
   // treatment those pages already use, so there's exactly one "scrolled"
   // look across the whole site, not two to keep in sync.
   const transparent = pathname === '/' && !scrolled;
+
+  // Mobile Safari/Chrome tint their own chrome (and the area behind the
+  // notch/status bar) from `<meta name="theme-color">`, which is static in
+  // index.html and doesn't know about this header's own scroll-driven
+  // transparent→solid transition — so on Home it always painted that strip
+  // the scrolled-in white, a hard-edged band sitting on top of the hero
+  // photo. Mirroring `transparent` here keeps system chrome in sync with
+  // what the in-page header is actually doing: tinted to the hero while
+  // floating over it, back to the page's own off-white the instant it
+  // goes solid — on any other page, or the moment you scroll.
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    meta.setAttribute('content', transparent ? '#eaf2ef' : '#fbfbf9');
+    return () => meta.setAttribute('content', '#fbfbf9');
+  }, [transparent]);
   // Home keeps the full key lockup on mobile too (not the compact `symbol`
   // every other page's mobile header uses) — its green-outlined key tail
   // is the whole point of the mark, and swapping to the plain square badge
