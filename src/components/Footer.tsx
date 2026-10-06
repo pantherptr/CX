@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
+import { useLocale } from '../lib/i18n';
 
 /**
  * Every link here resolves to a route that actually exists (see App.tsx).
@@ -66,6 +67,8 @@ const socials: { icon: IconName; label: string }[] = [
  *  column headers, hover states), it just doesn't need a black backdrop
  *  to do it. */
 export function Footer() {
+  const { t, lang, resetCountry } = useLocale();
+  const langLabel = { en: 'English (EU)', it: 'Italiano (IT)', ro: 'Română (RO)', es: 'Español (ES)' }[lang];
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-line bg-panel">
       {/* One quiet green wash, bookending the hero's own lighting so the
@@ -85,10 +88,10 @@ export function Footer() {
           <div className="max-w-xs">
             <Logo variant="wordmark" />
             <p className="mt-5 text-body leading-relaxed text-muted text-pretty">
-              The premium marketplace for car rental across Europe.
+              {t('The premium marketplace for car rental across Europe.')}
             </p>
             <p className="mt-4 font-display text-copy font-semibold text-ink">
-              Rent. Drive. Experience.
+              {t('Rent. Drive. Experience.')}
             </p>
             <div className="mt-6 flex gap-2.5">
               {socials.map((s) => (
@@ -105,8 +108,8 @@ export function Footer() {
           </div>
 
           {columns.map((col) => (
-            <nav key={col.title} aria-label={col.title}>
-              <h4 className="text-label font-semibold uppercase tracking-[0.16em] text-accent-700">{col.title}</h4>
+            <nav key={col.title} aria-label={t(col.title)}>
+              <h4 className="text-label font-semibold uppercase tracking-[0.16em] text-accent-700">{t(col.title)}</h4>
               <ul className="mt-4 flex flex-col gap-1">
                 {col.links.map((l) => (
                   <li key={l.label}>
@@ -116,7 +119,7 @@ export function Footer() {
                       to={l.to}
                       className="inline-block py-1.5 text-body text-muted transition-colors hover:text-ink"
                     >
-                      {l.label}
+                      {t(l.label)}
                     </Link>
                   </li>
                 ))}
@@ -127,12 +130,15 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col gap-5 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-detail text-faint">
-            © {new Date().getFullYear()} CX Mobility S.r.l. — Milan, Italy. All rights reserved.
+            {t('© {year} CX Mobility S.r.l. — Milan, Italy. All rights reserved.', { year: new Date().getFullYear() })}
           </p>
           <div className="flex items-center gap-5 text-detail text-muted">
             <span className="inline-flex items-center gap-1.5">
-              <Icon name="globe" size={15} /> English (EU)
+              <Icon name="globe" size={15} /> {langLabel}
             </span>
+            <button type="button" onClick={resetCountry} className="underline-offset-2 transition-colors hover:text-ink hover:underline">
+              {t('Change country')}
+            </button>
             <span className="inline-flex items-center gap-1.5">
               <Icon name="euro" size={15} /> EUR
             </span>

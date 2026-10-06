@@ -6,6 +6,7 @@ import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { haptics } from '../lib/native';
 import { useCompare } from '../lib/compareStore';
+import { useLocale } from '../lib/i18n';
 import { Icon } from './Icon';
 import { Img, useTilt } from './motion';
 import { CarQuickView } from './CarQuickView';
@@ -15,6 +16,7 @@ import { CarQuickView } from './CarQuickView';
  *  hover) once the car is actually in the comparison set, so the state
  *  itself is the persistent signal, not the hover. */
 function CompareToggle({ carId }: { carId: string }) {
+  const { t } = useLocale();
   const { isComparing, toggleCompare } = useCompare();
   const active = isComparing(carId);
   return (
@@ -23,7 +25,7 @@ function CompareToggle({ carId }: { carId: string }) {
         e.preventDefault();
         toggleCompare(carId);
       }}
-      aria-label={active ? 'Remove from compare' : 'Add to compare'}
+      aria-label={active ? t('Remove from compare') : t('Add to compare')}
       aria-pressed={active}
       className={`pressable absolute bottom-3 left-3 flex min-h-9 items-center gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium shadow-hair transition-all duration-300 ${
         active
@@ -31,12 +33,13 @@ function CompareToggle({ carId }: { carId: string }) {
           : 'glass translate-y-1 text-ink opacity-70 group-hover:translate-y-0 group-hover:opacity-100 can-hover:opacity-0'
       }`}
     >
-      <Icon name={active ? 'check' : 'compare'} size={13} /> {active ? 'Comparing' : 'Compare'}
+      <Icon name={active ? 'check' : 'compare'} size={13} /> {active ? t('Comparing') : t('Compare')}
     </button>
   );
 }
 
 function FavButton({ carId }: { carId: string }) {
+  const { t } = useLocale();
   const { isFavorite, toggleFavorite } = useApp();
   const fav = isFavorite(carId);
   const [popping, setPopping] = useState(false);
@@ -49,7 +52,7 @@ function FavButton({ carId }: { carId: string }) {
         setPopping(true);
       }}
       onAnimationEnd={() => setPopping(false)}
-      aria-label={fav ? 'Remove from saved' : 'Save car'}
+      aria-label={fav ? t('Remove from saved') : t('Save car')}
       aria-pressed={fav}
       // The visible disc stays a compact 36px; the invisible ring brings
       // the actual touch target to 44px, so a thumb doesn't miss and open
@@ -83,6 +86,7 @@ export function CarCard({
    *  fabricated status. Omitted entirely when no dates are in play. */
   available?: boolean;
 }) {
+  const { t } = useLocale();
   const { ref: tiltRef, style: tiltStyle } = useTilt<HTMLAnchorElement>({ max: 5, lift: 1.012 });
   const [quickView, setQuickView] = useState(false);
 
@@ -120,7 +124,7 @@ export function CarCard({
           </div>
           <p className="text-ink">
             <span className="font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-detail text-muted"> / day</span>
+            <span className="text-detail text-muted"> {t('/ day')}</span>
           </p>
         </div>
       </Link>
@@ -155,12 +159,12 @@ export function CarCard({
             <div className="absolute left-3 top-3 flex gap-2">
               {car.instantBook && (
                 <span className="badge badge-glass">
-                  <Icon name="instant" size={12} className="text-accent-bright" /> Instant book
+                  <Icon name="instant" size={12} className="text-accent-bright" /> {t('Instant book')}
                 </span>
               )}
               {car.rating >= 4.9 && (
                 <span className="badge badge-glass">
-                  <Icon name="star" size={12} className="text-star" /> Top rated
+                  <Icon name="star" size={12} className="text-star" /> {t('Top rated')}
                 </span>
               )}
               {available && (
@@ -185,7 +189,7 @@ export function CarCard({
               }}
               className="glass pressable absolute bottom-3 right-3 flex min-h-9 translate-y-1 items-center sm:left-1/2 sm:right-auto sm:-translate-x-1/2 gap-1.5 rounded-full px-3.5 py-2 text-caption font-medium text-ink opacity-70 shadow-hair transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 can-hover:opacity-0"
             >
-              <Icon name="grid" size={13} /> Quick view
+              <Icon name="grid" size={13} /> {t('Quick view')}
             </button>
           </div>
 
@@ -212,16 +216,16 @@ export function CarCard({
 
             <div className="mt-2.5 flex items-center gap-3 text-caption text-muted">
               <span className="flex items-center gap-1">
-                <Icon name="seat" size={13} /> {car.seats} seats
+                <Icon name="seat" size={13} /> {t('{n} seats', { n: car.seats })}
               </span>
               <span className="flex items-center gap-1">
-                <Icon name="gear" size={13} /> {car.transmission}
+                <Icon name="gear" size={13} /> {t(car.transmission)}
               </span>
             </div>
 
             <div className="mt-3.5 flex items-end justify-between border-t border-line pt-3.5">
               <p className="text-detail text-muted">
-                {car.trips} trips
+                {t('{n} trips', { n: car.trips })}
               </p>
               <p className="text-ink">
                 <span className="text-lead font-semibold">{eur(car.pricePerDay)}</span>

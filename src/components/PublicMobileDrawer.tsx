@@ -6,6 +6,7 @@ import { SignalLogo } from './SignalLogo';
 import { ConciergeLauncher } from './Concierge';
 import { useViewportBottomGap } from '../lib/useViewportGap';
 import { useScramble } from '../lib/useScramble';
+import { useLocale } from '../lib/i18n';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 
 /** Logged-out mobile menu. Split out of Navbar so it (and the animation
@@ -21,9 +22,10 @@ export default function PublicMobileDrawer({
 }) {
   const reduceMotion = !!useReducedMotion();
   const gap = useViewportBottomGap();
-  const findDriveScramble = useScramble('Find your next drive');
-  const signInScramble = useScramble('Sign in');
-  const createAccountScramble = useScramble('Create an account');
+  const { t } = useLocale();
+  const findDriveScramble = useScramble(t('Find your next drive'));
+  const signInScramble = useScramble(t('Sign in'));
+  const createAccountScramble = useScramble(t('Create an account'));
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +51,7 @@ export default function PublicMobileDrawer({
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label="Menu"
+              aria-label={t('Menu')}
               className="absolute inset-0 flex h-full w-full flex-col overflow-hidden bg-surface text-ink shadow-pop"
               initial={reduceMotion ? false : { x: '100%' }}
               animate={{ x: 0 }}
@@ -71,7 +73,7 @@ export default function PublicMobileDrawer({
                 <button
                   onClick={() => onClose()}
                   className="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
-                  aria-label="Close menu"
+                  aria-label={t('Close menu')}
                 >
                   <Icon name="x" size={20} />
                 </button>
@@ -100,7 +102,7 @@ export default function PublicMobileDrawer({
                           }`
                         }
                       >
-                        {l.label}
+                        {t(l.label)}
                         <Icon name="chevronRight" size={16} className={isListCar ? 'text-accent' : 'text-faint'} />
                       </NavLink>
                     );
@@ -121,7 +123,7 @@ export default function PublicMobileDrawer({
                       <SignalLogo size={22} />
                       <span>
                         <span className="block text-body font-semibold leading-tight text-ink">SIGNAL</span>
-                        <span className="block text-caption leading-tight text-muted">Community</span>
+                        <span className="block text-caption leading-tight text-muted">{t('Community')}</span>
                       </span>
                     </span>
                     <Icon name="chevronRight" size={16} className="text-accent" />

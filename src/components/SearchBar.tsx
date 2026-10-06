@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { useLocale } from '../lib/i18n';
 
 const cities = ['Milan', 'Rome', 'Florence', 'Paris', 'Barcelona', 'Munich', 'Amsterdam'];
 const types = ['Any type', 'Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -22,7 +23,8 @@ export function SearchBar({
   dark?: boolean;
 }) {
   const navigate = useNavigate();
-  const [location, setLocation] = useState('Milan');
+  const { t, country } = useLocale();
+  const [location, setLocation] = useState(country?.code === 'ES' ? 'Barcelona' : 'Milan');
   const [pickup, setPickup] = useState(today(3));
   const [ret, setRet] = useState(today(6));
   const [type, setType] = useState('Any type');
@@ -80,7 +82,7 @@ export function SearchBar({
       }`}
     >
       <div className={`flex flex-col divide-y md:flex-row md:divide-x md:divide-y-0 ${dark ? 'divide-white/10' : 'divide-line'}`}>
-        <Field label="Where" icon="pin">
+        <Field label={t('Where')} icon="pin">
           <select value={location} onChange={(e) => setLocation(e.target.value)} className={selectCls}>
             {cities.map((c) => (
               <option key={c} className="text-ink">
@@ -90,19 +92,19 @@ export function SearchBar({
           </select>
         </Field>
 
-        <Field label="Pick-up" icon="calendar">
+        <Field label={t('Pick-up')} icon="calendar">
           <input type="date" value={pickup} min={today()} onChange={(e) => setPickup(e.target.value)} className={dateCls} />
         </Field>
 
-        <Field label="Return" icon="calendar">
+        <Field label={t('Return')} icon="calendar">
           <input type="date" value={ret} min={pickup} onChange={(e) => setRet(e.target.value)} className={dateCls} />
         </Field>
 
-        <Field label="Car type" icon="car">
+        <Field label={t('Car type')} icon="car">
           <select value={type} onChange={(e) => setType(e.target.value)} className={selectCls}>
-            {types.map((t) => (
-              <option key={t} className="text-ink">
-                {t}
+            {types.map((ty) => (
+              <option key={ty} value={ty} className="text-ink">
+                {t(ty)}
               </option>
             ))}
           </select>
@@ -114,7 +116,7 @@ export function SearchBar({
             className={`btn btn-block h-full min-h-[52px] gap-2 md:w-auto md:px-6 ${dark ? 'btn-accent-bright' : 'btn-accent'}`}
           >
             <Icon name="search" size={18} strokeWidth={2} />
-            <span className="md:hidden lg:inline">Search Cars</span>
+            <span className="md:hidden lg:inline">{t('Search Cars')}</span>
           </button>
         </div>
       </div>

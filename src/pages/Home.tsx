@@ -13,9 +13,12 @@ import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { CarCategory } from '../data/types';
+import { CITY_COORDS } from '../data/cityCoords';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
+import { useLocale } from '../lib/i18n';
 
+const globePlaces = catalogue.cityNames.filter((c) => CITY_COORDS[c]).map((c) => ({ name: c, coords: CITY_COORDS[c] }));
 const CityGlobe = lazy(() => import('../components/home/CityGlobe').then((m) => ({ default: m.CityGlobe })));
 
 /** Original CX editorial hero art: created specifically with generous
@@ -131,6 +134,7 @@ const SPOTLIGHT_CATEGORIES: { key: CarCategory; label: string }[] = [
  *  cleanly on a card edge. Disabled at either end so it never "does
  *  nothing" silently. */
 function RailArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | null> }) {
+  const { t } = useLocale();
   const [edges, setEdges] = useState({ start: true, end: false });
 
   useEffect(() => {
@@ -162,7 +166,7 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | nul
           type="button"
           onClick={() => page(dir)}
           disabled={dir === -1 ? edges.start : edges.end}
-          aria-label={dir === -1 ? 'Previous cars' : 'More cars'}
+          aria-label={dir === -1 ? t('Previous cars') : t('More cars')}
           className="grid h-10 w-10 place-items-center rounded-full border border-line-strong bg-surface text-ink shadow-hair transition hover:border-ink/30 hover:shadow-soft active:scale-95 disabled:cursor-default disabled:opacity-35 disabled:shadow-none"
         >
           <Icon name={dir === -1 ? 'chevronLeft' : 'chevronRight'} size={18} />
@@ -173,13 +177,14 @@ function RailArrows({ railRef }: { railRef: React.RefObject<HTMLDivElement | nul
 }
 
 function StatCounter({ value, decimals, label }: { value: number; decimals?: number; label: string }) {
+  const { t } = useLocale();
   const { ref, value: animated } = useCountUp<HTMLParagraphElement>(value, { decimals, duration: 1200 });
   return (
     <div className="text-center sm:text-left">
       <p ref={ref} className="font-display text-3xl font-semibold tabular-nums text-ink sm:text-5xl">
         {decimals ? animated.toFixed(decimals) : animated}
       </p>
-      <p className="mt-1 text-caption text-muted sm:mt-1.5 sm:text-detail">{label}</p>
+      <p className="mt-1 text-caption text-muted sm:mt-1.5 sm:text-detail">{t(label)}</p>
     </div>
   );
 }
@@ -195,7 +200,8 @@ const HOME_FAQ_QUESTIONS = [
 const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).filter((f): f is (typeof faqs)[number] => !!f);
 
 export default function Home() {
-  const startScramble = useScramble('Start');
+  const { t } = useLocale();
+  const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
   const fleetRailRef = useRef<HTMLDivElement>(null);
   const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
@@ -287,7 +293,7 @@ export default function Home() {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.1em] text-ink-soft backdrop-blur">
-                    Top rated
+                    {t('Top rated')}
                   </span>
                 </div>
                 <div className="flex items-end justify-between gap-2 px-2 pb-1.5 pt-3">
@@ -300,7 +306,7 @@ export default function Home() {
                     </p>
                   </div>
                   <p className="shrink-0 text-right text-detail text-ink-soft">
-                    <span className="font-display text-lead font-semibold text-ink">{eur(fleetCars[0].pricePerDay)}</span>/day
+                    <span className="font-display text-lead font-semibold text-ink">{eur(fleetCars[0].pricePerDay)}</span>{t('/day')}
                   </p>
                 </div>
               </Link>
@@ -315,48 +321,48 @@ export default function Home() {
                   <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                   <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
                 </span>
-                Now live in {catalogue.cities} European cities
+                {t('Now live in {n} European cities', { n: catalogue.cities })}
               </span>
             </Reveal>
 
             <Reveal delay={80} className="reveal-blur">
               <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
                 <span className="text-ink">
-                  I own the keys
+                  {t('I own the keys')}
                 </span>
                 <br />
                 <span className="text-accent">
-                  to your heart.
+                  {t('to your heart.')}
                 </span>
               </h1>
             </Reveal>
 
             <Reveal delay={140} className="reveal-blur">
               <p className="mt-5 max-w-md text-lead leading-relaxed text-ink-soft text-pretty sm:text-feature">
-                Premium cars. Verified hosts. Ready for the road.
+                {t('Premium cars. Verified hosts. Ready for the road.')}
               </p>
             </Reveal>
 
             <Reveal delay={200} className="reveal-blur">
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link to="/browse" className="btn btn-accent-bright btn-lg">
-                  Explore Cars <Icon name="arrowRight" size={17} />
+                  {t('Explore Cars')} <Icon name="arrowRight" size={17} />
                 </Link>
                 <Link
                   to="/list-your-car"
                   className="btn btn-lg border border-ink/15 bg-white/55 text-ink shadow-hair backdrop-blur-md hover:border-ink/30 hover:bg-white/75"
                 >
-                  List Your Car
+                  {t('List Your Car')}
                 </Link>
               </div>
             </Reveal>
 
             <Reveal delay={260} className="reveal-blur">
               <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 shadow-hair backdrop-blur-md">
-                {trustRow.map((t) => (
-                  <span key={t.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
-                    <Icon name={t.icon} size={15} className="text-accent" />
-                    {t.label}
+                {trustRow.map((tr) => (
+                  <span key={tr.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
+                    <Icon name={tr.icon} size={15} className="text-accent" />
+                    {t(tr.label)}
                   </span>
                 ))}
               </div>
@@ -377,15 +383,15 @@ export default function Home() {
       <section className="section">
         <div className="container-page">
           <SectionHead
-            eyebrow="Explore the CX Fleet"
-            title="Choose the car that fits your journey."
+            eyebrow={t('Explore the CX Fleet')}
+            title={t('Choose the car that fits your journey.')}
             action={
               <div className="flex items-center gap-4">
                 <Link
                   to="/browse"
                   className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
                 >
-                  View all cars <Icon name="arrowRight" size={15} />
+                  {t('View all cars')} <Icon name="arrowRight" size={15} />
                 </Link>
                 <RailArrows railRef={fleetRailRef} />
               </div>
@@ -421,14 +427,14 @@ export default function Home() {
       {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
       <section className="container-page section-tight">
         <SectionHead
-          eyebrow="How it works"
-          title="From search to road in three steps."
+          eyebrow={t('How it works')}
+          title={t('From search to road in three steps.')}
           action={
             <Link
               to="/how-it-works"
               className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
             >
-              Learn more <Icon name="arrowRight" size={15} />
+              {t('Learn more')} <Icon name="arrowRight" size={15} />
             </Link>
           }
         />
@@ -450,9 +456,9 @@ export default function Home() {
                   <Icon name={st.icon} size={20} />
                 </span>
                 <div>
-                  <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">Step {i + 1}</p>
-                  <h3 className="mt-1 font-display text-lg font-semibold text-ink">{st.title}</h3>
-                  <p className="mt-1.5 text-detail leading-relaxed text-muted">{st.desc}</p>
+                  <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">{t('Step {n}', { n: i + 1 })}</p>
+                  <h3 className="mt-1 font-display text-lg font-semibold text-ink">{t(st.title)}</h3>
+                  <p className="mt-1.5 text-detail leading-relaxed text-muted">{t(st.desc)}</p>
                 </div>
               </li>
             </Reveal>
@@ -478,34 +484,33 @@ export default function Home() {
               )}
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
               <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
-                <Icon name="pin" size={14} className="text-accent" /> Delivered to your door
+                <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
               </span>
             </div>
             <div className="px-6 py-9 sm:px-10 sm:py-12">
-              <p className="eyebrow">CX Delivery</p>
+              <p className="eyebrow">{t('CX Delivery')}</p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                Your journey starts at your door.
+                {t('Your journey starts at your door.')}
               </h2>
               <p className="mt-3 text-copy leading-relaxed text-muted">
-                Land in a new city and your car is already waiting. No queues, no counters, no detours — just the
-                first mile of your trip, without the hassle.
+                {t('Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.')}
               </p>
               <ul className="mt-6 space-y-3">
                 {[
                   'Choose delivery at checkout, to the address you pick',
                   'Hosts set their own delivery fee — you see it before you pay',
                   'Prefer to collect? Pick up from your host instead',
-                ].map((t) => (
-                  <li key={t} className="flex items-start gap-3 text-body text-ink-soft">
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-3 text-body text-ink-soft">
                     <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700">
                       <Icon name="check" size={12} strokeWidth={3} />
                     </span>
-                    {t}
+                    {t(line)}
                   </li>
                 ))}
               </ul>
               <Link to="/browse" className="btn btn-accent-bright btn-lg mt-8">
-                Find a car near you <Icon name="arrowRight" size={17} />
+                {t('Find a car near you')} <Icon name="arrowRight" size={17} />
               </Link>
             </div>
           </div>
@@ -523,13 +528,13 @@ export default function Home() {
             <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
               <div className="max-w-xl">
                 <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
-                  <ConciergeMark size={44} live /> CX Concierge
+                  <ConciergeMark size={44} live /> {t('CX Concierge')}
                 </p>
                 <h2 className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                  Find your CX
+                  {t('Find your CX')}
                 </h2>
                 <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
-                  Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.
+                  {t("Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.")}
                 </p>
                 <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-7" {...startScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />
@@ -546,7 +551,7 @@ export default function Home() {
                   <div className="flex items-start gap-2.5">
                     <ConciergeMark size={28} />
                     <span className="rounded-2xl rounded-tl-md border border-line bg-white px-3.5 py-2 text-detail text-ink-soft shadow-hair">
-                      What kind of trip is this?
+                      {t('What kind of trip is this?')}
                     </span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -566,14 +571,14 @@ export default function Home() {
                           <Icon name={o.icon} size={14} />
                         </span>
                         <span className="min-w-0">
-                          <span className="block truncate text-caption font-semibold leading-tight">{o.label}</span>
-                          <span className="block truncate text-[0.625rem] leading-tight text-muted">{o.sub}</span>
+                          <span className="block truncate text-caption font-semibold leading-tight">{t(o.label)}</span>
+                          <span className="block truncate text-[0.625rem] leading-tight text-muted">{t(o.sub)}</span>
                         </span>
                       </span>
                     ))}
                   </div>
                   <div className="mt-3 flex justify-end">
-                    <span className="rounded-2xl rounded-tr-md bg-ink px-3.5 py-2 text-detail font-medium text-white">Road Trip</span>
+                    <span className="rounded-2xl rounded-tr-md bg-ink px-3.5 py-2 text-detail font-medium text-white">{t('Road Trip')}</span>
                   </div>
                 </div>
               </div>
@@ -606,12 +611,12 @@ export default function Home() {
             {/* -------- Benefits + trust -------- */}
             <div className="order-2 px-5 py-8 sm:px-10 sm:py-14 lg:order-none lg:px-12">
               <Reveal>
-                <p className="eyebrow text-accent-bright">Why CX</p>
+                <p className="eyebrow text-accent-bright">{t('Why CX')}</p>
                 <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-[2.75rem] sm:leading-[1.05]">
-                  Drive with confidence.
+                  {t('Drive with confidence.')}
                 </h2>
                 <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted sm:text-lead">
-                  Premium cars. Trusted hosts. A better way to rent.
+                  {t('Premium cars. Trusted hosts. A better way to rent.')}
                 </p>
               </Reveal>
 
@@ -623,8 +628,8 @@ export default function Home() {
                         <Icon name={b.icon} size={20} />
                       </span>
                       <div>
-                        <p className="text-label font-semibold uppercase tracking-[0.1em] text-on-noir">{b.title}</p>
-                        <p className="mt-1.5 text-caption leading-relaxed text-on-noir-muted sm:text-detail">{b.description}</p>
+                        <p className="text-label font-semibold uppercase tracking-[0.1em] text-on-noir">{t(b.title)}</p>
+                        <p className="mt-1.5 text-caption leading-relaxed text-on-noir-muted sm:text-detail">{t(b.description)}</p>
                       </div>
                     </div>
                   </Reveal>
@@ -634,9 +639,9 @@ export default function Home() {
               {/* Trust row */}
               <Reveal delay={460}>
                 <div className="mt-9 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-white/10 pt-6">
-                  {['Verified vehicles', 'Secure booking', 'Transparent pricing', 'Dedicated support'].map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1.5 text-caption font-medium text-on-noir-muted">
-                      <Icon name="check" size={14} className="text-accent-bright" /> {t}
+                  {['Verified vehicles', 'Secure booking', 'Transparent pricing', 'Dedicated support'].map((line) => (
+                    <span key={line} className="inline-flex items-center gap-1.5 text-caption font-medium text-on-noir-muted">
+                      <Icon name="check" size={14} className="text-accent-bright" /> {t(line)}
                     </span>
                   ))}
                 </div>
@@ -650,13 +655,13 @@ export default function Home() {
       {/* ================= EXPLORE BY CATEGORY ================= */}
       <section className="container-page section-tight">
         <SectionHead
-          title="Explore by category"
+          title={t('Explore by category')}
           action={
             <Link
               to="/browse"
               className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
             >
-              View all cars <Icon name="arrowRight" size={15} />
+              {t('View all cars')} <Icon name="arrowRight" size={15} />
             </Link>
           }
         />
@@ -677,7 +682,7 @@ export default function Home() {
                       src={unsplash(tile.image, 800)}
                       srcSet={unsplashSrcSet(tile.image, [400, 800, 1200])}
                       sizes={i === 0 ? '(min-width: 1024px) 600px, (min-width: 640px) 50vw, 62vw' : '(min-width: 1024px) 300px, (min-width: 640px) 50vw, 62vw'}
-                      alt={tile.label}
+                      alt={t(tile.label)}
                       loading="lazy"
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -686,11 +691,11 @@ export default function Home() {
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
                     <div className="min-w-0">
                       <p className={`font-display font-semibold text-white ${i === 0 ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lead sm:text-xl'}`}>
-                        {tile.label}
+                        {t(tile.label)}
                       </p>
                       <p className="mt-1 text-detail text-white/80">
-                        {tile.count} {tile.count === 1 ? 'car' : 'cars'}
-                        {tile.fromPrice !== undefined && <> · from {eur(tile.fromPrice)}/day</>}
+                        {tile.count} {t(tile.count === 1 ? 'car' : 'cars')}
+                        {tile.fromPrice !== undefined && <> · {t('from {price}/day', { price: eur(tile.fromPrice) })}</>}
                       </p>
                     </div>
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-[background-color,transform] duration-300 group-hover:translate-x-0.5 group-hover:bg-accent">
@@ -722,14 +727,13 @@ export default function Home() {
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
                   <SignalLogo size={26} />
                 </span>
-                <p className="eyebrow">CX SIGNAL</p>
+                <p className="eyebrow">{t('CX SIGNAL')}</p>
               </div>
               <h2 className="mt-4 max-w-2xl font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                Great drives deserve to be shared.
+                {t('Great drives deserve to be shared.')}
               </h2>
               <p className="mt-3 max-w-xl text-copy leading-relaxed text-muted">
-                SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip
-                worth remembering.
+                {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
                 {[
@@ -742,14 +746,14 @@ export default function Home() {
                       <Icon name={f.icon} size={19} />
                     </span>
                     <div className="sm:mt-4">
-                      <h3 className="font-display text-lg font-semibold text-ink">{f.title}</h3>
-                      <p className="mt-1 text-detail leading-relaxed text-muted sm:mt-1.5">{f.desc}</p>
+                      <h3 className="font-display text-lg font-semibold text-ink">{t(f.title)}</h3>
+                      <p className="mt-1 text-detail leading-relaxed text-muted sm:mt-1.5">{t(f.desc)}</p>
                     </div>
                   </div>
                 ))}
               </div>
               <Link to="/signal" className="btn btn-accent-bright btn-lg mt-8">
-                Open Signal <Icon name="arrowRight" size={17} />
+                {t('Open Signal')} <Icon name="arrowRight" size={17} />
               </Link>
             </div>
           </div>
@@ -761,20 +765,19 @@ export default function Home() {
         <Reveal>
           <div className="grid items-center gap-8 rounded-[1.75rem] border border-line bg-surface px-6 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <p className="eyebrow">For car owners</p>
+              <p className="eyebrow">{t('For car owners')}</p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                Your car is parked. It could be earning.
+                {t('Your car is parked. It could be earning.')}
               </h2>
               <p className="mt-3 max-w-lg text-copy leading-relaxed text-muted">
-                Share the car you love with drivers who will treat it right. Set your own price, decide how it is
-                handed over, and stay in control of every trip.
+                {t('Share the car you love with drivers who will treat it right. Set your own price, decide how it is handed over, and stay in control of every trip.')}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link to="/list-your-car" className="btn btn-primary btn-lg">
-                  List your car <Icon name="arrowRight" size={17} />
+                  {t('List your car')} <Icon name="arrowRight" size={17} />
                 </Link>
                 <Link to="/how-it-works" className="btn btn-secondary btn-lg">
-                  How hosting works
+                  {t('How hosting works')}
                 </Link>
               </div>
             </div>
@@ -788,7 +791,7 @@ export default function Home() {
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
                     <Icon name={r.icon} size={19} />
                   </span>
-                  <span className="text-body font-medium text-ink-soft">{r.t}</span>
+                  <span className="text-body font-medium text-ink-soft">{t(r.t)}</span>
                 </li>
               ))}
             </ul>
@@ -809,12 +812,12 @@ export default function Home() {
       <section className="container-page section">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <Reveal>
-            <p className="eyebrow">Where CX is live</p>
+            <p className="eyebrow">{t('Where CX is live')}</p>
             <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-              {catalogue.cities} European cities, one key.
+              {t('{n} European cities, one key.', { n: catalogue.cities })}
             </h2>
             <p className="mt-3 max-w-md text-copy leading-relaxed text-muted">
-              Pick up in {globeCity || 'your city'}, drive on to the next. Drag the globe to look around.
+              {t('Pick up in {city}, drive on to the next. Drag the globe to look around.', { city: globeCity || t('your city') })}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {catalogue.cityNames.map((c) => (
@@ -830,16 +833,16 @@ export default function Home() {
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link to="/browse" className="btn btn-accent-bright btn-lg">
-                Find a car <Icon name="arrowRight" size={17} />
+                {t('Find a car')} <Icon name="arrowRight" size={17} />
               </Link>
               <Link to="/help" className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600">
-                Help &amp; support <Icon name="arrowRight" size={15} />
+                {t('Help & support')} <Icon name="arrowRight" size={15} />
               </Link>
             </div>
           </Reveal>
           <Reveal delay={120}>
             <Suspense fallback={<div className="mx-auto aspect-square w-full max-w-[26rem] rounded-full skeleton" />}>
-              <CityGlobe cities={catalogue.cityNames} onCityChange={setGlobeCity} />
+              <CityGlobe places={globePlaces} onCityChange={setGlobeCity} />
             </Suspense>
           </Reveal>
         </div>
@@ -850,20 +853,20 @@ export default function Home() {
         <Reveal>
           <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
             <div>
-              <p className="eyebrow">Good to know</p>
+              <p className="eyebrow">{t('Good to know')}</p>
               <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                Questions, answered.
+                {t('Questions, answered.')}
               </h2>
               <p className="mt-4 max-w-sm text-copy leading-relaxed text-muted text-pretty">
-                The essentials about booking, protection and cancellations — before you book.
+                {t('The essentials about booking, protection and cancellations — before you book.')}
               </p>
               <Link to="/help" className="mt-5 inline-flex items-center gap-1.5 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600">
-                Visit the Help Center <Icon name="arrowRight" size={16} />
+                {t('Visit the Help Center')} <Icon name="arrowRight" size={16} />
               </Link>
             </div>
             <div className="rounded-3xl border border-line bg-white px-5 py-2 shadow-hair sm:px-8">
               {HOME_FAQS.map((f) => (
-                <FaqItem key={f.q} q={f.q} a={f.a} />
+                <FaqItem key={f.q} q={t(f.q)} a={t(f.a)} />
               ))}
             </div>
           </div>
@@ -875,13 +878,13 @@ export default function Home() {
         <Reveal>
           <div className="flex flex-col items-center gap-6 text-center">
             <h2 className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl">
-              Ready for your next journey?
+              {t('Ready for your next journey?')}
             </h2>
             <p className="max-w-md text-copy leading-relaxed text-muted">
-              Premium cars from verified hosts, in {catalogue.cities} European cities.
+              {t('Premium cars from verified hosts, in {n} European cities.', { n: catalogue.cities })}
             </p>
             <Link to="/browse" className="btn btn-accent-bright btn-lg">
-              Explore Cars <Icon name="arrowRight" size={17} />
+              {t('Explore Cars')} <Icon name="arrowRight" size={17} />
             </Link>
           </div>
         </Reveal>

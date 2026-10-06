@@ -1,0 +1,222 @@
+import type { Lang } from './countries';
+
+/**
+ * English → translation, one row per string: [en, it, ro, es].
+ * The English text is the key, so a string that has no row yet simply
+ * renders in English — pages can be translated one block at a time.
+ * `{name}` placeholders are filled by `t(en, { name })`.
+ */
+type Row = [en: string, it: string, ro: string, es: string];
+
+const ROWS: Row[] = [
+  // ---- Navbar, drawer, footer ----
+  ['Cars', 'Auto', 'Mașini', 'Coches'],
+  ['How It Works', 'Come funziona', 'Cum funcționează', 'Cómo funciona'],
+  ['List Your Car', 'Metti la tua auto', 'Listează-ți mașina', 'Publica tu coche'],
+  ['About', 'Chi siamo', 'Despre', 'Nosotros'],
+  ['Create account', 'Crea account', 'Creează cont', 'Crear cuenta'],
+  ['Create an account', 'Crea un account', 'Creează un cont', 'Crear una cuenta'],
+  ['Sign in', 'Accedi', 'Autentificare', 'Iniciar sesión'],
+  ['Log in', 'Accedi', 'Conectare', 'Entrar'],
+  ['Find your next drive', 'Trova il tuo prossimo viaggio', 'Găsește următoarea călătorie', 'Encuentra tu próximo viaje'],
+  ['Community', 'Community', 'Comunitate', 'Comunidad'],
+  ['Menu', 'Menu', 'Meniu', 'Menú'],
+  ['Open menu', 'Apri il menu', 'Deschide meniul', 'Abrir el menú'],
+  ['Close menu', 'Chiudi il menu', 'Închide meniul', 'Cerrar el menú'],
+  ['The premium marketplace for car rental across Europe.', 'Il marketplace premium per il noleggio auto in tutta Europa.', 'Piața premium pentru închirieri auto în toată Europa.', 'El marketplace premium de alquiler de coches en toda Europa.'],
+  ['Rent. Drive. Experience.', 'Noleggia. Guida. Vivi.', 'Închiriază. Condu. Trăiește.', 'Alquila. Conduce. Vive.'],
+  ['Rent', 'Noleggia', 'Închiriază', 'Alquila'],
+  ['Explore', 'Esplora', 'Explorează', 'Explora'],
+  ['Support', 'Assistenza', 'Asistență', 'Ayuda'],
+  ['Legal', 'Legale', 'Legal', 'Legal'],
+  ['Account', 'Account', 'Cont', 'Cuenta'],
+  ['Browse cars', 'Sfoglia le auto', 'Răsfoiește mașinile', 'Ver coches'],
+  ['Compare cars', 'Confronta le auto', 'Compară mașini', 'Comparar coches'],
+  ['CX Garage', 'CX Garage', 'CX Garage', 'CX Garage'],
+  ['How it works', 'Come funziona', 'Cum funcționează', 'Cómo funciona'],
+  ['About CX', 'Chi è CX', 'Despre CX', 'Sobre CX'],
+  ['List your car', 'Metti la tua auto', 'Listează-ți mașina', 'Publica tu coche'],
+  ['Help centre', 'Centro assistenza', 'Centru de ajutor', 'Centro de ayuda'],
+  ['Contact us', 'Contattaci', 'Contactează-ne', 'Contáctanos'],
+  ['Terms of Service', 'Termini di servizio', 'Termeni și condiții', 'Términos del servicio'],
+  ['Privacy Policy', 'Informativa sulla privacy', 'Politica de confidențialitate', 'Política de privacidad'],
+  ['Cancellation Policy', 'Politica di cancellazione', 'Politica de anulare', 'Política de cancelación'],
+  ['© {year} CX Mobility S.r.l. — Milan, Italy. All rights reserved.', '© {year} CX Mobility S.r.l. — Milano, Italia. Tutti i diritti riservati.', '© {year} CX Mobility S.r.l. — Milano, Italia. Toate drepturile rezervate.', '© {year} CX Mobility S.r.l. — Milán, Italia. Todos los derechos reservados.'],
+  ['Change country', 'Cambia paese', 'Schimbă țara', 'Cambiar de país'],
+
+  // ---- Search bar ----
+  ['Where', 'Dove', 'Unde', 'Dónde'],
+  ['Pick-up', 'Ritiro', 'Preluare', 'Recogida'],
+  ['Return', 'Riconsegna', 'Returnare', 'Devolución'],
+  ['Car type', 'Tipo di auto', 'Tip mașină', 'Tipo de coche'],
+  ['Search Cars', 'Cerca auto', 'Caută mașini', 'Buscar coches'],
+  ['Any type', 'Qualsiasi tipo', 'Orice tip', 'Cualquier tipo'],
+  ['Economy', 'Economy', 'Economice', 'Económicos'],
+  ['Luxury', 'Lusso', 'Lux', 'Lujo'],
+  ['SUV', 'SUV', 'SUV', 'SUV'],
+  ['Sport', 'Sportive', 'Sport', 'Deportivos'],
+  ['Sports', 'Sportive', 'Sport', 'Deportivos'],
+  ['Electric', 'Elettriche', 'Electrice', 'Eléctricos'],
+  ['Convertible', 'Cabrio', 'Decapotabile', 'Descapotables'],
+  ['Convertibles', 'Cabrio', 'Decapotabile', 'Descapotables'],
+  ['Family', 'Famiglia', 'Familie', 'Familiares'],
+
+  // ---- Home: hero ----
+  ['Now live in {n} European cities', 'Ora attivi in {n} città europee', 'Acum disponibili în {n} orașe europene', 'Ya disponibles en {n} ciudades europeas'],
+  ['I own the keys', 'Ho le chiavi', 'Eu am cheile', 'Tengo las llaves'],
+  ['to your heart.', 'del tuo cuore.', 'inimii tale.', 'de tu corazón.'],
+  ['Premium cars. Verified hosts. Ready for the road.', 'Auto premium. Host verificati. Pronte per la strada.', 'Mașini premium. Gazde verificate. Gata de drum.', 'Coches premium. Anfitriones verificados. Listos para la carretera.'],
+  ['Explore Cars', 'Esplora le auto', 'Explorează mașinile', 'Explorar coches'],
+  ['Verified hosts', 'Host verificati', 'Gazde verificate', 'Anfitriones verificados'],
+  ['Clear cancellation terms', 'Condizioni di cancellazione chiare', 'Condiții clare de anulare', 'Condiciones de cancelación claras'],
+  ['24/7 support', 'Assistenza 24/7', 'Asistență 24/7', 'Soporte 24/7'],
+  ['Top rated', 'Più votata', 'Cea mai bine cotată', 'La mejor valorada'],
+  ['/day', '/giorno', '/zi', '/día'],
+
+  // ---- Home: fleet, how it works ----
+  ['Explore the CX Fleet', 'Esplora la flotta CX', 'Explorează flota CX', 'Explora la flota CX'],
+  ['Choose the car that fits your journey.', 'Scegli l’auto giusta per il tuo viaggio.', 'Alege mașina potrivită pentru călătoria ta.', 'Elige el coche que encaja con tu viaje.'],
+  ['View all cars', 'Vedi tutte le auto', 'Vezi toate mașinile', 'Ver todos los coches'],
+  ['Previous cars', 'Auto precedenti', 'Mașinile anterioare', 'Coches anteriores'],
+  ['More cars', 'Altre auto', 'Mai multe mașini', 'Más coches'],
+  ['How it works', 'Come funziona', 'Cum funcționează', 'Cómo funciona'],
+  ['From search to road in three steps.', 'Dalla ricerca alla strada in tre passi.', 'De la căutare la drum în trei pași.', 'De la búsqueda a la carretera en tres pasos.'],
+  ['Learn more', 'Scopri di più', 'Află mai multe', 'Saber más'],
+  ['Step {n}', 'Passo {n}', 'Pasul {n}', 'Paso {n}'],
+  ['Find your car', 'Trova la tua auto', 'Găsește-ți mașina', 'Encuentra tu coche'],
+  ['Search by city, dates and car type, and read real reviews from past trips.', 'Cerca per città, date e tipo di auto e leggi le recensioni reali di chi ha già viaggiato.', 'Caută după oraș, date și tip de mașină și citește recenzii reale de la alte călătorii.', 'Busca por ciudad, fechas y tipo de coche, y lee reseñas reales de otros viajes.'],
+  ['Book in minutes', 'Prenota in pochi minuti', 'Rezervă în câteva minute', 'Reserva en minutos'],
+  ['Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.', 'Prenota subito le auto idonee e paga in sicurezza. Vedi la politica di cancellazione prima di pagare.', 'Rezervă instant mașinile eligibile și plătește în siguranță. Vezi politica de anulare înainte să plătești.', 'Reserva al instante en los coches elegibles y paga con seguridad. Consulta la política de cancelación antes de pagar.'],
+  ['Hit the road', 'Mettiti in strada', 'Pornește la drum', 'Ponte en marcha'],
+  ['Meet your host, enjoy the drive, then rate your experience.', 'Incontra il tuo host, goditi il viaggio e poi valuta la tua esperienza.', 'Întâlnește-ți gazda, bucură-te de drum, apoi evaluează experiența.', 'Conoce a tu anfitrión, disfruta del viaje y valora tu experiencia.'],
+
+  // ---- Home: delivery ----
+  ['Delivered to your door', 'Consegnata a casa tua', 'Livrată la ușa ta', 'Entregado en tu puerta'],
+  ['CX Delivery', 'CX Delivery', 'CX Delivery', 'CX Delivery'],
+  ['Your journey starts at your door.', 'Il tuo viaggio inizia da casa tua.', 'Călătoria ta începe de la ușa ta.', 'Tu viaje empieza en tu puerta.'],
+  ['Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.', 'Atterri in una nuova città e la tua auto ti sta già aspettando. Niente code, niente sportelli, niente deviazioni: solo il primo chilometro del viaggio, senza pensieri.', 'Aterizezi într-un oraș nou și mașina te așteaptă deja. Fără cozi, fără ghișee, fără ocolișuri — doar primul kilometru al călătoriei, fără bătăi de cap.', 'Aterrizas en una ciudad nueva y tu coche ya te está esperando. Sin colas, sin mostradores, sin desvíos: solo el primer kilómetro de tu viaje, sin complicaciones.'],
+  ['Choose delivery at checkout, to the address you pick', 'Scegli la consegna al checkout, all’indirizzo che preferisci', 'Alege livrarea la finalizarea comenzii, la adresa dorită', 'Elige la entrega al pagar, en la dirección que quieras'],
+  ['Hosts set their own delivery fee — you see it before you pay', 'Ogni host stabilisce il costo di consegna: lo vedi prima di pagare', 'Gazdele stabilesc propria taxă de livrare — o vezi înainte să plătești', 'Cada anfitrión fija su tarifa de entrega: la ves antes de pagar'],
+  ['Prefer to collect? Pick up from your host instead', 'Preferisci ritirarla? Ritirala direttamente dal tuo host', 'Preferi să o ridici? Ia mașina direct de la gazdă', '¿Prefieres recogerlo? Recógelo directamente de tu anfitrión'],
+  ['Find a car near you', 'Trova un’auto vicino a te', 'Găsește o mașină lângă tine', 'Encuentra un coche cerca de ti'],
+
+  // ---- Home: concierge ----
+  ['CX Concierge', 'CX Concierge', 'CX Concierge', 'CX Concierge'],
+  ['Find your CX', 'Trova la tua CX', 'Găsește-ți CX-ul', 'Encuentra tu CX'],
+  ['Tell us how you want to drive — we\'ll find the right car. You don\'t need to find the right car; CX finds it for you.', 'Dicci come vuoi guidare e troveremo l’auto giusta. Non devi cercarla tu: ci pensa CX.', 'Spune-ne cum vrei să conduci și găsim mașina potrivită. Nu trebuie să o cauți tu; CX o găsește pentru tine.', 'Cuéntanos cómo quieres conducir y encontraremos el coche adecuado. No tienes que buscarlo tú: CX lo encuentra por ti.'],
+  ['Start', 'Inizia', 'Începe', 'Empezar'],
+  ['What kind of trip is this?', 'Che tipo di viaggio è?', 'Ce fel de călătorie este?', '¿Qué tipo de viaje es?'],
+  ['Road Trip', 'Road trip', 'Road trip', 'Viaje por carretera'],
+  ['Long-haul comfort', 'Comfort sulle lunghe distanze', 'Confort pe distanțe lungi', 'Confort en largas distancias'],
+  ['The finest ride', 'Il massimo del lusso', 'Cea mai rafinată alegere', 'Lo mejor de lo mejor'],
+  ['City', 'Città', 'Oraș', 'Ciudad'],
+  ['Nimble around town', 'Agile in città', 'Agilă prin oraș', 'Ágil por la ciudad'],
+  ['Performance', 'Prestazioni', 'Performanță', 'Prestaciones'],
+  ['Pure thrill', 'Pura adrenalina', 'Adrenalină pură', 'Pura emoción'],
+
+  // ---- Home: why CX ----
+  ['Why CX', 'Perché CX', 'De ce CX', 'Por qué CX'],
+  ['Drive with confidence.', 'Guida con fiducia.', 'Condu cu încredere.', 'Conduce con confianza.'],
+  ['Premium cars. Trusted hosts. A better way to rent.', 'Auto premium. Host affidabili. Un modo migliore di noleggiare.', 'Mașini premium. Gazde de încredere. O modalitate mai bună de a închiria.', 'Coches premium. Anfitriones de confianza. Una mejor forma de alquilar.'],
+  ['Verified Cars', 'Auto verificate', 'Mașini verificate', 'Coches verificados'],
+  ['Every vehicle is carefully reviewed and verified before being listed.', 'Ogni veicolo viene controllato e verificato con cura prima di essere pubblicato.', 'Fiecare vehicul este verificat cu atenție înainte de a fi listat.', 'Cada vehículo se revisa y verifica cuidadosamente antes de publicarse.'],
+  ['Trusted Hosts', 'Host affidabili', 'Gazde de încredere', 'Anfitriones de confianza'],
+  ['Connect with verified hosts and transparent rental information.', 'Entra in contatto con host verificati e informazioni di noleggio trasparenti.', 'Intră în legătură cu gazde verificate și informații transparente despre închiriere.', 'Conecta con anfitriones verificados e información de alquiler transparente.'],
+  ['Flexible Rentals', 'Noleggi flessibili', 'Închirieri flexibile', 'Alquileres flexibles'],
+  ['Every car shows its cancellation policy before you pay — and hosts who cancel always refund you in full.', 'Ogni auto mostra la propria politica di cancellazione prima del pagamento, e se l’host annulla ricevi sempre il rimborso completo.', 'Fiecare mașină își arată politica de anulare înainte de plată, iar dacă gazda anulează primești mereu rambursare integrală.', 'Cada coche muestra su política de cancelación antes de pagar, y si el anfitrión cancela siempre te reembolsamos todo.'],
+  ['24/7 Support', 'Assistenza 24/7', 'Asistență 24/7', 'Soporte 24/7'],
+  ['We\'re here whenever you need us — before, during and after your journey.', 'Siamo qui quando ci serve: prima, durante e dopo il tuo viaggio.', 'Suntem aici oricând ai nevoie de noi — înainte, în timpul și după călătorie.', 'Estamos aquí cuando nos necesites: antes, durante y después de tu viaje.'],
+  ['Verified vehicles', 'Veicoli verificati', 'Vehicule verificate', 'Vehículos verificados'],
+  ['Secure booking', 'Prenotazione sicura', 'Rezervare sigură', 'Reserva segura'],
+  ['Transparent pricing', 'Prezzi trasparenti', 'Prețuri transparente', 'Precios transparentes'],
+  ['Dedicated support', 'Assistenza dedicata', 'Asistență dedicată', 'Soporte dedicado'],
+
+  // ---- Home: categories ----
+  ['Explore by category', 'Esplora per categoria', 'Explorează pe categorii', 'Explora por categoría'],
+  ['car', 'auto', 'mașină', 'coche'],
+  ['cars', 'auto', 'mașini', 'coches'],
+  ['from {price}/day', 'da {price}/giorno', 'de la {price}/zi', 'desde {price}/día'],
+
+  // ---- Home: SIGNAL ----
+  ['CX SIGNAL', 'CX SIGNAL', 'CX SIGNAL', 'CX SIGNAL'],
+  ['Great drives deserve to be shared.', 'I grandi viaggi meritano di essere condivisi.', 'Drumurile frumoase merită împărtășite.', 'Los grandes viajes merecen compartirse.'],
+  ['SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.', 'SIGNAL è dove vive il mondo CX: notizie ufficiali, nuove auto e le persone che rendono ogni viaggio da ricordare.', 'SIGNAL este locul unde trăiește lumea CX — știri oficiale, mașini noi și oamenii care fac fiecare călătorie memorabilă.', 'SIGNAL es donde vive el mundo CX: noticias oficiales, coches nuevos y las personas que hacen cada viaje inolvidable.'],
+  ['Straight from CX', 'Direttamente da CX', 'Direct de la CX', 'Directo de CX'],
+  ['News, announcements and new cars from the CX Rent team. One feed, no noise.', 'Notizie, annunci e nuove auto dal team CX Rent. Un solo feed, senza rumore.', 'Știri, anunțuri și mașini noi de la echipa CX Rent. Un singur flux, fără zgomot.', 'Noticias, anuncios y coches nuevos del equipo CX Rent. Un solo feed, sin ruido.'],
+  ['Real stories', 'Storie vere', 'Povești reale', 'Historias reales'],
+  ['Verified hosts and drivers share their cars and their drives — Stories, Respect and more.', 'Host e guidatori verificati condividono le loro auto e i loro viaggi: Storie, Respect e altro.', 'Gazde și șoferi verificați își împărtășesc mașinile și drumurile — Povești, Respect și altele.', 'Anfitriones y conductores verificados comparten sus coches y sus viajes: Historias, Respect y más.'],
+  ['A stage for your car', 'Un palcoscenico per la tua auto', 'O scenă pentru mașina ta', 'Un escenario para tu coche'],
+  ['Hosts can show their car to the community and put it in front of renters who care.', 'Gli host possono mostrare la propria auto alla community e metterla davanti a chi la apprezza.', 'Gazdele își pot arăta mașina comunității și o pot pune în fața celor care o apreciază.', 'Los anfitriones pueden mostrar su coche a la comunidad y ponerlo ante quienes lo valoran.'],
+  ['Open Signal', 'Apri Signal', 'Deschide Signal', 'Abrir Signal'],
+
+  // ---- Home: hosts ----
+  ['For car owners', 'Per i proprietari di auto', 'Pentru proprietari de mașini', 'Para propietarios de coches'],
+  ['Your car is parked. It could be earning.', 'La tua auto è ferma. Potrebbe farti guadagnare.', 'Mașina ta stă parcată. Ar putea câștiga.', 'Tu coche está aparcado. Podría estar ganando dinero.'],
+  ['Share the car you love with drivers who will treat it right. Set your own price, decide how it is handed over, and stay in control of every trip.', 'Condividi l’auto che ami con guidatori che la tratteranno bene. Scegli il tuo prezzo, decidi come consegnarla e mantieni il controllo di ogni viaggio.', 'Împărtășește mașina pe care o iubești cu șoferi care o vor trata cum se cuvine. Stabilește-ți prețul, decide cum este predată și păstrează controlul asupra fiecărei călătorii.', 'Comparte el coche que amas con conductores que lo cuidarán. Fija tu precio, decide cómo se entrega y mantén el control de cada viaje.'],
+  ['How hosting works', 'Come funziona l’hosting', 'Cum funcționează găzduirea', 'Cómo funciona ser anfitrión'],
+  ['You set the daily rate — and receive it in full', 'Decidi tu la tariffa giornaliera e la ricevi per intero', 'Tu stabilești tariful zilnic — și îl primești integral', 'Tú fijas la tarifa diaria y la recibes completa'],
+  ['Offer pickup, delivery, or both', 'Offri ritiro, consegna o entrambi', 'Oferă preluare, livrare sau ambele', 'Ofrece recogida, entrega o ambas'],
+  ['Verified renters, protection on every trip', 'Noleggiatori verificati, protezione su ogni viaggio', 'Chiriași verificați, protecție la fiecare călătorie', 'Conductores verificados, protección en cada viaje'],
+
+  // ---- Home: stats + globe ----
+  ['European cities', 'Città europee', 'Orașe europene', 'Ciudades europeas'],
+  ['Cars listed', 'Auto disponibili', 'Mașini listate', 'Coches disponibles'],
+  ['Average rating', 'Valutazione media', 'Evaluare medie', 'Valoración media'],
+  ['Where CX is live', 'Dove è attivo CX', 'Unde este activ CX', 'Dónde está activo CX'],
+  ['{n} European cities, one key.', '{n} città europee, una sola chiave.', '{n} orașe europene, o singură cheie.', '{n} ciudades europeas, una sola llave.'],
+  ['Pick up in {city}, drive on to the next. Drag the globe to look around.', 'Ritira a {city}, prosegui verso la prossima. Trascina il globo per guardarti intorno.', 'Ridică din {city}, continuă spre următorul. Trage globul pentru a privi în jur.', 'Recoge en {city} y sigue hasta la siguiente. Arrastra el globo para mirar alrededor.'],
+  ['your city', 'la tua città', 'orașul tău', 'tu ciudad'],
+  ['Find a car', 'Trova un’auto', 'Găsește o mașină', 'Encuentra un coche'],
+  ['Help & support', 'Aiuto e assistenza', 'Ajutor și asistență', 'Ayuda y soporte'],
+
+  // ---- Home: FAQ ----
+  ['Good to know', 'Da sapere', 'Bine de știut', 'Bueno saber'],
+  ['Questions, answered.', 'Domande, risposte.', 'Întrebări, răspunsuri.', 'Preguntas, respondidas.'],
+  ['The essentials about booking, protection and cancellations — before you book.', 'L’essenziale su prenotazione, protezione e cancellazioni, prima di prenotare.', 'Esențialul despre rezervare, protecție și anulări — înainte să rezervi.', 'Lo esencial sobre reservas, protección y cancelaciones, antes de reservar.'],
+  ['Visit the Help Center', 'Vai al Centro assistenza', 'Vizitează Centrul de ajutor', 'Visita el Centro de ayuda'],
+  ['How does booking a car work?', 'Come funziona la prenotazione di un’auto?', 'Cum funcționează rezervarea unei mașini?', '¿Cómo funciona la reserva de un coche?'],
+  ['Search by city and dates, choose a car, and either reserve instantly or send a request to the host. You\'ll see the full price — including service fee and protection — before you confirm anything.', 'Cerca per città e date, scegli un’auto e prenota subito oppure invia una richiesta all’host. Vedrai il prezzo completo, comprese commissioni di servizio e protezione, prima di confermare.', 'Caută după oraș și date, alege o mașină și rezervă instant sau trimite o cerere gazdei. Vei vedea prețul complet — inclusiv taxa de serviciu și protecția — înainte de a confirma.', 'Busca por ciudad y fechas, elige un coche y reserva al instante o envía una solicitud al anfitrión. Verás el precio completo, con tarifa de servicio y protección, antes de confirmar.'],
+  ['Is my trip insured?', 'Il mio viaggio è assicurato?', 'Este călătoria mea asigurată?', '¿Mi viaje está asegurado?'],
+  ['Every booking includes a protection plan, priced as a percentage of your rental cost and shown as a separate line item at checkout — never hidden in the daily rate.', 'Ogni prenotazione include un piano di protezione, calcolato come percentuale del costo del noleggio e mostrato come voce separata al checkout, mai nascosto nella tariffa giornaliera.', 'Fiecare rezervare include un plan de protecție, calculat ca procent din costul închirierii și afișat separat la finalizare, niciodată ascuns în tariful zilnic.', 'Cada reserva incluye un plan de protección, calculado como porcentaje del coste del alquiler y mostrado como línea aparte al pagar, nunca oculto en la tarifa diaria.'],
+  ['What are the cancellation policies?', 'Quali sono le politiche di cancellazione?', 'Care sunt politicile de anulare?', '¿Cuáles son las políticas de cancelación?'],
+  ['Every host chooses one policy for their car, and it is shown on the car page and at checkout before you pay. Flexible: full refund until 24 hours before pick-up. Moderate: full refund until 5 days before, 50% until 24 hours before. Strict: 50% refund until 7 days before pick-up. If a host cancels, you always get a full refund.', 'Ogni host sceglie una politica per la propria auto, mostrata nella pagina dell’auto e al checkout prima del pagamento. Flessibile: rimborso totale fino a 24 ore prima del ritiro. Moderata: rimborso totale fino a 5 giorni prima, 50% fino a 24 ore prima. Rigida: rimborso del 50% fino a 7 giorni prima del ritiro. Se l’host annulla, ricevi sempre il rimborso completo.', 'Fiecare gazdă alege o politică pentru mașina sa, afișată pe pagina mașinii și la finalizare, înainte de plată. Flexibilă: rambursare integrală până cu 24 de ore înainte de preluare. Moderată: rambursare integrală până cu 5 zile înainte, 50% până cu 24 de ore înainte. Strictă: rambursare de 50% până cu 7 zile înainte de preluare. Dacă gazda anulează, primești mereu rambursare integrală.', 'Cada anfitrión elige una política para su coche, que se muestra en la página del coche y al pagar. Flexible: reembolso total hasta 24 horas antes de la recogida. Moderada: reembolso total hasta 5 días antes, 50% hasta 24 horas antes. Estricta: 50% de reembolso hasta 7 días antes de la recogida. Si el anfitrión cancela, siempre recibes el reembolso completo.'],
+  ['Can I change my trip dates after booking?', 'Posso cambiare le date dopo aver prenotato?', 'Pot schimba datele după rezervare?', '¿Puedo cambiar las fechas después de reservar?'],
+  ['Yes — from Trip Details, use "Modify dates" any time before your trip starts. We re-check the car\'s availability for your new dates and recalculate the price before anything is confirmed.', 'Sì: da Dettagli viaggio usa “Modifica date” in qualsiasi momento prima dell’inizio. Ricontrolliamo la disponibilità dell’auto per le nuove date e ricalcoliamo il prezzo prima di confermare.', 'Da — din Detaliile călătoriei folosește „Modifică datele” oricând înainte de începerea călătoriei. Verificăm din nou disponibilitatea mașinii pentru noile date și recalculăm prețul înainte de confirmare.', 'Sí: desde Detalles del viaje usa “Modificar fechas” en cualquier momento antes de que empiece. Volvemos a comprobar la disponibilidad del coche y recalculamos el precio antes de confirmar.'],
+  ['How do I coordinate pickup with my host?', 'Come mi accordo con l’host per il ritiro?', 'Cum mă coordonez cu gazda pentru preluare?', '¿Cómo coordino la recogida con mi anfitrión?'],
+  ['Your Trip Details page shows the pickup location with a direct link to Maps, plus your host\'s typical response time. Message them directly from there to confirm exact timing.', 'La pagina Dettagli viaggio mostra il luogo di ritiro con un link diretto a Maps e il tempo di risposta abituale dell’host. Scrivigli da lì per confermare l’orario esatto.', 'Pagina Detaliile călătoriei arată locul de preluare, cu link direct către Maps, și timpul obișnuit de răspuns al gazdei. Scrie-i de acolo pentru a confirma ora exactă.', 'La página Detalles del viaje muestra el lugar de recogida con un enlace directo a Maps y el tiempo de respuesta habitual del anfitrión. Escríbele desde ahí para confirmar la hora exacta.'],
+  ['How do I become a host?', 'Come divento host?', 'Cum devin gazdă?', '¿Cómo me hago anfitrión?'],
+  ['Tap "List your car" from the menu, walk through the guided listing flow (vehicle details, photos, pricing, availability) and publish. Your car becomes visible to renters immediately.', 'Tocca “Metti la tua auto” dal menu, completa la procedura guidata (dati del veicolo, foto, prezzo, disponibilità) e pubblica. La tua auto sarà subito visibile ai noleggiatori.', 'Apasă „Listează-ți mașina” din meniu, parcurge procesul ghidat (detalii vehicul, fotografii, preț, disponibilitate) și publică. Mașina ta devine imediat vizibilă pentru chiriași.', 'Pulsa “Publica tu coche” en el menú, sigue el proceso guiado (datos del vehículo, fotos, precio, disponibilidad) y publica. Tu coche será visible de inmediato para los conductores.'],
+
+  // ---- Home: final CTA ----
+  ['Ready for your next journey?', 'Pronto per il tuo prossimo viaggio?', 'Gata pentru următoarea călătorie?', '¿Listo para tu próximo viaje?'],
+  ['Premium cars from verified hosts, in {n} European cities.', 'Auto premium da host verificati, in {n} città europee.', 'Mașini premium de la gazde verificate, în {n} orașe europene.', 'Coches premium de anfitriones verificados, en {n} ciudades europeas.'],
+
+  // ---- Car card ----
+  ['Remove from compare', 'Rimuovi dal confronto', 'Elimină din comparație', 'Quitar de la comparación'],
+  ['Add to compare', 'Aggiungi al confronto', 'Adaugă la comparație', 'Añadir a la comparación'],
+  ['Comparing', 'In confronto', 'În comparație', 'Comparando'],
+  ['Compare', 'Confronta', 'Compară', 'Comparar'],
+  ['Remove from saved', 'Rimuovi dai salvati', 'Elimină din salvate', 'Quitar de guardados'],
+  ['Save car', 'Salva l’auto', 'Salvează mașina', 'Guardar coche'],
+  ['Instant book', 'Prenotazione immediata', 'Rezervare instant', 'Reserva inmediata'],
+  ['Quick view', 'Anteprima', 'Previzualizare', 'Vista rápida'],
+  ['{n} seats', '{n} posti', '{n} locuri', '{n} plazas'],
+  ['{n} trips', '{n} viaggi', '{n} călătorii', '{n} viajes'],
+  ['/ day', '/ giorno', '/ zi', '/ día'],
+  ['Automatic', 'Automatico', 'Automată', 'Automático'],
+  ['Manual', 'Manuale', 'Manuală', 'Manual'],
+
+  // ---- Country gateway ----
+  ['Choose your country', 'Scegli il tuo paese', 'Alege țara ta', 'Elige tu país'],
+  ['We\'ll show CX in your language.', 'Mostreremo CX nella tua lingua.', 'Vom afișa CX în limba ta.', 'Mostraremos CX en tu idioma.'],
+  ['Coming soon', 'Prossimamente', 'În curând', 'Próximamente'],
+  ['You can change country any time from the footer.', 'Puoi cambiare paese in qualsiasi momento dal footer.', 'Poți schimba țara oricând din subsol.', 'Puedes cambiar de país en cualquier momento desde el pie de página.'],
+  ['Continue in {country}', 'Continua in {country}', 'Continuă în {country}', 'Continuar en {country}'],
+];
+
+export const DICT: Record<Exclude<Lang, 'en'>, Record<string, string>> = { it: {}, ro: {}, es: {} };
+for (const [en, it, ro, es] of ROWS) {
+  DICT.it[en] = it;
+  DICT.ro[en] = ro;
+  DICT.es[en] = es;
+}

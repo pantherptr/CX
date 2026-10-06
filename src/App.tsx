@@ -18,6 +18,8 @@ import { MaintenanceGate } from './components/MaintenanceGate';
 // Eager — the three routes a first-time visitor actually lands on. Keeping
 // these in the main chunk avoids a loading flash on the critical path.
 import Home from './pages/Home';
+import CountryGateway from './pages/CountryGateway';
+import { useLocale } from './lib/i18n';
 import Browse from './pages/Browse';
 import CarDetails from './pages/CarDetails';
 import NotFound from './pages/NotFound';
@@ -143,6 +145,13 @@ function ListCarEntry() {
   return session ? <ListCar /> : <HostLanding />;
 }
 
+/** `/` is the country gateway until a visitor has picked a country; after
+ *  that it is the Home page, in that country's language. */
+function HomeEntry() {
+  const { country } = useLocale();
+  return country ? <Home /> : <CountryGateway />;
+}
+
 function MarketingLayout() {
   // The full marketing footer (product/company/support/legal columns,
   // socials, newsletter tone) belongs to the public site — an
@@ -150,6 +159,10 @@ function MarketingLayout() {
   // help, booking, list-a-car) should feel like the same private app as
   // the dashboard, which never renders this footer at all.
   const { session } = useAuth();
+  const { country } = useLocale();
+  const { pathname } = useLocation();
+  // The gateway is a page of its own — no navbar, no footer around it.
+  if (pathname === '/' && !country) return <Outlet />;
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />
@@ -255,7 +268,7 @@ export default function App() {
               authenticated session bounces straight to the dashboard,
               whether arriving by direct URL, link, or browser back/forward. */}
           <Route element={<PublicOnlyRoute />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomeEntry />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
           </Route>

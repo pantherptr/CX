@@ -6,6 +6,7 @@ import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
+import { useLocale } from '../lib/i18n';
 
 const PublicMobileDrawer = lazy(() => import('./PublicMobileDrawer'));
 const AppMobileDrawer = lazy(() => import('./AppMobileDrawer').then((m) => ({ default: m.AppMobileDrawer })));
@@ -24,8 +25,9 @@ function PublicNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const [menuEverOpened, setMenuEverOpened] = useState(false);
-  const createAccountScramble = useScramble('Create account');
-  const signInScramble = useScramble('Sign in');
+  const { t } = useLocale();
+  const createAccountScramble = useScramble(t('Create account'));
+  const signInScramble = useScramble(t('Sign in'));
   // PublicNavbar only ever renders for a logged-out session (see `Navbar`
   // below), but the auth-button slot still branches on it directly rather
   // than assuming — correct if that routing rule ever changes, free
@@ -129,7 +131,7 @@ function PublicNavbar() {
                   >
                     {({ isActive }) => (
                       <>
-                        {l.label}
+                        {t(l.label)}
                         <span
                           className={`absolute inset-x-3.5 -bottom-0.5 h-px rounded-full bg-accent-bright transition-all duration-300 ${
                             isActive
@@ -203,7 +205,7 @@ function PublicNavbar() {
                     transparent ? 'text-ink-soft hover:text-ink' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
-                  Log in
+                  {t('Log in')}
                 </Link>
                 <Link
                   to="/login"

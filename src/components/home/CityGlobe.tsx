@@ -4,16 +4,12 @@ import { feature } from 'topojson-client';
 import type { Topology, GeometryCollection } from 'topojson-specification';
 import world from 'world-atlas/countries-110m.json';
 
-/** [lng, lat] — only cities CX actually lists cars in (see catalogue.cityNames). */
-const CITY_COORDS: Record<string, [number, number]> = {
-  Milan: [9.19, 45.46],
-  Rome: [12.5, 41.9],
-  Florence: [11.25, 43.77],
-  Paris: [2.35, 48.86],
-  Amsterdam: [4.9, 52.37],
-  Munich: [11.58, 48.14],
-  Barcelona: [2.17, 41.39],
-};
+export interface GlobePlace {
+  name: string;
+  coords: [number, number];
+  /** Locked places are drawn as hollow, muted dots. */
+  locked?: boolean;
+}
 
 const LAND = feature(
   world as unknown as Topology,
@@ -29,17 +25,29 @@ const TRAVEL_MS = 1400;
  * yourself; it pauses off-screen and respects reduced motion.
  */
 export function CityGlobe({
-  cities,
+  places,
   onCityChange,
+  focus,
+  tour = true,
 }: {
-  cities: string[];
+  places: GlobePlace[];
   onCityChange?: (city: string) => void;
+  /** Name of a place to rotate to (e.g. while hovering a list). Overrides the tour. */
+  focus?: string | null;
+  /** Drift from place to place on its own while nothing is focused. */
+  tour?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [visible, setVisible] = useState(false);
-  const known = cities.filter((c) => CITY_COORDS[c]);
+  const known = places.map((p) => p.name);
   const knownKey = known.join('|');
+  const placesRef = useRef(places);
+  placesRef.current = places;
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const tourRef = useRef(tour);
+  tourRef.current = tour;
   const onChangeRef = useRef(onCityChange);
   onChangeRef.current = onCityChange;
 
@@ -81,7 +89,8 @@ export function CityGlobe({
     ro.observe(wrap);
 
     // rotation is [-lng, -lat] of the point facing the viewer
-    const target = (c: string): [number, number] => [-CITY_COORDS[c][0], -CITY_COORDS[c][1] + 8];
+    const coordsOf = (n: string) => placesRef.current.find((p) => p.name === n)!.coords;
+    const target = (c: string): [number, number] => [-coordsOf(c)[0], -coordsOf(c)[1] + 8];
     let from = target(known[0]);
     let to = from;
     let index = 0;
@@ -94,9 +103,25 @@ export function CityGlobe({
     let raf = 0;
     onChangeRef.current?.(known[0]);
 
+    let seenFocus: string | null | undefined;
     const draw = (now: number) => {
-      if (!dragging && !reduce && known.length > 1) {
-        if (phase === 'hold' && now - phaseStart > HOLD_MS) {
+      const wanted = focusRef.current;
+      if (wanted !== seenFocus) {
+        seenFocus = wanted;
+        const i = wanted ? known.indexOf(wanted) : -1;
+        if (i >= 0 && !dragging) {
+          index = i;
+          from = rot;
+          to = target(known[i]);
+          while (to[0] - from[0] > 180) to = [to[0] - 360, to[1]];
+          while (to[0] - from[0] < -180) to = [to[0] + 360, to[1]];
+          phase = 'travel';
+          phaseStart = now;
+        }
+      }
+      const touring = tourRef.current && !focusRef.current;
+      if (!dragging && !reduce && (touring || phase === 'travel')) {
+        if (phase === 'hold' && now - phaseStart > HOLD_MS && known.length > 1) {
           index = (index + 1) % known.length;
           from = rot;
           to = target(known[index]);
@@ -117,7 +142,7 @@ export function CityGlobe({
           }
         }
       } else if (!dragging && reduce) {
-        rot = target(known[0]);
+        rot = target(known[index]);
       }
 
       projection.rotate([rot[0], rot[1]]);
@@ -144,8 +169,9 @@ export function CityGlobe({
 
       const current = known[index];
       const centre: [number, number] = [-rot[0], -rot[1]];
-      for (const city of known) {
-        const coords = CITY_COORDS[city];
+      for (const place of placesRef.current) {
+        const city = place.name;
+        const coords = place.coords;
         // hide dots on the far side of the sphere
         const d = Math.acos(
           Math.sin((centre[1] * Math.PI) / 180) * Math.sin((coords[1] * Math.PI) / 180) +
@@ -157,6 +183,16 @@ export function CityGlobe({
         if (!p) continue;
         const active = city === current;
         ctx.globalAlpha = 1;
+        if (place.locked) {
+          ctx.globalAlpha = 0.45;
+          ctx.strokeStyle = ink;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(p[0], p[1], 2.8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          continue;
+        }
         ctx.fillStyle = accent;
         ctx.beginPath();
         ctx.arc(p[0], p[1], active ? 4.5 : 3, 0, Math.PI * 2);
@@ -218,7 +254,7 @@ export function CityGlobe({
       <canvas
         ref={canvasRef}
         role="img"
-        aria-label={`Globe showing CX cities: ${known.join(', ')}`}
+        aria-label={`Globe showing: ${known.join(', ')}`}
         className="block w-full cursor-grab touch-pan-y active:cursor-grabbing"
       />
     </div>
