@@ -5,6 +5,7 @@ import { ProfileAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { uploadSignalAvatar, updateSignalProfile, checkUsernameAvailable, setSignalUsername } from '../../lib/data/signalProfile';
+import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 
 const BIO_MAX = 200;
 // Mirrors validate_signal_username's own rules exactly (0059's own
@@ -179,6 +180,10 @@ export function SignalEditProfileSheet({
     if (!session || saving) return;
     if (!hasChanges) {
       requestClose();
+      return;
+    }
+    if (bioChanged && hasContactInfo(bio)) {
+      toast({ title: 'Keep it inside CX', desc: CONTACT_WARNING, icon: 'shield' });
       return;
     }
     setSaving(true);

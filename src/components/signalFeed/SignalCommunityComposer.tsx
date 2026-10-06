@@ -15,6 +15,7 @@ import { fetchHostCars } from '../../lib/data/cars';
 import type { Car } from '../../data/types';
 import { ProfileAvatar } from './SignalIdentityBadge';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, SPRING_SNAPPY, Tap } from '../motionKit';
+import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
 const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this scrolls inside instead
@@ -246,6 +247,10 @@ export function SignalCommunityComposer({
 
   const handleSubmit = async () => {
     if (!canPublish) return;
+    if (hasContactInfo(body)) {
+      setError(CONTACT_WARNING);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {

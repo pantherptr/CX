@@ -67,7 +67,7 @@
 "Saved": "Salvata",
 "Skip": "Salta",
 "Step {0} of {1}": "Passo {0} di {1}",
-"Support is not available right now": "L’assistenza non è disponibile al momento",
+"Support is not available right now": "Il supporto non è disponibile al momento",
 "Talk to a person": "Parla con una persona",
 "Tell me about your trip and I'll recommend the best match from the CX fleet.": "Raccontami il tuo viaggio e ti consiglierò l’auto più adatta della flotta CX.",
 "View Details": "Vedi dettagli",
@@ -1560,5 +1560,7 @@
 "Contact CX": "Contatta CX",
 "Message CX": "Scrivi a CX",
 "Sign in to meet your host": "Accedi per conoscere il tuo host",
-"The host’s name, photo, bio and how fast they reply are shared with signed-in members. Your trip is always arranged through CX.": "Nome, foto, bio dell’host e quanto in fretta risponde sono visibili ai membri che hanno fatto l’accesso. Il tuo viaggio viene sempre organizzato tramite CX."
+"The host’s name, photo, bio and how fast they reply are shared with signed-in members. Your trip is always arranged through CX.": "Nome, foto, bio dell’host e quanto in fretta risponde sono visibili ai membri che hanno fatto l’accesso. Il tuo viaggio viene sempre organizzato tramite CX.",
+"Keep it inside CX": "Resta dentro CX",
+"For your safety, keep contact details and payments inside CX. Phone numbers, emails, links and requests to pay outside the app can’t be shared.": "Per la tua sicurezza, tieni contatti e pagamenti dentro CX. Numeri di telefono, email, link e richieste di pagare fuori dall’app non possono essere condivisi."
 }

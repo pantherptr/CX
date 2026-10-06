@@ -16,6 +16,7 @@ import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { StoryTextSlide, STORY_BG_STYLES } from './StoryTextSlide';
 import { useAuth } from '../../lib/auth';
+import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 
 const MAX_SLIDES = 10;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -207,6 +208,10 @@ export function SignalStoryComposer({
     }
     if (slides.some((s) => s.mediaType === 'text' && !s.textContent?.trim())) {
       setError('Add some text to your text Story.');
+      return;
+    }
+    if (slides.some((s) => hasContactInfo(s.caption) || hasContactInfo(s.textContent))) {
+      setError(CONTACT_WARNING);
       return;
     }
     setPublishing(true);

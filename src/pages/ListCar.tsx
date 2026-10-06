@@ -10,6 +10,7 @@ import { catalogue } from '../lib/catalogue';
 import { DEFAULT_POLICY, type CancellationPolicy } from '../lib/cancellationPolicy';
 import { CancellationPolicyPicker } from '../components/CancellationPolicy';
 import type { Car } from '../data/types';
+import { CONTACT_WARNING, hasContactInfo } from '../lib/contactGuard';
 
 /**
  * Real listing creation. Every field here maps to a column on `cars`;
@@ -168,6 +169,10 @@ export default function ListCar() {
 
   const submit = async (status: 'draft' | 'published') => {
     if (!session || submitting) return;
+    if (hasContactInfo(form.description) || hasContactInfo(form.location)) {
+      setSubmitError(CONTACT_WARNING);
+      return;
+    }
     setSubmitting(status);
     setSubmitError(null);
 

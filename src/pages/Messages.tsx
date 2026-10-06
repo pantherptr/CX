@@ -17,6 +17,8 @@ import {
   type Conversation,
   type MessagingSearchResult,
 } from '../lib/data/messages';
+import { CONTACT_WARNING, hasContactInfo } from '../lib/contactGuard';
+import { useApp } from '../lib/store';
 
 type SendAsRole = 'owner' | 'owner_assistant';
 
@@ -179,6 +181,7 @@ interface PendingMessage {
 
 export default function Messages() {
   const { session, profile } = useAuth();
+  const { toast } = useApp();
   const [params, setParams] = useSearchParams();
   const { conversations, loading: conversationsLoading, refresh } = useConversations(session?.user.id);
   const [activeId, setActiveId] = useState<string | null>(params.get('c'));
@@ -276,6 +279,12 @@ export default function Messages() {
   const send = () => {
     const body = text.trim();
     if (!body || !activeId || !session) return;
+    // Talking to CX is open; between members, contact details and off-app
+    // payments stay out (the database hides them too — migration 0070).
+    if (!profile?.is_owner && active?.other.role !== 'cx' && hasContactInfo(body)) {
+      toast({ title: 'Keep it inside CX', desc: CONTACT_WARNING, icon: 'shield' });
+      return;
+    }
     setText('');
     // Collapse the auto-grown composer back to one line with the text.
     if (composerRef.current) composerRef.current.style.height = 'auto';
