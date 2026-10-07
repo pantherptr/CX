@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { POLICY_INFO } from '../lib/cancellationPolicy';
 import { CancellationPolicyCard } from '../components/CancellationPolicy';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ConfiguratorLauncher } from '../components/Configurator';
+import { useNavigate, useParams } from 'react-router-dom';
 import { fetchCarWithHost, fetchSimilarCars } from '../lib/data/cars';
 import type { Car, Host } from '../data/types';
 import { eur } from '../lib/format';
@@ -10,11 +9,11 @@ import { unsplash, unsplashSrcSet } from '../lib/img';
 import { Icon, type IconName } from '../components/Icon';
 import { Modal, Stars } from '../components/primitives';
 import { Img } from '../components/motion';
-import { motion, AnimatePresence } from '../components/motionKit';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
 import { HostCard } from '../components/HostCard';
 import { HostLocked } from '../components/HostLocked';
+import { Group, Row } from '../components/IosList';
 import { useHasAccess } from '../lib/useAccess';
 import { CarCard } from '../components/CarCard';
 import { useApp } from '../lib/store';
@@ -82,42 +81,6 @@ const featureIcon: Record<string, IconName> = {
   'Rear entertainment': 'music',
 };
 
-/** iOS-style grouped list: a titled card whose rows are separated by hairlines. */
-function Group({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <section className="mt-7">
-      {title && <h2 className="mb-2.5 px-1 font-display text-lg font-semibold text-ink">{title}</h2>}
-      <div className="divide-y divide-line overflow-hidden rounded-[22px] border border-line bg-surface">{children}</div>
-    </section>
-  );
-}
-
-function Row({ icon, title, sub, value, onClick, open, children }: { icon: IconName; title: ReactNode; sub?: ReactNode; value?: string; onClick?: () => void; open?: boolean; children?: ReactNode }) {
-  const inner = (
-    <div className="flex items-center gap-3.5 px-4 py-3.5">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-panel text-ink"><Icon name={icon} size={18} /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-body font-medium text-ink">{title}</span>
-        {sub && <span className="mt-0.5 block text-detail leading-snug text-muted">{sub}</span>}
-      </span>
-      {value && <span className="shrink-0 text-body text-muted">{value}</span>}
-      {onClick && <Icon name="chevronRight" size={16} className={`shrink-0 text-faint transition-transform duration-300 ${open ? 'rotate-90' : ''}`} />}
-    </div>
-  );
-  return (
-    <div>
-      {onClick ? <button type="button" onClick={onClick} className="block w-full text-left transition-colors active:bg-panel">{inner}</button> : inner}
-      <AnimatePresence initial={false}>
-        {open && children && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">
-            <div className="px-4 pb-4">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 /** Swipeable photo pager with a translucent page control — tap a photo for full screen. */
 function HeroPager({ images, alt, onOpen }: { images: string[]; alt: string; onOpen: (i: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -166,11 +129,6 @@ const roundBtn = 'pressable grid h-10 w-10 place-items-center rounded-full bg-wh
 
 export default function CarDetails() {
   const { slug } = useParams();
-  // A shared build link (`?build=1&view=N`) reopens the configurator on
-  // the exact frame the sender was looking at.
-  const [searchParams] = useSearchParams();
-  const autoOpenBuild = searchParams.get('build') === '1';
-  const sharedView = Number(searchParams.get('view')) || 0;
   const { isFavorite, toggleFavorite, toast } = useApp();
   const { session } = useAuth();
   const hasAccess = useHasAccess();
@@ -359,18 +317,6 @@ export default function CarDetails() {
                   </div>
                 </section>
               )}
-
-              {/* Build */}
-              <div className="mt-7">
-                <ConfiguratorLauncher car={car} autoOpen={autoOpenBuild} initialView={sharedView} className="flex w-full items-center gap-3.5 rounded-[22px] bg-ink px-4 py-3.5 text-left text-white transition-transform active:scale-[0.99]">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-white/10"><Icon name="sparkles" size={19} className="text-accent-bright" /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">Build Your CX</span>
-                    <span className="block text-detail text-white/60">{t('Customise this car')}</span>
-                  </span>
-                  <Icon name="chevronRight" size={17} className="text-white/50" />
-                </ConfiguratorLauncher>
-              </div>
 
               {/* Details */}
               <Group title={t('Details')}>

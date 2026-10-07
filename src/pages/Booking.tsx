@@ -10,6 +10,7 @@ import { motion, AnimatePresence, SPRING_SMOOTH, useReducedMotion } from '../com
 import { useLocale } from '../lib/i18n';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
+import { Group, Row } from '../components/IosList';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -117,6 +118,9 @@ export default function Booking() {
   const [messaging, setMessaging] = useState(false);
   const reduceMotion = useReducedMotion();
   const [dir, setDir] = useState(1);
+  const [sumOpen, setSumOpen] = useState(false);
+  const [calOpen, setCalOpen] = useState(true);
+  const [policyOpen, setPolicyOpen] = useState(false);
   const [driver, setDriver] = useState({ name: '', email: '', phone: '', dob: '', licence: '', country: '', expiry: '' });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -422,6 +426,7 @@ export default function Booking() {
     toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
   };
 
+  const shortDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
   /* ---------- Confirmation ---------- */
@@ -546,13 +551,71 @@ export default function Booking() {
     );
   }
 
-  return (
-    <div className="container-page py-8">
-      <button onClick={back} className="mb-6 inline-flex items-center gap-1.5 text-body text-muted transition-colors hover:text-ink">
-        <Icon name="chevronLeft" size={16} /> Back
-      </button>
+  const breakdown = (
+    <dl className="space-y-2.5 text-body">
+              <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
+              <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
+              {selectedExtraItems.map((ex) => (
+                <div key={ex.id} className="flex justify-between">
+                  <dt className="text-muted">{ex.name}</dt>
+                  <dd className="text-ink">{eur(ex.priceModel === 'per_day' ? ex.price * activeDays : ex.price)}</dd>
+                </div>
+              ))}
+              {fulfillmentType === 'delivery' && (
+                <div className="flex justify-between">
+                  <dt className="flex items-center gap-1 text-muted">Delivery fee <Icon name="car" size={13} /></dt>
+                  <dd className="text-ink">{deliveryFee > 0 ? eur(deliveryFee) : 'Free'}</dd>
+                </div>
+              )}
+              {discountPreview > 0 && (
+                <div className="flex justify-between text-accent">
+                  <dt>Discount ({availableReward?.discountPercentage}% OFF)</dt>
+                  <dd>−{eur(discountPreview)}</dd>
+                </div>
+              )}
+              <div className="hairline my-1" />
+              <div className="flex justify-between text-copy font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
+            </dl>
+  );
 
-      <div className="mb-8 max-w-2xl"><Stepper step={step} /></div>
+  return (
+    <div className="container-page py-6 sm:py-8">
+      <div className="mb-5 flex items-center gap-3">
+        <button onClick={back} aria-label="Back" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-ink ring-1 ring-line">
+          <Icon name="chevronLeft" size={20} />
+        </button>
+        <div className="min-w-0">
+          <p className="truncate font-display text-copy font-semibold leading-tight text-ink">{car.make} {car.model}</p>
+          <p className="truncate text-caption text-muted">{car.year}{car.trim ? ` · ${car.trim}` : ''} · {car.city}</p>
+        </div>
+      </div>
+
+      <div className="mb-6 max-w-2xl"><Stepper step={step} /></div>
+
+      {/* A phone sees the trip and the price at the top, tap for the breakdown */}
+      {step < 3 && (
+        <div className="mb-5 overflow-hidden rounded-[22px] border border-line bg-surface lg:hidden">
+          <button onClick={() => setSumOpen((o) => !o)} aria-expanded={sumOpen} className="flex w-full items-center gap-3 p-3 text-left">
+            <Img src={unsplash(car.images[0], 240)} alt="" className="h-14 w-[72px] shrink-0 rounded-xl object-cover" fallback={<span className="h-14 w-[72px] shrink-0 rounded-xl bg-panel" />} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body font-semibold text-ink">{pickupDate && returnDate ? `${shortDate(pickupDate)} → ${shortDate(returnDate)}` : 'Choose your dates'}</span>
+              <span className="block text-caption text-muted">{days || 1} {(days || 1) === 1 ? 'day' : 'days'}{extrasTotal > 0 ? ' · + extras' : ''}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <span className="font-display text-lead font-semibold text-ink">{eur(grandTotal)}</span>
+              <Icon name="chevronDown" size={16} className={`text-faint transition-transform duration-300 ${sumOpen ? 'rotate-180' : ''}`} />
+            </span>
+          </button>
+          <AnimatePresence initial={false}>
+            {sumOpen && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">
+                <div className="border-t border-line px-4 py-3.5">{breakdown}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
         <div className="min-w-0 pb-24 lg:pb-0">
@@ -566,111 +629,97 @@ export default function Booking() {
           >
           {step === 0 && (
             <section>
-              <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
-              <p className="mt-1.5 text-body text-muted">Confirm where and when you'd like the car.</p>
-              <div className="mt-6 rounded-[24px] border border-line bg-surface p-5 sm:p-6">
+              <h1 className="font-display text-[1.7rem] font-bold tracking-tight text-ink">Trip details</h1>
+              <p className="mt-1 text-body text-muted">Confirm where and when you'd like the car.</p>
+
+              <Group title="Get the car">
                 {car.pickupEnabled !== false && car.deliveryEnabled && (
-                  <div className="mb-5">
-                    <span className="field-label">How would you like to receive the car?</span>
-                    <div className="mt-2 grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setFulfillmentType('pickup')}
-                        className={`rounded-[18px] border p-3.5 text-left transition-[border-color,box-shadow] duration-300 ${fulfillmentType === 'pickup' ? 'border-ink bg-surface shadow-[0_0_0_1px_#16161a]' : 'border-line hover:border-ink/40'}`}
-                      >
-                        <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="pin" size={15} /> Pick Up</span>
-                        <span className="mt-0.5 block text-detail text-muted">Go to the host's pick-up location.</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFulfillmentType('delivery')}
-                        className={`rounded-[18px] border p-3.5 text-left transition-[border-color,box-shadow] duration-300 ${fulfillmentType === 'delivery' ? 'border-ink bg-surface shadow-[0_0_0_1px_#16161a]' : 'border-line hover:border-ink/40'}`}
-                      >
-                        <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="car" size={15} /> Deliver to Me</span>
-                        <span className="mt-0.5 block text-detail text-muted">
-                          {car.deliveryFeeType === 'fixed' ? `+${eur(car.deliveryFeeAmount ?? 0)}` : 'Free'}
-                        </span>
-                      </button>
+                  <div className="p-3">
+                    <div className="flex rounded-xl bg-panel p-1">
+                      {([['pickup', 'Pick Up', 'pin'], ['delivery', 'Deliver to Me', 'car']] as const).map(([id, label, ic]) => {
+                        const on = fulfillmentType === id;
+                        return (
+                          <button key={id} type="button" onClick={() => setFulfillmentType(id)} className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-[9px] px-2 py-2 text-detail font-semibold transition-colors ${on ? 'text-ink' : 'text-muted'}`}>
+                            {on && <motion.span layoutId="fulfil" className="absolute inset-0 rounded-[9px] bg-surface shadow-hair" transition={SPRING_SMOOTH} />}
+                            <span className="relative inline-flex items-center gap-1.5"><Icon name={ic} size={14} /> {label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
+                    <p className="mt-2 px-1 text-caption text-muted">
+                      {fulfillmentType === 'pickup' ? "Go to the host's pick-up location." : car.deliveryFeeType === 'fixed' ? `Delivery fee +${eur(car.deliveryFeeAmount ?? 0)}` : 'Delivery is free.'}
+                    </p>
                   </div>
                 )}
-
-                {fulfillmentType === 'pickup' ? (
-                  <Labeled label="Pick-up location">
-                    <div className="relative">
-                      <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                      <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="input !pl-11" />
-                    </div>
-                  </Labeled>
-                ) : (
-                  <Labeled label="Delivery address" hint="The host will confirm the exact drop-off details with you.">
-                    <div className="relative">
-                      <Icon name="pin" size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-                      <input
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        placeholder="Street, city"
-                        className="input !pl-11"
-                      />
-                    </div>
-                    {car.deliveryRadiusKm && (
-                      <p className="mt-1.5 text-detail text-muted">Delivery available within ~{car.deliveryRadiusKm}km of the host.</p>
+                <label className="flex items-center gap-3.5 px-4 py-3.5">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-panel text-ink"><Icon name="pin" size={18} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-caption font-semibold uppercase tracking-wide text-muted">{fulfillmentType === 'pickup' ? 'Pick-up location' : 'Delivery address'}</span>
+                    {fulfillmentType === 'pickup' ? (
+                      <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="mt-0.5 w-full bg-transparent text-[16px] font-medium text-ink outline-none sm:text-body" />
+                    ) : (
+                      <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="Street, city" className="mt-0.5 w-full bg-transparent text-[16px] font-medium text-ink outline-none placeholder:text-faint sm:text-body" />
                     )}
-                    {car.deliveryInstructions && (
-                      <p className="mt-1 text-detail text-muted">{car.deliveryInstructions}</p>
-                    )}
-                  </Labeled>
-                )}
-
-                <div className="mt-5 border-t border-line pt-5">
-                  <span className="field-label">Dates</span>
-                  <div className="mt-2">
-                    <AvailabilityCalendar
-                      carId={car.id}
-                      startDate={pickupDate || null}
-                      endDate={returnDate || null}
-                      onSelect={(start, end) => {
-                        setPickupDate(start);
-                        setReturnDate(end);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {dateError && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
-                    <Icon name="info" size={16} /> {dateError}
+                  </span>
+                </label>
+                {fulfillmentType === 'delivery' && (car.deliveryRadiusKm || car.deliveryInstructions) && (
+                  <p className="px-4 py-3 text-detail leading-relaxed text-muted">
+                    {car.deliveryRadiusKm ? `Delivery available within ~${car.deliveryRadiusKm}km of the host. ` : ''}
+                    {car.deliveryInstructions}
                   </p>
                 )}
-                {!dateError && availability === 'checking' && (
-                  <p className="mt-4 text-detail text-muted">Checking availability…</p>
-                )}
-                {!dateError && availability === 'unavailable' && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
-                    <Icon name="info" size={16} /> This car is already booked for part of those dates. Try a different range.
-                  </p>
-                )}
-                {!dateError && availability === 'available' && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={SPRING_SMOOTH}
-                    className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-panel px-4 py-3 text-detail text-ink"
-                  >
-                    <span className="flex items-center gap-1.5 font-semibold"><Icon name="checkCircle" size={16} className="text-accent" /> Available for your dates</span>
-                    <span className="text-muted">{fmtDate(pickupDate)} → {fmtDate(returnDate)} · {days} {days === 1 ? 'day' : 'days'}</span>
-                  </motion.p>
-                )}
+              </Group>
 
-                <div className="mt-5 rounded-xl bg-panel p-4">
-                  <p className="flex items-center gap-2 text-detail font-medium text-ink"><Icon name="shield" size={16} className="text-accent" /> Premium protection included</p>
-                  <p className="mt-1 text-detail text-muted">Every CX trip comes with damage protection and 24/7 roadside assistance.</p>
-                </div>
-              </div>
+              <Group title="Dates">
+                <Row
+                  icon="calendar"
+                  title={pickupDate && returnDate ? `${fmtDate(pickupDate)} → ${fmtDate(returnDate)}` : 'Choose your dates'}
+                  sub={pickupDate && returnDate ? `${days} ${days === 1 ? 'day' : 'days'}` : 'Tap the days you need the car.'}
+                  onClick={() => setCalOpen((o) => !o)}
+                  open={calOpen}
+                >
+                  <AvailabilityCalendar
+                    carId={car.id}
+                    startDate={pickupDate || null}
+                    endDate={returnDate || null}
+                    onSelect={(start, end) => {
+                      setPickupDate(start);
+                      setReturnDate(end);
+                      if (start && end) setTimeout(() => setCalOpen(false), 450);
+                    }}
+                  />
+                </Row>
+              </Group>
 
-              <h2 className="mt-8 font-display text-lg font-semibold text-ink">Cancellation policy</h2>
-              <p className="mt-1 text-detail text-muted">Set by the host of this car. Read it before you pay.</p>
-              <CancellationPolicyCard policy={car.cancellationPolicy ?? 'flexible'} className="mt-3" />
+              {dateError && (
+                <p className="mt-3 flex items-center gap-2 rounded-2xl bg-danger/10 px-4 py-3 text-detail text-danger">
+                  <Icon name="info" size={16} /> {dateError}
+                </p>
+              )}
+              {!dateError && availability === 'checking' && <p className="mt-3 px-1 text-detail text-muted">Checking availability…</p>}
+              {!dateError && availability === 'unavailable' && (
+                <p className="mt-3 flex items-center gap-2 rounded-2xl bg-danger/10 px-4 py-3 text-detail text-danger">
+                  <Icon name="info" size={16} /> This car is already booked for part of those dates. Try a different range.
+                </p>
+              )}
+              {!dateError && availability === 'available' && (
+                <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={SPRING_SMOOTH} className="mt-3 flex items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-detail font-semibold text-ink ring-1 ring-line">
+                  <Icon name="checkCircle" size={16} className="text-accent" /> Available for your dates
+                </motion.p>
+              )}
+
+              <Group title="Good to know">
+                <Row icon="shield" title="Premium protection included" sub="Every CX trip comes with damage protection and 24/7 roadside assistance." />
+                <Row
+                  icon="calendar"
+                  title={<>Cancellation: {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].label}</>}
+                  sub={POLICY_INFO[car.cancellationPolicy ?? 'flexible'].tagline}
+                  onClick={() => setPolicyOpen((o) => !o)}
+                  open={policyOpen}
+                >
+                  <CancellationPolicyCard policy={car.cancellationPolicy ?? 'flexible'} />
+                </Row>
+              </Group>
             </section>
           )}
 
@@ -828,31 +877,7 @@ export default function Booking() {
               </label>
             )}
 
-            <dl className="space-y-2.5 border-t border-line px-4 py-4 text-body">
-              <div className="flex justify-between"><dt className="text-muted">{eur(car.pricePerDay)} × {days || 1} days</dt><dd className="text-ink">{eur(b.base)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Service fee</dt><dd className="text-ink">{eur(b.service)}</dd></div>
-              <div className="flex justify-between"><dt className="flex items-center gap-1 text-muted">Protection <Icon name="shield" size={13} className="text-accent" /></dt><dd className="text-ink">{eur(b.protection)}</dd></div>
-              {selectedExtraItems.map((ex) => (
-                <div key={ex.id} className="flex justify-between">
-                  <dt className="text-muted">{ex.name}</dt>
-                  <dd className="text-ink">{eur(ex.priceModel === 'per_day' ? ex.price * activeDays : ex.price)}</dd>
-                </div>
-              ))}
-              {fulfillmentType === 'delivery' && (
-                <div className="flex justify-between">
-                  <dt className="flex items-center gap-1 text-muted">Delivery fee <Icon name="car" size={13} /></dt>
-                  <dd className="text-ink">{deliveryFee > 0 ? eur(deliveryFee) : 'Free'}</dd>
-                </div>
-              )}
-              {discountPreview > 0 && (
-                <div className="flex justify-between text-accent">
-                  <dt>Discount ({availableReward?.discountPercentage}% OFF)</dt>
-                  <dd>−{eur(discountPreview)}</dd>
-                </div>
-              )}
-              <div className="hairline my-1" />
-              <div className="flex justify-between text-copy font-semibold text-ink"><dt>Total</dt><dd>{eur(grandTotal)}</dd></div>
-            </dl>
+            <div className="border-t border-line px-4 py-4">{breakdown}</div>
             <div className="flex items-center gap-2 border-t border-line bg-panel/50 px-4 py-3 text-caption text-muted">
               <Icon name="shield" size={14} className="text-accent" />
               {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].label} cancellation · {POLICY_INFO[car.cancellationPolicy ?? 'flexible'].tagline}
