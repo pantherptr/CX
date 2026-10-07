@@ -77,3 +77,22 @@ export function SignalS({ size = 24, className = '' }: { size?: number; classNam
     />
   );
 }
+
+/** The big, steady SIGNAL "S" with a light that sweeps through its silhouette
+ *  and a green glow that slowly breathes behind it. */
+export function SignalSHero({ height = 112, className = '' }: { height?: number; className?: string }) {
+  const width = height * 1.84;
+  return (
+    <span className={`relative inline-block ${className}`} style={{ height, width }}>
+      <span aria-hidden="true" className="s-breathe pointer-events-none absolute -inset-x-[18%] -inset-y-[30%] rounded-full bg-[radial-gradient(closest-side,rgba(0,212,71,0.45),transparent)]" />
+      <img src="/brand/signal-s.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-contain" style={{ maxWidth: 'none' }} />
+      <span
+        aria-hidden="true"
+        className="signal-sweep-mask pointer-events-none absolute inset-0"
+        style={{ WebkitMaskImage: 'url(/brand/signal-s.webp)', maskImage: 'url(/brand/signal-s.webp)' }}
+      >
+        <span className="signal-sweep-bar absolute" />
+      </span>
+    </span>
+  );
+}

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Tap, AnimatePresence } from '../components/motionKit';
-import { SignalLogo } from '../components/SignalLogo';
-import { FlyingMark } from '../components/FlyingMark';
+import { SignalLogo, SignalSHero } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
@@ -205,7 +204,7 @@ export default function Signal() {
         />
         <div className="relative flex w-full max-w-sm flex-col items-center">
           <div className="animate-scale-in">
-            <FlyingMark src="/brand/signal-s.webp" width={360} height={196} className="h-28 sm:h-32" shadow />
+            <SignalSHero height={112} />
           </div>
           <p className="mt-9 text-detail font-bold uppercase tracking-[0.28em] text-accent-bright">CX SIGNAL</p>
           <h1 className="mt-3 font-display text-[2rem] font-semibold leading-[1.08] text-on-noir text-balance sm:text-4xl">The official voice of CX Rent.</h1>

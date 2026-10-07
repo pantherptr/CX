@@ -738,6 +738,16 @@
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
 
+  /* the glow behind the SIGNAL "S" on the gate page: a slow breath */
+  .s-breathe { animation: s-breathe 4.2s ease-in-out infinite; }
+  @keyframes s-breathe {
+    0%, 100% { opacity: 0.45; transform: scale(0.94); }
+    50% { opacity: 0.95; transform: scale(1.06); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .s-breathe { animation: none; opacity: 0.7; }
+  }
+
   /* The SIGNALBAR header logo's own "live" effect (SignalBarLogo.tsx) —
      intentionally NOT `.signal-sweep-bar` above. That one is a fast,
      continuous, obvious 3.4s loop meant to be noticed on an active nav
