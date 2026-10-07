@@ -17,7 +17,7 @@ import { useEmpireTrendingPosts, type EmpireFeedScope } from '../../lib/data/emp
  *  0049_signal_split_official_community.sql) — Official's own Trending
  *  never surfaces a stray community post and vice versa; Community
  *  reuses this same component as its "Popular" Discovery chip. */
-export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {}) {
+export function SignalTrendingSection({ scope, authorKind, vertical = false }: EmpireFeedScope & { vertical?: boolean } = {}) {
   const { posts } = useEmpireTrendingPosts({ scope, authorKind });
   const { pathname } = useLocation();
   const base = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
@@ -29,12 +29,12 @@ export function SignalTrendingSection({ scope, authorKind }: EmpireFeedScope = {
       <h2 className="mb-3 flex items-center gap-1.5 text-detail font-semibold uppercase tracking-wide text-muted">
         <Icon name="trending" size={14} /> Trending
       </h2>
-      <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+      <div className={vertical ? 'flex flex-col gap-3' : 'no-scrollbar flex gap-3 overflow-x-auto pb-1'}>
         {posts.map((p) => (
           <Link
             key={p.id}
             to={`${base}/post/${p.id}`}
-            className="group pressable flex w-40 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface"
+            className={`group pressable flex shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface ${vertical ? 'w-full' : 'w-40'}`}
           >
             <div className="relative aspect-[4/3] w-full bg-panel">
               {p.mediaUrls[0] ? (

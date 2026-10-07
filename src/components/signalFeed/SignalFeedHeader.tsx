@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY, SPRING_SMOOTH } from '../motionKit';
@@ -46,6 +47,7 @@ export function SignalFeedHeader({
   onSearchClose?: () => void;
 }) {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -79,14 +81,14 @@ export function SignalFeedHeader({
 
   return (
     <header
-      className={`sticky top-0 z-20 grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 pt-safe backdrop-blur-xl transition-colors duration-300 sm:px-6 ${
+      className={`sticky top-0 z-20 grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 pt-safe backdrop-blur-xl transition-colors duration-300 sm:px-6 lg:h-16 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 ${
         scrolled ? 'border-b border-line bg-surface/92' : 'border-b border-transparent bg-surface/55'
       }`}
     >
       {/* Search dock — grows out of the lens and takes over the whole bar */}
       <AnimatePresence>
         {searchOpen && (
-          <div className="absolute inset-x-4 inset-y-0 flex items-center justify-end pt-safe sm:inset-x-6">
+          <div className="absolute inset-x-4 inset-y-0 flex items-center justify-end pt-safe sm:inset-x-6 lg:left-auto lg:right-24 lg:w-[34rem]">
             <motion.div
               className="flex h-10 items-center overflow-hidden rounded-full border border-line-strong bg-surface shadow-soft"
               initial={reduceMotion ? { width: '100%', x: 0 } : { width: 32, x: -dockOffset }}
@@ -123,12 +125,12 @@ export function SignalFeedHeader({
           </div>
         )}
       </AnimatePresence>
-      <div aria-hidden="true" className="pointer-events-none invisible flex items-center gap-0.5">
+      <div aria-hidden="true" className="pointer-events-none invisible flex items-center gap-0.5 lg:hidden">
         {Array.from({ length: iconSlots }, (_, i) => (
           <span key={i} className="h-8 w-8" />
         ))}
       </div>
-      <div className={`flex min-w-0 justify-center overflow-hidden transition-opacity duration-200 ${searchOpen ? 'opacity-0' : ''}`}>
+      <div className={`flex min-w-0 justify-center overflow-hidden transition-opacity duration-200 lg:justify-start ${searchOpen ? 'opacity-0' : ''}`}>
         <SignalBarLogo size={20} />
       </div>
       <div className={`flex items-center justify-self-end gap-0.5 transition-opacity duration-200 ${searchOpen ? 'pointer-events-none opacity-0' : ''}`}>
@@ -158,6 +160,14 @@ export function SignalFeedHeader({
             </AnimatePresence>
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => navigate(signedIn ? '/dashboard' : '/')}
+          aria-label="Close SIGNAL"
+          className="pressable ml-3 hidden h-9 w-9 place-items-center rounded-full border border-line-strong text-ink transition-colors hover:bg-panel lg:grid"
+        >
+          <Icon name="x" size={17} />
+        </button>
       </div>
     </header>
   );

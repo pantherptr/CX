@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
+import { useMediaQuery } from '../components/motion';
 import { Tap, AnimatePresence } from '../components/motionKit';
 import { SignalLogo, SignalSHero } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
@@ -58,6 +59,7 @@ import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
 export default function Signal() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const { pathname } = useLocation();
   const { postId, highlightId, authorId } = useParams<{ postId?: string; highlightId?: string; authorId?: string }>();
   const space: 'official' | 'community' = pathname.startsWith('/signal/community') ? 'community' : 'official';
@@ -202,6 +204,13 @@ export default function Signal() {
           className="pointer-events-none absolute inset-0"
           style={{ background: 'radial-gradient(60% 42% at 50% 36%, rgba(0,212,71,0.20), transparent 70%), radial-gradient(50% 30% at 50% 100%, rgba(0,212,71,0.08), transparent 70%)' }}
         />
+        <Link
+          to="/"
+          aria-label="Close SIGNAL"
+          className="pressable absolute right-8 top-8 hidden h-10 w-10 place-items-center rounded-full border border-white/15 text-on-noir transition-colors hover:bg-white/10 lg:grid"
+        >
+          <Icon name="x" size={18} />
+        </Link>
         <div className="relative flex w-full max-w-sm flex-col items-center">
           <div className="animate-scale-in">
             <SignalSHero height={112} />
@@ -222,6 +231,41 @@ export default function Signal() {
     );
   }
 
+  const navItems: { label: string; icon: IconName; active?: boolean; groupEnd?: boolean; onSelect: () => void }[] = [
+          { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
+          { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
+          // My Profile leads the personal-shortcuts section — the one row
+          // every signed-in visitor has, regardless of publishing rights,
+          // so it's the first thing under the Official/Community divider
+          // rather than sitting below the publish-only rows.
+          { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
+          ...(canManage || canPublishSelf
+            ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
+            : []),
+          // A Host/Verified Client gets one-tap Create Post/Add Story from
+          // anywhere in Signal — both jump to Community first (Community
+          // is the only space they can publish into) then open the same
+          // composer the feed's own inline trigger uses, never a second
+          // creation flow. Owner/Admin keep their existing Official
+          // composer entry point inline in the feed, unchanged — this menu
+          // isn't where they publish today, so it isn't where this adds
+          // shortcuts either. A plain Client (can't publish anywhere) gets
+          // neither row.
+          ...(canPublishSelf
+            ? [
+                {
+                  label: 'Create Post', icon: 'plus' as const,
+                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setComposerOpen(true); },
+                },
+                {
+                  label: 'Add Story', icon: 'camera' as const, groupEnd: true,
+                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setStoryComposerOpen(true); },
+                },
+              ]
+            : []),
+          { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
+          ];
+
   const highlightIndex = highlightId && highlights ? highlights.findIndex((h) => h.id === highlightId) : -1;
 
   return (
@@ -238,7 +282,30 @@ export default function Signal() {
         onNotificationsClick={() => setNotificationsOpen(true)}
       />
 
-      <main className="mx-auto w-full max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4">
+      <div className="mx-auto flex w-full max-w-[1180px] flex-1 items-start gap-8 lg:px-8 lg:py-6">
+      {isDesktop && (
+        <aside className="sticky top-20 w-56 shrink-0">
+          <nav aria-label="SIGNAL" className="flex flex-col gap-0.5">
+            {navItems.map((it) => (
+              <div key={it.label}>
+                <button
+                  type="button"
+                  onClick={it.onSelect}
+                  aria-current={it.active ? 'page' : undefined}
+                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${
+                    it.active ? 'bg-panel font-semibold text-ink' : 'font-medium text-ink-soft'
+                  }`}
+                >
+                  <Icon name={it.icon} size={18} />
+                  {it.label}
+                </button>
+                {it.groupEnd && <div className="mx-3 my-2 border-t border-line" />}
+              </div>
+            ))}
+          </nav>
+        </aside>
+      )}
+      <main className="w-full min-w-0 max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4 lg:max-w-2xl lg:flex-none lg:px-0 lg:py-0">
       <SignalPullToRefresh onRefresh={handleRefresh}>
         <SignalStoriesBar
           scope={space}
@@ -378,10 +445,16 @@ export default function Signal() {
           </>
         )}
 
-        {space === 'official' && category === null && <SignalTrendingSection scope="official" />}
+        {!isDesktop && space === 'official' && category === null && <SignalTrendingSection scope="official" />}
         </div>
       </SignalPullToRefresh>
       </main>
+      {isDesktop && (
+        <aside className="sticky top-20 w-72 shrink-0">
+          {space === 'official' && <SignalTrendingSection scope="official" vertical />}
+        </aside>
+      )}
+      </div>
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}
 
@@ -407,42 +480,8 @@ export default function Signal() {
         />
       )}
 
-      <SignalQuickControl
-        items={[
-          { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
-          { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
-          // My Profile leads the personal-shortcuts section — the one row
-          // every signed-in visitor has, regardless of publishing rights,
-          // so it's the first thing under the Official/Community divider
-          // rather than sitting below the publish-only rows.
-          { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
-          ...(canManage || canPublishSelf
-            ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
-            : []),
-          // A Host/Verified Client gets one-tap Create Post/Add Story from
-          // anywhere in Signal — both jump to Community first (Community
-          // is the only space they can publish into) then open the same
-          // composer the feed's own inline trigger uses, never a second
-          // creation flow. Owner/Admin keep their existing Official
-          // composer entry point inline in the feed, unchanged — this menu
-          // isn't where they publish today, so it isn't where this adds
-          // shortcuts either. A plain Client (can't publish anywhere) gets
-          // neither row.
-          ...(canPublishSelf
-            ? [
-                {
-                  label: 'Create Post', icon: 'plus' as const,
-                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setComposerOpen(true); },
-                },
-                {
-                  label: 'Add Story', icon: 'camera' as const, groupEnd: true,
-                  onSelect: () => { if (space !== 'community') navigate('/signal/community'); setStoryComposerOpen(true); },
-                },
-              ]
-            : []),
-          { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
-        ]}
-      />
+      {!isDesktop && <SignalQuickControl items={navItems} />}
+
 
       {highlightId && highlights && highlightIndex >= 0 && (
         <SignalStoryViewer
