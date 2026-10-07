@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Logo, GoogleSignInButton, AuthDivider } from '../components/primitives';
+import { AuthCard, AuthItem } from '../components/AuthCard';
 import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
 
@@ -16,6 +17,7 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
   const createAccountScramble = useScramble('Create account');
   const [confirmSent, setConfirmSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,85 +62,54 @@ export default function Signup() {
   }
 
   return (
-    <div className="container-page flex min-h-[70vh] items-center justify-center py-16">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
-          <Logo />
-        </div>
-        <div className="card p-7 sm:p-8">
-          <h1 className="text-center font-display text-2xl font-semibold text-ink">Create your account</h1>
-          <p className="mt-1.5 text-center text-body text-muted">Rent or list a car on CX</p>
+    <AuthCard title="Create your account" subtitle="Rent or list a car on CX">
+      <form onSubmit={onSubmit} className="mt-7 space-y-3.5">
+        <AuthItem stop className="relative">
+          <label className="sr-only" htmlFor="name">Full name</label>
+          <Icon name="user" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
+          <input id="name" required autoComplete="name" placeholder="Full name" className="input !h-12 !pl-11 !text-[16px]" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        </AuthItem>
+        <AuthItem stop className="relative">
+          <label className="sr-only" htmlFor="email">Email</label>
+          <Icon name="message" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
+          <input id="email" type="email" required autoComplete="email" placeholder="Email address" className="input !h-12 !pl-11 !text-[16px]" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </AuthItem>
+        <AuthItem stop className="relative">
+          <label className="sr-only" htmlFor="password">Password</label>
+          <Icon name="lock" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
+          <input id="password" type={showPassword ? 'text' : 'password'} required minLength={6} autoComplete="new-password" placeholder="Password (min. 6 characters)" className="input !h-12 !pl-11 !pr-12 !text-[16px]" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-faint transition-colors hover:text-ink">
+            <Icon name={showPassword ? 'eyeOff' : 'eye'} size={17} />
+          </button>
+        </AuthItem>
+        {error && <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>}
+        <AuthItem stop>
+          <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : createAccountScramble)}>
+            <span className="btn-glint__sweep" aria-hidden="true" />
+            {submitting ? 'Creating account…' : createAccountScramble.display}
+            {!submitting && <Icon name="arrowRight" size={16} />}
+          </button>
+        </AuthItem>
+        <AuthItem>
+          <p className="text-center text-caption leading-relaxed text-muted">
+            By creating an account you agree to our{' '}
+            <Link to="/terms" className="font-medium text-ink underline underline-offset-2">Terms</Link> and{' '}
+            <Link to="/privacy" className="font-medium text-ink underline underline-offset-2">Privacy Policy</Link>.
+          </p>
+        </AuthItem>
+      </form>
 
-          <div className="mt-7">
-            <GoogleSignInButton label="Sign up with Google" />
-          </div>
-          <AuthDivider />
+      <AuthItem stop>
+        <AuthDivider />
+        <GoogleSignInButton label="Sign up with Google" />
+      </AuthItem>
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="field-label" htmlFor="name">
-                Full name
-              </label>
-              <input
-                id="name"
-                required
-                autoComplete="name"
-                className="input"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                className="input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-                className="input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {error && (
-              <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
-            )}
-            <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : createAccountScramble)}>
-              <span className="btn-glint__sweep" aria-hidden="true" />
-              {submitting ? 'Creating account…' : createAccountScramble.display}
-              {!submitting && <Icon name="arrowRight" size={16} />}
-            </button>
-            <p className="text-center text-caption leading-relaxed text-muted">
-              By creating an account you agree to our{' '}
-              <Link to="/terms" className="font-medium text-ink underline underline-offset-2">Terms</Link> and{' '}
-              <Link to="/privacy" className="font-medium text-ink underline underline-offset-2">Privacy Policy</Link>.
-            </p>
-          </form>
-        </div>
-        <p className="mt-5 text-center text-body text-muted">
+      <AuthItem stop>
+        <p className="mt-6 text-center text-body text-muted">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-ink underline underline-offset-2">
-            Sign in
-          </Link>
+          <Link to="/login" className="font-semibold text-ink underline underline-offset-2">Sign in</Link>
         </p>
-      </div>
-    </div>
+      </AuthItem>
+    </AuthCard>
   );
 }

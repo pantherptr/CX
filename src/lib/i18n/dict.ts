@@ -274,6 +274,7 @@ const ROWS: Row[] = [
   ['Translate', 'Traduci', 'Traduce', 'Traducir'],
   ['See original', 'Mostra originale', 'Vezi originalul', 'Ver original'],
   ['Translating…', 'Traduzione in corso…', 'Se traduce…', 'Traduciendo…'],
+  ['Create your account', 'Crea il tuo account', 'Creează-ți contul', 'Crea tu cuenta'],
   ['Welcome back', 'Bentornato', 'Bine ai revenit', 'Bienvenido de nuevo'],
   ['Translation unavailable', 'Traduzione non disponibile', 'Traducere indisponibilă', 'Traducción no disponible'],
 
