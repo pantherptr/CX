@@ -9,35 +9,10 @@ import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
 
 
-/** A point travelling clockwise around a rounded rectangle's edge. Returns
- *  the position plus the direction of travel (degrees, 0 = heading right). */
-function pointOnRoundedRect(w: number, h: number, r: number, t: number) {
-  const sx = w - 2 * r;
-  const sy = h - 2 * r;
-  const arc = (Math.PI * r) / 2;
-  const total = 2 * sx + 2 * sy + 4 * arc;
-  let d = (((t % 1) + 1) % 1) * total;
-  if (d < sx) return { x: r + d, y: 0, a: 0 };
-  d -= sx;
-  if (d < arc) { const q = d / r; return { x: w - r + Math.sin(q) * r, y: r - Math.cos(q) * r, a: (q * 180) / Math.PI }; }
-  d -= arc;
-  if (d < sy) return { x: w, y: r + d, a: 90 };
-  d -= sy;
-  if (d < arc) { const q = d / r; return { x: w - r + Math.cos(q) * r, y: h - r + Math.sin(q) * r, a: 90 + (q * 180) / Math.PI }; }
-  d -= arc;
-  if (d < sx) return { x: w - r - d, y: h, a: 180 };
-  d -= sx;
-  if (d < arc) { const q = d / r; return { x: r - Math.sin(q) * r, y: h - r + Math.cos(q) * r, a: 180 + (q * 180) / Math.PI }; }
-  d -= arc;
-  if (d < sy) return { x: 0, y: h - r - d, a: 270 };
-  d -= sy;
-  const q = d / r;
-  return { x: r - Math.cos(q) * r, y: r - Math.sin(q) * r, a: 270 + (q * 180) / Math.PI };
-}
-
-/** The card's light: a small car circuits the edge and the glowing beam
- *  trails it — both driven from the same clock so the car is always the
- *  head of the light. Also tilts the card toward the pointer. */
+/** The card's light: a small car that drives around the card on its own —
+ *  steering toward a random field, button or link, slowing as it arrives,
+ *  pausing a moment, then picking somewhere else. Elements opt in with
+ *  `data-car-stop`. The edge beam turns on its own, slowly. */
 function useCardLight(enabled: boolean) {
   const frame = useRef<HTMLDivElement>(null);
   const car = useRef<HTMLDivElement>(null);
@@ -46,15 +21,60 @@ function useCardLight(enabled: boolean) {
     const carEl = car.current;
     if (!el || !carEl) return;
     if (!enabled) { carEl.style.display = 'none'; return; }
+
     let raf = 0;
-    const start = performance.now();
+    let last = performance.now();
+    const start = last;
+    let x = el.offsetWidth * 0.5;
+    let y = -6;
+    let heading = 90; // degrees, 0 = right, 90 = down
+    let target: { x: number; y: number } | null = null;
+    let pauseUntil = 0;
+    let lastStop: Element | null = null;
+
+    const pickTarget = () => {
+      const stops = Array.from(el.querySelectorAll('[data-car-stop]')).filter((n) => n !== lastStop);
+      const stop = stops[Math.floor(Math.random() * stops.length)];
+      if (!stop) return null;
+      lastStop = stop;
+      const f = el.getBoundingClientRect();
+      const r = stop.getBoundingClientRect();
+      // land somewhere on the element, favouring its ends so the car reads as "parking" beside it
+      const side = Math.random();
+      const fx = side < 0.4 ? 0.1 + Math.random() * 0.15 : side < 0.8 ? 0.75 + Math.random() * 0.15 : 0.3 + Math.random() * 0.4;
+      return { x: r.left - f.left + r.width * fx, y: r.top - f.top + r.height * (0.35 + Math.random() * 0.3) };
+    };
+
     const loop = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
       const w = el.offsetWidth;
       const h = el.offsetHeight;
-      const { x, y, a } = pointOnRoundedRect(w, h, 28, ((now - start) / 11000) % 1);
-      carEl.style.transform = `translate(${x}px, ${y}px) rotate(${a}deg)`;
-      const ang = (Math.atan2(x - w / 2, -(y - h / 2)) * 180) / Math.PI;
-      el.style.setProperty('--beam-angle', `${(ang - 358 + 720) % 360}deg`);
+
+      if (!target && now >= pauseUntil) target = pickTarget();
+      if (target) {
+        const dx = target.x - x;
+        const dy = target.y - y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 6) {
+          target = null;
+          pauseUntil = now + 700 + Math.random() * 900;
+        } else {
+          const want = (Math.atan2(dy, dx) * 180) / Math.PI;
+          let diff = ((want - heading + 540) % 360) - 180;
+          // car-like steering: a limited turn rate, so it swings through curves
+          const maxTurn = 200 * dt;
+          diff = Math.max(-maxTurn, Math.min(maxTurn, diff));
+          heading += diff;
+          const speed = Math.min(150, 40 + dist * 1.6) * (Math.abs(diff) > maxTurn * 0.9 ? 0.6 : 1);
+          x += Math.cos((heading * Math.PI) / 180) * speed * dt;
+          y += Math.sin((heading * Math.PI) / 180) * speed * dt;
+        }
+      }
+      x = Math.max(-8, Math.min(w + 8, x));
+      y = Math.max(-8, Math.min(h + 8, y));
+      carEl.style.transform = `translate(${x}px, ${y}px) rotate(${heading}deg)`;
+      el.style.setProperty('--beam-angle', `${(((now - start) / 9000) % 1) * 360}deg`);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -145,11 +165,11 @@ export default function Login() {
         </div>
         <motion.div variants={group} initial="hidden" animate="show" className="relative overflow-hidden rounded-[28px] bg-surface p-7 shadow-pop sm:p-9">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 [@media(hover:hover)]:opacity-100" style={{ background: 'radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(0,212,71,0.10), transparent 70%)' }} />
-          <motion.div variants={rise} className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-line bg-surface shadow-hair">
+          <motion.div variants={rise} data-car-stop className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-line bg-surface shadow-hair">
             <CxsLogo size={30} />
           </motion.div>
 
-          <h1 aria-label={title} className="mt-5 text-center font-display text-[1.9rem] font-bold leading-tight tracking-tight text-ink">
+          <h1 aria-label={title} data-car-stop className="mt-5 text-center font-display text-[1.9rem] font-bold leading-tight tracking-tight text-ink">
             <motion.span variants={group} className="inline-block" aria-hidden="true">
               {Array.from(title).map((ch, i) => (
                 <motion.span key={i} variants={letter} className="inline-block whitespace-pre">
@@ -161,7 +181,7 @@ export default function Login() {
           <motion.p variants={rise} className="mt-1.5 text-center text-body text-muted">Sign in to your CX account</motion.p>
 
           <motion.form variants={group} onSubmit={onSubmit} className="mt-7 space-y-3.5">
-            <motion.div variants={rise} className="relative">
+            <motion.div variants={rise} data-car-stop className="relative">
               <label className="sr-only" htmlFor="email">Email</label>
               <Icon name="message" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
               <input
@@ -175,7 +195,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </motion.div>
-            <motion.div variants={rise} className="relative">
+            <motion.div variants={rise} data-car-stop className="relative">
               <label className="sr-only" htmlFor="password">Password</label>
               <Icon name="lock" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
               <input
@@ -201,7 +221,7 @@ export default function Login() {
               <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>
             )}
             <motion.div variants={rise}>
-              <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : signInScramble)}>
+              <button type="submit" data-car-stop disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : signInScramble)}>
                 <span className="btn-glint__sweep" aria-hidden="true" />
                 {submitting ? 'Signing in…' : signInScramble.display}
                 {!submitting && <Icon name="arrowRight" size={16} />}
@@ -209,12 +229,12 @@ export default function Login() {
             </motion.div>
           </motion.form>
 
-          <motion.div variants={rise}>
+          <motion.div variants={rise} data-car-stop>
             <AuthDivider />
             <GoogleSignInButton label="Sign in with Google" />
           </motion.div>
 
-          <motion.p variants={rise} className="mt-6 text-center text-body text-muted">
+          <motion.p variants={rise} data-car-stop className="mt-6 text-center text-body text-muted">
             New to CX?{' '}
             <Link to="/signup" className="font-semibold text-ink underline underline-offset-2">
               Create an account
