@@ -9,7 +9,8 @@ import { FleetShowcase } from '../components/home/FleetShowcase';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
-import { unsplash, unsplashSrcSet } from '../lib/img';
+import { unsplash, unsplashSrcSet, avatar } from '../lib/img';
+import { FleetLiveBoard, type LiveItem, type LiveStat } from '../components/FleetLiveBoard';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { Car } from '../data/types';
@@ -237,6 +238,37 @@ export default function Home() {
     return [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 8);
   }, [allCars]);
 
+  // The live board on the home page is an illustration built on real cars.
+  const liveBoard = useMemo(() => {
+    if (!allCars || allCars.length < 2) return null;
+    const people = [
+      { name: 'Marco Rossi', img: 11, a: 'Via Roma 21', b: 'Aeroporto' },
+      { name: 'Elena Popescu', img: 32, a: 'Calea Victoriei 8', b: 'Piața Unirii' },
+      { name: 'Lucía Gómez', img: 45, a: 'Gran Vía 14', b: 'Estación Sur' },
+    ];
+    const items: LiveItem[] = [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 3).map((c, i) => ({
+      id: c.id,
+      title: `${c.make} ${c.model}`,
+      image: unsplash(c.images[0], 320),
+      plate: `${c.year} · ${c.city}`,
+      person: people[i].name,
+      avatar: avatar(people[i].img),
+      etaMin: [12, 9, 15][i],
+      km: [8.1, 5.4, 10.2][i],
+      pickup: people[i].a,
+      dropoff: people[i].b,
+      status: 'On trip',
+    }));
+    const avg = allCars.reduce((n, c) => n + c.rating, 0) / allCars.length;
+    const stats: LiveStat[] = [
+      { label: 'Cars on CX', value: String(allCars.length), icon: 'cars' },
+      { label: 'Average rating', value: avg.toFixed(1), icon: 'star' },
+      { label: 'Cities', value: String(new Set(allCars.map((c) => c.city)).size), icon: 'pin' },
+      { label: 'Instant book', value: String(allCars.filter((c) => c.instantBook).length), icon: 'bolt' },
+    ];
+    return { items, stats };
+  }, [allCars]);
+
   return (
     <div>
       {/* ================= HERO — real photography, edge to edge =================
@@ -386,6 +418,16 @@ export default function Home() {
       <section className="container-page section">
         <FleetShowcase cars={fleetCars} />
       </section>
+
+      {/* ================= LIVE BOARD — every trip at a glance ================= */}
+      {liveBoard && (
+        <section className="container-page section">
+          <SectionHead eyebrow={t('Live board')} title={t('Every trip, in view.')} />
+          <Reveal className="mt-8">
+            <FleetLiveBoard items={liveBoard.items} stats={liveBoard.stats} title={t('Live tracking')} />
+          </Reveal>
+        </section>
+      )}
 
       {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
       <section className="container-page section-tight">

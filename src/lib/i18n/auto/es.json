@@ -1616,5 +1616,18 @@
 "Show password": "Mostrar contraseña",
 "Hide password": "Ocultar contraseña",
 "Email address": "Correo electrónico",
-"Password (min. 6 characters)": "Contraseña (mín. 6 caracteres)"
+"Password (min. 6 characters)": "Contraseña (mín. 6 caracteres)",
+"Live board": "Panel en vivo",
+"Every trip, in view.": "Cada viaje, a la vista.",
+"Live tracking": "Seguimiento en vivo",
+"Live preview": "Vista previa en vivo",
+"On trip": "En viaje",
+"Arriving in": "Llega en",
+"Distance left": "Distancia restante",
+"Latest activity": "Última actividad",
+"Cars on CX": "Coches en CX",
+"Cities": "Ciudades",
+"Instant book": "Reserva inmediata",
+"Drop-off": "Devolución",
+"Average rating": "Valoración media"
 }

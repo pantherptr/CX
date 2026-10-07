@@ -249,8 +249,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                 </div>
                 <p className="mt-2.5 text-caption font-semibold text-ink">Latest activity</p>
                 <ul className="mt-1.5 space-y-1.5">
-                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-bright" /><span className="min-w-0 truncate">Pickup · {current.pickup}</span></li>
-                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" /><span className="min-w-0 truncate">Drop-off · {current.dropoff}</span></li>
+                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-bright" /><span className="min-w-0 truncate"><span>Pickup</span> · {current.pickup}</span></li>
+                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" /><span className="min-w-0 truncate"><span>Drop-off</span> · {current.dropoff}</span></li>
                 </ul>
               </motion.div>
             )}
