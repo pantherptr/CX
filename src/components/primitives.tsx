@@ -79,9 +79,9 @@ export function AuthDivider() {
  * key, for light surfaces). `symbol` is the old square badge, kept only as a
  * square avatar image for the official CX identity in SIGNAL. */
 export const LOGO_SRC = {
-  full: '/cx-logo-full.png',
+  full: '/cx-logo-main.png',
   symbol: '/cx-logo-symbol.png',
-  wordmark: '/cx-logo-full.png',
+  wordmark: '/cx-logo-main.png',
 } as const;
 
 export function Logo({
@@ -106,7 +106,7 @@ export function Logo({
       <Img
         src={LOGO_SRC.wordmark}
         alt="CX"
-        className="h-5 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-6"
+        className="h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-7"
         fallback={fallback}
       />
     </Link>
