@@ -1701,5 +1701,14 @@
 "Get the car": "Ricevi l'auto",
 "Choose your dates": "Scegli le date",
 "Tap the days you need the car.": "Tocca i giorni in cui ti serve l'auto.",
-"Delivery is free.": "La consegna è gratuita."
+"Delivery is free.": "La consegna è gratuita.",
+"Pick-up": "Ritiro",
+"Return": "Riconsegna",
+"day": "giorno",
+"days": "giorni",
+"before fees": "prima delle commissioni",
+"Pick a pick-up and a return day": "Scegli un giorno di ritiro e uno di riconsegna",
+"Clear": "Cancella",
+"Apply": "Applica",
+"Now choose the return day": "Ora scegli il giorno di riconsegna"
 }

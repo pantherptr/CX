@@ -9,7 +9,7 @@ import { Img } from '../components/motion';
 import { motion, AnimatePresence, SPRING_SMOOTH, useReducedMotion } from '../components/motionKit';
 import { useLocale } from '../lib/i18n';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
-import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
+import { DateRangeSheet } from '../components/DateRangeSheet';
 import { Group, Row } from '../components/IosList';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useApp } from '../lib/store';
@@ -119,7 +119,7 @@ export default function Booking() {
   const reduceMotion = useReducedMotion();
   const [dir, setDir] = useState(1);
   const [sumOpen, setSumOpen] = useState(false);
-  const [calOpen, setCalOpen] = useState(true);
+  const [calOpen, setCalOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   const [driver, setDriver] = useState({ name: '', email: '', phone: '', dob: '', licence: '', country: '', expiry: '' });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -675,20 +675,17 @@ export default function Booking() {
                   icon="calendar"
                   title={pickupDate && returnDate ? `${fmtDate(pickupDate)} → ${fmtDate(returnDate)}` : 'Choose your dates'}
                   sub={pickupDate && returnDate ? `${days} ${days === 1 ? 'day' : 'days'}` : 'Tap the days you need the car.'}
-                  onClick={() => setCalOpen((o) => !o)}
+                  onClick={() => setCalOpen(true)}
+                />
+                <DateRangeSheet
                   open={calOpen}
-                >
-                  <AvailabilityCalendar
-                    carId={car.id}
-                    startDate={pickupDate || null}
-                    endDate={returnDate || null}
-                    onSelect={(start, end) => {
-                      setPickupDate(start);
-                      setReturnDate(end);
-                      if (start && end) setTimeout(() => setCalOpen(false), 450);
-                    }}
-                  />
-                </Row>
+                  onClose={() => setCalOpen(false)}
+                  carId={car.id}
+                  start={pickupDate || null}
+                  end={returnDate || null}
+                  pricePerDay={car.pricePerDay}
+                  onApply={(start, end) => { setPickupDate(start); setReturnDate(end); }}
+                />
               </Group>
 
               {dateError && (

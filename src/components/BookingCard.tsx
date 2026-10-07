@@ -2,9 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Car } from '../data/types';
 import { Icon } from './Icon';
-import { Modal } from './primitives';
-import { AvailabilityCalendar } from './AvailabilityCalendar';
-import { useMediaQuery } from './motion';
+import { DateRangeSheet } from './DateRangeSheet';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
@@ -53,13 +51,11 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
   const setLoc = (v: string) => setLocEdit(v);
   const [messaging, setMessaging] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 640px)');
   const cardRef = useRef<HTMLDivElement>(null);
 
   const selectDates = (start: string, end: string) => {
     setPickup(start);
     setRet(end);
-    setShowCalendar(false);
   };
 
   const days = useMemo(() => daysBetween(pickup, ret), [pickup, ret]);
@@ -129,23 +125,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         </label>
       </div>
 
-      {/* Desktop: popover anchored under the card. Mobile: bottom-sheet modal. */}
-      {showCalendar && !isMobile && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowCalendar(false)} />
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 animate-scale-in rounded-2xl border border-line bg-surface p-4 shadow-pop">
-            <AvailabilityCalendar carId={car.id} startDate={pickup} endDate={ret} onSelect={selectDates} />
-          </div>
-        </>
-      )}
-      {showCalendar && isMobile && (
-        <Modal open={showCalendar} onClose={() => setShowCalendar(false)} className="rounded-t-[1.75rem] p-5 pb-8" labelledBy="cal-title">
-          <p id="cal-title" className="mb-4 font-display text-lg font-semibold text-ink">
-            Select your dates
-          </p>
-          <AvailabilityCalendar carId={car.id} startDate={pickup} endDate={ret} onSelect={selectDates} />
-        </Modal>
-      )}
+      <DateRangeSheet open={showCalendar} onClose={() => setShowCalendar(false)} carId={car.id} start={pickup} end={ret} pricePerDay={car.pricePerDay} onApply={selectDates} />
 
       <dl className="mt-4 space-y-2.5 text-body">
         <div className="flex items-center justify-between">

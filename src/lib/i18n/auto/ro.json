@@ -1701,5 +1701,14 @@
 "Get the car": "Primește mașina",
 "Choose your dates": "Alege datele",
 "Tap the days you need the car.": "Atinge zilele în care ai nevoie de mașină.",
-"Delivery is free.": "Livrarea este gratuită."
+"Delivery is free.": "Livrarea este gratuită.",
+"Pick-up": "Ridicare",
+"Return": "Returnare",
+"day": "zi",
+"days": "zile",
+"before fees": "înainte de taxe",
+"Pick a pick-up and a return day": "Alege o zi de ridicare și una de returnare",
+"Clear": "Șterge",
+"Apply": "Aplică",
+"Now choose the return day": "Acum alege ziua de returnare"
 }
