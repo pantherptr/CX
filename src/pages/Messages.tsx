@@ -86,6 +86,13 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
   );
 }
 
+/** WhatsApp-style double tick: grey once delivered, blue once read. */
+const DoubleCheck = ({ read }: { read: boolean }) => (
+  <svg className={`h-3.5 w-3.5 ${read ? 'text-[#53bdeb]' : 'text-neutral-400'}`} viewBox="0 0 16 11" fill="currentColor" aria-hidden="true">
+    <path d="M11.045 0.585L11.988 1.528L5.858 7.658L2.558 4.358L3.502 3.415L5.858 5.772L11.045 0.585ZM14.345 0.585L15.288 1.528L9.158 7.658L8.215 6.715L14.345 0.585ZM9.158 9.545L5.858 6.245L6.802 5.302L9.158 7.658L14.345 2.472L15.288 3.415L9.158 9.545Z" />
+  </svg>
+);
+
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
   const sameDay = d.toDateString() === new Date().toDateString();
@@ -105,18 +112,18 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
   return (
     <button
       onClick={onClick}
-      className={`relative flex w-full items-center gap-3 border-b border-line px-4 py-3.5 text-left transition-colors active:bg-panel/70 ${active ? 'bg-panel/60' : '[@media(hover:hover)]:hover:bg-panel/30'}`}
+      className={`relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-neutral-200/70 ${active ? 'bg-neutral-200/70' : '[@media(hover:hover)]:hover:bg-neutral-100'}`}
     >
       {/* A colored rail on the active row reads as "this is the open thread"
           at a glance, the same language Slack/Linear use for a selected
           item in a list — the existing `bg-panel/60` tint alone was easy
           to miss at a quick scan. */}
-      {active && <span className="absolute inset-y-0 left-0 w-[3px] bg-accent" aria-hidden="true" />}
+      {active && <span className="absolute inset-y-0 left-0 w-1 bg-[#00a884]" aria-hidden="true" />}
       {c.other.avatar ? (
         <Img
           src={c.other.avatar}
           alt=""
-          className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-line"
+          className="h-12 w-12 shrink-0 rounded-full object-cover"
           fallback={
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
               <Icon name="user" size={18} />
@@ -128,21 +135,21 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
           <Icon name="user" size={18} />
         </span>
       )}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 border-b border-black/[0.06] pb-3 -mb-3">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
             <p className={`truncate text-body ${unread ? 'font-semibold text-ink' : 'font-medium text-ink'}`}>{c.other.name}</p>
             <VerifiedBadge role={c.other.role} size={13} />
           </span>
           {c.lastMessage && (
-            <span className={`shrink-0 text-label ${unread ? 'font-medium text-accent' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
+            <span className={`shrink-0 text-label ${unread ? 'font-medium text-[#00a884]' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
           )}
         </div>
         {c.car && <p className="truncate text-caption text-accent">{c.car.make} {c.car.model}</p>}
         <p className={`truncate text-detail ${unread ? 'font-medium text-ink-soft' : 'text-muted'}`}>{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
       </div>
       {unread && (
-        <span className="grid h-5 min-w-5 shrink-0 place-items-center self-start rounded-full bg-accent px-1 text-label font-semibold text-white">
+        <span className="grid h-5 min-w-5 shrink-0 place-items-center self-start rounded-full bg-[#00a884] px-1 text-label font-semibold text-white">
           {c.unreadCount > 9 ? '9+' : c.unreadCount}
         </span>
       )}
@@ -306,23 +313,35 @@ export default function Messages() {
     <DashboardShell variant="customer" active="Messages" fullHeight>
       <div className="flex h-full">
         {/* Conversation list */}
-        <div className={`flex w-full flex-col border-r border-line bg-surface md:w-[340px] md:shrink-0 ${mobileChat ? 'hidden md:flex' : 'flex'}`}>
-          <div className="border-b border-line">
-            <div className="flex items-center justify-between px-4 pb-4 pt-4">
-              <div>
-                <h1 className="font-display text-xl font-semibold text-ink">Messages</h1>
-                <p className="mt-0.5 text-caption text-muted">
-                  {totalUnread > 0
-                    ? `${totalUnread} unread message${totalUnread === 1 ? '' : 's'}`
-                    : conversations && conversations.length > 0
-                      ? `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
-                      : 'Talk with hosts and clients'}
-                </p>
+        <div className={`flex w-full flex-col border-r border-black/10 bg-white md:w-[360px] md:shrink-0 ${mobileChat ? 'hidden md:flex' : 'flex'}`}>
+          <div className="shrink-0 bg-[#f0f2f5]">
+            <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+              <div className="flex min-w-0 items-center gap-3">
+                {profile?.avatar_url ? (
+                  <Img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                    fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white"><Icon name="user" size={17} /></span>}
+                  />
+                ) : (
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white"><Icon name="user" size={17} /></span>
+                )}
+                <div className="min-w-0">
+                  <h1 className="font-display text-lg font-semibold leading-tight text-ink">Messages</h1>
+                  <p className="truncate text-caption text-muted">
+                    {totalUnread > 0
+                      ? `${totalUnread} unread message${totalUnread === 1 ? '' : 's'}`
+                      : conversations && conversations.length > 0
+                        ? `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
+                        : 'Talk with hosts and clients'}
+                  </p>
+                </div>
               </div>
               {profile?.is_owner && (
                 <button
                   onClick={() => setNewMessageOpen(true)}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ink hover:bg-panel"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-neutral-600 transition-colors hover:bg-black/5 hover:text-[#00a884]"
                   aria-label="New message"
                   title="Message anyone directly"
                 >
@@ -332,14 +351,14 @@ export default function Messages() {
             </div>
           </div>
           {conversations && conversations.length > 0 && (
-            <div className="border-b border-line px-4 py-2.5">
+            <div className="shrink-0 px-3 py-2">
               <div className="relative">
-                <Icon name="search" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
+                <Icon name="search" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search conversations…"
-                  className="input !h-9 !py-0 !pl-9 text-detail"
+                  className="h-9 w-full rounded-lg border-0 bg-[#f0f2f5] pl-9 pr-3 text-detail text-ink outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-[#00a884]/40"
                 />
               </div>
             </div>
@@ -371,7 +390,7 @@ export default function Messages() {
         </div>
 
         {/* Chat window */}
-        <div className={`flex min-w-0 flex-1 flex-col bg-bg ${mobileChat ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`flex min-w-0 flex-1 flex-col bg-[#efeae2] ${mobileChat ? 'flex' : 'hidden md:flex'}`}>
           {!active ? (
             <div className="flex flex-1 flex-col items-center justify-center">
               <EmptyState size="md" icon="message" title={conversationsLoading ? 'Loading…' : 'Select a conversation'} />
@@ -382,13 +401,13 @@ export default function Messages() {
                   keyboard shrinking the space below it; it should always
                   keep its full height and let the message list absorb
                   the change instead. */}
-              <div className="flex shrink-0 items-center gap-3 border-b border-line bg-surface/80 px-4 py-3 backdrop-blur">
+              <div className="z-10 flex shrink-0 items-center gap-3 bg-[#f0f2f5] px-3.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
                 <button onClick={closeConvo} aria-label="Back to conversations" className="grid h-9 w-9 place-items-center rounded-lg text-ink active:bg-panel md:hidden"><Icon name="chevronLeft" size={20} /></button>
                 {active.other.avatar ? (
                   <Img
                     src={active.other.avatar}
                     alt=""
-                    className="h-10 w-10 rounded-full object-cover ring-1 ring-line"
+                    className="h-10 w-10 rounded-full object-cover"
                     fallback={
                       <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
                         <Icon name="user" size={16} />
@@ -413,7 +432,7 @@ export default function Messages() {
                   </div>
                 </div>
                 {active.car && (
-                  <Link to={`/cars/${active.car.slug}`} className="btn btn-secondary btn-sm shrink-0">
+                  <Link to={`/cars/${active.car.slug}`} className="shrink-0 rounded-full bg-white px-3.5 py-1.5 text-detail font-semibold text-ink shadow-hair transition-colors hover:bg-neutral-50">
                     View car
                   </Link>
                 )}
@@ -422,7 +441,15 @@ export default function Messages() {
               {/* Messages — the one thing that actually scrolls. overscroll-contain
                   stops iOS's elastic bounce at the top/bottom of this list from
                   chaining into the page behind it. */}
-              <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8">
+              <div
+                ref={scrollRef}
+                className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-10"
+                style={{ backgroundImage: 'radial-gradient(rgba(0,0,0,0.045) 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+              >
+                <div className="mx-auto mb-3 flex max-w-[92%] items-center justify-center gap-1.5 rounded-lg bg-[#ffeebd] px-3 py-1.5 text-center text-[11px] leading-snug text-amber-900 sm:max-w-md">
+                  <Icon name="lock" size={11} className="shrink-0 text-amber-700" />
+                  <span>Keep payments and contact details inside CX — it keeps you protected.</span>
+                </div>
                 {messages === null ? (
                   <div className="flex flex-col items-center gap-2 py-10 text-center">
                     <PremiumPageLoader size={70} />
@@ -463,25 +490,25 @@ export default function Messages() {
                       <div key={m.id}>
                         {showDateDivider && (
                           <div className="my-4 flex items-center justify-center first:mt-0">
-                            <span className="rounded-full bg-panel px-3 py-1 text-label font-medium text-muted">
+                            <span className="rounded-lg bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 shadow-hair">
                               {fmtDateSeparator(m.createdAt)}
                             </span>
                           </div>
                         )}
                         <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${showHead ? 'mt-3' : 'mt-1'}`}>
-                          <div className="max-w-[78%] sm:max-w-[65%]">
+                          <div className="max-w-[82%] sm:max-w-[65%]">
                             {showHead && <RoleLabel role={badgeRole} align={mine ? 'right' : 'left'} />}
                             <div
-                              className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-body leading-snug shadow-[0_1px_2px_rgba(22,22,26,0.06)] [overflow-wrap:anywhere] ${
-                                mine ? 'bg-ink text-white rounded-br-md' : 'bg-surface text-ink border border-line rounded-bl-md'
+                              className={`whitespace-pre-wrap rounded-lg px-3 py-1.5 text-body leading-snug text-neutral-900 shadow-[0_1px_0.5px_rgba(11,20,26,0.13)] [overflow-wrap:anywhere] ${
+                                mine ? 'rounded-tr-none bg-[#d9fdd3]' : 'rounded-tl-none bg-white'
                               }`}
                             >
                               {m.body}
                             </div>
                             {showTail && (
-                              <p className={`mt-1 flex items-center gap-1 text-label text-faint ${mine ? 'justify-end' : ''}`}>
+                              <p className={`mt-0.5 flex items-center gap-1 px-0.5 text-[10px] text-neutral-500 ${mine ? 'justify-end' : ''}`}>
                                 {fmtBubbleTime(m.createdAt)}
-                                {mine && <Icon name="check" size={13} className={m.readAt ? 'text-accent' : 'text-faint'} />}
+                                {mine && <DoubleCheck read={!!m.readAt} />}
                               </p>
                             )}
                           </div>
@@ -497,10 +524,10 @@ export default function Messages() {
                     distinct, dismissible bubble with its own retry. */}
                 {pendingForActive.map((p) => (
                   <div key={p.localId} className="mt-3 flex justify-end">
-                    <div className="max-w-[78%] origin-bottom-right animate-scale-in sm:max-w-[65%]">
+                    <div className="max-w-[82%] origin-bottom-right animate-scale-in sm:max-w-[65%]">
                       <div
-                        className={`whitespace-pre-wrap rounded-2xl rounded-br-md px-4 py-2.5 text-body leading-snug [overflow-wrap:anywhere] ${
-                          p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/70 text-white'
+                        className={`whitespace-pre-wrap rounded-lg rounded-tr-none px-3 py-1.5 text-body leading-snug [overflow-wrap:anywhere] ${
+                          p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-[#d9fdd3]/70 text-neutral-900'
                         }`}
                       >
                         {p.body}
@@ -527,7 +554,7 @@ export default function Messages() {
                   normal spacing (not instead of it) so it clears the
                   home indicator now that BottomNav no longer sits below
                   it on this route (see BottomNav.tsx's OWNS_BOTTOM_BAR). */}
-              <div className="shrink-0 border-t border-line bg-surface pt-3 pr-3 pl-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pt-4 sm:pr-6 sm:pl-6 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+              <div className="z-10 shrink-0 bg-[#f0f2f5] pt-2 pr-2.5 pl-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] sm:pt-2.5 sm:pr-4 sm:pl-4 sm:pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))]">
                 {profile?.is_owner && (
                   <div className="mb-2 flex items-center gap-1.5">
                     <span className="text-caption text-muted">Sending as:</span>
@@ -549,7 +576,7 @@ export default function Messages() {
                     </button>
                   </div>
                 )}
-                <div className="flex items-end gap-2 rounded-2xl border border-line-strong bg-bg px-2 py-1.5 transition-colors focus-within:border-accent">
+                <div className="flex items-end gap-2">
                   {/* Grows with the message (up to ~5 lines, then scrolls)
                       instead of a one-line input that couldn't hold a line
                       break at all. Enter sends where there's a hardware
@@ -574,12 +601,12 @@ export default function Messages() {
                       if (!sending) send();
                     }}
                     placeholder="Write a message…"
-                    className="max-h-[132px] min-w-0 flex-1 resize-none bg-transparent px-2 py-1.5 text-body leading-snug text-ink outline-none placeholder:text-faint"
+                    className="max-h-[132px] min-w-0 flex-1 resize-none rounded-lg bg-white px-3.5 py-2.5 text-body leading-snug text-ink outline-none placeholder:text-neutral-500"
                   />
                   <button
                     onClick={send}
                     disabled={!text.trim() || sending}
-                    className="mb-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
                     aria-label="Send"
                   >
                     <Icon name="send" size={17} />
