@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
+import { buildCity, WORLD } from '../lib/cityMap';
 
 /** An animated "live fleet" board: stat tiles, a list of cars on the road,
  *  and a map where the selected car drives its route while a cursor picks
@@ -24,37 +25,34 @@ export interface LiveItem {
 }
 export interface LiveStat { label: string; value: string; icon: IconName }
 
-const ROUTES = [
-  'M 60 372 C 120 300, 150 262, 230 232 S 360 182, 420 112 S 500 62, 546 48',
-  'M 556 366 C 500 322, 462 292, 400 272 S 282 252, 222 172 S 150 82, 92 58',
-  'M 54 92 C 160 112, 222 132, 300 202 S 440 300, 534 336',
-];
-const STREETS = [
-  'M 0 150 H 600', 'M 0 300 H 600', 'M 150 0 V 420', 'M 330 0 V 420', 'M 480 0 V 420',
-  'M 0 40 L 200 420', 'M 600 120 L 380 420',
-];
-const SIDE = ['M 0 95 H 600', 'M 0 225 H 600', 'M 0 360 H 600', 'M 75 0 V 420', 'M 240 0 V 420', 'M 405 0 V 420', 'M 540 0 V 420'];
-const BLOCKS: [number, number, number, number][] = [
-  [20, 170, 110, 110], [170, 20, 140, 110], [350, 20, 110, 110], [500, 20, 80, 90],
-  [350, 170, 110, 110], [500, 170, 80, 110], [20, 320, 110, 80], [170, 320, 140, 80], [350, 320, 110, 80],
-  [20, 20, 110, 110], [170, 170, 140, 110],
-];
-const RIVER = 'M -20 262 C 90 236, 190 318, 320 292 S 540 350, 630 318';
-const PARKS: [number, number, number, number][] = [[40, 190, 70, 56], [372, 40, 66, 52], [186, 336, 100, 42]];
-const PLACES: { x: number; y: number; label: string }[] = [
-  { x: 548, y: 30, label: 'Airport' }, { x: 92, y: 40, label: 'Old Town' }, { x: 536, y: 322, label: 'Station' },
-];
-const TRAVEL_MS = 9000;
+const TRAVEL_MS = 14000;
 const HOLD_MS = 1800;
 const CYCLE = TRAVEL_MS + HOLD_MS;
-const SELECT_MS = 7000;
+const SELECT_MS = 9000;
+// the camera: how much of the city is in view
+const VIEW_W = 640;
+const VIEW_H = 440;
+// start / end intersections of each listed car's trip
+const TRIPS: [[number, number], [number, number]][] = [
+  [[1, 7], [11, 1]],
+  [[11, 7], [2, 2]],
+  [[1, 1], [10, 6]],
+];
+// ambient traffic
+const AMBIENT: [[number, number], [number, number]][] = [
+  [[0, 4], [12, 4]], [[6, 0], [6, 8]], [[12, 2], [3, 8]], [[2, 0], [9, 8]], [[0, 7], [8, 1]], [[12, 6], [4, 0]],
+];
+const AMBIENT_COLORS = ['#8d948b', '#b9beb6', '#6f766d', '#a3a89f', '#cdd1c9', '#7c8378'];
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
-const pct = (x: number, y: number) => ({ left: `${(x / 600) * 100}%`, top: `${(y / 420) * 100}%` });
 
 export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tracking' }: { items: LiveItem[]; stats?: LiveStat[]; preview?: boolean; title?: string }) {
   const reduce = useReducedMotion();
+  const city = useMemo(() => buildCity(), []);
+  const routesD = useMemo(() => items.map((_, i) => city.routeBetween(...TRIPS[i % TRIPS.length])), [city, items]);
+  const ambientD = useMemo(() => AMBIENT.map(([a, b]) => city.routeBetween(a, b)), [city]);
+
   const [sel, setSel] = useState(0);
   const [visible, setVisible] = useState(false);
   const [live, setLive] = useState({ min: items[0]?.etaMin ?? 0, km: items[0]?.km ?? 0, speed: 42, pct: 0 });
@@ -62,18 +60,21 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
   const [paused, setPaused] = useState(false);
 
   const root = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const routeRefs = useRef<(SVGPathElement | null)[]>([]);
+  const ambientRefs = useRef<(SVGPathElement | null)[]>([]);
   const carRefs = useRef<(SVGGElement | null)[]>([]);
+  const ambientCars = useRef<(SVGGElement | null)[]>([]);
   const trailRef = useRef<SVGPathElement>(null);
   const tagRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
   const selRef = useRef(0);
   selRef.current = sel;
+  const cam = useRef<{ x: number; y: number } | null>(null);
 
   const current = items[sel] ?? items[0];
 
-  // Only simulate while the board is actually on screen.
   useEffect(() => {
     const el = root.current;
     if (!el) return;
@@ -96,51 +97,80 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     return () => window.clearTimeout(id);
   }, [sel, reduce, items.length]);
 
-  // Pick the next car every few seconds (unless the visitor took over).
   useEffect(() => {
     if (!visible || reduce || paused || items.length < 2) return;
-    const id = window.setInterval(() => setSel((s) => (s + 1) % items.length), SELECT_MS);
+    const id = window.setInterval(() => setSel((v) => (v + 1) % items.length), SELECT_MS);
     return () => window.clearInterval(id);
   }, [visible, reduce, paused, items.length]);
 
-  // Every car drives its own route on a loop; the selected one is lit up.
+  // Every car drives its own street route; ambient traffic fills the roads;
+  // the camera follows the selected car like a navigation app.
   useEffect(() => {
     if (!items.length) return;
-    const paths = items.map((_, i) => routeRefs.current[i % ROUTES.length]);
-    const lens = paths.map((p) => p?.getTotalLength() ?? 0);
-    const place = (i: number, t: number) => {
-      const path = paths[i];
-      const car = carRefs.current[i];
-      if (!path || !car) return;
-      const p = path.getPointAtLength(lens[i] * t);
-      const q = path.getPointAtLength(Math.min(lens[i], lens[i] * t + 1));
-      car.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${(Math.atan2(q.y - p.y, q.x - p.x) * 180) / Math.PI})`);
-      return p;
+    const paths = items.map((_, i) => routeRefs.current[i]);
+    const lens = paths.map((pa) => pa?.getTotalLength() ?? 0);
+    const apaths = ambientRefs.current;
+    const alens = apaths.map((pa) => pa?.getTotalLength() ?? 0);
+    const svg = svgRef.current;
+    const clampView = (cx: number, cy: number) => ({
+      x: Math.max(0, Math.min(WORLD.w - VIEW_W, cx - VIEW_W / 2)),
+      y: Math.max(0, Math.min(WORLD.h - VIEW_H, cy - VIEW_H / 2)),
+    });
+    const pose = (path: SVGPathElement, len: number, t: number) => {
+      const p = path.getPointAtLength(len * t);
+      const q = path.getPointAtLength(Math.min(len, len * t + 1));
+      return { p, a: (Math.atan2(q.y - p.y, q.x - p.x) * 180) / Math.PI };
     };
+    let lastNow = 0;
     const frame = (now: number, still: boolean) => {
+      const dt = lastNow ? Math.min(0.05, (now - lastNow) / 1000) : 0.016;
+      lastNow = now;
       const si = selRef.current;
+      let selPoint: { x: number; y: number } | null = null;
       items.forEach((it, i) => {
-        const local = still ? CYCLE * (i === si ? 0.5 : 0.25 + i * 0.2) : (now + i * (CYCLE / items.length)) % CYCLE;
+        const path = paths[i];
+        const car = carRefs.current[i];
+        if (!path || !car) return;
+        const local = still ? CYCLE * (i === si ? 0.45 : 0.3 + i * 0.15) : (now + i * (CYCLE / items.length)) % CYCLE;
         const t = easeInOut(Math.min(1, local / TRAVEL_MS));
-        const p = place(i, t);
-        if (i !== si || !p) return;
+        const { p, a } = pose(path, lens[i], t);
+        car.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${a})`);
+        if (i !== si) return;
+        selPoint = p;
         const trail = trailRef.current;
         if (trail) trail.style.strokeDasharray = `${lens[i] * t} ${lens[i]}`;
-        const tag = tagRef.current;
-        if (tag) { const at = pct(p.x, p.y); tag.style.left = at.left; tag.style.top = at.top; }
         const min = Math.max(1, Math.round(it.etaMin * (1 - t)));
         const km = Math.max(0.1, +(it.km * (1 - t)).toFixed(1));
-        const speed = Math.round(t > 0.04 && t < 0.97 ? 38 + 14 * Math.sin(now / 900 + i) + 10 * Math.sin(t * Math.PI) : 0);
-        const pctDone = Math.round(t * 100);
-        setLive((l) => (l.min === min && l.km === km && l.speed === speed && l.pct === pctDone ? l : { min, km, speed, pct: pctDone }));
+        const speed = Math.round(t > 0.03 && t < 0.97 ? 38 + 12 * Math.sin(now / 900 + i) + 12 * Math.sin(t * Math.PI) : 0);
+        const done = Math.round(t * 100);
+        setLive((l) => (l.min === min && l.km === km && l.speed === speed && l.pct === done ? l : { min, km, speed, pct: done }));
       });
+      apaths.forEach((path, i) => {
+        const car = ambientCars.current[i];
+        if (!path || !car) return;
+        const period = 26000 + i * 4500;
+        const t = still ? 0.3 + i * 0.1 : ((now + i * 7300) % period) / period;
+        const { p, a } = pose(path, alens[i], t);
+        car.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${a}) scale(0.78)`);
+      });
+      if (svg && selPoint) {
+        const target = clampView((selPoint as { x: number; y: number }).x, (selPoint as { x: number; y: number }).y);
+        if (!cam.current || still) cam.current = target;
+        else cam.current = { x: cam.current.x + (target.x - cam.current.x) * Math.min(1, dt * 2.6), y: cam.current.y + (target.y - cam.current.y) * Math.min(1, dt * 2.6) };
+        svg.setAttribute('viewBox', `${cam.current.x.toFixed(1)} ${cam.current.y.toFixed(1)} ${VIEW_W} ${VIEW_H}`);
+        const tag = tagRef.current;
+        if (tag) {
+          tag.style.left = `${(((selPoint as { x: number }).x - cam.current.x) / VIEW_W) * 100}%`;
+          tag.style.top = `${(((selPoint as { y: number }).y - cam.current.y) / VIEW_H) * 100}%`;
+        }
+      }
     };
     if (reduce || !visible) { frame(0, true); return; }
     let raf = 0;
     const loop = (now: number) => { frame(now, false); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [visible, reduce, items, sel]);
+  }, [visible, reduce, items, sel, routesD, ambientD]);
 
   if (!current) return null;
 
@@ -149,17 +179,11 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     window.setTimeout(() => setPaused(false), 25000);
     setSel(i);
   };
-  const route = ROUTES[sel % ROUTES.length];
-  const endOf = (d: string) => {
-    const m = d.trim().split(/\s+/);
-    return { x: Number(m[m.length - 2]), y: Number(m[m.length - 1]) };
-  };
 
   return (
     <div ref={root} className="relative overflow-hidden rounded-[32px] border border-line bg-surface p-3 shadow-soft sm:p-5">
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-accent-bright/10 blur-3xl" />
 
-      {/* Header strip */}
       <div className="relative mb-3 flex flex-wrap items-center justify-between gap-2 px-1 sm:mb-4">
         <div className="flex items-center gap-2.5">
           <span className="relative grid h-2.5 w-2.5 place-items-center">
@@ -174,18 +198,17 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
 
       {stats && (
         <div className="relative grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl border border-line bg-panel/50 p-3.5">
-              <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-050 text-accent"><Icon name={s.icon} size={15} /></span>
-              <p className="mt-2.5 font-display text-[1.375rem] font-semibold leading-none text-ink">{s.value}</p>
-              <p className="mt-1.5 text-caption text-muted">{s.label}</p>
+          {stats.map((st) => (
+            <div key={st.label} className="rounded-2xl border border-line bg-panel/50 p-3.5">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-050 text-accent"><Icon name={st.icon} size={15} /></span>
+              <p className="mt-2.5 font-display text-[1.375rem] font-semibold leading-none text-ink">{st.value}</p>
+              <p className="mt-1.5 text-caption text-muted">{st.label}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className={`relative grid gap-3 lg:grid-cols-[minmax(0,320px)_1fr] ${stats ? 'mt-3' : ''}`}>
-        {/* Cars on the road */}
+      <div className={`relative grid gap-3 lg:grid-cols-[minmax(0,300px)_1fr] ${stats ? 'mt-3' : ''}`}>
         <div className="space-y-2">
           {items.map((it, i) => {
             const on = i === sel;
@@ -210,68 +233,93 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                     <span className="truncate text-caption text-ink-soft">{it.person}</span>
                   </span>
                 </span>
-                {on && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-accent-bright/80" style={{ width: `${live.pct}%` }} />}
+                {on && <span className="absolute bottom-0 left-0 h-[3px] bg-accent-bright/80" style={{ width: `${live.pct}%` }} />}
               </button>
             );
           })}
         </div>
 
-        {/* Map */}
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-[#eef1ec]" style={{ aspectRatio: '600 / 420' }}>
-          <svg viewBox="0 0 600 420" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        {/* Map — a navigation-style view that follows the selected car */}
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#eceee7] sm:aspect-[64/44]">
+          <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="absolute inset-0 h-full w-full" aria-hidden="true">
             <defs>
               <filter id="fl-car-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#16161a" floodOpacity="0.35" /></filter>
+              {city.labels.map((l) => <path key={l.id} id={l.id} d={l.d} />)}
             </defs>
-            {BLOCKS.map(([x, y, w, h], i) => (
-              <rect key={i} x={x} y={y} width={w} height={h} rx="14" fill={i % 4 === 0 ? '#e3ebde' : '#e8ece5'} />
+            <rect x="-50" y="-50" width={WORLD.w + 100} height={WORLD.h + 100} fill="#eceee7" />
+            <path d={city.parks} fill="#d7e8cd" />
+            {city.trees.map((t, i) => <circle key={i} cx={t.x} cy={t.y} r={t.r} fill="#c4dcb8" />)}
+            <path d={city.river} fill="none" stroke="#c3dbe7" strokeWidth="74" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.river} fill="none" stroke="#d9eaf2" strokeWidth="62" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.buildings.a} fill="#e3e5dd" stroke="#d3d6cc" strokeWidth="0.8" />
+            <path d={city.buildings.b} fill="#dde0d8" stroke="#cfd3c9" strokeWidth="0.8" />
+            <path d={city.buildings.c} fill="#e8eae3" stroke="#d3d6cc" strokeWidth="0.8" />
+            {/* roads: casing first, then the surface */}
+            <path d={city.locals} fill="none" stroke="#d6d9cf" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#e1d8c0" strokeWidth="22" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.locals} fill="none" stroke="#ffffff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#fffdf6" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#efe9d8" strokeWidth="1" strokeDasharray="9 11" strokeLinecap="round" />
+            {city.roundabouts.map((r, i) => (
+              <g key={i} transform={`translate(${r.x} ${r.y})`}>
+                <circle r="34" fill="#fffdf6" stroke="#e1d8c0" strokeWidth="3" />
+                <circle r="19" fill="#d7e8cd" stroke="#e1d8c0" strokeWidth="2" />
+              </g>
             ))}
-            {PARKS.map(([x, y, w, h], i) => (
-              <rect key={`p${i}`} x={x} y={y} width={w} height={h} rx="22" fill="#d5e6cb" />
+            {city.labels.map((l, i) => (
+              <text key={l.id} fontSize="10.5" fontWeight="600" fill="#9aa194" style={{ letterSpacing: '0.12em' }} dy="-11">
+                <textPath href={`#${l.id}`} startOffset={`${12 + (i % 3) * 22}%`}>{l.name.toUpperCase()}</textPath>
+              </text>
             ))}
-            <path d={RIVER} fill="none" stroke="#cfe2ec" strokeWidth="30" strokeLinecap="round" />
-            <path d={RIVER} fill="none" stroke="#e1eef4" strokeWidth="22" strokeLinecap="round" />
-            {SIDE.map((d, i) => <path key={`s${i}`} d={d} fill="none" stroke="#f7f8f5" strokeWidth="5" />)}
-            {[...STREETS, ...ROUTES].map((d, i) => (
-              <path key={i} d={d} fill="none" stroke="#dcdfd8" strokeWidth="15.5" strokeLinecap="round" />
-            ))}
-            {[...STREETS, ...ROUTES].map((d, i) => (
-              <path key={`w${i}`} d={d} fill="none" stroke="#ffffff" strokeWidth="13" strokeLinecap="round" />
-            ))}
-            {ROUTES.map((d, i) => (
-              <path key={`r${i}`} ref={(n) => { routeRefs.current[i] = n; }} d={d} fill="none" stroke="none" />
-            ))}
-            {PLACES.map((pl) => (
+            {city.places.map((pl) => (
               <g key={pl.label} transform={`translate(${pl.x} ${pl.y})`}>
-                <circle r="3.5" fill="#9aa396" />
-                <text y="-8" textAnchor="middle" fontSize="9" fontWeight="600" fill="#7c8678" style={{ letterSpacing: '0.04em' }}>{pl.label}</text>
+                <circle r="9" fill="#ffffff" stroke="#cfd3c9" strokeWidth="1.5" />
+                <circle r="3.4" fill="#00a63f" />
+                <text y="-17" textAnchor="middle" fontSize="12.5" fontWeight="700" fill="#6c7568" stroke="#eceee7" strokeWidth="3" paintOrder="stroke">{pl.label}</text>
               </g>
             ))}
 
+            {/* hidden geometry used to move the cars */}
+            {routesD.map((d, i) => <path key={`r${i}`} ref={(n) => { routeRefs.current[i] = n; }} d={d} fill="none" stroke="none" />)}
+            {ambientD.map((d, i) => <path key={`a${i}`} ref={(n) => { ambientRefs.current[i] = n; }} d={d} fill="none" stroke="none" />)}
+
             {/* selected route */}
-            <path d={route} fill="none" stroke="#00d447" strokeWidth="3" strokeDasharray="2 7" strokeLinecap="round" opacity="0.6" />
-            <path ref={trailRef} d={route} fill="none" stroke="#00d447" strokeWidth="5" strokeLinecap="round" />
+            {routesD[sel] && (
+              <>
+                <path d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="5" strokeDasharray="1 9" strokeLinecap="round" opacity="0.5" />
+                <path ref={trailRef} d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" opacity="0.92" />
+              </>
+            )}
+
+            {/* ambient traffic */}
+            {ambientD.map((_, i) => (
+              <g key={`ac${i}`} ref={(n) => { ambientCars.current[i] = n; }}>
+                <rect x="-12" y="-6.2" width="24" height="12.4" rx="5" fill={AMBIENT_COLORS[i % AMBIENT_COLORS.length]} />
+                <rect x="-1" y="-4.6" width="7" height="9.2" rx="2" fill="#ffffff" opacity="0.55" />
+              </g>
+            ))}
 
             {/* destination pins */}
             {items.map((_, i) => {
-              const e = endOf(ROUTES[i % ROUTES.length]);
+              const e = city.node(...TRIPS[i % TRIPS.length][1]);
               const on = i === sel;
               return (
-                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y})`} opacity={on ? 1 : 0.45}>
-                  {on && <circle r="18" fill="#00d447" opacity="0.2"><animate attributeName="r" values="12;24;12" dur="2.4s" repeatCount="indefinite" /></circle>}
-                  <path d="M0 -4 C -9 -16 -11 -26 0 -31 C 11 -26 9 -16 0 -4 Z" fill="#16161a" />
-                  <circle cx="0" cy="-20" r="4" fill="#00d447" />
+                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y})`} opacity={on ? 1 : 0.5}>
+                  {on && <circle r="22" fill="#00d447" opacity="0.2"><animate attributeName="r" values="14;30;14" dur="2.4s" repeatCount="indefinite" /></circle>}
+                  <path d="M0 -4 C -11 -19 -13 -31 0 -37 C 13 -31 11 -19 0 -4 Z" fill="#16161a" />
+                  <circle cx="0" cy="-24" r="4.8" fill="#00d447" />
                 </g>
               );
             })}
 
-            {/* every car on its own route */}
+            {/* the listed cars */}
             {items.map((_, i) => {
               const on = i === sel;
               return (
-                <g key={`car${i}`} ref={(n) => { carRefs.current[i] = n; }} opacity={on ? 1 : 0.7}>
-                  {on && <circle r="20" fill="#00d447" opacity="0.22" />}
-                  <g filter="url(#fl-car-shadow)" transform={on ? undefined : 'scale(0.8)'}>
-                    <rect x="-14" y="-7.5" width="28" height="15" rx="6" fill={on ? '#16161a' : '#4b4f4a'} />
+                <g key={`car${i}`} ref={(n) => { carRefs.current[i] = n; }} opacity={on ? 1 : 0.85}>
+                  {on && <circle r="26" fill="#00d447" opacity="0.22" />}
+                  <g filter="url(#fl-car-shadow)" transform={on ? 'scale(1.25)' : 'scale(0.95)'}>
+                    <rect x="-14" y="-7.5" width="28" height="15" rx="6" fill={on ? '#16161a' : '#3c403b'} />
                     <rect x="-1" y="-5.5" width="8" height="11" rx="2.5" fill="#e8faec" />
                     <rect x="-9" y="-5.5" width="5" height="11" rx="2" fill="#e8faec" opacity="0.5" />
                     <circle cx="13" cy="-4.5" r="1.7" fill="#00d447" />
@@ -282,14 +330,12 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             })}
           </svg>
 
-          {/* name tag that rides with the selected car */}
-          <div ref={tagRef} className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[170%]">
+          <div ref={tagRef} className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[190%]">
             <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-white shadow-pop">
               {current.person.split(' ')[0]} · {live.min} min
             </span>
           </div>
 
-          {/* Trip card */}
           <AnimatePresence mode="wait">
             {showCard && (
               <motion.div
@@ -298,7 +344,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={reduce ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
                 transition={SPRING_SMOOTH}
-                className="absolute bottom-2.5 left-2.5 right-2.5 z-20 rounded-2xl border border-line bg-surface/95 p-3.5 shadow-pop backdrop-blur sm:bottom-3 sm:left-auto sm:right-3 sm:w-[280px]"
+                className="absolute bottom-2.5 left-2.5 right-2.5 z-20 rounded-2xl border border-line bg-surface/95 p-3.5 shadow-pop backdrop-blur sm:bottom-3 sm:left-auto sm:right-3 sm:w-[270px]"
               >
                 <div className="flex items-center gap-2.5">
                   {current.avatar ? <img src={current.avatar} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="h-9 w-9 rounded-full bg-panel" />}
@@ -311,7 +357,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                 </div>
                 <div className="mt-3">
                   <div className="h-1.5 overflow-hidden rounded-full bg-panel"><div className="h-full rounded-full bg-accent-bright" style={{ width: `${live.pct}%` }} /></div>
-                  <div className="mt-1.5 flex justify-between text-[10px] font-medium text-faint"><span>{current.pickup}</span><span>{current.dropoff}</span></div>
+                  <div className="mt-1.5 flex justify-between gap-2 text-[10px] font-medium text-faint"><span className="truncate">{current.pickup}</span><span className="truncate">{current.dropoff}</span></div>
                 </div>
                 <div className="mt-2.5 grid grid-cols-3 gap-2 border-y border-line py-2.5">
                   <div>
@@ -327,18 +373,12 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                     <p className="text-caption text-muted">Speed</p>
                   </div>
                 </div>
-                <p className="mt-2.5 text-caption font-semibold text-ink">Latest activity</p>
-                <ul className="mt-1.5 space-y-1.5">
-                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-bright" /><span className="min-w-0 truncate"><span>Pickup</span> · {current.pickup}</span></li>
-                  <li className="flex items-start gap-2 text-caption text-muted"><span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ink" /><span className="min-w-0 truncate"><span>Drop-off</span> · {current.dropoff}</span></li>
-                </ul>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* the cursor that "chooses" each car */}
       {!reduce && (
         <div ref={cursorRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 z-30 hidden transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:block">
           <svg width="22" height="22" viewBox="0 0 24 24" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]"><path d="M4 2 L20 11 L12 13 L9 21 Z" fill="#16161a" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" /></svg>
