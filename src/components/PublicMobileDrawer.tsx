@@ -2,7 +2,6 @@ import { FlyingMark } from './FlyingMark';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
-import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { ConciergeLauncher } from './Concierge';
 import { useViewportBottomGap } from '../lib/useViewportGap';
@@ -70,7 +69,7 @@ export default function PublicMobileDrawer({
             >
               {/* -------- Compact header: logo + close, nothing else -------- */}
               <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
-                <Logo variant="wordmark" />
+                <Link to="/" onClick={() => onClose()} aria-label="CX home" className="inline-flex min-h-11 items-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-9" /></Link>
                 <button
                   onClick={() => onClose()}
                   className="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
@@ -81,7 +80,6 @@ export default function PublicMobileDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
-                <div className="mb-6 flex justify-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-14" /></div>
                 {/* -------- The one primary CTA — compact, single line -------- */}
                 <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg btn-block !justify-between mb-6" {...findDriveScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />

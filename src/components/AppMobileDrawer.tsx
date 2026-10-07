@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Img } from './motion';
-import { Logo } from './primitives';
 import { SignalLogo } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
@@ -139,7 +138,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
             }}
           >
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
-              <Logo variant="wordmark" />
+              <Link to="/dashboard" onClick={() => onClose()} aria-label="CX home" className="inline-flex min-h-11 items-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-9" /></Link>
               <button
                 onClick={onClose}
                 className="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
@@ -150,7 +149,6 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <nav className="flex-1 overflow-y-auto p-3">
-              <div className="mb-4 mt-1 flex justify-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-12" /></div>
               {isHost && (
                 <div role="tablist" aria-label="Menu for" className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
                   {(
