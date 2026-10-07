@@ -365,7 +365,7 @@ export function SignalStoryCamera({
 
   return (
     <div className="h-full w-full bg-noir">
-      <StoryCanvas>
+      <StoryCanvas fillOnPhone>
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-safe" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
           <Tap onClick={onClose} aria-label="Close" scale={0.9} className="grid h-9 w-9 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50">
             <Icon name="x" size={20} />

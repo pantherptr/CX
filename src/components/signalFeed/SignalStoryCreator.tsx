@@ -408,7 +408,7 @@ function EditorStage({
       exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
       transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
     >
-      <StoryCanvas>
+      <StoryCanvas fillOnPhone>
         {isText ? (
           <TextCanvas slide={activeSlide} textareaRef={textareaRef} onChange={(patch) => onPatchActive(patch)} />
         ) : activeSlide.mediaType === 'video' ? (
