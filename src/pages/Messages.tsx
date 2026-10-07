@@ -88,12 +88,7 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
   );
 }
 
-/** WhatsApp-style double tick: grey once delivered, blue once read. */
-const DoubleCheck = ({ read }: { read: boolean }) => (
-  <svg className={`h-3.5 w-3.5 ${read ? 'text-[#53bdeb]' : 'text-neutral-400'}`} viewBox="0 0 16 11" fill="currentColor" aria-hidden="true">
-    <path d="M11.045 0.585L11.988 1.528L5.858 7.658L2.558 4.358L3.502 3.415L5.858 5.772L11.045 0.585ZM14.345 0.585L15.288 1.528L9.158 7.658L8.215 6.715L14.345 0.585ZM9.158 9.545L5.858 6.245L6.802 5.302L9.158 7.658L14.345 2.472L15.288 3.415L9.158 9.545Z" />
-  </svg>
-);
+const ROLE_SUBTITLE: Record<string, string> = { host: 'Host', client: 'Client', owner: 'Owner', admin: 'Admin', owner_assistant: 'Assistant' };
 
 const fmtTime = (iso: string) => {
   const d = new Date(iso);
@@ -114,47 +109,38 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
   return (
     <button
       onClick={onClick}
-      className={`relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-neutral-200/70 ${active ? 'bg-neutral-200/70' : '[@media(hover:hover)]:hover:bg-neutral-100'}`}
+      className={`flex w-full items-center gap-3.5 px-5 py-3 text-left transition-colors active:bg-panel ${active ? 'bg-panel' : ''}`}
     >
-      {/* A colored rail on the active row reads as "this is the open thread"
-          at a glance, the same language Slack/Linear use for a selected
-          item in a list — the existing `bg-panel/60` tint alone was easy
-          to miss at a quick scan. */}
-      {active && <span className="absolute inset-y-0 left-0 w-1 bg-[#00a884]" aria-hidden="true" />}
       {c.other.avatar ? (
         <Img
           src={c.other.avatar}
           alt=""
-          className="h-12 w-12 shrink-0 rounded-full object-cover"
-          fallback={
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
-              <Icon name="user" size={18} />
-            </span>
-          }
+          className="h-[52px] w-[52px] shrink-0 rounded-full object-cover"
+          fallback={<span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
         />
       ) : (
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
-          <Icon name="user" size={18} />
-        </span>
+        <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
       )}
-      <div className="min-w-0 flex-1 border-b border-black/[0.06] pb-3 -mb-3">
+      <div className="min-w-0 flex-1 border-b border-line pb-3 -mb-3">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
-            <p className={`truncate text-body ${unread ? 'font-semibold text-ink' : 'font-medium text-ink'}`}>{c.other.name}</p>
+            <p className={`truncate text-[15px] ${unread ? 'font-semibold' : 'font-medium'} text-ink`}>{c.other.name}</p>
             <VerifiedBadge role={c.other.role} size={13} />
           </span>
           {c.lastMessage && (
-            <span className={`shrink-0 text-label ${unread ? 'font-medium text-[#00a884]' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
+            <span className={`shrink-0 text-label ${unread ? 'font-semibold text-accent' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
           )}
         </div>
-        {c.car && <p className="truncate text-caption text-accent">{c.car.make} {c.car.model}</p>}
-        <p className={`truncate text-detail ${unread ? 'font-medium text-ink-soft' : 'text-muted'}`}>{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
+        {c.car && <p className="truncate text-caption font-medium text-accent">{c.car.make} {c.car.model}</p>}
+        <div className="flex items-center justify-between gap-2">
+          <p className={`truncate text-detail ${unread ? 'font-medium text-ink-soft' : 'text-muted'}`}>{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
+          {unread && (
+            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1.5 text-label font-bold text-white">
+              {c.unreadCount > 9 ? '9+' : c.unreadCount}
+            </span>
+          )}
+        </div>
       </div>
-      {unread && (
-        <span className="grid h-5 min-w-5 shrink-0 place-items-center self-start rounded-full bg-[#00a884] px-1 text-label font-semibold text-white">
-          {c.unreadCount > 9 ? '9+' : c.unreadCount}
-        </span>
-      )}
     </button>
   );
 }
@@ -188,10 +174,10 @@ interface PendingMessage {
   status: 'sending' | 'failed';
 }
 
-/** The message stream inside the MacBook frame — the mock-up's own bubble
- *  styling (small type, white/green bubbles, blue ticks, sender label on
- *  incoming), fed with the real thread. */
-function MockThread({
+/** The message stream — one renderer for both layouts. `large` is the phone
+ *  chat (15px type, ink/white bubbles); the default is the compact one inside
+ *  the laptop frame. Same real thread either way. */
+function Thread({
   messages,
   pending,
   active,
@@ -199,6 +185,8 @@ function MockThread({
   myRole,
   onRetry,
   onDismiss,
+  large = false,
+  ownerIdentity = false,
 }: {
   messages: Message[] | null;
   pending: PendingMessage[];
@@ -207,62 +195,73 @@ function MockThread({
   myRole: VerifiedRole;
   onRetry: (p: PendingMessage) => void;
   onDismiss: (id: string) => void;
+  large?: boolean;
+  /** Only the Owner picks an identity per message, so only their own bubbles carry a role label. */
+  ownerIdentity?: boolean;
 }) {
+  const t = large
+    ? { gap: 'space-y-1', bubble: 'max-w-[82%] rounded-2xl px-3.5 py-2 text-[15px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
+    : { gap: 'space-y-1.5', bubble: 'max-w-[75%] rounded-xl px-3 py-1.5 text-[11.5px] leading-snug', time: 'text-[9px]', day: 'text-[9px] px-2.5 py-0.5', note: 'text-[9.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
+  const roleOf = (m: Message): VerifiedRole => (m.senderId === myId ? (m.senderRole ?? myRole) : active.other.role);
   return (
-    <div className="flex min-h-full flex-col justify-end space-y-2.5">
-      <div className="mx-auto my-1 flex max-w-[90%] items-center justify-center gap-1 rounded-md bg-[#ffeebd] px-3 py-1 text-center text-[9.5px] text-amber-900">
-        <LockIcon className="h-2.5 w-2.5 shrink-0 text-amber-700" />
-        <span>Keep payments and contact details inside CX — it keeps you protected.</span>
+    <div className={`flex min-h-full flex-col justify-end ${t.gap}`}>
+      <div className={`mx-auto mb-2 flex w-fit max-w-[92%] items-center justify-center gap-1.5 rounded-full bg-white text-center text-muted shadow-hair ring-1 ring-line ${t.note}`}>
+        <LockIcon className="h-3 w-3 shrink-0 text-accent" />
+        <span>Payments and contact details stay inside CX — that's how you're protected.</span>
       </div>
       {messages === null ? (
-        <p className="py-6 text-center text-[10px] text-neutral-500">Loading…</p>
+        <p className="py-8 text-center text-detail text-muted">Loading…</p>
       ) : messages.length === 0 && pending.length === 0 ? (
-        <p className="py-6 text-center text-[10px] text-neutral-500">Say hello — this is the start of your conversation.</p>
+        <p className="py-8 text-center text-detail text-muted">Say hello — this is the start of your conversation.</p>
       ) : (
         messages.map((m, i) => {
           const mine = m.senderId === myId;
           const prev = messages[i - 1];
+          const next = messages[i + 1];
+          const role = roleOf(m);
+          const first = !prev || prev.senderId !== m.senderId || roleOf(prev) !== role;
+          const last = !next || next.senderId !== m.senderId || roleOf(next) !== role;
           const showDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
-          const label = mine ? null : active.other.name;
-          void myRole;
           return (
-            <div key={m.id} className="space-y-2.5">
+            <div key={m.id}>
               {showDay && (
-                <div className="mx-auto my-0.5 w-fit rounded-md bg-white/80 px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-neutral-500 uppercase">
-                  {fmtDateSeparator(m.createdAt)}
+                <div className="my-3 flex justify-center">
+                  <span className={`rounded-full bg-black/[0.05] font-semibold uppercase tracking-wider text-muted ${t.day}`}>{fmtDateSeparator(m.createdAt)}</span>
                 </div>
               )}
-              <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+              <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} ${first && !showDay ? 'mt-2.5' : ''}`}>
+                {first && (!mine || ownerIdentity) && <RoleLabel role={role} align={mine ? 'right' : 'left'} />}
                 <div
-                  className={`relative max-w-[75%] rounded-lg px-3 py-1.5 text-xs ${
-                    mine ? 'rounded-tr-none bg-[#dcf8c6] text-neutral-900' : 'rounded-tl-none bg-white text-neutral-900'
+                  className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${
+                    mine
+                      ? `bg-ink text-white ${last ? 'rounded-br-md' : ''}`
+                      : `bg-white text-ink shadow-hair ring-1 ring-line ${last ? 'rounded-bl-md' : ''}`
                   }`}
                 >
-                  {label && <p className="mb-0.5 text-[10px] font-bold text-emerald-700">{label}</p>}
-                  <p className="whitespace-pre-wrap text-[11.5px] leading-snug [overflow-wrap:anywhere]">{m.body}</p>
-                  <div className="mt-0.5 flex items-center justify-end gap-1">
-                    <span className={`text-[9px] ${mine ? 'text-emerald-800/70' : 'text-neutral-400'}`}>{fmtBubbleTime(m.createdAt)}</span>
-                    {mine && <DoubleCheckIcon className={`h-3.5 w-3.5 ${m.readAt ? 'text-[#53bdeb]' : 'text-neutral-400'}`} />}
-                  </div>
+                  {m.body}
                 </div>
+                {last && (
+                  <p className={`mt-1 flex items-center gap-1 px-1 text-faint ${t.time}`}>
+                    {fmtBubbleTime(m.createdAt)}
+                    {mine && <DoubleCheckIcon className={`${t.tick} ${m.readAt ? 'text-accent-bright' : 'text-faint'}`} />}
+                  </p>
+                )}
               </div>
             </div>
           );
         })
       )}
       {pending.map((p) => (
-        <div key={p.localId} className="flex flex-col items-end">
-          <div className={`max-w-[75%] rounded-lg rounded-tr-none px-3 py-1.5 text-[11.5px] leading-snug ${p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-[#dcf8c6]/70 text-neutral-900'}`}>
-            {p.body}
-          </div>
-          <p className="mt-0.5 flex items-center gap-2 text-[9px]">
+        <div key={p.localId} className="flex flex-col items-end pt-1">
+          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/70 text-white'}`}>{p.body}</div>
+          <p className={`mt-1 flex items-center gap-2 px-1 ${t.time}`}>
             {p.status === 'sending' ? (
-              <span className="text-neutral-500">Sending…</span>
+              <span className="text-faint">Sending…</span>
             ) : (
               <>
-                <span className="text-red-600">Not delivered</span>
-                <button onClick={() => onRetry(p)} className="font-semibold text-emerald-700 hover:underline">Retry</button>
-                <button onClick={() => onDismiss(p.localId)} className="text-neutral-500 hover:text-neutral-800">Discard</button>
+                <span className="text-danger">Not delivered</span>
+                <button onClick={() => onRetry(p)} className="font-semibold text-accent hover:underline">Retry</button>
+                <button onClick={() => onDismiss(p.localId)} className="text-faint hover:text-ink">Discard</button>
               </>
             )}
           </p>
@@ -270,6 +269,25 @@ function MockThread({
       ))}
     </div>
   );
+}
+
+/** The visible area while the on-screen keyboard is up — the phone chat is
+ *  pinned to it so the composer never jumps or hides behind the keyboard. */
+function useVisualViewportBox(): { top: number; height: number | string } {
+  const [box, setBox] = useState<{ top: number; height: number | string }>({ top: 0, height: '100dvh' });
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setBox({ top: Math.round(vv.offsetTop), height: Math.round(vv.height) });
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+  return box;
 }
 
 export default function Messages() {
@@ -286,6 +304,7 @@ export default function Messages() {
   // The Owner's identity switcher — which badge their next message sends
   // under. Not persisted; defaults back to their real identity each visit.
   const [sendAsRole, setSendAsRole] = useState<SendAsRole>('owner');
+  const vv = useVisualViewportBox();
   const scrollRef = useRef<HTMLDivElement>(null);
   const mockScrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -339,6 +358,13 @@ export default function Messages() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, session?.user.id, messages?.length]);
+
+  useEffect(() => {
+    if (!mobileChat || window.matchMedia('(min-width: 640px)').matches) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [mobileChat]);
 
   const closeConvo = () => {
     setMobileChat(false);
@@ -404,7 +430,7 @@ export default function Messages() {
         <MacbookMockup
           className="my-auto"
           headerTitle={active?.other.name ?? (conversationsLoading ? 'Loading…' : 'Messages')}
-          headerSubtitle={active ? (active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : 'online') : ''}
+          headerSubtitle={active ? (active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? '') : ''}
           avatarUrl={active?.other.avatar}
           avatarFallback={active?.other.name?.[0]?.toUpperCase() ?? 'C'}
           userAvatarUrl={profile?.avatar_url}
@@ -455,14 +481,14 @@ export default function Messages() {
                       e.preventDefault();
                       if (!sending) send();
                     }}
-                    placeholder="Type a message"
+                    placeholder="Write a message…"
                     className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-1.5 text-xs leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button
                     onClick={send}
                     disabled={!text.trim() || sending}
                     aria-label="Send"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#00a884] text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-bright disabled:opacity-40"
                   >
                     <Icon name="send" size={15} />
                   </button>
@@ -472,7 +498,8 @@ export default function Messages() {
           }
         >
           {active && (
-            <MockThread
+            <Thread
+                ownerIdentity={!!profile?.is_owner}
               messages={messages}
               pending={pendingForActive}
               active={active}
@@ -485,68 +512,51 @@ export default function Messages() {
         </MacbookMockup>
       </div>
 
-      {/* Phone layout — the full-screen chat. */}
-      <div className="flex h-full sm:hidden">
-        {/* Conversation list */}
-        <div className={`flex w-full flex-col border-r border-black/10 bg-white md:w-[360px] md:shrink-0 ${mobileChat ? 'hidden md:flex' : 'flex'}`}>
-          <div className="shrink-0 bg-[#f0f2f5]">
-            <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-              <div className="flex min-w-0 items-center gap-3">
-                {profile?.avatar_url ? (
-                  <Img
-                    src={profile.avatar_url}
-                    alt=""
-                    className="h-10 w-10 shrink-0 rounded-full object-cover"
-                    fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white"><Icon name="user" size={17} /></span>}
-                  />
-                ) : (
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white"><Icon name="user" size={17} /></span>
-                )}
-                <div className="min-w-0">
-                  <h1 className="font-display text-lg font-semibold leading-tight text-ink">Messages</h1>
-                  <p className="truncate text-caption text-muted">
-                    {totalUnread > 0
-                      ? `${totalUnread} unread message${totalUnread === 1 ? '' : 's'}`
-                      : conversations && conversations.length > 0
-                        ? `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
-                        : 'Talk with hosts and clients'}
-                  </p>
-                </div>
+      {/* Phone layout — a clean list, then a full-screen chat that follows the
+          visual viewport (keyboard-safe) with 16px inputs so iOS never zooms. */}
+      <div className="h-full sm:hidden">
+        <div className="flex h-full flex-col bg-surface">
+          <div className="shrink-0 px-5 pb-3 pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="font-display text-[1.75rem] font-bold leading-tight tracking-tight text-ink">Messages</h1>
+                <p className="mt-0.5 text-detail text-muted">
+                  {totalUnread > 0
+                    ? `${totalUnread} unread message${totalUnread === 1 ? '' : 's'}`
+                    : conversations && conversations.length > 0
+                      ? `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
+                      : 'Talk with hosts and clients'}
+                </p>
               </div>
               {profile?.is_owner && (
                 <button
                   onClick={() => setNewMessageOpen(true)}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-neutral-600 transition-colors hover:bg-black/5 hover:text-[#00a884]"
+                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white"
                   aria-label="New message"
-                  title="Message anyone directly"
                 >
                   <Icon name="plus" size={19} />
                 </button>
               )}
             </div>
-          </div>
-          {conversations && conversations.length > 0 && (
-            <div className="shrink-0 px-3 py-2">
-              <div className="relative">
-                <Icon name="search" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+            {conversations && conversations.length > 0 && (
+              <div className="relative mt-4">
+                <Icon name="search" size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search conversations…"
-                  className="h-9 w-full rounded-lg border-0 bg-[#f0f2f5] pl-9 pr-3 text-detail text-ink outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-[#00a884]/40"
+                  placeholder="Search conversations"
+                  className="h-11 w-full rounded-full border-0 bg-panel pl-11 pr-4 text-[16px] text-ink outline-none placeholder:text-faint focus:ring-2 focus:ring-accent/30"
                 />
               </div>
-            </div>
-          )}
-          <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:pb-safe">
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
             {conversationsLoading ? (
-              <div className="flex flex-col items-center gap-2 py-16 text-center">
-                <PremiumPageLoader size={70} />
-              </div>
+              <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
             ) : conversations && conversations.length > 0 ? (
               visibleConversations.length > 0 ? (
                 visibleConversations.map((c) => (
-                  <ConversationRow key={c.id} c={c} active={c.id === activeId} onClick={() => openConvo(c.id)} />
+                  <ConversationRow key={c.id} c={c} active={false} onClick={() => openConvo(c.id)} />
                 ))
               ) : (
                 <p className="px-6 py-16 text-center text-detail text-muted">No conversations match “{search.trim()}”.</p>
@@ -564,233 +574,94 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* Chat window */}
-        <div className={`flex min-w-0 flex-1 flex-col bg-[#efeae2] ${mobileChat ? 'flex' : 'hidden md:flex'}`}>
-          {!active ? (
-            <div className="flex flex-1 flex-col items-center justify-center">
-              <EmptyState size="md" icon="message" title={conversationsLoading ? 'Loading…' : 'Select a conversation'} />
+        {mobileChat && active && (
+          <div
+            className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
+            style={{ top: vv.top, height: vv.height }}
+          >
+            <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-surface/95 px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] backdrop-blur">
+              <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink active:bg-panel">
+                <Icon name="chevronLeft" size={22} />
+              </button>
+              {active.other.avatar ? (
+                <Img
+                  src={active.other.avatar}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>}
+                />
+              ) : (
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="flex min-w-0 items-center gap-1.5 truncate text-[15px] font-semibold leading-tight text-ink">
+                  <span className="truncate">{active.other.name}</span>
+                  <VerifiedBadge role={active.other.role} size={13} />
+                </p>
+                <p className="truncate text-caption text-muted">
+                  {active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
+                </p>
+              </div>
+              {active.car && (
+                <Link to={`/cars/${active.car.slug}`} className="pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-detail font-semibold text-white">
+                  View car
+                </Link>
+              )}
             </div>
-          ) : (
-            <>
-              {/* Chat header — shrink-0 so it can never be squeezed by the
-                  keyboard shrinking the space below it; it should always
-                  keep its full height and let the message list absorb
-                  the change instead. */}
-              <div className="z-10 flex shrink-0 items-center gap-3 bg-[#f0f2f5] px-3.5 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
-                <button onClick={closeConvo} aria-label="Back to conversations" className="grid h-9 w-9 place-items-center rounded-lg text-ink active:bg-panel md:hidden"><Icon name="chevronLeft" size={20} /></button>
-                {active.other.avatar ? (
-                  <Img
-                    src={active.other.avatar}
-                    alt=""
-                    className="h-10 w-10 rounded-full object-cover"
-                    fallback={
-                      <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
-                        <Icon name="user" size={16} />
-                      </span>
-                    }
-                  />
-                ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-accent-050 text-accent ring-1 ring-line">
-                    <Icon name="user" size={16} />
-                  </span>
-                )}
-                {/* Name on its own line, role + vehicle context on the next —
-                    the identity spec calls for name/verification/role/context
-                    all visible without clutter; a bare icon next to the name
-                    left role ambiguous (Host and Client share the same green
-                    mark), so the role now reads as an explicit word here. */}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-ink">{active.other.name}</p>
-                  <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-                    <VerifiedBadge role={active.other.role} showLabel size={11} />
-                    {active.car && <span className="truncate text-caption text-muted">{active.car.make} {active.car.model}</span>}
-                  </div>
-                </div>
-                {active.car && (
-                  <Link to={`/cars/${active.car.slug}`} className="shrink-0 rounded-full bg-white px-3.5 py-1.5 text-detail font-semibold text-ink shadow-hair transition-colors hover:bg-neutral-50">
-                    View car
-                  </Link>
-                )}
-              </div>
 
-              {/* Messages — the one thing that actually scrolls. overscroll-contain
-                  stops iOS's elastic bounce at the top/bottom of this list from
-                  chaining into the page behind it. */}
-              <div
-                ref={scrollRef}
-                className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-10"
-                style={{ backgroundImage: 'radial-gradient(rgba(0,0,0,0.045) 1px, transparent 1px)', backgroundSize: '18px 18px' }}
-              >
-                <div className="mx-auto mb-3 flex max-w-[92%] items-center justify-center gap-1.5 rounded-lg bg-[#ffeebd] px-3 py-1.5 text-center text-[11px] leading-snug text-amber-900 sm:max-w-md">
-                  <Icon name="lock" size={11} className="shrink-0 text-amber-700" />
-                  <span>Keep payments and contact details inside CX — it keeps you protected.</span>
-                </div>
-                {messages === null ? (
-                  <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <PremiumPageLoader size={70} />
-                  </div>
-                ) : messages.length === 0 && pendingForActive.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <p className="text-detail text-muted">Say hello — this is the start of your conversation.</p>
-                  </div>
-                ) : (
-                  messages.map((m, i) => {
-                    const mine = m.senderId === session?.user.id;
-                    // The Owner's own messages carry sender_role per
-                    // message (which identity they chose to send under);
-                    // everyone else's — and the Owner's own messages sent
-                    // before this feature existed — fall back to their
-                    // real account role.
-                    const badgeRole: VerifiedRole = mine ? (m.senderRole ?? myRole) : active.other.role;
-                    const roleOf = (msg: typeof m) =>
-                      msg.senderId === session?.user.id ? (msg.senderRole ?? myRole) : active.other.role;
-                    const prev = messages[i - 1];
-                    const next = messages[i + 1];
-                    // A new "who's talking" label appears whenever the
-                    // sender changes — or, uniquely for the Owner, when
-                    // they switch identity mid-thread. Without that second
-                    // check, three Owner messages sent as Owner then
-                    // Assistant then Owner again would visually read as
-                    // one uninterrupted run from a single identity.
-                    const showHead = !prev || prev.senderId !== m.senderId || roleOf(prev) !== badgeRole;
-                    const showTail = !next || next.senderId !== m.senderId || roleOf(next) !== badgeRole;
-                    // A divider whenever the calendar day changes from the
-                    // previous message (or before the very first one) — the
-                    // per-bubble timestamp alone only shows a date once a
-                    // message stops being "today", which left long-running
-                    // threads with no visual anchor for where one day ended
-                    // and the next began.
-                    const showDateDivider = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
-                    return (
-                      <div key={m.id}>
-                        {showDateDivider && (
-                          <div className="my-4 flex items-center justify-center first:mt-0">
-                            <span className="rounded-lg bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 shadow-hair">
-                              {fmtDateSeparator(m.createdAt)}
-                            </span>
-                          </div>
-                        )}
-                        <div className={`flex ${mine ? 'justify-end' : 'justify-start'} ${showHead ? 'mt-3' : 'mt-1'}`}>
-                          <div className="max-w-[82%] sm:max-w-[65%]">
-                            {showHead && <RoleLabel role={badgeRole} align={mine ? 'right' : 'left'} />}
-                            <div
-                              className={`whitespace-pre-wrap rounded-lg px-3 py-1.5 text-body leading-snug text-neutral-900 shadow-[0_1px_0.5px_rgba(11,20,26,0.13)] [overflow-wrap:anywhere] ${
-                                mine ? 'rounded-tr-none bg-[#d9fdd3]' : 'rounded-tl-none bg-white'
-                              }`}
-                            >
-                              {m.body}
-                            </div>
-                            {showTail && (
-                              <p className={`mt-0.5 flex items-center gap-1 px-0.5 text-[10px] text-neutral-500 ${mine ? 'justify-end' : ''}`}>
-                                {fmtBubbleTime(m.createdAt)}
-                                {mine && <DoubleCheck read={!!m.readAt} />}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                {/* Optimistic sends for this thread — shown regardless of
-                    whether `messages` has loaded yet, so a message typed
-                    the instant a conversation opens never feels lost.
-                    `failed` never fakes a delivered state: it stays a
-                    distinct, dismissible bubble with its own retry. */}
-                {pendingForActive.map((p) => (
-                  <div key={p.localId} className="mt-3 flex justify-end">
-                    <div className="max-w-[82%] origin-bottom-right animate-scale-in sm:max-w-[65%]">
-                      <div
-                        className={`whitespace-pre-wrap rounded-lg rounded-tr-none px-3 py-1.5 text-body leading-snug [overflow-wrap:anywhere] ${
-                          p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-[#d9fdd3]/70 text-neutral-900'
-                        }`}
-                      >
-                        {p.body}
-                      </div>
-                      <p className="mt-1 flex items-center justify-end gap-2 text-label">
-                        {p.status === 'sending' ? (
-                          <span className="text-faint">Sending…</span>
-                        ) : (
-                          <>
-                            <span className="text-danger">Not delivered</span>
-                            <button onClick={() => retrySend(p)} className="font-semibold text-accent hover:underline">Retry</button>
-                            <button onClick={() => dismissFailed(p.localId)} className="text-faint hover:text-ink">Discard</button>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-3">
+              <Thread
+                ownerIdentity={!!profile?.is_owner}
+                large
+                messages={messages}
+                pending={pendingForActive}
+                active={active}
+                myId={session?.user.id}
+                myRole={myRole}
+                onRetry={retrySend}
+                onDismiss={dismissFailed}
+              />
+            </div>
 
-              {/* Composer — shrink-0 keeps it pinned at its natural size
-                  regardless of what the message list above does; the
-                  bottom padding adds the safe-area inset on top of the
-                  normal spacing (not instead of it) so it clears the
-                  home indicator now that BottomNav no longer sits below
-                  it on this route (see BottomNav.tsx's OWNS_BOTTOM_BAR). */}
-              <div className="z-10 shrink-0 bg-[#f0f2f5] pt-2 pr-2.5 pl-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] sm:pt-2.5 sm:pr-4 sm:pl-4 sm:pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))]">
-                {profile?.is_owner && (
-                  <div className="mb-2 flex items-center gap-1.5">
-                    <span className="text-caption text-muted">Sending as:</span>
-                    <button
-                      onClick={() => setSendAsRole('owner')}
-                      className={`flex items-center gap-1 rounded-full px-2 py-1 text-caption font-medium transition-colors ${
-                        sendAsRole === 'owner' ? 'bg-danger/10 text-danger' : 'text-faint hover:bg-panel'
-                      }`}
-                    >
-                      <VerifiedBadge role="owner" size={13} /> Owner
-                    </button>
-                    <button
-                      onClick={() => setSendAsRole('owner_assistant')}
-                      className={`flex items-center gap-1 rounded-full px-2 py-1 text-caption font-medium transition-colors ${
-                        sendAsRole === 'owner_assistant' ? 'bg-[#f5a524]/15 text-[#a86400]' : 'text-faint hover:bg-panel'
-                      }`}
-                    >
-                      <VerifiedBadge role="owner_assistant" size={13} /> Owner Assistant
-                    </button>
-                  </div>
-                )}
-                <div className="flex items-end gap-2">
-                  {/* Grows with the message (up to ~5 lines, then scrolls)
-                      instead of a one-line input that couldn't hold a line
-                      break at all. Enter sends where there's a hardware
-                      keyboard; on touch keyboards it's a newline and the
-                      button sends, like every phone chat app. Never sends
-                      mid-IME-composition (Enter there confirms a Japanese/
-                      Chinese/Korean candidate, it isn't "send"). */}
-                  <textarea
-                    ref={composerRef}
-                    rows={1}
-                    value={text}
-                    onChange={(e) => {
-                      setText(e.target.value);
-                      const el = e.currentTarget;
-                      el.style.height = 'auto';
-                      el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
-                      if (window.matchMedia('(hover: none)').matches) return;
-                      e.preventDefault();
-                      if (!sending) send();
-                    }}
-                    placeholder="Write a message…"
-                    className="max-h-[132px] min-w-0 flex-1 resize-none rounded-lg bg-white px-3.5 py-2.5 text-body leading-snug text-ink outline-none placeholder:text-neutral-500"
-                  />
-                  <button
-                    onClick={send}
-                    disabled={!text.trim() || sending}
-                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#00a884] text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:opacity-40 disabled:active:scale-100"
-                    aria-label="Send"
-                  >
-                    <Icon name="send" size={17} />
+            <div className="shrink-0 border-t border-line bg-surface px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2.5">
+              {profile?.is_owner && (
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="text-caption text-muted">Sending as</span>
+                  <button onClick={() => setSendAsRole('owner')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner' ? 'bg-danger/10 text-danger' : 'text-faint'}`}>
+                    <VerifiedBadge role="owner" size={13} /> Owner
+                  </button>
+                  <button onClick={() => setSendAsRole('owner_assistant')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner_assistant' ? 'bg-[#f5a524]/15 text-[#a86400]' : 'text-faint'}`}>
+                    <VerifiedBadge role="owner_assistant" size={13} /> Assistant
                   </button>
                 </div>
+              )}
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={composerRef}
+                  rows={1}
+                  value={text}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    const el = e.currentTarget;
+                    el.style.height = 'auto';
+                    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+                  }}
+                  placeholder="Write a message…"
+                  enterKeyHint="send"
+                  className="max-h-[120px] min-w-0 flex-1 resize-none rounded-[22px] bg-panel px-4 py-[11px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
+                />
+                <button
+                  onClick={send}
+                  disabled={!text.trim() || sending}
+                  className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:bg-panel disabled:text-faint"
+                  aria-label="Send"
+                >
+                  <Icon name="send" size={18} />
+                </button>
               </div>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
       {newMessageOpen && session && (
         <NewMessageModal
