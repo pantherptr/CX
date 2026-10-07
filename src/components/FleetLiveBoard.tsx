@@ -35,6 +35,8 @@ const ZOOM = 16.7;
 const PITCH = 46;
 const BEARING = -18;
 const SELECT_MS = 11000;
+// keep the car clear of the trip sheet along the bottom
+const PAD = { top: 10, bottom: 130, left: 0, right: 0 };
 const HERO_COLORS = ['#17181c', '#f6f7f9', '#2c3a55'];
 
 /* ------------------------------ geometry ------------------------------ */
@@ -78,11 +80,11 @@ function pointAt(t: Track, s: number) {
   };
 }
 
-const slice = (t: Track, s: number): [number, number][] => {
-  const out: [number, number][] = [];
-  for (let i = 0; i < t.coords.length && t.cum[i] <= s; i++) out.push(t.coords[i]);
+/** The part of the route still ahead of distance `s` — what the map draws, like a navigation app. */
+const remaining = (t: Track, s: number): [number, number][] => {
   const p = pointAt(t, s);
-  out.push([p.lng, p.lat]);
+  const out: [number, number][] = [[p.lng, p.lat]];
+  for (let i = 0; i < t.coords.length; i++) if (t.cum[i] > s) out.push(t.coords[i]);
   return out;
 };
 
@@ -180,7 +182,6 @@ function CarSprite({ uid, color, brake, selected }: { uid: string; color: string
 }
 
 const SRC_FULL = 'fl-route';
-const SRC_DONE = 'fl-done';
 
 interface SimCar { s: number; v: number; hold: number; stopAt: number; lng: number; lat: number; bearing: number; brake: boolean }
 
@@ -289,23 +290,23 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
           // the route: white casing, soft green line, bright green for the part already driven
           const empty = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [] as [number, number][] } };
           map.addSource(SRC_FULL, { type: 'geojson', data: empty });
-          map.addSource(SRC_DONE, { type: 'geojson', data: empty });
           const layout = { 'line-cap': 'round' as const, 'line-join': 'round' as const };
-          map.addLayer({ id: 'fl-casing', type: 'line', source: SRC_FULL, layout, paint: { 'line-color': '#ffffff', 'line-width': 9, 'line-opacity': 0.95 } }, labelLayer);
-          map.addLayer({ id: 'fl-base', type: 'line', source: SRC_FULL, layout, paint: { 'line-color': '#bfeccd', 'line-width': 5 } }, labelLayer);
-          map.addLayer({ id: 'fl-done', type: 'line', source: SRC_DONE, layout, paint: { 'line-color': '#00c93f', 'line-width': 5 } }, labelLayer);
+          map.addLayer({ id: 'fl-casing', type: 'line', source: SRC_FULL, layout, paint: { 'line-color': '#ffffff', 'line-width': 10, 'line-opacity': 0.95 } }, labelLayer);
+          map.addLayer({ id: 'fl-base', type: 'line', source: SRC_FULL, layout, paint: { 'line-color': '#16161a', 'line-width': 5 } }, labelLayer);
 
-          // the customer waiting at each destination
-          items.forEach((it, i) => {
+          // the drop-off point of each trip: a black square with the street name on a chip
+          items.forEach((_, i) => {
             const end = tracks[i].coords[tracks[i].coords.length - 1];
             const el = document.createElement('div');
-            el.className = 'fl-pin';
+            el.className = 'fl-dest';
+            const label = document.createElement('span');
+            label.className = 'fl-dest__label';
+            label.textContent = tracks[i].to;
             const pulse = document.createElement('span');
-            pulse.className = 'fl-pin__pulse';
-            const ring = document.createElement('span');
-            ring.className = 'fl-pin__ring';
-            if (it.avatar) { const img = document.createElement('img'); img.src = it.avatar; img.alt = ''; ring.appendChild(img); }
-            el.append(pulse, ring);
+            pulse.className = 'fl-dest__pulse';
+            const dot = document.createElement('span');
+            dot.className = 'fl-dest__dot';
+            el.append(label, pulse, dot);
             new maplibregl.Marker({ element: el }).setLngLat(end).addTo(map);
           });
 
@@ -320,7 +321,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
 
           // the ETA bubble that rides above the selected car
           const tag = document.createElement('div');
-          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -36] }).setLngLat([start.lng, start.lat]).addTo(map);
+          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -26] }).setLngLat([start.lng, start.lat]).addTo(map);
 
           setCarEls(els);
           setTagEl(tag);
@@ -349,12 +350,11 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
 
     const selectRoute = () => {
       const i = selRef.current;
-      const feat = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: tracks[i].coords } };
-      (map.getSource(SRC_FULL) as GeoJSONSource | undefined)?.setData(feat);
+      (map.getSource(SRC_FULL) as GeoJSONSource | undefined)?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: remaining(tracks[i], sim[i].s) } });
       const c = sim[i];
       if (lastSel.current !== -1) {
         flying.current = true;
-        map.flyTo({ center: [c.lng, c.lat], zoom: ZOOM, pitch: PITCH, bearing: BEARING, duration: 2200, essential: true });
+        map.flyTo({ center: [c.lng, c.lat], zoom: ZOOM, pitch: PITCH, bearing: BEARING, padding: PAD, duration: 2200, essential: true });
       }
       lastSel.current = i;
     };
@@ -405,9 +405,9 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
       if (!flying.current) {
         camLng += (c.lng - camLng) * Math.min(1, dt * 3.2);
         camLat += (c.lat - camLat) * Math.min(1, dt * 3.2);
-        map.jumpTo({ center: [camLng, camLat], zoom: ZOOM, pitch: PITCH, bearing: BEARING });
+        map.jumpTo({ center: [camLng, camLat], zoom: ZOOM, pitch: PITCH, bearing: BEARING, padding: PAD });
       }
-      (map.getSource(SRC_DONE) as GeoJSONSource | undefined)?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: slice(tr, c.s) } });
+      (map.getSource(SRC_FULL) as GeoJSONSource | undefined)?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: remaining(tr, c.s) } });
 
       const t = c.s / tr.total;
       const min = Math.max(1, Math.round(((tr.duration * (1 - t)) / 60) * 1.15));
@@ -513,34 +513,36 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={reduce ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
                 transition={SPRING_SMOOTH}
-                className="absolute bottom-2.5 left-2.5 right-2.5 z-20 rounded-2xl border border-line bg-surface/95 p-3.5 shadow-pop backdrop-blur sm:bottom-8 sm:left-auto sm:right-3 sm:w-[270px]"
+                className="absolute inset-x-2.5 bottom-9 z-20 rounded-2xl border border-line bg-surface/95 p-3 shadow-pop backdrop-blur sm:inset-x-3"
               >
-                <div className="flex items-center gap-2.5">
-                  {current.avatar ? <img src={current.avatar} alt="" className="h-9 w-9 rounded-full object-cover" /> : <span className="h-9 w-9 rounded-full bg-panel" />}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-detail font-semibold text-ink">{current.person}</p>
-                    <p className="text-caption text-muted">Customer</p>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
+                  <div className="flex min-w-0 flex-1 basis-[200px] items-center gap-2.5">
+                    {current.avatar ? <img src={current.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" /> : <span className="h-9 w-9 shrink-0 rounded-full bg-panel" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-detail font-semibold text-ink">{current.person}</p>
+                      <p className="text-caption text-muted">Customer</p>
+                    </div>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="phone" size={14} /></span>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon name="message" size={14} /></span>
                   </div>
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="phone" size={14} /></span>
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white"><Icon name="message" size={14} /></span>
+                  <div className="grid grid-cols-3 gap-5">
+                    <div>
+                      <p className="font-display text-body font-semibold leading-tight text-ink">{live.min} min</p>
+                      <p className="text-caption text-muted">Arriving in</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-body font-semibold leading-tight text-ink">{live.km.toFixed(1)} km</p>
+                      <p className="text-caption text-muted">Distance left</p>
+                    </div>
+                    <div>
+                      <p className="font-display text-body font-semibold leading-tight text-ink">{live.speed} <span className="text-caption font-medium text-muted">km/h</span></p>
+                      <p className="text-caption text-muted">Speed</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-3">
-                  <div className="h-1.5 overflow-hidden rounded-full bg-panel"><div className="h-full rounded-full bg-accent-bright" style={{ width: `${live.pct}%` }} /></div>
+                <div className="mt-2.5">
+                  <div className="h-1 overflow-hidden rounded-full bg-panel"><div className="h-full rounded-full bg-ink" style={{ width: `${live.pct}%` }} /></div>
                   <div className="mt-1.5 flex justify-between gap-2 text-[10px] font-medium text-faint"><span className="truncate">{track.from}</span><span className="truncate text-right">{track.to}</span></div>
-                </div>
-                <div className="mt-2.5 grid grid-cols-3 gap-2 border-y border-line py-2.5">
-                  <div>
-                    <p className="font-display text-body font-semibold text-ink">{live.min} min</p>
-                    <p className="text-caption text-muted">Arriving in</p>
-                  </div>
-                  <div>
-                    <p className="font-display text-body font-semibold text-ink">{live.km.toFixed(1)} km</p>
-                    <p className="text-caption text-muted">Distance left</p>
-                  </div>
-                  <div>
-                    <p className="font-display text-body font-semibold text-ink">{live.speed} <span className="text-caption font-medium text-muted">km/h</span></p>
-                    <p className="text-caption text-muted">Speed</p>
-                  </div>
                 </div>
               </motion.div>
             )}
@@ -557,19 +559,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
       {/* the cars, drawn into their map markers */}
       {carEls.map((el, i) =>
         createPortal(
-          <svg viewBox="-30 -30 60 60" width="76" height="76" style={{ display: 'block', overflow: 'visible' }}>
-            <defs>
-              <filter id={`flc${i}-disc`} x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" floodColor="#16161a" floodOpacity="0.28" /></filter>
-            </defs>
-            {i === sel && (
-              <circle r="24" fill="#00c93f" opacity="0.2">
-                <animate attributeName="r" values="19;28;19" dur="2.2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.3;0.04;0.3" dur="2.2s" repeatCount="indefinite" />
-              </circle>
-            )}
-            <circle r="20.5" fill="#ffffff" opacity="0.96" filter={`url(#flc${i}-disc)`} />
-            <circle r="20.5" fill="none" stroke={i === sel ? '#00c93f' : 'rgba(22,22,26,0.12)'} strokeWidth={i === sel ? 1.6 : 0.8} />
-            <g transform="scale(0.98)">
+          <svg viewBox="-24 -14 48 28" width="56" height="33" style={{ display: 'block', overflow: 'visible', opacity: i === sel ? 1 : 0.88 }}>
+            <g transform={i === sel ? 'scale(1.05)' : 'scale(0.94)'}>
               <CarSprite uid={`flc${i}`} color={HERO_COLORS[i % HERO_COLORS.length]} selected={false} brake={(g) => { brakeRefs.current[i] = g; }} />
             </g>
           </svg>,

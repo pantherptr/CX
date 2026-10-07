@@ -1844,10 +1844,11 @@
 @media (prefers-reduced-motion: reduce) { .auth-aurora { animation: none; } }
 
 
-/* Live board: the customer waiting at a destination (a map marker) */
-.fl-pin { position: relative; width: 34px; height: 34px; }
-.fl-pin__ring { position: absolute; inset: 0; overflow: hidden; border-radius: 50%; background: #16161a; border: 3px solid #fff; box-shadow: 0 6px 16px -4px rgba(22, 22, 26, 0.4); }
-.fl-pin__ring img { width: 100%; height: 100%; object-fit: cover; }
-.fl-pin__pulse { position: absolute; inset: -9px; border-radius: 50%; background: rgba(0, 201, 63, 0.26); animation: fl-pin-pulse 2.4s ease-out infinite; }
-@keyframes fl-pin-pulse { 0% { transform: scale(0.55); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .fl-pin__pulse { animation: none; opacity: 0.4; } }
+/* Live board: the drop-off point — a black square with the street name above it */
+.fl-dest { position: relative; width: 22px; height: 22px; }
+.fl-dest__dot { position: absolute; inset: 0; border-radius: 6px; background: #16161a; box-shadow: 0 6px 14px -4px rgba(22, 22, 26, 0.5); }
+.fl-dest__dot::after { content: ''; position: absolute; inset: 7px; border-radius: 2px; background: #fff; }
+.fl-dest__pulse { position: absolute; inset: -8px; border-radius: 12px; background: rgba(22, 22, 26, 0.16); animation: fl-dest-pulse 2.4s ease-out infinite; }
+.fl-dest__label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; max-width: 190px; overflow: hidden; text-overflow: ellipsis; padding: 4px 9px; border-radius: 999px; background: #fff; color: #16161a; font-size: 11px; font-weight: 600; box-shadow: 0 6px 16px -6px rgba(22, 22, 26, 0.35); }
+@keyframes fl-dest-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fl-dest__pulse { animation: none; opacity: 0.4; } }
