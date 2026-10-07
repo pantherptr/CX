@@ -5,7 +5,6 @@ import { SignalLogo } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img } from '../components/motion';
-import { FleetShowcase } from '../components/home/FleetShowcase';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
@@ -412,11 +411,6 @@ export default function Home() {
             </div>
           </Reveal>
         </div>
-      </section>
-
-      {/* ================= FLEET — the rental experience starts right here ================= */}
-      <section className="container-page section">
-        <FleetShowcase cars={fleetCars} />
       </section>
 
       {/* ================= LIVE BOARD — every trip at a glance ================= */}
