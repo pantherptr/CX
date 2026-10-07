@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
-import { SignalLogo } from './SignalLogo';
+import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { Img, useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -76,7 +76,7 @@ export function DashboardShell({
             style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
           />
           <span className="flex items-center gap-3">
-            <SignalLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+            <SignalS size={22} className="transition-transform duration-300 group-hover:scale-110" />
             <span className="tracking-wide">SIGNAL</span>
           </span>
           <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />

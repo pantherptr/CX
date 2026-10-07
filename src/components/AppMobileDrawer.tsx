@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Img } from './motion';
-import { SignalLogo } from './SignalLogo';
+import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
@@ -208,7 +208,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                   style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
                 />
                 <span className="flex items-center gap-3">
-                  <SignalLogo size={24} className="transition-transform duration-300 group-hover:scale-110" />
+                  <SignalS size={22} className="transition-transform duration-300 group-hover:scale-110" />
                   <span className="tracking-wide">SIGNAL</span>
                 </span>
                 <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
