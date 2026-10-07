@@ -10,7 +10,6 @@ import { EmptyState, Modal } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { motion, AnimatePresence, SPRING_SNAPPY } from '../components/motionKit';
 import { useScramble } from '../lib/useScramble';
-import { useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -347,8 +346,6 @@ export default function Browse() {
     (filters.priceMax !== emptyFilters.priceMax || filters.priceMin !== emptyFilters.priceMin ? 1 : 0) +
     (hasDateFilter ? 1 : 0);
 
-  const { ref: countRef, value: animatedCount } = useCountUp<HTMLSpanElement>(results.length, { duration: 450 });
-
   const panel = (
     <FilterPanel
       f={filters}
@@ -383,7 +380,7 @@ export default function Browse() {
         <div className="min-w-0 flex-1">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem]">
-              {loading || error ? t('Browse cars') : (<><span ref={countRef} className="tabular-nums">{animatedCount}</span> {t(results.length === 1 ? 'car to rent' : 'cars to rent')}</>)}
+              {t('Browse cars')}
             </h1>
             <div className="flex items-center gap-2.5">
               <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
@@ -479,7 +476,7 @@ export default function Browse() {
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">{panel}</div>
         <div className="shrink-0 border-t border-line p-4">
           <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
-            {t('Show')} {results.length} {t(results.length === 1 ? 'car' : 'cars')}
+            {t('Show cars')}
           </button>
         </div>
       </Modal>
