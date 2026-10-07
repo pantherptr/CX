@@ -315,12 +315,12 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             const el = document.createElement('div');
             els.push(el);
             const p = pointAt(tracks[i], 0);
-            return new maplibregl.Marker({ element: el, rotationAlignment: 'map', pitchAlignment: 'map' }).setLngLat([p.lng, p.lat]).addTo(map);
+            return new maplibregl.Marker({ element: el, rotationAlignment: 'map', pitchAlignment: 'viewport' }).setLngLat([p.lng, p.lat]).addTo(map);
           });
 
           // the ETA bubble that rides above the selected car
           const tag = document.createElement('div');
-          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -16] }).setLngLat([start.lng, start.lat]).addTo(map);
+          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -36] }).setLngLat([start.lng, start.lat]).addTo(map);
 
           setCarEls(els);
           setTagEl(tag);
@@ -557,9 +557,20 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
       {/* the cars, drawn into their map markers */}
       {carEls.map((el, i) =>
         createPortal(
-          <svg viewBox="-27 -15 54 30" width="58" height="32" style={{ display: 'block', overflow: 'visible' }}>
-            <g transform={i === sel ? 'scale(1.08)' : undefined}>
-              <CarSprite uid={`flc${i}`} color={HERO_COLORS[i % HERO_COLORS.length]} selected={i === sel} brake={(g) => { brakeRefs.current[i] = g; }} />
+          <svg viewBox="-30 -30 60 60" width="76" height="76" style={{ display: 'block', overflow: 'visible' }}>
+            <defs>
+              <filter id={`flc${i}-disc`} x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" floodColor="#16161a" floodOpacity="0.28" /></filter>
+            </defs>
+            {i === sel && (
+              <circle r="24" fill="#00c93f" opacity="0.2">
+                <animate attributeName="r" values="19;28;19" dur="2.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.3;0.04;0.3" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+            )}
+            <circle r="20.5" fill="#ffffff" opacity="0.96" filter={`url(#flc${i}-disc)`} />
+            <circle r="20.5" fill="none" stroke={i === sel ? '#00c93f' : 'rgba(22,22,26,0.12)'} strokeWidth={i === sel ? 1.6 : 0.8} />
+            <g transform="scale(0.98)">
+              <CarSprite uid={`flc${i}`} color={HERO_COLORS[i % HERO_COLORS.length]} selected={false} brake={(g) => { brakeRefs.current[i] = g; }} />
             </g>
           </svg>,
           el,
