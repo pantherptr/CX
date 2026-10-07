@@ -92,7 +92,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
   };
 
   return (
-    <div ref={cardRef} className={embedded ? 'relative' : 'card relative p-5 shadow-card'}>
+    <div ref={cardRef} className={embedded ? 'relative' : 'relative rounded-[28px] border border-line bg-surface p-5 shadow-[0_24px_60px_-30px_rgba(22,22,26,0.35)]'}>
       <div className="flex items-end justify-between">
         <div>
           <span className="text-[26px] font-semibold text-ink">{eur(car.pricePerDay)}</span>
@@ -105,27 +105,28 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         </span>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-line-strong">
-        <label className="block border-b border-line px-3.5 py-2.5">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-line-strong">
+        <button
+          type="button"
+          onClick={() => setShowCalendar(true)}
+          className="grid w-full grid-cols-2 divide-x divide-line text-left transition-colors hover:bg-panel/60"
+        >
+          <span className="px-3.5 py-2.5">
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">Pick-up</span>
+            <span className="mt-0.5 block text-body font-medium text-ink">{fmtShort(pickup)}</span>
+          </span>
+          <span className="px-3.5 py-2.5">
+            <span className="text-label font-semibold uppercase tracking-wide text-muted">Return</span>
+            <span className="mt-0.5 block text-body font-medium text-ink">{fmtShort(ret)}</span>
+          </span>
+        </button>
+        <label className="block border-t border-line px-3.5 py-2.5">
           <span className="text-label font-semibold uppercase tracking-wide text-muted">Pick-up location</span>
           <div className="mt-0.5 flex items-center gap-2">
             <Icon name="pin" size={15} className="text-muted" />
             <input value={loc} onChange={(e) => setLoc(e.target.value)} className="w-full bg-transparent text-body font-medium text-ink outline-none" />
           </div>
         </label>
-        <button
-          type="button"
-          onClick={() => setShowCalendar(true)}
-          className="flex w-full items-center justify-between px-3.5 py-2.5 text-left transition-colors hover:bg-panel"
-        >
-          <div>
-            <span className="text-label font-semibold uppercase tracking-wide text-muted">Dates</span>
-            <p className="mt-0.5 text-body font-medium text-ink">
-              {fmtShort(pickup)} – {fmtShort(ret)}
-            </p>
-          </div>
-          <Icon name="calendar" size={17} className="text-muted" />
-        </button>
       </div>
 
       {/* Desktop: popover anchored under the card. Mobile: bottom-sheet modal. */}
@@ -168,7 +169,7 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         </div>
       </dl>
 
-      <button onClick={reserve} className="btn btn-accent-bright btn-block btn-lg mt-4">
+      <button onClick={reserve} className="btn btn-primary btn-block btn-lg mt-4">
         {car.instantBook ? 'Reserve car' : 'Request to book'}
         <Icon name="arrowRight" size={17} />
       </button>

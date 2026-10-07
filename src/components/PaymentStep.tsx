@@ -62,7 +62,11 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
 
   return (
     <>
-      <div className="mt-6 card p-6">
+      <div className="mt-6 rounded-[24px] border border-line bg-surface p-5 sm:p-6">
+        <div className="mb-5 flex items-center justify-between rounded-2xl bg-panel px-4 py-3">
+          <span className="text-detail text-muted">You pay today</span>
+          <span className="font-display text-lead font-semibold text-ink">{amount != null ? eur(amount) : '—'}</span>
+        </div>
         <PaymentElement />
         {deposit != null && deposit > 0 && (
           <p className="mt-5 flex items-start gap-2 rounded-xl bg-panel px-3.5 py-2.5 text-detail text-muted">
@@ -82,14 +86,14 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
         <Link to="/terms" target="_blank" className="font-medium text-ink underline underline-offset-2">Terms</Link> and the{' '}
         <Link to="/cancellation-policy" target="_blank" className="font-medium text-ink underline underline-offset-2">Cancellation Policy</Link>.
       </p>
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between gap-3">
         <button onClick={onBack} disabled={submitting} className="btn btn-ghost text-muted hover:text-ink disabled:opacity-60">
           <Icon name="chevronLeft" size={16} /> Back
         </button>
         <button
           onClick={handlePay}
           disabled={!stripe || !elements || submitting}
-          className="btn btn-accent-bright btn-lg disabled:opacity-60"
+          className="btn btn-primary btn-lg disabled:opacity-60"
         >
           {submitting ? 'Confirming…' : `Pay ${amount != null ? eur(amount) : ''}`}
           {!submitting && <Icon name="arrowRight" size={17} />}
@@ -154,7 +158,23 @@ export function PaymentStep({ clientSecret, amount, deposit, loading, error, sub
       )}
 
       {stripePromise && clientSecret && (
-        <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+        <Elements
+          stripe={stripePromise}
+          options={{
+            clientSecret,
+            appearance: {
+              theme: 'flat',
+              variables: { colorPrimary: '#16161a', colorText: '#16161a', colorDanger: '#c4302b', borderRadius: '12px', spacingUnit: '4px', fontFamily: 'inherit' },
+              rules: {
+                '.Input': { border: '1px solid #dcdbd3', boxShadow: 'none', padding: '12px' },
+                '.Input:focus': { border: '1px solid #16161a', boxShadow: '0 0 0 3px rgba(22,22,26,0.08)' },
+                '.Tab': { border: '1px solid #dcdbd3', boxShadow: 'none' },
+                '.Tab--selected': { border: '1px solid #16161a', boxShadow: '0 0 0 1px #16161a' },
+                '.Label': { fontWeight: '600', fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' },
+              },
+            },
+          }}
+        >
           <PaymentForm amount={amount} deposit={deposit} submitting={submitting} setSubmitting={setSubmitting} onBack={onBack} onPaid={onPaid} onError={onError} />
         </Elements>
       )}

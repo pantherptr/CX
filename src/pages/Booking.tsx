@@ -6,6 +6,8 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
+import { motion, AnimatePresence, SPRING_SMOOTH, useReducedMotion } from '../components/motionKit';
+import { useLocale } from '../lib/i18n';
 import { daysBetween, priceBreakdown } from '../components/BookingCard';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -31,39 +33,47 @@ const STEPS = ['Trip details', 'Extras', 'Driver details', 'Payment', 'Confirmat
 const CONFIRMATION_STEP = STEPS.length - 1;
 
 function Stepper({ step }: { step: number }) {
+  const { t } = useLocale();
   return (
-    <ol className="flex items-center">
-      {STEPS.map((s, i) => {
-        const done = i < step;
-        const active = i === step;
-        return (
-          <li key={s} className="flex flex-1 items-center last:flex-none">
-            <div className="flex items-center gap-2.5">
-              <span
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-detail font-semibold transition-all ${
-                  done ? 'bg-accent-bright text-noir' : active ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
-                }`}
-              >
-                {done ? <Icon name="check" size={15} strokeWidth={3} /> : i + 1}
-              </span>
-              <span className={`hidden text-detail font-medium sm:block ${active || done ? 'text-ink' : 'text-faint'}`}>{s}</span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <span className={`mx-3 h-px flex-1 ${done ? 'bg-accent-bright' : 'bg-line'}`} />
-            )}
+    <div>
+      <div className="flex items-baseline justify-between text-detail">
+        <span className="font-display text-copy font-semibold text-ink">{t(STEPS[step])}</span>
+        <span className="text-muted">{t('Step {n} of {m}', { n: step + 1, m: STEPS.length })}</span>
+      </div>
+      <div className="mt-2.5 flex gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1}>
+        {STEPS.map((s, i) => (
+          <span key={s} className="relative h-[5px] flex-1 overflow-hidden rounded-full bg-line">
+            <motion.span
+              className="absolute inset-0 origin-left rounded-full bg-ink"
+              initial={false}
+              animate={{ scaleX: i < step ? 1 : i === step ? 0.55 : 0 }}
+              transition={SPRING_SMOOTH}
+            />
+          </span>
+        ))}
+      </div>
+      <ol className="mt-3 hidden justify-between sm:flex">
+        {STEPS.map((s, i) => (
+          <li key={s} className={`flex items-center gap-1.5 text-caption font-medium transition-colors ${i === step ? 'text-ink' : i < step ? 'text-ink-soft' : 'text-faint'}`}>
+            {i < step ? <Icon name="check" size={12} strokeWidth={3} className="text-accent" /> : <span className={`h-1.5 w-1.5 rounded-full ${i === step ? 'bg-ink' : 'bg-line-strong'}`} />}
+            {t(s)}
           </li>
-        );
-      })}
-    </ol>
+        ))}
+      </ol>
+    </div>
   );
 }
 
-function Labeled({ label, children, full, hint }: { label: string; children: ReactNode; full?: boolean; hint?: string }) {
+function Labeled({ label, children, full, hint, error }: { label: string; children: ReactNode; full?: boolean; hint?: string; error?: string | null }) {
   return (
     <label className={full ? 'sm:col-span-2' : ''}>
       <span className="field-label">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-caption text-faint">{hint}</span>}
+      {error ? (
+        <span className="mt-1 flex items-center gap-1 text-caption text-danger"><Icon name="info" size={12} /> {error}</span>
+      ) : (
+        hint && <span className="mt-1 block text-caption text-faint">{hint}</span>
+      )}
     </label>
   );
 }
@@ -105,6 +115,10 @@ export default function Booking() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<BookingRecord | null>(null);
   const [messaging, setMessaging] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const [dir, setDir] = useState(1);
+  const [driver, setDriver] = useState({ name: '', email: '', phone: '', dob: '', licence: '', country: '', expiry: '' });
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Real-payment state — see src/lib/data/payments.ts and
   // src/components/PaymentStep.tsx. clientSecret/quotedAmount come back
@@ -114,6 +128,17 @@ export default function Booking() {
   const [quotedAmount, setQuotedAmount] = useState<number | null>(null);
   const [deposit, setDeposit] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Driver details start from the account, once it is known.
+  useEffect(() => {
+    setDriver((d) => ({
+      ...d,
+      name: d.name || profile?.full_name || '',
+      email: d.email || session?.user.email || '',
+      phone: d.phone || profile?.phone || '',
+      country: d.country || profile?.location || '',
+    }));
+  }, [profile?.full_name, profile?.phone, profile?.location, session?.user.email]);
 
   useEffect(() => {
     let cancelled = false;
@@ -299,8 +324,40 @@ export default function Booking() {
     !dateError && pickupDate && returnDate && availability === 'available' &&
     (fulfillmentType === 'pickup' || deliveryAddress.trim().length > 0);
 
+  const driverErrors = (() => {
+    const e: Record<string, string> = {};
+    if (driver.name.trim().length < 2) e.name = 'Enter the driver\'s full name.';
+    if (!/^\S+@\S+\.\S+$/.test(driver.email.trim())) e.email = 'Enter a valid email address.';
+    if (driver.phone.replace(/\D/g, '').length < 7) e.phone = 'Enter a phone number we can reach.';
+    if (!driver.dob) e.dob = 'Enter the date of birth.';
+    else {
+      const dob = new Date(driver.dob);
+      const age = (Date.now() - dob.getTime()) / (365.25 * 86400000);
+      if (Number.isNaN(age) || age < 18) e.dob = 'The driver must be at least 18.';
+      else if (age > 100) e.dob = 'Check the date of birth.';
+    }
+    if (driver.licence.trim().length < 5) e.licence = 'Enter the licence number.';
+    if (!driver.country.trim()) e.country = 'Enter the country that issued the licence.';
+    if (!driver.expiry) e.expiry = 'Enter the licence expiry date.';
+    else if (returnDate && driver.expiry <= returnDate) e.expiry = 'The licence must be valid past your return date.';
+    else if (driver.expiry <= todayISO()) e.expiry = 'This licence has expired.';
+    return e;
+  })();
+  const field = (k: keyof typeof driver) => ({
+    value: driver[k],
+    onChange: (ev: { target: { value: string } }) => setDriver((d) => ({ ...d, [k]: ev.target.value })),
+    onBlur: () => setTouched((t) => ({ ...t, [k]: true })),
+    'aria-invalid': touched[k] && driverErrors[k] ? true : undefined,
+  });
+  const err = (k: keyof typeof driver) => (touched[k] ? driverErrors[k] : undefined);
+
   const next = () => {
     if (step === 0 && !canContinueStep0) return;
+    if (step === 2 && Object.keys(driverErrors).length > 0) {
+      setTouched({ name: true, email: true, phone: true, dob: true, licence: true, country: true, expiry: true });
+      haptics.tick();
+      return;
+    }
     if (step === 2 && !session) {
       // Payment needs a signed-in renter (their JWT is what scopes the
       // price quote and, later, the charge) — check before showing that
@@ -310,11 +367,14 @@ export default function Booking() {
       return;
     }
     if (step < STEPS.length - 1) {
+      setDir(1);
       setStep((s) => s + 1);
       window.scrollTo({ top: 0 });
     }
   };
-  const back = () => (step > 0 ? setStep((s) => s - 1) : navigate(-1));
+  const back = () => {
+    if (step > 0) { setDir(-1); setStep((s) => s - 1); } else navigate(-1);
+  };
 
   const handleMessageHost = async () => {
     if (!session) return;
@@ -366,29 +426,68 @@ export default function Booking() {
 
   /* ---------- Confirmation ---------- */
   if (step === CONFIRMATION_STEP && confirmed) {
+    const ymd = (d: string) => d.replace(/-/g, '');
+    const dayAfter = (d: string) => {
+      const x = new Date(`${d}T12:00:00`);
+      x.setDate(x.getDate() + 1);
+      return x.toISOString().slice(0, 10);
+    };
+    const downloadIcs = () => {
+      const lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CX//Booking//EN', 'BEGIN:VEVENT',
+        `UID:${confirmed.reference}@cx`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`,
+        `DTSTART;VALUE=DATE:${ymd(confirmed.startDate)}`,
+        `DTEND;VALUE=DATE:${ymd(dayAfter(confirmed.endDate))}`,
+        `SUMMARY:CX trip — ${car.year} ${car.make} ${car.model}`,
+        `LOCATION:${(confirmed.fulfillmentType === 'delivery' ? confirmed.deliveryAddress : confirmed.pickupLocation) || car.city}`,
+        `DESCRIPTION:Booking ${confirmed.reference}`,
+        'END:VEVENT', 'END:VCALENDAR',
+      ];
+      const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/calendar' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cx-${confirmed.reference}.ics`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    const timeline = [
+      { icon: 'checkCircle' as IconName, title: 'Booked and paid', sub: 'Your booking is confirmed and your host has been notified.', done: true },
+      { icon: 'message' as IconName, title: 'Questions? Ask CX', sub: 'Our team is here before and during your trip.', done: false },
+      { icon: 'key' as IconName, title: `Pick-up · ${fmtDate(confirmed.startDate)}`, sub: confirmed.fulfillmentType === 'delivery' ? `Delivery to ${confirmed.deliveryAddress || ''}` : confirmed.pickupLocation || car.location, done: false },
+      { icon: 'car' as IconName, title: `Return · ${fmtDate(confirmed.endDate)}`, sub: 'Bring it back as you found it — your deposit is released automatically.', done: false },
+    ];
     return (
-      <div className="container-page max-w-2xl py-14">
-        <div className="animate-scale-in text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-bright/15 text-accent-bright">
-            <Icon name="checkCircle" size={34} />
-          </span>
-          <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">You're all set.</h1>
-          <p className="mt-3 text-copy text-muted">
-            Your booking is confirmed. Your host has been notified.
-          </p>
+      <div className="container-page max-w-2xl py-12">
+        <div className="text-center">
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={SPRING_SMOOTH}
+            className="mx-auto grid h-[72px] w-[72px] place-items-center rounded-full bg-ink text-white shadow-[0_18px_40px_-14px_rgba(22,22,26,0.55)]"
+          >
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <motion.path d="M5 12.5l4.2 4.2L19 7" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.25, duration: 0.5, ease: 'easeOut' }} />
+            </svg>
+          </motion.span>
+          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.15 }} className="mt-6 font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+            You're all set.
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-3 text-copy text-muted">
+            Booking <span className="font-medium text-ink">{confirmed.reference}</span> is confirmed.
+          </motion.p>
         </div>
 
-        <div className="mt-9 card overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.35 }} className="mt-9 overflow-hidden rounded-[28px] border border-line bg-surface">
           <div className="flex items-center gap-4 border-b border-line p-5">
             <Img
               src={unsplash(car.images[0], 240)}
               alt=""
-              className="h-20 w-28 rounded-xl object-cover"
-              fallback={<span className="grid h-20 w-28 place-items-center rounded-xl bg-panel text-muted"><Icon name="car" size={24} /></span>}
+              className="h-20 w-28 rounded-2xl object-cover"
+              fallback={<span className="grid h-20 w-28 place-items-center rounded-2xl bg-panel text-muted"><Icon name="car" size={24} /></span>}
             />
             <div className="min-w-0">
-              <p className="text-caption font-medium uppercase tracking-wide text-accent">Booking {confirmed.reference}</p>
-              <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-ink">{car.year} {car.make} {car.model}</h2>
+              <h2 className="truncate font-display text-lg font-semibold text-ink">{car.year} {car.make} {car.model}</h2>
               <p className="text-detail text-muted">Hosted by {host.name}</p>
             </div>
           </div>
@@ -409,9 +508,9 @@ export default function Booking() {
           </dl>
           {(confirmed.cancellationPolicy || confirmed.extras.length > 0) && (
             <div className="flex flex-wrap gap-2 border-t border-line px-5 py-4">
-              <span className="badge badge-accent"><Icon name="shield" size={12} /> {POLICY_INFO[confirmed.cancellationPolicy].label} cancellation</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1.5 text-caption font-medium text-ink-soft"><Icon name="shield" size={12} /> {POLICY_INFO[confirmed.cancellationPolicy].label} cancellation</span>
               {confirmed.extras.map((ex) => (
-                <span key={ex.id} className="badge bg-panel-2 text-ink-soft">{ex.name}</span>
+                <span key={ex.id} className="rounded-full bg-panel px-3 py-1.5 text-caption font-medium text-ink-soft">{ex.name}</span>
               ))}
             </div>
           )}
@@ -421,31 +520,28 @@ export default function Booking() {
               Reward applied: −{eur(confirmed.discountAmount)}
             </div>
           )}
-          <div className="flex items-center gap-3 border-t border-line bg-panel/50 p-5">
-            <Img
-              src={host.avatar}
-              alt=""
-              className="h-11 w-11 rounded-full object-cover"
-              fallback={
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent">
-                  <Icon name="user" size={18} />
-                </span>
-              }
-            />
-            <div className="flex-1">
-              <p className="text-body font-medium text-ink">{host.name}</p>
-              <p className="text-detail text-muted">Responds {host.responseTime}</p>
-            </div>
-            <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-sm disabled:opacity-60">
-              <Icon name="message" size={15} /> {messaging ? 'Opening…' : 'Message CX'}
-            </button>
-          </div>
-        </div>
+        </motion.div>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link to="/dashboard#trips" className="btn btn-accent-bright btn-lg flex-1">View My Trip <Icon name="arrowRight" size={17} /></Link>
-          <Link to="/browse" className="btn btn-secondary btn-lg flex-1">Explore More Cars</Link>
+        <motion.ol initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.45 }} className="mt-6 rounded-[28px] border border-line bg-surface p-5">
+          <p className="mb-4 text-label font-semibold uppercase tracking-[0.12em] text-muted">What happens next</p>
+          {timeline.map((tl, i) => (
+            <li key={tl.title} className="relative flex gap-3.5 pb-5 last:pb-0">
+              {i < timeline.length - 1 && <span className="absolute left-[17px] top-9 h-[calc(100%-26px)] w-px bg-line" aria-hidden="true" />}
+              <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full ${tl.done ? 'bg-ink text-white' : 'bg-panel text-ink-soft'}`}><Icon name={tl.icon} size={16} /></span>
+              <div className="min-w-0 pt-0.5">
+                <p className="text-body font-medium text-ink">{tl.title}</p>
+                <p className="mt-0.5 text-detail text-muted">{tl.sub}</p>
+              </div>
+            </li>
+          ))}
+        </motion.ol>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <Link to="/dashboard#trips" className="btn btn-primary btn-lg sm:col-span-2">View my trip <Icon name="arrowRight" size={17} /></Link>
+          <button onClick={downloadIcs} className="btn btn-secondary btn-lg"><Icon name="calendar" size={17} /> Add to calendar</button>
+          <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-lg disabled:opacity-60"><Icon name="message" size={17} /> {messaging ? 'Opening…' : 'Message CX'}</button>
         </div>
+        <Link to="/browse" className="mt-4 block text-center text-detail font-medium text-muted transition-colors hover:text-ink">Explore more cars</Link>
       </div>
     );
   }
@@ -456,16 +552,23 @@ export default function Booking() {
         <Icon name="chevronLeft" size={16} /> Back
       </button>
 
-      <p className="eyebrow">Build Your Drive</p>
-      <div className="mb-8 mt-1 max-w-2xl"><Stepper step={step} /></div>
+      <div className="mb-8 max-w-2xl"><Stepper step={step} /></div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px] lg:gap-12">
-        <div className="min-w-0">
+        <div className="min-w-0 pb-24 lg:pb-0">
+          <AnimatePresence mode="wait" initial={false} custom={dir}>
+          <motion.div
+            key={step}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir * 36 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir * -36 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          >
           {step === 0 && (
-            <section className="animate-fade-up">
+            <section>
               <h1 className="font-display text-2xl font-semibold text-ink">Trip details</h1>
               <p className="mt-1.5 text-body text-muted">Confirm where and when you'd like the car.</p>
-              <div className="mt-6 card p-6">
+              <div className="mt-6 rounded-[24px] border border-line bg-surface p-5 sm:p-6">
                 {car.pickupEnabled !== false && car.deliveryEnabled && (
                   <div className="mb-5">
                     <span className="field-label">How would you like to receive the car?</span>
@@ -473,7 +576,7 @@ export default function Booking() {
                       <button
                         type="button"
                         onClick={() => setFulfillmentType('pickup')}
-                        className={`rounded-xl border p-3.5 text-left transition-colors ${fulfillmentType === 'pickup' ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'}`}
+                        className={`rounded-[18px] border p-3.5 text-left transition-[border-color,box-shadow] duration-300 ${fulfillmentType === 'pickup' ? 'border-ink bg-surface shadow-[0_0_0_1px_#16161a]' : 'border-line hover:border-ink/40'}`}
                       >
                         <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="pin" size={15} /> Pick Up</span>
                         <span className="mt-0.5 block text-detail text-muted">Go to the host's pick-up location.</span>
@@ -481,7 +584,7 @@ export default function Booking() {
                       <button
                         type="button"
                         onClick={() => setFulfillmentType('delivery')}
-                        className={`rounded-xl border p-3.5 text-left transition-colors ${fulfillmentType === 'delivery' ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'}`}
+                        className={`rounded-[18px] border p-3.5 text-left transition-[border-color,box-shadow] duration-300 ${fulfillmentType === 'delivery' ? 'border-ink bg-surface shadow-[0_0_0_1px_#16161a]' : 'border-line hover:border-ink/40'}`}
                       >
                         <span className="flex items-center gap-1.5 font-medium text-ink"><Icon name="car" size={15} /> Deliver to Me</span>
                         <span className="mt-0.5 block text-detail text-muted">
@@ -548,9 +651,15 @@ export default function Booking() {
                   </p>
                 )}
                 {!dateError && availability === 'available' && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-accent-050 px-3.5 py-2.5 text-detail text-accent-700">
-                    <Icon name="checkCircle" size={16} /> Available for your dates.
-                  </p>
+                  <motion.p
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={SPRING_SMOOTH}
+                    className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-panel px-4 py-3 text-detail text-ink"
+                  >
+                    <span className="flex items-center gap-1.5 font-semibold"><Icon name="checkCircle" size={16} className="text-accent" /> Available for your dates</span>
+                    <span className="text-muted">{fmtDate(pickupDate)} → {fmtDate(returnDate)} · {days} {days === 1 ? 'day' : 'days'}</span>
+                  </motion.p>
                 )}
 
                 <div className="mt-5 rounded-xl bg-panel p-4">
@@ -566,31 +675,36 @@ export default function Booking() {
           )}
 
           {step === 1 && (
-            <section className="animate-fade-up">
+            <section>
               <h1 className="font-display text-2xl font-semibold text-ink">Extras</h1>
               <p className="mt-1.5 text-body text-muted">Optional add-ons for this trip — skip if you don't need them.</p>
               <div className="mt-6 space-y-3">
                 {(extrasCatalog ?? []).map((extra) => {
                   const checked = selectedExtras.has(extra.id);
                   return (
-                    <label
+                    <button
+                      type="button"
                       key={extra.id}
-                      className={`flex cursor-pointer items-center gap-4 rounded-xl border p-4 transition-colors ${
-                        checked ? 'border-ink bg-panel' : 'border-line hover:border-line-strong'
+                      onClick={() => toggleExtra(extra.id)}
+                      aria-pressed={checked}
+                      className={`flex w-full items-center gap-4 rounded-[20px] border p-4 text-left transition-[border-color,box-shadow,background-color] duration-300 ${
+                        checked ? 'border-ink bg-surface shadow-[0_0_0_1px_#16161a]' : 'border-line bg-surface hover:border-ink/40'
                       }`}
                     >
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface text-ink-soft">
+                      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-colors duration-300 ${checked ? 'bg-ink text-white' : 'bg-panel text-ink-soft'}`}>
                         <Icon name={extra.icon as IconName} size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium text-ink">{extra.name}</span>
                         <span className="block text-detail text-muted">{extra.description}</span>
                       </span>
-                      <span className="shrink-0 text-detail font-medium text-ink">
-                        {eur(extra.price)}{extra.priceModel === 'per_day' ? '/day' : ''}
+                      <span className="shrink-0 text-right">
+                        <span className="block text-detail font-semibold text-ink">{eur(extra.price)}{extra.priceModel === 'per_day' ? '/day' : ''}</span>
+                        <span className={`mt-1 ml-auto grid h-5 w-5 place-items-center rounded-full border transition-all duration-300 ${checked ? 'border-ink bg-ink text-white' : 'border-line-strong text-transparent'}`}>
+                          <Icon name="check" size={12} strokeWidth={3} />
+                        </span>
                       </span>
-                      <input type="checkbox" checked={checked} onChange={() => toggleExtra(extra.id)} className="h-4 w-4 shrink-0 accent-[var(--color-accent)]" />
-                    </label>
+                    </button>
                   );
                 })}
                 {extrasCatalog && extrasCatalog.length === 0 && (
@@ -601,26 +715,35 @@ export default function Booking() {
           )}
 
           {step === 2 && (
-            <section className="animate-fade-up">
+            <section>
               <h1 className="font-display text-2xl font-semibold text-ink">Driver details</h1>
-              <p className="mt-1.5 text-body text-muted">We need a few details to verify the primary driver.</p>
-              <div className="mt-6 card p-6">
+              <p className="mt-1.5 text-body text-muted">The person who will drive. We check these against the licence at hand-over.</p>
+              <div className="mt-6 rounded-[24px] border border-line bg-surface p-5 sm:p-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Labeled label="Full name" full>
-                    <input defaultValue={profile?.full_name ?? ''} className="input" />
+                  <Labeled label="Full name" full error={err('name')}>
+                    <input autoComplete="name" className="input !text-[16px] sm:!text-body" {...field('name')} />
                   </Labeled>
-                  <Labeled label="Email" full>
-                    <input type="email" defaultValue={session?.user.email ?? ''} className="input" />
+                  <Labeled label="Email" full error={err('email')}>
+                    <input type="email" autoComplete="email" className="input !text-[16px] sm:!text-body" {...field('email')} />
                   </Labeled>
-                  <Labeled label="Phone">
-                    <input defaultValue={profile?.phone ?? ''} className="input" />
+                  <Labeled label="Phone" error={err('phone')}>
+                    <input type="tel" autoComplete="tel" className="input !text-[16px] sm:!text-body" {...field('phone')} />
                   </Labeled>
-                  <Labeled label="Date of birth"><input type="date" className="input" /></Labeled>
-                  <Labeled label="Driving licence number" full><input placeholder="e.g. RSSLXA92E14F205X" className="input" /></Labeled>
-                  <Labeled label="Licence country"><input defaultValue={profile?.location ?? ''} className="input" /></Labeled>
-                  <Labeled label="Licence expiry"><input type="date" className="input" /></Labeled>
+                  <Labeled label="Date of birth" error={err('dob')}>
+                    <input type="date" max={todayISO()} autoComplete="bday" className="input !text-[16px] sm:!text-body" {...field('dob')} />
+                  </Labeled>
+                  <Labeled label="Driving licence number" full error={err('licence')}>
+                    <input placeholder="e.g. RSSLXA92E14F205X" autoCapitalize="characters" className="input !text-[16px] sm:!text-body" {...field('licence')} />
+                  </Labeled>
+                  <Labeled label="Licence country" error={err('country')}>
+                    <input className="input !text-[16px] sm:!text-body" {...field('country')} />
+                  </Labeled>
+                  <Labeled label="Licence expiry" error={err('expiry')} hint={returnDate ? 'Must be valid past your return date.' : undefined}>
+                    <input type="date" min={todayISO()} className="input !text-[16px] sm:!text-body" {...field('expiry')} />
+                  </Labeled>
                 </div>
               </div>
+              <p className="mt-3 flex items-center gap-2 text-caption text-muted"><Icon name="lock" size={13} /> Your details are used only to verify this booking.</p>
             </section>
           )}
 
@@ -639,12 +762,15 @@ export default function Booking() {
             />
           )}
 
+          </motion.div>
+          </AnimatePresence>
+
           {step !== 3 && (
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-6 hidden items-center justify-between lg:flex">
               <button onClick={back} className="btn btn-ghost text-muted hover:text-ink">
                 <Icon name="chevronLeft" size={16} /> {step === 0 ? 'Cancel' : 'Back'}
               </button>
-              <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-accent-bright btn-lg disabled:opacity-50">
+              <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-primary btn-lg disabled:opacity-50">
                 Continue to Book <Icon name="arrowRight" size={17} />
               </button>
             </div>
@@ -653,13 +779,13 @@ export default function Booking() {
 
         {/* Summary */}
         <aside>
-          <div className="sticky top-[84px] card overflow-hidden">
-            <p className="px-4 pt-4 text-label font-semibold uppercase tracking-wide text-muted">Your CX Drive</p>
+          <div className="sticky top-[84px] overflow-hidden rounded-[24px] border border-line bg-surface">
+            <p className="px-4 pt-4 text-label font-semibold uppercase tracking-[0.12em] text-muted">Your CX Drive</p>
             <div className="flex gap-3.5 p-4">
               <Img
                 src={unsplash(car.images[0], 240)}
                 alt=""
-                className="h-20 w-24 shrink-0 rounded-xl object-cover"
+                className="h-20 w-24 shrink-0 rounded-2xl object-cover"
                 fallback={<span className="grid h-20 w-24 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="car" size={22} /></span>}
               />
               <div className="min-w-0">
@@ -734,6 +860,23 @@ export default function Booking() {
           </div>
         </aside>
       </div>
+
+      {step < 3 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-3">
+            <button onClick={back} aria-label="Back" className="pressable grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line text-ink">
+              <Icon name="chevronLeft" size={20} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="text-caption text-muted">Total</p>
+              <p className="font-display text-lead font-semibold leading-tight text-ink">{eur(grandTotal)}</p>
+            </div>
+            <button onClick={next} disabled={step === 0 && !canContinueStep0} className="btn btn-primary btn-lg disabled:opacity-50">
+              Continue <Icon name="arrowRight" size={17} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1865,3 +1865,7 @@
 .bm-pin { all: unset; box-sizing: border-box; cursor: pointer; padding: 6px 11px; border-radius: 999px; background: #fff; color: #16161a; font: 700 12.5px/1 var(--font-sans, system-ui); box-shadow: 0 6px 16px -6px rgba(22, 22, 26, 0.45), 0 0 0 1px rgba(22, 22, 26, 0.08); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, color 0.2s; }
 .bm-pin:hover, .bm-pin[data-on='hover'] { transform: scale(1.12); z-index: 2; }
 .bm-pin[data-on='active'] { background: #16161a; color: #fff; transform: scale(1.18); z-index: 3; }
+
+
+/* Forms: a field the user has touched and got wrong */
+.input[aria-invalid='true'] { border-color: var(--color-danger); background-color: color-mix(in srgb, var(--color-danger) 4%, var(--color-surface)); }
