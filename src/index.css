@@ -1884,3 +1884,9 @@
 .fly-sway.fly-fast { animation-duration: 3.4s; }
 .fly-beat.fly-fast { animation-duration: 1.5s; }
 @media (prefers-reduced-motion: reduce) { .fly-bob, .fly-sway, .fly-beat, .fly-shadow { animation: none; } }
+
+
+/* Maps: a quiet credit — a small (i) that opens the text on tap */
+.maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(255,255,255,0.7); border-radius: 999px; margin: 6px; font-size: 10px; }
+.maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button { width: 20px; height: 20px; background-size: 12px; opacity: 0.6; }
+.maplibregl-ctrl-attrib.maplibregl-compact-show { padding: 2px 24px 2px 8px; }

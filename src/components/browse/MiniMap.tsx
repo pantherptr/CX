@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { CITY_COORDS } from '../../data/cityCoords';
+import { collapseAttribution } from '../../lib/mapAttribution';
 
 /** A small flat map of a car's city with the pick-up area marked. Loads the
  *  map library only when it is first shown. The pin sits on the city centre,
@@ -29,6 +30,7 @@ export function MiniMap({ city, className = '' }: { city: string; className?: st
           attributionControl: { compact: true },
           fadeDuration: 0,
         });
+        collapseAttribution(map);
         map.on('load', () => {
           if (cancelled || !map) return;
           const el = document.createElement('div');

@@ -1,3 +1,4 @@
+import { collapseAttribution } from '../lib/mapAttribution';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Map as MapLibreMap, Marker as MapLibreMarker, GeoJSONSource } from 'maplibre-gl';
@@ -183,6 +184,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
           fadeDuration: 0,
         });
         mapRef.current = map;
+        collapseAttribution(map);
 
         map.on('load', () => {
           if (cancelled) return;

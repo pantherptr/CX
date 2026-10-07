@@ -1,3 +1,4 @@
+import { collapseAttribution } from '../../lib/mapAttribution';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import type { Car } from '../../data/types';
@@ -72,6 +73,7 @@ export function BrowseMap({
         });
         map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right');
         mapRef.current = map;
+        collapseAttribution(map);
         map.on('load', () => { if (!cancelled) setReady(true); });
       } catch {
         if (!cancelled) setFailed(true);
