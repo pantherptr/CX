@@ -754,6 +754,19 @@
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
 
+  /* The in-page spinner: a faint track with one green arc turning. */
+  .cx-spinner {
+    display: block;
+    border-radius: 9999px;
+    border: 2.5px solid rgb(0 0 0 / 0.08);
+    border-top-color: var(--color-accent-bright);
+    animation: cx-spin 0.85s cubic-bezier(0.5, 0.15, 0.5, 0.85) infinite;
+  }
+  @keyframes cx-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .cx-spinner { animation-duration: 2.4s; }
+  }
+
   /* The first-visit loader: the CX mark eases in, a short green bar glides
      under it. Compositor-only (transform/opacity). */
   .cx-load-in { animation: cx-load-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }

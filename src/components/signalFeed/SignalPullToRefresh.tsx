@@ -1,116 +1,141 @@
-import { useRef, useState, type ReactNode } from 'react';
-import { CxsLogo } from '../CxsLogo';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { haptics } from '../../lib/native';
 
 const PULL_THRESHOLD = 64; // px of (resisted) pull before releasing triggers a refresh
-const MAX_PULL = 96; // px — the indicator never grows past this, however far the finger travels
+const MAX_PULL = 92; // the indicator never grows past this, however far the finger travels
 const RESISTANCE = 0.5; // rubber-band feel: the indicator moves slower than the finger
-const SETTLE_HEIGHT = 56; // px the indicator holds at while actually refreshing
+const SETTLE_HEIGHT = 56; // px the indicator holds at while refreshing
+const MIN_REFRESH_MS = 700; // so a fast refresh doesn't flash the indicator away
+const RING_R = 16;
+const RING_C = 2 * Math.PI * RING_R;
 
-/** Pull-to-refresh for SIGNAL's feed (Official and Community both — this
- *  wraps whatever `children` the page passes, so mounting it once in
- *  Signal.tsx covers both spaces). The one visual idea: cxs.png's "S" —
- *  SIGNAL's own nav mark, not a generic spinner — rotates with the pull
- *  itself (1:1 with the finger, no CSS animation involved yet) and only
- *  switches to a continuous spin once released past the threshold,
- *  settling at a fixed height until the refresh promise resolves.
+/** Pull-to-refresh for SIGNAL's feed. The indicator is the SIGNAL "S" inside a
+ *  ring that fills as you pull; past the threshold it ticks (haptic), and on
+ *  release the ring spins until the refresh is done.
  *
- *  Only engages when the page is already scrolled to the very top and
- *  the drag is downward — anything else (scrolling, tapping a button, a
- *  post's own horizontal interactions) never sets `dragging`, so this
- *  never competes with them. Deliberately does not call
- *  `preventDefault()` on the touch move (React's synthetic touch
- *  handlers are passive by default, and doing this properly needs a
- *  manual non-passive listener) — on iOS this means the browser's own
- *  rubber-band bounce can show alongside this indicator while pulling,
- *  a minor visual overlap rather than a broken interaction, not worth
- *  the extra native-listener plumbing for. */
+ *  The touch handlers are real, non-passive listeners: while a pull that
+ *  started at the very top is in progress the browser's own overscroll /
+ *  rubber-band is cancelled (`preventDefault`), so the page doesn't bounce
+ *  and drag the indicator along with it — that double motion was what made
+ *  the old version feel broken inside the iOS app. Anything that isn't a
+ *  downward drag from the top is left completely alone. */
 export function SignalPullToRefresh({ onRefresh, children }: { onRefresh: () => void | Promise<void>; children: ReactNode }) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [pull, setPull] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const startYRef = useRef<number | null>(null);
-  const movedRef = useRef(false);
+  const stateRef = useRef({ startY: null as number | null, pull: 0, refreshing: false, armed: false });
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
 
-  const runRefresh = async () => {
-    setRefreshing(true);
-    setDragging(false);
-    setPull(SETTLE_HEIGHT);
-    try {
-      await onRefresh();
-    } finally {
-      setRefreshing(false);
-      setPull(0);
-    }
-  };
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const st = stateRef.current;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (refreshing || window.scrollY > 0) {
-      startYRef.current = null;
-      return;
-    }
-    startYRef.current = e.touches[0].clientY;
-    movedRef.current = false;
-  };
+    const atTop = () => window.scrollY <= 0;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (startYRef.current === null || refreshing) return;
-    if (window.scrollY > 0) {
-      // scrolled away from the top mid-gesture — abandon the pull
-      startYRef.current = null;
+    const runRefresh = async () => {
+      st.refreshing = true;
+      setRefreshing(true);
       setDragging(false);
-      setPull(0);
-      return;
-    }
-    const dy = e.touches[0].clientY - startYRef.current;
-    if (dy <= 0) return;
-    movedRef.current = true;
-    setDragging(true);
-    setPull(Math.min(MAX_PULL, dy * RESISTANCE));
-  };
+      setPull(SETTLE_HEIGHT);
+      st.pull = SETTLE_HEIGHT;
+      const started = performance.now();
+      try {
+        await onRefreshRef.current();
+      } finally {
+        const rest = Math.max(0, MIN_REFRESH_MS - (performance.now() - started));
+        window.setTimeout(() => {
+          st.refreshing = false;
+          st.pull = 0;
+          setRefreshing(false);
+          setPull(0);
+        }, rest);
+      }
+    };
 
-  const handleTouchEnd = () => {
-    startYRef.current = null;
-    if (!movedRef.current) return;
-    movedRef.current = false;
-    setDragging(false);
-    if (pull >= PULL_THRESHOLD) {
-      void runRefresh();
-    } else {
-      setPull(0);
-    }
-  };
+    const onStart = (e: TouchEvent) => {
+      if (st.refreshing || !atTop()) {
+        st.startY = null;
+        return;
+      }
+      st.startY = e.touches[0].clientY;
+      st.armed = false;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (st.startY === null || st.refreshing) return;
+      if (!atTop()) {
+        st.startY = null;
+        setDragging(false);
+        setPull(0);
+        st.pull = 0;
+        return;
+      }
+      const dy = e.touches[0].clientY - st.startY;
+      if (dy <= 0) return;
+      if (e.cancelable) e.preventDefault(); // no page bounce while pulling
+      const next = Math.min(MAX_PULL, dy * RESISTANCE);
+      st.pull = next;
+      setDragging(true);
+      setPull(next);
+      const armed = next >= PULL_THRESHOLD;
+      if (armed && !st.armed) haptics.tick();
+      st.armed = armed;
+    };
+
+    const onEnd = () => {
+      if (st.startY === null) return;
+      st.startY = null;
+      setDragging(false);
+      if (st.pull >= PULL_THRESHOLD) void runRefresh();
+      else {
+        st.pull = 0;
+        setPull(0);
+      }
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    el.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, []);
+
+  const progress = refreshing ? 0.28 : Math.min(1, pull / PULL_THRESHOLD);
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+    <div ref={rootRef}>
       <div
         aria-hidden={!refreshing}
         className="flex items-center justify-center overflow-hidden"
-        style={{
-          height: pull,
-          transition: dragging ? 'none' : `height 320ms var(--ease-out-expo)`,
-        }}
+        style={{ height: pull, transition: dragging ? 'none' : 'height 320ms var(--ease-out-expo)' }}
       >
-        <button
-          onClick={() => { if (!refreshing) void runRefresh(); }}
-          aria-label="Refresh"
-          className="grid place-items-center rounded-full p-2 transition-opacity"
-          style={{ opacity: refreshing ? 1 : Math.min(1, pull / PULL_THRESHOLD) }}
+        <div
+          className="relative grid h-10 w-10 place-items-center rounded-full bg-surface shadow-soft ring-1 ring-line"
+          style={{ opacity: refreshing ? 1 : Math.min(1, pull / 28), transform: `scale(${refreshing ? 1 : 0.7 + 0.3 * progress})` }}
         >
-          <span
-            className={refreshing ? 'animate-signal-refresh-spin' : undefined}
-            style={{
-              display: 'inline-block',
-              // While actively pulling (not yet released), the S rotates
-              // 1:1 with the finger instead of running the CSS keyframe —
-              // direct manipulation feels more responsive than a canned
-              // animation for this part, same reasoning the Story
-              // viewer's own swipe-to-close drag already uses.
-              transform: !refreshing ? `rotate(${pull * 3}deg)` : undefined,
-            }}
+          <svg
+            className={`absolute inset-0 -rotate-90 ${refreshing ? 'animate-spin' : ''}`}
+            style={refreshing ? { animationDuration: '0.9s' } : undefined}
+            viewBox="0 0 40 40"
+            aria-hidden="true"
           >
-            <CxsLogo size={26} />
-          </span>
-        </button>
+            <circle cx="20" cy="20" r={RING_R} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="2.5" />
+            <circle
+              cx="20" cy="20" r={RING_R} fill="none" stroke="#00d447" strokeWidth="2.5" strokeLinecap="round"
+              strokeDasharray={RING_C}
+              strokeDashoffset={RING_C * (1 - progress)}
+            />
+          </svg>
+          <img src="/brand/signal-s.webp" alt="" draggable={false} className="relative h-[13px] w-auto select-none" />
+        </div>
       </div>
       {children}
     </div>
