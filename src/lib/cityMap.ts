@@ -8,6 +8,8 @@ export const WORLD = { w: 1800, h: 1200 };
 const COLS = 13;
 const ROWS = 9;
 const STEP = 150;
+/** Roads and buildings only — no river, parks or place labels. */
+const MINIMAL = true;
 
 type P = { x: number; y: number };
 
@@ -138,8 +140,8 @@ export function buildCity(): City {
       const quad = [node(i, j), node(i + 1, j), node(i + 1, j + 1), node(i, j + 1)];
       const c = { x: (quad[0].x + quad[2].x) / 2, y: (quad[0].y + quad[2].y) / 2 };
       const q = inset(quad, 13);
-      if (distToRiver(c) < 62) continue; // water
-      if (parkCells.has(`${i},${j}`) || distToRiver(c) < 118) {
+      if (!MINIMAL && distToRiver(c) < 62) continue; // water
+      if (!MINIMAL && (parkCells.has(`${i},${j}`) || distToRiver(c) < 118)) {
         parksD.push(poly(inset(quad, 11)));
         const n = 7 + Math.floor(rand() * 6);
         for (let k = 0; k < n; k++) {

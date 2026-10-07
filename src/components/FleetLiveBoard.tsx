@@ -42,14 +42,14 @@ const AMBIENT: [[number, number], [number, number]][] = [
 ];
 type VKind = 'car' | 'small' | 'van' | 'bus' | 'moto';
 const KINDS: Record<VKind, { len: number; wid: number; vmax: number; acc: number }> = {
-  car: { len: 14, wid: 6.6, vmax: 82, acc: 70 },
-  small: { len: 12, wid: 6, vmax: 76, acc: 76 },
-  van: { len: 17, wid: 7.2, vmax: 66, acc: 52 },
-  bus: { len: 26, wid: 8, vmax: 56, acc: 38 },
-  moto: { len: 8, wid: 3.4, vmax: 96, acc: 110 },
+  car: { len: 19, wid: 8.6, vmax: 82, acc: 70 },
+  small: { len: 16, wid: 7.8, vmax: 76, acc: 76 },
+  van: { len: 23, wid: 9.4, vmax: 66, acc: 52 },
+  bus: { len: 34, wid: 10.4, vmax: 56, acc: 38 },
+  moto: { len: 11, wid: 4.4, vmax: 96, acc: 110 },
 };
 const VEHICLE_MIX: VKind[] = ['car', 'car', 'small', 'car', 'van', 'small', 'car', 'bus', 'car', 'moto', 'small', 'car', 'van', 'car', 'small', 'car', 'moto', 'car', 'bus', 'car', 'small', 'car', 'van', 'car'];
-const VEHICLE_COLORS = ['#8d948b', '#b9beb6', '#6f766d', '#d4d8cf', '#5b6b8c', '#a4423c', '#c9b27a', '#4d5a50', '#e2e4de', '#3f4742'];
+const VEHICLE_COLORS = ['#17181c', '#f6f7f9', '#c9ced6', '#4a505b', '#2c3a55', '#f6f7f9', '#17181c', '#9aa1ad', '#f6f7f9', '#b13a3a'];
 const LIGHT_NODES: [number, number][] = [[2, 1], [6, 4], [10, 4], [2, 7], [10, 1], [6, 1]];
 const LIGHT_CYCLE = 15000; // ms: horizontal green, amber, vertical green, amber
 const lightState = (now: number, horizontal: boolean): 'green' | 'amber' | 'red' => {
@@ -58,13 +58,83 @@ const lightState = (now: number, horizontal: boolean): 'green' | 'amber' | 'red'
   if (horizontal) return hGreen ? 'green' : hAmber ? 'amber' : 'red';
   return vGreen ? 'green' : c >= 14000 ? 'amber' : 'red';
 };
-const LANE = 3.9;
-const HERO_COLORS = ['#16161a', '#eef0ec', '#0b7a38'];
+const LANE = 4.8;
+const HERO_COLORS = ['#17181c', '#f6f7f9', '#2c3a55'];
 const KMH = 0.62; // world px/s → displayed km/h
-const HERO_SPEC = { len: 15, wid: 7.2, vmax: 98, acc: 80 };
-const HERO_SCALE = 0.43;
+const HERO_SPEC = { len: 20, wid: 9, vmax: 98, acc: 80 };
 
 
+
+
+/** A top-down car in the style of a ride-hailing map: soft shadow, body, glass,
+ *  roof, mirrors, head- and tail-lights. Drawn in a 38×16 box and stretched to
+ *  the vehicle's real length and width. `brake` receives the tail-light group. */
+function VehicleSprite({ kind, color, len, wid, brake }: { kind: VKind | 'hero'; color: string; len: number; wid: number; brake: (el: SVGGElement | null) => void }) {
+  const light = ['#f6f7f9', '#c9ced6', '#9aa1ad'].includes(color);
+  const glass = '#2a3040';
+  const edge = light ? 'rgba(60,70,90,0.35)' : 'rgba(255,255,255,0.14)';
+  if (kind === 'moto') {
+    return (
+      <g transform={`scale(${len / 12}, ${wid / 5})`}>
+        <ellipse cx="0.5" cy="1.2" rx="6.4" ry="2.6" fill="rgba(40,50,70,0.22)" />
+        <rect x="-6" y="-1.1" width="12" height="2.2" rx="1.1" fill={color} stroke={edge} strokeWidth="0.3" />
+        <rect x="2" y="-2.5" width="1.2" height="5" rx="0.6" fill="#2a3040" />
+        <circle cx="-1" cy="0" r="1.2" fill="#2a3040" />
+        <g ref={brake} style={{ opacity: 0.2 }}><rect x="-6.3" y="-0.8" width="0.9" height="1.6" fill="#ff3b30" /></g>
+      </g>
+    );
+  }
+  const long = kind === 'bus';
+  const boxy = kind === 'van';
+  return (
+    <g transform={`scale(${len / 38}, ${wid / 16})`}>
+      <ellipse cx="1" cy="2.2" rx="20" ry="9" fill="rgba(40,50,70,0.2)" />
+      {/* tyres peeking out */}
+      {[-12.5, 10].map((x) => (
+        <g key={x} fill="#20242c">
+          <rect x={x} y="-8.7" width="6.5" height="2" rx="1" />
+          <rect x={x} y="6.7" width="6.5" height="2" rx="1" />
+        </g>
+      ))}
+      {/* body */}
+      <path d="M-19 -5.4 C-19 -7.4 -16.5 -8 -13 -8 L11 -8 C15.6 -8 19 -6.4 19.6 -3.8 L19.6 3.8 C19 6.4 15.6 8 11 8 L-13 8 C-16.5 8 -19 7.4 -19 5.4 Z" fill={color} stroke={edge} strokeWidth="0.5" />
+      {long ? (
+        <>
+          <rect x="-16.5" y="-6" width="28" height="12" rx="2.5" fill={light ? '#e8ebf0' : '#2d3340'} />
+          <path d="M-14 -4.3 H10 M-14 4.3 H10" stroke={glass} strokeWidth="1.6" strokeLinecap="round" opacity="0.75" />
+          <rect x="12" y="-6" width="5" height="12" rx="2" fill={glass} opacity="0.9" />
+        </>
+      ) : boxy ? (
+        <>
+          <rect x="-16" y="-6.2" width="22" height="12.4" rx="2.5" fill={light ? '#e8ebf0' : color} stroke={edge} strokeWidth="0.4" />
+          <path d="M7 -6 L14 -5 C15.4 -3 15.4 3 14 5 L7 6 Z" fill={glass} />
+        </>
+      ) : (
+        <>
+          {/* hood + trunk panel lines */}
+          <path d="M9 -7 C11 -4 11 4 9 7 M-13 -6.6 C-14.4 -3 -14.4 3 -13 6.6" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="0.5" />
+          {/* windscreen, rear glass */}
+          <path d="M2.4 -6.2 L8.6 -5 C9.8 -2.8 9.8 2.8 8.6 5 L2.4 6.2 Z" fill={glass} />
+          <path d="M-8.4 -5.6 L-12.6 -4.5 C-13.6 -2.4 -13.6 2.4 -12.6 4.5 L-8.4 5.6 Z" fill={glass} />
+          {/* roof + side glass */}
+          <rect x="-8.8" y="-6" width="11.6" height="12" rx="2.6" fill={light ? '#e3e7ee' : color} stroke={edge} strokeWidth="0.45" />
+          <rect x="-8" y="-6.4" width="10" height="1.1" rx="0.5" fill={glass} opacity="0.8" />
+          <rect x="-8" y="5.3" width="10" height="1.1" rx="0.5" fill={glass} opacity="0.8" />
+          <rect x="-6.6" y="-3.8" width="8" height="7.6" rx="2" fill="rgba(255,255,255,0.1)" />
+        </>
+      )}
+      {/* mirrors, lamps */}
+      <rect x="3.6" y="-9" width="3" height="1.6" rx="0.8" fill={color} stroke={edge} strokeWidth="0.3" />
+      <rect x="3.6" y="7.4" width="3" height="1.6" rx="0.8" fill={color} stroke={edge} strokeWidth="0.3" />
+      <rect x="18" y="-6" width="1.8" height="3" rx="0.9" fill="#fff7cf" />
+      <rect x="18" y="3" width="1.8" height="3" rx="0.9" fill="#fff7cf" />
+      <g ref={brake} style={{ opacity: 0.2 }}>
+        <rect x="-19.4" y="-6.2" width="1.8" height="3.2" rx="0.9" fill="#ff3b30" />
+        <rect x="-19.4" y="3" width="1.8" height="3.2" rx="0.9" fill="#ff3b30" />
+      </g>
+    </g>
+  );
+}
 
 export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tracking' }: { items: LiveItem[]; stats?: LiveStat[]; preview?: boolean; title?: string }) {
   const reduce = useReducedMotion();
@@ -446,43 +516,34 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
         </div>
 
         {/* Map — a navigation-style view that follows the selected car */}
-        <div ref={mapRef} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#eceee7] sm:aspect-[64/44]">
+        <div ref={mapRef} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#f2f4f7] sm:aspect-[64/44]">
           <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${VIEW_H0}`} className="absolute inset-0 h-full w-full" aria-hidden="true">
             <defs>
-              <linearGradient id="fl-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff6c8" stopOpacity="0.55" /><stop offset="1" stopColor="#fff6c8" stopOpacity="0" /></linearGradient>
-              <filter id="fl-car-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#16161a" floodOpacity="0.35" /></filter>
-              {city.labels.map((l) => <path key={l.id} id={l.id} d={l.d} />)}
+              <linearGradient id="fl-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff6c8" stopOpacity="0.5" /><stop offset="1" stopColor="#fff6c8" stopOpacity="0" /></linearGradient>
+              <filter id="fl-blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.4" /></filter>
+              {items.map((_, i) => (
+                <clipPath key={i} id={`fl-av-${i}`}><circle r="11" /></clipPath>
+              ))}
             </defs>
-            <rect x="-50" y="-50" width={WORLD.w + 100} height={WORLD.h + 100} fill="#eceee7" />
-            <path d={city.parks} fill="#d7e8cd" />
-            {city.trees.map((t, i) => <circle key={i} cx={t.x} cy={t.y} r={t.r} fill="#c4dcb8" />)}
-            <path d={city.river} fill="none" stroke="#c3dbe7" strokeWidth="74" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.river} fill="none" stroke="#d9eaf2" strokeWidth="62" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.buildings.a} fill="#e3e5dd" stroke="#d3d6cc" strokeWidth="0.8" />
-            <path d={city.buildings.b} fill="#dde0d8" stroke="#cfd3c9" strokeWidth="0.8" />
-            <path d={city.buildings.c} fill="#e8eae3" stroke="#d3d6cc" strokeWidth="0.8" />
-            {/* roads: casing first, then the surface */}
-            <path d={city.locals} fill="none" stroke="#d6d9cf" strokeWidth="17" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.arterials} fill="none" stroke="#e1d8c0" strokeWidth="28" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.locals} fill="none" stroke="#ffffff" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.arterials} fill="none" stroke="#fffdf6" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.arterials} fill="none" stroke="#efe9d8" strokeWidth="1" strokeDasharray="9 11" strokeLinecap="round" />
+            <rect x="-50" y="-50" width={WORLD.w + 100} height={WORLD.h + 100} fill="#f2f4f7" />
+
+            {/* roads */}
+            <path d={city.locals} fill="none" stroke="#e3e6ec" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#dbdfe6" strokeWidth="28" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#f5f6f9" strokeWidth="1.2" strokeDasharray="11 13" strokeLinecap="round" />
             {city.roundabouts.map((r, i) => (
               <g key={i} transform={`translate(${r.x} ${r.y})`}>
-                <circle r="34" fill="#fffdf6" stroke="#e1d8c0" strokeWidth="3" />
-                <circle r="19" fill="#d7e8cd" stroke="#e1d8c0" strokeWidth="2" />
+                <circle r="34" fill="#dbdfe6" />
+                <circle r="15" fill="#f2f4f7" stroke="#e3e6ec" strokeWidth="1.5" />
               </g>
             ))}
-            {city.labels.map((l, i) => (
-              <text key={l.id} fontSize="10.5" fontWeight="600" fill="#9aa194" style={{ letterSpacing: '0.12em' }} dy="-15">
-                <textPath href={`#${l.id}`} startOffset={`${12 + (i % 3) * 22}%`}>{l.name.toUpperCase()}</textPath>
-              </text>
-            ))}
-            {city.places.map((pl) => (
-              <g key={pl.label} transform={`translate(${pl.x} ${pl.y})`}>
-                <circle r="9" fill="#ffffff" stroke="#cfd3c9" strokeWidth="1.5" />
-                <circle r="3.4" fill="#00a63f" />
-                <text y="-17" textAnchor="middle" fontSize="12.5" fontWeight="700" fill="#6c7568" stroke="#eceee7" strokeWidth="3" paintOrder="stroke">{pl.label}</text>
+
+            {/* buildings: soft shadow, side wall, roof — a light extrusion */}
+            {([['a', 2.5, 3.5], ['b', 4, 5.5], ['c', 6, 8.5]] as const).map(([k, dx, dy]) => (
+              <g key={k}>
+                <path d={city.buildings[k]} transform={`translate(${dx * 2.2} ${dy * 2.2})`} fill="rgba(70,82,105,0.14)" filter="url(#fl-blur)" />
+                <path d={city.buildings[k]} transform={`translate(${dx} ${dy})`} fill="#d9dde5" stroke="#d2d7df" strokeWidth="0.6" />
+                <path d={city.buildings[k]} fill="#ffffff" stroke="#e8ebf0" strokeWidth="0.8" />
               </g>
             ))}
 
@@ -490,105 +551,83 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             {routesD.map((d, i) => <path key={`r${i}`} ref={(n) => { routeRefs.current[i] = n; }} d={d} fill="none" stroke="none" />)}
             {ambientD.map((d, i) => <path key={`a${i}`} ref={(n) => { ambientRefs.current[i] = n; }} d={d} fill="none" stroke="none" />)}
 
-            {/* selected route */}
+            {/* the selected car's route */}
             {routesD[sel] && (
               <>
-                <path d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="5" strokeDasharray="1 9" strokeLinecap="round" opacity="0.5" />
-                <path ref={trailRef} d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.92" />
+                <path d={routesD[sel]} fill="none" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
+                <path d={routesD[sel]} fill="none" stroke="#bfeccd" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                <path ref={trailRef} d={routesD[sel]} fill="none" stroke="#00c93f" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
               </>
             )}
 
-            {/* traffic lights */}
+            {/* signals */}
             {LIGHT_NODES.map(([ni, nj], li) => {
               const n = city.node(ni, nj);
               return (
                 <g key={`tl${li}`} ref={(el) => { lightRefs.current[li] = el; }} transform={`translate(${n.x} ${n.y})`}>
-                  <circle cx="-13" cy="-13" r="2.6" fill="#22c55e" stroke="#16161a" strokeWidth="1" />
-                  <circle cx="13" cy="13" r="2.6" fill="#ef4444" stroke="#16161a" strokeWidth="1" />
+                  <circle cx="-14" cy="-14" r="2.4" fill="#22c55e" />
+                  <circle cx="14" cy="14" r="2.4" fill="#ef4444" />
                 </g>
               );
             })}
 
-            {/* ambient traffic: cars, vans, buses, motorbikes */}
-            {vehicles.map((vh, i) => {
-              const k = KINDS[vh.kind];
-              const hl = k.wid / 2 - 2.2;
-              return (
-                <g key={`ac${i}`} ref={(el) => { ambientCars.current[i] = el; }}>
-                  <rect x={-k.len / 2} y={-k.wid / 2} width={k.len} height={k.wid} rx={vh.kind === 'bus' ? 4 : vh.kind === 'moto' ? 3 : 5} fill={vh.color} stroke="rgba(22,22,26,0.28)" strokeWidth="0.5" />
-                  {vh.kind !== 'moto' && <rect x={-k.len * 0.04} y={-k.wid / 2 + 1.6} width={k.len * 0.3} height={k.wid - 3.2} rx="2" fill="#ffffff" opacity="0.55" />}
-                  {vh.kind === 'bus' && <rect x={-k.len / 2 + 4} y={-k.wid / 2 + 2} width={k.len - 14} height={k.wid - 4} rx="2" fill="#ffffff" opacity="0.35" />}
-                  <circle cx={k.len / 2 - 1.5} cy={-hl} r="0.8" fill="#fff6c8" />
-                  <circle cx={k.len / 2 - 1.5} cy={hl} r="0.8" fill="#fff6c8" />
-                  <g ref={(el) => { brakeRefs.current[i] = el; }} style={{ opacity: 0.15 }}>
-                    <circle cx={-k.len / 2 + 1.5} cy={-hl} r="1" fill="#ff3b30" />
-                    <circle cx={-k.len / 2 + 1.5} cy={hl} r="1" fill="#ff3b30" />
-                  </g>
-                </g>
-              );
-            })}
-
-            {/* destination pins */}
-            {items.map((_, i) => {
+            {/* destination: the customer waiting on the corner */}
+            {items.map((it, i) => {
               const e = city.node(...TRIPS[i % TRIPS.length][1]);
               const on = i === sel;
               return (
-                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y}) scale(0.7)`} opacity={on ? 1 : 0.5}>
-                  {on && <circle r="22" fill="#00d447" opacity="0.2"><animate attributeName="r" values="14;30;14" dur="2.4s" repeatCount="indefinite" /></circle>}
-                  <path d="M0 -4 C -11 -19 -13 -31 0 -37 C 13 -31 11 -19 0 -4 Z" fill="#16161a" />
-                  <circle cx="0" cy="-24" r="4.8" fill="#00d447" />
+                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y})`} opacity={on ? 1 : 0.55}>
+                  {on && (
+                    <>
+                      <circle r="16" fill="#00c93f" opacity="0.14"><animate attributeName="r" values="14;30;14" dur="2.6s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.22;0;0.22" dur="2.6s" repeatCount="indefinite" /></circle>
+                      <circle r="16" fill="#00c93f" opacity="0.12" />
+                    </>
+                  )}
+                  <circle r="13.5" fill="#ffffff" filter="url(#fl-blur)" opacity="0.5" transform="translate(0 2)" />
+                  <circle r="13" fill="#ffffff" />
+                  {it.avatar ? (
+                    <g clipPath={`url(#fl-av-${i})`}><image href={it.avatar} x="-11" y="-11" width="22" height="22" preserveAspectRatio="xMidYMid slice" /></g>
+                  ) : (
+                    <circle r="11" fill="#17181c" />
+                  )}
                 </g>
               );
             })}
 
-            {/* the listed cars: a top-down sports car with glass, mirrors, headlight beams and brake lights */}
+            {/* ambient traffic */}
+            {vehicles.map((vh, i) => {
+              const k = KINDS[vh.kind];
+              return (
+                <g key={`ac${i}`} ref={(el) => { ambientCars.current[i] = el; }}>
+                  <VehicleSprite kind={vh.kind} color={vh.color} len={k.len} wid={k.wid} brake={(el) => { brakeRefs.current[i] = el; }} />
+                </g>
+              );
+            })}
+
+            {/* the listed cars */}
             {items.map((_, i) => {
               const on = i === sel;
-              const c = HERO_COLORS[i % HERO_COLORS.length];
-              const light = c === '#eef0ec';
               return (
-                <g key={`car${i}`} ref={(n) => { carRefs.current[i] = n; }} opacity={on ? 1 : 0.92}>
+                <g key={`car${i}`} ref={(n) => { carRefs.current[i] = n; }}>
                   {on && (
-                    <circle r="15" fill="#00d447" opacity="0.2">
+                    <circle r="15" fill="#00c93f" opacity="0.18">
                       <animate attributeName="r" values="11;19;11" dur="2.2s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.28;0.06;0.28" dur="2.2s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.26;0.06;0.26" dur="2.2s" repeatCount="indefinite" />
                     </circle>
                   )}
-                  {/* headlight beams */}
-                  <path d="M7 -2.2 L26 -7.5 L26 7.5 L7 2.2 Z" fill="url(#fl-beam)" opacity={on ? 0.9 : 0.55} />
-                  <g filter="url(#fl-car-shadow)" transform={`scale(${on ? HERO_SCALE * 1.1 : HERO_SCALE})`}>
-                    {/* body */}
-                    <path d="M-17 -6.8 C-17 -9 -14 -10 -10 -10 L9 -10 C14 -10 17 -8 18 -5 L18 5 C17 8 14 10 9 10 L-10 10 C-14 10 -17 9 -17 6.8 Z" fill={c} stroke={light ? '#b9beb6' : 'rgba(255,255,255,0.18)'} strokeWidth="0.8" />
-                    {/* wheel arches */}
-                    <rect x="-13" y="-11.2" width="7" height="2.6" rx="1.2" fill="#16161a" />
-                    <rect x="-13" y="8.6" width="7" height="2.6" rx="1.2" fill="#16161a" />
-                    <rect x="8" y="-11.2" width="7" height="2.6" rx="1.2" fill="#16161a" />
-                    <rect x="8" y="8.6" width="7" height="2.6" rx="1.2" fill="#16161a" />
-                    {/* cabin glass */}
-                    <path d="M-8 -6.6 L4 -6.2 C6.5 -6 8 -3.8 8 0 C8 3.8 6.5 6 4 6.2 L-8 6.6 C-9.5 5 -10 2.5 -10 0 C-10 -2.5 -9.5 -5 -8 -6.6 Z" fill={light ? '#2a3a33' : '#b8e8c8'} opacity={light ? 0.85 : 0.7} />
-                    <rect x="-4" y="-5.4" width="6" height="10.8" rx="2.2" fill={c} opacity="0.55" />
-                    {/* mirrors */}
-                    <rect x="3.5" y="-11.6" width="3" height="1.8" rx="0.8" fill={c} stroke="rgba(0,0,0,0.25)" strokeWidth="0.4" />
-                    <rect x="3.5" y="9.8" width="3" height="1.8" rx="0.8" fill={c} stroke="rgba(0,0,0,0.25)" strokeWidth="0.4" />
-                    {/* CX stripe */}
-                    <rect x="-16" y="-0.9" width="32" height="1.8" rx="0.9" fill="#00d447" opacity="0.9" />
-                    {/* headlights */}
-                    <rect x="16" y="-8" width="2.2" height="3.4" rx="1.1" fill="#fff8d0" />
-                    <rect x="16" y="4.6" width="2.2" height="3.4" rx="1.1" fill="#fff8d0" />
-                    {/* brake lights */}
-                    <g ref={(n) => { heroBrake.current[i] = n; }} style={{ opacity: 0.15 }}>
-                      <rect x="-18" y="-8" width="2" height="3.6" rx="1" fill="#ff3b30" />
-                      <rect x="-18" y="4.4" width="2" height="3.6" rx="1" fill="#ff3b30" />
-                    </g>
+                  <path d="M7 -2.2 L25 -7 L25 7 L7 2.2 Z" fill="url(#fl-beam)" opacity={on ? 0.8 : 0.45} />
+                  <g transform={on ? 'scale(1.12)' : undefined}>
+                    <VehicleSprite kind="hero" color={HERO_COLORS[i % HERO_COLORS.length]} len={HERO_SPEC.len} wid={HERO_SPEC.wid} brake={(el) => { heroBrake.current[i] = el; }} />
                   </g>
                 </g>
               );
             })}
           </svg>
 
-          <div ref={tagRef} className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[190%]">
-            <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-white shadow-pop">
-              {current.person.split(' ')[0]} · {live.min} min
+          <div ref={tagRef} className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[170%]">
+            <span className="flex items-center gap-2 whitespace-nowrap rounded-full bg-white py-1 pl-3 pr-1 text-[12px] font-semibold text-ink shadow-[0_6px_18px_-4px_rgba(22,22,26,0.28)]">
+              {live.min} min
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1.5 text-[9px] font-bold tracking-wide text-white">CX</span>
             </span>
           </div>
 
