@@ -125,7 +125,7 @@ function HeroPager({ images, alt, onOpen }: { images: string[]; alt: string; onO
   );
 }
 
-const roundBtn = 'pressable grid h-10 w-10 place-items-center rounded-full bg-white/80 text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] backdrop-blur-xl transition-colors hover:bg-white';
+const roundBtn = 'pressable grid h-11 w-11 place-items-center rounded-full bg-white/80 text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] backdrop-blur-xl transition-colors hover:bg-white';
 
 export default function CarDetails() {
   const { slug } = useParams();
@@ -299,7 +299,7 @@ export default function CarDetails() {
                   <h2 className="mb-2 px-1 font-display text-lg font-semibold text-ink">{t('About this car')}</h2>
                   <p className={`px-1 text-copy leading-relaxed text-ink-soft text-pretty ${moreText ? '' : 'line-clamp-3'}`}><Ugc text={car.description} /></p>
                   {car.description.length > 140 && (
-                    <button onClick={() => setMoreText((v) => !v)} className="mt-1.5 px-1 text-detail font-semibold text-ink underline underline-offset-4">{moreText ? t('Less') : t('More')}</button>
+                    <button onClick={() => setMoreText((v) => !v)} className="mt-1 inline-flex min-h-11 items-center px-1 text-detail font-semibold text-ink underline underline-offset-4">{moreText ? t('Less') : t('More')}</button>
                   )}
                 </section>
               )}

@@ -116,7 +116,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
           onClick={(e) => { e.stopPropagation(); haptics.tick(); toggleFavorite(car.id); }}
           aria-label={fav ? t('Remove from saved') : t('Save car')}
           aria-pressed={fav}
-          className="pressable absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 hover:scale-110"
+          className="pressable absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 before:absolute before:-inset-1.5 before:content-[''] hover:scale-110"
         >
           <Icon name="heart" size={17} fill={fav} className={fav ? 'text-[#e2384d]' : 'text-ink'} strokeWidth={1.8} />
         </button>

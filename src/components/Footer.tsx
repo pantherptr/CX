@@ -119,7 +119,7 @@ export function Footer() {
                         without visually loosening the list. */}
                     <Link
                       to={l.to}
-                      className="inline-block py-1.5 text-body text-muted transition-colors hover:text-ink"
+                      className="inline-flex min-h-11 items-center text-body text-muted transition-colors hover:text-ink sm:min-h-0 sm:py-1.5"
                     >
                       {t(l.label)}
                     </Link>
@@ -138,7 +138,7 @@ export function Footer() {
             <span className="inline-flex items-center gap-1.5">
               <Icon name="globe" size={15} /> {langLabel}
             </span>
-            <button type="button" onClick={resetCountry} className="underline-offset-2 transition-colors hover:text-ink hover:underline">
+            <button type="button" onClick={resetCountry} className="inline-flex min-h-11 items-center underline-offset-2 transition-colors hover:text-ink hover:underline sm:min-h-0">
               {t('Change country')}
             </button>
             <span className="inline-flex items-center gap-1.5">

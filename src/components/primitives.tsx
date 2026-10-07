@@ -102,7 +102,7 @@ export function Logo({
     </span>
   );
   return (
-    <Link to={session ? '/dashboard' : '/'} className={`group inline-flex items-center ${className}`} aria-label="CX home">
+    <Link to={session ? '/dashboard' : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
       <Img
         src={LOGO_SRC.wordmark}
         alt="CX"
