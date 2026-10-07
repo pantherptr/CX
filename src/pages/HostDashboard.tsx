@@ -633,17 +633,14 @@ export default function HostDashboard() {
   const liveItems = useMemo<LiveItem[]>(() => {
     const trips = classified.filter((c) => c.phase === 'active' || c.phase === 'upcoming').slice(0, 3);
     if (trips.length > 0) {
-      return trips.map(({ booking: b, phase }, i) => ({
+      return trips.map(({ booking: b, phase }) => ({
         id: b.id,
         title: `${b.car.make} ${b.car.model}`,
         image: b.car.image,
         plate: b.reference,
         person: b.renter.name || 'Renter',
         avatar: b.renter.avatar || undefined,
-        etaMin: [12, 9, 15][i % 3],
-        km: [8.1, 5.4, 10.2][i % 3],
-        pickup: b.pickupLocation || b.car.location,
-        dropoff: b.deliveryAddress || b.car.location,
+        city: b.car.location.split(',').pop()?.trim() || '',
         status: phase === 'active' ? 'On trip' : 'Upcoming',
       }));
     }
@@ -653,10 +650,7 @@ export default function HostDashboard() {
       image: unsplash(c.images[0], 320),
       plate: `${c.year} · ${c.city}`,
       person: ['Marco Rossi', 'Elena Popescu', 'Lucía Gómez'][i % 3],
-      etaMin: [12, 9, 15][i % 3],
-      km: [8.1, 5.4, 10.2][i % 3],
-      pickup: c.location,
-      dropoff: c.city,
+      city: c.city,
       status: 'Ready',
     }));
   }, [classified, hostCars]);

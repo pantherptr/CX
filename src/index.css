@@ -1842,3 +1842,12 @@
 @keyframes auth-aurora { 0%, 100% { transform: translate(-30%, -20%) scale(1); } 50% { transform: translate(30%, 20%) scale(1.25); } }
 .auth-aurora { animation: auth-aurora 14s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .auth-aurora { animation: none; } }
+
+
+/* Live board: the customer waiting at a destination (a map marker) */
+.fl-pin { position: relative; width: 34px; height: 34px; }
+.fl-pin__ring { position: absolute; inset: 0; overflow: hidden; border-radius: 50%; background: #16161a; border: 3px solid #fff; box-shadow: 0 6px 16px -4px rgba(22, 22, 26, 0.4); }
+.fl-pin__ring img { width: 100%; height: 100%; object-fit: cover; }
+.fl-pin__pulse { position: absolute; inset: -9px; border-radius: 50%; background: rgba(0, 201, 63, 0.26); animation: fl-pin-pulse 2.4s ease-out infinite; }
+@keyframes fl-pin-pulse { 0% { transform: scale(0.55); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fl-pin__pulse { animation: none; opacity: 0.4; } }

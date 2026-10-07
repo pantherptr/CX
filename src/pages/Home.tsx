@@ -252,10 +252,7 @@ export default function Home() {
       plate: `${c.year} · ${c.city}`,
       person: people[i].name,
       avatar: avatar(people[i].img),
-      etaMin: [12, 9, 15][i],
-      km: [8.1, 5.4, 10.2][i],
-      pickup: people[i].a,
-      dropoff: people[i].b,
+      city: c.city,
       status: 'On trip',
     }));
     const avg = allCars.reduce((n, c) => n + c.rating, 0) / allCars.length;
