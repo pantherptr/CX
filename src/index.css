@@ -776,6 +776,12 @@
     from { clip-path: inset(0 100% 0 0); filter: blur(10px); opacity: 0; transform: scale(0.96); }
     to { clip-path: inset(0 0 0 0); filter: blur(0); opacity: 1; transform: none; }
   }
+  /* The green key slides out of the X after the letters have landed. */
+  .cx-key { animation: cx-key 0.8s 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes cx-key {
+    from { clip-path: inset(0 100% 0 52%); transform: translateX(-9%); opacity: 0; }
+    to { clip-path: inset(0 0 0 52%); transform: none; opacity: 1; }
+  }
   .cx-bloom { transform: translate(-50%, -50%); animation: cx-bloom 3.2s ease-in-out infinite; }
   @keyframes cx-bloom {
     0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.92); }
@@ -795,7 +801,7 @@
     100% { left: calc(100% - 5px); opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .cx-reveal, .cx-bloom, .cx-line { animation: none; }
+    .cx-reveal, .cx-key, .cx-bloom, .cx-line { animation: none; }
     .cx-line-glow { animation: none; opacity: 0; }
   }
 

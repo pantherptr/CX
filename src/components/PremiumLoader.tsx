@@ -28,11 +28,15 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
 
 /** Full-screen loading overlay — shown once per session while the app
  *  first boots. Off-white (no colour jump from the native launch screen or
- *  the pre-paint background in `index.html`), a soft green bloom breathing
- *  behind the CX mark, the mark unveiled left-to-right out of a blur with a
- *  light then sweeping through its silhouette, and a hairline of green light
- *  drawing out from the centre underneath. No card, no numbers, no text.
- *  `hiding` fades and eases it out into the real app.
+ *  the pre-paint background in `index.html`). The CX letters are unveiled
+ *  left-to-right out of a blur, then the green key slides out of the X and
+ *  a light sweeps through the whole mark. A soft green bloom breathes
+ *  behind it and a hairline of light draws out underneath. No card, no
+ *  numbers, no text. `hiding` fades and eases it out into the real app.
+ *
+ *  The mark is two aligned layers cut from `cx-logo-main.png` (same canvas,
+ *  so they stack pixel-perfectly): `cx-logo-letters.png` and
+ *  `cx-logo-key.png`.
  */
 export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
   return (
@@ -48,14 +52,15 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
         className="cx-bloom pointer-events-none absolute left-1/2 top-1/2 h-[120vmin] w-[120vmin] rounded-full"
         style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.16), rgba(0,212,71,0.05) 55%, transparent 100%)' }}
       />
-      <div className="cx-reveal relative" style={{ width: 'clamp(190px, 62vw, 300px)', aspectRatio: '1633 / 318' }}>
-        <img src="/cx-logo-main.png" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-contain" />
+      <div className="relative" style={{ width: 'clamp(190px, 62vw, 300px)', aspectRatio: '1633 / 318' }}>
+        <img src="/brand/cx-logo-letters.png" alt="" draggable={false} className="cx-reveal absolute inset-0 h-full w-full select-none object-contain" />
+        <img src="/brand/cx-logo-key.png" alt="" draggable={false} className="cx-key absolute inset-0 h-full w-full select-none object-contain" />
         <span
           aria-hidden="true"
           className="signal-sweep-mask pointer-events-none absolute inset-0"
           style={{ WebkitMaskImage: 'url(/cx-logo-main.png)', maskImage: 'url(/cx-logo-main.png)' }}
         >
-          <span className="signal-sweep-bar absolute" style={{ animationDelay: '0.9s' }} />
+          <span className="signal-sweep-bar absolute" style={{ animationDelay: '1.5s' }} />
         </span>
       </div>
       <div className="relative mt-10 h-px w-[min(46vw,180px)]">
