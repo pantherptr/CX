@@ -27,33 +27,40 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
 }
 
 /** Full-screen loading overlay — shown once per session while the app
- *  first boots. The off-white page colour (so there is no colour jump from
- *  the native launch screen or the pre-paint background in `index.html`),
- *  the CX mark centred with a light sweeping through its own silhouette,
- *  and a short green bar gliding under it. Nothing else: no card, no
- *  numbers. `hiding` fades and eases it out into the real app.
+ *  first boots. Off-white (no colour jump from the native launch screen or
+ *  the pre-paint background in `index.html`), a soft green bloom breathing
+ *  behind the CX mark, the mark unveiled left-to-right out of a blur with a
+ *  light then sweeping through its silhouette, and a hairline of green light
+ *  drawing out from the centre underneath. No card, no numbers, no text.
+ *  `hiding` fades and eases it out into the real app.
  */
 export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-bg transition-[opacity,transform] duration-500 ease-out ${
-        hiding ? 'pointer-events-none scale-[1.015] opacity-0' : 'opacity-100'
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-bg transition-[opacity,transform] duration-500 ease-out ${
+        hiding ? 'pointer-events-none scale-[1.02] opacity-0' : 'opacity-100'
       }`}
       role="status"
       aria-label="Loading"
     >
-      <div className="cx-load-in relative" style={{ width: 'clamp(160px, 52vw, 240px)', aspectRatio: '1633 / 318' }}>
+      <div
+        aria-hidden="true"
+        className="cx-bloom pointer-events-none absolute left-1/2 top-1/2 h-[120vmin] w-[120vmin] rounded-full"
+        style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.16), rgba(0,212,71,0.05) 55%, transparent 100%)' }}
+      />
+      <div className="cx-reveal relative" style={{ width: 'clamp(190px, 62vw, 300px)', aspectRatio: '1633 / 318' }}>
         <img src="/cx-logo-main.png" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-contain" />
         <span
           aria-hidden="true"
           className="signal-sweep-mask pointer-events-none absolute inset-0"
           style={{ WebkitMaskImage: 'url(/cx-logo-main.png)', maskImage: 'url(/cx-logo-main.png)' }}
         >
-          <span className="signal-sweep-bar absolute" />
+          <span className="signal-sweep-bar absolute" style={{ animationDelay: '0.9s' }} />
         </span>
       </div>
-      <div className="cx-load-in mt-9 h-[3px] w-24 overflow-hidden rounded-full bg-ink/10" style={{ animationDelay: '0.12s' }}>
-        <span className="cx-load-bar block h-full w-1/2 rounded-full bg-accent-bright" />
+      <div className="relative mt-10 h-px w-[min(46vw,180px)]">
+        <span className="cx-line absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, #00d447 50%, transparent)' }} />
+        <span className="cx-line-glow absolute left-0 top-1/2 h-[5px] w-[5px] -translate-y-1/2 rounded-full bg-accent-bright" />
       </div>
     </div>
   );
