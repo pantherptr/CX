@@ -59,6 +59,8 @@ const lightState = (now: number, horizontal: boolean): 'green' | 'amber' | 'red'
   return vGreen ? 'green' : c >= 14000 ? 'amber' : 'red';
 };
 const LANE = 4.8;
+/** Only the listed cars are on the map; flip to bring the background traffic back. */
+const SHOW_AMBIENT = false;
 const HERO_COLORS = ['#17181c', '#f6f7f9', '#2c3a55'];
 const KMH = 0.62; // world px/s → displayed km/h
 const HERO_SPEC = { len: 20, wid: 9, vmax: 98, acc: 80 };
@@ -141,7 +143,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
   const city = useMemo(() => buildCity(), []);
   const routesD = useMemo(() => items.map((_, i) => city.routeBetween(...TRIPS[i % TRIPS.length])), [city, items]);
   const ambientD = useMemo(() => AMBIENT.map(([a, b]) => city.routeBetween(a, b)), [city]);
-  const vehicles = useMemo(() => VEHICLE_MIX.map((kind, i) => ({ kind, route: i % AMBIENT.length, dir: i % 2 === 0 ? 1 : -1, color: VEHICLE_COLORS[(i * 7) % VEHICLE_COLORS.length], jitter: 0.9 + ((i * 37) % 21) / 100 })), []);
+  const vehicles = useMemo(() => (SHOW_AMBIENT ? VEHICLE_MIX : []).map((kind, i) => ({ kind, route: i % AMBIENT.length, dir: i % 2 === 0 ? 1 : -1, color: VEHICLE_COLORS[(i * 7) % VEHICLE_COLORS.length], jitter: 0.9 + ((i * 37) % 21) / 100 })), []);
 
   const [sel, setSel] = useState(0);
   const [visible, setVisible] = useState(false);
