@@ -339,10 +339,20 @@ export default function Messages() {
   const pendingForActive = pending.filter((p) => p.conversationId === activeId);
   const totalUnread = (conversations ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
 
+  // Opening a conversation lands on the latest message at once; only a new
+  // message arriving in the already-open thread glides down to it.
+  const lastScroll = useRef<{ id: string | null; len: number; chat: boolean }>({ id: null, len: 0, chat: false });
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    mockScrollRef.current?.scrollTo({ top: mockScrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages?.length, pendingForActive.length]);
+    const len = (messages?.length ?? 0) + pendingForActive.length;
+    const prev = lastScroll.current;
+    const behavior: ScrollBehavior = prev.id === activeId && prev.chat === mobileChat && prev.len > 0 ? 'smooth' : 'auto';
+    lastScroll.current = { id: activeId, len, chat: mobileChat };
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    mockScrollRef.current?.scrollTo({ top: mockScrollRef.current.scrollHeight, behavior });
+  }, [messages?.length, pendingForActive.length, activeId, mobileChat]);
+
+  // iOS-style edge swipe: drag from the left edge to the right to go back.
+  const edgeSwipe = useRef<{ x: number; y: number } | null>(null);
 
   // Re-runs on every new message in the open thread, not just when it's
   // first opened — a reply arriving while this conversation is already
@@ -578,6 +588,20 @@ export default function Messages() {
           <div
             className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
             style={{ top: vv.top, height: vv.height }}
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              edgeSwipe.current = t.clientX < 28 ? { x: t.clientX, y: t.clientY } : null;
+            }}
+            onTouchEnd={(e) => {
+              const start = edgeSwipe.current;
+              edgeSwipe.current = null;
+              if (!start) return;
+              const t = e.changedTouches[0];
+              if (t.clientX - start.x > 70 && Math.abs(t.clientY - start.y) < 60) {
+                haptics.tick();
+                closeConvo();
+              }
+            }}
           >
             <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-surface/95 px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] backdrop-blur">
               <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink active:bg-panel">
