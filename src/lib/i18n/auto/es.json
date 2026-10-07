@@ -1654,5 +1654,12 @@
 "Bags": "Maletas",
 "No reviews yet.": "Aún no hay reseñas.",
 "Book now": "Reservar ahora",
-"Show cars": "Mostrar coches"
+"Show cars": "Mostrar coches",
+"Map": "Mapa",
+"List": "Lista",
+"Hide map": "Ocultar mapa",
+"Show map": "Mostrar mapa",
+"Map of listed cars": "Mapa de los coches",
+"Map unavailable": "Mapa no disponible",
+"Pins show the approximate area": "Los marcadores muestran la zona aproximada"
 }

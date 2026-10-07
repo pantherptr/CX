@@ -5,11 +5,13 @@ import type { Car } from '../data/types';
 import { BrowseCard } from '../components/browse/BrowseCard';
 import { CarDrawer } from '../components/browse/CarDrawer';
 import { PriceHistogram } from '../components/browse/PriceHistogram';
+import { BrowseMap } from '../components/browse/BrowseMap';
 import { Icon } from '../components/Icon';
 import { EmptyState, Modal } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { motion, AnimatePresence, SPRING_SNAPPY } from '../components/motionKit';
 import { useScramble } from '../lib/useScramble';
+import { useMediaQuery } from '../components/motion';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -275,6 +277,12 @@ export default function Browse() {
   const [sortOpen, setSortOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const [openCar, setOpenCar] = useState<Car | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const wide = useMediaQuery('(min-width: 1280px)');
+  const [showMap, setShowMap] = useState(true);
+  const [mapView, setMapView] = useState(false); // below xl the map takes the list's place
+  const mapBeside = wide && showMap;
+  const mapOnly = !wide && mapView;
   const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
 
   useEffect(() => {
@@ -361,7 +369,7 @@ export default function Browse() {
   );
 
   return (
-    <div className="container-page py-6 sm:py-8">
+    <div className="container-page !max-w-[1760px] py-6 sm:py-8">
       <div className="flex gap-6 lg:gap-8">
         {/* Filters */}
         <aside className="hidden w-[280px] shrink-0 lg:block">
@@ -383,6 +391,14 @@ export default function Browse() {
               {t('Browse cars')}
             </h1>
             <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => (wide ? setShowMap((v) => !v) : setMapView((v) => !v))}
+                className="btn btn-secondary"
+                aria-pressed={wide ? showMap : mapView}
+              >
+                <Icon name={wide ? 'pin' : mapView ? 'grid' : 'pin'} size={16} />
+                {wide ? (showMap ? t('Hide map') : t('Show map')) : mapView ? t('List') : t('Map')}
+              </button>
               <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
                 <Icon name="sliders" size={17} /> {t('Filters')}
                 {activeCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-label font-semibold text-white">{activeCount}</span>}
@@ -430,36 +446,57 @@ export default function Browse() {
             </ConciergeLauncher>
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <CarCardSkeleton key={i} />
-              ))}
+          <div className={mapBeside ? 'flex items-start gap-5' : ''}>
+            <div className={mapBeside ? 'w-[470px] shrink-0' : 'min-w-0'}>
+              {loading ? (
+                <div className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <CarCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : error ? (
+                <div className="card">
+                  <EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-20" />
+                </div>
+              ) : results.length === 0 ? (
+                <div className="card">
+                  <EmptyState
+                    size="lg"
+                    icon="search"
+                    title={t('No cars match your filters')}
+                    description={t('Try widening your price range or clearing a few filters to see more of the fleet.')}
+                    action={<button onClick={reset} className="btn btn-primary">{t('Clear all filters')}</button>}
+                    className="px-6 py-20"
+                  />
+                </div>
+              ) : mapOnly ? (
+                <BrowseMap cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[68dvh] rounded-[24px] border border-line" />
+              ) : (
+                <motion.div layout className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
+                  <AnimatePresence mode="popLayout">
+                    {results.map((car, i) => (
+                      <BrowseCard
+                        key={car.id}
+                        car={car}
+                        variant={mapBeside ? 'row' : 'grid'}
+                        active={openCar?.id === car.id}
+                        priority={i < 6}
+                        available={hasDateFilter}
+                        onOpen={() => setOpenCar(car)}
+                        onHover={setHoverId}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              )}
             </div>
-          ) : error ? (
-            <div className="card">
-              <EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-20" />
-            </div>
-          ) : results.length === 0 ? (
-            <div className="card">
-              <EmptyState
-                size="lg"
-                icon="search"
-                title={t('No cars match your filters')}
-                description={t('Try widening your price range or clearing a few filters to see more of the fleet.')}
-                action={<button onClick={reset} className="btn btn-primary">{t('Clear all filters')}</button>}
-                className="px-6 py-20"
-              />
-            </div>
-          ) : (
-            <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <AnimatePresence mode="popLayout">
-                {results.map((car, i) => (
-                  <BrowseCard key={car.id} car={car} active={openCar?.id === car.id} priority={i < 6} available={hasDateFilter} onOpen={() => setOpenCar(car)} />
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          )}
+
+            {mapBeside && (
+              <div className="sticky top-[84px] min-w-0 flex-1">
+                <BrowseMap cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-104px)] rounded-[24px] border border-line" />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
