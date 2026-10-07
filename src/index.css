@@ -1820,3 +1820,27 @@
     .vehicle-art-image { transition: none !important; }
   }
 }
+
+
+/* Login: a bright line that travels around the card's edge. */
+@property --beam-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.auth-beam { position: relative; border-radius: 28px; }
+.auth-beam::before,
+.auth-beam::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 29px;
+  padding: 1.5px;
+  pointer-events: none;
+  background: conic-gradient(from var(--beam-angle), transparent 0deg 250deg, rgba(0, 212, 71, 0.15) 290deg, #00d447 340deg, #ffffff 358deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: auth-beam-spin 5s linear infinite;
+}
+.auth-beam::after { filter: blur(7px); opacity: 0.55; inset: -4px; padding: 4px; border-radius: 32px; }
+@keyframes auth-beam-spin { to { --beam-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .auth-beam::before, .auth-beam::after { animation: none; }
+}
