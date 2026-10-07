@@ -1823,7 +1823,7 @@
 
 
 /* Login: a bright line that travels around the card's edge. */
-@property --beam-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@property --beam-angle { syntax: '<angle>'; initial-value: 0deg; inherits: true; }
 .auth-beam { position: relative; border-radius: 28px; }
 .auth-beam::before,
 .auth-beam::after {
@@ -1837,10 +1837,8 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  animation: auth-beam-spin 5s linear infinite;
 }
 .auth-beam::after { filter: blur(7px); opacity: 0.55; inset: -4px; padding: 4px; border-radius: 32px; }
-@keyframes auth-beam-spin { to { --beam-angle: 360deg; } }
-@media (prefers-reduced-motion: reduce) {
-  .auth-beam::before, .auth-beam::after { animation: none; }
-}
+@keyframes auth-aurora { 0%, 100% { transform: translate(-30%, -20%) scale(1); } 50% { transform: translate(30%, 20%) scale(1.25); } }
+.auth-aurora { animation: auth-aurora 14s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .auth-aurora { animation: none; } }
