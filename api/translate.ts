@@ -49,7 +49,10 @@ async function translateBatch(texts: string[], lang: Lang, key: string): Promise
       messages: [{ role: 'user', content: JSON.stringify(texts) }],
     }),
   });
-  if (!res.ok) return texts.map(() => null);
+  if (!res.ok) {
+    console.error('translate: Anthropic', res.status, (await res.text()).slice(0, 300));
+    return texts.map(() => null);
+  }
   const data = (await res.json()) as { content?: { type: string; text?: string }[] };
   const raw = data.content?.find((c) => c.type === 'text')?.text ?? '';
   try {
@@ -101,7 +104,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Only translate text that really is published content.
     const allowed: number[] = [];
     for (const i of missing) {
-      const { data: ok } = await db.rpc('is_translatable_content', { t: list[i] });
+      const { data: ok, error: rpcError } = await db.rpc('is_translatable_content', { t: list[i] });
+      if (rpcError) console.error('translate: allow-list rpc', rpcError.message);
       if (ok === true) allowed.push(i);
     }
     if (allowed.length > 0) {
@@ -114,7 +118,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           rows.push({ source_hash: hashes[i], lang: L, translated: tr });
         }
       });
-      if (rows.length > 0) await db.from('content_translations').upsert(rows, { onConflict: 'source_hash,lang' });
+      if (rows.length > 0) {
+        const { error: upsertError } = await db.from('content_translations').upsert(rows, { onConflict: 'source_hash,lang' });
+        if (upsertError) console.error('translate: cache write', upsertError.message);
+      }
     }
   }
 
