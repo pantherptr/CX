@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { SignalLogo } from '../SignalLogo';
+import { CxsLogo } from '../CxsLogo';
 import { NotificationsList } from '../NotificationsList';
 import { useSheetDrag } from '../motion';
 import { useHideForNavigation } from '../motionKit';
@@ -56,7 +56,7 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
             <span className="h-1 w-9 rounded-full bg-ink/15" aria-hidden="true" />
           </div>
           <div className="relative flex items-center justify-between px-5 pt-4 sm:px-6">
-            <SignalLogo size={30} />
+            <CxsLogo size={34} />
             <button onClick={requestClose} aria-label="Close" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft transition-colors hover:text-ink">
               <Icon name="x" size={18} />
             </button>

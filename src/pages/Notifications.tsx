@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
-import { SignalLogo } from '../components/SignalLogo';
+import { CxsLogo } from '../components/CxsLogo';
 import { NotificationsList } from '../components/NotificationsList';
 import { useAuth } from '../lib/auth';
 import { useMyNotifications, type SignalNotification } from '../lib/data/notifications';
@@ -31,7 +31,7 @@ export default function Notifications() {
         <div className="relative overflow-hidden rounded-3xl border border-line bg-surface px-6 py-6 shadow-hair sm:px-8 sm:py-8">
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-accent-bright/15 blur-3xl" />
           <div className="relative">
-            <SignalLogo size={30} />
+            <CxsLogo size={34} />
             <div className="mt-5 flex items-center gap-3">
               <h1 className="font-display text-3xl font-bold leading-none tracking-tight text-ink sm:text-4xl">Notifications</h1>
               {unreadCount > 0 && (
