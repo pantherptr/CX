@@ -7,7 +7,7 @@ import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './moti
 import routesData from '../data/liveRoutes.json';
 
 /** An animated "live fleet" board: stat tiles, a list of cars, and a real map
- *  of the car's city (real streets, real place names, 3D buildings) where the
+ *  of the car's city (real streets, real place names) where the
  *  selected car drives a real route while a cursor picks cars one after
  *  another and a trip card opens. The routes are real driving routes
  *  (scripts/build-live-routes.mjs) but the movement along them is a
@@ -31,9 +31,9 @@ interface RouteData { coords: [number, number][]; distance: number; duration: nu
 const ROUTES = routesData as unknown as Record<string, RouteData[]>;
 
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
-const ZOOM = 16.7;
-const PITCH = 46;
-const BEARING = -18;
+const ZOOM = 16.4;
+const PITCH = 0;
+const BEARING = 0;
 const SELECT_MS = 11000;
 // keep the car clear of the trip sheet along the bottom
 const PAD = { top: 10, bottom: 130, left: 0, right: 0 };
@@ -269,24 +269,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
 
         map.on('load', () => {
           if (cancelled) return;
-          // 3D buildings, under the labels
+          // flat map: labels stay above the route
           const labelLayer = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
-          map.addLayer(
-            {
-              id: 'fl-3d',
-              type: 'fill-extrusion',
-              source: 'openmaptiles',
-              'source-layer': 'building',
-              minzoom: 14,
-              paint: {
-                'fill-extrusion-color': '#fbfbfd',
-                'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 9],
-                'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-                'fill-extrusion-opacity': 0.96,
-              },
-            },
-            labelLayer,
-          );
           // the route: white casing, soft green line, bright green for the part already driven
           const empty = { type: 'Feature' as const, properties: {}, geometry: { type: 'LineString' as const, coordinates: [] as [number, number][] } };
           map.addSource(SRC_FULL, { type: 'geojson', data: empty });
@@ -491,7 +475,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
           })}
         </div>
 
-        {/* The map — a real city, 3D buildings, the selected car followed by the camera */}
+        {/* The map — a real city, flat, the selected car followed by the camera */}
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#f2f4f7] sm:aspect-[64/44]">
           <div ref={mapBox} style={{ position: 'absolute', inset: 0 }} role="img" aria-label={`Map of ${current.city}`} />
           {mapState !== 'ready' && (
