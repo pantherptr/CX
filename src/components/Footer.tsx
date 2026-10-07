@@ -1,3 +1,4 @@
+import { FlyingMark } from './FlyingMark';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
@@ -93,6 +94,7 @@ export function Footer() {
             <p className="mt-4 font-display text-copy font-semibold text-ink">
               {t('Rent. Drive. Experience.')}
             </p>
+            <FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="mt-7 h-14" />
             <div className="mt-6 flex gap-2.5">
               {socials.map((s) => (
                 <button

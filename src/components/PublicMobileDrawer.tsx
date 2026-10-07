@@ -81,7 +81,7 @@ export default function PublicMobileDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
-                <div className="mb-6 flex justify-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-14" flutter={2} /></div>
+                <div className="mb-6 flex justify-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-14" /></div>
                 {/* -------- The one primary CTA — compact, single line -------- */}
                 <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg btn-block !justify-between mb-6" {...findDriveScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />
