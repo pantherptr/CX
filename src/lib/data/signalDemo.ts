@@ -50,7 +50,7 @@ function mapDemoPost(row: DemoPostRow): EmpirePost {
     title: row.title,
     body: row.body,
     mediaPaths: [],
-    mediaUrls: row.media_photo_id ? [unsplash(row.media_photo_id, 1200)] : [],
+    mediaUrls: row.media_photo_id ? [unsplash(row.media_photo_id, 900)] : [],
     isPinned: false,
     isFeatured: false,
     pinnedToProfile: false,

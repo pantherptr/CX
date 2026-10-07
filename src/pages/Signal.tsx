@@ -84,6 +84,21 @@ export default function Signal() {
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
 
+  // Warm the browser cache for the photos just below the fold, so scrolling
+  // reveals finished images instead of skeletons. Capped, and only the
+  // first image of each post.
+  useEffect(() => {
+    if (!posts) return;
+    posts.slice(0, 10).forEach((p) => {
+      const url = p.mediaUrls?.[0];
+      if (url) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = url;
+      }
+    });
+  }, [posts]);
+
   // "New posts" never yanks the feed out from under someone mid-scroll —
   // it only ever flips a quiet banner (see useEmpireFeed's own poll); this
   // is the one thing that actually merges them in, and only from a real
