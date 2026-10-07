@@ -19,11 +19,16 @@ export function StoryCanvas({
   className = '',
   boxClassName = '',
   boxStyle,
+  fillOnPhone = false,
 }: {
   children: ReactNode;
   className?: string;
   boxClassName?: string;
   boxStyle?: CSSProperties;
+  /** On a phone-width screen the box fills the whole container instead of
+   *  letterboxing to 9:16 — a tall phone shows the Story edge to edge, with
+   *  no empty bars (the media is `object-cover`, so it just crops a little). */
+  fillOnPhone?: boolean;
 }) {
   const outerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
@@ -35,6 +40,10 @@ export function StoryCanvas({
       const cw = el.clientWidth;
       const ch = el.clientHeight;
       if (cw <= 0 || ch <= 0) return;
+      if (fillOnPhone && window.matchMedia('(max-width: 639px)').matches) {
+        setSize({ width: cw, height: ch });
+        return;
+      }
       let width = cw;
       let height = width / STORY_RATIO;
       if (height > ch) {

@@ -359,6 +359,7 @@ export function SignalStoryViewer({
     // over a dim backdrop instead of blowing up full-bleed.
     <div className="fixed inset-0 z-[300] bg-black animate-fade-in sm:bg-black/90 sm:p-6">
       <StoryCanvas
+        fillOnPhone
         boxClassName="shadow-2xl sm:rounded-2xl"
         boxStyle={{
           transform: `translateY(${closing ? '100%' : `${dragY}px`})`,
