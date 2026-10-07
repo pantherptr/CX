@@ -163,6 +163,16 @@ const BAR_BOTTOM_GAP = 12; // px between the capsule and the safe-area edge
 // the bar deliberately ignores).
 const MAX_CHROME_GAP = 120;
 
+// Installed to the home screen (PWA) there is no browser toolbar under the
+// page, so the capsule sits much lower: just above the home indicator, the
+// way a native tab bar does, instead of floating a full safe-area higher.
+const IS_STANDALONE =
+  typeof window !== 'undefined' &&
+  (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
+const BAR_BOTTOM = IS_STANDALONE
+  ? `max(${BAR_BOTTOM_GAP - 4}px, calc(env(safe-area-inset-bottom, 0px) - 14px))`
+  : `calc(env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP}px)`;
+
 /** Routes that already own a bottom sticky action bar — the tab bar would
     stack awkwardly on top of them, so it stays hidden there instead.
     An open `/messages` chat (`?c=`) is the other case: a real chat composer needs the entire
@@ -312,7 +322,7 @@ export function BottomNav() {
       style={{
         left: BAR_SIDE_GAP,
         right: BAR_SIDE_GAP,
-        bottom: `calc(env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP}px)`,
+        bottom: BAR_BOTTOM,
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's
         // content reflows or jumps as this slides away; the bar's own
