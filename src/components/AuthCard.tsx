@@ -1,5 +1,4 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { CxsLogo } from './CxsLogo';
 import { motion, useReducedMotion, SPRING_SMOOTH } from './motionKit';
 import { useLocale } from '../lib/i18n';
 
@@ -258,8 +257,8 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
             <motion.div variants={group(reduceMotion)} initial="hidden" animate="show" className="relative overflow-hidden rounded-[28px] bg-surface p-7 shadow-pop sm:p-9">
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 [@media(hover:hover)]:opacity-100" style={{ background: 'radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(0,212,71,0.10), transparent 70%)' }} />
 
-              <AuthItem stop className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-line bg-surface shadow-hair">
-                <CxsLogo size={30} />
+              <AuthItem stop className="mx-auto h-[90px] w-[135px] overflow-hidden rounded-[24px] bg-black shadow-pop ring-1 ring-black/10">
+                <img src="/cx-cobra-mark.png" alt="CX" width={135} height={90} className="h-full w-full object-cover" />
               </AuthItem>
 
               <h1 aria-label={heading} data-car-stop className="mt-5 text-center font-display text-[1.9rem] font-bold leading-tight tracking-tight text-ink">
