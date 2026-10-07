@@ -17,6 +17,7 @@ import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
+import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
 import { ActivePill } from '../components/motionKit';
 
 const TABS: { id: TripPhase; label: string }[] = [
@@ -627,6 +628,40 @@ export default function HostDashboard() {
     return map;
   }, [classified]);
 
+  // The live board: real active/upcoming trips first (real renter, car and
+  // pickup place); with none, the host's own cars with a sample renter.
+  const liveItems = useMemo<LiveItem[]>(() => {
+    const trips = classified.filter((c) => c.phase === 'active' || c.phase === 'upcoming').slice(0, 3);
+    if (trips.length > 0) {
+      return trips.map(({ booking: b, phase }, i) => ({
+        id: b.id,
+        title: `${b.car.make} ${b.car.model}`,
+        image: b.car.image,
+        plate: b.reference,
+        person: b.renter.name || 'Renter',
+        avatar: b.renter.avatar || undefined,
+        etaMin: [12, 9, 15][i % 3],
+        km: [8.1, 5.4, 10.2][i % 3],
+        pickup: b.pickupLocation || b.car.location,
+        dropoff: b.deliveryAddress || b.car.location,
+        status: phase === 'active' ? 'On trip' : 'Upcoming',
+      }));
+    }
+    return (hostCars ?? []).filter((c) => c.status === 'published').slice(0, 3).map((c, i) => ({
+      id: c.id,
+      title: `${c.make} ${c.model}`,
+      image: unsplash(c.images[0], 320),
+      plate: `${c.year} · ${c.city}`,
+      person: ['Marco Rossi', 'Elena Popescu', 'Lucía Gómez'][i % 3],
+      etaMin: [12, 9, 15][i % 3],
+      km: [8.1, 5.4, 10.2][i % 3],
+      pickup: c.location,
+      dropoff: c.city,
+      status: 'Ready',
+    }));
+  }, [classified, hostCars]);
+  const hasRealTrips = classified.some((c) => c.phase === 'active' || c.phase === 'upcoming');
+
   const actionItems = useMemo(() => {
     const soonCutoff = toISO(new Date(Date.now() + 2 * 86_400_000));
     return buildActionItems({
@@ -666,6 +701,15 @@ export default function HostDashboard() {
             </>
           )}
         </div>
+
+        {/* Live board — real trips when there are any, otherwise a preview on the host's own cars. */}
+        {!loading && liveItems.length > 0 && (
+          <Reveal delay={160}>
+            <section className="mt-6">
+              <FleetLiveBoard items={liveItems} preview={!hasRealTrips} title="Live tracking" />
+            </section>
+          </Reveal>
+        )}
 
         {/* Action Required — the host's real to-do list, built only from
             signals this backend genuinely tracks (see buildActionItems). */}
