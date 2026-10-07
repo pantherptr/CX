@@ -94,20 +94,6 @@ export function NotificationsList({
     );
   }
 
-  if (notifications.length === 0) {
-    return (
-      <div className="animate-fade-up rounded-2xl border border-line bg-surface">
-        <EmptyState
-          size={compact ? 'md' : 'lg'}
-          icon="bell"
-          title="You're all caught up"
-          description="Follows, Respects, comments and shares on SIGNAL will show up here."
-          className={compact ? 'px-6 py-12' : 'px-6 py-20'}
-        />
-      </div>
-    );
-  }
-
   const unread = notifications.filter((n) => !n.readAt);
   const count = (id: TabId) => (id === 'unread' ? unread.length : id === 'follows' ? unread.filter((n) => n.type === 'follow').length : id === 'activity' ? unread.filter((n) => n.type !== 'follow').length : 0);
   const shown = notifications.filter((n) => matches(n, tab));
@@ -150,9 +136,19 @@ export function NotificationsList({
       </div>
 
       {shown.length === 0 ? (
-        <p className="px-6 py-14 text-center text-detail text-muted">
-          {tab === 'unread' ? 'Nothing unread.' : 'Nothing here yet.'}
-        </p>
+        notifications.length === 0 ? (
+          <EmptyState
+            size={compact ? 'md' : 'lg'}
+            icon="bell"
+            title="You're all caught up"
+            description="Follows, Respects, comments and shares on SIGNAL will show up here."
+            className={compact ? 'px-6 py-12' : 'px-6 py-20'}
+          />
+        ) : (
+          <p className="px-6 py-14 text-center text-detail text-muted">
+            {tab === 'unread' ? 'Nothing unread.' : 'Nothing here yet.'}
+          </p>
+        )
       ) : (
         <div>
           {shown.map((n) => {
