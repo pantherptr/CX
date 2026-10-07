@@ -276,6 +276,9 @@ const ROWS: Row[] = [
   ['Translating…', 'Traduzione in corso…', 'Se traduce…', 'Traduciendo…'],
   ['Create your account', 'Crea il tuo account', 'Creează-ți contul', 'Crea tu cuenta'],
   ['Step {n} of {m}', 'Passaggio {n} di {m}', 'Pasul {n} din {m}', 'Paso {n} de {m}'],
+  ['More {c} cars', 'Altre auto {c}', 'Alte mașini {c}', 'Más coches {c}'],
+  ['Cancellation', 'Cancellazione', 'Anulare', 'Cancelación'],
+  ['The exact address is shared once your booking is confirmed.', "L'indirizzo esatto viene condiviso a prenotazione confermata.", 'Adresa exactă este comunicată după confirmarea rezervării.', 'La dirección exacta se comparte al confirmar la reserva.'],
   ['Welcome back', 'Bentornato', 'Bine ai revenit', 'Bienvenido de nuevo'],
   ['Translation unavailable', 'Traduzione non disponibile', 'Traducere indisponibilă', 'Traducción no disponible'],
 
