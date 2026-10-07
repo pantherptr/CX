@@ -27,7 +27,7 @@ const config: CapacitorConfig = {
       androidScaleType: 'CENTER_CROP',
     },
     StatusBar: {
-      style: 'DARK', // dark text/icons — the app's default surface is light
+      style: 'LIGHT', // Capacitor's LIGHT = dark text/icons, for the app's light surface
     },
     Keyboard: {
       // 'native' resizes the actual WKWebView when the keyboard shows,
