@@ -400,7 +400,7 @@ export default function Signal() {
             it's reachable from wherever they've scrolled to, not just the
             very top. */}
         {newPostsAvailable && posts && posts.length > 0 && (
-          <div className="sticky top-16 z-30 flex animate-fade-up justify-center py-1.5">
+          <div className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-30 flex animate-fade-up justify-center py-1.5">
             <Tap
               onClick={handleLoadNewPosts}
               className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-detail font-semibold text-white shadow-pop"

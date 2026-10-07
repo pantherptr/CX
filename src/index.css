@@ -130,6 +130,22 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Inside the iOS app: no image-preview / link-callout sheet on long-press,
+     and no accidental text selection on controls — it reads as a web page. */
+  html.native-app img,
+  html.native-app a,
+  html.native-app button,
+  html.native-app [role='button'] {
+    -webkit-touch-callout: none;
+  }
+  html.native-app button,
+  html.native-app [role='button'],
+  html.native-app nav,
+  html.native-app header {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   /* No double-tap-to-zoom on controls — taps register immediately instead
      of the browser holding each one briefly to see if a second tap is
      coming. Pinch-zoom and scrolling are untouched. In `base`, so any

@@ -142,7 +142,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
 
   return (
     <motion.div
-      className="fixed inset-x-0 bottom-0 top-14 z-[250] flex flex-col bg-bg"
+      className="fixed inset-x-0 bottom-0 top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-[250] lg:top-16 flex flex-col bg-bg"
       role="dialog"
       aria-modal="true"
       aria-label="Search results"
