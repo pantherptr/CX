@@ -31,7 +31,8 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
  *  the pre-paint background in `index.html`). The CX letters are unveiled
  *  left-to-right out of a blur, then the green key slides out of the X and
  *  a light sweeps through the whole mark. A soft green bloom breathes
- *  behind it and a hairline of light draws out underneath. No card, no
+ *  behind it, and underneath a little road scene: a white car drives in
+ *  and holds its place while the road's dashes stream past. No card, no
  *  numbers, no text. `hiding` fades and eases it out into the real app.
  *
  *  The mark is two aligned layers cut from `cx-logo-main.png` (same canvas,
@@ -63,9 +64,19 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
           <span className="signal-sweep-bar absolute" style={{ animationDelay: '1.5s' }} />
         </span>
       </div>
-      <div className="relative mt-10 h-px w-[min(46vw,180px)]">
-        <span className="cx-line absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, #00d447 50%, transparent)' }} />
-        <span className="cx-line-glow absolute left-0 top-1/2 h-[5px] w-[5px] -translate-y-1/2 rounded-full bg-accent-bright" />
+      {/* The road: a strip of asphalt whose dashes stream past while the car
+          holds its place — it fades out at both ends so it never looks like a box. */}
+      <div className="cx-road relative mt-9" aria-hidden="true">
+        <div className="cx-road-strip absolute inset-x-0 top-1/2 h-[48px] -translate-y-1/2 overflow-hidden rounded-[16px] bg-[#23262b]">
+          <span className="absolute inset-x-0 top-[5px] h-px bg-white/25" />
+          <span className="absolute inset-x-0 bottom-[5px] h-px bg-white/25" />
+          <span className="cx-road-dashes absolute top-1/2 h-[2px] -translate-y-1/2" />
+          <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.07] to-transparent" />
+        </div>
+        <div className="cx-car absolute left-1/2 top-1/2 w-[112px]">
+          <span className="cx-beam pointer-events-none absolute left-[88%] top-1/2 h-10 w-24 -translate-y-1/2" />
+          <img src="/brand/loader-car.webp" alt="" draggable={false} className="cx-car-body relative block w-full select-none" />
+        </div>
       </div>
     </div>
   );

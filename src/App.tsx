@@ -174,7 +174,7 @@ function MarketingLayout() {
   );
 }
 
-function useSplash(minMs = 1500) {
+function useSplash(minMs = 2300) {
   const [visible, setVisible] = useState(() => !sessionStorage.getItem('cx-splashed'));
   const [hiding, setHiding] = useState(false);
 
