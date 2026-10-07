@@ -80,6 +80,7 @@ export default function PublicMobileDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
+                <img src="/brand/cx-bat.webp" alt="" aria-hidden="true" width={220} height={79} className="mx-auto mb-6 h-14 w-auto select-none" draggable={false} />
                 {/* -------- The one primary CTA — compact, single line -------- */}
                 <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg btn-block !justify-between mb-6" {...findDriveScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />
