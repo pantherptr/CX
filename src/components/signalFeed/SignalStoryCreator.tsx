@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
 import { vibrateTap } from '../motion';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, SPRING_SNAPPY, Tap } from '../motionKit';
@@ -65,6 +66,7 @@ export function SignalStoryCreator({
   mode?: 'official' | 'self';
 }) {
   const { profile } = useAuth();
+  useLightStatusBar();
   const reduceMotion = !!useReducedMotion();
   const objectUrls = useRef<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -417,8 +419,8 @@ function EditorStage({
           <img src={activeSlide.preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )}
 
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 pt-safe" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
-          <Tap onClick={onBack} aria-label="Back" scale={0.9} className="grid h-9 w-9 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50">
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/55 via-black/20 to-transparent px-4 pb-8 pt-safe" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+          <Tap onClick={onBack} aria-label="Back" scale={0.9} className="grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-black/50">
             <Icon name="chevronLeft" size={20} />
           </Tap>
           {slides.length > 1 && (
@@ -426,12 +428,12 @@ function EditorStage({
               {activeIndex + 1} / {slides.length}
             </span>
           )}
-          <Tap onClick={onRemoveActive} aria-label="Remove" scale={0.9} className="grid h-9 w-9 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50">
+          <Tap onClick={onRemoveActive} aria-label="Remove" scale={0.9} className="grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-black/50">
             <Icon name="trash" size={17} />
           </Tap>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 pb-safe pt-6">
+        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pt-14" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}>
           {!isText && (
             captionOpen ? (
               <input
@@ -441,10 +443,10 @@ function EditorStage({
                 onBlur={() => { if (!activeSlide.caption.trim()) setCaptionOpen(false); }}
                 placeholder="Add a caption…"
                 maxLength={200}
-                className="w-full border-0 bg-transparent text-body text-white placeholder:text-white/50 focus:outline-none focus:ring-0"
+                className="w-full rounded-2xl border-0 bg-black/35 px-4 py-3 text-body text-white ring-1 ring-white/15 backdrop-blur-md placeholder:text-white/55 focus:outline-none focus:ring-white/30"
               />
             ) : (
-              <button onClick={() => setCaptionOpen(true)} className="pressable self-start text-body text-white/80 hover:text-white">
+              <button onClick={() => setCaptionOpen(true)} className="pressable w-full rounded-2xl bg-black/35 px-4 py-3 text-left text-body text-white/80 ring-1 ring-white/15 backdrop-blur-md hover:text-white">
                 {activeSlide.caption || 'Add a caption…'}
               </button>
             )
@@ -513,7 +515,7 @@ function EditorStage({
             </div>
           )}
 
-          <div className="flex items-center justify-between rounded-2xl bg-white/[0.06] px-3.5 py-2.5">
+          <div className="flex items-center justify-between rounded-2xl bg-black/35 px-3.5 py-2 ring-1 ring-white/10 backdrop-blur-md">
             <span className="flex items-center gap-2 text-caption font-medium text-white/80">
               <Icon name={viewOnce ? 'eye' : 'clock'} size={15} />
               {viewOnce ? 'Disappears after one view' : 'Visible for 24 hours'}
@@ -523,7 +525,7 @@ function EditorStage({
                 type="button"
                 onClick={() => onViewOnceChange(false)}
                 aria-pressed={!viewOnce}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${!viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${!viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
               >
                 24h
               </button>
@@ -531,7 +533,7 @@ function EditorStage({
                 type="button"
                 onClick={() => onViewOnceChange(true)}
                 aria-pressed={viewOnce}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
               >
                 Once
               </button>
@@ -550,9 +552,10 @@ function EditorStage({
             onClick={onPublish}
             disabled={publishing}
             scale={0.97}
-            className="btn w-full justify-center bg-accent-bright text-noir hover:bg-accent-bright/90 disabled:opacity-60"
+            className="btn min-h-[52px] w-full justify-center rounded-full bg-accent-bright text-[15px] font-semibold text-noir shadow-[0_8px_28px_-6px_rgba(0,212,71,0.6)] hover:bg-accent-bright/90 disabled:opacity-60"
           >
             {publishing ? 'Posting…' : 'Post Story'}
+            {!publishing && <Icon name="arrowRight" size={17} />}
           </Tap>
         </div>
       </StoryCanvas>
