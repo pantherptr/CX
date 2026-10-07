@@ -32,6 +32,36 @@ function limited(ip: string): boolean {
   return recent.length > 60;
 }
 
+/** Free fallback (MyMemory) — no key, no card. Its query limit is ~500 bytes,
+ *  so a text is cut at sentence/space boundaries and the parts re-joined. */
+async function freeTranslate(text: string, lang: Lang): Promise<string | null> {
+  const parts: string[] = [];
+  let rest = text;
+  while (rest.length > 0) {
+    if (rest.length <= 450) { parts.push(rest); break; }
+    const slice = rest.slice(0, 450);
+    const cut = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '), slice.lastIndexOf('\n'), slice.lastIndexOf(' '));
+    const at = cut > 100 ? cut + 1 : 450;
+    parts.push(rest.slice(0, at));
+    rest = rest.slice(at);
+  }
+  const out: string[] = [];
+  for (const part of parts) {
+    if (!part.trim()) { out.push(part); continue; }
+    try {
+      const r = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(part)}&langpair=en|${lang}`);
+      if (!r.ok) return null;
+      const j = (await r.json()) as { responseStatus?: number | string; responseData?: { translatedText?: string } };
+      const t = j.responseData?.translatedText;
+      if (Number(j.responseStatus) !== 200 || !t || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t)) return null;
+      out.push(t);
+    } catch {
+      return null;
+    }
+  }
+  return out.join('');
+}
+
 const hashOf = (s: string) => createHash('sha256').update(s).digest('hex');
 
 async function translateBatch(texts: string[], lang: Lang, key: string): Promise<(string | null)[]> {
@@ -100,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const results: (string | null)[] = list.map((_, i) => (hashes[i] ? found.get(hashes[i]) ?? null : null));
   const missing = list.map((t, i) => i).filter((i) => hashes[i] && results[i] === null);
 
-  if (missing.length > 0 && anthropicKey) {
+  if (missing.length > 0) {
     // Only translate text that really is published content.
     const allowed: number[] = [];
     for (const i of missing) {
@@ -109,7 +139,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (ok === true) allowed.push(i);
     }
     if (allowed.length > 0) {
-      const out = await translateBatch(allowed.map((i) => list[i]), L, anthropicKey);
+      let out: (string | null)[] = allowed.map(() => null);
+      if (anthropicKey) out = await translateBatch(allowed.map((i) => list[i]), L, anthropicKey);
+      for (let k = 0; k < allowed.length; k++) {
+        if (!out[k]) out[k] = await freeTranslate(list[allowed[k]], L);
+      }
       const rows: { source_hash: string; lang: Lang; translated: string }[] = [];
       allowed.forEach((i, k) => {
         const tr = out[k];
