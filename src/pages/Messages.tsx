@@ -19,6 +19,8 @@ import {
 } from '../lib/data/messages';
 import { CONTACT_WARNING, hasContactInfo } from '../lib/contactGuard';
 import { useApp } from '../lib/store';
+import { MacbookMockup, LockIcon, DoubleCheckIcon } from '../components/ui/great-ui-macbook-mockup';
+import type { Message } from '../lib/data/messages';
 
 type SendAsRole = 'owner' | 'owner_assistant';
 
@@ -186,6 +188,90 @@ interface PendingMessage {
   status: 'sending' | 'failed';
 }
 
+/** The message stream inside the MacBook frame — the mock-up's own bubble
+ *  styling (small type, white/green bubbles, blue ticks, sender label on
+ *  incoming), fed with the real thread. */
+function MockThread({
+  messages,
+  pending,
+  active,
+  myId,
+  myRole,
+  onRetry,
+  onDismiss,
+}: {
+  messages: Message[] | null;
+  pending: PendingMessage[];
+  active: Conversation;
+  myId: string | undefined;
+  myRole: VerifiedRole;
+  onRetry: (p: PendingMessage) => void;
+  onDismiss: (id: string) => void;
+}) {
+  return (
+    <div className="flex min-h-full flex-col justify-end space-y-2.5">
+      <div className="mx-auto my-1 flex max-w-[90%] items-center justify-center gap-1 rounded-md bg-[#ffeebd] px-3 py-1 text-center text-[9.5px] text-amber-900">
+        <LockIcon className="h-2.5 w-2.5 shrink-0 text-amber-700" />
+        <span>Keep payments and contact details inside CX — it keeps you protected.</span>
+      </div>
+      {messages === null ? (
+        <p className="py-6 text-center text-[10px] text-neutral-500">Loading…</p>
+      ) : messages.length === 0 && pending.length === 0 ? (
+        <p className="py-6 text-center text-[10px] text-neutral-500">Say hello — this is the start of your conversation.</p>
+      ) : (
+        messages.map((m, i) => {
+          const mine = m.senderId === myId;
+          const prev = messages[i - 1];
+          const showDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+          const label = mine ? null : active.other.name;
+          void myRole;
+          return (
+            <div key={m.id} className="space-y-2.5">
+              {showDay && (
+                <div className="mx-auto my-0.5 w-fit rounded-md bg-white/80 px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-neutral-500 uppercase">
+                  {fmtDateSeparator(m.createdAt)}
+                </div>
+              )}
+              <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`relative max-w-[75%] rounded-lg px-3 py-1.5 text-xs ${
+                    mine ? 'rounded-tr-none bg-[#dcf8c6] text-neutral-900' : 'rounded-tl-none bg-white text-neutral-900'
+                  }`}
+                >
+                  {label && <p className="mb-0.5 text-[10px] font-bold text-emerald-700">{label}</p>}
+                  <p className="whitespace-pre-wrap text-[11.5px] leading-snug [overflow-wrap:anywhere]">{m.body}</p>
+                  <div className="mt-0.5 flex items-center justify-end gap-1">
+                    <span className={`text-[9px] ${mine ? 'text-emerald-800/70' : 'text-neutral-400'}`}>{fmtBubbleTime(m.createdAt)}</span>
+                    {mine && <DoubleCheckIcon className={`h-3.5 w-3.5 ${m.readAt ? 'text-[#53bdeb]' : 'text-neutral-400'}`} />}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+      {pending.map((p) => (
+        <div key={p.localId} className="flex flex-col items-end">
+          <div className={`max-w-[75%] rounded-lg rounded-tr-none px-3 py-1.5 text-[11.5px] leading-snug ${p.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-[#dcf8c6]/70 text-neutral-900'}`}>
+            {p.body}
+          </div>
+          <p className="mt-0.5 flex items-center gap-2 text-[9px]">
+            {p.status === 'sending' ? (
+              <span className="text-neutral-500">Sending…</span>
+            ) : (
+              <>
+                <span className="text-red-600">Not delivered</span>
+                <button onClick={() => onRetry(p)} className="font-semibold text-emerald-700 hover:underline">Retry</button>
+                <button onClick={() => onDismiss(p.localId)} className="text-neutral-500 hover:text-neutral-800">Discard</button>
+              </>
+            )}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Messages() {
   const { session, profile } = useAuth();
   const { toast } = useApp();
@@ -201,6 +287,7 @@ export default function Messages() {
   // under. Not persisted; defaults back to their real identity each visit.
   const [sendAsRole, setSendAsRole] = useState<SendAsRole>('owner');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mockScrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   const { messages } = useConversation(activeId);
@@ -235,6 +322,7 @@ export default function Messages() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    mockScrollRef.current?.scrollTo({ top: mockScrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages?.length, pendingForActive.length]);
 
   // Re-runs on every new message in the open thread, not just when it's
@@ -311,7 +399,94 @@ export default function Messages() {
 
   return (
     <DashboardShell variant="customer" active="Messages" fullHeight>
-      <div className="flex h-full">
+      {/* Laptop-frame layout (tablet and up) — the Great UI MacBook mock-up fed with real data. */}
+      <div className="hidden h-full items-center overflow-y-auto bg-[#e9edef] px-6 py-6 sm:flex">
+        <MacbookMockup
+          className="my-auto"
+          headerTitle={active?.other.name ?? (conversationsLoading ? 'Loading…' : 'Messages')}
+          headerSubtitle={active ? (active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : 'online') : ''}
+          avatarUrl={active?.other.avatar}
+          avatarFallback={active?.other.name?.[0]?.toUpperCase() ?? 'C'}
+          userAvatarUrl={profile?.avatar_url}
+          chats={visibleConversations.map((c) => ({
+            id: c.id,
+            name: c.other.name,
+            initial: c.other.name?.[0]?.toUpperCase() ?? '?',
+            avatarUrl: c.other.avatar,
+            lastMsg: c.lastMessage ? c.lastMessage.body : 'No messages yet',
+            time: c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '',
+            unreadCount: c.unreadCount,
+            isActive: c.id === activeId,
+          }))}
+          onSelectChat={openConvo}
+          search={search}
+          onSearch={setSearch}
+          onNewChat={profile?.is_owner ? () => setNewMessageOpen(true) : undefined}
+          scrollRef={mockScrollRef}
+          headerAction={
+            active?.car ? (
+              <Link to={`/cars/${active.car.slug}`} className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-neutral-700 hover:text-emerald-700">
+                View car
+              </Link>
+            ) : null
+          }
+          composer={
+            active ? (
+              <div className="z-10 shrink-0 bg-[#f0f2f5] p-2.5">
+                {profile?.is_owner && (
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[10px]">
+                    <span className="text-neutral-500">Sending as:</span>
+                    <button onClick={() => setSendAsRole('owner')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner' ? 'bg-red-100 text-red-700' : 'text-neutral-500 hover:bg-black/5'}`}>Owner</button>
+                    <button onClick={() => setSendAsRole('owner_assistant')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner_assistant' ? 'bg-amber-100 text-amber-800' : 'text-neutral-500 hover:bg-black/5'}`}>Owner Assistant</button>
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  <textarea
+                    rows={1}
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      const el = e.currentTarget;
+                      el.style.height = 'auto';
+                      el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+                      e.preventDefault();
+                      if (!sending) send();
+                    }}
+                    placeholder="Type a message"
+                    className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-1.5 text-xs leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
+                  />
+                  <button
+                    onClick={send}
+                    disabled={!text.trim() || sending}
+                    aria-label="Send"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#00a884] text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
+                  >
+                    <Icon name="send" size={15} />
+                  </button>
+                </div>
+              </div>
+            ) : undefined
+          }
+        >
+          {active && (
+            <MockThread
+              messages={messages}
+              pending={pendingForActive}
+              active={active}
+              myId={session?.user.id}
+              myRole={myRole}
+              onRetry={retrySend}
+              onDismiss={dismissFailed}
+            />
+          )}
+        </MacbookMockup>
+      </div>
+
+      {/* Phone layout — the full-screen chat. */}
+      <div className="flex h-full sm:hidden">
         {/* Conversation list */}
         <div className={`flex w-full flex-col border-r border-black/10 bg-white md:w-[360px] md:shrink-0 ${mobileChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="shrink-0 bg-[#f0f2f5]">
