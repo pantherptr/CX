@@ -11,6 +11,7 @@ import { useUnreadMessageCount } from '../lib/data/messages';
 // describe a rename that never actually happened underneath.
 import { useEmpireUnreadCount } from '../lib/data/empireFeed';
 import { useViewportBottomGap } from '../lib/useViewportGap';
+import { Capacitor } from '@capacitor/core';
 import { haptics } from '../lib/native';
 
 /** Re-tapping the tab you're already on scrolls that screen back to the
@@ -168,7 +169,8 @@ const MAX_CHROME_GAP = 120;
 // way a native tab bar does, instead of floating a full safe-area higher.
 const IS_STANDALONE =
   typeof window !== 'undefined' &&
-  (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
+  (Capacitor.isNativePlatform() ||
+    window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
 const BAR_BOTTOM = IS_STANDALONE
   ? `max(${BAR_BOTTOM_GAP - 4}px, calc(env(safe-area-inset-bottom, 0px) - 14px))`
   : `calc(env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP}px)`;

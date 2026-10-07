@@ -201,7 +201,7 @@ export function DashboardShell({
           height live, including when the keyboard opens. */}
       <div className={`flex min-w-0 flex-1 flex-col ${fullHeight ? 'h-dvh' : ''}`}>
         {/* Topbar */}
-        <header className="sticky top-0 z-40 flex h-[64px] items-center gap-3 border-b border-line bg-bg/85 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-40 flex h-[calc(64px+env(safe-area-inset-top,0px))] items-center gap-3 border-b border-line bg-bg/85 px-4 pt-safe backdrop-blur-xl sm:px-6">
           {/* Same header anatomy as AppNavbar on mobile: logo left, actions
               right with the menu last — the drawer slides in from the right,
               so its trigger belongs on the right too. */}
