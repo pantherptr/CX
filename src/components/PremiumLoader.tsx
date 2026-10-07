@@ -192,39 +192,34 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
 }
 
 /** Full-screen loading overlay — shown once per session while the app
- *  first boots. A near-black field (matching the pre-paint background
- *  `index.html` sets inline, so there's no color jump the instant this
- *  mounts) with a small, quiet composition centered on it: the ring
- *  animation and a minimal wordmark underneath — no card, no progress
- *  readout, no controls, nothing that reads as a game splash screen.
- *
- *  Sized deliberately small, not "as big as the viewport allows": a
- *  premium automotive product loads quietly, it doesn't fill the screen
- *  with a hero animation. `clamp(84px, 28vw, 150px)` holds the ring at
- *  ~28% of viewport width on every phone size (320–430px) — squarely in
- *  a small, centered 25–35% range — and caps it at a modest 150px from
- *  small tablets up, so it gets *proportionally* smaller as the screen
- *  grows rather than scaling up just because there's more room.
- *
- *  `hiding` plays the ring's own "lap complete" flourish alongside the
- *  wrapper's fade, so the loader never just vanishes mid-travel — and
- *  the fade/scale-out reads as a quiet handoff into the real app, not a
- *  dramatic reveal. */
+ *  first boots. The off-white page colour (so there is no colour jump from
+ *  the native launch screen or the pre-paint background in `index.html`),
+ *  the CX mark centred with a light sweeping through its own silhouette,
+ *  and a short green bar gliding under it. Nothing else: no card, no
+ *  numbers. `hiding` fades and eases it out into the real app.
+ */
 export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4 bg-noir transition-opacity duration-500 ${
-        hiding ? 'pointer-events-none opacity-0' : 'opacity-100'
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-bg transition-[opacity,transform] duration-500 ease-out ${
+        hiding ? 'pointer-events-none scale-[1.015] opacity-0' : 'opacity-100'
       }`}
       role="status"
       aria-label="Loading"
     >
-      <div className="animate-scale-in" style={{ width: 'clamp(84px, 28vw, 150px)' }}>
-        <SupercarOrbit duration={5.2} completing={hiding} dark />
+      <div className="cx-load-in relative" style={{ width: 'clamp(160px, 52vw, 240px)', aspectRatio: '1633 / 318' }}>
+        <img src="/cx-logo-main.png" alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-contain" />
+        <span
+          aria-hidden="true"
+          className="signal-sweep-mask pointer-events-none absolute inset-0"
+          style={{ WebkitMaskImage: 'url(/cx-logo-main.png)', maskImage: 'url(/cx-logo-main.png)' }}
+        >
+          <span className="signal-sweep-bar absolute" />
+        </span>
       </div>
-      <p className="animate-scale-in text-label font-semibold uppercase tracking-[0.3em] text-on-noir-muted">
-        CX Rent
-      </p>
+      <div className="cx-load-in mt-9 h-[3px] w-24 overflow-hidden rounded-full bg-ink/10" style={{ animationDelay: '0.12s' }}>
+        <span className="cx-load-bar block h-full w-1/2 rounded-full bg-accent-bright" />
+      </div>
     </div>
   );
 }

@@ -754,6 +754,23 @@
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
 
+  /* The first-visit loader: the CX mark eases in, a short green bar glides
+     under it. Compositor-only (transform/opacity). */
+  .cx-load-in { animation: cx-load-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes cx-load-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  .cx-load-bar { animation: cx-load-bar 1.25s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+  @keyframes cx-load-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cx-load-in { animation: none; }
+    .cx-load-bar { animation: none; transform: translateX(50%); }
+  }
+
   /* the glow behind the SIGNAL "S" on the gate page: a slow breath */
   .s-breathe { animation: s-breathe 4.2s ease-in-out infinite; }
   @keyframes s-breathe {
