@@ -9,7 +9,7 @@ import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet, avatar } from '../lib/img';
-import { FleetLiveBoard, type LiveItem, type LiveStat } from '../components/FleetLiveBoard';
+import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { Car } from '../data/types';
@@ -255,14 +255,7 @@ export default function Home() {
       city: c.city,
       status: 'On trip',
     }));
-    const avg = allCars.reduce((n, c) => n + c.rating, 0) / allCars.length;
-    const stats: LiveStat[] = [
-      { label: 'Cars on CX', value: String(allCars.length), icon: 'cars' },
-      { label: 'Average rating', value: avg.toFixed(1), icon: 'star' },
-      { label: 'Cities', value: String(new Set(allCars.map((c) => c.city)).size), icon: 'pin' },
-      { label: 'Instant book', value: String(allCars.filter((c) => c.instantBook).length), icon: 'bolt' },
-    ];
-    return { items, stats };
+    return { items };
   }, [allCars]);
 
   return (
@@ -415,7 +408,7 @@ export default function Home() {
         <section className="container-page section">
           <SectionHead eyebrow={t('Live board')} title={t('Every trip, in view.')} />
           <Reveal className="mt-8">
-            <FleetLiveBoard items={liveBoard.items} stats={liveBoard.stats} title={t('Live tracking')} />
+            <FleetLiveBoard items={liveBoard.items} title={t('Live tracking')} />
           </Reveal>
         </section>
       )}

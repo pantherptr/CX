@@ -420,14 +420,16 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     <div ref={root} className="relative overflow-hidden rounded-[32px] border border-line bg-surface p-3 shadow-soft sm:p-5">
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-accent-bright/10 blur-3xl" />
 
-      <div className="relative mb-3 flex flex-wrap items-center justify-between gap-2 px-1 sm:mb-4">
-        <div className="flex items-center gap-2.5">
-          <span className="relative grid h-2.5 w-2.5 place-items-center">
-            <span className="absolute h-2.5 w-2.5 animate-ping rounded-full bg-accent-bright/60" />
-            <span className="h-2 w-2 rounded-full bg-accent-bright" />
+      <div className="relative mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 sm:mb-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050">
+            <span className="absolute h-9 w-9 animate-ping rounded-full bg-accent-bright/25" />
+            <span className="relative h-2.5 w-2.5 rounded-full bg-accent-bright" />
           </span>
-          <h3 className="font-display text-lead font-semibold text-ink">{title}</h3>
-          <span className="text-detail text-muted">{`· ${items.length} cars on the road`}</span>
+          <div className="min-w-0">
+            <h3 className="font-display text-lead font-semibold leading-tight text-ink">{title}</h3>
+            <p className="truncate text-detail text-muted"><span>{`${items.length} cars on the road`}</span>{` · ${[...new Set(items.map((it) => it.city))].join(' · ')}`}</p>
+          </div>
         </div>
         {preview && <span className="rounded-full border border-line bg-panel px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted">Live preview</span>}
       </div>
