@@ -1852,3 +1852,10 @@
 .fl-dest__label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; max-width: 190px; overflow: hidden; text-overflow: ellipsis; padding: 4px 9px; border-radius: 999px; background: #fff; color: #16161a; font-size: 11px; font-weight: 600; box-shadow: 0 6px 16px -6px rgba(22, 22, 26, 0.35); }
 @keyframes fl-dest-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fl-dest__pulse { animation: none; opacity: 0.4; } }
+
+
+/* Browse: black thumbs for the histogram price filter */
+.range-ink::-webkit-slider-thumb { border-color: #16161a; width: 20px; height: 20px; margin-top: 4px; }
+.range-ink::-moz-range-thumb { border-color: #16161a; }
+.range-ink:active::-webkit-slider-thumb { box-shadow: 0 0 0 7px rgba(22, 22, 26, 0.12), 0 4px 12px -4px rgba(22, 22, 26, 0.35); }
+.range-ink:active::-moz-range-thumb { box-shadow: 0 0 0 7px rgba(22, 22, 26, 0.12), 0 4px 12px -4px rgba(22, 22, 26, 0.35); }

@@ -2,12 +2,15 @@ import { useMemo, useState, useEffect, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
-import { CarCard } from '../components/CarCard';
+import { BrowseCard } from '../components/browse/BrowseCard';
+import { CarDrawer } from '../components/browse/CarDrawer';
+import { PriceHistogram } from '../components/browse/PriceHistogram';
 import { Icon } from '../components/Icon';
 import { EmptyState, Modal } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
+import { motion, AnimatePresence, SPRING_SNAPPY } from '../components/motionKit';
 import { useScramble } from '../lib/useScramble';
-import { Reveal, useCountUp } from '../components/motion';
+import { useCountUp } from '../components/motion';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -23,6 +26,8 @@ const SORTS = [
   { id: 'rating', label: 'Top rated' },
   { id: 'trips', label: 'Most booked' },
 ];
+const PRICE_MIN = 30;
+const PRICE_MAX = 800;
 
 interface Filters {
   priceMin: number;
@@ -35,11 +40,12 @@ interface Filters {
   bags: number;
   features: string[];
   rating: number;
+  instant: boolean;
 }
 
 const emptyFilters: Filters = {
-  priceMin: 30,
-  priceMax: 800,
+  priceMin: PRICE_MIN,
+  priceMax: PRICE_MAX,
   types: [],
   brands: [],
   transmission: 'any',
@@ -48,99 +54,80 @@ const emptyFilters: Filters = {
   bags: 0,
   features: [],
   rating: 0,
+  instant: false,
 };
 
 function toggle<T>(arr: T[], v: T): T[] {
   return arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 }
 
-function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
+/** A filter section that folds away with a smooth height change. */
+function Section({ title, open: initial = true, children }: { title: string; open?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(initial);
   return (
-    <div className="border-t border-line py-5 first:border-t-0 first:pt-0">
-      <h3 className="mb-3.5 text-detail font-semibold uppercase tracking-wide text-ink">{title}</h3>
-      {children}
+    <div className="border-t border-line py-4 first:border-t-0 first:pt-0">
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center justify-between text-left">
+        <h3 className="text-label font-semibold uppercase tracking-[0.12em] text-muted">{title}</h3>
+        <Icon name="chevronDown" size={15} className={`text-faint transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pt-3.5">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function Check({ label, checked, onChange, note }: { label: string; checked: boolean; onChange: () => void; note?: string }) {
+function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between py-1.5 group">
-      <span className="flex items-center gap-2.5">
-        <span
-          className={`grid h-[18px] w-[18px] place-items-center rounded-[6px] border transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-active:scale-90 ${
-            checked ? 'border-accent bg-accent text-white' : 'border-line-strong bg-surface group-hover:border-faint'
-          }`}
-        >
-          {checked && <Icon name="check" size={12} strokeWidth={3} />}
-        </span>
-        <span className="text-body text-ink-soft">{label}</span>
+    <label className="group flex cursor-pointer items-center gap-2.5 py-1.5">
+      <span
+        className={`grid h-[18px] w-[18px] place-items-center rounded-[5px] border transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-active:scale-90 ${
+          checked ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface group-hover:border-ink/50'
+        }`}
+      >
+        {checked && <Icon name="check" size={12} strokeWidth={3} />}
       </span>
-      {note && <span className="text-caption text-faint">{note}</span>}
+      <span className="text-body text-ink-soft">{label}</span>
       <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
     </label>
   );
 }
 
-/** One track, two thumbs, the chosen band filled in — replaces two
- *  separate full-width native sliders sitting side by side, where neither
- *  showed the range they formed together. Built on two real
- *  `<input type="range">`s stacked over one painted track, so keyboard,
- *  screen-reader and touch support stay native; only the thumbs accept
- *  pointer input (see `.range-dual` in index.css). */
-function PriceRange({
-  min,
-  max,
-  step,
-  low,
-  high,
-  onLow,
-  onHigh,
-}: {
-  min: number;
-  max: number;
-  step: number;
-  low: number;
-  high: number;
-  onLow: (v: number) => void;
-  onHigh: (v: number) => void;
-}) {
-  const { t } = useLocale();
-  const pct = (v: number) => ((v - min) / (max - min)) * 100;
-  // When both thumbs sit at the far right, the "max" input (on top) would
-  // be the only grabbable one and it can't move left past "min" — a dead
-  // end. Lift "min" above it whenever it's pushed up near the end.
-  const lowOnTop = low > max - step * 5;
+/** A grey pill with a white thumb that slides to the chosen option. */
+function Segmented<T extends string | number>({ id, options, value, onChange }: { id: string; options: { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
   return (
-    <div className="relative h-8">
-      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-line-strong" />
-      <div
-        className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-accent"
-        style={{ left: `${pct(low)}%`, right: `${100 - pct(high)}%` }}
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={low}
-        onChange={(e) => onLow(+e.target.value)}
-        className="range-dual absolute inset-0 w-full"
-        style={{ zIndex: lowOnTop ? 3 : 1 }}
-        aria-label={t('Minimum price per day')}
-      />
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={high}
-        onChange={(e) => onHigh(+e.target.value)}
-        className="range-dual absolute inset-0 w-full"
-        style={{ zIndex: 2 }}
-        aria-label={t('Maximum price per day')}
-      />
+    <div className="flex rounded-xl bg-panel p-1">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button key={String(o.value)} onClick={() => onChange(o.value)} className={`relative flex-1 rounded-[9px] px-2 py-1.5 text-detail font-medium transition-colors ${on ? 'text-ink' : 'text-muted hover:text-ink'}`}>
+            {on && <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-[9px] bg-surface shadow-hair" transition={SPRING_SNAPPY} />}
+            <span className="relative">{o.label}</span>
+          </button>
+        );
+      })}
     </div>
+  );
+}
+
+function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className="flex w-full items-center justify-between py-1 text-left">
+      <span className="text-label font-semibold uppercase tracking-[0.12em] text-muted">{label}</span>
+      <span className={`relative h-[22px] w-10 rounded-full transition-colors duration-300 ${checked ? 'bg-ink' : 'bg-line-strong'}`}>
+        <motion.span className="absolute top-[3px] h-4 w-4 rounded-full bg-white shadow-hair" animate={{ left: checked ? 21 : 3 }} transition={SPRING_SNAPPY} />
+      </span>
+    </button>
   );
 }
 
@@ -149,6 +136,7 @@ function FilterPanel({
   set,
   reset,
   brands,
+  prices,
   pickupDate,
   returnDate,
   setPickupDate,
@@ -158,6 +146,7 @@ function FilterPanel({
   set: (fn: (p: Filters) => Filters) => void;
   reset: () => void;
   brands: string[];
+  prices: number[];
   pickupDate: string;
   returnDate: string;
   setPickupDate: (v: string) => void;
@@ -166,136 +155,92 @@ function FilterPanel({
   const { t } = useLocale();
   return (
     <div>
-      <FilterGroup title={t('Dates')}>
+      <div className="pb-4">
+        <Switch checked={f.instant} onChange={(v) => set((p) => ({ ...p, instant: v }))} label={t('Instant book only')} />
+      </div>
+
+      <Section title={t('Dates')}>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="text-label font-semibold uppercase tracking-wide text-muted">{t('Pick-up')}</span>
-            <input
-              type="date"
-              value={pickupDate}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setPickupDate(e.target.value)}
-              className="input mt-1 !py-2 !text-detail"
-            />
+            <input type="date" value={pickupDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setPickupDate(e.target.value)} className="input mt-1 !py-2 !text-[16px] sm:!text-detail" />
           </label>
           <label className="block">
             <span className="text-label font-semibold uppercase tracking-wide text-muted">{t('Return')}</span>
-            <input
-              type="date"
-              value={returnDate}
-              min={pickupDate || new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setReturnDate(e.target.value)}
-              className="input mt-1 !py-2 !text-detail"
-            />
+            <input type="date" value={returnDate} min={pickupDate || new Date().toISOString().slice(0, 10)} onChange={(e) => setReturnDate(e.target.value)} className="input mt-1 !py-2 !text-[16px] sm:!text-detail" />
           </label>
         </div>
-      </FilterGroup>
+      </Section>
 
-      <FilterGroup title={t('Price per day')}>
-        <div className="flex items-center justify-between text-body text-ink">
-          <span className="font-semibold">{eur(f.priceMin)}</span>
-          <span className="text-muted">{t('to')}</span>
-          <span className="font-semibold">{eur(f.priceMax)}{f.priceMax >= 800 ? '+' : ''}</span>
+      <Section title={t('Price range / day')}>
+        <PriceHistogram
+          prices={prices}
+          min={PRICE_MIN}
+          max={PRICE_MAX}
+          step={10}
+          low={f.priceMin}
+          high={f.priceMax}
+          onLow={(v) => set((p) => ({ ...p, priceMin: Math.min(v, p.priceMax) }))}
+          onHigh={(v) => set((p) => ({ ...p, priceMax: Math.max(v, p.priceMin) }))}
+        />
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-panel px-3 py-2"><p className="text-caption text-muted">{t('From')}</p><p className="text-body font-semibold tabular-nums text-ink">{eur(f.priceMin)}</p></div>
+          <div className="rounded-xl bg-panel px-3 py-2"><p className="text-caption text-muted">{t('To')}</p><p className="text-body font-semibold tabular-nums text-ink">{eur(f.priceMax)}{f.priceMax >= PRICE_MAX ? '+' : ''}</p></div>
         </div>
-        <div className="mt-2">
-          <PriceRange
-            min={30}
-            max={800}
-            step={10}
-            low={f.priceMin}
-            high={f.priceMax}
-            onLow={(v) => set((p) => ({ ...p, priceMin: Math.min(v, p.priceMax) }))}
-            onHigh={(v) => set((p) => ({ ...p, priceMax: Math.max(v, p.priceMin) }))}
-          />
-        </div>
-        <div className="mt-1 flex justify-between text-caption text-faint">
-          <span>€30</span>
-          <span>€800+</span>
-        </div>
-      </FilterGroup>
+      </Section>
 
-      <FilterGroup title={t('Car type')}>
-        {ALL_TYPES.map((ty) => (
-          <Check key={ty} label={t(ty)} checked={f.types.includes(ty)} onChange={() => set((p) => ({ ...p, types: toggle(p.types, ty) }))} />
-        ))}
-      </FilterGroup>
+      <Section title={t('Car type')}>
+        <div className="grid grid-cols-2 gap-x-3">
+          {ALL_TYPES.map((ty) => (
+            <Check key={ty} label={t(ty)} checked={f.types.includes(ty)} onChange={() => set((p) => ({ ...p, types: toggle(p.types, ty) }))} />
+          ))}
+        </div>
+      </Section>
 
-      <FilterGroup title={t('Brand')}>
+      <Section title={t('Brand')} open={false}>
         <div className="max-h-52 overflow-y-auto pr-1">
           {brands.map((b) => (
             <Check key={b} label={b} checked={f.brands.includes(b)} onChange={() => set((p) => ({ ...p, brands: toggle(p.brands, b) }))} />
           ))}
         </div>
-      </FilterGroup>
+      </Section>
 
-      <FilterGroup title={t('Transmission')}>
-        <div className="flex gap-2">
-          {['any', 'Automatic', 'Manual'].map((tr) => (
-            <button
-              key={tr}
-              onClick={() => set((p) => ({ ...p, transmission: tr }))}
-              data-active={f.transmission === tr}
-              className="chip flex-1 justify-center capitalize"
-            >
-              {tr === 'any' ? t('Any') : t(tr)}
-            </button>
+      <Section title={t('Transmission')}>
+        <Segmented
+          id="tr"
+          value={f.transmission}
+          onChange={(v) => set((p) => ({ ...p, transmission: v }))}
+          options={[{ value: 'any', label: t('Any') }, { value: 'Automatic', label: t('Automatic') }, { value: 'Manual', label: t('Manual') }]}
+        />
+      </Section>
+
+      <Section title={t('Fuel type')} open={false}>
+        <div className="grid grid-cols-2 gap-x-3">
+          {ALL_FUEL.map((fu) => (
+            <Check key={fu} label={t(fu)} checked={f.fuels.includes(fu)} onChange={() => set((p) => ({ ...p, fuels: toggle(p.fuels, fu) }))} />
           ))}
         </div>
-      </FilterGroup>
+      </Section>
 
-      <FilterGroup title={t('Fuel type')}>
-        {ALL_FUEL.map((fu) => (
-          <Check key={fu} label={t(fu)} checked={f.fuels.includes(fu)} onChange={() => set((p) => ({ ...p, fuels: toggle(p.fuels, fu) }))} />
-        ))}
-      </FilterGroup>
+      <Section title={t('Seats')} open={false}>
+        <Segmented id="seats" value={f.seats} onChange={(v) => set((p) => ({ ...p, seats: v }))} options={[0, 2, 4, 5, 7].map((s) => ({ value: s, label: s === 0 ? t('Any') : `${s}+` }))} />
+      </Section>
 
-      <FilterGroup title={t('Seats')}>
-        <div className="flex gap-2">
-          {[0, 2, 4, 5, 7].map((s) => (
-            <button
-              key={s}
-              onClick={() => set((p) => ({ ...p, seats: s }))}
-              data-active={f.seats === s}
-              className="chip flex-1 justify-center"
-            >
-              {s === 0 ? t('Any') : `${s}+`}
-            </button>
-          ))}
-        </div>
-      </FilterGroup>
+      <Section title={t('Luggage')} open={false}>
+        <Segmented id="bags" value={f.bags} onChange={(v) => set((p) => ({ ...p, bags: v }))} options={[0, 1, 2, 3, 4].map((b) => ({ value: b, label: b === 0 ? t('Any') : `${b}+` }))} />
+      </Section>
 
-      <FilterGroup title={t('Luggage')}>
-        <div className="flex gap-2">
-          {[0, 1, 2, 3, 4].map((b) => (
-            <button
-              key={b}
-              onClick={() => set((p) => ({ ...p, bags: b }))}
-              data-active={f.bags === b}
-              className="chip flex-1 justify-center"
-            >
-              {b === 0 ? t('Any') : `${b}+`}
-            </button>
-          ))}
-        </div>
-      </FilterGroup>
-
-      <FilterGroup title={t('Features')}>
+      <Section title={t('Features')} open={false}>
         {ALL_FEATURES.map((ft) => (
           <Check key={ft} label={t(ft)} checked={f.features.includes(ft)} onChange={() => set((p) => ({ ...p, features: toggle(p.features, ft) }))} />
         ))}
-      </FilterGroup>
+      </Section>
 
-      <FilterGroup title={t('Rating')}>
-        <div className="flex gap-2">
-          {[0, 4.5, 4.8, 4.9].map((r) => (
-            <button key={r} onClick={() => set((p) => ({ ...p, rating: r }))} data-active={f.rating === r} className="chip flex-1 justify-center gap-1">
-              {r === 0 ? t('Any') : <><Icon name="star" size={12} className="text-star" />{r}+</>}
-            </button>
-          ))}
-        </div>
-      </FilterGroup>
+      <Section title={t('Rating')} open={false}>
+        <Segmented id="rating" value={f.rating} onChange={(v) => set((p) => ({ ...p, rating: v }))} options={[0, 4.5, 4.8, 4.9].map((r) => ({ value: r, label: r === 0 ? t('Any') : `${r}+` }))} />
+      </Section>
 
-      <button onClick={reset} className="mt-5 w-full text-body font-medium text-muted transition-colors hover:text-ink">
+      <button onClick={reset} className="mt-4 w-full rounded-xl border border-line py-2.5 text-detail font-medium text-muted transition-colors hover:border-ink hover:text-ink">
         {t('Clear all filters')}
       </button>
     </div>
@@ -304,15 +249,12 @@ function FilterPanel({
 
 function CarCardSkeleton() {
   return (
-    <div className="card overflow-hidden">
-      <div className="skeleton aspect-[4/3]" />
-      <div className="space-y-2.5 p-4">
+    <div className="rounded-[24px] border border-line bg-surface p-3">
+      <div className="mb-2.5 flex justify-between"><div className="skeleton h-6 w-20 rounded-full" /><div className="skeleton h-6 w-16 rounded-full" /></div>
+      <div className="skeleton aspect-[4/3] rounded-[18px]" />
+      <div className="space-y-2.5 px-1 pt-3.5">
         <div className="skeleton h-4 w-3/5 rounded-md" />
         <div className="skeleton h-3 w-2/5 rounded-md" />
-        <div className="mt-3 flex items-end justify-between border-t border-line pt-3.5">
-          <div className="skeleton h-3 w-16 rounded-md" />
-          <div className="skeleton h-4 w-14 rounded-md" />
-        </div>
       </div>
     </div>
   );
@@ -333,6 +275,7 @@ export default function Browse() {
   const [sort, setSort] = useState('recommended');
   const [sortOpen, setSortOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [openCar, setOpenCar] = useState<Car | null>(null);
   const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
 
   useEffect(() => {
@@ -359,6 +302,7 @@ export default function Browse() {
   }, [cars]);
 
   const brands = useMemo(() => [...new Set((cars ?? []).map((c) => c.make))].sort(), [cars]);
+  const prices = useMemo(() => (cars ?? []).map((c) => c.pricePerDay), [cars]);
 
   const hasDateFilter = Boolean(pickupDate && returnDate && returnDate > pickupDate);
 
@@ -372,6 +316,7 @@ export default function Browse() {
       if (filters.seats && c.seats < filters.seats) return false;
       if (filters.bags && c.luggage < filters.bags) return false;
       if (filters.rating && c.rating < filters.rating) return false;
+      if (filters.instant && !c.instantBook) return false;
       if (filters.features.length && !filters.features.every((ft) => c.features.includes(ft))) return false;
       if (city && c.city.toLowerCase() !== city.toLowerCase()) return false;
       if (hasDateFilter && rangesOverlap(pickupDate, returnDate, bookedByCar.get(c.id) ?? [])) return false;
@@ -398,132 +343,105 @@ export default function Browse() {
   const activeCount =
     filters.types.length + filters.brands.length + filters.fuels.length + filters.features.length +
     (filters.transmission !== 'any' ? 1 : 0) + (filters.seats ? 1 : 0) + (filters.bags ? 1 : 0) + (filters.rating ? 1 : 0) +
+    (filters.instant ? 1 : 0) +
     (filters.priceMax !== emptyFilters.priceMax || filters.priceMin !== emptyFilters.priceMin ? 1 : 0) +
     (hasDateFilter ? 1 : 0);
 
-  const { ref: countRef, value: animatedCount } = useCountUp<HTMLSpanElement>(results.length, { duration: 500 });
+  const { ref: countRef, value: animatedCount } = useCountUp<HTMLSpanElement>(results.length, { duration: 450 });
+
+  const panel = (
+    <FilterPanel
+      f={filters}
+      set={setFilters}
+      reset={reset}
+      brands={brands}
+      prices={prices}
+      pickupDate={pickupDate}
+      returnDate={returnDate}
+      setPickupDate={setPickupDate}
+      setReturnDate={setReturnDate}
+    />
+  );
 
   return (
-    <div className="container-page py-8">
-      {/* Concierge entry — the same noir-and-key identity the Concierge
-          itself opens into, so the banner and the experience read as one
-          thing; compact enough not to compete with the search bar below. */}
-      <div
-        data-surface="noir"
-        className="relative mb-6 flex flex-col items-start gap-3.5 overflow-hidden rounded-2xl bg-noir px-5 py-4 shadow-card min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between min-[420px]:gap-4"
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(60% 140% at 0% 0%, rgba(0,212,71,0.2), transparent 62%)' }}
-        />
-        <div className="relative flex min-w-0 items-center gap-3.5">
-          <ConciergeMark size={44} live />
-          <div className="min-w-0">
-            <p className="font-display text-copy font-semibold leading-tight text-white">CX Concierge</p>
-            <p className="mt-0.5 text-detail leading-snug text-on-noir-muted">{t('Not sure which car? Tell us how you want to drive.')}</p>
-          </div>
-        </div>
-        <ConciergeLauncher className="btn btn-glint btn-accent-bright relative shrink-0" {...findCxScramble}>
-          <span className="btn-glint__sweep" aria-hidden="true" />
-          {findCxScramble.display} <Icon name="arrowRight" size={16} />
-        </ConciergeLauncher>
-      </div>
-
-      {/* Top bar */}
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{t('Browse cars')}</h1>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Icon name="pin" size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder={t('Search by city — Milan, Rome, Paris…')}
-              className="input !pl-11"
-            />
-          </div>
-          <div className="flex items-center gap-2.5">
-            <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
-              <Icon name="sliders" size={17} /> {t('Filters')}
-              {activeCount > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">{activeCount}</span>
-              )}
-            </button>
-            <div className="relative">
-              <button onClick={() => setSortOpen((o) => !o)} className="btn btn-secondary" aria-haspopup="listbox">
-                <Icon name="sort" size={16} />
-                <span className="hidden sm:inline">{t(SORTS.find((s) => s.id === sort)!.label)}</span>
-                <Icon name="chevronDown" size={15} className="text-muted" />
-              </button>
-              {sortOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-56 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop" role="listbox">
-                    {SORTS.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => { setSort(s.id); setSortOpen(false); }}
-                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
-                      >
-                        {t(s.label)}
-                        {sort === s.id && <Icon name="check" size={16} className="text-accent" />}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-8">
-        {/* Sidebar */}
-        <aside className="hidden w-72 shrink-0 lg:block">
-          <div className="sticky top-[84px] card p-6">
+    <div className="container-page py-6 sm:py-8">
+      <div className="flex gap-6 lg:gap-8">
+        {/* Filters */}
+        <aside className="hidden w-[280px] shrink-0 lg:block">
+          <div className="sticky top-[84px] max-h-[calc(100dvh-100px)] overflow-y-auto rounded-[24px] border border-line bg-surface p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-medium text-ink">{t('Filters')}</h2>
-              {activeCount > 0 && <span className="badge badge-accent">{t('{n} active', { n: activeCount })}</span>}
+              <h2 className="font-display text-copy font-semibold text-ink">{t('Filter by')}</h2>
+              {activeCount > 0 && (
+                <button onClick={reset} className="text-caption font-medium text-muted transition-colors hover:text-ink">{t('Reset all')} · {activeCount}</button>
+              )}
             </div>
-            <FilterPanel
-              f={filters}
-              set={setFilters}
-              reset={reset}
-              brands={brands}
-              pickupDate={pickupDate}
-              returnDate={returnDate}
-              setPickupDate={setPickupDate}
-              setReturnDate={setReturnDate}
-            />
+            {panel}
           </div>
         </aside>
 
         {/* Results */}
         <div className="min-w-0 flex-1">
-          {!loading && !error && (
-            <p className="mb-4 text-body text-muted">
-              <span ref={countRef} className="font-medium tabular-nums text-ink">{animatedCount}</span> {t('cars available')}
-              {city && <> {t('in')} <span className="font-medium text-ink">{city}</span></>}
-            </p>
-          )}
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem]">
+              {loading || error ? t('Browse cars') : (<><span ref={countRef} className="tabular-nums">{animatedCount}</span> {t(results.length === 1 ? 'car to rent' : 'cars to rent')}</>)}
+            </h1>
+            <div className="flex items-center gap-2.5">
+              <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
+                <Icon name="sliders" size={17} /> {t('Filters')}
+                {activeCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-label font-semibold text-white">{activeCount}</span>}
+              </button>
+              <div className="relative">
+                <button onClick={() => setSortOpen((o) => !o)} className="btn btn-secondary" aria-haspopup="listbox">
+                  <Icon name="sort" size={16} />
+                  <span className="hidden sm:inline">{t(SORTS.find((s) => s.id === sort)!.label)}</span>
+                  <Icon name="chevronDown" size={15} className="text-muted" />
+                </button>
+                {sortOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                    <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-56 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop" role="listbox">
+                      {SORTS.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => { setSort(s.id); setSortOpen(false); }}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${sort === s.id ? 'text-ink' : 'text-ink-soft'}`}
+                        >
+                          {t(s.label)}
+                          {sort === s.id && <Icon name="check" size={16} className="text-ink" />}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Icon name="pin" size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder={t('Search by city — Milan, Rome, Paris…')}
+                className="h-11 w-full rounded-full border border-line bg-surface pl-11 pr-4 text-[16px] text-ink outline-none transition-colors placeholder:text-faint focus:border-ink sm:text-body"
+              />
+            </div>
+            <ConciergeLauncher className="group inline-flex h-11 shrink-0 items-center gap-2.5 rounded-full border border-line bg-surface pl-1.5 pr-4 text-detail font-semibold text-ink transition-colors hover:border-ink" {...findCxScramble}>
+              <ConciergeMark size={32} />
+              {findCxScramble.display} <Icon name="arrowRight" size={14} className="transition-transform group-hover:translate-x-0.5" />
+            </ConciergeLauncher>
+          </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <CarCardSkeleton key={i} />
               ))}
             </div>
           ) : error ? (
             <div className="card">
-              <EmptyState
-                size="lg"
-                tone="danger"
-                icon="info"
-                title={t("Couldn't load cars")}
-                description={error}
-                className="px-6 py-20"
-              />
+              <EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-20" />
             </div>
           ) : results.length === 0 ? (
             <div className="card">
@@ -537,40 +455,28 @@ export default function Browse() {
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {results.map((car, i) => (
-                <Reveal key={car.id} delay={(i % 6) * 60}>
-                  <CarCard car={car} priority={i < 6} available={hasDateFilter} />
-                </Reveal>
-              ))}
-            </div>
+            <motion.div layout className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {results.map((car, i) => (
+                  <BrowseCard key={car.id} car={car} active={openCar?.id === car.id} priority={i < 6} available={hasDateFilter} onOpen={() => setOpenCar(car)} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
       </div>
 
-      {/* Mobile filter sheet — the shared Modal gives it the drag handle,
-          scroll lock, Escape, focus handling and home-indicator clearance
-          under the "Show N cars" button that the old hand-rolled sheet
-          lacked. */}
+      <CarDrawer car={openCar} onClose={() => setOpenCar(null)} />
+
+      {/* Mobile filter sheet */}
       <Modal open={drawer} onClose={() => setDrawer(false)} className="flex max-h-[88dvh] flex-col" labelledBy="filters-sheet-title">
         <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
-          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">{t('Filters')}</h2>
+          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">{t('Filter by')}</h2>
           <button onClick={() => setDrawer(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-panel active:bg-panel" aria-label={t('Close')}>
             <Icon name="x" size={20} />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-2">
-          <FilterPanel
-            f={filters}
-            set={setFilters}
-            reset={reset}
-            brands={brands}
-            pickupDate={pickupDate}
-            returnDate={returnDate}
-            setPickupDate={setPickupDate}
-            setReturnDate={setReturnDate}
-          />
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">{panel}</div>
         <div className="shrink-0 border-t border-line p-4">
           <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
             {t('Show')} {results.length} {t(results.length === 1 ? 'car' : 'cars')}
