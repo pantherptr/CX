@@ -64,15 +64,16 @@ export function SignalLogo({ size = 24, className = '' }: { size?: number; class
   );
 }
 
-/** The plain "S" badge for SIGNAL on the logged-out surfaces (menu, top bar, home). */
+/** The SIGNAL "S" mark for the logged-out surfaces (menu, top bar, home). */
 export function SignalS({ size = 24, className = '' }: { size?: number; className?: string }) {
   return (
-    <span
+    <img
+      src="/brand/signal-s.webp"
+      alt=""
       aria-hidden="true"
-      className={`inline-grid shrink-0 place-items-center rounded-full bg-ink font-display font-bold leading-none text-white ${className}`}
-      style={{ height: size, width: size, fontSize: size * 0.58 }}
-    >
-      S
-    </span>
+      draggable={false}
+      className={`inline-block shrink-0 object-contain ${className}`}
+      style={{ height: size, width: size * 1.84, maxWidth: 'none' }}
+    />
   );
 }
