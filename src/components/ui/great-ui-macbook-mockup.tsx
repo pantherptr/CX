@@ -108,7 +108,7 @@ export function MacbookMockup({
   return (
     <div
       className={cx(
-        'relative mx-auto flex w-full max-w-[480px] transform-gpu flex-col items-center justify-center py-4 [perspective:1200px] sm:max-w-[620px] md:max-w-[820px]',
+        'relative mx-auto flex w-full max-w-[480px] transform-gpu flex-col items-center justify-center py-4 [perspective:1200px] sm:max-w-[680px] md:max-w-[920px] lg:max-w-[1120px]',
         className,
       )}
     >
@@ -117,13 +117,13 @@ export function MacbookMockup({
         animate={{ rotateX: 0, opacity: 1, scale: 1 }}
         transition={{ type: 'spring', stiffness: 140, damping: 20, mass: 0.9 }}
         style={{ transformOrigin: 'bottom center' }}
-        className="relative z-10 flex h-[360px] w-full transform-gpu flex-col overflow-hidden rounded-t-2xl bg-neutral-900 p-2 sm:h-[390px] sm:p-2.5 md:h-[520px] dark:bg-neutral-950"
+        className="relative z-10 flex h-[360px] w-full transform-gpu flex-col overflow-hidden rounded-t-2xl bg-neutral-900 p-2 sm:h-[470px] sm:p-2.5 md:h-[580px] lg:h-[680px] dark:bg-neutral-950"
       >
         <div className="relative isolate flex h-full w-full transform-gpu overflow-hidden rounded-t-[10px] bg-white text-neutral-900 transition-colors">
           {/* Sidebar */}
-          <div className="flex w-[170px] shrink-0 flex-col bg-[#f6f7f5] transition-colors sm:w-[220px] md:w-[270px]">
+          <div className="flex w-[170px] shrink-0 flex-col bg-[#f6f7f5] transition-colors sm:w-[220px] md:w-[300px] lg:w-[340px]">
             <div className="flex shrink-0 items-center justify-between bg-[#f6f7f5] px-3 py-2">
-              <Avatar url={userAvatarUrl} alt="You" initial="Y" className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-ink text-xs font-bold text-white" />
+              <Avatar url={userAvatarUrl} alt="You" initial="Y" className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-ink text-[13.5px] font-bold text-white" />
               <div className="flex items-center gap-2.5 text-neutral-600">
                 <span className="transition-colors hover:text-accent"><StatusCircleIcon /></span>
                 {onNewChat ? (
@@ -136,17 +136,17 @@ export function MacbookMockup({
             </div>
 
             <div className="p-2">
-              <div className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-1 text-xs text-neutral-400">
+              <div className="flex items-center gap-2 rounded-lg bg-white px-2.5 py-1 text-[13.5px] text-neutral-400">
                 <SearchIcon className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
                 {onSearch ? (
                   <input
                     value={search}
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="Search conversations"
-                    className="min-w-0 flex-1 bg-transparent text-[10.5px] text-neutral-800 outline-none placeholder:text-neutral-400"
+                    className="min-w-0 flex-1 bg-transparent text-[12.5px] text-neutral-800 outline-none placeholder:text-neutral-400"
                   />
                 ) : (
-                  <span className="truncate text-[10.5px]">Search conversations</span>
+                  <span className="truncate text-[12.5px]">Search conversations</span>
                 )}
                 <FilterIcon className="ml-auto h-3 w-3 shrink-0 text-neutral-400" />
               </div>
@@ -166,16 +166,16 @@ export function MacbookMockup({
                   )}
                 >
                   {chat.isActive && <div className="absolute top-0 bottom-0 left-0 w-1 bg-accent" />}
-                  <Avatar url={chat.avatarUrl} alt={chat.name} initial={chat.initial} className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-xs font-bold text-white sm:h-8 sm:w-8" />
+                  <Avatar url={chat.avatarUrl} alt={chat.name} initial={chat.initial} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-[13.5px] font-bold text-white sm:h-10 sm:w-10" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="truncate text-[11px] font-semibold text-neutral-900">{chat.name}</span>
-                      <span className="shrink-0 text-[9px] text-neutral-400">{chat.time}</span>
+                      <span className="truncate text-[13.5px] font-semibold text-neutral-900">{chat.name}</span>
+                      <span className="shrink-0 text-[11px] text-neutral-400">{chat.time}</span>
                     </div>
-                    <p className="mt-0.5 truncate text-[10px] text-neutral-500">{chat.lastMsg}</p>
+                    <p className="mt-0.5 truncate text-[12px] text-neutral-500">{chat.lastMsg}</p>
                   </div>
                   {!!chat.unreadCount && (
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white">
                       {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
                     </span>
                   )}
@@ -188,10 +188,10 @@ export function MacbookMockup({
           <div className="relative flex min-w-0 flex-1 flex-col bg-[#f1f2ee] transition-colors">
             <div className="z-10 flex shrink-0 items-center justify-between bg-[#f6f7f5] px-3.5 py-2">
               <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar url={avatarUrl} alt={headerTitle} initial={avatarFallback} className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-xs font-bold text-white" />
+                <Avatar url={avatarUrl} alt={headerTitle} initial={avatarFallback} className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink text-[13.5px] font-bold text-white" />
                 <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-xs leading-tight font-semibold text-neutral-900">{headerTitle}</span>
-                  <span className="truncate text-[10px] font-medium text-accent">{headerSubtitle}</span>
+                  <span className="truncate text-[13.5px] leading-tight font-semibold text-neutral-900">{headerTitle}</span>
+                  <span className="truncate text-[12px] font-medium text-accent">{headerSubtitle}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-neutral-600">
@@ -209,14 +209,14 @@ export function MacbookMockup({
 
             {composer ?? (
               <div className="z-10 flex shrink-0 items-center gap-2 bg-[#f6f7f5] p-2.5">
-                <div className="flex-1 rounded-lg bg-white px-3 py-1.5 text-xs text-neutral-400">Write a message…</div>
+                <div className="flex-1 rounded-lg bg-white px-3 py-1.5 text-[13.5px] text-neutral-400">Write a message…</div>
               </div>
             )}
           </div>
         </div>
       </motion.div>
 
-      <div className="relative z-20 flex h-3.5 w-[520px] max-w-full items-start justify-center rounded-b-xl bg-neutral-300 sm:h-4 sm:w-[670px] md:w-[880px]">
+      <div className="relative z-20 flex h-3.5 w-[520px] max-w-full items-start justify-center rounded-b-xl bg-neutral-300 sm:h-4 sm:w-[670px] md:w-[980px] lg:w-[1200px]">
         <div className="h-1.5 w-14 rounded-b-md bg-neutral-400/90 sm:w-20" />
       </div>
     </div>

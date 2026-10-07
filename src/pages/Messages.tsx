@@ -201,7 +201,7 @@ function Thread({
 }) {
   const t = large
     ? { gap: 'space-y-1', bubble: 'max-w-[82%] rounded-2xl px-3.5 py-2 text-[15px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
-    : { gap: 'space-y-1.5', bubble: 'max-w-[75%] rounded-xl px-3 py-1.5 text-[11.5px] leading-snug', time: 'text-[9px]', day: 'text-[9px] px-2.5 py-0.5', note: 'text-[9.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
+    : { gap: 'space-y-1.5', bubble: 'max-w-[75%] rounded-xl px-3.5 py-2 text-[14px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-2.5 py-0.5', note: 'text-[11.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
   const roleOf = (m: Message): VerifiedRole => (m.senderId === myId ? (m.senderRole ?? myRole) : active.other.role);
   return (
     <div className={`flex min-h-full flex-col justify-end ${t.gap}`}>
@@ -482,7 +482,7 @@ export default function Messages() {
                       if (!sending) send();
                     }}
                     placeholder="Write a message…"
-                    className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-1.5 text-xs leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
+                    className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-2 text-[14px] leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button
                     onClick={send}
