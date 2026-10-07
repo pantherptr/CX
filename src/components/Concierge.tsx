@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
-import { FlyingMark } from './FlyingMark';
 import { PremiumPageLoader } from './PremiumLoader';
 import { useAuth } from '../lib/auth';
 import { useApp } from '../lib/store';
@@ -211,11 +210,11 @@ function QuickReply({
       aria-pressed={active}
       className={`group inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2.5 text-body font-medium transition-[background-color,border-color,color] duration-200 active:scale-[0.98] ${
         active
-          ? 'border-accent bg-accent-050 text-ink'
-          : 'border-line bg-white text-ink-soft shadow-hair hover:border-line-strong hover:text-ink'
+          ? 'border-ink bg-ink text-white'
+          : 'border-line bg-white text-ink-soft shadow-hair hover:border-ink/40 hover:text-ink'
       }`}
     >
-      <span className={`transition-colors ${active ? 'text-accent' : 'text-muted group-hover:text-ink-soft'}`}>
+      <span className={`transition-colors ${active ? 'text-white' : 'text-muted group-hover:text-ink-soft'}`}>
         {multi && active ? <Icon name="check" size={17} strokeWidth={2.6} /> : icon}
       </span>
       <span>{label}</span>
@@ -244,15 +243,15 @@ function OptionCard({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`group relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border p-3 text-left transition-[background-color,border-color,box-shadow] duration-200 active:scale-[0.98] ${
+      className={`group relative flex min-h-[4.25rem] items-center gap-3 rounded-[20px] border p-3 text-left transition-[background-color,border-color,box-shadow] duration-200 active:scale-[0.98] ${
         active
-          ? 'border-accent bg-accent-050 shadow-[0_0_0_1px_var(--color-accent)]'
-          : 'border-line bg-white shadow-hair hover:border-line-strong hover:shadow-soft'
+          ? 'border-ink bg-white shadow-[0_0_0_1px_#16161a]'
+          : 'border-line bg-white shadow-hair hover:border-ink/40 hover:shadow-soft'
       }`}
     >
       <span
         className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-colors ${
-          active ? 'bg-accent text-white' : 'bg-panel text-ink-soft group-hover:bg-accent-050 group-hover:text-accent-700'
+          active ? 'bg-ink text-white' : 'bg-panel text-ink-soft group-hover:bg-panel-2 group-hover:text-ink'
         }`}
       >
         {icon}
@@ -272,7 +271,7 @@ function ActionLink({ children, onClick, icon }: { children: ReactNode; onClick:
   return (
     <button
       onClick={onClick}
-      className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-1 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600"
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-1 text-body font-semibold text-ink underline underline-offset-4 transition-colors hover:text-ink-soft"
     >
       {children} {icon && <Icon name={icon} size={15} />}
     </button>
@@ -445,7 +444,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden overscroll-none bg-[#f6f7f3] animate-fade-in">
-      <div className="relative shrink-0 border-b border-line bg-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="relative shrink-0 border-b border-line/70 bg-white/85 backdrop-blur-xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <ConciergeMark size={38} live />
@@ -476,15 +475,12 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         </div>
-        <div
-          className="h-[3px] w-full bg-line"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={progress}
-          aria-label="Concierge progress"
-        >
-          <div className="h-full bg-accent transition-[width] duration-500 ease-out" style={{ width: `${progress}%` }} />
+        <div className="flex gap-1.5 px-4 pb-2.5 sm:px-6" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label="Concierge progress">
+          {QUIZ_STEPS.map((qs, i) => (
+            <span key={qs} className="relative h-[4px] flex-1 overflow-hidden rounded-full bg-line">
+              <span className="absolute inset-0 origin-left rounded-full bg-ink transition-transform duration-500 ease-out" style={{ transform: `scaleX(${step === 'results' || i < answeredCount ? 1 : i === answeredCount && !thinking ? 0.45 : 0})` }} />
+            </span>
+          ))}
         </div>
       </div>
 
@@ -493,10 +489,9 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
           {/* Welcome — always at the top, even once questions are
               answered, so the transcript reads like a real conversation
               from the start rather than resetting per step. */}
-          <div className="px-1 pb-1 pt-6 animate-fade-up">
-            <FlyingMark src="/brand/cx-bat-man.webp" width={200} height={95} className="mb-4 h-[84px]" shadow />
-            <p className="text-label font-semibold uppercase tracking-[0.14em] text-accent-700">Personal vehicle advisor</p>
-            <h2 className="mt-2 font-display text-[1.75rem] font-semibold leading-tight tracking-tight text-ink text-balance sm:text-3xl">
+          <div className="px-1 pb-1 pt-7 animate-fade-up">
+            <p className="text-label font-semibold uppercase tracking-[0.14em] text-muted">Personal vehicle advisor</p>
+            <h2 className="mt-2 font-display text-[2rem] font-bold leading-[1.08] tracking-tight text-ink text-balance sm:text-4xl">
               Find the right car in five questions.
             </h2>
             <p className="mt-2 max-w-lg text-body leading-relaxed text-muted text-pretty">
@@ -647,7 +642,7 @@ function ConciergeModal({ onClose }: { onClose: () => void }) {
                       <button
                         onClick={() => advance('budget')}
                         aria-label="Confirm budget"
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent text-white transition-transform hover:scale-105"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ink text-white transition-transform hover:scale-105"
                       >
                         <Icon name="arrowRight" size={15} strokeWidth={2.5} />
                       </button>
@@ -821,7 +816,7 @@ function TopMatch({
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button onClick={() => onRent(car.slug)} className="btn btn-accent-bright btn-lg flex-1">
+          <button onClick={() => onRent(car.slug)} className="btn btn-primary btn-lg flex-1">
             Rent This Car <Icon name="arrowRight" size={17} />
           </button>
           <Link
