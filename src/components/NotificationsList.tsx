@@ -26,6 +26,14 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+type Bucket = 'Today' | 'Yesterday' | 'This week' | 'Earlier';
+const BUCKETS: Bucket[] = ['Today', 'Yesterday', 'This week', 'Earlier'];
+const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+function bucketOf(iso: string): Bucket {
+  const days = Math.round((dayStart(new Date()) - dayStart(new Date(iso))) / 86400000);
+  return days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? 'This week' : 'Earlier';
+}
+
 // Each kind of event gets a small badge on the actor's photo. Follow and
 // Respect keep their own colours (ties to FollowButton's solid ink and the
 // post action's accent green); comments and shares stay neutral so the two
@@ -99,10 +107,10 @@ export function NotificationsList({
   const shown = notifications.filter((n) => matches(n, tab));
 
   return (
-    <div className="animate-fade-up overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
-      {/* Tabs + mark all */}
-      <div className="flex items-center justify-between gap-3 border-b border-line px-4 pt-1">
-        <div className="scrollbar-none -mb-px flex min-w-0 gap-1 overflow-x-auto" role="tablist">
+    <div className="animate-fade-up">
+      {/* Filters (a segmented control) + mark all */}
+      <div className="flex items-center justify-between gap-3 px-1 pb-3">
+        <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto rounded-full bg-panel p-1" role="tablist">
           {TABS.map((t) => {
             const n = count(t.id);
             const on = tab === t.id;
@@ -112,8 +120,8 @@ export function NotificationsList({
                 role="tab"
                 aria-selected={on}
                 onClick={() => setTab(t.id)}
-                className={`inline-flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-3 text-detail font-semibold transition-colors ${
-                  on ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-detail font-semibold transition-[background-color,color,box-shadow] ${
+                  on ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'
                 }`}
               >
                 {t.label}
@@ -128,126 +136,139 @@ export function NotificationsList({
           <button
             onClick={onMarkAllRead}
             disabled={unread.length === 0}
-            className="pressable inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-detail font-medium text-ink-soft transition-colors hover:bg-panel hover:text-ink disabled:opacity-40"
+            aria-label="Mark all as read"
+            className="pressable inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 text-detail font-semibold text-accent transition-colors hover:bg-panel disabled:text-faint disabled:opacity-60"
           >
-            <Icon name="check" size={14} strokeWidth={2.5} /> Mark all as read
+            <Icon name="check" size={15} strokeWidth={2.5} /> <span className="hidden sm:inline">Mark all as read</span>
           </button>
         )}
       </div>
 
       {shown.length === 0 ? (
-        notifications.length === 0 ? (
-          <EmptyState
-            size={compact ? 'md' : 'lg'}
-            icon="bell"
-            title="You're all caught up"
-            description="Follows, Respects, comments and shares on SIGNAL will show up here."
-            className={compact ? 'px-6 py-12' : 'px-6 py-20'}
-          />
-        ) : (
-          <p className="px-6 py-14 text-center text-detail text-muted">
-            {tab === 'unread' ? 'Nothing unread.' : 'Nothing here yet.'}
-          </p>
-        )
-      ) : (
-        <div>
-          {shown.map((n) => {
-            const copy = COPY[n.type];
-            const role = actorRole(n);
-            const isUnread = !n.readAt;
-            return (
-              <div
-                key={n.id}
-                className={`relative flex items-start gap-3 border-b border-line last:border-0 ${compact ? 'px-4 py-3.5' : 'px-5 py-4'} ${
-                  isUnread ? 'bg-accent-050/50' : ''
-                }`}
-              >
-                <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorName}>
-                  {n.actorAvatarUrl ? (
-                    <Img
-                      src={n.actorAvatarUrl}
-                      alt=""
-                      className="h-11 w-11 rounded-full object-cover"
-                      fallback={
-                        <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-ink-soft">
-                          <Icon name="user" size={20} />
-                        </span>
-                      }
-                    />
-                  ) : (
-                    <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-ink-soft">
-                      <Icon name="user" size={20} />
-                    </span>
-                  )}
-                  <span className={`absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full ring-2 ring-surface ${copy.badge}`}>
-                    <Icon name={copy.icon} size={11} />
-                  </span>
-                </button>
-
-                <button onClick={() => onOpen(n)} className="min-w-0 flex-1 text-left">
-                  <p className="text-body leading-snug text-ink">
-                    <span className="font-semibold">{n.actorName}</span>
-                    {role && (
-                      <span className="mx-1 inline-flex translate-y-[2px] align-baseline">
-                        <VerifiedBadge role={role} size={13} />
-                      </span>
-                    )}{' '}
-                    <span className="text-ink-soft">{copy.verb}</span>
-                  </p>
-                  <p className="mt-0.5 text-caption text-faint">
-                    {timeAgo(n.createdAt)}
-                    {n.actorUsername ? ` · @${n.actorUsername}` : ''}
-                  </p>
-                  {n.postPreview && (
-                    <p className="mt-2 line-clamp-2 rounded-xl bg-panel px-3 py-2 text-detail text-ink-soft">“{n.postPreview}”</p>
-                  )}
-                  {n.type === 'follow' && n.actorId && (
-                    <span className="mt-2.5 inline-flex rounded-full border border-line-strong px-3.5 py-1.5 text-detail font-semibold text-ink">
-                      View profile
-                    </span>
-                  )}
-                </button>
-
-                <div className="relative flex shrink-0 items-center gap-2 pt-0.5">
-                  <button
-                    onClick={() => setMenuFor((m) => (m === n.id ? null : n.id))}
-                    aria-label="More"
-                    aria-expanded={menuFor === n.id}
-                    className="pressable grid h-8 w-8 place-items-center rounded-full text-faint transition-colors hover:bg-panel hover:text-ink"
-                  >
-                    <Icon name="moreHorizontal" size={18} />
-                  </button>
-                  <UnreadDot show={isUnread} />
-                  {menuFor === n.id && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
-                      <div className="absolute right-0 top-9 z-20 w-44 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-pop">
-                        {isUnread && onMarkRead && (
-                          <button
-                            onClick={() => { onMarkRead(n.id); setMenuFor(null); }}
-                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-detail text-ink transition-colors hover:bg-panel"
-                          >
-                            <Icon name="check" size={15} /> Mark as read
-                          </button>
-                        )}
-                        <button
-                          onClick={() => { setMenuFor(null); onOpen(n); }}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-detail text-ink transition-colors hover:bg-panel"
-                        >
-                          <Icon name="arrowUpRight" size={15} /> {n.postId ? 'Open post' : 'Open profile'}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
+          {notifications.length === 0 ? (
+            <EmptyState
+              size={compact ? 'md' : 'lg'}
+              icon="bell"
+              title="You're all caught up"
+              description="Follows, Respects, comments and shares on SIGNAL will show up here."
+              className={compact ? 'px-6 py-12' : 'px-6 py-20'}
+            />
+          ) : (
+            <p className="px-6 py-14 text-center text-detail text-muted">
+              {tab === 'unread' ? 'Nothing unread.' : 'Nothing here yet.'}
+            </p>
+          )}
         </div>
+      ) : (
+        BUCKETS.map((bucket) => {
+          const group = shown.filter((n) => bucketOf(n.createdAt) === bucket);
+          if (group.length === 0) return null;
+          return (
+            <section key={bucket} className="mb-5 last:mb-0">
+              <h2 className="mb-2 px-2 text-detail font-semibold uppercase tracking-wide text-muted">{bucket}</h2>
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
+                {group.map((n) => {
+                  const copy = COPY[n.type];
+                  const role = actorRole(n);
+                  const isUnread = !n.readAt;
+                  return (
+                    <div
+                      key={n.id}
+                      className={`relative flex items-start gap-3.5 border-b border-line last:border-0 ${compact ? 'px-4 py-3.5' : 'px-4 py-4 sm:px-5'} ${
+                        isUnread ? 'bg-accent-050/35' : ''
+                      }`}
+                    >
+                      {isUnread && <span aria-hidden="true" className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-accent-bright" />}
+                      <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorName}>
+                        {n.actorAvatarUrl ? (
+                          <Img
+                            src={n.actorAvatarUrl}
+                            alt=""
+                            className="h-12 w-12 rounded-full object-cover"
+                            fallback={
+                              <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-ink-soft">
+                                <Icon name="user" size={21} />
+                              </span>
+                            }
+                          />
+                        ) : (
+                          <span className="grid h-12 w-12 place-items-center rounded-full bg-panel text-ink-soft">
+                            <Icon name="user" size={21} />
+                          </span>
+                        )}
+                        <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full ring-2 ring-surface ${copy.badge}`}>
+                          <Icon name={copy.icon} size={12} />
+                        </span>
+                      </button>
+
+                      <button onClick={() => onOpen(n)} className="min-w-0 flex-1 text-left">
+                        <p className="text-[15px] leading-snug text-ink">
+                          <span className="font-semibold">{n.actorName}</span>
+                          {role && (
+                            <span className="mx-1 inline-flex translate-y-[2px] align-baseline">
+                              <VerifiedBadge role={role} size={13} />
+                            </span>
+                          )}{' '}
+                          <span className="text-ink-soft">{copy.verb}</span>
+                        </p>
+                        {n.actorUsername && <p className="mt-0.5 text-caption text-faint">@{n.actorUsername}</p>}
+                        {n.postPreview && (
+                          <p className="mt-2 line-clamp-2 rounded-xl bg-panel px-3 py-2 text-detail text-ink-soft">“{n.postPreview}”</p>
+                        )}
+                        {n.type === 'follow' && n.actorId && (
+                          <span className="mt-2.5 inline-flex min-h-9 items-center rounded-full bg-ink px-4 text-detail font-semibold text-white">
+                            View profile
+                          </span>
+                        )}
+                      </button>
+
+                      <div className="relative flex shrink-0 flex-col items-end gap-1">
+                        <span className={`text-caption tabular-nums ${isUnread ? 'font-semibold text-accent' : 'text-faint'}`}>{timeAgo(n.createdAt)}</span>
+                        <div className="flex items-center gap-1.5">
+                          <UnreadDot show={isUnread} />
+                          <button
+                            onClick={() => setMenuFor((m) => (m === n.id ? null : n.id))}
+                            aria-label="More"
+                            aria-expanded={menuFor === n.id}
+                            className="pressable grid h-9 w-9 place-items-center rounded-full text-faint transition-colors hover:bg-panel hover:text-ink"
+                          >
+                            <Icon name="moreHorizontal" size={18} />
+                          </button>
+                        </div>
+                        {menuFor === n.id && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
+                            <div className="absolute right-0 top-14 z-20 w-48 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-pop">
+                              {isUnread && onMarkRead && (
+                                <button
+                                  onClick={() => { onMarkRead(n.id); setMenuFor(null); }}
+                                  className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-left text-detail text-ink transition-colors hover:bg-panel"
+                                >
+                                  <Icon name="check" size={15} /> Mark as read
+                                </button>
+                              )}
+                              <button
+                                onClick={() => { setMenuFor(null); onOpen(n); }}
+                                className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-left text-detail text-ink transition-colors hover:bg-panel"
+                              >
+                                <Icon name="arrowUpRight" size={15} /> {n.postId ? 'Open post' : 'Open profile'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })
       )}
 
       {hasMore && (
-        <div className="border-t border-line p-3">
+        <div className="mt-4">
           <button onClick={loadMore} disabled={loadingMore} className="btn btn-secondary btn-block disabled:opacity-50">
             {loadingMore ? 'Loading…' : 'Load more'}
           </button>
