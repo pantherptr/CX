@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
-import { SignalLogo } from '../components/SignalLogo';
+import { SignalS } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img } from '../components/motion';
@@ -653,7 +653,7 @@ export default function Home() {
               <div>
                 <div className="flex items-center gap-3">
                   <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-accent-700 shadow-hair ring-1 ring-accent/15">
-                    <SignalLogo size={26} />
+                    <SignalS size={26} />
                   </span>
                   <p className="eyebrow">{t('CX SIGNAL')}</p>
                 </div>

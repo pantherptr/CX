@@ -2,7 +2,7 @@ import { FlyingMark } from './FlyingMark';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
-import { SignalLogo } from './SignalLogo';
+import { SignalS } from './SignalLogo';
 import { ConciergeLauncher } from './Concierge';
 import { useViewportBottomGap } from '../lib/useViewportGap';
 import { useScramble } from '../lib/useScramble';
@@ -120,7 +120,7 @@ export default function PublicMobileDrawer({
                     }
                   >
                     <span className="flex items-center gap-2.5">
-                      <SignalLogo size={22} />
+                      <SignalS size={26} />
                       <span>
                         <span className="block text-body font-semibold leading-tight text-ink">SIGNAL</span>
                         <span className="block text-caption leading-tight text-muted">{t('Community')}</span>

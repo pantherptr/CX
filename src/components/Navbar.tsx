@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Img } from './motion';
 import { Logo } from './primitives';
-import { SignalLogo } from './SignalLogo';
+import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
 import { useLocale } from '../lib/i18n';
@@ -163,7 +163,7 @@ function PublicNavbar() {
                       style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.32), transparent 75%)' }}
                     />
                   )}
-                  <SignalLogo size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                  <SignalS size={20} className="transition-transform duration-300 group-hover:scale-110" />
                   <span className="tracking-wide">SIGNAL</span>
                 </>
               )}

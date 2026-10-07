@@ -63,3 +63,16 @@ export function SignalLogo({ size = 24, className = '' }: { size?: number; class
     </span>
   );
 }
+
+/** The plain "S" badge for SIGNAL on the logged-out surfaces (menu, top bar, home). */
+export function SignalS({ size = 24, className = '' }: { size?: number; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-grid shrink-0 place-items-center rounded-full bg-ink font-display font-bold leading-none text-white ${className}`}
+      style={{ height: size, width: size, fontSize: size * 0.58 }}
+    >
+      S
+    </span>
+  );
+}
