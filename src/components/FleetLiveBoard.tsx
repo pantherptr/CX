@@ -38,6 +38,10 @@ const SELECT_MS = 11000;
 // keep the car clear of the trip sheet along the bottom
 const PAD = { top: 10, bottom: 130, left: 0, right: 0 };
 const HERO_COLORS = ['#17181c', '#f6f7f9', '#2c3a55'];
+// Pre-rendered 3D car, one sprite sheet per colour (scripts/render-car-sprites.py): the frame is picked from the heading, like ride-hailing maps do.
+const CAR_SHEETS = ['/car/black.webp', '/car/white.webp', '/car/navy.webp'];
+const CAR_FRAMES = 24;
+const CAR_PX = 82;
 
 /* ------------------------------ geometry ------------------------------ */
 interface Track { coords: [number, number][]; cum: number[]; total: number; duration: number; from: string; to: string }
@@ -91,95 +95,8 @@ const remaining = (t: Track, s: number): [number, number][] => {
 const angleLerp = (from: number, to: number, f: number) => from + ((((to - from) % 360) + 540) % 360 - 180) * f;
 
 /* ------------------------------- sprite ------------------------------- */
-/** Mix a #rrggbb colour toward white (amt > 0) or black (amt < 0). */
-const shade = (hex: string, amt: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  const t = amt < 0 ? 0 : 255;
-  const f = Math.abs(amt);
-  const c = (v: number) => Math.round(v + (t - v) * f);
-  return `rgb(${c((n >> 16) & 255)},${c((n >> 8) & 255)},${c(n & 255)})`;
-};
-
-/** A top-down car in the style of a ride-hailing map: soft shadow, glossy
- *  gradient body with hood and roof reflections, panoramic glass roof, door
- *  shut-lines, wing mirrors, LED head- and tail-lights, and wheels with rims.
- *  Drawn in a 38×16 box; `brake` receives the tail-light group so the board can
- *  light it when the car slows. `uid` keeps each car's gradients separate. */
-function CarSprite({ uid, color, brake, selected }: { uid: string; color: string; brake: (el: SVGGElement | null) => void; selected: boolean }) {
-  const light = color === '#f6f7f9';
-  const body = `${uid}-b`;
-  const glassId = `${uid}-g`;
-  const sheen = `${uid}-s`;
-  const edge = light ? 'rgba(70,80,100,0.38)' : 'rgba(255,255,255,0.16)';
-  return (
-    <g>
-      <defs>
-        <linearGradient id={body} x1="0" y1="-8" x2="0" y2="8" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor={shade(color, light ? -0.04 : 0.22)} />
-          <stop offset="0.45" stopColor={color} />
-          <stop offset="1" stopColor={shade(color, -0.2)} />
-        </linearGradient>
-        <linearGradient id={glassId} x1="-8" y1="-5" x2="3" y2="5" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#3b4357" />
-          <stop offset="0.5" stopColor="#1b2030" />
-          <stop offset="1" stopColor="#0f131e" />
-        </linearGradient>
-        <linearGradient id={sheen} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#fff" stopOpacity="0" />
-          <stop offset="0.5" stopColor="#fff" stopOpacity={light ? 0.5 : 0.28} />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
-        </linearGradient>
-        <filter id={`${uid}-blur`} x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="1.7" /></filter>
-      </defs>
-
-      {selected && <ellipse cx="0" cy="0" rx="23" ry="10.5" fill="#00c93f" opacity="0.13" />}
-      <ellipse cx="1.5" cy="3.2" rx="20.5" ry="8.6" fill="rgba(25,32,48,0.34)" filter={`url(#${uid}-blur)`} />
-
-      {/* wheels: tyre + rim */}
-      {[-12.6, 9.6].map((x) => (
-        <g key={x}>
-          <rect x={x} y="-9.1" width="7" height="2.5" rx="1.2" fill="#14171d" />
-          <rect x={x + 1.6} y="-8.6" width="3.8" height="1.5" rx="0.7" fill="#7b8190" />
-          <rect x={x} y="6.6" width="7" height="2.5" rx="1.2" fill="#14171d" />
-          <rect x={x + 1.6} y="7.1" width="3.8" height="1.5" rx="0.7" fill="#7b8190" />
-        </g>
-      ))}
-
-      {/* body shell */}
-      <path d="M-19 -5.2 C-19 -7.3 -16.6 -8 -13 -8 L10.5 -8 C15.4 -8 18.6 -6.6 19.5 -3.9 L19.7 0 L19.5 3.9 C18.6 6.6 15.4 8 10.5 8 L-13 8 C-16.6 8 -19 7.3 -19 5.2 Z" fill={`url(#${body})`} stroke={edge} strokeWidth="0.5" />
-      {/* bonnet and boot highlights */}
-      <ellipse cx="13.6" cy="-2.2" rx="4.6" ry="1.5" fill={`url(#${sheen})`} transform="rotate(-8 13.6 -2.2)" />
-      <ellipse cx="-15.4" cy="-2" rx="2.8" ry="1.1" fill={`url(#${sheen})`} />
-      {/* bonnet crease + door shut-lines */}
-      <path d="M9.4 -6.9 C11.6 -4 11.6 4 9.4 6.9" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="0.45" />
-      <path d="M-13.2 -6.7 C-14.6 -3 -14.6 3 -13.2 6.7" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="0.45" />
-      <path d="M-3 -7.6 L-3 -6.1 M-3 7.6 L-3 6.1 M3.2 -7.6 L3.2 -6.1 M3.2 7.6 L3.2 6.1" stroke="rgba(0,0,0,0.22)" strokeWidth="0.4" />
-
-      {/* glasshouse: windscreen, panoramic roof, rear glass */}
-      <path d="M2.2 -6.3 L8.9 -5.1 C10.2 -2.8 10.2 2.8 8.9 5.1 L2.2 6.3 Z" fill={`url(#${glassId})`} />
-      <path d="M-8.6 -5.8 L-12.9 -4.6 C-14 -2.4 -14 2.4 -12.9 4.6 L-8.6 5.8 Z" fill={`url(#${glassId})`} />
-      <rect x="-9" y="-6.1" width="11.4" height="12.2" rx="2.7" fill={`url(#${glassId})`} stroke={edge} strokeWidth="0.4" />
-      <path d="M-6.8 -5 L-1 -5.4 L-3.6 5.4 L-8 5.1 Z" fill="#fff" opacity="0.1" />
-      <path d="M-0.6 -5.5 L0.8 -5.5 L-1.6 5.5 L-3 5.5 Z" fill="#fff" opacity="0.07" />
-      
-      {/* wing mirrors */}
-      <path d="M5 -8 L6.4 -9.5 L8.2 -9.3 L7.6 -7.9 Z" fill={color} stroke={edge} strokeWidth="0.35" />
-      <path d="M5 8 L6.4 9.5 L8.2 9.3 L7.6 7.9 Z" fill={color} stroke={edge} strokeWidth="0.35" />
-
-      {/* grille + LED headlights with daytime-running strips */}
-      <rect x="19" y="-2.4" width="0.9" height="4.8" rx="0.4" fill="#10131a" />
-      <path d="M16.4 -6.9 C17.9 -6.9 19 -6 19.3 -4.7 L19.5 -3.8 C18.6 -4.2 17.4 -4.7 16 -5.1 Z" fill="#fff6c4" />
-      <path d="M16.4 6.9 C17.9 6.9 19 6 19.3 4.7 L19.5 3.8 C18.6 4.2 17.4 4.7 16 5.1 Z" fill="#fff6c4" />
-      <path d="M16.6 -6 L19.1 -5 M16.6 6 L19.1 5" stroke="#ffffff" strokeWidth="0.45" strokeLinecap="round" />
-
-      {/* LED tail-lights: a light bar that glows when braking */}
-      <g ref={brake} style={{ opacity: 0.35 }}>
-        <rect x="-19.5" y="-5.6" width="1.1" height="11.2" rx="0.55" fill="#ff2d20" />
-        <path d="M-19.4 -6.6 L-16.4 -7 L-16.4 -5.8 L-19.4 -5.6 Z M-19.4 6.6 L-16.4 7 L-16.4 5.8 L-19.4 5.6 Z" fill="#ff5a4a" />
-      </g>
-    </g>
-  );
-}
+/** The car as a 3D render: a sprite sheet with one frame every 15°, shown by moving the background. */
+const carFrame = (bearing: number) => Math.round((((bearing % 360) + 360) % 360) / (360 / CAR_FRAMES)) % CAR_FRAMES;
 
 const SRC_FULL = 'fl-route';
 
@@ -202,7 +119,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
   const mapBox = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const cursorRef = useRef<HTMLDivElement>(null);
-  const brakeRefs = useRef<(SVGGElement | null)[]>([]);
+  const carRefs = useRef<(HTMLDivElement | null)[]>([]);
   const mapRef = useRef<MapLibreMap | null>(null);
   const carMarkers = useRef<MapLibreMarker[]>([]);
   const tagMarker = useRef<MapLibreMarker | null>(null);
@@ -300,12 +217,12 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             const el = document.createElement('div');
             els.push(el);
             const p = pointAt(tracks[i], 0);
-            return new maplibregl.Marker({ element: el, rotationAlignment: 'map', pitchAlignment: 'viewport' }).setLngLat([p.lng, p.lat]).addTo(map);
+            return new maplibregl.Marker({ element: el, rotationAlignment: 'viewport', pitchAlignment: 'viewport' }).setLngLat([p.lng, p.lat]).addTo(map);
           });
 
           // the ETA bubble that rides above the selected car
           const tag = document.createElement('div');
-          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -26] }).setLngLat([start.lng, start.lat]).addTo(map);
+          tagMarker.current = new maplibregl.Marker({ element: tag, anchor: 'bottom', offset: [0, -34] }).setLngLat([start.lng, start.lat]).addTo(map);
 
           setCarEls(els);
           setTagEl(tag);
@@ -377,9 +294,11 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
         c.lng = p.lng; c.lat = p.lat;
         c.bearing = angleLerp(c.bearing, p.bearing, still ? 1 : Math.min(1, dt * 6));
         const m = carMarkers.current[i];
-        if (m) { m.setLngLat([c.lng, c.lat]); m.setRotation(c.bearing - 90); }
-        const b = brakeRefs.current[i];
-        if (b) b.style.opacity = c.brake ? '1' : '0.35';
+        if (m) m.setLngLat([c.lng, c.lat]);
+        const img = carRefs.current[i];
+        if (img) {
+          img.style.backgroundPosition = `${-carFrame(c.bearing) * CAR_PX}px 0`;
+        }
       });
 
       const c = sim[si];
@@ -545,11 +464,22 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
       {/* the cars, drawn into their map markers */}
       {carEls.map((el, i) =>
         createPortal(
-          <svg viewBox="-24 -14 48 28" width="56" height="33" style={{ display: 'block', overflow: 'visible', opacity: i === sel ? 1 : 0.88 }}>
-            <g transform={i === sel ? 'scale(1.05)' : 'scale(0.94)'}>
-              <CarSprite uid={`flc${i}`} color={HERO_COLORS[i % HERO_COLORS.length]} selected={false} brake={(g) => { brakeRefs.current[i] = g; }} />
-            </g>
-          </svg>,
+          <div
+            ref={(n) => { carRefs.current[i] = n; }}
+            style={{
+              position: 'relative',
+              width: CAR_PX,
+              height: CAR_PX,
+              backgroundImage: `url(${CAR_SHEETS[i % CAR_SHEETS.length]})`,
+              backgroundSize: `${CAR_PX * CAR_FRAMES}px ${CAR_PX}px`,
+              backgroundRepeat: 'no-repeat',
+              transform: i === sel ? 'scale(1.08)' : 'scale(0.96)',
+              opacity: i === sel ? 1 : 0.9,
+              transition: 'transform 300ms',
+              filter: 'drop-shadow(0 2px 3px rgba(22,22,26,0.18))',
+            }}
+          >
+          </div>,
           el,
         ),
       )}
