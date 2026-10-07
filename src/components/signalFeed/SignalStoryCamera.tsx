@@ -366,8 +366,8 @@ export function SignalStoryCamera({
   return (
     <div className="h-full w-full bg-noir">
       <StoryCanvas fillOnPhone>
-        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-safe" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
-          <Tap onClick={onClose} aria-label="Close" scale={0.9} className="grid h-9 w-9 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/50">
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/50 via-black/15 to-transparent px-4 pb-8 pt-safe" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+          <Tap onClick={onClose} aria-label="Close" scale={0.9} className="grid h-10 w-10 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-black/50">
             <Icon name="x" size={20} />
           </Tap>
           <div className="flex items-center gap-2">
@@ -377,7 +377,7 @@ export function SignalStoryCamera({
                 aria-label={torchOn ? 'Turn off flash' : 'Turn on flash'}
                 aria-pressed={torchOn}
                 scale={0.9}
-                className={`grid h-9 w-9 place-items-center rounded-full backdrop-blur-sm transition-colors ${torchOn ? 'bg-accent-bright text-noir' : 'bg-black/30 text-white hover:bg-black/50'}`}
+                className={`grid h-10 w-10 place-items-center rounded-full ring-1 backdrop-blur-md transition-colors ${torchOn ? 'bg-accent-bright text-noir ring-accent-bright' : 'bg-black/35 text-white ring-white/15 hover:bg-black/50'}`}
               >
                 <Icon name="bolt" size={17} fill={torchOn} />
               </Tap>
@@ -444,7 +444,7 @@ export function SignalStoryCamera({
         )}
 
         {recording && (
-          <div className="absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 backdrop-blur-sm">
+          <div className="absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/50 px-3.5 py-1.5 ring-1 ring-white/10 backdrop-blur-md" style={{ top: 'calc(max(env(safe-area-inset-top), 12px) + 4px)' }}>
             <motion.span
               className="h-2 w-2 rounded-full bg-red-500"
               animate={reduceMotion ? undefined : { opacity: [1, 0.35, 1] }}
@@ -455,18 +455,18 @@ export function SignalStoryCamera({
         )}
 
         {errorMessage && status === 'ready' && (
-          <div className="absolute inset-x-4 top-16 z-20 rounded-xl bg-black/60 px-3 py-2 text-center text-caption font-medium text-white backdrop-blur-sm">
+          <div className="absolute inset-x-4 z-20 rounded-xl bg-black/60 px-3 py-2 text-center text-caption font-medium text-white backdrop-blur-md" style={{ top: 'calc(max(env(safe-area-inset-top), 12px) + 56px)' }}>
             {errorMessage}
           </div>
         )}
 
-        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-4 px-8 pb-safe pt-8">
-          <Tap onClick={onTextStory} aria-label="Write a text Story" scale={0.95} className="rounded-full bg-black/30 px-3.5 py-1.5 text-caption font-semibold text-white backdrop-blur-sm">
+        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-4 bg-gradient-to-t from-black/60 via-black/25 to-transparent px-8 pt-16" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}>
+          <Tap onClick={onTextStory} aria-label="Write a text Story" scale={0.95} className="rounded-full bg-black/35 px-4 py-2 text-caption font-semibold text-white ring-1 ring-white/15 backdrop-blur-md">
             Aa Text
           </Tap>
           <div className="flex w-full items-center justify-between">
-            <Tap onClick={openGallery} scale={0.92} aria-label="Gallery" className="grid h-11 w-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm">
-              <Icon name="image" size={19} />
+            <Tap onClick={openGallery} scale={0.92} aria-label="Gallery" className="grid h-12 w-12 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/15 backdrop-blur-md">
+              <Icon name="image" size={20} />
             </Tap>
 
             <motion.button
@@ -480,9 +480,20 @@ export function SignalStoryCamera({
               whileTap={reduceMotion ? undefined : { scale: 0.9 }}
               animate={recording ? { scale: [1, 1.06, 1] } : { scale: 1 }}
               transition={recording && !reduceMotion ? { duration: 1.1, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.15 }}
-              className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white disabled:opacity-40"
+              className="relative grid h-[84px] w-[84px] place-items-center rounded-full disabled:opacity-40"
             >
-              <span className={`transition-all ${recording ? 'h-6 w-6 rounded-md bg-red-500' : 'h-[58px] w-[58px] rounded-full bg-white'}`} />
+              <svg className="pointer-events-none absolute inset-0 -rotate-90" viewBox="0 0 84 84" aria-hidden="true">
+                <circle cx="42" cy="42" r="39" fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth="3.5" />
+                {recording && (
+                  <circle
+                    cx="42" cy="42" r="39" fill="none" stroke="#ef4444" strokeWidth="4.5" strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 39}
+                    strokeDashoffset={2 * Math.PI * 39 * (1 - Math.min(1, (recordSeconds + 1) / Math.max(1, maxVideoDurationSec)))}
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                  />
+                )}
+              </svg>
+              <span className={`transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg bg-red-500' : 'h-[66px] w-[66px] rounded-full bg-white shadow-[0_2px_14px_rgba(0,0,0,0.35)]'}`} />
             </motion.button>
 
             <Tap
@@ -490,11 +501,12 @@ export function SignalStoryCamera({
               disabled={!canSwitchCamera || status !== 'ready'}
               scale={0.92}
               aria-label="Switch camera"
-              className="grid h-11 w-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur-sm disabled:opacity-0"
+              className="grid h-12 w-12 place-items-center rounded-full bg-black/35 text-white ring-1 ring-white/15 backdrop-blur-md disabled:opacity-0"
             >
-              <Icon name="cameraFlip" size={19} />
+              <Icon name="cameraFlip" size={20} />
             </Tap>
           </div>
+          <p className="text-[11px] font-medium tracking-wide text-white/70">{recording ? 'Release to stop' : 'Tap for photo · hold for video'}</p>
         </div>
       </StoryCanvas>
 
