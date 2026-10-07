@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Tap, AnimatePresence } from '../components/motionKit';
 import { SignalLogo } from '../components/SignalLogo';
+import { FlyingMark } from '../components/FlyingMark';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
@@ -196,21 +197,28 @@ export default function Signal() {
 
   if (!session) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-noir px-6 text-center">
-        <SignalLogo size={88} />
-        <div>
-          <p className="text-detail font-bold uppercase tracking-[0.2em] text-accent-bright">CX SIGNAL</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold text-on-noir sm:text-4xl">The official voice of CX Rent.</h1>
-          <p className="mt-2 max-w-sm text-copy leading-relaxed text-on-noir-muted">
+      <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-noir px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-center">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(60% 42% at 50% 36%, rgba(0,212,71,0.20), transparent 70%), radial-gradient(50% 30% at 50% 100%, rgba(0,212,71,0.08), transparent 70%)' }}
+        />
+        <div className="relative flex w-full max-w-sm flex-col items-center">
+          <div className="animate-scale-in">
+            <FlyingMark src="/brand/signal-s.webp" width={360} height={196} className="h-28 sm:h-32" shadow />
+          </div>
+          <p className="mt-9 text-detail font-bold uppercase tracking-[0.28em] text-accent-bright">CX SIGNAL</p>
+          <h1 className="mt-3 font-display text-[2rem] font-semibold leading-[1.08] text-on-noir text-balance sm:text-4xl">The official voice of CX Rent.</h1>
+          <p className="mt-3 max-w-xs text-copy leading-relaxed text-on-noir-muted">
             News, announcements and new cars, straight from the team.
           </p>
+          <Link to="/login" state={{ from: { pathname: '/signal' } }} className="btn btn-accent-bright btn-lg mt-9 w-full">
+            Sign In <Icon name="arrowRight" size={17} />
+          </Link>
+          <Link to="/" className="mt-2 inline-flex min-h-11 items-center text-detail font-medium text-on-noir-muted hover:text-on-noir">
+            ← Back to CX Rent
+          </Link>
         </div>
-        <Link to="/login" state={{ from: { pathname: '/signal' } }} className="btn btn-accent-bright btn-lg">
-          Sign In <Icon name="arrowRight" size={17} />
-        </Link>
-        <Link to="/" className="text-detail font-medium text-on-noir-muted hover:text-on-noir">
-          ← Back to CX Rent
-        </Link>
       </div>
     );
   }
