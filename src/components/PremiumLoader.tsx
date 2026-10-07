@@ -31,8 +31,8 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
  *  the pre-paint background in `index.html`). The CX letters are unveiled
  *  left-to-right out of a blur, then the green key slides out of the X and
  *  a light sweeps through the whole mark. A soft green bloom breathes
- *  behind it, and underneath a little road scene: a white car drives in
- *  and holds its place while the road's dashes stream past. No card, no
+ *  behind it, and underneath a little road scene: a white car shoots
+ *  across the road once, the dashes streaking past, and the site opens. No card, no
  *  numbers, no text. `hiding` fades and eases it out into the real app.
  *
  *  The mark is two aligned layers cut from `cx-logo-main.png` (same canvas,
@@ -61,7 +61,7 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
           className="signal-sweep-mask pointer-events-none absolute inset-0"
           style={{ WebkitMaskImage: 'url(/cx-logo-main.png)', maskImage: 'url(/cx-logo-main.png)' }}
         >
-          <span className="signal-sweep-bar absolute" style={{ animationDelay: '1.5s' }} />
+          <span className="signal-sweep-bar absolute" style={{ animationDelay: '1.1s' }} />
         </span>
       </div>
       {/* The road: a strip of asphalt whose dashes stream past while the car
@@ -74,6 +74,7 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
           <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.07] to-transparent" />
         </div>
         <div className="cx-car absolute left-1/2 top-1/2 w-[112px]">
+          <span className="cx-trail pointer-events-none absolute right-[86%] top-1/2 h-[7px] w-28 -translate-y-1/2 rounded-full" />
           <span className="cx-beam pointer-events-none absolute left-[88%] top-1/2 h-10 w-24 -translate-y-1/2" />
           <img src="/brand/loader-car.webp" alt="" draggable={false} className="cx-car-body relative block w-full select-none" />
         </div>
