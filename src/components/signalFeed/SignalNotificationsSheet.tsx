@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
+import { SignalBarLogo } from '../SignalBarLogo';
 import { NotificationsList } from '../NotificationsList';
 import { useSheetDrag } from '../motion';
 import { useHideForNavigation } from '../motionKit';
@@ -27,6 +28,8 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
   const { hidden, hideForNavigation } = useHideForNavigation(pathname);
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
 
+  const unreadCount = notifications?.filter((n) => !n.readAt).length ?? 0;
+
   if (hidden) return null;
 
   const openNotification = (n: SignalNotification) => {
@@ -47,25 +50,31 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
         className="relative flex h-[97vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface animate-sheet-in sm:h-[88vh] sm:max-w-lg sm:rounded-3xl"
         style={dragStyle}
       >
-        <div {...dragHandlers} className="relative shrink-0 overflow-hidden bg-gradient-to-b from-accent-050 to-transparent">
+        <div {...dragHandlers} className="relative shrink-0 overflow-hidden bg-surface">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-accent-bright/15 blur-3xl" />
           <div className="flex flex-col items-center pt-2.5 sm:hidden">
             <span className="h-1 w-9 rounded-full bg-ink/15" aria-hidden="true" />
           </div>
-          <div className="flex items-center gap-3.5 px-6 pb-6 pt-5">
-            <span className="relative grid h-14 w-14 shrink-0 place-items-center rounded-full bg-accent-bright text-white shadow-[0_8px_24px_-6px_rgba(0,212,71,0.55)]">
-              <Icon name="bell" size={24} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="font-display text-feature font-bold text-ink">Notifications</h2>
-              <p className="text-detail text-muted">Everything happening around your SIGNAL activity</p>
-            </div>
-            <button onClick={requestClose} aria-label="Close" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
-              <Icon name="x" size={21} />
+          <div className="relative flex items-center justify-between px-5 pt-4 sm:px-6">
+            <SignalBarLogo size={16} />
+            <button onClick={requestClose} aria-label="Close" className="pressable grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft transition-colors hover:text-ink">
+              <Icon name="x" size={18} />
             </button>
+          </div>
+          <div className="relative px-5 pb-5 pt-5 sm:px-6">
+            <div className="flex items-center gap-2.5">
+              <h2 className="font-display text-[1.75rem] font-bold leading-none tracking-tight text-ink">Notifications</h2>
+              {unreadCount > 0 && (
+                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-bright px-1.5 text-detail font-bold leading-none text-white shadow-[0_6px_16px_-4px_rgba(0,212,71,0.6)]">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-detail text-muted">Everything happening around your SIGNAL activity</p>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto border-t border-line p-4 sm:p-5">
+        <div className="flex-1 overflow-y-auto bg-panel/60 p-4 sm:p-5">
           <NotificationsList
             notifications={notifications}
             loadMore={loadMore}
