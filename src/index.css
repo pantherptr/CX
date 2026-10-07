@@ -1869,3 +1869,18 @@
 
 /* Forms: a field the user has touched and got wrong */
 .input[aria-invalid='true'] { border-color: var(--color-danger); background-color: color-mix(in srgb, var(--color-danger) 4%, var(--color-surface)); }
+
+
+/* FlyingMark — three unrelated periods so the hover never settles into a loop */
+@keyframes fly-bob { 0%, 100% { transform: translateY(2px); } 38% { transform: translateY(-8px); } 64% { transform: translateY(-4px); } }
+@keyframes fly-sway { 0%, 100% { transform: translateX(-3px) rotate(-1.8deg); } 33% { transform: translateX(2px) rotate(0.9deg); } 71% { transform: translateX(4px) rotate(2deg); } }
+@keyframes fly-beat { 0%, 100% { transform: scale(1, 1); } 28% { transform: scale(1.035, 0.965); } 52% { transform: scale(0.99, 1.012); } 76% { transform: scale(1.02, 0.985); } }
+@keyframes fly-shadow { 0%, 100% { transform: translateX(-50%) scaleX(1.05); opacity: 0.7; } 38% { transform: translateX(-50%) scaleX(0.72); opacity: 0.38; } 64% { transform: translateX(-50%) scaleX(0.86); opacity: 0.5; } }
+.fly-bob { animation: fly-bob 3.7s ease-in-out infinite; }
+.fly-sway { animation: fly-sway 5.3s ease-in-out infinite -1.4s; }
+.fly-beat { animation: fly-beat 2.3s ease-in-out infinite -0.6s; transform-origin: 50% 60%; }
+.fly-shadow { animation: fly-shadow 3.7s ease-in-out infinite; }
+.fly-bob.fly-fast { animation-duration: 2.6s; }
+.fly-sway.fly-fast { animation-duration: 3.4s; }
+.fly-beat.fly-fast { animation-duration: 1.5s; }
+@media (prefers-reduced-motion: reduce) { .fly-bob, .fly-sway, .fly-beat, .fly-shadow { animation: none; } }

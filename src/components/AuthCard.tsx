@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { motion, useReducedMotion, SPRING_SMOOTH } from './motionKit';
+import { FlyingMark } from './FlyingMark';
 import { useLocale } from '../lib/i18n';
 
 /** The shared sign-in / sign-up card: a white card on a soft light field
@@ -258,7 +259,7 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 [@media(hover:hover)]:opacity-100" style={{ background: 'radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(0,212,71,0.10), transparent 70%)' }} />
 
               <AuthItem stop className="mx-auto w-fit">
-                <img src="/brand/cx-bat-man.webp" alt="CX" width={200} height={95} className="h-[96px] w-auto drop-shadow-[0_14px_16px_rgba(22,22,26,0.22)]" />
+                <FlyingMark src="/brand/cx-bat-man.webp" alt="CX" width={200} height={95} className="h-[96px] pb-2" shadow />
               </AuthItem>
 
               <h1 aria-label={heading} data-car-stop className="mt-5 text-center font-display text-[1.9rem] font-bold leading-tight tracking-tight text-ink">

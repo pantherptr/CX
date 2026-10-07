@@ -1,3 +1,4 @@
+import { FlyingMark } from './FlyingMark';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -149,7 +150,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <nav className="flex-1 overflow-y-auto p-3">
-              <img src="/brand/cx-bat.webp" alt="" aria-hidden="true" width={220} height={79} className="mx-auto mb-4 mt-1 h-12 w-auto select-none" draggable={false} />
+              <div className="mb-4 mt-1 flex justify-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-12" flutter={2} /></div>
               {isHost && (
                 <div role="tablist" aria-label="Menu for" className="mb-3 flex gap-1 rounded-xl border border-line bg-panel/60 p-1">
                   {(
