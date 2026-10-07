@@ -27,8 +27,8 @@ export interface LiveStat { label: string; value: string; icon: IconName }
 
 const SELECT_MS = 9000;
 // the camera: how much of the city is in view
-const VIEW_W = 640;
-const VIEW_H = 440;
+const VIEW_W = 520;
+const VIEW_H0 = 357;
 // start / end intersections of each listed car's trip
 const TRIPS: [[number, number], [number, number]][] = [
   [[1, 7], [11, 1]],
@@ -42,11 +42,11 @@ const AMBIENT: [[number, number], [number, number]][] = [
 ];
 type VKind = 'car' | 'small' | 'van' | 'bus' | 'moto';
 const KINDS: Record<VKind, { len: number; wid: number; vmax: number; acc: number }> = {
-  car: { len: 24, wid: 12, vmax: 82, acc: 70 },
-  small: { len: 20, wid: 11, vmax: 76, acc: 76 },
-  van: { len: 30, wid: 13, vmax: 66, acc: 52 },
-  bus: { len: 46, wid: 14, vmax: 56, acc: 38 },
-  moto: { len: 14, wid: 6, vmax: 96, acc: 110 },
+  car: { len: 14, wid: 6.6, vmax: 82, acc: 70 },
+  small: { len: 12, wid: 6, vmax: 76, acc: 76 },
+  van: { len: 17, wid: 7.2, vmax: 66, acc: 52 },
+  bus: { len: 26, wid: 8, vmax: 56, acc: 38 },
+  moto: { len: 8, wid: 3.4, vmax: 96, acc: 110 },
 };
 const VEHICLE_MIX: VKind[] = ['car', 'car', 'small', 'car', 'van', 'small', 'car', 'bus', 'car', 'moto', 'small', 'car', 'van', 'car', 'small', 'car', 'moto', 'car', 'bus', 'car', 'small', 'car', 'van', 'car'];
 const VEHICLE_COLORS = ['#8d948b', '#b9beb6', '#6f766d', '#d4d8cf', '#5b6b8c', '#a4423c', '#c9b27a', '#4d5a50', '#e2e4de', '#3f4742'];
@@ -58,10 +58,11 @@ const lightState = (now: number, horizontal: boolean): 'green' | 'amber' | 'red'
   if (horizontal) return hGreen ? 'green' : hAmber ? 'amber' : 'red';
   return vGreen ? 'green' : c >= 14000 ? 'amber' : 'red';
 };
-const LANE = 4.4;
+const LANE = 3.9;
 const HERO_COLORS = ['#16161a', '#eef0ec', '#0b7a38'];
 const KMH = 0.62; // world px/s → displayed km/h
-const HERO_SPEC = { len: 34, wid: 15, vmax: 98, acc: 80 };
+const HERO_SPEC = { len: 15, wid: 7.2, vmax: 98, acc: 80 };
+const HERO_SCALE = 0.43;
 
 
 
@@ -94,6 +95,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
   const selRef = useRef(0);
   selRef.current = sel;
   const cam = useRef<{ x: number; y: number } | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const viewH = useRef(VIEW_H0);
 
   const current = items[sel] ?? items[0];
 
@@ -125,6 +128,17 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     return () => window.clearInterval(id);
   }, [visible, reduce, paused, items.length]);
 
+  // The map shows a window of the city sized to whatever the box is.
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const measure = () => { if (el.clientWidth > 0) viewH.current = VIEW_W * (el.clientHeight / el.clientWidth); };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // One traffic simulation for every vehicle: the listed cars obey exactly the
   // same rules as the ambient traffic — their lane, the signals, the vehicle
   // in front, slowing for corners. The camera follows the selected car.
@@ -137,12 +151,12 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     const lens = paths.map((pa) => pa?.getTotalLength() ?? 0);
     const svg = svgRef.current;
 
-    type Sim = { path: number; dir: 1 | -1; s: number; v: number; braking: boolean; spec: { len: number; wid: number; vmax: number; acc: number }; jitter: number; hold: number; x: number; y: number; hx: number; hy: number };
+    type Sim = { path: number; dir: 1 | -1; s: number; v: number; braking: boolean; spec: { len: number; wid: number; vmax: number; acc: number }; jitter: number; hold: number; x: number; y: number; hx: number; hy: number; o: number; passing: number; blocked: number; creep: number };
     const sim: Sim[] = [
-      ...items.map((_, i): Sim => ({ path: i, dir: 1, s: 0, v: 0, braking: false, spec: HERO_SPEC, jitter: 1, hold: 600 + i * 1400, x: 0, y: 0, hx: 1, hy: 0 })),
+      ...items.map((_, i): Sim => ({ path: i, dir: 1, s: 0, v: 0, braking: false, spec: HERO_SPEC, jitter: 1, hold: 600 + i * 1400, x: 0, y: 0, hx: 1, hy: 0, o: 1, passing: -1, blocked: 0, creep: 0 })),
       ...vehicles.map((vh, i): Sim => ({
         path: nHero + vh.route, dir: vh.dir as 1 | -1, s: (((i * 197) % 1000) / 1000) * (lens[nHero + vh.route] || 1000) * 0.9, v: 30 + (i % 5) * 8,
-        braking: false, spec: KINDS[vh.kind], jitter: vh.jitter, hold: 0, x: 0, y: 0, hx: 1, hy: 0,
+        braking: false, spec: KINDS[vh.kind], jitter: vh.jitter, hold: 0, x: 0, y: 0, hx: 1, hy: 0, o: 1, passing: -1, blocked: 0, creep: 0,
       })),
     ];
 
@@ -165,9 +179,21 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
 
     const clampView = (cx: number, cy: number) => ({
       x: Math.max(0, Math.min(WORLD.w - VIEW_W, cx - VIEW_W / 2)),
-      y: Math.max(0, Math.min(WORLD.h - VIEW_H, cy - VIEW_H / 2)),
+      y: Math.max(0, Math.min(WORLD.h - viewH.current, cy - viewH.current / 2)),
     });
 
+    // give every vehicle a real position before the first step
+    sim.forEach((vh) => {
+      const path = paths[vh.path];
+      const len = lens[vh.path];
+      if (!path || !len) return;
+      const sEff = vh.dir > 0 ? vh.s : len - vh.s;
+      const p = path.getPointAtLength(sEff);
+      const q = path.getPointAtLength(Math.min(len, Math.max(0, sEff + vh.dir * 1.5)));
+      const ang = Math.atan2(q.y - p.y, q.x - p.x);
+      vh.hx = Math.cos(ang); vh.hy = Math.sin(ang);
+      vh.x = p.x - Math.sin(ang) * LANE; vh.y = p.y + Math.cos(ang) * LANE;
+    });
     let lastNow = 0;
     const frame = (now: number, still: boolean) => {
       const dt = lastNow ? Math.min(0.05, (now - lastNow) / 1000) : 0.016;
@@ -224,19 +250,71 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
           }
           // the vehicle in front in the same lane
           let lead = Infinity;
+          let leadIdx = -1;
           for (const j of groups.get(`${vh.path}:${vh.dir}`) ?? []) {
-            if (j === i) continue;
+            if (j === i || j === vh.passing || sim[j].o < 0.2) continue;
             const g = sim[j].s - vh.s - sim[j].spec.len * 0.5 - vh.spec.len * 0.5;
-            if (g > -1 && g < lead) lead = g;
+            if (g > -1 && g < lead) { lead = g; leadIdx = j; }
           }
-          if (lead < 46) vdes = Math.min(vdes, Math.max(0, (lead - 10) * 2.2));
-          // anything directly ahead, even on another street (junctions, merges)
+
+          // overtaking: a clear opposite lane, no bend or signal coming, a slower leader
+          const oncoming = sim.some((o2, j) => {
+            if (j === i) return false;
+            const dx = o2.x - vh.x, dy = o2.y - vh.y;
+            const ahead = dx * vh.hx + dy * vh.hy;
+            if (ahead < -6 || ahead > 230) return false;
+            const lateral = Math.abs(-dx * vh.hy + dy * vh.hx);
+            // coming toward us in (or near) the lane we would use
+            return lateral < 14 && o2.hx * vh.hx + o2.hy * vh.hy < -0.5;
+          });
+          const signalSoon = lightsOn[vh.path].some((lt) => { const d = vh.dir > 0 ? lt.s - vh.s : vh.s - (len - lt.s); return d > -4 && d < 190; });
+          const nearEnd = (vh.dir > 0 ? len - sEff : sEff) < 160;
+          if (vh.passing >= 0) {
+            const L = sim[vh.passing];
+            const ahead = vh.s - L.s;
+            if (ahead > (L.spec.len + vh.spec.len) / 2 + 9) vh.passing = -1;
+            else if (oncoming && ahead < 0) { vh.passing = -1; vdes = Math.min(vdes, L.v); }
+          } else if (vh.o > 0.92 && leadIdx >= 0 && lead < 24 && sim[leadIdx].v > 3 && sim[leadIdx].v < vdes * 0.72 && !oncoming && !signalSoon && !nearEnd && turn < 0.1 && vh.v > 14) {
+            vh.passing = leadIdx;
+          }
+          vh.o += ((vh.passing >= 0 ? -1 : 1) - vh.o) * Math.min(1, dt * 2.6);
+          if (lead < 30 && vh.passing < 0) vdes = Math.min(vdes, Math.max(0, (lead - 5) * 2.4));
+
+          // never drive through anything: keep a bumper gap to whatever is in front, on any street
+          let pairLimit = Infinity; // vehicles crossing or oncoming
+          let sameLimit = Infinity; // vehicles ahead going the same way — never ignored
+          let stuck = false;
           for (let j = 0; j < sim.length; j++) {
-            if (j === i || sim[j].path === vh.path) continue;
+            if (j === i || j === vh.passing) continue;
             const dx = sim[j].x - vh.x, dy = sim[j].y - vh.y;
-            const d = Math.hypot(dx, dy);
-            if (d > 42 || d < 1) continue;
-            if ((dx * vh.hx + dy * vh.hy) / d > 0.86) vdes = Math.min(vdes, Math.max(0, (d - 16) * 2));
+            if (dx * dx + dy * dy > 1600) continue;
+            const fwd = dx * vh.hx + dy * vh.hy;
+            const lat = Math.abs(-dx * vh.hy + dy * vh.hx);
+            const reach = (vh.spec.len + sim[j].spec.len) / 2 + 22;
+            // a crossing street with no signal: give way to whoever is coming from the right
+            if (sim[j].path !== vh.path && -dx * vh.hy + dy * vh.hx > 1.5 && fwd > -4 && fwd < 46) {
+              for (const tt of [0.45, 0.95]) {
+                const ax = vh.x + vh.hx * vh.v * tt, ay = vh.y + vh.hy * vh.v * tt;
+                const bx = sim[j].x + sim[j].hx * sim[j].v * tt, by = sim[j].y + sim[j].hy * sim[j].v * tt;
+                if (Math.hypot(ax - bx, ay - by) < (vh.spec.len + sim[j].spec.len) * 0.42 + 2) { pairLimit = 0; break; }
+              }
+            }
+            if (fwd > 0 && fwd < reach && lat < (vh.spec.wid + sim[j].spec.wid) / 2 + 1.6) {
+              const gap = fwd - (vh.spec.len + sim[j].spec.len) / 2;
+              const lim = Math.max(0, (gap - 4) * 2.6);
+              if (sim[j].hx * vh.hx + sim[j].hy * vh.hy > 0.5) sameLimit = Math.min(sameLimit, lim);
+              else pairLimit = Math.min(pairLimit, lim);
+              if (gap < 8 && !(sim[j].hx * vh.hx + sim[j].hy * vh.hy > 0.5)) stuck = true;
+            }
+          }
+          // two cars waiting on each other inside a junction: after a moment one eases through
+          if (vh.creep > 0) {
+            vh.creep -= dt * 1000;
+            vdes = Math.min(Math.max(Math.min(vdes, 20), 14), sameLimit);
+          } else {
+            vdes = Math.min(vdes, pairLimit, sameLimit);
+            vh.blocked = stuck && vh.v < 3 ? vh.blocked + dt * 1000 : 0;
+            if (vh.blocked > (i < nHero ? 1400 : 2200 + (i % 4) * 500)) { vh.creep = 2600; vh.blocked = 0; }
           }
           const dv = vdes - vh.v;
           vh.braking = dv < -6 || vdes < 4;
@@ -259,7 +337,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
         const q = path.getPointAtLength(Math.min(len, Math.max(0, sEff + vh.dir * 1.5)));
         const ang = Math.atan2(q.y - p.y, q.x - p.x);
         vh.hx = Math.cos(ang); vh.hy = Math.sin(ang);
-        vh.x = p.x - Math.sin(ang) * LANE; vh.y = p.y + Math.cos(ang) * LANE;
+        vh.x = p.x - Math.sin(ang) * LANE * vh.o; vh.y = p.y + Math.cos(ang) * LANE * vh.o;
         el.setAttribute('transform', `translate(${vh.x.toFixed(1)} ${vh.y.toFixed(1)}) rotate(${((ang * 180) / Math.PI).toFixed(1)})`);
         const edge = Math.min(vh.s, len - vh.s);
         if (!isHero) el.style.opacity = String(Math.max(0, Math.min(1, edge / 40)));
@@ -284,11 +362,11 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
         const target = clampView(sp.x, sp.y);
         if (!cam.current || still) cam.current = target;
         else cam.current = { x: cam.current.x + (target.x - cam.current.x) * Math.min(1, dt * 2.6), y: cam.current.y + (target.y - cam.current.y) * Math.min(1, dt * 2.6) };
-        svg.setAttribute('viewBox', `${cam.current.x.toFixed(1)} ${cam.current.y.toFixed(1)} ${VIEW_W} ${VIEW_H}`);
+        svg.setAttribute('viewBox', `${cam.current.x.toFixed(1)} ${cam.current.y.toFixed(1)} ${VIEW_W} ${viewH.current.toFixed(1)}`);
         const tag = tagRef.current;
         if (tag) {
           tag.style.left = `${((sp.x - cam.current.x) / VIEW_W) * 100}%`;
-          tag.style.top = `${((sp.y - cam.current.y) / VIEW_H) * 100}%`;
+          tag.style.top = `${((sp.y - cam.current.y) / viewH.current) * 100}%`;
         }
       }
     };
@@ -298,7 +376,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
     const loop = (now: number) => { frame(now, false); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [visible, reduce, items, sel, routesD, ambientD, vehicles, city]);
+  }, [visible, reduce, items, routesD, ambientD, vehicles, city]);
 
   if (!current) return null;
 
@@ -368,8 +446,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
         </div>
 
         {/* Map — a navigation-style view that follows the selected car */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#eceee7] sm:aspect-[64/44]">
-          <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="absolute inset-0 h-full w-full" aria-hidden="true">
+        <div ref={mapRef} className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line bg-[#eceee7] sm:aspect-[64/44]">
+          <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${VIEW_H0}`} className="absolute inset-0 h-full w-full" aria-hidden="true">
             <defs>
               <linearGradient id="fl-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff6c8" stopOpacity="0.55" /><stop offset="1" stopColor="#fff6c8" stopOpacity="0" /></linearGradient>
               <filter id="fl-car-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#16161a" floodOpacity="0.35" /></filter>
@@ -384,10 +462,10 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             <path d={city.buildings.b} fill="#dde0d8" stroke="#cfd3c9" strokeWidth="0.8" />
             <path d={city.buildings.c} fill="#e8eae3" stroke="#d3d6cc" strokeWidth="0.8" />
             {/* roads: casing first, then the surface */}
-            <path d={city.locals} fill="none" stroke="#d6d9cf" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.arterials} fill="none" stroke="#e1d8c0" strokeWidth="22" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.locals} fill="none" stroke="#ffffff" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={city.arterials} fill="none" stroke="#fffdf6" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.locals} fill="none" stroke="#d6d9cf" strokeWidth="17" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#e1d8c0" strokeWidth="28" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.locals} fill="none" stroke="#ffffff" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={city.arterials} fill="none" stroke="#fffdf6" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" />
             <path d={city.arterials} fill="none" stroke="#efe9d8" strokeWidth="1" strokeDasharray="9 11" strokeLinecap="round" />
             {city.roundabouts.map((r, i) => (
               <g key={i} transform={`translate(${r.x} ${r.y})`}>
@@ -396,7 +474,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
               </g>
             ))}
             {city.labels.map((l, i) => (
-              <text key={l.id} fontSize="10.5" fontWeight="600" fill="#9aa194" style={{ letterSpacing: '0.12em' }} dy="-11">
+              <text key={l.id} fontSize="10.5" fontWeight="600" fill="#9aa194" style={{ letterSpacing: '0.12em' }} dy="-15">
                 <textPath href={`#${l.id}`} startOffset={`${12 + (i % 3) * 22}%`}>{l.name.toUpperCase()}</textPath>
               </text>
             ))}
@@ -416,7 +494,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
             {routesD[sel] && (
               <>
                 <path d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="5" strokeDasharray="1 9" strokeLinecap="round" opacity="0.5" />
-                <path ref={trailRef} d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" opacity="0.92" />
+                <path ref={trailRef} d={routesD[sel]} fill="none" stroke="#00d447" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.92" />
               </>
             )}
 
@@ -425,8 +503,8 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
               const n = city.node(ni, nj);
               return (
                 <g key={`tl${li}`} ref={(el) => { lightRefs.current[li] = el; }} transform={`translate(${n.x} ${n.y})`}>
-                  <circle cx="-17" cy="-17" r="3.4" fill="#22c55e" stroke="#16161a" strokeWidth="1" />
-                  <circle cx="17" cy="17" r="3.4" fill="#ef4444" stroke="#16161a" strokeWidth="1" />
+                  <circle cx="-13" cy="-13" r="2.6" fill="#22c55e" stroke="#16161a" strokeWidth="1" />
+                  <circle cx="13" cy="13" r="2.6" fill="#ef4444" stroke="#16161a" strokeWidth="1" />
                 </g>
               );
             })}
@@ -437,14 +515,14 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
               const hl = k.wid / 2 - 2.2;
               return (
                 <g key={`ac${i}`} ref={(el) => { ambientCars.current[i] = el; }}>
-                  <rect x={-k.len / 2} y={-k.wid / 2} width={k.len} height={k.wid} rx={vh.kind === 'bus' ? 4 : vh.kind === 'moto' ? 3 : 5} fill={vh.color} stroke="rgba(22,22,26,0.28)" strokeWidth="0.8" />
+                  <rect x={-k.len / 2} y={-k.wid / 2} width={k.len} height={k.wid} rx={vh.kind === 'bus' ? 4 : vh.kind === 'moto' ? 3 : 5} fill={vh.color} stroke="rgba(22,22,26,0.28)" strokeWidth="0.5" />
                   {vh.kind !== 'moto' && <rect x={-k.len * 0.04} y={-k.wid / 2 + 1.6} width={k.len * 0.3} height={k.wid - 3.2} rx="2" fill="#ffffff" opacity="0.55" />}
                   {vh.kind === 'bus' && <rect x={-k.len / 2 + 4} y={-k.wid / 2 + 2} width={k.len - 14} height={k.wid - 4} rx="2" fill="#ffffff" opacity="0.35" />}
-                  <circle cx={k.len / 2 - 1.5} cy={-hl} r="1.2" fill="#fff6c8" />
-                  <circle cx={k.len / 2 - 1.5} cy={hl} r="1.2" fill="#fff6c8" />
+                  <circle cx={k.len / 2 - 1.5} cy={-hl} r="0.8" fill="#fff6c8" />
+                  <circle cx={k.len / 2 - 1.5} cy={hl} r="0.8" fill="#fff6c8" />
                   <g ref={(el) => { brakeRefs.current[i] = el; }} style={{ opacity: 0.15 }}>
-                    <circle cx={-k.len / 2 + 1.5} cy={-hl} r="1.5" fill="#ff3b30" />
-                    <circle cx={-k.len / 2 + 1.5} cy={hl} r="1.5" fill="#ff3b30" />
+                    <circle cx={-k.len / 2 + 1.5} cy={-hl} r="1" fill="#ff3b30" />
+                    <circle cx={-k.len / 2 + 1.5} cy={hl} r="1" fill="#ff3b30" />
                   </g>
                 </g>
               );
@@ -455,7 +533,7 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
               const e = city.node(...TRIPS[i % TRIPS.length][1]);
               const on = i === sel;
               return (
-                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y})`} opacity={on ? 1 : 0.5}>
+                <g key={`pin${i}`} transform={`translate(${e.x} ${e.y}) scale(0.7)`} opacity={on ? 1 : 0.5}>
                   {on && <circle r="22" fill="#00d447" opacity="0.2"><animate attributeName="r" values="14;30;14" dur="2.4s" repeatCount="indefinite" /></circle>}
                   <path d="M0 -4 C -11 -19 -13 -31 0 -37 C 13 -31 11 -19 0 -4 Z" fill="#16161a" />
                   <circle cx="0" cy="-24" r="4.8" fill="#00d447" />
@@ -471,14 +549,14 @@ export function FleetLiveBoard({ items, stats, preview = true, title = 'Live tra
               return (
                 <g key={`car${i}`} ref={(n) => { carRefs.current[i] = n; }} opacity={on ? 1 : 0.92}>
                   {on && (
-                    <circle r="34" fill="#00d447" opacity="0.2">
-                      <animate attributeName="r" values="26;40;26" dur="2.2s" repeatCount="indefinite" />
+                    <circle r="15" fill="#00d447" opacity="0.2">
+                      <animate attributeName="r" values="11;19;11" dur="2.2s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="0.28;0.06;0.28" dur="2.2s" repeatCount="indefinite" />
                     </circle>
                   )}
                   {/* headlight beams */}
-                  <path d="M16 -5 L58 -17 L58 17 L16 5 Z" fill="url(#fl-beam)" opacity={on ? 0.9 : 0.55} />
-                  <g filter="url(#fl-car-shadow)" transform={on ? 'scale(1.18)' : 'scale(1)'}>
+                  <path d="M7 -2.2 L26 -7.5 L26 7.5 L7 2.2 Z" fill="url(#fl-beam)" opacity={on ? 0.9 : 0.55} />
+                  <g filter="url(#fl-car-shadow)" transform={`scale(${on ? HERO_SCALE * 1.1 : HERO_SCALE})`}>
                     {/* body */}
                     <path d="M-17 -6.8 C-17 -9 -14 -10 -10 -10 L9 -10 C14 -10 17 -8 18 -5 L18 5 C17 8 14 10 9 10 L-10 10 C-14 10 -17 9 -17 6.8 Z" fill={c} stroke={light ? '#b9beb6' : 'rgba(255,255,255,0.18)'} strokeWidth="0.8" />
                     {/* wheel arches */}
