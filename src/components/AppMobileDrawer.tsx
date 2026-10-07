@@ -137,7 +137,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
               if (info.offset.x > DRAG_CLOSE_PX || info.velocity.x > DRAG_CLOSE_VELOCITY) onClose();
             }}
           >
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
+            <div className="flex h-[calc(4rem+env(safe-area-inset-top,0px))] shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
               <Logo variant="wordmark" />
               <button
                 onClick={onClose}

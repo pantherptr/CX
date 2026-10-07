@@ -107,7 +107,7 @@ export function SignalMediaViewer({
       aria-modal="true"
     >
       <div
-        className="flex h-14 shrink-0 items-center justify-between px-4 pt-safe transition-opacity duration-200"
+        className="flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] shrink-0 items-center justify-between px-4 pt-safe transition-opacity duration-200"
         style={{ opacity: drag.y > 0 ? 0 : 1 }}
       >
         <span className="text-detail font-medium tabular-nums text-white/70">

@@ -81,7 +81,7 @@ export function SignalFeedHeader({
 
   return (
     <header
-      className={`sticky top-0 z-20 grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 pt-safe backdrop-blur-xl transition-colors duration-300 sm:px-6 lg:h-16 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 ${
+      className={`sticky top-0 z-20 grid h-[calc(3.5rem+env(safe-area-inset-top,0px))] shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center px-4 pt-safe backdrop-blur-xl transition-colors duration-300 sm:px-6 lg:h-16 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 ${
         scrolled ? 'border-b border-line bg-surface/92' : 'border-b border-transparent bg-surface/55'
       }`}
     >

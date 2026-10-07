@@ -68,7 +68,7 @@ export default function PublicMobileDrawer({
               }}
             >
               {/* -------- Compact header: logo + close, nothing else -------- */}
-              <div className="flex h-16 shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
+              <div className="flex h-[calc(4rem+env(safe-area-inset-top,0px))] shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
                 <Link to="/" onClick={() => onClose()} aria-label="CX home" className="inline-flex min-h-11 items-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-9" /></Link>
                 <button
                   onClick={() => onClose()}
