@@ -962,15 +962,19 @@ export function SignalPostCard({
       )}
 
       {tr.available && post.body.trim() !== '' && (
-        <button
-          type="button"
-          onClick={tr.toggle}
-          disabled={tr.status === 'loading'}
-          className="mx-4 mb-2 -mt-1 inline-flex items-center gap-1.5 text-caption font-medium text-faint transition-colors hover:text-ink sm:mx-5"
-        >
-          <Icon name="globe" size={13} />
-          {tr.status === 'loading' ? t('Translating…') : tr.on ? t('See original') : t('Translate')}
-        </button>
+        <div className="px-4 pb-3 sm:px-5">
+          <button
+            type="button"
+            onClick={tr.toggle}
+            disabled={tr.status === 'loading'}
+            className={`pressable inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold transition-colors ${
+              tr.on ? 'bg-accent-050 text-accent-bright' : 'bg-panel text-ink-soft hover:text-ink'
+            }`}
+          >
+            <Icon name="globe" size={13} className={tr.status === 'loading' ? 'animate-spin' : ''} />
+            {tr.status === 'loading' ? t('Translating…') : tr.on ? t('See original') : t('Translate')}
+          </button>
+        </div>
       )}
       {tr.available && tr.status === 'failed' && (
         <p className="px-4 pb-1.5 text-caption text-muted sm:px-5">{t('Translation unavailable')}</p>
