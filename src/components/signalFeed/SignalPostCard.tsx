@@ -5,7 +5,7 @@ import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import {
-  EMPIRE_CATEGORIES, toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
+  toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
   setEmpirePostFeatured, setEmpirePostProfilePin, setEmpirePostArchived, markEmpirePostViewed,
   incrementEmpirePostImpression, incrementEmpirePostShare, reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
@@ -46,8 +46,6 @@ function timeAgo(iso: string): string {
   if (day < 7) return `${day}d`;
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
-
-const categoryLabel = (c: EmpirePost['category']) => EMPIRE_CATEGORIES.find((x) => x.value === c)?.label ?? c;
 
 // A single video/image in the feed (not the fixed-crop hero or multi-media
 // grid) shows its OWN aspect ratio rather than a hardcoded 16:9 — but never
@@ -658,11 +656,6 @@ export function SignalPostCard({
             )}
             {identity.username && ' · '}
             {identity.subtitle}
-            {/* Community posts carry no real editorial category (the
-                server forces a hidden 'community' placeholder value —
-                see create_empire_post) — only Official's own News/
-                Update/etc. content ever shows one. */}
-            {post.publisherType !== 'self' && ` · ${categoryLabel(post.category)}`}
             {post.editedAt && ' · Edited'}
             {post.isArchived && ' · Archived'}
           </p>

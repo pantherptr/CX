@@ -11,7 +11,7 @@ import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer'
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
-import { SignalCategoryFilter } from '../components/signalFeed/SignalCategoryFilter';
+import { SignalSpaceSwitch } from '../components/signalFeed/SignalSpaceSwitch';
 import { SignalTrendingSection } from '../components/signalFeed/SignalTrendingSection';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
@@ -79,7 +79,8 @@ export default function Signal() {
   const canPublishSelf = Boolean(session);
   const canPostHere = space === 'official' ? canManage : canPublishSelf;
 
-  const [category, setCategory] = useState<EmpireCategory | null>(null);
+  // Official has no category filter any more — the feed is always "all".
+  const [category] = useState<EmpireCategory | null>(null);
 
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
@@ -391,7 +392,7 @@ export default function Signal() {
           />
         )}
 
-        {space === 'official' && <SignalCategoryFilter value={category} onChange={setCategory} />}
+        <SignalSpaceSwitch space={space} onChange={(sp) => navigate(sp === 'official' ? '/signal' : '/signal/community')} />
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever

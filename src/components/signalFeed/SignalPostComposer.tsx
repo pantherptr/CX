@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import {
-  EMPIRE_CATEGORIES, createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
+  createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpireCategory, type EmpirePost,
 } from '../../lib/data/empireFeed';
 import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
@@ -55,7 +55,8 @@ export function SignalPostComposer({
   const { profile } = useAuth();
   const objectUrls = useRef<string[]>([]);
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(editing?.publisherType ?? lastSignalPublisherType());
-  const [category, setCategory] = useState<EmpireCategory>(editing?.category ?? 'news');
+  // Posts are no longer sorted into News/Update/… — a new one is simply "news".
+  const category: EmpireCategory = editing?.category ?? 'news';
   const [title, setTitle] = useState(editing?.title ?? '');
   const [body, setBody] = useState(editing?.body ?? '');
   // Existing (already-uploaded) media paths, kept unless removed; newly
@@ -192,20 +193,6 @@ export function SignalPostComposer({
         ownerName={profile?.full_name || 'Owner'}
         ownerAvatarUrl={profile?.avatar_url ?? null}
       />
-
-      <div className="no-scrollbar -mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
-        {EMPIRE_CATEGORIES.map((c) => (
-          <button
-            key={c.value}
-            onClick={() => setCategory(c.value)}
-            className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
-              category === c.value ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
 
       <input
         value={title}
