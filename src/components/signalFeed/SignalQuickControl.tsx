@@ -94,7 +94,7 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
       {open && <div className="fixed inset-0 z-0" onClick={() => setOpen(false)} />}
 
       {hint && !open && (
-        <span className="pointer-events-none absolute left-0 top-1/2 h-14 w-7 -translate-y-1/2 animate-quick-control-pulse rounded-r-xl ring-2 ring-accent-bright/60" />
+        <span className="pointer-events-none absolute left-0 top-1/2 h-16 w-8 -translate-y-1/2 animate-quick-control-pulse rounded-r-2xl ring-2 ring-accent-bright/60" />
       )}
 
       <button
@@ -104,10 +104,10 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
         }}
         aria-label={open ? 'Close Signal quick menu' : 'Open Signal quick menu'}
         aria-expanded={open}
-        className="pressable relative z-10 flex h-14 w-7 items-center justify-center overflow-hidden rounded-r-xl border border-l-0 border-line bg-surface/85 shadow-hair backdrop-blur-md transition-colors hover:bg-surface"
+        className="pressable relative z-10 flex h-16 w-8 items-center justify-center overflow-hidden rounded-r-2xl border border-l-0 border-line bg-surface/90 shadow-[0_8px_22px_-8px_rgba(0,0,0,0.35),0_0_16px_-4px_rgba(0,212,71,0.45)] backdrop-blur-md transition-colors hover:bg-surface"
       >
-        <span className="absolute inset-y-0 left-0 w-[2px] bg-accent-bright" />
-        <CxsLogo size={open ? 16 : 13} className="transition-[width,height] duration-200" />
+        <span className="absolute inset-y-0 left-0 w-[3px] bg-accent-bright" />
+        <CxsLogo size={open ? 19 : 16} className="transition-[width,height] duration-200" />
       </button>
 
       <AnimatePresence>
