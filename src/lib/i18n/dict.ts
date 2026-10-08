@@ -9,6 +9,12 @@ import type { Lang } from './countries';
 type Row = [en: string, it: string, ro: string, es: string];
 
 const ROWS: Row[] = [
+  // ---- Empty feed ----
+  ["No posts yet", "Ancora nessun post", "Încă nu există postări", "Aún no hay publicaciones"],
+  ["Official updates from CX will appear here.", "Gli aggiornamenti ufficiali di CX appariranno qui.", "Actualizările oficiale de la CX vor apărea aici.", "Las novedades oficiales de CX aparecerán aquí."],
+  ["Be the first to share something with the community.", "Sii il primo a condividere qualcosa con la community.", "Fii primul care împărtășește ceva cu comunitatea.", "Sé el primero en compartir algo con la comunidad."],
+  ["Post something", "Pubblica qualcosa", "Postează ceva", "Publica algo"],
+  ["Signal is just getting started.", "Signal sta appena iniziando.", "Signal abia începe.", "Signal acaba de empezar."],
   // ---- New posts pill ----
   ["New post", "Nuovo post", "Postare nouă", "Nueva publicación"],
   ["{count} new posts", "{count} nuovi post", "{count} postări noi", "{count} publicaciones nuevas"],

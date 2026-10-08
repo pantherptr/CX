@@ -447,11 +447,25 @@ export default function Signal() {
             <SignalPostSkeleton />
           </>
         ) : posts.length === 0 ? (
-          <div className="py-24 text-center">
-            <SignalLogo size={48} className="mx-auto opacity-50" />
-            <p className="mt-4 text-body text-muted">
-              {space === 'official' ? 'Signal is just getting started.' : 'Nothing here yet — check back soon.'}
+          <div className="flex flex-col items-center px-6 py-20 text-center">
+            <span className="grid h-24 w-24 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">
+              <SignalLogo size={52} />
+            </span>
+            <p className="mt-5 font-display text-lead font-semibold text-ink">
+              {space === 'official' ? t('Signal is just getting started.') : t('No posts yet')}
             </p>
+            <p className="mt-1.5 max-w-[16rem] text-detail text-muted">
+              {space === 'official' ? t('Official updates from CX will appear here.') : t('Be the first to share something with the community.')}
+            </p>
+            {canPostHere && space === 'community' && (
+              <Tap
+                onClick={() => { setComposerOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-detail font-semibold text-white shadow-pop"
+              >
+                <Icon name="plus" size={16} strokeWidth={2.6} />
+                {t('Post something')}
+              </Tap>
+            )}
           </div>
         ) : (
           <>
