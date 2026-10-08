@@ -1,3 +1,4 @@
+import { SignalPostSkeleton } from './SignalPostSkeleton';
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
@@ -66,7 +67,10 @@ export function SignalPostListOverlay({
         <button onClick={onClose} aria-label="Back to Signal" className="pressable grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
           <Icon name="chevronLeft" size={20} />
         </button>
-        <span className="font-display font-semibold text-ink">{title}</span>
+        <div className="min-w-0 leading-tight">
+          <p className="truncate font-display text-lead font-semibold text-ink">{title}</p>
+          {shown && shown.length > 0 && <p className="text-caption text-faint">{shown.length}</p>}
+        </div>
       </div>
 
       {withCollections && collections.length > 0 && (
@@ -76,8 +80,8 @@ export function SignalPostListOverlay({
               key={c.id ?? 'all'}
               type="button"
               onClick={() => setActiveCollection(c.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
-                activeCollection === c.id ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
+              className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-all ${
+                activeCollection === c.id ? 'bg-ink text-white shadow-[0_8px_18px_-8px_rgba(0,0,0,0.5)]' : 'bg-panel text-ink-soft hover:bg-panel-2'
               }`}
             >
               {c.name}
@@ -88,14 +92,16 @@ export function SignalPostListOverlay({
 
       <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-6">
         {posts === null ? (
-          <div className="card animate-pulse p-4">
-            <div className="skeleton mb-3 h-10 w-10 rounded-full" />
-            <div className="skeleton h-24 w-full rounded-lg" />
-          </div>
+          <>
+            <SignalPostSkeleton />
+            <SignalPostSkeleton />
+          </>
         ) : (shown ?? []).length === 0 ? (
-          <div className="py-24 text-center">
-            <SignalLogo size={48} className="mx-auto opacity-50" />
-            <p className="mt-4 text-body text-muted">{emptyMessage}</p>
+          <div className="flex flex-col items-center px-6 py-20 text-center">
+            <span className="grid h-24 w-24 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">
+              <SignalLogo size={52} />
+            </span>
+            <p className="mt-5 max-w-[18rem] text-body text-muted">{emptyMessage}</p>
           </div>
         ) : (
           (shown ?? []).map((post) => (
