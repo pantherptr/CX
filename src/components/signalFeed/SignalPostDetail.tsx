@@ -117,32 +117,46 @@ export function SignalPostDetail({
             />
 
             {related && related.length > 0 && (
-              <div className="mt-7">
-                <h2 className="mb-2 px-1 text-detail font-semibold text-muted">More from Signal</h2>
-                <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
-                  {related.map((r) => (
-                    <Link
-                      key={r.id}
-                      to={`${base}/post/${r.id}`}
-                      className="pressable flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel"
-                    >
-                      {r.mediaUrls[0] ? (
-                        <Img
-                          src={r.mediaUrls[0]}
-                          alt=""
-                          className="h-14 w-14 shrink-0 rounded-xl object-cover"
-                          fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>}
-                        />
-                      ) : (
-                        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">{r.title || r.body || 'Photo / Video'}</p>
-                        <p className="mt-0.5 truncate text-caption text-muted">{r.authorName}</p>
-                      </div>
-                      <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
-                    </Link>
-                  ))}
+              <div className="mt-8">
+                <h2 className="mb-3 px-1 font-display text-lead font-semibold text-ink">More from Signal</h2>
+                <div className="no-scrollbar -mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:-mx-4 sm:px-4">
+                  {related.map((r) => {
+                    const media = r.mediaUrls.find((u) => !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(u));
+                    const isVideo = !media && r.mediaUrls.length > 0;
+                    return (
+                      <Link
+                        key={r.id}
+                        to={`${base}/post/${r.id}`}
+                        className="pressable group relative aspect-[4/5] w-44 shrink-0 snap-start overflow-hidden rounded-3xl bg-noir shadow-[0_18px_36px_-22px_rgba(0,0,0,0.55)] ring-1 ring-black/[0.06]"
+                      >
+                        {media ? (
+                          <Img
+                            src={media}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            fallback={<span className="absolute inset-0 grid place-items-center bg-panel text-muted"><Icon name="image" size={22} /></span>}
+                          />
+                        ) : (
+                          <span className="absolute inset-0 bg-gradient-to-br from-noir-2 via-noir to-accent-700/40" />
+                        )}
+                        <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+                        {isVideo && (
+                          <span className="absolute right-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full bg-black/55 text-white"><Icon name="play" size={12} fill /></span>
+                        )}
+                        <span className="absolute inset-x-3.5 bottom-3.5 text-white">
+                          <span className="line-clamp-3 block text-[14px] font-semibold leading-snug">{r.title || r.body || 'Photo / Video'}</span>
+                          <span className="mt-1.5 flex items-center gap-1.5 text-caption text-white/75">
+                            {r.authorAvatarUrl ? (
+                              <img src={r.authorAvatarUrl} alt="" className="h-4 w-4 rounded-full object-cover ring-1 ring-white/40" />
+                            ) : (
+                              <Icon name="user" size={12} />
+                            )}
+                            <span className="truncate">{r.authorName}</span>
+                          </span>
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
