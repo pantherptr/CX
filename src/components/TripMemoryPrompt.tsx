@@ -8,7 +8,8 @@ import { useLocale } from '../lib/i18n';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
-import { fetchMyTripMemoryFor, formatTripPeriod, publishTripMemory } from '../lib/data/tripMemories';
+import { fetchMyStampFor, fetchMyTripMemoryFor, formatTripPeriod, publishTripMemory, setStampVisibility, syncMyTripStamps, type TripStampData } from '../lib/data/tripMemories';
+import { TripStamp } from './TripStamp';
 import type { Booking } from '../lib/data/bookings';
 
 const MAX = 400;
@@ -21,6 +22,7 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
   const { toast } = useApp();
   const { session } = useAuth();
   const [existing, setExisting] = useState<{ visibility: 'public' | 'private' } | null | undefined>(undefined);
+  const [stamp, setStamp] = useState<{ id: string; visibility: 'public' | 'private' } | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<'public' | 'private' | null>(null);
   const { cars } = useCars();
@@ -41,8 +43,28 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
   useEffect(() => {
     let cancelled = false;
     fetchMyTripMemoryFor(booking.id).then((m) => { if (!cancelled) setExisting(m); });
+    // The stamp for a finished trip is created automatically — private until you say otherwise.
+    syncMyTripStamps().then(() => fetchMyStampFor(booking.id)).then((st) => { if (!cancelled) setStamp(st); });
     return () => { cancelled = true; };
   }, [booking.id]);
+
+  const stampData: TripStampData | null = stamp && city
+    ? {
+        id: stamp.id, visibility: stamp.visibility, city, startDate: booking.startDate, endDate: booking.endDate,
+        car: { id: booking.car.id, slug: booking.car.slug, make: booking.car.make, model: booking.car.model, year: booking.car.year },
+      }
+    : null;
+
+  const toggleStamp = async () => {
+    if (!stamp) return;
+    const next = stamp.visibility === 'public' ? 'private' : 'public';
+    setStamp({ ...stamp, visibility: next });
+    const { error } = await setStampVisibility(stamp.id, next);
+    if (error) {
+      setStamp(stamp);
+      toast({ title: t('Could not change who sees this'), desc: error, icon: 'info' });
+    }
+  };
 
   const submit = async (visibility: 'public' | 'private') => {
     if (busy) return;
@@ -62,6 +84,20 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
 
   return (
     <>
+      {stampData && (
+        <section className="mt-6 flex flex-col items-center rounded-3xl bg-panel/60 px-5 pb-5 pt-7">
+          <div className="w-full max-w-[16rem]"><TripStamp stamp={stampData} /></div>
+          <button
+            type="button"
+            onClick={() => void toggleStamp()}
+            aria-pressed={stamp?.visibility === 'public'}
+            className="pressable mt-5 inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 text-detail font-semibold text-ink-soft shadow-hair"
+          >
+            <Icon name={stamp?.visibility === 'public' ? 'globe' : 'eyeOff'} size={14} />
+            {stamp?.visibility === 'public' ? t('Public — shown on the car’s Roadbook') : t('Private — only you see it')}
+          </button>
+        </section>
+      )}
       <section className="mt-6 overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_18px_40px_-26px_rgba(0,0,0,0.35)]">
         <div className="flex items-center gap-4 p-4">
           <span className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-panel">
@@ -70,12 +106,12 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
           <div className="min-w-0 flex-1">
             <VerifiedTripBadge />
             <p className="mt-1.5 font-display text-lead font-semibold leading-tight text-ink">
-              {existing ? t('Your Keychain card') : t('Turn this trip into a Keychain card')}
+              {existing ? t('Shared on SIGNAL') : t('Share this trip on SIGNAL')}
             </p>
             <p className="mt-0.5 text-detail text-muted">
               {existing
-                ? existing.visibility === 'public' ? t('Published to SIGNAL, your Keychain and this car’s Roadbook.') : t('Saved just for you.')
-                : t('You choose: share it on SIGNAL, or keep it just for you.')}
+                ? t('Published to SIGNAL and this car’s Roadbook.')
+                : t('Optional: write a few words and post it on SIGNAL.')}
             </p>
           </div>
         </div>
@@ -88,7 +124,7 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
             )
           ) : (
             <button type="button" onClick={() => setOpen(true)} className="btn btn-primary btn-block">
-              <Icon name="key" size={16} /> {t('Create the card')}
+              <Icon name="message" size={16} /> {t('Write a few words')}
             </button>
           )}
         </div>
@@ -96,7 +132,7 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
 
       <Modal open={open} onClose={() => setOpen(false)} className="flex max-h-[92dvh] flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 pt-5">
-          <h2 className="font-display text-xl font-semibold text-ink">{t('Your Keychain card')}</h2>
+          <h2 className="font-display text-xl font-semibold text-ink">{t('Share on SIGNAL')}</h2>
           <div className="mt-4 overflow-hidden rounded-3xl ring-1 ring-black/[0.06]">
             <div className="relative aspect-[16/10] bg-noir">
               <Img src={booking.car.image} alt="" className="absolute inset-0 h-full w-full object-cover" fallback={<span className="absolute inset-0 grid place-items-center text-muted"><Icon name="car" size={26} /></span>} />
@@ -124,8 +160,8 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
           </p>
         </div>
         <div className="grid shrink-0 grid-cols-2 gap-3 border-t border-line p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-          <button type="button" onClick={() => void submit('private')} disabled={busy !== null} className="btn btn-secondary btn-lg justify-center disabled:opacity-60">
-            <Icon name="eyeOff" size={16} /> {busy === 'private' ? '…' : t('Only me')}
+          <button type="button" onClick={() => setOpen(false)} disabled={busy !== null} className="btn btn-secondary btn-lg justify-center disabled:opacity-60">
+            {t('Cancel')}
           </button>
           <button type="button" onClick={() => void submit('public')} disabled={busy !== null} className="btn btn-primary btn-lg justify-center disabled:opacity-60">
             {busy === 'public' ? '…' : t('Publish')}

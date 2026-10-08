@@ -157,7 +157,7 @@ export function SignalProfileDetail({
   const heroMode = Boolean(realProfile || demo);
   const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
   const [tab, setTab] = useState<'posts' | 'vehicles' | 'saved' | 'keychain'>('posts');
-  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(isMe ? ['saved'] : []), ...(realProfile ? ['keychain'] : [])]) as ('posts' | 'vehicles' | 'saved' | 'keychain')[];
+  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ('posts' | 'vehicles' | 'saved' | 'keychain')[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
   useEffect(() => {

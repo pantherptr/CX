@@ -148,3 +148,51 @@ export function formatTripPeriod(startDate: string, endDate: string, locale?: st
     ? `${s.getDate()}–${e.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })}`
     : `${dm(s)} – ${e.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 }
+
+// ---- Keychain stamps (migration 0084): one stamp per finished, verified trip ----
+export interface TripStampData {
+  id: string;
+  visibility: 'public' | 'private';
+  city: string;
+  startDate: string;
+  endDate: string;
+  car: { id: string; slug: string; make: string; model: string; year: number };
+}
+
+interface StampRow {
+  id: string; visibility?: 'public' | 'private'; city: string; start_date: string; end_date: string;
+  car_id: string; car_slug: string; car_make: string; car_model: string; car_year: number;
+}
+
+const mapStamp = (r: StampRow): TripStampData => ({
+  id: r.id, visibility: r.visibility ?? 'public', city: r.city, startDate: r.start_date, endDate: r.end_date,
+  car: { id: r.car_id, slug: r.car_slug, make: r.car_make, model: r.car_model, year: r.car_year },
+});
+
+/** Creates any missing stamps for the signed-in user's finished trips. */
+export async function syncMyTripStamps(): Promise<void> {
+  await supabase.rpc('sync_my_trip_stamps');
+}
+
+export async function fetchUserStamps(userId: string): Promise<TripStampData[]> {
+  const { data, error } = await supabase.rpc('fetch_user_stamps', { p_user_id: userId });
+  if (error) return [];
+  return ((data ?? []) as StampRow[]).map(mapStamp);
+}
+
+export async function fetchCarStamps(carId: string): Promise<TripStampData[]> {
+  const { data, error } = await supabase.rpc('fetch_car_stamps', { p_car_id: carId });
+  if (error) return [];
+  return ((data ?? []) as StampRow[]).map(mapStamp);
+}
+
+export async function setStampVisibility(stampId: string, visibility: 'public' | 'private'): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_trip_stamp_visibility', { p_stamp_id: stampId, p_visibility: visibility });
+  return { error: error?.message ?? null };
+}
+
+export async function fetchMyStampFor(bookingId: string): Promise<{ id: string; visibility: 'public' | 'private' } | null> {
+  const { data, error } = await supabase.rpc('my_stamp_for_booking', { p_booking_id: bookingId });
+  if (error) return null;
+  return ((data as { id: string; visibility: 'public' | 'private' }[] | null)?.[0]) ?? null;
+}

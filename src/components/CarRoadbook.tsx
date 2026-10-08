@@ -4,7 +4,8 @@ import { Icon } from './Icon';
 import { useLocale } from '../lib/i18n';
 import { Ugc } from '../lib/i18n/ugc';
 import { useAuth } from '../lib/auth';
-import { fetchCarRoadbook, formatTripPeriod, type RoadbookEntry } from '../lib/data/tripMemories';
+import { fetchCarRoadbook, fetchCarStamps, formatTripPeriod, type RoadbookEntry, type TripStampData } from '../lib/data/tripMemories';
+import { TripStampGrid } from './TripStamp';
 import { VerifiedTripBadge } from './signalFeed/SignalKeychainTab';
 import { KeysCta } from './signalFeed/KeysCta';
 
@@ -14,11 +15,13 @@ export function CarRoadbook({ carId, carSlug }: { carId: string; carSlug: string
   const { t } = useLocale();
   const { session } = useAuth();
   const [entries, setEntries] = useState<RoadbookEntry[] | null>(null);
+  const [stamps, setStamps] = useState<TripStampData[]>([]);
 
   useEffect(() => {
     if (!session) { setEntries([]); return; }
     let cancelled = false;
     fetchCarRoadbook(carId).then((rows) => { if (!cancelled) setEntries(rows); });
+    fetchCarStamps(carId).then((rows) => { if (!cancelled) setStamps(rows); });
     return () => { cancelled = true; };
   }, [carId, session]);
 
@@ -35,7 +38,7 @@ export function CarRoadbook({ carId, carSlug }: { carId: string; carSlug: string
     );
   }
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && stamps.length === 0) {
     return (
       <div className="rounded-3xl bg-panel px-5 py-8 text-center">
         <Icon name="key" size={26} className="mx-auto text-accent-700" />
@@ -45,7 +48,17 @@ export function CarRoadbook({ carId, carSlug }: { carId: string; carSlug: string
     );
   }
 
-  return <RoadbookList entries={entries} carId={carId} carSlug={carSlug} />;
+  return (
+    <div>
+      {stamps.length > 0 && (
+        <div className={entries.length > 0 ? 'mb-8' : ''}>
+          <TripStampGrid stamps={stamps} />
+          {entries.length === 0 && <div className="mt-6"><KeysCta carId={carId} carSlug={carSlug} /></div>}
+        </div>
+      )}
+      {entries.length > 0 && <RoadbookList entries={entries} carId={carId} carSlug={carSlug} />}
+    </div>
+  );
 }
 
 export function RoadbookList({ entries, carId, carSlug }: { entries: RoadbookEntry[]; carId: string; carSlug: string }) {
