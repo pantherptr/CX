@@ -102,11 +102,11 @@ export function SignalCommunityComposer({
   const [selectedVehicle, setSelectedVehicle] = useState<EmpireVehicleRef | null>(editing?.vehicle ?? null);
   const canAttachVehicle = Boolean(profile?.is_host);
 
-  const totalMedia = existingPaths.length + pending.length;
-  const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0;
   // A poll (2–4 options) rides along with a new post; the post's text is the question.
   const [pollOptions, setPollOptions] = useState<string[] | null>(null);
-  const pollValid = !pollOptions || cleanPollOptions(pollOptions).length >= 2;
+  const pollValid = !pollOptions || (cleanPollOptions(pollOptions).length >= 2 && body.trim().length > 0);
+  const totalMedia = existingPaths.length + pending.length;
+  const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
@@ -413,7 +413,14 @@ export function SignalCommunityComposer({
           </AnimatePresence>
 
           {isOpen && !editing && pollOptions && (
-            <SignalPollEditor options={pollOptions} onChange={setPollOptions} onRemove={() => setPollOptions(null)} />
+            <>
+              <SignalPollEditor options={pollOptions} onChange={setPollOptions} onRemove={() => setPollOptions(null)} />
+              {!pollValid && (
+                <p className="mt-2 text-caption font-medium text-ink-soft">
+                  {body.trim().length === 0 ? 'Write the poll question above, then add at least two options.' : 'Add at least two options to publish the poll.'}
+                </p>
+              )}
+            </>
           )}
 
           {mediaError && <p className="mt-1.5 text-caption font-medium text-danger">{mediaError}</p>}
@@ -450,7 +457,7 @@ export function SignalCommunityComposer({
                       onClick={() => setPollOptions((p) => (p ? null : ['', '']))}
                       aria-pressed={Boolean(pollOptions)}
                       aria-label="Add a poll"
-                      className={`grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-accent-050 ${pollOptions ? 'bg-accent-050 text-accent-700' : 'text-accent-700'}`}
+                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-accent-050 ${pollOptions ? 'bg-accent-050 text-accent-700' : 'text-accent-700'}`}
                     >
                       <Icon name="chart" size={20} />
                     </Tap>
@@ -461,7 +468,7 @@ export function SignalCommunityComposer({
                       onClick={openVehiclePicker}
                       aria-expanded={vehiclePickerOpen}
                       aria-label="Attach vehicle"
-                      className="grid h-11 w-11 place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050"
                     >
                       <Icon name="car" size={20} fill={Boolean(selectedVehicle)} />
                     </Tap>

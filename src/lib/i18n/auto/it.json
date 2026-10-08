@@ -1776,5 +1776,7 @@
 "New collection": "Nuova raccolta",
 "Could not update the collection": "Impossibile aggiornare la raccolta",
 "Add to a collection": "Aggiungi a una raccolta",
-"You already have a collection with that name.": "Hai già una raccolta con questo nome."
+"You already have a collection with that name.": "Hai già una raccolta con questo nome.",
+"Write the poll question above, then add at least two options.": "Scrivi sopra la domanda del sondaggio, poi aggiungi almeno due opzioni.",
+"Add at least two options to publish the poll.": "Aggiungi almeno due opzioni per pubblicare il sondaggio."
 }

@@ -1776,5 +1776,7 @@
 "New collection": "Colecție nouă",
 "Could not update the collection": "Nu s-a putut actualiza colecția",
 "Add to a collection": "Adaugă într-o colecție",
-"You already have a collection with that name.": "Ai deja o colecție cu acest nume."
+"You already have a collection with that name.": "Ai deja o colecție cu acest nume.",
+"Write the poll question above, then add at least two options.": "Scrie mai sus întrebarea sondajului, apoi adaugă cel puțin două opțiuni.",
+"Add at least two options to publish the poll.": "Adaugă cel puțin două opțiuni pentru a publica sondajul."
 }
