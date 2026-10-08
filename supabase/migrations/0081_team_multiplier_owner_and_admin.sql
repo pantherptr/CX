@@ -1,6 +1,5 @@
--- Only the Owner gets the "double" multiplier. Admins can still stack Respects /
--- Saves / Views / poll votes, but strictly one per tap: any batch larger than 1
--- from a non-Owner is cut back to 1 here, whatever the app sends.
+-- Doubling is for the whole team again (Owner and Admin), not the Owner alone:
+-- restores the 0079 versions of the four add-batch functions.
 
 create or replace function public.add_empire_post_respect(p_post_id uuid, p_amount integer default 1)
 returns integer
@@ -10,7 +9,7 @@ declare
   v_had boolean;
   v_author uuid;
   v_count integer;
-  v_n integer := case when public.is_owner() then greatest(1, least(coalesce(p_amount, 1), 100000)) else 1 end;
+  v_n integer := greatest(1, least(coalesce(p_amount, 1), 100000));
 begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if not public.is_admin() then raise exception 'Not authorized'; end if;
@@ -32,7 +31,7 @@ as $$
 declare
   v_next integer;
   v_count integer;
-  v_n integer := case when public.is_owner() then greatest(1, least(coalesce(p_amount, 1), 100000)) else 1 end;
+  v_n integer := greatest(1, least(coalesce(p_amount, 1), 100000));
 begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if not public.is_admin() then raise exception 'Not authorized'; end if;
@@ -51,7 +50,7 @@ as $$
 declare
   v_next integer;
   v_count integer;
-  v_n integer := case when public.is_owner() then greatest(1, least(coalesce(p_amount, 1), 100000)) else 1 end;
+  v_n integer := greatest(1, least(coalesce(p_amount, 1), 100000));
 begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if not public.is_admin() then raise exception 'Not authorized'; end if;
@@ -70,7 +69,7 @@ as $$
 declare
   v_poll uuid;
   v_next integer;
-  v_n integer := case when public.is_owner() then greatest(1, least(coalesce(p_amount, 1), 100000)) else 1 end;
+  v_n integer := greatest(1, least(coalesce(p_amount, 1), 100000));
 begin
   if auth.uid() is null then raise exception 'Not authenticated'; end if;
   if not public.is_admin() then raise exception 'Not authorized'; end if;

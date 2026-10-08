@@ -514,7 +514,7 @@ export function SignalPostCard({
 
   const handleTeamRespect = async () => {
     const before = myRespects;
-    const amt = tapAmount(before, Boolean(viewerProfile?.is_owner));
+    const amt = tapAmount(before);
     setMyRespects(before + amt);
     onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + amt });
     fireStamp();
@@ -576,7 +576,7 @@ export function SignalPostCard({
 
   const handleTeamSave = async () => {
     const before = mySaves;
-    const amt = tapAmount(before, Boolean(viewerProfile?.is_owner));
+    const amt = tapAmount(before);
     setMySaves(before + amt);
     onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + amt });
     setSavePlay((k) => k + 1);
@@ -644,7 +644,7 @@ export function SignalPostCard({
 
   const handleTeamView = async () => {
     const before = myViews;
-    const amt = tapAmount(before, Boolean(viewerProfile?.is_owner));
+    const amt = tapAmount(before);
     setMyViews(before + amt);
     setViewPlay((k) => k + 1);
     onChanged({ ...post, viewCount: post.viewCount + amt });
