@@ -9,6 +9,8 @@ import type { Lang } from './countries';
 type Row = [en: string, it: string, ro: string, es: string];
 
 const ROWS: Row[] = [
+  // ---- Collections grid ----
+  ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----
   ["No posts yet", "Ancora nessun post", "Încă nu există postări", "Aún no hay publicaciones"],
   ["Official updates from CX will appear here.", "Gli aggiornamenti ufficiali di CX appariranno qui.", "Actualizările oficiale de la CX vor apărea aici.", "Las novedades oficiales de CX aparecerán aquí."],

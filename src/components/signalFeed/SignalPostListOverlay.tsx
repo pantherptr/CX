@@ -32,10 +32,30 @@ export function SignalPostListOverlay({
   const [activeCollection, setActiveCollection] = useState<string | null>(null);
   const [collectionPostIds, setCollectionPostIds] = useState<Set<string> | null>(null);
 
+  const [idsByCollection, setIdsByCollection] = useState<Record<string, Set<string>>>({});
+
   useEffect(() => {
     if (!withCollections) return;
-    fetchMyCollections().then(setCollections);
+    let cancelled = false;
+    fetchMyCollections().then(async (rows) => {
+      if (cancelled) return;
+      setCollections(rows);
+      const entries = await Promise.all(rows.map(async (c) => [c.id, new Set(await fetchCollectionPostIds(c.id))] as const));
+      if (!cancelled) setIdsByCollection(Object.fromEntries(entries));
+    });
+    return () => { cancelled = true; };
   }, [withCollections]);
+
+  const isVideoUrl = (u: string) => /\.(mp4|mov|webm|m4v)(\?|$)/i.test(u);
+  const coverFor = (ids: Set<string> | null) => {
+    const pool = (posts ?? []).filter((p) => !ids || ids.has(p.id));
+    for (const p of pool) {
+      const img = p.mediaUrls.find((u) => !isVideoUrl(u));
+      if (img) return img;
+    }
+    return null;
+  };
+  const countFor = (ids: Set<string> | null) => (posts ?? []).filter((p) => !ids || ids.has(p.id)).length;
 
   useEffect(() => {
     if (!activeCollection) {
@@ -73,20 +93,36 @@ export function SignalPostListOverlay({
         </div>
       </div>
 
-      {withCollections && collections.length > 0 && (
-        <div className="no-scrollbar mx-auto flex w-full max-w-xl gap-1.5 overflow-x-auto px-3 pt-3 sm:px-4">
-          {[{ id: null as string | null, name: 'All' }, ...collections].map((c) => (
-            <button
-              key={c.id ?? 'all'}
-              type="button"
-              onClick={() => setActiveCollection(c.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-all ${
-                activeCollection === c.id ? 'bg-ink text-white shadow-[0_8px_18px_-8px_rgba(0,0,0,0.5)]' : 'bg-panel text-ink-soft hover:bg-panel-2'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+      {withCollections && collections.length > 0 && posts && posts.length > 0 && (
+        <div className="mx-auto grid w-full max-w-xl grid-cols-2 gap-3 px-3 pt-4 sm:px-4">
+          {[{ id: null as string | null, name: 'All saved' }, ...collections].map((c) => {
+            const ids = c.id ? idsByCollection[c.id] ?? new Set<string>() : null;
+            const cover = coverFor(ids);
+            const active = activeCollection === c.id;
+            return (
+              <button
+                key={c.id ?? 'all'}
+                type="button"
+                onClick={() => setActiveCollection(c.id)}
+                className={`pressable group relative aspect-[4/3] overflow-hidden rounded-2xl text-left shadow-[0_14px_30px_-18px_rgba(0,0,0,0.45)] transition-all ${
+                  active ? 'ring-2 ring-accent-bright ring-offset-2 ring-offset-bg' : 'ring-1 ring-black/[0.06]'
+                }`}
+              >
+                {cover ? (
+                  <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <span className="absolute inset-0 grid place-items-center bg-gradient-to-br from-accent-050 to-panel text-accent-700">
+                    <Icon name="bookmark" size={30} />
+                  </span>
+                )}
+                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                <span className="absolute inset-x-3 bottom-2.5 text-white">
+                  <span className="block truncate text-detail font-semibold leading-tight">{c.name}</span>
+                  <span className="block text-caption text-white/75">{countFor(ids)}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
