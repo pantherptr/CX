@@ -395,19 +395,17 @@ function OfficialVoiceHeader({
   compress: number;
 }) {
   const isCx = type === 'cx';
-  const avatar = isCx ? (
-    <span className="grid h-20 w-20 place-items-center rounded-full bg-white ring-1 ring-line">
-      <Img
-        src="/cx-logo-symbol.png"
-        alt=""
-        className="h-12 w-12 object-contain"
-        fallback={<span className="text-lg font-semibold text-ink">CX</span>}
-      />
-    </span>
-  ) : (
-    <span className="grid h-20 w-20 place-items-center rounded-full bg-noir text-accent-bright">
-      <Icon name="headset" size={32} />
-    </span>
+  const avatar = (
+    <Img
+      src={isCx ? '/brand/avatar-cx.webp' : '/brand/avatar-assistant.webp'}
+      alt=""
+      className="h-24 w-24 rounded-full object-cover shadow-[0_10px_30px_-10px_rgba(0,0,0,0.45)] ring-1 ring-line"
+      fallback={
+        <span className="grid h-24 w-24 place-items-center rounded-full bg-noir text-accent-bright">
+          <Icon name="headset" size={32} />
+        </span>
+      }
+    />
   );
   return (
     <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>

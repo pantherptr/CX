@@ -62,26 +62,6 @@ function officialRole(type: 'cx' | 'assistant'): VerifiedRole {
  *  needed: Concierge.tsx already uses this exact icon for the same AI). */
 export function SignalIdentityAvatar({ identity, size = 40 }: { identity: SignalIdentity; size?: number }) {
   const style = { height: size, width: size };
-  if (identity.type === 'cx') {
-    // cx-logo-symbol.png is a tall lockup with a lot of transparent
-    // margin around the actual mark (~37% pixel coverage of its own
-    // bounding box) — object-cover on a circle scales it up to fill the
-    // box and crops most of that margin away, cutting the mark itself
-    // off at odd points. Showing it via object-contain, shrunk with real
-    // padding inside its own backing circle, keeps the whole logo intact
-    // and legible instead.
-    return (
-      <span className="grid shrink-0 place-items-center rounded-full bg-white ring-1 ring-line" style={style}>
-        <Img
-          src={identity.avatarUrl!}
-          alt=""
-          className="object-contain"
-          style={{ height: size * 0.6, width: size * 0.6 }}
-          fallback={<span className="font-semibold text-ink" style={{ fontSize: size * 0.4 }}>CX</span>}
-        />
-      </span>
-    );
-  }
   if (identity.avatarUrl) {
     return (
       <Img
@@ -90,9 +70,15 @@ export function SignalIdentityAvatar({ identity, size = 40 }: { identity: Signal
         className="shrink-0 rounded-full object-cover"
         style={style}
         fallback={
-          <span className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft" style={style}>
-            <Icon name="user" size={Math.round(size * 0.5)} />
-          </span>
+          identity.type === 'cx' || identity.type === 'assistant' ? (
+            <span className="grid shrink-0 place-items-center rounded-full bg-noir text-accent-bright" style={style}>
+              <Icon name="headset" size={Math.round(size * 0.45)} />
+            </span>
+          ) : (
+            <span className="grid shrink-0 place-items-center rounded-full bg-panel text-ink-soft" style={style}>
+              <Icon name="user" size={Math.round(size * 0.5)} />
+            </span>
+          )
         }
       />
     );

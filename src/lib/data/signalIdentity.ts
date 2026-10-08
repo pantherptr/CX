@@ -39,10 +39,8 @@ export interface SignalIdentity {
    *  have one. Displayed as `@username` wherever a post/comment/Story
    *  shows an identity; absent (not yet chosen) just shows nothing. */
   username: string | null;
-  /** Real photo for 'owner' and 'self', the site's one official mark for
-   *  'cx', and `null` for 'assistant' — rendered as an icon glyph instead
-   *  of an image (see SignalIdentityAvatar), matching Concierge.tsx's own
-   *  headset-icon treatment for the same AI so it reads as one voice. */
+  /** Real photo for 'owner' and 'self'; fixed brand artwork for 'cx' (the
+   *  bat-man on green) and 'assistant' (the silver bat on noir). */
   avatarUrl: string | null;
   /** Only meaningful when `type === 'self'` — which real-identity badge
    *  to show. Absent for the three fixed official voices (their badge is
@@ -66,9 +64,9 @@ export function resolveSignalIdentity(
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
-      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: null, username: null };
+      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: '/brand/avatar-assistant.webp', username: null };
     case 'cx':
-      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/cx-logo-symbol.png', username: null };
+      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/brand/avatar-cx.webp', username: null };
     case 'self': {
       const selfRole: 'owner' | 'admin' | 'host' | 'verified_client' | 'client' =
         authorIsOwner ? 'owner'
