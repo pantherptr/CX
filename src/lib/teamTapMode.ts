@@ -37,7 +37,7 @@ export function useTeamTapMode(): TeamTapMode {
   );
 }
 
-/** How many to add on this tap, given how many the person already has — */
+/** How many to add on this tap, given how many the person already has. */
 export function tapAmount(have: number, mode: TeamTapMode = current): number {
   return mode === 'double' ? Math.max(1, have) : 1;
 }
