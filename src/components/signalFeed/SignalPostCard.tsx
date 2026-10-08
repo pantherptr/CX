@@ -547,11 +547,6 @@ export function SignalPostCard({
     void handleTeamRespect();
   };
 
-  // Everyone sees how many Respects / Saves / Views a post has — never who
-  // gave them. (Who is private; see 0076 for how notifications treat it.)
-  const countOf = (n: number) =>
-    n > 0 ? <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span> : null;
-
   // Saves work the same way for the team (0075): tap = +1, hold = remove all.
   const [mySaves, setMySaves] = useState(0);
   const saveHoldRef = useRef<number | undefined>(undefined);
@@ -1061,7 +1056,6 @@ export function SignalPostCard({
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
                 <ThumbsUpIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
               </span>
-              {countOf(post.likeCount)}
             </Tap>
           ) : (
             <Tap
@@ -1073,7 +1067,6 @@ export function SignalPostCard({
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
                 <ThumbsUpIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
               </span>
-              {countOf(post.likeCount)}
             </Tap>
           )}
         </div>
@@ -1092,7 +1085,6 @@ export function SignalPostCard({
             <span className={`${ICON_WRAP} group-hover:bg-panel`}>
               <BookmarkIcon size={19} filled={mySaves > 0} playKey={savePlay} />
             </span>
-            {countOf(post.saveCount)}
           </Tap>
         ) : (
           <Tap
@@ -1104,17 +1096,7 @@ export function SignalPostCard({
             <span className={`${ICON_WRAP} group-hover:bg-panel`}>
               <BookmarkIcon size={19} filled={post.savedByMe} playKey={savePlay} />
             </span>
-            {countOf(post.saveCount)}
           </Tap>
-        )}
-
-        {post.viewCount > 0 && (
-          <span className={`${ACTION} text-ink-soft`}>
-            <span className={ICON_WRAP}>
-              <EyeIcon size={18} />
-            </span>
-            {countOf(post.viewCount)}
-          </span>
         )}
 
         {/* Owner-only — add_empire_post_comment enforces this server-side;
@@ -1130,7 +1112,6 @@ export function SignalPostCard({
             <span className={`${ICON_WRAP} group-hover:bg-sky-50`}>
               <Icon name="message" size={19} />
             </span>
-            {countOf(post.commentCount)}
           </Tap>
         )}
 
@@ -1145,6 +1126,58 @@ export function SignalPostCard({
           </span>
         </Tap>
       </div>
+
+      {/* The stats bar under every post: views, Respects and Saves for
+          everyone (numbers only — never who), plus Shares and the
+          "Performance" label for Owner/Admin. It fills in as people react. */}
+      {(canManage || post.viewCount > 0 || post.likeCount > 0 || post.saveCount > 0) && (
+        <div className="border-t border-line px-4 py-3 sm:px-5">
+          {canManage && <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</p>}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Views: for Owner/Admin this chip adds a view on tap (hold removes
+                the extras you added); the +N is how many you've added. */}
+            {(post.viewCount > 0 || isTeamViewer) &&
+              (isTeamViewer ? (
+                <button
+                  type="button"
+                  onClick={viewClick}
+                  onPointerDown={viewPressStart}
+                  onPointerUp={viewPressEnd}
+                  onPointerLeave={viewPressEnd}
+                  onPointerCancel={viewPressEnd}
+                  aria-label="Add a view — hold to remove yours"
+                  className="pressable inline-flex min-h-10 select-none items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft"
+                >
+                  <EyeIcon size={17} playKey={viewPlay} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
+                  <span className="text-[14px] font-medium leading-none">views</span>
+                  <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none text-white">
+                    {myViews > 1 ? `+${myViews - 1}` : '+'}
+                  </span>
+                </button>
+              ) : (
+                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
+                  <EyeIcon size={17} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
+                  <span className="text-[14px] font-medium leading-none">views</span>
+                </span>
+              ))}
+            {([
+              ['like', post.likeCount, 'likes', true],
+              ['bookmark', post.saveCount, 'saves', true],
+              ['share', post.shareCount, 'shares', false],
+            ] as const)
+              .filter(([, n, , public_]) => (public_ ? n > 0 || canManage : canManage))
+              .map(([icon, n, label]) => (
+                <span key={label} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
+                  <Icon name={icon} size={16} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(n)}</span>
+                  <span className="text-[14px] font-medium leading-none">{label}</span>
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Owner/CX-team comments are public — they render right here,
           automatically, for every viewer the moment at least one exists,
@@ -1166,52 +1199,6 @@ export function SignalPostCard({
           above, never shown to a regular user. Plain text, not a
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
-      {canManage && (
-        <div className="border-t border-line px-4 py-3 sm:px-5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</p>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Views: for Owner/Admin this chip adds a view on tap (hold removes
-                the extras you added); the +N is how many you've added. */}
-            {isTeamViewer ? (
-              <button
-                type="button"
-                onClick={viewClick}
-                onPointerDown={viewPressStart}
-                onPointerUp={viewPressEnd}
-                onPointerLeave={viewPressEnd}
-                onPointerCancel={viewPressEnd}
-                aria-label="Add a view — hold to remove yours"
-                className="pressable inline-flex min-h-10 select-none items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft"
-              >
-                <EyeIcon size={17} playKey={viewPlay} className="shrink-0 text-faint" />
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
-                <span className="text-[14px] font-medium leading-none">views</span>
-                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none text-white">
-                  {myViews > 1 ? `+${myViews - 1}` : '+'}
-                </span>
-              </button>
-            ) : (
-              <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
-                <EyeIcon size={17} className="shrink-0 text-faint" />
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
-                <span className="text-[14px] font-medium leading-none">views</span>
-              </span>
-            )}
-            {([
-              ['like', post.likeCount, 'likes'],
-              ['bookmark', post.saveCount, 'saves'],
-              ['share', post.shareCount, 'shares'],
-            ] as const).map(([icon, n, label]) => (
-              <span key={label} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
-                <Icon name={icon} size={16} className="shrink-0 text-faint" />
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(n)}</span>
-                <span className="text-[14px] font-medium leading-none">{label}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}
