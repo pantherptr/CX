@@ -242,7 +242,7 @@ export default function Signal() {
           // so it's the first thing under the Official/Community divider
           // rather than sitting below the publish-only rows.
           { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
-          ...(canManage
+          ...(profile?.is_owner
             ? [{
                 label: tapMode === 'double' ? t('Taps: doubling ×2') : t('Taps: one by one'),
                 icon: 'chart' as const,

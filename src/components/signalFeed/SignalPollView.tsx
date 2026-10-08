@@ -34,7 +34,7 @@ export function SignalPollView({ postId, isOwnPost }: { postId: string; isOwnPos
     if (!session || busy) return;
     const before = poll;
     const have = poll.options.find((o) => o.id === optionId)?.myVotes ?? 0;
-    const amt = tapAmount(have);
+    const amt = tapAmount(have, Boolean(profile?.is_owner));
     setPoll({
       ...poll,
       myVote: optionId,

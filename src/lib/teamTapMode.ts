@@ -37,7 +37,8 @@ export function useTeamTapMode(): TeamTapMode {
   );
 }
 
-/** How many to add on this tap, given how many the person already has. */
-export function tapAmount(have: number, mode: TeamTapMode = current): number {
-  return mode === 'double' ? Math.max(1, have) : 1;
+/** How many to add on this tap, given how many the person already has —
+ *  doubling is the Owner's alone; an Admin always adds one. */
+export function tapAmount(have: number, isOwner: boolean, mode: TeamTapMode = current): number {
+  return isOwner && mode === 'double' ? Math.max(1, have) : 1;
 }
