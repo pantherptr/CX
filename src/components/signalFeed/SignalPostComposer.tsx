@@ -10,6 +10,9 @@ import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { useAuth } from '../../lib/auth';
 import { fireConfetti } from '../../lib/confetti';
+import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
+import { createEmpirePoll } from '../../lib/data/empirePolls';
+import { useApp } from '../../lib/store';
 
 // Shared with SignalCommunityComposer (the compact native composer used
 // for Community) — one source of truth for these limits rather than two
@@ -53,6 +56,8 @@ export function SignalPostComposer({
   onCancel?: () => void;
 }) {
   const { profile } = useAuth();
+  const { toast } = useApp();
+  const [pollOptions, setPollOptions] = useState<string[] | null>(null);
   const objectUrls = useRef<string[]>([]);
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(editing?.publisherType ?? lastSignalPublisherType());
   // Posts are no longer sorted into News/Update/… — a new one is simply "news".
@@ -150,6 +155,10 @@ export function SignalPostComposer({
       setError('Write something before publishing.');
       return;
     }
+    if (pollOptions && cleanPollOptions(pollOptions).length < 2) {
+      setError('A poll needs at least two options.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -164,6 +173,10 @@ export function SignalPostComposer({
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
         return;
+      }
+      if (!editing && pollOptions) {
+        const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
+        if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
       }
       // update_empire_post returns a bare row with no joined counts (see
       // mapCreatedPost) — carry the real, already-known engagement
@@ -263,9 +276,11 @@ export function SignalPostComposer({
         </div>
       )}
 
+      {!editing && pollOptions && <SignalPollEditor options={pollOptions} onChange={setPollOptions} onRemove={() => setPollOptions(null)} />}
+
       {mediaError && <p className="mt-2 text-caption font-medium text-danger">{mediaError}</p>}
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={`mt-3 grid gap-2 ${editing ? 'grid-cols-2' : 'grid-cols-3'}`}>
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
@@ -299,6 +314,19 @@ export function SignalPostComposer({
             onChange={(e) => { addVideoFiles(e.target.files); e.target.value = ''; }}
           />
         </label>
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => setPollOptions((p) => (p ? null : ['', '']))}
+            aria-pressed={Boolean(pollOptions)}
+            className={`pressable inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-2 text-detail font-semibold transition-colors ${
+              pollOptions ? 'border-accent bg-accent-050 text-accent-700' : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
+            }`}
+          >
+            <Icon name="chart" size={16} />
+            Poll
+          </button>
+        )}
       </div>
 
       {error && <p className="mt-3 text-detail font-medium text-danger">{error}</p>}

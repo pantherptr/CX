@@ -13,6 +13,9 @@ import {
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
 import { ThumbsUpIcon } from '../ThumbsUpIcon';
+import { SignalPollView } from './SignalPollView';
+import { SignalCollectionsSheet } from './SignalCollectionsSheet';
+import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
@@ -482,6 +485,16 @@ export function SignalPostCard({
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
   const [savePlay, setSavePlay] = useState(0);
+  // After a Save, a short line offers to file the post in a collection.
+  const [collectionHint, setCollectionHint] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const hintTimerRef = useRef<number | undefined>(undefined);
+  const offerCollections = () => {
+    setCollectionHint(true);
+    window.clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = window.setTimeout(() => setCollectionHint(false), 6000);
+  };
+  useEffect(() => () => window.clearTimeout(hintTimerRef.current), []);
   const [sharePlay, setSharePlay] = useState(0);
   const [viewPlay, setViewPlay] = useState(0);
   const fireStamp = () => {
@@ -564,6 +577,7 @@ export function SignalPostCard({
     setMySaves(before + 1);
     onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
     setSavePlay((k) => k + 1);
+    offerCollections();
     vibrateTap();
     const { count, error } = await addEmpirePostSave(post.id);
     if (error) {
@@ -687,6 +701,7 @@ export function SignalPostCard({
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
     if (!post.savedByMe) {
       setSavePlay((k) => k + 1);
+      offerCollections();
       vibrateTap();
     }
     const { error } = post.isDemo ? await toggleSignalDemoPostSave(post.id) : await toggleEmpirePostSave(post.id);
@@ -961,36 +976,9 @@ export function SignalPostCard({
         <p className="px-4 pb-1.5 text-caption text-muted sm:px-5">{t('Translation unavailable')}</p>
       )}
 
-      {post.vehicle && (
-        <Link
-          to={`/cars/${post.vehicle.slug}`}
-          className="pressable mx-4 mb-3 flex items-center gap-3 rounded-2xl border border-line bg-panel/70 p-3 sm:mx-5"
-        >
-          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface">
-            {post.vehicle.imageUrl ? (
-              <Img
-                src={post.vehicle.imageUrl}
-                alt=""
-                className="h-full w-full object-cover"
-                fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>}
-              />
-            ) : (
-              <span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={20} /></span>
-            )}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-detail font-semibold text-ink">
-              {post.vehicle.year} {post.vehicle.make} {post.vehicle.model}
-            </span>
-            <span className="block truncate text-caption text-muted">
-              {post.vehicle.city} · €{compact(post.vehicle.pricePerDay)}/day
-            </span>
-          </span>
-          <span className="flex shrink-0 items-center gap-1 text-caption font-semibold text-accent-700">
-            View Vehicle <Icon name="chevronRight" size={14} />
-          </span>
-        </Link>
-      )}
+      {!post.isDemo && <SignalPollView postId={post.id} isOwnPost={isOwnPost} />}
+
+      {post.vehicle && <SignalVehicleCard vehicle={post.vehicle} authorId={post.authorId} isOwnPost={isOwnPost} />}
 
       {post.mediaUrls.length > 0 && (
         featured ? (
@@ -1132,6 +1120,21 @@ export function SignalPostCard({
         </div>
       </div>
 
+      {collectionHint && !post.isDemo && (
+        <div className="mx-4 mb-2 flex animate-fade-up items-center justify-between gap-3 rounded-xl bg-panel px-3.5 py-2 sm:mx-5">
+          <span className="flex items-center gap-1.5 text-detail font-medium text-ink-soft">
+            <Icon name="check" size={14} strokeWidth={3} className="text-accent-700" /> Saved
+          </span>
+          <button
+            type="button"
+            onClick={() => { setCollectionHint(false); setCollectionsOpen(true); }}
+            className="pressable inline-flex min-h-8 items-center gap-1 text-detail font-semibold text-accent-700"
+          >
+            Add to a collection <Icon name="chevronRight" size={14} />
+          </button>
+        </div>
+      )}
+
       {/* The stats bar under every post: a plain row of icon + number — views,
           Respects and Saves for everyone (numbers only, never who), plus
           Shares and the "Performance" label for Owner/Admin. It fills in as
@@ -1201,6 +1204,8 @@ export function SignalPostCard({
           above, never shown to a regular user. Plain text, not a
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
+      {collectionsOpen && <SignalCollectionsSheet postId={post.id} onClose={() => setCollectionsOpen(false)} />}
+
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}

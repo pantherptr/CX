@@ -16,6 +16,9 @@ import type { Car } from '../../data/types';
 import { ProfileAvatar } from './SignalIdentityBadge';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, SPRING_SNAPPY, Tap } from '../motionKit';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
+import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
+import { createEmpirePoll } from '../../lib/data/empirePolls';
+import { useApp } from '../../lib/store';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
 const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this scrolls inside instead
@@ -76,6 +79,7 @@ export function SignalCommunityComposer({
   onDone: (post: EmpirePost) => void;
 }) {
   const { profile } = useAuth();
+  const { toast } = useApp();
   const reduceMotion = useReducedMotion();
   const objectUrls = useRef<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -100,7 +104,10 @@ export function SignalCommunityComposer({
 
   const totalMedia = existingPaths.length + pending.length;
   const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0;
-  const canPublish = (body.trim().length > 0 || totalMedia > 0) && !submitting;
+  // A poll (2–4 options) rides along with a new post; the post's text is the question.
+  const [pollOptions, setPollOptions] = useState<string[] | null>(null);
+  const pollValid = !pollOptions || cleanPollOptions(pollOptions).length >= 2;
+  const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
   useEffect(() => () => window.clearTimeout(blurTimerRef.current), []);
@@ -196,6 +203,7 @@ export function SignalCommunityComposer({
 
   const resetDraft = () => {
     setBody('');
+    setPollOptions(null);
     pending.forEach((m) => URL.revokeObjectURL(m.preview));
     setPending([]);
     setExistingPaths([]);
@@ -263,6 +271,10 @@ export function SignalCommunityComposer({
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
         return;
+      }
+      if (!editing && pollOptions) {
+        const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
+        if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
       }
       // create_empire_post returns a bare row with no joined author
       // columns (see mapCreatedPost) — Official's own composer got away
@@ -400,6 +412,10 @@ export function SignalCommunityComposer({
             )}
           </AnimatePresence>
 
+          {isOpen && !editing && pollOptions && (
+            <SignalPollEditor options={pollOptions} onChange={setPollOptions} onRemove={() => setPollOptions(null)} />
+          )}
+
           {mediaError && <p className="mt-1.5 text-caption font-medium text-danger">{mediaError}</p>}
           {error && <p className="mt-1.5 text-caption font-medium text-danger">{error}</p>}
 
@@ -428,6 +444,17 @@ export function SignalCommunityComposer({
                       onChange={(e) => { void addMediaFiles(e.target.files); e.target.value = ''; }}
                     />
                   </label>
+                  {!editing && (
+                    <Tap
+                      onMouseDown={holdFocus}
+                      onClick={() => setPollOptions((p) => (p ? null : ['', '']))}
+                      aria-pressed={Boolean(pollOptions)}
+                      aria-label="Add a poll"
+                      className={`grid h-11 w-11 place-items-center rounded-full transition-colors hover:bg-accent-050 ${pollOptions ? 'bg-accent-050 text-accent-700' : 'text-accent-700'}`}
+                    >
+                      <Icon name="chart" size={20} />
+                    </Tap>
+                  )}
                   {canAttachVehicle && (
                     <Tap
                       onMouseDown={holdFocus}

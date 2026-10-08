@@ -469,6 +469,7 @@ export default function Signal() {
           title="Saved"
           emptyMessage="Posts you save will show up here."
           canManage={canManage}
+          withCollections
           fetcher={() => fetchEmpireSavedPosts()}
           onClose={() => setSavedOpen(false)}
         />

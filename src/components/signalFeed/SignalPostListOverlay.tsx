@@ -3,6 +3,7 @@ import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
 import { SignalPostCard } from './SignalPostCard';
 import type { EmpirePost } from '../../lib/data/empireFeed';
+import { fetchMyCollections, fetchCollectionPostIds, type PostCollection } from '../../lib/data/collections';
 
 /** A small, generic "list of Signal posts" overlay — powers both "My
  *  Posts" and "Saved" from the Quick Control. Same fixed-overlay/sticky-
@@ -15,14 +16,37 @@ export function SignalPostListOverlay({
   canManage,
   fetcher,
   onClose,
+  withCollections = false,
 }: {
   title: string;
   emptyMessage: string;
   canManage: boolean;
   fetcher: () => Promise<EmpirePost[]>;
   onClose: () => void;
+  /** Show the viewer's collections as filter chips (the Saved list). */
+  withCollections?: boolean;
 }) {
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
+  const [collections, setCollections] = useState<PostCollection[]>([]);
+  const [activeCollection, setActiveCollection] = useState<string | null>(null);
+  const [collectionPostIds, setCollectionPostIds] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (!withCollections) return;
+    fetchMyCollections().then(setCollections);
+  }, [withCollections]);
+
+  useEffect(() => {
+    if (!activeCollection) {
+      setCollectionPostIds(null);
+      return;
+    }
+    let cancelled = false;
+    fetchCollectionPostIds(activeCollection).then((ids) => { if (!cancelled) setCollectionPostIds(new Set(ids)); });
+    return () => { cancelled = true; };
+  }, [activeCollection]);
+
+  const shown = posts && collectionPostIds ? posts.filter((p) => collectionPostIds.has(p.id)) : posts;
 
   useEffect(() => {
     let cancelled = false;
@@ -45,19 +69,36 @@ export function SignalPostListOverlay({
         <span className="font-display font-semibold text-ink">{title}</span>
       </div>
 
+      {withCollections && collections.length > 0 && (
+        <div className="no-scrollbar mx-auto flex w-full max-w-xl gap-1.5 overflow-x-auto px-3 pt-3 sm:px-4">
+          {[{ id: null as string | null, name: 'All' }, ...collections].map((c) => (
+            <button
+              key={c.id ?? 'all'}
+              type="button"
+              onClick={() => setActiveCollection(c.id)}
+              className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
+                activeCollection === c.id ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-xl px-3 py-4 sm:px-4 sm:py-6">
         {posts === null ? (
           <div className="card animate-pulse p-4">
             <div className="skeleton mb-3 h-10 w-10 rounded-full" />
             <div className="skeleton h-24 w-full rounded-lg" />
           </div>
-        ) : posts.length === 0 ? (
+        ) : (shown ?? []).length === 0 ? (
           <div className="py-24 text-center">
             <SignalLogo size={48} className="mx-auto opacity-50" />
             <p className="mt-4 text-body text-muted">{emptyMessage}</p>
           </div>
         ) : (
-          posts.map((post) => (
+          (shown ?? []).map((post) => (
             <SignalPostCard
               key={post.id}
               post={post}
