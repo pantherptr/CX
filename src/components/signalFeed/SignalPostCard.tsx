@@ -56,6 +56,14 @@ function timeAgo(iso: string): string {
 // portrait-post height instead of stretching to nearly the full viewport
 // (the "video takes over the screen" complaint this whole pass fixes). A
 // max-height is a second, independent safety net for wide desktop cards.
+// The action buttons: soft pills that light up when active — Respect in CX
+// green with a glow, Save in ink — plus round buttons for Share/Comment.
+const PILL = 'flex min-h-11 select-none items-center gap-2 rounded-full px-4 text-[15px] font-semibold ring-1 transition-[background-color,color,box-shadow] duration-200';
+const PILL_IDLE = 'bg-panel/70 text-ink-soft ring-line hover:bg-panel hover:text-ink';
+const PILL_RESPECT = 'bg-gradient-to-b from-[#22e664] to-[#00b83d] text-white ring-accent-bright/50 shadow-[0_10px_22px_-10px_rgba(0,212,71,0.8)]';
+const PILL_SAVE = 'bg-ink text-white ring-ink shadow-[0_10px_22px_-12px_rgba(0,0,0,0.65)]';
+const ROUND = 'grid h-11 w-11 select-none place-items-center rounded-full bg-panel/70 text-ink-soft ring-1 ring-line transition-colors duration-200 hover:bg-panel hover:text-ink';
+
 const MIN_MEDIA_ASPECT = 4 / 5;
 const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
 
@@ -1030,15 +1038,15 @@ export function SignalPostCard({
           totals — never who. The team's repeat Respect/Save/View taps (hold
           to take back) live on the same buttons. Giving a Respect stamps
           "RESPECTED" above the thumb for a moment. */}
-      <div className={`flex items-center justify-between px-3 pb-3 transition-[padding] duration-200 sm:px-4 ${respected ? 'pt-6' : 'pt-1'}`}>
-        <div className="flex items-center gap-0.5">
+      <div className={`flex items-center justify-between px-3 pb-3 transition-[padding] duration-200 sm:px-4 ${respected ? 'pt-8' : 'pt-1'}`}>
+        <div className="flex items-center gap-2">
           <div className="relative">
             {respected && (
               <span
                 key={stampKey}
                 aria-hidden="true"
                 style={stampKey > 0 ? undefined : { transform: 'rotate(-8deg)' }}
-                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[22px] left-2 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
+                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[27px] left-3 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
               >
                 Respected
               </span>
@@ -1052,9 +1060,7 @@ export function SignalPostCard({
                 onPointerCancel={respectPressEnd}
                 scale={0.92}
                 aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
-                className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                  myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
-                }`}
+                className={`${PILL} ${myRespects > 0 ? PILL_RESPECT : PILL_IDLE}`}
               >
                 <ThumbsUpIcon size={21} filled={myRespects > 0} playKey={respectPlay} className="shrink-0" />
                 {countOf(post.likeCount)}
@@ -1064,9 +1070,7 @@ export function SignalPostCard({
                 onClick={handleRespect}
                 scale={0.92}
                 aria-label={post.likedByMe ? 'Respected' : 'Respect'}
-                className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                  post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
-                }`}
+                className={`${PILL} ${post.likedByMe ? PILL_RESPECT : PILL_IDLE}`}
               >
                 <ThumbsUpIcon size={21} filled={post.likedByMe} playKey={respectPlay} className="shrink-0" />
                 {countOf(post.likeCount)}
@@ -1083,9 +1087,7 @@ export function SignalPostCard({
               onPointerCancel={savePressEnd}
               scale={0.92}
               aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
-              className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                mySaves > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
-              }`}
+              className={`${PILL} ${mySaves > 0 ? PILL_SAVE : PILL_IDLE}`}
             >
               <BookmarkIcon size={20} filled={mySaves > 0} playKey={savePlay} className="shrink-0" />
               {countOf(post.saveCount)}
@@ -1095,9 +1097,7 @@ export function SignalPostCard({
               onClick={handleSave}
               scale={0.92}
               aria-label={post.savedByMe ? 'Saved' : 'Save'}
-              className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                post.savedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
-              }`}
+              className={`${PILL} ${post.savedByMe ? PILL_SAVE : PILL_IDLE}`}
             >
               <BookmarkIcon size={20} filled={post.savedByMe} playKey={savePlay} className="shrink-0" />
               {countOf(post.saveCount)}
@@ -1114,20 +1114,20 @@ export function SignalPostCard({
                 onPointerLeave={viewPressEnd}
                 onPointerCancel={viewPressEnd}
                 aria-label="Add a view — hold to remove yours"
-                className="pressable flex min-h-11 select-none items-center gap-1.5 rounded-full px-3 text-[14px] text-faint"
+                className="pressable flex min-h-9 select-none items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-faint transition-colors hover:bg-panel"
               >
                 <EyeIcon size={18} playKey={viewPlay} className="shrink-0" />
                 {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
               </button>
             ) : (
-              <span className="flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-faint">
+              <span className="flex min-h-9 items-center gap-1.5 px-2 text-[13px] font-medium text-faint">
                 <EyeIcon size={18} className="shrink-0" />
                 {countOf(post.viewCount)}
               </span>
             ))}
         </div>
 
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-2">
           {/* Owner-only — add_empire_post_comment enforces this server-side;
               hiding it for everyone else is just honest UI. No demo
               equivalent (see signalDemo.ts). */}
@@ -1136,19 +1136,18 @@ export function SignalPostCard({
               onClick={() => setCommentsSheetOpen(true)}
               scale={0.92}
               aria-label="Comment"
-              className="flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] text-ink-soft transition-colors hover:text-sky-600"
+              className={`${ROUND} hover:text-sky-600`}
             >
-              <Icon name="message" size={21} className="shrink-0" />
-              {countOf(post.commentCount)}
+              <Icon name="message" size={20} className="shrink-0" />
             </Tap>
           )}
           <Tap
             onClick={handleShare}
             scale={0.92}
             aria-label="Share"
-            className="flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] text-ink-soft transition-colors hover:text-accent-700"
+            className={`${ROUND} hover:text-accent-700`}
           >
-            <ShareIcon size={21} playKey={sharePlay} className="shrink-0" />
+            <ShareIcon size={20} playKey={sharePlay} className="shrink-0" />
           </Tap>
         </div>
       </div>
