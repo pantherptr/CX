@@ -1031,6 +1031,7 @@ export function SignalPostCard({
           take back) live on the same buttons. A "RESPECTED" stamp sits above
           the thumb while a Respect stands. */}
       <div className={`flex items-center justify-between px-4 pb-2 transition-[padding] duration-200 sm:px-5 ${respected ? 'pt-7' : 'pt-1'}`}>
+        <div className="flex items-center gap-1">
         <div className="relative">
           {respected && (
             <span
@@ -1099,6 +1100,9 @@ export function SignalPostCard({
           </Tap>
         )}
 
+        </div>
+
+        <div className="flex items-center gap-1">
         {/* Owner-only — add_empire_post_comment enforces this server-side;
             hiding it for everyone else is just honest UI. No demo
             equivalent (see signalDemo.ts). */}
@@ -1125,6 +1129,7 @@ export function SignalPostCard({
             <ShareIcon size={19} playKey={sharePlay} />
           </span>
         </Tap>
+        </div>
       </div>
 
       {/* The stats bar under every post: a plain row of icon + number — views,
