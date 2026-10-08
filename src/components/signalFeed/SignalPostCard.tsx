@@ -608,8 +608,15 @@ export function SignalPostCard({
     window.clearTimeout(saveHoldRef.current);
     saveHoldRef.current = window.setTimeout(() => {
       saveHeldRef.current = true;
-      void handleClearSaves();
-    }, 650);
+      vibrateTap();
+      if (post.isDemo) {
+        toast({ title: 'Sample posts can’t be added to collections', icon: 'info' });
+        return;
+      }
+      setCollectionHint(false);
+      setCollectionsOpen(true);
+      if (mySaves === 0 && !post.isDemo) void handleTeamSave();
+    }, 450);
   };
   const savePressEnd = () => window.clearTimeout(saveHoldRef.current);
   const saveClick = () => {
@@ -696,6 +703,39 @@ export function SignalPostCard({
         void handleRespect();
       }
     : undefined;
+
+  // Press and hold Save → straight to "which collection?" (saving first if
+  // it isn't saved yet); a plain tap still just toggles Save.
+  const collectHoldRef = useRef<number | undefined>(undefined);
+  const collectHeldRef = useRef(false);
+  useEffect(() => () => window.clearTimeout(collectHoldRef.current), []);
+  const collectPressStart = () => {
+    collectHeldRef.current = false;
+    window.clearTimeout(collectHoldRef.current);
+    collectHoldRef.current = window.setTimeout(() => {
+      collectHeldRef.current = true;
+      vibrateTap();
+      if (post.isDemo) {
+        toast({ title: 'Sample posts can’t be added to collections', icon: 'info' });
+        return;
+      }
+      setCollectionHint(false);
+      setCollectionsOpen(true);
+      if (!post.savedByMe) {
+        onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
+        setSavePlay((k) => k + 1);
+        void toggleEmpirePostSave(post.id).then(({ error }) => { if (error) onChanged(post); });
+      }
+    }, 450);
+  };
+  const collectPressEnd = () => window.clearTimeout(collectHoldRef.current);
+  const saveTap = () => {
+    if (collectHeldRef.current) {
+      collectHeldRef.current = false;
+      return;
+    }
+    void handleSave();
+  };
 
   const handleSave = async () => {
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
@@ -1072,7 +1112,7 @@ export function SignalPostCard({
             onPointerLeave={savePressEnd}
             onPointerCancel={savePressEnd}
             scale={0.94}
-            aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
+            aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to choose a collection` : 'Save — hold to choose a collection'}
             className={`${ACTION} ${mySaves > 0 ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
           >
             <span className={`${ICON_WRAP} group-hover:bg-panel`}>
@@ -1081,10 +1121,15 @@ export function SignalPostCard({
           </Tap>
         ) : (
           <Tap
-            onClick={handleSave}
+            onClick={saveTap}
+            onPointerDown={collectPressStart}
+            onPointerUp={collectPressEnd}
+            onPointerLeave={collectPressEnd}
+            onPointerCancel={collectPressEnd}
+            onContextMenu={(e: { preventDefault: () => void }) => e.preventDefault()}
             scale={0.94}
-            aria-label={post.savedByMe ? 'Saved' : 'Save'}
-            className={`${ACTION} ${post.savedByMe ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+            aria-label={post.savedByMe ? 'Saved — hold to choose a collection' : 'Save — hold to choose a collection'}
+            className={`${ACTION} select-none [-webkit-touch-callout:none] ${post.savedByMe ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
           >
             <span className={`${ICON_WRAP} group-hover:bg-panel`}>
               <BookmarkIcon size={19} filled={post.savedByMe} playKey={savePlay} />
@@ -1208,7 +1253,13 @@ export function SignalPostCard({
           above, never shown to a regular user. Plain text, not a
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
-      {collectionsOpen && <SignalCollectionsSheet postId={post.id} onClose={() => setCollectionsOpen(false)} />}
+      {collectionsOpen && (
+        <SignalCollectionsSheet
+          postId={post.id}
+          onClose={() => setCollectionsOpen(false)}
+          onClearSaves={isTeamViewer && mySaves > 0 ? () => void handleClearSaves() : undefined}
+        />
+      )}
 
       {viewerIndex !== null && (
         <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />

@@ -9,7 +9,7 @@ import { useApp } from '../../lib/store';
 /** "Save to a collection": your own folders for saved posts. Tap a folder to
  *  put the post in it (or take it out); make a new one on the spot. Private
  *  to you. */
-export function SignalCollectionsSheet({ postId, onClose }: { postId: string; onClose: () => void }) {
+export function SignalCollectionsSheet({ postId, onClose, onClearSaves }: { postId: string; onClose: () => void; onClearSaves?: () => void }) {
   const { toast } = useApp();
   const [collections, setCollections] = useState<PostCollection[] | null>(null);
   const [inIds, setInIds] = useState<Set<string>>(new Set());
@@ -125,6 +125,15 @@ export function SignalCollectionsSheet({ postId, onClose }: { postId: string; on
             </button>
           </div>
           {error && <p className="mt-2 text-caption font-medium text-danger">{error}</p>}
+          {onClearSaves && (
+            <button
+              type="button"
+              onClick={() => { onClearSaves(); onClose(); }}
+              className="pressable mt-3 w-full rounded-full py-2.5 text-detail font-semibold text-danger hover:bg-panel"
+            >
+              Remove all my Saves
+            </button>
+          )}
         </div>
       </div>
     </div>
