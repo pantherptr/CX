@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
-import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
 import { fetchEmpirePostById, fetchEmpireFeed, type EmpirePost } from '../../lib/data/empireFeed';
-import { fetchSignalDemoPostById } from '../../lib/data/signalDemo';
+import { fetchSignalDemoPostById, fetchSignalDemoPosts } from '../../lib/data/signalDemo';
+import { useLocale } from '../../lib/i18n';
 import { SignalPostCard } from './SignalPostCard';
 import { shareLink } from '../../lib/native';
 import { useApp } from '../../lib/store';
@@ -30,6 +30,7 @@ export function SignalPostDetail({
   const [loaded, setLoaded] = useState(false);
   const [related, setRelated] = useState<EmpirePost[] | null>(null);
   const { toast } = useApp();
+  const { t } = useLocale();
   const { pathname } = useLocation();
   const base = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const scope = base === '/signal/community' ? 'community' : 'official';
@@ -48,9 +49,10 @@ export function SignalPostDetail({
         if (cancelled) return;
         setPost(p);
         setLoaded(true);
-        if (p && !p.isDemo) {
-          fetchEmpireFeed(5, undefined, undefined, { scope })
-            .then((rows) => !cancelled && setRelated(rows.filter((r) => r.id !== p.id).slice(0, 4)))
+        if (p) {
+          const rows = p.isDemo ? fetchSignalDemoPosts(7) : fetchEmpireFeed(7, undefined, undefined, { scope });
+          rows
+            .then((list) => !cancelled && setRelated(list.filter((r) => r.id !== p.id).slice(0, 5)))
             .catch(() => !cancelled && setRelated([]));
         }
       })
@@ -119,55 +121,19 @@ export function SignalPostDetail({
 
             {related && related.length > 0 && (
               <div className="mt-8">
-                <h2 className="mb-3 px-1 font-display text-lead font-semibold text-ink">More from Signal</h2>
-                <div className="no-scrollbar -mx-3 flex snap-x snap-mandatory scroll-px-3 gap-3 overflow-x-auto px-3 pb-2 sm:-mx-4 sm:scroll-px-4 sm:px-4">
-                  {related.map((r) => {
-                    const media = r.mediaUrls.find((u) => !/\.(mp4|mov|webm|m4v)(\?|$)/i.test(u));
-                    const video = r.mediaUrls.find((u) => /\.(mp4|mov|webm|m4v)(\?|$)/i.test(u));
-                    const textOnly = !media && !video;
-                    const snippet = (r.title || r.body || '').trim();
-                    return (
-                      <Link
-                        key={r.id}
-                        to={`${base}/post/${r.id}`}
-                        className={`pressable group relative flex aspect-[4/5] w-44 shrink-0 snap-start flex-col overflow-hidden rounded-3xl shadow-[0_18px_36px_-22px_rgba(0,0,0,0.5)] ring-1 ring-black/[0.06] ${textOnly ? 'bg-gradient-to-br from-accent-050 via-surface to-panel' : 'bg-noir'}`}
-                      >
-                        {media ? (
-                          <Img
-                            src={media}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            fallback={<span className="absolute inset-0 grid place-items-center bg-panel text-muted"><Icon name="image" size={22} /></span>}
-                          />
-                        ) : video ? (
-                          <video src={`${video}#t=0.1`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
-                        ) : null}
-                        {!textOnly && <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-black/5" />}
-                        {video && !media && (
-                          <span className="absolute right-2.5 top-2.5 grid h-8 w-8 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm"><Icon name="play" size={13} fill /></span>
-                        )}
-                        {textOnly ? (
-                          <span className="relative flex-1 p-4">
-                            <span className="absolute left-3 top-1 select-none font-display text-[56px] font-bold leading-none text-accent-bright/30">“</span>
-                            <span className="relative mt-7 line-clamp-[7] block text-[15px] font-semibold leading-snug text-ink">{snippet || 'Photo / Video'}</span>
-                          </span>
-                        ) : (
-                          <span className="relative mt-auto block px-3.5 pt-3 text-white">
-                            {snippet && <span className="line-clamp-2 block text-[14px] font-semibold leading-snug">{snippet}</span>}
-                          </span>
-                        )}
-                        <span className={`relative flex items-center gap-1.5 px-3.5 pb-3.5 pt-2 text-caption ${textOnly ? 'text-muted' : 'text-white/80'}`}>
-                          {r.authorAvatarUrl ? (
-                            <img src={r.authorAvatarUrl} alt="" className={`h-5 w-5 rounded-full object-cover ring-1 ${textOnly ? 'ring-black/10' : 'ring-white/40'}`} />
-                          ) : (
-                            <Icon name="user" size={13} />
-                          )}
-                          <span className="truncate font-medium">{r.authorName}</span>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                <h2 className="mb-3 px-1 font-display text-lead font-semibold text-ink">{t('Keep discovering')}</h2>
+                {related.map((r) => (
+                  <SignalPostCard
+                    key={r.id}
+                    post={r}
+                    canManage={canManage}
+                    onChanged={(updated) => setRelated((prev) => (prev ?? []).map((x) => (x.id === updated.id ? updated : x)))}
+                    onDeleted={(id) => setRelated((prev) => (prev ?? []).filter((x) => x.id !== id))}
+                  />
+                ))}
+                <Link to={base} className="pressable mx-auto mt-1 flex w-fit items-center gap-1.5 rounded-full bg-panel px-5 py-2.5 text-detail font-semibold text-ink">
+                  {t('Back to the feed')} <Icon name="arrowRight" size={15} />
+                </Link>
               </div>
             )}
           </>

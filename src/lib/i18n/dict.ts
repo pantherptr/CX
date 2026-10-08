@@ -28,6 +28,8 @@ const ROWS: Row[] = [
     ["Sample", "Esempio", "Exemplu", "Ejemplo"],
     ["or", "o", "sau", "o"],
     ["Profile not found", "Profilo non trovato", "Profilul nu a fost găsit", "Perfil no encontrado"],
+    ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
+  ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----
