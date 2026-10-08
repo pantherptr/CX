@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../Icon';
 import { useActiveEmpireStories } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
-import { SignalIdentityAvatar } from './SignalIdentityBadge';
+import { SignalIdentityAvatar, ProfileAvatar } from './SignalIdentityBadge';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalStoryCreator } from './SignalStoryCreator';
 import { useAuth } from '../../lib/auth';
@@ -45,7 +45,7 @@ export function SignalStoriesBar({
   onOpenComposer: () => void;
   onCloseComposer: () => void;
 }) {
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const { stories: allStories, refresh } = useActiveEmpireStories();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -73,8 +73,13 @@ export function SignalStoriesBar({
       <div className="no-scrollbar -mx-2.5 mb-3 flex snap-x scroll-pl-2.5 gap-3.5 overflow-x-auto px-2.5 pb-1 pt-0.5 sm:-mx-4 sm:scroll-pl-4 sm:px-4 lg:mx-0 lg:scroll-pl-0 lg:px-0">
         {canCreate && (
           <Tap onClick={onOpenComposer} scale={0.93} className="flex shrink-0 snap-start flex-col items-center gap-1.5">
-            <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-ink text-accent-bright shadow-[0_8px_20px_-8px_rgba(0,0,0,0.5)] ring-4 ring-bg">
-              <Icon name="plus" size={26} strokeWidth={2.4} />
+            <span className="relative grid h-[68px] w-[68px] place-items-center rounded-full border-2 border-dashed border-line-strong p-[3px]">
+              <span className="grid h-full w-full place-items-center overflow-hidden rounded-full bg-panel text-ink-soft">
+                {profile?.avatar_url ? <ProfileAvatar src={profile.avatar_url} size={58} /> : <Icon name="user" size={26} />}
+              </span>
+              <span className="absolute -bottom-0.5 -right-0.5 grid h-6 w-6 place-items-center rounded-full bg-accent-bright text-white ring-[3px] ring-bg">
+                <Icon name="plus" size={14} strokeWidth={3} />
+              </span>
             </span>
             <span className="line-clamp-2 w-[72px] text-center text-[11.5px] font-medium leading-tight text-ink-soft">Add Story</span>
           </Tap>
