@@ -11,6 +11,9 @@ type Row = [en: string, it: string, ro: string, es: string];
 const ROWS: Row[] = [
     ["Remove all my Saves", "Rimuovi tutti i miei Salva", "Elimină toate salvările mele", "Quitar todos mis Guardados"],
     ["Sample posts can’t be added to collections", "Gli esempi non si possono aggiungere alle collezioni", "Postările-exemplu nu pot fi adăugate în colecții", "Las publicaciones de ejemplo no se pueden añadir a colecciones"],
+    ["Taps: doubling ×2", "Tocchi: raddoppia ×2", "Atingeri: dublează ×2", "Toques: duplica ×2"],
+  ["Taps: one by one", "Tocchi: uno alla volta", "Atingeri: unul câte unul", "Toques: uno a uno"],
+  ["Remove my votes ({count})", "Rimuovi i miei voti ({count})", "Elimină voturile mele ({count})", "Quitar mis votos ({count})"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----

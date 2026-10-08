@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
+import { useTeamTapMode, setTeamTapMode } from '../lib/teamTapMode';
 import { useMediaQuery } from '../components/motion';
 import { Tap, AnimatePresence, motion } from '../components/motionKit';
 import { SignalLogo, SignalSHero } from '../components/SignalLogo';
@@ -57,6 +58,7 @@ import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
  *  links redirect here — see `EmpireToSignalRedirect` in App.tsx. */
 export default function Signal() {
   const { t } = useLocale();
+  const tapMode = useTeamTapMode();
   const { session, profile } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -240,6 +242,13 @@ export default function Signal() {
           // so it's the first thing under the Official/Community divider
           // rather than sitting below the publish-only rows.
           { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
+          ...(canManage
+            ? [{
+                label: tapMode === 'double' ? t('Taps: doubling ×2') : t('Taps: one by one'),
+                icon: 'chart' as const,
+                onSelect: () => setTeamTapMode(tapMode === 'double' ? 'single' : 'double'),
+              }]
+            : []),
           ...(canManage || canPublishSelf
             ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
             : []),

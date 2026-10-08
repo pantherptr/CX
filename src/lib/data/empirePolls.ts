@@ -5,6 +5,8 @@ export interface PollOption {
   label: string;
   votes: number;
   mine: boolean;
+  /** How many votes the viewer has put on this option (the team can stack several). */
+  myVotes: number;
 }
 export interface PostPoll {
   id: string;
@@ -22,6 +24,7 @@ interface PollRow {
   option_position: number;
   votes: number;
   my_vote: boolean;
+  my_votes?: number;
 }
 
 function group(rows: PollRow[]): Map<string, PostPoll> {
@@ -32,7 +35,7 @@ function group(rows: PollRow[]): Map<string, PostPoll> {
       poll = { id: r.poll_id, options: [], myVote: null, totalVotes: 0 };
       out.set(r.post_id, poll);
     }
-    poll.options.push({ id: r.option_id, label: r.label, votes: r.votes, mine: r.my_vote });
+    poll.options.push({ id: r.option_id, label: r.label, votes: r.votes, mine: r.my_vote, myVotes: r.my_votes ?? (r.my_vote ? 1 : 0) });
     poll.totalVotes += r.votes;
     if (r.my_vote) poll.myVote = r.option_id;
   }
@@ -71,5 +74,17 @@ export async function createEmpirePoll(postId: string, options: string[]): Promi
 
 export async function voteEmpirePoll(optionId: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('vote_empire_poll', { p_option_id: optionId });
+  return { error: error?.message ?? null };
+}
+
+/** Owner/Admin only (0079): put `amount` more votes on an option. */
+export async function addEmpirePollVotes(optionId: string, amount = 1): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('add_empire_poll_votes', { p_option_id: optionId, p_amount: amount });
+  return { error: error?.message ?? null };
+}
+
+/** Owner/Admin only (0079): take back every vote the caller put on a poll. */
+export async function clearMyPollVotes(pollId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('clear_my_poll_votes', { p_poll_id: pollId });
   return { error: error?.message ?? null };
 }

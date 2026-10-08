@@ -699,8 +699,8 @@ export async function toggleEmpirePostLike(postId: string): Promise<{ liked: boo
 
 /** Owner/Admin only (0074): every call adds one more Respect. Resolves to how
  *  many Respects the caller has on the post now. */
-export async function addEmpirePostRespect(postId: string): Promise<{ count: number; error: string | null }> {
-  const { data, error } = await supabase.rpc('add_empire_post_respect', { p_post_id: postId });
+export async function addEmpirePostRespect(postId: string, amount = 1): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_respect', { p_post_id: postId, p_amount: amount });
   if (error) return { count: 0, error: error.message };
   return { count: Number(data) || 0, error: null };
 }
@@ -719,8 +719,8 @@ export async function clearMyRespects(postId: string): Promise<{ error: string |
 }
 
 /** Owner/Admin only (0075): every call adds one more Save. */
-export async function addEmpirePostSave(postId: string): Promise<{ count: number; error: string | null }> {
-  const { data, error } = await supabase.rpc('add_empire_post_save', { p_post_id: postId });
+export async function addEmpirePostSave(postId: string, amount = 1): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_save', { p_post_id: postId, p_amount: amount });
   if (error) return { count: 0, error: error.message };
   return { count: Number(data) || 0, error: null };
 }
@@ -735,8 +735,8 @@ export async function clearMySaves(postId: string): Promise<{ error: string | nu
 }
 
 /** Owner/Admin only (0075): every call adds one more View. */
-export async function addEmpirePostView(postId: string): Promise<{ count: number; error: string | null }> {
-  const { data, error } = await supabase.rpc('add_empire_post_view', { p_post_id: postId });
+export async function addEmpirePostView(postId: string, amount = 1): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_view', { p_post_id: postId, p_amount: amount });
   if (error) return { count: 0, error: error.message };
   return { count: Number(data) || 0, error: null };
 }

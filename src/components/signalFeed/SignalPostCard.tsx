@@ -15,6 +15,7 @@ import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/da
 import { ThumbsUpIcon } from '../ThumbsUpIcon';
 import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
+import { tapAmount } from '../../lib/teamTapMode';
 import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -513,11 +514,12 @@ export function SignalPostCard({
 
   const handleTeamRespect = async () => {
     const before = myRespects;
-    setMyRespects(before + 1);
-    onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + 1 });
+    const amt = tapAmount(before);
+    setMyRespects(before + amt);
+    onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + amt });
     fireStamp();
     vibrateTap();
-    const { count, error } = await addEmpirePostRespect(post.id);
+    const { count, error } = await addEmpirePostRespect(post.id, amt);
     if (error) {
       setMyRespects(before);
       onChanged(post);
@@ -574,12 +576,13 @@ export function SignalPostCard({
 
   const handleTeamSave = async () => {
     const before = mySaves;
-    setMySaves(before + 1);
-    onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
+    const amt = tapAmount(before);
+    setMySaves(before + amt);
+    onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + amt });
     setSavePlay((k) => k + 1);
     offerCollections();
     vibrateTap();
-    const { count, error } = await addEmpirePostSave(post.id);
+    const { count, error } = await addEmpirePostSave(post.id, amt);
     if (error) {
       setMySaves(before);
       onChanged(post);
@@ -641,11 +644,12 @@ export function SignalPostCard({
 
   const handleTeamView = async () => {
     const before = myViews;
-    setMyViews(before + 1);
+    const amt = tapAmount(before);
+    setMyViews(before + amt);
     setViewPlay((k) => k + 1);
-    onChanged({ ...post, viewCount: post.viewCount + 1 });
+    onChanged({ ...post, viewCount: post.viewCount + amt });
     vibrateTap();
-    const { count, error } = await addEmpirePostView(post.id);
+    const { count, error } = await addEmpirePostView(post.id, amt);
     if (error) {
       setMyViews(before);
       onChanged(post);
