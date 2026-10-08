@@ -30,7 +30,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
       exit={{ opacity: 0, scale: 0.96 }}
       transition={SPRING_SMOOTH}
       whileHover={{ y: -3 }}
-      className={`group relative cursor-pointer rounded-[24px] border bg-surface p-3 transition-[border-color,box-shadow] duration-300 ${
+      className={`group relative cursor-pointer overflow-hidden rounded-[24px] border bg-surface ${variant === 'row' ? 'p-3' : 'p-0'} transition-[border-color,box-shadow] duration-300 ${
         active ? 'border-ink shadow-[0_0_0_1px_#16161a,0_18px_40px_-18px_rgba(22,22,26,0.4)]' : 'border-line hover:border-ink/70 hover:shadow-[0_18px_40px_-22px_rgba(22,22,26,0.35)]'
       }`}
       onClick={onOpen}
@@ -86,22 +86,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
         </div>
       ) : (
         <>
-      <div className="flex items-center justify-between gap-2 px-1 pb-2.5">
-        <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-panel px-2.5 py-1 text-caption font-medium text-ink-soft">
-          <Icon name="pin" size={12} className="shrink-0" /> <span className="truncate">{car.city}</span>
-        </span>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-panel px-2.5 py-1 text-caption font-medium text-ink-soft">
-          {rated ? (
-            <>
-              <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(1)} <span className="text-faint">({car.trips})</span>
-            </>
-          ) : (
-            t('New')
-          )}
-        </span>
-      </div>
-
-      <div className="relative aspect-[4/3] overflow-hidden rounded-[18px] bg-panel">
+      <div className="relative aspect-[4/3.2] overflow-hidden bg-panel">
         <Img
           src={unsplash(car.images[0], 700)}
           srcSet={unsplashSrcSet(car.images[0], [400, 700, 1000, 1400])}
@@ -112,47 +97,59 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
           className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.05]"
           fallback={<span className="grid h-full w-full place-items-center bg-gradient-to-br from-panel to-panel-2 text-faint"><Icon name="car" size={34} /></span>}
         />
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+
+        <div className="absolute left-3 top-3 flex max-w-[calc(100%-4.5rem)] flex-wrap gap-1.5">
+          <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+            <Icon name="pin" size={11} className="shrink-0" /> <span className="truncate">{car.city}</span>
+          </span>
+          {car.instantBook && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+              <Icon name="instant" size={11} className="text-accent" /> {t('Instant book')}
+            </span>
+          )}
+        </div>
         <button
           onClick={(e) => { e.stopPropagation(); haptics.tick(); toggleFavorite(car.id); }}
           aria-label={fav ? t('Remove from saved') : t('Save car')}
           aria-pressed={fav}
-          className="pressable absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 before:absolute before:-inset-1.5 before:content-[''] hover:scale-110"
+          className="pressable absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 before:absolute before:-inset-1.5 before:content-[''] hover:scale-110"
         >
           <Icon name="heart" size={17} fill={fav} className={fav ? 'text-[#e2384d]' : 'text-ink'} strokeWidth={1.8} />
         </button>
-        {car.instantBook && (
-          <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-caption font-semibold text-ink shadow-hair backdrop-blur">
-            <Icon name="instant" size={11} className="text-accent" /> {t('Instant book')}
-          </span>
-        )}
-        {available && (
-          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-caption font-semibold text-white">
-            <Icon name="check" size={11} /> {t('Available')}
-          </span>
-        )}
-      </div>
 
-      <div className="px-1 pb-0.5 pt-3.5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="absolute inset-x-4 bottom-3.5 flex items-end justify-between gap-3 text-white">
           <div className="min-w-0">
-            <h3 className="truncate font-display text-copy font-semibold text-ink">
-              {car.make} {car.model}
-            </h3>
-            <p className="mt-0.5 truncate text-detail text-muted">
-              {car.trim ? `${car.trim} · ` : ''}
-              {car.year}
-            </p>
+            <h3 className="truncate font-display text-lead font-semibold leading-tight">{car.make} {car.model}</h3>
+            <p className="mt-0.5 truncate text-detail text-white/75">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
           </div>
-          <p className="shrink-0 text-right text-ink">
-            <span className="font-display text-lead font-semibold">{eur(car.pricePerDay)}</span>
-            <span className="text-detail text-muted"> {t('/ day')}</span>
+          <p className="shrink-0 text-right">
+            <span className="font-display text-xl font-semibold">{eur(car.pricePerDay)}</span>
+            <span className="text-detail text-white/75"> {t('/ day')}</span>
           </p>
         </div>
-        <p className="mt-2.5 flex items-center gap-3 text-caption text-muted">
-          <span className="inline-flex items-center gap-1"><Icon name="seat" size={13} /> {t('{n} seats', { n: car.seats })}</span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <p className="flex min-w-0 items-center gap-3 text-caption text-muted">
+          <span className="inline-flex items-center gap-1"><Icon name="seat" size={13} /> {car.seats}</span>
           <span className="inline-flex items-center gap-1"><Icon name="gear" size={13} /> {t(car.transmission)}</span>
           <span className="inline-flex items-center gap-1"><Icon name="gas" size={13} /> {t(car.fuel)}</span>
         </p>
+        <span className="inline-flex shrink-0 items-center gap-1 text-caption font-semibold text-ink-soft">
+          {rated ? (
+            <>
+              <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(1)} <span className="font-normal text-faint">({car.trips})</span>
+            </>
+          ) : (
+            <span className="rounded-full bg-accent-050 px-2 py-0.5 text-accent-700">{t('New')}</span>
+          )}
+        </span>
+        {available && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-caption font-semibold text-white">
+            <Icon name="check" size={11} /> {t('Available')}
+          </span>
+        )}
       </div>
         </>
       )}
