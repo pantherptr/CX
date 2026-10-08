@@ -9,7 +9,7 @@ import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
 import { fetchMyStampFor, fetchMyTripMemoryFor, formatTripPeriod, publishTripMemory, setStampVisibility, syncMyTripStamps, type TripStampData } from '../lib/data/tripMemories';
-import { TripStamp } from './TripStamp';
+import { TripStamp, StampInkFilter } from './TripStamp';
 import type { Booking } from '../lib/data/bookings';
 
 const MAX = 400;
@@ -86,7 +86,8 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
     <>
       {stampData && (
         <section className="mt-6 flex flex-col items-center rounded-3xl bg-panel/60 px-5 pb-5 pt-7">
-          <div className="w-full max-w-[16rem]"><TripStamp stamp={stampData} /></div>
+          <StampInkFilter />
+          <div className="w-full max-w-[22rem]"><TripStamp stamp={stampData} /></div>
           <button
             type="button"
             onClick={() => void toggleStamp()}
