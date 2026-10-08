@@ -47,6 +47,9 @@ end;
 $$;
 
 -- 4. The list: the actor comes back only for a connection (or a follow).
+--    (Dropped first: the live function's column list can differ from the one
+--    in the migration history, and Postgres won't change a return type in place.)
+drop function if exists public.fetch_my_notifications(integer, timestamptz);
 create or replace function public.fetch_my_notifications(p_limit integer default 30, p_before timestamptz default null)
 returns table (
   id uuid, type text, created_at timestamptz, read_at timestamptz,
