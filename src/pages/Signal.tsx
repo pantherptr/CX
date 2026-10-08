@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useMediaQuery } from '../components/motion';
-import { Tap, AnimatePresence } from '../components/motionKit';
+import { Tap, AnimatePresence, motion } from '../components/motionKit';
 import { SignalLogo, SignalSHero } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
@@ -396,17 +396,29 @@ export default function Signal() {
             stays out of the way until they actually want it. Sticky so
             it's reachable from wherever they've scrolled to, not just the
             very top. */}
-        {newPostsAvailable && posts && posts.length > 0 && (
-          <div className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-30 flex animate-fade-up justify-center py-1.5">
-            <Tap
-              onClick={handleLoadNewPosts}
-              className="flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-detail font-semibold text-white shadow-pop"
+        <AnimatePresence>
+          {newPostsAvailable && posts && posts.length > 0 && (
+            <motion.div
+              key="new-posts"
+              initial={{ opacity: 0, y: -14, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 460, damping: 30 }}
+              className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-30 flex justify-center py-2"
             >
-              <Icon name="chevronUp" size={15} />
-              New posts
-            </Tap>
-          </div>
-        )}
+              <Tap
+                onClick={handleLoadNewPosts}
+                className="group flex items-center gap-2 rounded-full bg-ink/90 py-1.5 pl-2 pr-4 text-[13.5px] font-semibold tracking-tight text-white shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)] ring-1 ring-white/15 backdrop-blur-xl"
+              >
+                <span className="relative grid h-6 w-6 place-items-center rounded-full bg-accent-bright text-white">
+                  <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-full bg-accent-bright/50 [animation-duration:2.2s]" />
+                  <Icon name="chevronUp" size={14} />
+                </span>
+                New posts
+              </Tap>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {posts === null ? (
           <>
