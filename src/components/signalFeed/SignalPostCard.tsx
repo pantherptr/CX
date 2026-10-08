@@ -1127,15 +1127,15 @@ export function SignalPostCard({
         </Tap>
       </div>
 
-      {/* The stats bar under every post: views, Respects and Saves for
-          everyone (numbers only — never who), plus Shares and the
-          "Performance" label for Owner/Admin. It fills in as people react. */}
+      {/* The stats bar under every post: a plain row of icon + number — views,
+          Respects and Saves for everyone (numbers only, never who), plus
+          Shares and the "Performance" label for Owner/Admin. It fills in as
+          people react. For Owner/Admin the eye also adds a view on tap (hold
+          removes the extras you added; the +N counts them). */}
       {(canManage || post.viewCount > 0 || post.likeCount > 0 || post.saveCount > 0) && (
-        <div className="border-t border-line px-4 py-3 sm:px-5">
-          {canManage && <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</p>}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Views: for Owner/Admin this chip adds a view on tap (hold removes
-                the extras you added); the +N is how many you've added. */}
+        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 sm:px-5">
+          {canManage ? <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span> : <span />}
+          <div className="flex items-center gap-4 text-ink-soft">
             {(post.viewCount > 0 || isTeamViewer) &&
               (isTeamViewer ? (
                 <button
@@ -1146,33 +1146,30 @@ export function SignalPostCard({
                   onPointerLeave={viewPressEnd}
                   onPointerCancel={viewPressEnd}
                   aria-label="Add a view — hold to remove yours"
-                  className="pressable inline-flex min-h-10 select-none items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft"
+                  className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                 >
-                  <EyeIcon size={17} playKey={viewPlay} className="shrink-0 text-faint" />
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
-                  <span className="text-[14px] font-medium leading-none">views</span>
-                  <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none text-white">
+                  <EyeIcon size={16} playKey={viewPlay} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
+                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
                   </span>
                 </button>
               ) : (
-                <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
-                  <EyeIcon size={17} className="shrink-0 text-faint" />
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
-                  <span className="text-[14px] font-medium leading-none">views</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <EyeIcon size={16} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                 </span>
               ))}
             {([
-              ['like', post.likeCount, 'likes', true],
-              ['bookmark', post.saveCount, 'saves', true],
-              ['share', post.shareCount, 'shares', false],
+              ['like', post.likeCount, true],
+              ['bookmark', post.saveCount, true],
+              ['share', post.shareCount, false],
             ] as const)
-              .filter(([, n, , public_]) => (public_ ? n > 0 || canManage : canManage))
-              .map(([icon, n, label]) => (
-                <span key={label} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
-                  <Icon name={icon} size={16} className="shrink-0 text-faint" />
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(n)}</span>
-                  <span className="text-[14px] font-medium leading-none">{label}</span>
+              .filter(([, n, isPublic]) => (isPublic ? n > 0 || canManage : canManage))
+              .map(([icon, n]) => (
+                <span key={icon} className="inline-flex items-center gap-1.5">
+                  <Icon name={icon} size={15} className="shrink-0 text-faint" />
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span>
                 </span>
               ))}
           </div>
