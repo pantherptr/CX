@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLightStatusBar } from '../../lib/useLightStatusBar';
+import { useApp } from '../../lib/store';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
@@ -60,6 +61,7 @@ export function SignalStoryViewer({
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { session } = useAuth();
+  const { toast } = useApp();
   const reduceMotion = !!useReducedMotion();
   useLightStatusBar();
   const [storyIndex, setStoryIndex] = useState(startIndex);
@@ -72,9 +74,10 @@ export function SignalStoryViewer({
   const [holdPaused, setPaused] = useState(false);
   // The header's pause/play button — separate from hold-to-pause, which
   // releases itself on touch end and would otherwise undo a manual pause.
-  const [manualPaused, setManualPaused] = useState(false);
-  const paused = holdPaused || manualPaused;
+  // Paused only while a finger (or the mouse) is held on the Story.
+  const paused = holdPaused;
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // Respect is per-story (one respect_count for the whole Story, not per
   // slide) — the `stories` prop is a fixed snapshot for this viewer's
   // lifetime, so a toggle here is tracked locally per story id rather
@@ -127,7 +130,6 @@ export function SignalStoryViewer({
   useEffect(() => {
     setVideoProgress(0);
     setMuted(true);
-    setManualPaused(false);
   }, [slide?.id]);
 
   // Hold-to-pause already drives the image slide's CSS animation via
@@ -328,15 +330,24 @@ export function SignalStoryViewer({
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(deleteConfirmMessage)) return;
+  // The confirmation is an in-app sheet, not `window.confirm`: inside the iOS
+  // app's web view the native confirm can silently answer "no", which made
+  // Delete look like it did nothing. A failed delete now says why.
+  const handleDelete = () => {
+    endHold();
+    setConfirmDelete(true);
+  };
+  const runDelete = async () => {
     setDeleting(true);
     const { error } = await onDeleteStory(story.id);
     setDeleting(false);
-    if (!error) {
-      onStoryDeleted();
-      onClose();
+    setConfirmDelete(false);
+    if (error) {
+      toast({ title: 'Could not delete', desc: error, icon: 'info' });
+      return;
     }
+    onStoryDeleted();
+    onClose();
   };
 
   const handleToggleRespect = async (e: React.MouseEvent) => {
@@ -535,13 +546,6 @@ export function SignalStoryViewer({
               </div>
             </button>
             <div className="ml-auto flex items-center gap-1">
-              <button
-                onClick={(e) => { e.stopPropagation(); setManualPaused((p) => !p); }}
-                aria-label={manualPaused ? 'Play' : 'Pause'}
-                className="grid h-10 w-10 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Icon name={manualPaused ? 'play' : 'pause'} size={17} />
-              </button>
               {/* Author-or-admin only, same rule fetch_empire_story_insights
                   enforces server-side — opens the aggregate-only Views/
                   Respects panel. There is deliberately no "who viewed"
@@ -599,6 +603,28 @@ export function SignalStoryViewer({
         )}
       </div>
       </StoryCanvas>
+
+      {confirmDelete && (
+        <div className="absolute inset-0 z-[320] flex items-end justify-center bg-black/55 sm:items-center" onClick={() => !deleting && setConfirmDelete(false)}>
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm animate-fade-up rounded-t-3xl bg-surface p-5 sm:rounded-3xl"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-center font-display text-lead font-semibold text-ink">{deleteConfirmMessage}</p>
+            <div className="mt-5 grid gap-2">
+              <button onClick={() => void runDelete()} disabled={deleting} className="btn min-h-12 justify-center rounded-full bg-danger text-white disabled:opacity-60">
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+              <button onClick={() => setConfirmDelete(false)} disabled={deleting} className="btn btn-secondary min-h-12 justify-center rounded-full">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {insightsOpen && <SignalStoryInsights storyId={story.id} onClose={() => setInsightsOpen(false)} />}
     </div>
