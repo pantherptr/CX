@@ -132,51 +132,46 @@ export function SignalCommunityComposer({
     }
   };
 
-  const addImageFiles = (list: FileList | null) => {
-    if (!list) return;
+  // One picker for photos and videos together: each file is checked by its
+  // own kind, and the 4-item limit counts everything accepted so far.
+  const addMediaFiles = async (list: FileList | null) => {
+    if (!list || list.length === 0) return;
+    setMediaError(null);
     const accepted: PendingMedia[] = [];
     let firstError: string | null = null;
+    let hasVideo = false;
     for (const file of Array.from(list)) {
-      if (totalMedia + accepted.length >= MAX_MEDIA) {
-        firstError ??= `You can add up to ${MAX_MEDIA} items.`;
-        break;
-      }
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        firstError ??= `“${file.name}” must be a JPEG, PNG or WebP image.`;
-        continue;
-      }
-      if (file.size > MAX_BYTES) {
-        firstError ??= `“${file.name}” is larger than 5MB.`;
-        continue;
-      }
-      const preview = URL.createObjectURL(file);
-      objectUrls.current.push(preview);
-      accepted.push({ file, preview, mediaKind: 'image' });
+      if (file.type.startsWith('video/')) hasVideo = true;
     }
-    if (accepted.length) setPending((p) => [...p, ...accepted]);
-    setMediaError(firstError);
-  };
-
-  const addVideoFiles = async (list: FileList | null) => {
-    if (!list || list.length === 0) return;
-    setValidatingVideo(true);
-    setMediaError(null);
+    if (hasVideo) setValidatingVideo(true);
     try {
-      const accepted: PendingMedia[] = [];
-      let firstError: string | null = null;
       for (const file of Array.from(list)) {
         if (totalMedia + accepted.length >= MAX_MEDIA) {
           firstError ??= `You can add up to ${MAX_MEDIA} items.`;
           break;
         }
-        const result = await validateVideoFile(file, { maxBytes: MAX_VIDEO_BYTES, maxDurationSec: MAX_VIDEO_DURATION_SEC });
-        if (!result.ok) {
-          firstError ??= result.error ?? `"${file.name}" couldn't be added.`;
+        if (file.type.startsWith('video/')) {
+          const result = await validateVideoFile(file, { maxBytes: MAX_VIDEO_BYTES, maxDurationSec: MAX_VIDEO_DURATION_SEC });
+          if (!result.ok) {
+            firstError ??= result.error ?? `"${file.name}" couldn't be added.`;
+            continue;
+          }
+          const preview = URL.createObjectURL(file);
+          objectUrls.current.push(preview);
+          accepted.push({ file, preview, mediaKind: 'video' });
+          continue;
+        }
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+          firstError ??= `“${file.name}” must be a JPEG, PNG or WebP image.`;
+          continue;
+        }
+        if (file.size > MAX_BYTES) {
+          firstError ??= `“${file.name}” is larger than 5MB.`;
           continue;
         }
         const preview = URL.createObjectURL(file);
         objectUrls.current.push(preview);
-        accepted.push({ file, preview, mediaKind: 'video' });
+        accepted.push({ file, preview, mediaKind: 'image' });
       }
       if (accepted.length) setPending((p) => [...p, ...accepted]);
       setMediaError(firstError);
@@ -420,29 +415,17 @@ export function SignalCommunityComposer({
                 <div className="mt-3 flex items-center gap-1 border-t border-line pt-3">
                   <label
                     onMouseDown={holdFocus}
-                    aria-label="Add photo"
-                    className={`pressable grid h-11 w-11 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA ? 'pointer-events-none opacity-40' : ''}`}
+                    aria-label="Add photo or video"
+                    className={`pressable inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full bg-accent-050 px-4 text-detail font-semibold text-accent-700 transition-colors hover:bg-accent-100 ${totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''}`}
                   >
-                    <Icon name="image" size={21} />
+                    {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="image" size={20} />}
+                    {validatingVideo ? 'Checking…' : 'Photo / Video'}
                     <input
                       type="file"
-                      accept={ACCEPTED_TYPES.join(',')}
+                      accept={[...ACCEPTED_TYPES, ...VIDEO_MIME_TYPES].join(',')}
                       multiple
                       className="hidden"
-                      onChange={(e) => { addImageFiles(e.target.files); e.target.value = ''; }}
-                    />
-                  </label>
-                  <label
-                    onMouseDown={holdFocus}
-                    aria-label="Add video"
-                    className={`pressable grid h-11 w-11 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''}`}
-                  >
-                    {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={21} />}
-                    <input
-                      type="file"
-                      accept={VIDEO_MIME_TYPES.join(',')}
-                      className="hidden"
-                      onChange={(e) => { addVideoFiles(e.target.files); e.target.value = ''; }}
+                      onChange={(e) => { void addMediaFiles(e.target.files); e.target.value = ''; }}
                     />
                   </label>
                   {canAttachVehicle && (

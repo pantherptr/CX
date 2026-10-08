@@ -40,6 +40,14 @@ export const EMPIRE_CATEGORIES: { value: EmpireCategory; label: string }[] = [
 const MEDIA_BUCKET = 'empire-post-media';
 const FEED_PAGE_SIZE = 20;
 
+/** `create_empire_post` rejects an empty body, but a post may be just a photo or
+ *  video. A media-only post is stored with this invisible character instead;
+ *  every row read from the database goes through `fromStoredBody` so the rest
+ *  of the app only ever sees an empty string. */
+export const BLANK_BODY = '\u200B';
+export const toStoredBody = (body: string) => (body.trim() === '' ? BLANK_BODY : body);
+export const fromStoredBody = (body: string) => body.replace(/\u200B/g, '');
+
 export interface EmpirePost {
   id: string;
   authorId: string;
@@ -215,7 +223,7 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
     authorIsVerifiedClient: row.author_is_verified_client,
     category: row.category,
     title: row.title,
-    body: row.body,
+    body: fromStoredBody(row.body),
     mediaPaths: row.media_paths ?? [],
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,
@@ -560,7 +568,7 @@ export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ 
   const { data, error } = await supabase.rpc('create_empire_post', {
     p_category: input.category,
     p_title: input.title ?? null,
-    p_body: input.body,
+    p_body: toStoredBody(input.body),
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
     p_publisher_type: input.publisherType,
@@ -578,7 +586,7 @@ export async function updateEmpirePost(
     p_post_id: postId,
     p_category: input.category,
     p_title: input.title ?? null,
-    p_body: input.body,
+    p_body: toStoredBody(input.body),
     p_media_paths: input.mediaPaths ?? [],
     p_comments_disabled: input.commentsDisabled ?? false,
     p_publisher_type: input.publisherType,
@@ -615,7 +623,7 @@ function mapCreatedPost(row: {
     authorIsVerifiedClient: false,
     category: row.category,
     title: row.title,
-    body: row.body,
+    body: fromStoredBody(row.body),
     mediaPaths: row.media_paths ?? [],
     mediaUrls: (row.media_paths ?? []).map(mediaUrlFor),
     isPinned: row.is_pinned,

@@ -744,11 +744,13 @@ export function SignalPostCard({
       {post.title && (
         <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
-      <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
-        {tr.texts[1]}
-      </p>
+      {post.body.trim() !== '' && (
+        <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
+          {tr.texts[1]}
+        </p>
+      )}
 
-      {tr.available && (
+      {tr.available && post.body.trim() !== '' && (
         <button
           type="button"
           onClick={tr.toggle}
