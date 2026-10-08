@@ -16,6 +16,7 @@ import { useConversations, findOrCreateConversation } from '../lib/data/messages
 import { useMyRewards, rewardStatus, type Reward, type RewardStatus } from '../lib/data/rewards';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
+import { useLocale } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
 
 const TABS: { id: TripPhase; label: string }[] = [
@@ -152,6 +153,7 @@ const relativeTime = (iso: string) => {
 };
 
 function TripRow({ booking }: { booking: Booking }) {
+  const { t } = useLocale();
   const phase = classifyBooking(booking);
   return (
     <Link to={`/trips/${booking.id}`} className="group flex items-center gap-4 p-4 transition-colors hover:bg-panel/40">
@@ -167,6 +169,11 @@ function TripRow({ booking }: { booking: Booking }) {
           {fmtDate(booking.startDate)} → {fmtDate(booking.endDate)} · {booking.fulfillmentType === 'delivery' ? booking.deliveryAddress : (booking.pickupLocation || booking.car.location)}
         </p>
         <p className="mt-0.5 text-caption text-faint">Booking {booking.reference}</p>
+        {phase === 'completed' && (
+          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-accent-050 px-2.5 py-1 text-caption font-semibold text-accent-700">
+            <Icon name="key" size={11} /> {t('Keychain card')}
+          </span>
+        )}
       </div>
       <div className="text-right">
         <p className="text-body font-medium text-ink">{eur(booking.totalPrice)}</p>
