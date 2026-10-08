@@ -193,12 +193,12 @@ export function SignalPostComposer({
         ownerAvatarUrl={profile?.avatar_url ?? null}
       />
 
-      <div className="mt-4 flex flex-wrap gap-1.5">
+      <div className="no-scrollbar -mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
         {EMPIRE_CATEGORIES.map((c) => (
           <button
             key={c.value}
             onClick={() => setCategory(c.value)}
-            className={`rounded-full px-3 py-1.5 text-caption font-semibold uppercase tracking-wide transition-colors ${
+            className={`shrink-0 rounded-full px-4 py-2 text-detail font-semibold transition-colors ${
               category === c.value ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:bg-panel-2'
             }`}
           >
@@ -211,14 +211,14 @@ export function SignalPostComposer({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (optional)"
-        className="input mt-3 !py-2.5 font-display font-semibold"
+        className="input mt-3 !py-3 !text-[16px] font-display font-semibold"
       />
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Share news, an announcement, a new car…"
-        rows={4}
-        className="input mt-2 resize-none !py-2.5"
+        rows={5}
+        className="input mt-2 min-h-[8.5rem] resize-none !py-3 !text-[16px]"
       />
 
       {(existingUrls.length > 0 || pending.length > 0) && (
@@ -278,12 +278,12 @@ export function SignalPostComposer({
 
       {mediaError && <p className="mt-2 text-caption font-medium text-danger">{mediaError}</p>}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <label
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={(e) => { e.preventDefault(); setDragOver(false); addImageFiles(e.dataTransfer.files); }}
-          className={`pressable inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-detail font-semibold transition-colors ${
+          className={`pressable inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-2 text-detail font-semibold transition-colors ${
             dragOver ? 'border-accent bg-accent-050 text-accent-700' : 'border-line text-ink-soft hover:border-line-strong hover:text-ink'
           } ${totalMedia >= MAX_MEDIA ? 'pointer-events-none opacity-40' : ''}`}
         >
@@ -299,7 +299,7 @@ export function SignalPostComposer({
         </label>
 
         <label
-          className={`pressable inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3.5 py-2 text-detail font-semibold text-ink-soft transition-colors hover:border-line-strong hover:text-ink ${
+          className={`pressable inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-line px-2.5 py-2 text-detail font-semibold text-ink-soft transition-colors hover:border-line-strong hover:text-ink ${
             totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''
           }`}
         >
@@ -316,13 +316,13 @@ export function SignalPostComposer({
 
       {error && <p className="mt-3 text-detail font-medium text-danger">{error}</p>}
 
-      <div className="mt-4 flex items-center justify-end gap-2">
+      <div className="mt-4 flex items-center gap-2">
         {onCancel && (
-          <button onClick={onCancel} className="btn btn-secondary btn-sm">
+          <button onClick={onCancel} className="btn btn-secondary min-h-12 rounded-full px-5">
             Cancel
           </button>
         )}
-        <button onClick={handleSubmit} disabled={submitting} className="btn btn-primary btn-sm disabled:opacity-50">
+        <button onClick={handleSubmit} disabled={submitting} className="btn btn-primary min-h-12 flex-1 justify-center rounded-full text-[15px] disabled:opacity-50">
           {submitting ? 'Publishing…' : editing ? 'Save changes' : 'Publish'}
         </button>
       </div>
