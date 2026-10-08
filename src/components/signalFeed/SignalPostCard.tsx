@@ -832,12 +832,12 @@ export function SignalPostCard({
 
   return (
     <article
-      className={`card relative mb-4 animate-fade-up overflow-hidden rounded-3xl p-0 shadow-[0_18px_44px_-26px_rgba(0,0,0,0.3)] ${
+      className={`card relative mb-5 animate-fade-up overflow-hidden rounded-3xl p-0 shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34),0_1px_2px_rgba(0,0,0,0.05)] ${
         featured
           ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
           : isExclusive
             ? 'ring-1 ring-[#c9971c]/40'
-            : ''
+            : 'ring-1 ring-black/[0.06]'
       }`}
     >
       {/* The one card on the whole feed that should read as "CX's own" —
