@@ -1108,31 +1108,14 @@ export function SignalPostCard({
           </Tap>
         )}
 
-        {(post.viewCount > 0 || isTeamViewer) &&
-          (isTeamViewer ? (
-            <button
-              type="button"
-              onClick={viewClick}
-              onPointerDown={viewPressStart}
-              onPointerUp={viewPressEnd}
-              onPointerLeave={viewPressEnd}
-              onPointerCancel={viewPressEnd}
-              aria-label="Add a view — hold to remove yours"
-              className={`pressable ${ACTION} text-ink-soft hover:text-ink`}
-            >
-              <span className={`${ICON_WRAP} group-hover:bg-panel`}>
-                <EyeIcon size={18} playKey={viewPlay} />
-              </span>
-              {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
-            </button>
-          ) : (
-            <span className={`${ACTION} text-ink-soft`}>
-              <span className={ICON_WRAP}>
-                <EyeIcon size={18} />
-              </span>
-              {countOf(post.viewCount)}
+        {post.viewCount > 0 && (
+          <span className={`${ACTION} text-ink-soft`}>
+            <span className={ICON_WRAP}>
+              <EyeIcon size={18} />
             </span>
-          ))}
+            {countOf(post.viewCount)}
+          </span>
+        )}
 
         {/* Owner-only — add_empire_post_comment enforces this server-side;
             hiding it for everyone else is just honest UI. No demo
@@ -1184,18 +1167,45 @@ export function SignalPostCard({
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
       {canManage && (
-        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 sm:px-5">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>
-          <div className="flex items-center gap-4 text-ink-soft">
+        <div className="border-t border-line px-4 py-3 sm:px-5">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</p>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Views: for Owner/Admin this chip adds a view on tap (hold removes
+                the extras you added); the +N is how many you've added. */}
+            {isTeamViewer ? (
+              <button
+                type="button"
+                onClick={viewClick}
+                onPointerDown={viewPressStart}
+                onPointerUp={viewPressEnd}
+                onPointerLeave={viewPressEnd}
+                onPointerCancel={viewPressEnd}
+                aria-label="Add a view — hold to remove yours"
+                className="pressable inline-flex min-h-10 select-none items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft"
+              >
+                <EyeIcon size={17} playKey={viewPlay} className="shrink-0 text-faint" />
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
+                <span className="text-[14px] font-medium leading-none">views</span>
+                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none text-white">
+                  {myViews > 1 ? `+${myViews - 1}` : '+'}
+                </span>
+              </button>
+            ) : (
+              <span className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
+                <EyeIcon size={17} className="shrink-0 text-faint" />
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(post.viewCount)}</span>
+                <span className="text-[14px] font-medium leading-none">views</span>
+              </span>
+            )}
             {([
-              ['eye', post.viewCount],
-              ['like', post.likeCount],
-              ['bookmark', post.saveCount],
-              ['share', post.shareCount],
-            ] as const).map(([icon, n]) => (
-              <span key={icon} className="inline-flex items-center gap-1.5">
-                <Icon name={icon} size={15} className="text-faint" />
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span>
+              ['like', post.likeCount, 'likes'],
+              ['bookmark', post.saveCount, 'saves'],
+              ['share', post.shareCount, 'shares'],
+            ] as const).map(([icon, n, label]) => (
+              <span key={label} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-panel px-3.5 text-ink-soft">
+                <Icon name={icon} size={16} className="shrink-0 text-faint" />
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink">{compact(n)}</span>
+                <span className="text-[14px] font-medium leading-none">{label}</span>
               </span>
             ))}
           </div>
