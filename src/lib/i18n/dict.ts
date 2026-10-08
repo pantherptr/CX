@@ -25,6 +25,7 @@ const ROWS: Row[] = [
   ["A poll needs its question — write it in the text.", "Un sondaggio ha bisogno della domanda: scrivila nel testo.", "Un sondaj are nevoie de întrebare — scrie-o în text.", "Una encuesta necesita su pregunta: escríbela en el texto."],
     ["Open photo or video", "Apri foto o video", "Deschide fotografia sau videoclipul", "Abrir foto o vídeo"],
   ["Sort", "Ordina", "Sortează", "Ordenar"],
+    ["Sample", "Esempio", "Exemplu", "Ejemplo"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----

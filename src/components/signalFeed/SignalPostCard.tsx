@@ -920,6 +920,7 @@ export function SignalPostCard({
             {` · ${timeAgo(post.createdAt)}`}
             {post.editedAt && ' · Edited'}
             {post.isArchived && ' · Archived'}
+            {post.isDemo && ` · ${t('Sample')}`}
           </p>
         </div>
         {/* Every item here (Edit/Pin/Feature/Archive/Delete/Report) acts

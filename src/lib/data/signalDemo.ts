@@ -46,13 +46,26 @@ function demoStats(row: DemoPostRow) {
   return { likes, saves, views };
 }
 
+const AVATAR_COLORS = ['#0f766e', '#1d4ed8', '#7c3aed', '#be123c', '#b45309', '#15803d', '#0e7490', '#4338ca'];
+
+/** Sample people get a plain initials badge, not a photo of a real person. */
+export function demoAvatar(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const initials = ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  let h = 0;
+  for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const bg = AVATAR_COLORS[h % AVATAR_COLORS.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" fill="${bg}"/><text x="48" y="48" dy=".35em" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="38" font-weight="600" fill="#fff">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function mapDemoPost(row: DemoPostRow): EmpirePost {
   const stats = demoStats(row);
   return {
     id: row.id,
     authorId: row.demo_author_id,
     authorName: row.author_name,
-    authorAvatarUrl: row.author_avatar_url,
+    authorAvatarUrl: demoAvatar(row.author_name),
     authorUsername: row.author_username,
     authorRole: row.author_role === 'host' ? 'host' : 'client',
     authorIsOwner: false,
@@ -116,7 +129,7 @@ export async function fetchSignalDemoProfile(demoId: string): Promise<SignalDemo
   const rows = data as { id: string; full_name: string; username: string; avatar_url: string; bio: string | null; role: 'host' | 'verified_client'; post_count: number }[];
   if (rows.length === 0) return null;
   const r = rows[0];
-  return { id: r.id, fullName: r.full_name, username: r.username, avatarUrl: r.avatar_url, bio: r.bio, role: r.role, postCount: r.post_count };
+  return { id: r.id, fullName: r.full_name, username: r.username, avatarUrl: demoAvatar(r.full_name), bio: r.bio, role: r.role, postCount: r.post_count };
 }
 
 export async function fetchSignalDemoPostsByAuthor(demoAuthorId: string, limit = DEMO_PAGE_SIZE): Promise<EmpirePost[]> {
