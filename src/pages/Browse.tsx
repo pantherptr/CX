@@ -404,7 +404,7 @@ export default function Browse() {
                 {activeCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-label font-semibold text-white">{activeCount}</span>}
               </button>
               <div className="relative">
-                <button onClick={() => setSortOpen((o) => !o)} className="btn btn-secondary" aria-haspopup="listbox">
+                <button onClick={() => setSortOpen((o) => !o)} className="btn btn-secondary" aria-haspopup="listbox" aria-expanded={sortOpen} aria-label={t('Sort')}>
                   <Icon name="sort" size={16} />
                   <span className="hidden sm:inline">{t(SORTS.find((s) => s.id === sort)!.label)}</span>
                   <Icon name="chevronDown" size={15} className="text-muted" />

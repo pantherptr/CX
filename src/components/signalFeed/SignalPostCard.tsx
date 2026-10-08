@@ -183,7 +183,7 @@ function PostImage({
   const dynamicClass = dynamicAspect ? `w-full ${MEDIA_MAX_HEIGHT_CLASS}` : className;
   const style = dynamicAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5' } : undefined;
   const box = onClick ? (
-    <button onClick={handleTap} style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
+    <button onClick={handleTap} style={style} aria-label="Open photo or video" className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
   ) : (
     <div style={style} className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</div>
   );
@@ -901,7 +901,7 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-3 px-4 pb-3 pt-4 sm:px-5">
-        <Link to={signalProfileHref(post, profileBase)} viewTransition className="shrink-0">
+        <Link to={signalProfileHref(post, profileBase)} viewTransition aria-label={post.authorName} className="shrink-0">
           <span className="block rounded-full ring-2 ring-surface"><SignalIdentityAvatar identity={identity} size={42} /></span>
         </Link>
         <div className="min-w-0 flex-1 pt-0.5">

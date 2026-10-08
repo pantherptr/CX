@@ -23,6 +23,8 @@ const ROWS: Row[] = [
     ["Spent", "Speso", "Cheltuit", "Gastado"],
     ["Add a photo, a video or some text before publishing.", "Aggiungi una foto, un video o del testo prima di pubblicare.", "Adaugă o fotografie, un videoclip sau text înainte de a publica.", "Añade una foto, un vídeo o texto antes de publicar."],
   ["A poll needs its question — write it in the text.", "Un sondaggio ha bisogno della domanda: scrivila nel testo.", "Un sondaj are nevoie de întrebare — scrie-o în text.", "Una encuesta necesita su pregunta: escríbela en el texto."],
+    ["Open photo or video", "Apri foto o video", "Deschide fotografia sau videoclipul", "Abrir foto o vídeo"],
+  ["Sort", "Ordina", "Sortează", "Ordenar"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----
