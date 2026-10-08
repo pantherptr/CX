@@ -11,7 +11,6 @@ import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer'
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
-import { SignalSpaceSwitch } from '../components/signalFeed/SignalSpaceSwitch';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
 import { SignalPostDetail } from '../components/signalFeed/SignalPostDetail';
@@ -390,8 +389,6 @@ export default function Signal() {
             onDone={(post) => { setComposerOpen(false); prependPost(post); }}
           />
         )}
-
-        <SignalSpaceSwitch space={space} onChange={(sp) => navigate(sp === 'official' ? '/signal' : '/signal/community')} />
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
