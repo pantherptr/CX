@@ -30,10 +30,13 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
   const days = Math.max(1, Math.round((new Date(booking.endDate).getTime() - new Date(booking.startDate).getTime()) / 86_400_000));
   const [text, setText] = useState('');
 
+  // Prefill with the real city once it is known — until the person edits the text.
+  const [touched, setTouched] = useState(false);
   useEffect(() => {
+    if (touched || !city) return;
     setText(t('{n} days in {city} with the {car}.', { n: days, city, car }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booking.id, lang]);
+  }, [booking.id, lang, city, touched]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,7 +114,7 @@ export function TripMemoryPrompt({ booking }: { booking: Booking }) {
           <textarea
             id="trip-memory-text"
             value={text}
-            onChange={(e) => setText(e.target.value.slice(0, MAX))}
+            onChange={(e) => { setTouched(true); setText(e.target.value.slice(0, MAX)); }}
             rows={4}
             className="mt-1.5 w-full resize-none rounded-2xl border border-line bg-panel p-3.5 text-[16px] leading-snug text-ink outline-none focus:border-line-strong"
           />

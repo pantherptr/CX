@@ -11,7 +11,7 @@ import { KeysCta } from './signalFeed/KeysCta';
 /** The car's memory: verified trips people chose to publish, told like pages
  *  of a logbook — not a list of reviews. Signed-in members only, like SIGNAL. */
 export function CarRoadbook({ carId, carSlug }: { carId: string; carSlug: string }) {
-  const { t, lang } = useLocale();
+  const { t } = useLocale();
   const { session } = useAuth();
   const [entries, setEntries] = useState<RoadbookEntry[] | null>(null);
 
@@ -45,6 +45,11 @@ export function CarRoadbook({ carId, carSlug }: { carId: string; carSlug: string
     );
   }
 
+  return <RoadbookList entries={entries} carId={carId} carSlug={carSlug} />;
+}
+
+export function RoadbookList({ entries, carId, carSlug }: { entries: RoadbookEntry[]; carId: string; carSlug: string }) {
+  const { t, lang } = useLocale();
   return (
     <div>
       <p className="mb-4 text-detail text-muted">{t('Pages from the people who drove it.')}</p>
