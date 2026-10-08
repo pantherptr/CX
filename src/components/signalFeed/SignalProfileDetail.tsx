@@ -312,6 +312,7 @@ export function SignalProfileDetail({
             hostStats={realProfile?.isHost ? { rating: realProfile.rating, trips: realProfile.trips } : null}
             followers={showFollowCounts && realProfile ? { count: followersCount, onOpen: () => setFollowListMode('followers') } : undefined}
             following={showFollowCounts && realProfile ? { count: realProfile.followingCount, onOpen: () => setFollowListMode('following') } : undefined}
+            postsCount={posts ? posts.length : undefined}
             hasActiveStory={Boolean(myStory)}
             onOpenStory={() => setStoryViewerOpen(true)}
             onClose={onClose}

@@ -23,13 +23,13 @@ function CountUp({ value, children }: { value: number; children?: ReactNode }) {
 function StatCell({ value, label, onClick, suffix, decimals }: { value: number; label: string; onClick?: () => void; suffix?: string; decimals?: number }) {
   const body = (
     <>
-      <p className="font-display text-[1.6rem] font-semibold leading-none text-ink">
+      <p className="font-display text-[1.85rem] font-semibold leading-none tracking-tight text-ink tabular-nums">
         {decimals !== undefined ? <>{value.toFixed(decimals)}{suffix}</> : <CountUp value={value}>{suffix}</CountUp>}
       </p>
-      <p className="mt-1.5 text-caption font-medium text-muted">{label}</p>
+      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-faint">{label}</p>
     </>
   );
-  const cls = 'px-2 py-4 text-center';
+  const cls = 'px-2 py-5 text-center';
   return onClick ? (
     <button onClick={onClick} className={`pressable ${cls} transition-colors active:bg-panel`}>{body}</button>
   ) : (
@@ -57,6 +57,7 @@ export function SignalProfileHero({
   hostStats,
   followers,
   following,
+  postsCount,
   hasActiveStory,
   onOpenStory,
   action,
@@ -75,6 +76,7 @@ export function SignalProfileHero({
   hostStats?: { rating: number; trips: number } | null;
   followers?: { count: number; onOpen: () => void };
   following?: { count: number; onOpen: () => void };
+  postsCount?: number;
   hasActiveStory: boolean;
   onOpenStory: () => void;
   /** Follow, or Edit profile on your own. */
@@ -187,11 +189,12 @@ export function SignalProfileHero({
           </p>
         )}
 
-        {(followers || following || hostStats) && (
+        {(followers || following || hostStats || postsCount !== undefined) && (
           <div
-            className="mt-5 grid divide-x divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-hair"
-            style={{ gridTemplateColumns: `repeat(${(followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 2 : 0)}, minmax(0, 1fr))` }}
+            className="mt-5 grid divide-x divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_16px_36px_-24px_rgba(0,0,0,0.35)]"
+            style={{ gridTemplateColumns: `repeat(${(postsCount !== undefined ? 1 : 0) + (followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 2 : 0)}, minmax(0, 1fr))` }}
           >
+            {postsCount !== undefined && <StatCell value={postsCount} label="Posts" />}
             {followers && <StatCell value={followers.count} label="Followers" onClick={followers.onOpen} />}
             {following && <StatCell value={following.count} label="Following" onClick={following.onOpen} />}
             {hostStats && <StatCell value={hostStats.rating} label="Rating" suffix=" ★" decimals={1} />}
