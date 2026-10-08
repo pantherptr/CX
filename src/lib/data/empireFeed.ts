@@ -690,6 +690,27 @@ export async function toggleEmpirePostLike(postId: string): Promise<{ liked: boo
   return { liked: Boolean(data), error: null };
 }
 
+/** Owner/Admin only (0074): every call adds one more Respect. Resolves to how
+ *  many Respects the caller has on the post now. */
+export async function addEmpirePostRespect(postId: string): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_respect', { p_post_id: postId });
+  if (error) return { count: 0, error: error.message };
+  return { count: Number(data) || 0, error: null };
+}
+
+/** How many Respects the caller has given this post (0 for everyone but the team, at most 1). */
+export async function fetchMyRespectCount(postId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('my_empire_respect_count', { p_post_id: postId });
+  if (error) return 0;
+  return Number(data) || 0;
+}
+
+/** Takes back all of the caller's Respects on a post. */
+export async function clearMyRespects(postId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('clear_empire_post_respects', { p_post_id: postId });
+  return { error: error?.message ?? null };
+}
+
 export async function toggleEmpirePostSave(postId: string): Promise<{ saved: boolean; error: string | null }> {
   const { data, error } = await supabase.rpc('toggle_empire_post_save', { p_post_id: postId });
   if (error) return { saved: false, error: error.message };

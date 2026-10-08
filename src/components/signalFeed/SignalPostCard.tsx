@@ -5,7 +5,7 @@ import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import {
-  toggleEmpirePostLike, toggleEmpirePostSave, deleteEmpirePost, setEmpirePostPinned,
+  toggleEmpirePostLike, toggleEmpirePostSave, addEmpirePostRespect, fetchMyRespectCount, clearMyRespects, deleteEmpirePost, setEmpirePostPinned,
   setEmpirePostFeatured, setEmpirePostProfilePin, setEmpirePostArchived, markEmpirePostViewed,
   incrementEmpirePostImpression, incrementEmpirePostShare, reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
@@ -466,12 +466,81 @@ export function SignalPostCard({
     if (error) onChanged(post);
   };
 
+  // Owner and Admin can Respect a post as many times as they like (0074):
+  // every tap is +1 and the button shows how many they've given. Holding the
+  // button takes them all back. Everyone else keeps the one-tap toggle above.
+  const isTeamViewer = Boolean(viewerProfile?.is_owner || viewerProfile?.is_admin) && !post.isDemo;
+  const [myRespects, setMyRespects] = useState(0);
+  const holdTimerRef = useRef<number | undefined>(undefined);
+  const heldRespectRef = useRef(false);
+  useEffect(() => {
+    if (!isTeamViewer) return;
+    let cancelled = false;
+    fetchMyRespectCount(post.id).then((n) => { if (!cancelled) setMyRespects(n); });
+    return () => { cancelled = true; };
+  }, [isTeamViewer, post.id]);
+  useEffect(() => () => window.clearTimeout(holdTimerRef.current), []);
+
+  const handleTeamRespect = async () => {
+    const before = myRespects;
+    setMyRespects(before + 1);
+    onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + 1 });
+    setLikeBounce(true);
+    vibrateTap();
+    window.setTimeout(() => setLikeBounce(false), 300);
+    const { count, error } = await addEmpirePostRespect(post.id);
+    if (error) {
+      setMyRespects(before);
+      onChanged(post);
+      toast({ title: 'Could not add a Respect', desc: error, icon: 'info' });
+      return;
+    }
+    setMyRespects(count);
+  };
+
+  const handleClearRespects = async () => {
+    const before = myRespects;
+    if (before === 0) return;
+    setMyRespects(0);
+    onChanged({ ...post, likedByMe: false, likeCount: Math.max(0, post.likeCount - before) });
+    vibrateTap();
+    const { error } = await clearMyRespects(post.id);
+    if (error) {
+      setMyRespects(before);
+      onChanged(post);
+      toast({ title: 'Could not remove your Respects', desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Your Respects were removed', icon: 'check' });
+  };
+
+  const respectPressStart = () => {
+    heldRespectRef.current = false;
+    window.clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = window.setTimeout(() => {
+      heldRespectRef.current = true;
+      void handleClearRespects();
+    }, 650);
+  };
+  const respectPressEnd = () => window.clearTimeout(holdTimerRef.current);
+  const respectClick = () => {
+    if (heldRespectRef.current) {
+      heldRespectRef.current = false;
+      return;
+    }
+    void handleTeamRespect();
+  };
+
   // Double-tap only ever *gives* Respect, never takes it back — a second
   // double-tap on an already-respected photo just replays the burst, the
   // same one-way behavior people already expect from this gesture.
   // Signed-in only: there's no anonymous Respect to record.
   const handleDoubleTapRespect = session
     ? () => {
+        if (isTeamViewer) {
+          void handleTeamRespect();
+          return;
+        }
         if (post.likedByMe) {
           vibrateTap();
           return;
@@ -837,6 +906,28 @@ export function SignalPostCard({
             pop when it lands. `whitespace-nowrap` keeps "Respected" (the
             longer of the two labels) from ever wrapping to a second
             line and shifting the row's height. */}
+        {isTeamViewer ? (
+          <Tap
+            onClick={respectClick}
+            onPointerDown={respectPressStart}
+            onPointerUp={respectPressEnd}
+            onPointerLeave={respectPressEnd}
+            onPointerCancel={respectPressEnd}
+            scale={0.95}
+            aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
+            className={`flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
+              myRespects > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+            }`}
+          >
+            <Icon name="like" size={18} fill={myRespects > 0} className={`shrink-0 ${likeBounce ? 'animate-respect-pop' : ''}`} />
+            {myRespects > 0 ? 'Respected' : 'Respect'}
+            {myRespects > 0 && (
+              <span key={myRespects} className="animate-respect-pop grid h-[22px] min-w-[22px] place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none tabular-nums text-white">
+                {myRespects}
+              </span>
+            )}
+          </Tap>
+        ) : (
         <Tap
           onClick={handleRespect}
           scale={0.95}
@@ -852,6 +943,7 @@ export function SignalPostCard({
           />
           {post.likedByMe ? 'Respected' : 'Respect'}
         </Tap>
+        )}
         {/* Owner-only — see isOwnerViewer above. add_empire_post_comment
             enforces this server-side regardless of what this button
             does; hiding it for everyone else isn't the real security
