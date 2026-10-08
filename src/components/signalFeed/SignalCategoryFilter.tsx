@@ -21,10 +21,10 @@ export function SignalCategoryFilter({
   onChange: (category: EmpireCategory | null) => void;
 }) {
   return (
-    <div className="no-scrollbar mb-2.5 flex gap-1.5 overflow-x-auto pb-1">
+    <div className="no-scrollbar sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-10 -mx-2.5 mb-2 flex gap-1.5 overflow-x-auto bg-bg/85 px-2.5 py-2 backdrop-blur-xl sm:-mx-4 sm:px-4 lg:top-16 lg:mx-0 lg:rounded-2xl lg:px-1">
       <button
         onClick={() => onChange(null)}
-        className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-caption font-semibold uppercase tracking-wide ${
+        className={`relative shrink-0 rounded-full px-4 py-2 text-detail font-semibold ${
           value === null ? 'text-white' : 'bg-panel text-ink-soft transition-colors hover:bg-panel-2'
         }`}
       >
@@ -35,7 +35,7 @@ export function SignalCategoryFilter({
         <button
           key={c.value}
           onClick={() => onChange(c.value)}
-          className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-caption font-semibold uppercase tracking-wide ${
+          className={`relative shrink-0 rounded-full px-4 py-2 text-detail font-semibold ${
             value === c.value ? 'text-white' : 'bg-panel text-ink-soft transition-colors hover:bg-panel-2'
           }`}
         >

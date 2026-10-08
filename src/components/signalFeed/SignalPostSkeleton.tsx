@@ -7,8 +7,8 @@
 export function SignalPostSkeleton() {
   return (
     <div className="card mb-2.5 overflow-hidden p-0">
-      <div className="flex items-center gap-2.5 p-3 pb-2 sm:px-4">
-        <div className="skeleton h-9 w-9 shrink-0 rounded-full" />
+      <div className="flex items-center gap-3 p-3 pb-2 sm:px-4">
+        <div className="skeleton h-11 w-11 shrink-0 rounded-full" />
         <div className="flex-1 space-y-2">
           <div className="skeleton h-3.5 w-32 rounded-md" />
           <div className="skeleton h-3 w-20 rounded-md" />
