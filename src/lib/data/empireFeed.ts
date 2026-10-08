@@ -711,6 +711,39 @@ export async function clearMyRespects(postId: string): Promise<{ error: string |
   return { error: error?.message ?? null };
 }
 
+/** Owner/Admin only (0075): every call adds one more Save. */
+export async function addEmpirePostSave(postId: string): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_save', { p_post_id: postId });
+  if (error) return { count: 0, error: error.message };
+  return { count: Number(data) || 0, error: null };
+}
+export async function fetchMySaveCount(postId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('my_empire_save_count', { p_post_id: postId });
+  if (error) return 0;
+  return Number(data) || 0;
+}
+export async function clearMySaves(postId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('clear_empire_post_saves', { p_post_id: postId });
+  return { error: error?.message ?? null };
+}
+
+/** Owner/Admin only (0075): every call adds one more View. */
+export async function addEmpirePostView(postId: string): Promise<{ count: number; error: string | null }> {
+  const { data, error } = await supabase.rpc('add_empire_post_view', { p_post_id: postId });
+  if (error) return { count: 0, error: error.message };
+  return { count: Number(data) || 0, error: null };
+}
+export async function fetchMyViewCount(postId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('my_empire_view_count', { p_post_id: postId });
+  if (error) return 0;
+  return Number(data) || 0;
+}
+/** Removes only the extra Views the caller added; their own natural one stays. */
+export async function clearMyExtraViews(postId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('clear_empire_post_extra_views', { p_post_id: postId });
+  return { error: error?.message ?? null };
+}
+
 export async function toggleEmpirePostSave(postId: string): Promise<{ saved: boolean; error: string | null }> {
   const { data, error } = await supabase.rpc('toggle_empire_post_save', { p_post_id: postId });
   if (error) return { saved: false, error: error.message };

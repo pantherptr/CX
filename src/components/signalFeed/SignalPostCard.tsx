@@ -5,7 +5,8 @@ import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import {
-  toggleEmpirePostLike, toggleEmpirePostSave, addEmpirePostRespect, fetchMyRespectCount, clearMyRespects, deleteEmpirePost, setEmpirePostPinned,
+  toggleEmpirePostLike, toggleEmpirePostSave, addEmpirePostRespect, fetchMyRespectCount, clearMyRespects,
+  addEmpirePostSave, fetchMySaveCount, clearMySaves, addEmpirePostView, fetchMyViewCount, clearMyExtraViews, deleteEmpirePost, setEmpirePostPinned,
   setEmpirePostFeatured, setEmpirePostProfilePin, setEmpirePostArchived, markEmpirePostViewed,
   incrementEmpirePostImpression, incrementEmpirePostShare, reportEmpireContent, mediaKindFromPath, type EmpirePost,
 } from '../../lib/data/empireFeed';
@@ -531,6 +532,124 @@ export function SignalPostCard({
     void handleTeamRespect();
   };
 
+  // Saves work the same way for the team (0075): tap = +1, hold = remove all.
+  const [mySaves, setMySaves] = useState(0);
+  const saveHoldRef = useRef<number | undefined>(undefined);
+  const saveHeldRef = useRef(false);
+  useEffect(() => {
+    if (!isTeamViewer) return;
+    let cancelled = false;
+    fetchMySaveCount(post.id).then((n) => { if (!cancelled) setMySaves(n); });
+    return () => { cancelled = true; };
+  }, [isTeamViewer, post.id]);
+  useEffect(() => () => window.clearTimeout(saveHoldRef.current), []);
+
+  const handleTeamSave = async () => {
+    const before = mySaves;
+    setMySaves(before + 1);
+    onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
+    setSavePop(true);
+    vibrateTap();
+    window.setTimeout(() => setSavePop(false), 220);
+    const { count, error } = await addEmpirePostSave(post.id);
+    if (error) {
+      setMySaves(before);
+      onChanged(post);
+      toast({ title: 'Could not add a Save', desc: error, icon: 'info' });
+      return;
+    }
+    setMySaves(count);
+  };
+  const handleClearSaves = async () => {
+    const before = mySaves;
+    if (before === 0) return;
+    setMySaves(0);
+    onChanged({ ...post, savedByMe: false, saveCount: Math.max(0, post.saveCount - before) });
+    vibrateTap();
+    const { error } = await clearMySaves(post.id);
+    if (error) {
+      setMySaves(before);
+      onChanged(post);
+      toast({ title: 'Could not remove your Saves', desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Your Saves were removed', icon: 'check' });
+  };
+  const savePressStart = () => {
+    saveHeldRef.current = false;
+    window.clearTimeout(saveHoldRef.current);
+    saveHoldRef.current = window.setTimeout(() => {
+      saveHeldRef.current = true;
+      void handleClearSaves();
+    }, 650);
+  };
+  const savePressEnd = () => window.clearTimeout(saveHoldRef.current);
+  const saveClick = () => {
+    if (saveHeldRef.current) {
+      saveHeldRef.current = false;
+      return;
+    }
+    void handleTeamSave();
+  };
+
+  // ...and Views, from the Performance line only the team sees.
+  const [myViews, setMyViews] = useState(0);
+  const viewHoldRef = useRef<number | undefined>(undefined);
+  const viewHeldRef = useRef(false);
+  useEffect(() => {
+    if (!isTeamViewer) return;
+    let cancelled = false;
+    fetchMyViewCount(post.id).then((n) => { if (!cancelled) setMyViews(n); });
+    return () => { cancelled = true; };
+  }, [isTeamViewer, post.id]);
+  useEffect(() => () => window.clearTimeout(viewHoldRef.current), []);
+
+  const handleTeamView = async () => {
+    const before = myViews;
+    setMyViews(before + 1);
+    onChanged({ ...post, viewCount: post.viewCount + 1 });
+    vibrateTap();
+    const { count, error } = await addEmpirePostView(post.id);
+    if (error) {
+      setMyViews(before);
+      onChanged(post);
+      toast({ title: 'Could not add a View', desc: error, icon: 'info' });
+      return;
+    }
+    setMyViews(count);
+  };
+  const handleClearViews = async () => {
+    const extra = Math.max(0, myViews - 1);
+    if (extra === 0) return;
+    setMyViews(1);
+    onChanged({ ...post, viewCount: Math.max(0, post.viewCount - extra) });
+    vibrateTap();
+    const { error } = await clearMyExtraViews(post.id);
+    if (error) {
+      setMyViews(myViews);
+      onChanged(post);
+      toast({ title: 'Could not remove your Views', desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Your extra Views were removed', icon: 'check' });
+  };
+  const viewPressStart = () => {
+    viewHeldRef.current = false;
+    window.clearTimeout(viewHoldRef.current);
+    viewHoldRef.current = window.setTimeout(() => {
+      viewHeldRef.current = true;
+      void handleClearViews();
+    }, 650);
+  };
+  const viewPressEnd = () => window.clearTimeout(viewHoldRef.current);
+  const viewClick = () => {
+    if (viewHeldRef.current) {
+      viewHeldRef.current = false;
+      return;
+    }
+    void handleTeamView();
+  };
+
   // Double-tap only ever *gives* Respect, never takes it back — a second
   // double-tap on an already-respected photo just replays the burst, the
   // same one-way behavior people already expect from this gesture.
@@ -960,6 +1079,28 @@ export function SignalPostCard({
             Comment
           </Tap>
         )}
+        {isTeamViewer ? (
+          <Tap
+            onClick={saveClick}
+            onPointerDown={savePressStart}
+            onPointerUp={savePressEnd}
+            onPointerLeave={savePressEnd}
+            onPointerCancel={savePressEnd}
+            scale={0.95}
+            aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
+            className={`flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
+              mySaves > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+            }`}
+          >
+            <Icon name="bookmark" size={17} fill={mySaves > 0} className={`shrink-0 ${savePop ? 'animate-save-pop' : ''}`} />
+            {mySaves > 0 ? 'Saved' : 'Save'}
+            {mySaves > 0 && (
+              <span key={mySaves} className="animate-respect-pop grid h-[22px] min-w-[22px] place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none tabular-nums text-white">
+                {mySaves}
+              </span>
+            )}
+          </Tap>
+        ) : (
         <Tap
           onClick={handleSave}
           scale={0.95}
@@ -970,6 +1111,7 @@ export function SignalPostCard({
           <Icon name="bookmark" size={17} fill={post.savedByMe} className={savePop ? 'animate-save-pop' : ''} />
           {post.savedByMe ? 'Saved' : 'Save'}
         </Tap>
+        )}
         <Tap onClick={handleShare} scale={0.95} className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
           <Icon name="share" size={17} />
           Share
@@ -999,7 +1141,24 @@ export function SignalPostCard({
       {canManage && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-1.5 text-[11px] text-faint sm:px-4">
           <span className="font-semibold uppercase tracking-wide">Performance</span>
-          <span>{compact(post.viewCount)} views</span>
+          {isTeamViewer ? (
+            <button
+              type="button"
+              onClick={viewClick}
+              onPointerDown={viewPressStart}
+              onPointerUp={viewPressEnd}
+              onPointerLeave={viewPressEnd}
+              onPointerCancel={viewPressEnd}
+              aria-label={`Add a view (${myViews}) — hold to remove`}
+              className="pressable inline-flex min-h-8 select-none items-center gap-1.5 rounded-full bg-panel px-2.5 font-medium text-ink-soft"
+            >
+              <Icon name="eye" size={12} />
+              {compact(post.viewCount)} views
+              <span className="grid h-4 min-w-4 place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">{myViews > 1 ? `+${myViews - 1}` : '+'}</span>
+            </button>
+          ) : (
+            <span>{compact(post.viewCount)} views</span>
+          )}
           <span>{compact(post.likeCount)} likes</span>
           <span>{compact(post.saveCount)} saves</span>
           <span>{compact(post.shareCount)} shares</span>
