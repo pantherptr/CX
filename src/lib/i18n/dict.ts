@@ -18,6 +18,9 @@ const ROWS: Row[] = [
     ["Show more", "Mostra altro", "Arată mai mult", "Ver más"],
   ["Show less", "Mostra meno", "Arată mai puțin", "Ver menos"],
   ["Member since {date}", "Iscritto da {date}", "Membru din {date}", "Miembro desde {date}"],
+    ["Plan your next drive", "Pianifica il tuo prossimo viaggio", "Planifică următoarea călătorie", "Planifica tu próximo viaje"],
+  ["Pick a car, choose your dates, and the keys are yours.", "Scegli un'auto, scegli le date e le chiavi sono tue.", "Alege o mașină, alege datele și cheile sunt ale tale.", "Elige un coche, elige tus fechas y las llaves son tuyas."],
+    ["Spent", "Speso", "Cheltuit", "Gastado"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----

@@ -257,8 +257,25 @@ export default function CustomerDashboard() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* Stats — on a phone one slim strip, not four big cards of zeros */}
+        <div className="card mt-5 grid grid-cols-4 divide-x divide-line overflow-hidden sm:hidden">
+          {[
+            { label: 'Upcoming', value: String(upcomingCount) },
+            { label: 'Completed', value: String(completedCount) },
+            { label: 'Saved', value: String(favorites.size) },
+            { label: 'Spent', value: eur(totalSpent) },
+          ].map((st) => (
+            <div key={st.label} className="px-1 py-3.5 text-center">
+              {bookingsLoading ? (
+                <div className="skeleton mx-auto h-5 w-8 rounded-md" />
+              ) : (
+                <p className="truncate px-1 font-display text-[1.15rem] font-semibold leading-none tabular-nums text-ink">{st.value}</p>
+              )}
+              <p className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">{st.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-4">
           {bookingsLoading ? (
             <>
               <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
@@ -272,6 +289,25 @@ export default function CustomerDashboard() {
             </>
           )}
         </div>
+
+        {/* No trip yet — an invitation instead of an empty gap */}
+        {!bookingsLoading && !nextTrip && (
+          <Reveal>
+            <Link to="/browse" className="group relative mt-6 block overflow-hidden rounded-3xl bg-noir text-white shadow-[0_24px_50px_-26px_rgba(0,0,0,0.6)]">
+              {cars?.[0]?.images?.[0] && (
+                <Img src={cars[0].images[0]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70 transition-transform duration-700 group-hover:scale-105" />
+              )}
+              <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+              <span className="relative flex min-h-[11.5rem] flex-col justify-end p-5">
+                <span className="font-display text-xl font-semibold leading-tight">Plan your next drive</span>
+                <span className="mt-1 text-detail text-white/75">Pick a car, choose your dates, and the keys are yours.</span>
+                <span className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-detail font-semibold text-ink">
+                  Browse cars <Icon name="arrowRight" size={15} />
+                </span>
+              </span>
+            </Link>
+          </Reveal>
+        )}
 
         {/* Quick actions */}
         <Reveal delay={220}>
