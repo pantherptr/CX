@@ -6,7 +6,7 @@ import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
 import { markEmpireStoryViewed, deleteEmpireStory, toggleEmpireStoryRespect, type EmpireStory } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
-import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
+import { SignalIdentityAvatar, SignalIdentityBadge, AvatarWithBadge, identityBadgeRole } from './SignalIdentityBadge';
 import { StoryTextSlide } from './StoryTextSlide';
 import { StoryCanvas } from './StoryCanvas';
 import { SignalStoryInsights } from './SignalStoryInsights';
@@ -544,7 +544,9 @@ export function SignalStoryViewer({
           <div className="pointer-events-auto flex h-14 items-center gap-2.5 px-4">
             <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
               <SharedAvatar id={`story-avatar-${initialStoryId}`} active={story.id === initialStoryId}>
-                <SignalIdentityAvatar identity={identity} size={32} />
+                <AvatarWithBadge role={identityBadgeRole(identity)} avatarSize={32} ringClass="bg-black ring-black/70">
+                  <SignalIdentityAvatar identity={identity} size={32} />
+                </AvatarWithBadge>
               </SharedAvatar>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">

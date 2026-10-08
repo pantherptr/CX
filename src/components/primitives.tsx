@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type T
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
+import { CxMark, type CxTier } from './CxBadge';
 import { useAuth } from '../lib/auth';
 import { haptics } from '../lib/native';
 
@@ -480,8 +481,18 @@ const BADGE_RING: Partial<Record<Exclude<VerifiedRole, 'owner'>, string>> = {
   cx: 'var(--color-accent-bright)',
 };
 
+/** Which CX tier a role wears: the three levels of the CX badge system. */
+export function cxTierForRole(role: VerifiedRole): CxTier | null {
+  if (role === 'client') return 'verified';
+  if (role === 'host') return 'host';
+  if (role === 'owner') return null;
+  return 'team';
+}
+
 function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {
   if (role === 'owner') return <OwnerBadgeMark size={size} />;
+  const tier = cxTierForRole(role);
+  if (tier) return <CxMark tier={tier} size={size} />;
   const ring = BADGE_RING[role];
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
@@ -513,7 +524,7 @@ export function VerifiedBadge({
     );
   }
   return (
-    <span title={meta.label}>
+    <span title={cxTierForRole(role) ? undefined : meta.label} className="inline-flex">
       <BadgeMark role={role} size={size} />
     </span>
   );

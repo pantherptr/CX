@@ -4,6 +4,7 @@ import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
 import { Img, useCountUp } from '../motion';
 import { VerifiedBadge } from '../primitives';
+import { AvatarWithBadge } from './SignalIdentityBadge';
 import { compact } from '../../lib/format';
 import { Ugc } from '../../lib/i18n/ugc';
 
@@ -175,7 +176,7 @@ export function SignalProfileHero({
                   fallback={<span className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full bg-panel text-ink-soft sm:h-28 sm:w-28"><Icon name="user" size={32} /></span>}
                 />
               );
-              return hasActiveStory ? (
+              const avatarNode = hasActiveStory ? (
                 <button
                   onClick={onOpenStory}
                   aria-label="View Story"
@@ -186,6 +187,7 @@ export function SignalProfileHero({
               ) : (
                 <span className="inline-block rounded-full bg-bg p-1 shadow-[0_12px_28px_-14px_rgba(0,0,0,0.5)]">{face}</span>
               );
+              return <AvatarWithBadge role={role} avatarSize={88} ringClass="bg-bg ring-bg">{avatarNode}</AvatarWithBadge>;
             })()}
           </div>
         )}

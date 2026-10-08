@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
@@ -107,28 +108,46 @@ export function SignalIdentityAvatar({ identity, size = 40 }: { identity: Signal
  *  construction as `BadgeMark`, just not folded into the global
  *  `VerifiedRole` union, which is specifically about conversation-
  *  participant tiers, not SIGNAL's broadcast voices. */
-export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalIdentity; size?: number }) {
-  if (identity.type === 'owner') {
-    return <VerifiedBadge role="owner" size={size} />;
-  }
+/** Which badge role an identity wears, or null for no badge at all. */
+export function identityBadgeRole(identity: SignalIdentity): VerifiedRole | null {
+  if (identity.type === 'owner') return 'owner';
   if (identity.type === 'self') {
-    // A real account's own tier — the same badges used everywhere else
-    // in the app, not a separate SIGNAL-only mark, since this IS their
-    // real identity, not a voice. Owner/Admin posting under their own
-    // real identity (not the fixed 'owner' voice) still get their real
-    // mark, not a downgrade to 'client'. A plain client (none of the
-    // above, `selfRole` falls through to the literal string 'client' —
-    // see resolveSignalIdentity) gets NO badge at all: 'client' here
-    // means "an ordinary signed-in account," not "Verified Client," and
-    // the two must never render the same green checkmark — that would
-    // misrepresent a real, un-verified account as CX Rent-verified,
-    // exactly what `ProfileHeader` (SignalProfileDetail.tsx) already gets
-    // right by only badging owner/admin/host/verified_client.
-    if (identity.selfRole === 'owner') return <VerifiedBadge role="owner" size={size} />;
-    if (identity.selfRole === 'admin') return <VerifiedBadge role="admin" size={size} />;
-    if (identity.selfRole === 'host') return <VerifiedBadge role="host" size={size} />;
-    if (identity.selfRole === 'verified_client') return <VerifiedBadge role="client" size={size} />;
+    if (identity.selfRole === 'owner') return 'owner';
+    if (identity.selfRole === 'admin') return 'admin';
+    if (identity.selfRole === 'host') return 'host';
+    if (identity.selfRole === 'verified_client') return 'client';
     return null;
   }
-  return <VerifiedBadge role={officialRole(identity.type as 'cx' | 'assistant')} size={size} />;
+  return officialRole(identity.type as 'cx' | 'assistant');
+}
+
+export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalIdentity; size?: number }) {
+  const role = identityBadgeRole(identity);
+  return role ? <VerifiedBadge role={role} size={size} /> : null;
+}
+
+/** An avatar with its badge pinned discreetly to the bottom-right corner,
+ *  sized to the avatar (about 14px on small ones, up to 26px on a profile
+ *  photo). No badge, no overlay — never a placeholder. */
+export function AvatarWithBadge({
+  role,
+  avatarSize,
+  ringClass = 'bg-surface ring-surface',
+  children,
+}: {
+  role: VerifiedRole | null;
+  avatarSize: number;
+  ringClass?: string;
+  children: ReactNode;
+}) {
+  if (!role) return <>{children}</>;
+  const size = Math.min(26, Math.max(14, Math.round(avatarSize * 0.38)));
+  return (
+    <span className="relative inline-flex shrink-0">
+      {children}
+      <span className={`absolute -bottom-[3px] -right-[3px] grid place-items-center rounded-full p-[1.5px] ring-2 ${ringClass}`}>
+        <VerifiedBadge role={role} size={size} />
+      </span>
+    </span>
+  );
 }

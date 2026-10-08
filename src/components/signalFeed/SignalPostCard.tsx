@@ -21,7 +21,7 @@ import { fetchTripBadge, formatTripPeriod, type TripBadge } from '../../lib/data
 import { VerifiedTripBadge } from './SignalKeychainTab';
 import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
-import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
+import { SignalIdentityAvatar, SignalIdentityBadge, AvatarWithBadge, identityBadgeRole } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
@@ -975,7 +975,9 @@ export function SignalPostCard({
 
       <div className="flex items-start gap-3 px-4 pb-3 pt-4 sm:px-5">
         <Link to={signalProfileHref(post, profileBase)} viewTransition aria-label={post.authorName} className="shrink-0">
-          <span className="block rounded-full ring-2 ring-surface"><SignalIdentityAvatar identity={identity} size={42} /></span>
+          <AvatarWithBadge role={identityBadgeRole(identity)} avatarSize={42}>
+            <span className="block rounded-full ring-2 ring-surface"><SignalIdentityAvatar identity={identity} size={42} /></span>
+          </AvatarWithBadge>
         </Link>
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center justify-between gap-2">

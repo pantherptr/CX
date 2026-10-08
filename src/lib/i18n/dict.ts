@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["CX verified profile", "Profilo verificato CX", "Profil verificat CX", "Perfil verificado CX"],
+  ["CX verified host", "Host verificato CX", "Host verificat CX", "Host verificado CX"],
+  ["Official CX team", "Team ufficiale CX", "Echipa oficială CX", "Equipo oficial CX"],
   ["Keychain card", "Card Keychain", "Card Keychain", "Tarjeta Keychain"],
   ["I want the keys", "Vorrei le chiavi", "Aș vrea cheile", "Quiero las llaves"],
   ["Check availability", "vedi la disponibilità", "vezi disponibilitatea", "ver disponibilidad"],
