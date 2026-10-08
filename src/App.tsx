@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, useLocation, Navigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { BatPullToRefresh } from './components/BatPullToRefresh';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
@@ -231,10 +232,18 @@ export default function App() {
   // never needed a fresh mount for any of this in the first place. Every
   // other route keeps its exact previous per-pathname remount behavior.
   const pageKey = SIGNAL_ROUTE.test(location.pathname) ? '/signal' : location.pathname;
+  // Pull-to-refresh (the bat): remounting the page re-runs all of its data
+  // hooks. Not on SIGNAL (its feed has its own) nor on pages that hold form
+  // state a remount would wipe (booking, listing a car, settings, sign-in).
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const pullEnabled =
+    !SIGNAL_ROUTE.test(location.pathname) &&
+    !/^\/(book|list-your-car|settings|login|signup|empire|host\/cars)(\/|$)/.test(location.pathname);
   return (
     <>
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} />}
       <ScrollToTop />
+      <BatPullToRefresh enabled={pullEnabled && !splash.visible} onRefresh={() => { setRefreshNonce((n) => n + 1); return new Promise<void>((r) => window.setTimeout(r, 600)); }} />
       {/* Outer safety net — the inner ErrorBoundary below only covers the
           routed page itself; MaintenanceGate, BottomNav, CompareTray and
           Toaster all render on every single page and sit outside it, so a
@@ -242,7 +251,7 @@ export default function App() {
           white screen unrecovered. This one catches that case too. */}
       <ErrorBoundary>
       <MaintenanceGate>
-      <div key={pageKey} className={`animate-page ${bottomNavVisible && !/^\/messages/.test(location.pathname) ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : ''}`}>
+      <div key={`${pageKey}:${refreshNonce}`} className={`animate-page ${bottomNavVisible && !/^\/messages/.test(location.pathname) ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
           deliberately quiet — a centred marque rather than a full-screen
           splash — because these chunks resolve in a few hundred ms on a

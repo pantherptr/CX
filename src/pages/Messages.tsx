@@ -586,7 +586,7 @@ export default function Messages() {
 
         {mobileChat && active && (
           <div
-            className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
+            data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
             style={{ top: vv.top, height: vv.height }}
             onTouchStart={(e) => {
               const t = e.touches[0];
