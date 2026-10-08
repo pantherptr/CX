@@ -532,6 +532,11 @@ export function SignalPostCard({
     void handleTeamRespect();
   };
 
+  // Everyone sees how many Respects / Saves / Views a post has — never who
+  // gave them. (Who is private; see 0076 for how notifications treat it.)
+  const countOf = (n: number) =>
+    n > 0 ? <span className="font-medium tabular-nums text-faint">{compact(n)}</span> : null;
+
   // Saves work the same way for the team (0075): tap = +1, hold = remove all.
   const [mySaves, setMySaves] = useState(0);
   const saveHoldRef = useRef<number | undefined>(undefined);
@@ -1018,6 +1023,31 @@ export function SignalPostCard({
           clustering left with Share pushed to the far edge. Only the
           Owner gets a 4th "Comment" column — everyone else's row stays
           the original three. */}
+      {(post.viewCount > 0 || isTeamViewer) && (
+        <div className="px-3 pb-1 pt-0.5 sm:px-4">
+          {isTeamViewer ? (
+            <button
+              type="button"
+              onClick={viewClick}
+              onPointerDown={viewPressStart}
+              onPointerUp={viewPressEnd}
+              onPointerLeave={viewPressEnd}
+              onPointerCancel={viewPressEnd}
+              aria-label="Add a view — hold to remove yours"
+              className="pressable -ml-2 inline-flex min-h-9 select-none items-center gap-1.5 rounded-full px-2 text-caption font-medium tabular-nums text-faint"
+            >
+              <Icon name="eye" size={14} />
+              {compact(post.viewCount)}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-caption font-medium tabular-nums text-faint">
+              <Icon name="eye" size={14} />
+              {compact(post.viewCount)}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className={`grid gap-1 px-2 py-1 sm:px-3 ${isOwnerViewer && !post.isDemo ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {/* SIGNAL's signature interaction — "Respect", not "Like": same
             thumbs-up throughout both states (never swapped for a heart
@@ -1040,11 +1070,7 @@ export function SignalPostCard({
           >
             <Icon name="like" size={18} fill={myRespects > 0} className={`shrink-0 ${likeBounce ? 'animate-respect-pop' : ''}`} />
             {myRespects > 0 ? 'Respected' : 'Respect'}
-            {myRespects > 0 && (
-              <span key={myRespects} className="animate-respect-pop grid h-[22px] min-w-[22px] place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none tabular-nums text-white">
-                {myRespects}
-              </span>
-            )}
+            {countOf(post.likeCount)}
           </Tap>
         ) : (
         <Tap
@@ -1061,6 +1087,7 @@ export function SignalPostCard({
             className={likeBounce ? 'animate-respect-pop' : ''}
           />
           {post.likedByMe ? 'Respected' : 'Respect'}
+          {countOf(post.likeCount)}
         </Tap>
         )}
         {/* Owner-only — see isOwnerViewer above. add_empire_post_comment
@@ -1094,11 +1121,7 @@ export function SignalPostCard({
           >
             <Icon name="bookmark" size={17} fill={mySaves > 0} className={`shrink-0 ${savePop ? 'animate-save-pop' : ''}`} />
             {mySaves > 0 ? 'Saved' : 'Save'}
-            {mySaves > 0 && (
-              <span key={mySaves} className="animate-respect-pop grid h-[22px] min-w-[22px] place-items-center rounded-full bg-accent-bright px-1.5 text-[12px] font-bold leading-none tabular-nums text-white">
-                {mySaves}
-              </span>
-            )}
+            {countOf(post.saveCount)}
           </Tap>
         ) : (
         <Tap
@@ -1110,6 +1133,7 @@ export function SignalPostCard({
         >
           <Icon name="bookmark" size={17} fill={post.savedByMe} className={savePop ? 'animate-save-pop' : ''} />
           {post.savedByMe ? 'Saved' : 'Save'}
+          {countOf(post.saveCount)}
         </Tap>
         )}
         <Tap onClick={handleShare} scale={0.95} className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
@@ -1141,24 +1165,6 @@ export function SignalPostCard({
       {canManage && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-1.5 text-[11px] text-faint sm:px-4">
           <span className="font-semibold uppercase tracking-wide">Performance</span>
-          {isTeamViewer ? (
-            <button
-              type="button"
-              onClick={viewClick}
-              onPointerDown={viewPressStart}
-              onPointerUp={viewPressEnd}
-              onPointerLeave={viewPressEnd}
-              onPointerCancel={viewPressEnd}
-              aria-label={`Add a view (${myViews}) — hold to remove`}
-              className="pressable inline-flex min-h-8 select-none items-center gap-1.5 rounded-full bg-panel px-2.5 font-medium text-ink-soft"
-            >
-              <Icon name="eye" size={12} />
-              {compact(post.viewCount)} views
-              <span className="grid h-4 min-w-4 place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">{myViews > 1 ? `+${myViews - 1}` : '+'}</span>
-            </button>
-          ) : (
-            <span>{compact(post.viewCount)} views</span>
-          )}
           <span>{compact(post.likeCount)} likes</span>
           <span>{compact(post.saveCount)} saves</span>
           <span>{compact(post.shareCount)} shares</span>

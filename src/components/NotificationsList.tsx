@@ -43,6 +43,16 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   post_respect: { icon: 'like', verb: 'respected your post', badge: 'bg-accent-bright text-white' },
   post_comment: { icon: 'message', verb: 'commented on your post', badge: 'bg-sky-500 text-white' },
   post_share: { icon: 'share', verb: 'shared your post', badge: 'bg-amber-500 text-white' },
+  post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-violet-500 text-white' },
+};
+
+/** What a notification says when the person behind it stays private. */
+const ANON_TEXT: Record<NotificationType, string> = {
+  follow: 'Someone started following you',
+  post_respect: 'Your post received a Respect',
+  post_comment: 'Your post received a comment',
+  post_share: 'Your post was shared',
+  post_save: 'Your post was saved',
 };
 
 type TabId = 'all' | 'unread' | 'follows' | 'activity';
@@ -180,8 +190,12 @@ export function NotificationsList({
                       }`}
                     >
                       {isUnread && <span aria-hidden="true" className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-accent-bright" />}
-                      <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorName}>
-                        {n.actorAvatarUrl ? (
+                      <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorId ? n.actorName : ANON_TEXT[n.type]}>
+                        {!n.actorId ? (
+                          <span className={`grid h-12 w-12 place-items-center rounded-full ${copy.badge}`}>
+                            <Icon name={copy.icon} size={22} />
+                          </span>
+                        ) : n.actorAvatarUrl ? (
                           <Img
                             src={n.actorAvatarUrl}
                             alt=""
@@ -197,21 +211,27 @@ export function NotificationsList({
                             <Icon name="user" size={21} />
                           </span>
                         )}
-                        <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full ring-2 ring-surface ${copy.badge}`}>
-                          <Icon name={copy.icon} size={12} />
-                        </span>
+                        {n.actorId && (
+                          <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full ring-2 ring-surface ${copy.badge}`}>
+                            <Icon name={copy.icon} size={12} />
+                          </span>
+                        )}
                       </button>
 
                       <button onClick={() => onOpen(n)} className="min-w-0 flex-1 text-left">
-                        <p className="text-[15px] leading-snug text-ink">
-                          <span className="font-semibold">{n.actorName}</span>
-                          {role && (
-                            <span className="mx-1 inline-flex translate-y-[2px] align-baseline">
-                              <VerifiedBadge role={role} size={13} />
-                            </span>
-                          )}{' '}
-                          <span className="text-ink-soft">{copy.verb}</span>
-                        </p>
+                        {n.actorId ? (
+                          <p className="text-[15px] leading-snug text-ink">
+                            <span className="font-semibold">{n.actorName}</span>
+                            {role && (
+                              <span className="mx-1 inline-flex translate-y-[2px] align-baseline">
+                                <VerifiedBadge role={role} size={13} />
+                              </span>
+                            )}{' '}
+                            <span className="text-ink-soft">{copy.verb}</span>
+                          </p>
+                        ) : (
+                          <p className="text-[15px] font-semibold leading-snug text-ink">{ANON_TEXT[n.type]}</p>
+                        )}
                         {n.actorUsername && <p className="mt-0.5 text-caption text-faint">@{n.actorUsername}</p>}
                         {n.postPreview && (
                           <p className="mt-2 line-clamp-2 rounded-xl bg-panel px-3 py-2 text-detail text-ink-soft">“{n.postPreview}”</p>

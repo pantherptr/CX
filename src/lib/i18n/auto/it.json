@@ -1744,5 +1744,11 @@
 "Photo / Video": "Foto / Video",
 "Could not delete": "Impossibile eliminare",
 "Delete this Story? This cannot be undone.": "Eliminare questa storia? L’azione non si può annullare.",
-"Post details": "Dettaglio post"
+"Post details": "Dettaglio post",
+"Someone started following you": "Qualcuno ha iniziato a seguirti",
+"Your post received a Respect": "Il tuo post ha ricevuto un Respect",
+"Your post received a comment": "Il tuo post ha ricevuto un commento",
+"Your post was shared": "Il tuo post è stato condiviso",
+"Your post was saved": "Il tuo post è stato salvato",
+"saved your post": "ha salvato il tuo post"
 }

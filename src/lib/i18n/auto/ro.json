@@ -1744,5 +1744,11 @@
 "Photo / Video": "Foto / Video",
 "Could not delete": "Nu s-a putut șterge",
 "Delete this Story? This cannot be undone.": "Ștergi această poveste? Acțiunea nu poate fi anulată.",
-"Post details": "Detalii postare"
+"Post details": "Detalii postare",
+"Someone started following you": "Cineva a început să te urmărească",
+"Your post received a Respect": "Postarea ta a primit un Respect",
+"Your post received a comment": "Postarea ta a primit un comentariu",
+"Your post was shared": "Postarea ta a fost distribuită",
+"Your post was saved": "Postarea ta a fost salvată",
+"saved your post": "ți-a salvat postarea"
 }

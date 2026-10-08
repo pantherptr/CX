@@ -13,7 +13,7 @@ import { supabase } from '../supabase';
  * directly, matching this app's "every write through an RPC" convention.
  */
 
-export type NotificationType = 'follow' | 'post_respect' | 'post_comment' | 'post_share';
+export type NotificationType = 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save';
 
 export interface SignalNotification {
   id: string;
@@ -62,7 +62,9 @@ function mapNotification(row: NotificationRow): SignalNotification {
     createdAt: row.created_at,
     readAt: row.read_at,
     actorId: row.actor_id,
-    actorName: row.actor_name ?? 'CX Rent user',
+    // `actorId` is null when the actor stays private (not connected to the
+    // recipient) — the server never sends their identity in that case.
+    actorName: row.actor_name ?? '',
     actorAvatarUrl: row.actor_avatar_url,
     actorUsername: row.actor_username ?? null,
     actorIsOwner: row.actor_is_owner ?? false,
