@@ -21,8 +21,8 @@ import { MaintenanceGate } from './components/MaintenanceGate';
 import Home from './pages/Home';
 import CountryGateway from './pages/CountryGateway';
 import { useLocale } from './lib/i18n';
-import Browse from './pages/Browse';
-import CarDetails from './pages/CarDetails';
+const Browse = lazy(() => import('./pages/Browse'));
+const CarDetails = lazy(() => import('./pages/CarDetails'));
 import NotFound from './pages/NotFound';
 
 // Lazy — everything else. Most of these are behind auth (Booking,
