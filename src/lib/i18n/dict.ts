@@ -15,6 +15,9 @@ const ROWS: Row[] = [
   ["Taps: one by one", "Tocchi: uno alla volta", "Atingeri: unul câte unul", "Toques: uno a uno"],
   ["Remove my votes ({count})", "Rimuovi i miei voti ({count})", "Elimină voturile mele ({count})", "Quitar mis votos ({count})"],
     ["Nothing saved yet.", "Ancora niente di salvato.", "Încă nu ai salvat nimic.", "Aún no has guardado nada."],
+    ["Show more", "Mostra altro", "Arată mai mult", "Ver más"],
+  ["Show less", "Mostra meno", "Arată mai puțin", "Ver menos"],
+  ["Member since {date}", "Iscritto da {date}", "Membru din {date}", "Miembro desde {date}"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----

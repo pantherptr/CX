@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useLocale } from '../../lib/i18n';
 import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
 import { Img, useCountUp } from '../motion';
@@ -58,6 +59,7 @@ export function SignalProfileHero({
   followers,
   following,
   postsCount,
+  joined,
   hasActiveStory,
   onOpenStory,
   action,
@@ -77,6 +79,8 @@ export function SignalProfileHero({
   followers?: { count: number; onOpen: () => void };
   following?: { count: number; onOpen: () => void };
   postsCount?: number;
+  /** "Member since …", as the profile stores it. */
+  joined?: string | null;
   hasActiveStory: boolean;
   onOpenStory: () => void;
   /** Follow, or Edit profile on your own. */
@@ -87,6 +91,9 @@ export function SignalProfileHero({
   scrollTop: number;
   children?: ReactNode;
 }) {
+  const { t } = useLocale();
+  const [bioOpen, setBioOpen] = useState(false);
+  const longBio = (bio?.length ?? 0) > 150;
   const photo = coverUrl ?? avatarUrl;
   const separateAvatar = Boolean(coverUrl && avatarUrl);
   const scrolled = scrollTop > 260;
@@ -184,8 +191,20 @@ export function SignalProfileHero({
         )}
 
         {bio && (
-          <p className="whitespace-pre-wrap break-words text-copy leading-relaxed text-ink-soft sm:text-lead">
-            <Ugc text={bio} />
+          <div>
+            <p className={`whitespace-pre-wrap break-words text-copy leading-relaxed text-ink-soft sm:text-lead ${longBio && !bioOpen ? 'line-clamp-3' : ''}`}>
+              <Ugc text={bio} />
+            </p>
+            {longBio && (
+              <button type="button" onClick={() => setBioOpen((o) => !o)} className="pressable mt-1 text-detail font-semibold text-ink">
+                {bioOpen ? t('Show less') : t('Show more')}
+              </button>
+            )}
+          </div>
+        )}
+        {joined && (
+          <p className="mt-3 flex items-center gap-1.5 text-caption font-medium text-faint">
+            <Icon name="calendar" size={13} /> {t('Member since {date}', { date: joined })}
           </p>
         )}
 

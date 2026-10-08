@@ -285,11 +285,13 @@ export function SignalProfileDetail({
       )}
 
       {restPosts && restPosts.length === 0 && !pinnedPost && (
-        <div className="flex flex-col items-center gap-3 py-14 text-center">
-          <span className="h-7 w-[3px] rounded-full bg-accent-bright/50" aria-hidden="true" />
-          <p className="text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
+        <div className="flex flex-col items-center px-6 py-14 text-center">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">
+            <SignalLogo size={42} />
+          </span>
+          <p className="mt-4 text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
           {isMe && (
-            <Link to="/signal/community" className="btn btn-primary btn-sm mt-1">
+            <Link to="/signal/community" className="btn btn-primary btn-sm mt-3">
               Create Post
             </Link>
           )}
@@ -400,6 +402,7 @@ export function SignalProfileDetail({
             followers={showFollowCounts && realProfile ? { count: followersCount, onOpen: () => setFollowListMode('followers') } : undefined}
             following={showFollowCounts && realProfile ? { count: realProfile.followingCount, onOpen: () => setFollowListMode('following') } : undefined}
             postsCount={posts ? posts.length : undefined}
+            joined={realProfile?.joined ?? null}
             hasActiveStory={Boolean(myStory)}
             onOpenStory={() => setStoryViewerOpen(true)}
             onClose={onClose}
