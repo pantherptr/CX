@@ -535,7 +535,7 @@ export function SignalPostCard({
   // Everyone sees how many Respects / Saves / Views a post has — never who
   // gave them. (Who is private; see 0076 for how notifications treat it.)
   const countOf = (n: number) =>
-    n > 0 ? <span className="font-medium tabular-nums text-faint">{compact(n)}</span> : null;
+    n > 0 ? <span className="font-medium tabular-nums">{compact(n)}</span> : null;
 
   // Saves work the same way for the team (0075): tap = +1, hold = remove all.
   const [mySaves, setMySaves] = useState(0);
@@ -807,7 +807,7 @@ export function SignalPostCard({
 
   return (
     <article
-      className={`card relative mb-2.5 animate-fade-up overflow-hidden p-0 ${
+      className={`card relative mb-4 animate-fade-up overflow-hidden rounded-3xl p-0 shadow-[0_18px_44px_-26px_rgba(0,0,0,0.3)] ${
         featured
           ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
           : isExclusive
@@ -831,9 +831,9 @@ export function SignalPostCard({
         </div>
       )}
 
-      <div className="flex items-start gap-3 p-3 pb-2 sm:px-4">
+      <div className="flex items-start gap-3 px-4 pb-3 pt-4 sm:px-5">
         <Link to={signalProfileHref(post, profileBase)} viewTransition className="shrink-0">
-          <SignalIdentityAvatar identity={identity} size={44} />
+          <span className="block rounded-full ring-2 ring-surface"><SignalIdentityAvatar identity={identity} size={42} /></span>
         </Link>
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex items-center justify-between gap-2">
@@ -841,7 +841,6 @@ export function SignalPostCard({
               <span className="truncate font-display text-[16px] font-semibold text-ink">{identity.name}</span>
               <SignalIdentityBadge identity={identity} />
             </Link>
-            <span className="shrink-0 text-caption tabular-nums text-faint">{timeAgo(post.createdAt)}</span>
           </div>
           <p className="mt-0.5 truncate text-caption text-muted">
             {identity.username && (
@@ -849,6 +848,7 @@ export function SignalPostCard({
             )}
             {identity.username && ' · '}
             {identity.subtitle}
+            {` · ${timeAgo(post.createdAt)}`}
             {post.editedAt && ' · Edited'}
             {post.isArchived && ' · Archived'}
           </p>
@@ -928,10 +928,10 @@ export function SignalPostCard({
       </div>
 
       {post.title && (
-        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
+        <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
       {post.body.trim() !== '' && (
-        <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
+        <p className={`whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed text-ink sm:px-5 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
           {tr.texts[1]}
         </p>
       )}
@@ -941,22 +941,22 @@ export function SignalPostCard({
           type="button"
           onClick={tr.toggle}
           disabled={tr.status === 'loading'}
-          className="mx-3 mb-2 -mt-0.5 inline-flex items-center gap-1.5 text-caption font-medium text-faint transition-colors hover:text-ink sm:mx-4"
+          className="mx-4 mb-2 -mt-1 inline-flex items-center gap-1.5 text-caption font-medium text-faint transition-colors hover:text-ink sm:mx-5"
         >
           <Icon name="globe" size={13} />
           {tr.status === 'loading' ? t('Translating…') : tr.on ? t('See original') : t('Translate')}
         </button>
       )}
       {tr.available && tr.status === 'failed' && (
-        <p className="px-3 pb-1.5 text-caption text-muted sm:px-4">{t('Translation unavailable')}</p>
+        <p className="px-4 pb-1.5 text-caption text-muted sm:px-5">{t('Translation unavailable')}</p>
       )}
 
       {post.vehicle && (
         <Link
           to={`/cars/${post.vehicle.slug}`}
-          className="pressable mx-3 mb-2 flex items-center gap-3 rounded-xl border border-line bg-panel p-2 sm:mx-4"
+          className="pressable mx-4 mb-3 flex items-center gap-3 rounded-2xl border border-line bg-panel/70 p-3 sm:mx-5"
         >
-          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface">
+          <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-surface">
             {post.vehicle.imageUrl ? (
               <Img
                 src={post.vehicle.imageUrl}
@@ -1015,131 +1015,121 @@ export function SignalPostCard({
         )
       )}
 
-      {/* No numbers anywhere in this row, deliberately — Views/Likes/
-          Saves/Shares/Comments are all still tracked for real underneath
-          (see the mount effect above and each handler below), but a
-          regular user only ever sees these actions. Evenly split so
-          every touch target is equally large on mobile, rather than
-          clustering left with Share pushed to the far edge. Only the
-          Owner gets a 4th "Comment" column — everyone else's row stays
-          the original three. */}
-      {(post.viewCount > 0 || isTeamViewer) && (
-        <div className="px-3 pb-1 pt-0.5 sm:px-4">
+      {/* The engagement row, in the social-card style: icon + number for
+          Respect, Comment (Owner only), Share on the left; views and the
+          Save bookmark on the right. Numbers are public totals — never who.
+          The team's repeat Respect/Save/View taps (hold to take back) live on
+          the same buttons. */}
+      <div className="flex items-center justify-between px-3 pb-3 pt-1 sm:px-4">
+        <div className="flex items-center gap-0.5">
+          {/* SIGNAL's signature interaction — "Respect": a thumbs-up, filled
+              and CX green once given, with a quick pop when it lands. */}
           {isTeamViewer ? (
-            <button
-              type="button"
-              onClick={viewClick}
-              onPointerDown={viewPressStart}
-              onPointerUp={viewPressEnd}
-              onPointerLeave={viewPressEnd}
-              onPointerCancel={viewPressEnd}
-              aria-label="Add a view — hold to remove yours"
-              className="pressable -ml-2 inline-flex min-h-9 select-none items-center gap-1.5 rounded-full px-2 text-caption font-medium tabular-nums text-faint"
+            <Tap
+              onClick={respectClick}
+              onPointerDown={respectPressStart}
+              onPointerUp={respectPressEnd}
+              onPointerLeave={respectPressEnd}
+              onPointerCancel={respectPressEnd}
+              scale={0.92}
+              aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
+              className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+              }`}
             >
-              <Icon name="eye" size={14} />
-              {compact(post.viewCount)}
-            </button>
+              <Icon name="like" size={21} fill={myRespects > 0} className={`shrink-0 transition-transform ${myRespects > 0 ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+              {countOf(post.likeCount)}
+            </Tap>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-caption font-medium tabular-nums text-faint">
-              <Icon name="eye" size={14} />
-              {compact(post.viewCount)}
-            </span>
+            <Tap
+              onClick={handleRespect}
+              scale={0.92}
+              aria-label={post.likedByMe ? 'Respected' : 'Respect'}
+              className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+              }`}
+            >
+              <Icon name="like" size={21} fill={post.likedByMe} className={`shrink-0 transition-transform ${post.likedByMe ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+              {countOf(post.likeCount)}
+            </Tap>
+          )}
+          {/* Owner-only — add_empire_post_comment enforces this server-side;
+              hiding it for everyone else is just honest UI. No demo
+              equivalent (see signalDemo.ts). */}
+          {isOwnerViewer && !post.isDemo && (
+            <Tap
+              onClick={() => setCommentsSheetOpen(true)}
+              scale={0.92}
+              aria-label="Comment"
+              className="flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] text-ink-soft transition-colors hover:text-sky-600"
+            >
+              <Icon name="message" size={21} className="shrink-0" />
+              {countOf(post.commentCount)}
+            </Tap>
+          )}
+          <Tap
+            onClick={handleShare}
+            scale={0.92}
+            aria-label="Share"
+            className="flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] text-ink-soft transition-colors hover:text-accent-700"
+          >
+            <Icon name="share" size={21} className="shrink-0" />
+            {countOf(post.shareCount)}
+          </Tap>
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          {(post.viewCount > 0 || isTeamViewer) &&
+            (isTeamViewer ? (
+              <button
+                type="button"
+                onClick={viewClick}
+                onPointerDown={viewPressStart}
+                onPointerUp={viewPressEnd}
+                onPointerLeave={viewPressEnd}
+                onPointerCancel={viewPressEnd}
+                aria-label="Add a view — hold to remove yours"
+                className="pressable flex min-h-11 select-none items-center gap-1.5 rounded-full px-2.5 text-[13px] text-faint"
+              >
+                <Icon name="eye" size={16} className="shrink-0" />
+                {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
+              </button>
+            ) : (
+              <span className="flex min-h-11 items-center gap-1.5 px-2.5 text-[13px] text-faint">
+                <Icon name="eye" size={16} className="shrink-0" />
+                {countOf(post.viewCount)}
+              </span>
+            ))}
+          {isTeamViewer ? (
+            <Tap
+              onClick={saveClick}
+              onPointerDown={savePressStart}
+              onPointerUp={savePressEnd}
+              onPointerLeave={savePressEnd}
+              onPointerCancel={savePressEnd}
+              scale={0.92}
+              aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
+              className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                mySaves > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+              }`}
+            >
+              <Icon name="bookmark" size={20} fill={mySaves > 0} className={`shrink-0 transition-transform ${mySaves > 0 ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              {countOf(post.saveCount)}
+            </Tap>
+          ) : (
+            <Tap
+              onClick={handleSave}
+              scale={0.92}
+              aria-label={post.savedByMe ? 'Saved' : 'Save'}
+              className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
+              }`}
+            >
+              <Icon name="bookmark" size={20} fill={post.savedByMe} className={`shrink-0 transition-transform ${post.savedByMe ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              {countOf(post.saveCount)}
+            </Tap>
           )}
         </div>
-      )}
-
-      <div className={`grid gap-1 px-2 py-1 sm:px-3 ${isOwnerViewer && !post.isDemo ? 'grid-cols-4' : 'grid-cols-3'}`}>
-        {/* SIGNAL's signature interaction — "Respect", not "Like": same
-            thumbs-up throughout both states (never swapped for a heart
-            or checkmark), just filled + CX green + a quick scale/glow
-            pop when it lands. `whitespace-nowrap` keeps "Respected" (the
-            longer of the two labels) from ever wrapping to a second
-            line and shifting the row's height. */}
-        {isTeamViewer ? (
-          <Tap
-            onClick={respectClick}
-            onPointerDown={respectPressStart}
-            onPointerUp={respectPressEnd}
-            onPointerLeave={respectPressEnd}
-            onPointerCancel={respectPressEnd}
-            scale={0.95}
-            aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
-            className={`flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
-              myRespects > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-            }`}
-          >
-            <Icon name="like" size={18} fill={myRespects > 0} className={`shrink-0 ${likeBounce ? 'animate-respect-pop' : ''}`} />
-            {myRespects > 0 ? 'Respected' : 'Respect'}
-            {countOf(post.likeCount)}
-          </Tap>
-        ) : (
-        <Tap
-          onClick={handleRespect}
-          scale={0.95}
-          className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
-            post.likedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-          }`}
-        >
-          <Icon
-            name="like"
-            size={18}
-            fill={post.likedByMe}
-            className={likeBounce ? 'animate-respect-pop' : ''}
-          />
-          {post.likedByMe ? 'Respected' : 'Respect'}
-          {countOf(post.likeCount)}
-        </Tap>
-        )}
-        {/* Owner-only — see isOwnerViewer above. add_empire_post_comment
-            enforces this server-side regardless of what this button
-            does; hiding it for everyone else isn't the real security
-            boundary, just honest UI. Comments have no demo equivalent
-            (see signalDemo.ts) — commentCount stays 0 for a demo post
-            rather than opening a sheet that can't actually write one. */}
-        {isOwnerViewer && !post.isDemo && (
-          <Tap
-            onClick={() => setCommentsSheetOpen(true)}
-            scale={0.95}
-            className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel"
-          >
-            <Icon name="message" size={17} />
-            Comment
-          </Tap>
-        )}
-        {isTeamViewer ? (
-          <Tap
-            onClick={saveClick}
-            onPointerDown={savePressStart}
-            onPointerUp={savePressEnd}
-            onPointerLeave={savePressEnd}
-            onPointerCancel={savePressEnd}
-            scale={0.95}
-            aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
-            className={`flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors ${
-              mySaves > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-            }`}
-          >
-            <Icon name="bookmark" size={17} fill={mySaves > 0} className={`shrink-0 ${savePop ? 'animate-save-pop' : ''}`} />
-            {mySaves > 0 ? 'Saved' : 'Save'}
-            {countOf(post.saveCount)}
-          </Tap>
-        ) : (
-        <Tap
-          onClick={handleSave}
-          scale={0.95}
-          className={`flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold transition-colors ${
-            post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-          }`}
-        >
-          <Icon name="bookmark" size={17} fill={post.savedByMe} className={savePop ? 'animate-save-pop' : ''} />
-          {post.savedByMe ? 'Saved' : 'Save'}
-          {countOf(post.saveCount)}
-        </Tap>
-        )}
-        <Tap onClick={handleShare} scale={0.95} className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft transition-colors hover:bg-panel">
-          <Icon name="share" size={17} />
-          Share
-        </Tap>
       </div>
 
       {/* Owner/CX-team comments are public — they render right here,
