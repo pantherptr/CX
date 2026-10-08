@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
@@ -7,6 +7,7 @@ import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
 import { fetchHostCars } from '../../lib/data/cars';
+import { findOrCreateConversation } from '../../lib/data/messages';
 import { fetchEmpirePostsByAuthor, type EmpirePost } from '../../lib/data/empireFeed';
 import { fetchSignalDemoProfile, fetchSignalDemoPostsByAuthor, type SignalDemoProfile } from '../../lib/data/signalDemo';
 import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empireStories';
@@ -165,6 +166,23 @@ export function SignalProfileDetail({
   }, [realProfile?.id, realProfile?.followersCount]); // eslint-disable-line react-hooks/exhaustive-deps
   // Follow only makes sense for the two Community creator roles — see
   // the brief's own "Users can follow: Hosts, Verified Clients."
+  const navigate = useNavigate();
+  const [openingChat, setOpeningChat] = useState(false);
+  // A chat in CX is always about a car, so Message exists for hosts who have one listed.
+  const chatCar = realProfile?.isHost && !isMe ? (cars ?? [])[0] : undefined;
+  const openChat = async () => {
+    if (!session) { navigate('/login'); return; }
+    if (!chatCar || !realProfile || openingChat) return;
+    setOpeningChat(true);
+    try {
+      const id = await findOrCreateConversation(chatCar.id, session.user.id, realProfile.id);
+      navigate(`/messages?c=${id}`);
+    } catch {
+      toast({ title: 'Could not open the chat', desc: 'Check your connection and try again.', icon: 'info' });
+    } finally {
+      setOpeningChat(false);
+    }
+  };
   const canBeFollowed = Boolean(realProfile && !isMe && (realProfile.isHost || realProfile.isVerifiedClient));
   const showFollowCounts = Boolean(realProfile && (realProfile.isHost || realProfile.isVerifiedClient));
 
@@ -305,12 +323,27 @@ export function SignalProfileDetail({
                   Edit profile
                 </Tap>
               ) : realProfile && canBeFollowed ? (
-                <FollowButton
-                  userId={realProfile.id}
-                  initialFollowing={realProfile.followedByMe}
-                  variant="wide"
-                  onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
-                />
+                <div className="flex items-stretch gap-2.5">
+                  <div className="min-w-0 flex-1">
+                    <FollowButton
+                      userId={realProfile.id}
+                      initialFollowing={realProfile.followedByMe}
+                      variant="wide"
+                      onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
+                    />
+                  </div>
+                  {chatCar && (
+                    <Tap
+                      onClick={() => void openChat()}
+                      scale={0.96}
+                      aria-label="Message"
+                      className="inline-flex min-w-[7.5rem] items-center justify-center gap-2 rounded-2xl border border-line bg-surface px-5 text-body font-semibold text-ink shadow-hair transition-colors hover:border-line-strong"
+                    >
+                      <Icon name="message" size={18} />
+                      Message
+                    </Tap>
+                  )}
+                </div>
               ) : undefined
             }
           >
