@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /messages
+Disallow: /admin
+Disallow: /owner
+Disallow: /host/
+Disallow: /api/
+
+Sitemap: https://cxworld.eu/sitemap.xml

@@ -26,6 +26,7 @@ const ROWS: Row[] = [
     ["Open photo or video", "Apri foto o video", "Deschide fotografia sau videoclipul", "Abrir foto o vídeo"],
   ["Sort", "Ordina", "Sortează", "Ordenar"],
     ["Sample", "Esempio", "Exemplu", "Ejemplo"],
+    ["or", "o", "sau", "o"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----
