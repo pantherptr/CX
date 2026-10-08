@@ -754,6 +754,14 @@
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
 
+  /* The pull-to-refresh bat flapping while the feed reloads. */
+  .bat-flap { transform-origin: 50% 40%; animation: bat-flap 0.34s ease-in-out infinite; }
+  @keyframes bat-flap {
+    0%, 100% { transform: scale(1, 1); }
+    50% { transform: scale(1.1, 0.7); }
+  }
+  @media (prefers-reduced-motion: reduce) { .bat-flap { animation: none; } }
+
   /* The in-page spinner: a faint track with one green arc turning. */
   .cx-spinner {
     display: block;
