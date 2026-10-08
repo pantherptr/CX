@@ -16,6 +16,18 @@ function personRole(p: SignalPeopleResult): VerifiedRole | null {
   return p.isOwner ? 'owner' : p.isAdmin ? 'admin' : p.isHost ? 'host' : p.isVerifiedClient ? 'client' : null;
 }
 
+/** "3h" / "2d" / "7 Oct" — the same short age every other SIGNAL surface uses. */
+function resultAge(iso: string): string {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'now';
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d`;
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 const RECENT_KEY = 'signal:recentPeopleSearches';
 const RECENT_MAX = 5;
 
@@ -151,14 +163,14 @@ export function SignalSearchOverlay({ query }: { query: string }) {
       exit={{ opacity: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.2 }}
     >
-      <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto px-4 py-3">
+      <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-4">
         {!trimmed ? (
           recent.length > 0 ? (
             <div>
-              <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-faint">Recent</p>
-              <div className="flex flex-col gap-1">
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">Recent</p>
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
                 {recent.map((r) => (
-                  <div key={r.id} className="group flex items-center gap-2.5 rounded-xl px-1 py-1.5 hover:bg-panel">
+                  <div key={r.id} className="group flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel">
                     <Link
                       to={`${profileBase}/profile/${r.id}`}
                       viewTransition
@@ -169,11 +181,11 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                         <Img
                           src={r.avatarUrl}
                           alt=""
-                          className="h-9 w-9 shrink-0 rounded-full object-cover"
-                          fallback={<span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>}
+                          className="h-11 w-11 shrink-0 rounded-full object-cover"
+                          fallback={<span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
                         />
                       ) : (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>
+                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
                       )}
                       <div className="min-w-0">
                         <p className="truncate text-detail font-semibold text-ink">{r.fullName}</p>
@@ -184,7 +196,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                       onClick={() => removeRecent(r.id)}
                       scale={0.9}
                       aria-label={`Remove ${r.fullName} from recent searches`}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-faint opacity-0 transition-opacity hover:bg-line/40 hover:text-ink-soft group-hover:opacity-100"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-faint transition-colors hover:bg-line/40 hover:text-ink-soft"
                     >
                       <Icon name="x" size={13} />
                     </Tap>
@@ -193,12 +205,15 @@ export function SignalSearchOverlay({ query }: { query: string }) {
               </div>
             </div>
           ) : (
-            <p className="py-16 text-center text-detail text-muted">Search Signal — people, news, cars, offers…</p>
+            <div className="flex flex-col items-center gap-3 py-20 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="search" size={24} /></span>
+              <p className="max-w-[16rem] text-detail text-muted">Search Signal — people, news, cars, offers…</p>
+            </div>
           )
         ) : (
           <div className="flex flex-col gap-5">
             <div>
-              <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-faint">People</p>
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">People</p>
               <ResultsFade stateKey={peopleState}>
                 {peopleState === 'loading' ? (
                   <div className="flex flex-col gap-2">
@@ -207,11 +222,11 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                 ) : peopleState === 'empty' ? (
                   <p className="py-4 text-center text-detail text-muted">No accounts found.</p>
                 ) : (
-                  <div className="flex flex-col gap-1">
+                  <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
                     {(people ?? []).map((p) => {
                       const role = personRole(p);
                       return (
-                        <div key={p.id} className="flex items-center gap-2.5 rounded-xl px-1 py-1.5 hover:bg-panel">
+                        <div key={p.id} className="flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel">
                           <Link
                             to={`${profileBase}/profile/${p.id}`}
                             viewTransition
@@ -222,15 +237,15 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                               <Img
                                 src={p.avatarUrl}
                                 alt=""
-                                className="h-10 w-10 shrink-0 rounded-full object-cover"
-                                fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>}
+                                className="h-12 w-12 shrink-0 rounded-full object-cover"
+                                fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={19} /></span>}
                               />
                             ) : (
-                              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>
+                              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={19} /></span>
                             )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-1">
-                                <span className="truncate text-detail font-semibold text-ink">{p.fullName}</span>
+                                <span className="truncate text-[15px] font-semibold text-ink">{p.fullName}</span>
                                 {role && <VerifiedBadge role={role} size={13} />}
                               </div>
                               <p className="truncate text-caption text-faint">
@@ -252,7 +267,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
             </div>
 
             <div>
-              <p className="mb-2 text-caption font-semibold uppercase tracking-wide text-faint">Posts</p>
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">Posts</p>
               <ResultsFade stateKey={postsState}>
                 {postsState === 'loading' ? (
                   <div className="flex flex-col gap-2">
@@ -261,29 +276,30 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                 ) : postsState === 'empty' ? (
                   <p className="py-4 text-center text-detail text-muted">No Signal posts match “{trimmed}”.</p>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
                     {(posts ?? []).map((r) => (
                       <Link
                         key={r.id}
                         to={`/signal/post/${r.id}`}
                         viewTransition
                         onClick={hideForNavigation}
-                        className="pressable flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5 hover:border-line-strong"
+                        className="pressable flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel"
                       >
                         {r.mediaUrls[0] ? (
                           <Img
                             src={r.mediaUrls[0]}
                             alt=""
-                            className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                            fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>}
+                            className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                            fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>}
                           />
                         ) : (
-                          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-panel text-muted"><Icon name="image" size={16} /></span>
+                          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-detail font-semibold text-ink">{r.title || r.body}</p>
-                          <p className="text-caption text-muted">{r.category.replace('_', ' ')}</p>
+                          <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">{r.title || r.body || 'Photo / Video'}</p>
+                          <p className="mt-0.5 truncate text-caption text-muted">{r.authorName} · {resultAge(r.createdAt)}</p>
                         </div>
+                        <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
                       </Link>
                     ))}
                   </div>

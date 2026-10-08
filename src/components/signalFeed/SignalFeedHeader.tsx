@@ -109,7 +109,7 @@ export function SignalFeedHeader({
                 }}
                 placeholder="Search people, news, cars, offers…"
                 aria-label="Search Signal"
-                className="min-w-0 flex-1 bg-transparent px-1.5 text-body text-ink outline-none placeholder:text-faint"
+                className="min-w-0 flex-1 bg-transparent px-1.5 text-[16px] text-ink outline-none placeholder:text-faint"
                 autoCapitalize="none"
                 autoCorrect="off"
                 enterKeyHint="search"
