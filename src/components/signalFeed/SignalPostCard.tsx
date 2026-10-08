@@ -471,17 +471,15 @@ export function SignalPostCard({
   // button takes them all back. Everyone else keeps the one-tap toggle above.
   const isTeamViewer = Boolean(viewerProfile?.is_owner || viewerProfile?.is_admin) && !post.isDemo;
   const [myRespects, setMyRespects] = useState(0);
-  // The "RESPECTED" rubber stamp that lands above the thumb whenever a Respect is given.
+  const respected = isTeamViewer ? myRespects > 0 : post.likedByMe;
+  // The "RESPECTED" rubber stamp: it slams down when a Respect is given and then
+  // stays above the thumb for as long as the Respect stands.
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
-  const stampTimerRef = useRef<number | undefined>(undefined);
   const fireStamp = () => {
-    window.clearTimeout(stampTimerRef.current);
     setStampKey((k) => k + 1);
     setRespectPlay((k) => k + 1);
-    stampTimerRef.current = window.setTimeout(() => setStampKey(0), 1700);
   };
-  useEffect(() => () => window.clearTimeout(stampTimerRef.current), []);
   const holdTimerRef = useRef<number | undefined>(undefined);
   const heldRespectRef = useRef(false);
   useEffect(() => {
@@ -1029,14 +1027,15 @@ export function SignalPostCard({
           totals — never who. The team's repeat Respect/Save/View taps (hold
           to take back) live on the same buttons. Giving a Respect stamps
           "RESPECTED" above the thumb for a moment. */}
-      <div className="flex items-center justify-between px-3 pb-3 pt-1 sm:px-4">
+      <div className={`flex items-center justify-between px-3 pb-3 transition-[padding] duration-200 sm:px-4 ${respected ? 'pt-6' : 'pt-1'}`}>
         <div className="flex items-center gap-0.5">
           <div className="relative">
-            {stampKey > 0 && (
+            {respected && (
               <span
                 key={stampKey}
                 aria-hidden="true"
-                className="respect-stamp pointer-events-none absolute -top-9 left-1 z-20 whitespace-nowrap rounded-md border-2 border-accent-bright bg-surface/95 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.16em] text-accent-700 shadow-[0_6px_16px_-6px_rgba(0,212,71,0.55)]"
+                style={stampKey > 0 ? undefined : { transform: 'rotate(-8deg)' }}
+                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[22px] left-2 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
               >
                 Respected
               </span>
