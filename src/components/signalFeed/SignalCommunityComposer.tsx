@@ -313,16 +313,16 @@ export function SignalCommunityComposer({
   };
 
   const avatarFallback = (
-    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
-      <Icon name="user" size={18} />
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft">
+      <Icon name="user" size={19} />
     </span>
   );
 
   return (
-    <motion.div layout={!reduceMotion} transition={SPRING_SMOOTH} className={`mb-3 rounded-2xl border border-line bg-surface px-3.5 py-3 ${isOpen ? '' : 'transition-colors hover:border-line-strong'}`}>
-      <div className="flex items-start gap-2.5">
+    <motion.div layout={!reduceMotion} transition={SPRING_SMOOTH} className={`mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`}>
+      <div className="flex items-start gap-3">
         {profile?.avatar_url ? (
-          <ProfileAvatar src={profile.avatar_url} size={36} />
+          <ProfileAvatar src={profile.avatar_url} size={40} />
         ) : avatarFallback}
 
         <div className="min-w-0 flex-1">
@@ -332,9 +332,9 @@ export function SignalCommunityComposer({
             onChange={(e) => setBody(e.target.value)}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            placeholder="Share something with the community…"
+            placeholder="Share something…"
             rows={1}
-            className="w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-body leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0"
+            className="mt-[9px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[16px] leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0"
             style={{ height: MAX_COLLAPSED_HEIGHT, maxHeight: MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
           />
 
@@ -351,7 +351,7 @@ export function SignalCommunityComposer({
                   {existingUrls.map((url, i) => {
                     const isVideo = mediaKindFromPath(url) === 'video';
                     return (
-                      <div key={`existing-${url}`} className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-panel">
+                      <div key={`existing-${url}`} className="group relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-panel">
                         {isVideo ? (
                           <video src={url} muted playsInline className="h-full w-full object-cover" />
                         ) : (
@@ -371,7 +371,7 @@ export function SignalCommunityComposer({
                           onMouseDown={holdFocus}
                           onClick={() => removeExisting(i)}
                           aria-label="Remove media"
-                          className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white"
+                          className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white"
                         >
                           <Icon name="x" size={11} />
                         </button>
@@ -379,7 +379,7 @@ export function SignalCommunityComposer({
                     );
                   })}
                   {pending.map((media, i) => (
-                    <div key={media.preview} className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-panel">
+                    <div key={media.preview} className="group relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-panel">
                       {media.mediaKind === 'video' ? (
                         <video src={media.preview} muted playsInline className="h-full w-full object-cover" />
                       ) : (
@@ -394,7 +394,7 @@ export function SignalCommunityComposer({
                         onMouseDown={holdFocus}
                         onClick={() => removePending(i)}
                         aria-label="Remove media"
-                        className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white"
+                        className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-white"
                       >
                         <Icon name="x" size={11} />
                       </button>
@@ -417,13 +417,13 @@ export function SignalCommunityComposer({
                 transition={SPRING_SMOOTH}
                 className="overflow-hidden"
               >
-                <div className="mt-2.5 flex items-center gap-0.5 border-t border-line pt-2.5">
+                <div className="mt-3 flex items-center gap-1 border-t border-line pt-3">
                   <label
                     onMouseDown={holdFocus}
                     aria-label="Add photo"
-                    className={`pressable grid h-8 w-8 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA ? 'pointer-events-none opacity-40' : ''}`}
+                    className={`pressable grid h-11 w-11 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA ? 'pointer-events-none opacity-40' : ''}`}
                   >
-                    <Icon name="image" size={18} />
+                    <Icon name="image" size={21} />
                     <input
                       type="file"
                       accept={ACCEPTED_TYPES.join(',')}
@@ -435,9 +435,9 @@ export function SignalCommunityComposer({
                   <label
                     onMouseDown={holdFocus}
                     aria-label="Add video"
-                    className={`pressable grid h-8 w-8 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''}`}
+                    className={`pressable grid h-11 w-11 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''}`}
                   >
-                    {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={18} />}
+                    {validatingVideo ? <span className="skeleton h-4 w-4 rounded-full" /> : <Icon name="play" size={21} />}
                     <input
                       type="file"
                       accept={VIDEO_MIME_TYPES.join(',')}
@@ -451,9 +451,9 @@ export function SignalCommunityComposer({
                       onClick={openVehiclePicker}
                       aria-expanded={vehiclePickerOpen}
                       aria-label="Attach vehicle"
-                      className={`grid h-8 w-8 place-items-center rounded-full transition-colors hover:bg-accent-050 ${selectedVehicle ? 'text-accent-700' : 'text-accent-700'}`}
+                      className="grid h-11 w-11 place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050"
                     >
-                      <Icon name="car" size={17} fill={Boolean(selectedVehicle)} />
+                      <Icon name="car" size={20} fill={Boolean(selectedVehicle)} />
                     </Tap>
                   )}
 
@@ -465,7 +465,7 @@ export function SignalCommunityComposer({
                     disabled={!canPublish}
                     animate={{ scale: justPublished ? 1.05 : 1 }}
                     transition={{ scale: SPRING_SNAPPY }}
-                    className={`rounded-full px-4 py-1.5 text-detail font-semibold transition-colors ${
+                    className={`min-h-10 rounded-full px-5 py-2 text-[15px] font-semibold transition-colors ${
                       canPublish ? 'bg-ink text-white hover:bg-ink/90' : 'bg-panel text-faint'
                     }`}
                   >
@@ -476,9 +476,9 @@ export function SignalCommunityComposer({
                     onMouseDown={holdFocus}
                     onClick={editing ? onCancel : handleClose}
                     aria-label={editing ? 'Cancel editing' : 'Close composer'}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-ink"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-ink"
                   >
-                    <Icon name="x" size={16} />
+                    <Icon name="x" size={18} />
                   </button>
                 </div>
 
