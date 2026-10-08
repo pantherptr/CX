@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
@@ -106,6 +106,7 @@ function PostImage({
   onClick,
   onDoubleTap,
   dynamicAspect = false,
+  full = false,
   sharedId,
   sharedActive = true,
 }: {
@@ -120,6 +121,8 @@ function PostImage({
    *  utility. Multi-image grids and the Featured/Pinned hero keep their
    *  fixed crop, unchanged. */
   dynamicAspect?: boolean;
+  /** The single-post page: the photo at its own full size, never cropped. */
+  full?: boolean;
   /** Opts this exact box into the shared-element morph with
    *  SignalMediaViewer's fullscreen image (see the viewer's own matching
    *  comment) — omit entirely for media that shouldn't participate
@@ -159,7 +162,7 @@ function PostImage({
           if (dynamicAspect) {
             const img = e.currentTarget;
             if (img.naturalWidth && img.naturalHeight) {
-              setAspect(Math.max(img.naturalWidth / img.naturalHeight, MIN_MEDIA_ASPECT));
+              setAspect(full ? img.naturalWidth / img.naturalHeight : Math.max(img.naturalWidth / img.naturalHeight, MIN_MEDIA_ASPECT));
             }
           }
         }}
@@ -180,7 +183,7 @@ function PostImage({
       )}
     </>
   );
-  const dynamicClass = dynamicAspect ? `w-full ${MEDIA_MAX_HEIGHT_CLASS}` : className;
+  const dynamicClass = dynamicAspect ? `w-full ${full ? '' : MEDIA_MAX_HEIGHT_CLASS}` : className;
   const style = dynamicAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5' } : undefined;
   const box = onClick ? (
     <button onClick={handleTap} style={style} aria-label="Open photo or video" className={`relative overflow-hidden bg-panel ${dynamicClass}`}>{content}</button>
@@ -212,10 +215,13 @@ function PostVideo({
   className,
   onClick,
   fixedAspect = false,
+  full = false,
 }: {
   src: string;
   className: string;
   onClick?: () => void;
+  /** The single-post page: the video at its own full size, never cropped. */
+  full?: boolean;
   /** The Featured/Pinned hero treatment deliberately crops to a fixed
    *  16:10 box like its image counterpart does — only the regular feed
    *  grid preserves each video's own intrinsic composition. */
@@ -268,7 +274,7 @@ function PostVideo({
 
   return (
     <div
-      className={`relative overflow-hidden bg-panel ${fixedAspect ? className : `w-full ${MEDIA_MAX_HEIGHT_CLASS}`}`}
+      className={`relative overflow-hidden bg-panel ${fixedAspect ? className : `w-full ${full ? '' : MEDIA_MAX_HEIGHT_CLASS}`}`}
       style={!fixedAspect ? { aspectRatio: aspect ? `${aspect}` : '4/5', height: 'auto' } : undefined}
     >
       {!loaded && <div className="skeleton absolute inset-0" />}
@@ -285,7 +291,7 @@ function PostVideo({
           // Clamped to never go narrower than 4:5 — see MIN_MEDIA_ASPECT
           // above; a 9:16 clip is cropped to a contained portrait height
           // instead of stretching to nearly the full viewport.
-          if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(Math.max(v.videoWidth / v.videoHeight, MIN_MEDIA_ASPECT));
+          if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(full ? v.videoWidth / v.videoHeight : Math.max(v.videoWidth / v.videoHeight, MIN_MEDIA_ASPECT));
         }}
         onError={() => setErrored(true)}
         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -401,6 +407,7 @@ export function SignalPostCard({
   post,
   canManage,
   featured = false,
+  detail = false,
   onChanged,
   onDeleted,
   onPinToggled,
@@ -409,6 +416,8 @@ export function SignalPostCard({
   post: EmpirePost;
   canManage: boolean;
   featured?: boolean;
+  /** The single-post page: full text, full-size media, exact date and time; the card itself no longer opens anything. */
+  detail?: boolean;
   onChanged: (post: EmpirePost) => void;
   onDeleted: (postId: string) => void;
   onPinToggled?: () => void;
@@ -424,14 +433,41 @@ export function SignalPostCard({
   const isOwnerViewer = Boolean(viewerProfile?.is_owner);
   const { pathname } = useLocation();
   const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
+  const navigate = useNavigate();
+  const [textExpanded, setTextExpanded] = useState(false);
+  const [textClamped, setTextClamped] = useState(false);
+  const bodyRef = useRef<HTMLParagraphElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const tr = useManualTranslate([post.title, post.body]);
+
+  // Long text is cut in the feed ("Show more"); the single-post page shows it all.
+  const clampText = !detail && !featured;
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el || !clampText || textExpanded) return;
+    setTextClamped(el.scrollHeight > el.clientHeight + 2);
+  }, [tr.texts[1], clampText, textExpanded]);
+
+  // Like X: a tap on the card opens the post. If the text is cut off, the
+  // first tap shows all of it and the next one opens the post.
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (detail || featured) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('a, button, input, textarea, select, label, video, [role="button"], [data-no-open]')) return;
+    if (window.getSelection()?.toString()) return;
+    if (textClamped && !textExpanded) {
+      setTextExpanded(true);
+      return;
+    }
+    navigate(`${profileBase}/post/${post.id}`);
+  };
+  const postedAt = new Date(post.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : lang, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', year: 'numeric' });
 
   const isExclusive = post.category === 'exclusive';
   const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
@@ -876,7 +912,8 @@ export function SignalPostCard({
 
   return (
     <article
-      className={`card relative mb-5 animate-fade-up overflow-hidden rounded-3xl p-0 shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34),0_1px_2px_rgba(0,0,0,0.05)] ${
+      onClick={handleCardClick}
+      className={`card relative mb-5 animate-fade-up overflow-hidden rounded-3xl p-0 ${detail || featured ? '' : 'cursor-pointer'} shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34),0_1px_2px_rgba(0,0,0,0.05)] ${
         featured
           ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
           : isExclusive
@@ -1001,9 +1038,19 @@ export function SignalPostCard({
         <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
       {post.body.trim() !== '' && (
-        <p className={`whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed text-ink sm:px-5 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
-          {tr.texts[1]}
-        </p>
+        <div className="px-4 pb-3 sm:px-5">
+          <p
+            ref={bodyRef}
+            className={`whitespace-pre-wrap break-words leading-relaxed text-ink ${featured || detail ? 'text-detail' : 'text-body'} ${detail ? 'sm:text-copy' : ''} ${featured && !post.title ? 'line-clamp-3' : clampText && !textExpanded ? 'line-clamp-6' : ''}`}
+          >
+            {tr.texts[1]}
+          </p>
+          {clampText && textClamped && !textExpanded && (
+            <button type="button" onClick={(e) => { e.stopPropagation(); setTextExpanded(true); }} className="pressable mt-1 text-detail font-semibold text-accent-700">
+              {t('Show more')}
+            </button>
+          )}
+        </div>
       )}
 
       {tr.available && post.body.trim() !== '' && (
@@ -1030,7 +1077,27 @@ export function SignalPostCard({
       {post.vehicle && <SignalVehicleCard vehicle={post.vehicle} authorId={post.authorId} isOwnPost={isOwnPost} />}
 
       {post.mediaUrls.length > 0 && (
-        featured ? (
+        detail && !featured ? (
+          <div className="flex flex-col gap-1">
+            {post.mediaUrls.map((url, i) =>
+              mediaKindFromPath(url) === 'video' ? (
+                <PostVideo key={url} src={url} full onClick={() => setViewerIndex(i)} className="aspect-video" />
+              ) : (
+                <PostImage
+                  key={url}
+                  src={url}
+                  full
+                  dynamicAspect
+                  className="aspect-[4/5]"
+                  onClick={() => setViewerIndex(i)}
+                  onDoubleTap={handleDoubleTapRespect}
+                  sharedId={i === 0 ? `post-media-${url}` : undefined}
+                  sharedActive={viewerIndex === null}
+                />
+              ),
+            )}
+          </div>
+        ) : featured ? (
           mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
             <PostVideo src={post.mediaUrls[0]} className="aspect-[16/10] w-full" fixedAspect onClick={() => setViewerIndex(0)} />
           ) : (
@@ -1175,7 +1242,7 @@ export function SignalPostCard({
       </div>
 
       {collectionHint && !post.isDemo && (
-        <div className="mx-4 mb-2 flex animate-fade-up items-center justify-between gap-3 rounded-xl bg-panel px-3.5 py-2 sm:mx-5">
+        <div data-no-open className="mx-4 mb-2 flex animate-fade-up items-center justify-between gap-3 rounded-xl bg-panel px-3.5 py-2 sm:mx-5">
           <span className="flex items-center gap-1.5 text-detail font-medium text-ink-soft">
             <Icon name="check" size={14} strokeWidth={3} className="text-accent-700" /> Saved
           </span>
@@ -1188,6 +1255,8 @@ export function SignalPostCard({
           </button>
         </div>
       )}
+
+      {detail && <p className="px-4 pb-3 pt-3 text-caption text-muted sm:px-5">{postedAt}</p>}
 
       {/* The stats bar under every post: a plain row of icon + number — views,
           Respects and Saves for everyone (numbers only, never who), plus
@@ -1244,7 +1313,7 @@ export function SignalPostCard({
           the dedicated "Comment" action Owner-only for actually writing
           one via the sheet). */}
       {post.commentCount > 0 && !post.commentsDisabled && (
-        <div className="border-t border-line">
+        <div data-no-open className="border-t border-line">
           <SignalComments
             postId={post.id}
             canModerateAll={canManage}

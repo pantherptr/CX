@@ -110,6 +110,7 @@ export function SignalPostDetail({
         ) : (
           <>
             <SignalPostCard
+              detail
               post={post}
               canManage={canManage}
               onChanged={(updated) => setPost(updated)}
