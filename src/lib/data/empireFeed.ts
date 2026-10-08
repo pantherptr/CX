@@ -378,7 +378,9 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [newPostsAvailable, setNewPostsAvailable] = useState(false);
+  const [newPostsInfo, setNewPostsInfo] = useState<{ count: number; avatars: (string | null)[] } | null>(null);
+  const newPostsAvailable = newPostsInfo !== null;
+  const setNewPostsAvailable = useCallback((v: boolean) => { if (!v) setNewPostsInfo(null); }, []);
   const scope = scopeOpts?.scope;
   const authorKind = scopeOpts?.authorKind;
   // Read inside the poll without making the effect below re-run (and thus
@@ -455,8 +457,13 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       const current = postsRef.current;
       if (!current || current.length === 0) return;
       try {
-        const [latest] = await fetchEmpireFeed(1, undefined, category, { scope, authorKind });
-        if (!cancelled && latest && latest.id !== current[0]?.id) setNewPostsAvailable(true);
+        const peek = await fetchEmpireFeed(5, undefined, category, { scope, authorKind });
+        if (cancelled || peek.length === 0 || peek[0].id === current[0]?.id) return;
+        const known = new Set(current.map((p) => p.id));
+        const fresh = peek.filter((p) => !known.has(p.id));
+        const authors = new Map<string, string | null>();
+        for (const p of fresh) if (!authors.has(p.authorId)) authors.set(p.authorId, p.authorAvatarUrl);
+        setNewPostsInfo({ count: fresh.length >= 5 ? 5 : Math.max(1, fresh.length), avatars: [...authors.values()].slice(0, 3) });
       } catch {
         // a failed background peek is silent — it just tries again next tick
       }
@@ -518,7 +525,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
 
   return {
     posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost, prependPost,
-    newPostsAvailable, loadNewPosts,
+    newPostsAvailable, newPostsInfo, loadNewPosts,
   };
 }
 

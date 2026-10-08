@@ -9,6 +9,10 @@ import type { Lang } from './countries';
 type Row = [en: string, it: string, ro: string, es: string];
 
 const ROWS: Row[] = [
+  // ---- New posts pill ----
+  ["New post", "Nuovo post", "Postare nouă", "Nueva publicación"],
+  ["{count} new posts", "{count} nuovi post", "{count} postări noi", "{count} publicaciones nuevas"],
+  ["{count}+ new posts", "{count}+ nuovi post", "{count}+ postări noi", "{count}+ publicaciones nuevas"],
   // ---- Aggregated notifications ----
   ["and {count} other", "e {count} altro", "și încă {count}", "y {count} más"],
   ["and {count} others", "e altri {count}", "și alți {count}", "y {count} más"],

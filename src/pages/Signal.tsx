@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
+import { useLocale } from '../lib/i18n';
 import { useMediaQuery } from '../components/motion';
 import { Tap, AnimatePresence, motion } from '../components/motionKit';
 import { SignalLogo, SignalSHero } from '../components/SignalLogo';
@@ -55,6 +56,7 @@ import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
  *  has no Community twin — Highlights are Official-only. Old `/empire*`
  *  links redirect here — see `EmpireToSignalRedirect` in App.tsx. */
 export default function Signal() {
+  const { t } = useLocale();
   const { session, profile } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -82,7 +84,7 @@ export default function Signal() {
 
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
-  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, loadNewPosts } =
+  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
 
   // Warm the browser cache for the photos just below the fold, so scrolling
@@ -408,13 +410,31 @@ export default function Signal() {
             >
               <Tap
                 onClick={handleLoadNewPosts}
-                className="group flex items-center gap-2 rounded-full bg-ink/90 py-1.5 pl-2 pr-4 text-[13.5px] font-semibold tracking-tight text-white shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)] ring-1 ring-white/15 backdrop-blur-xl"
+                className="flex items-center gap-2.5 rounded-full border border-line bg-surface/85 py-1.5 pl-1.5 pr-3.5 text-[13.5px] font-semibold tracking-tight text-ink shadow-[0_12px_32px_-10px_rgba(0,0,0,0.35),0_2px_6px_rgba(0,0,0,0.06)] backdrop-blur-xl"
               >
-                <span className="relative grid h-6 w-6 place-items-center rounded-full bg-accent-bright text-white">
-                  <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-full bg-accent-bright/50 [animation-duration:2.2s]" />
-                  <Icon name="chevronUp" size={14} />
+                {newPostsInfo && newPostsInfo.avatars.length > 0 ? (
+                  <span className="flex -space-x-2">
+                    {newPostsInfo.avatars.map((src, i) =>
+                      src ? (
+                        <img key={i} src={src} alt="" className="h-7 w-7 rounded-full object-cover ring-2 ring-surface" />
+                      ) : (
+                        <span key={i} className="grid h-7 w-7 place-items-center rounded-full bg-panel text-ink-soft ring-2 ring-surface">
+                          <Icon name="user" size={14} />
+                        </span>
+                      ),
+                    )}
+                  </span>
+                ) : null}
+                <span>
+                  {!newPostsInfo || newPostsInfo.count <= 1
+                    ? t('New post')
+                    : newPostsInfo.count >= 5
+                      ? t('{count}+ new posts', { count: 5 })
+                      : t('{count} new posts', { count: newPostsInfo.count })}
                 </span>
-                New posts
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-ink text-white">
+                  <Icon name="chevronUp" size={13} />
+                </span>
               </Tap>
             </motion.div>
           )}
