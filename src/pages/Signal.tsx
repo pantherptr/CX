@@ -12,7 +12,6 @@ import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunit
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSpaceSwitch } from '../components/signalFeed/SignalSpaceSwitch';
-import { SignalTrendingSection } from '../components/signalFeed/SignalTrendingSection';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
 import { SignalPostDetail } from '../components/signalFeed/SignalPostDetail';
@@ -446,15 +445,9 @@ export default function Signal() {
           </>
         )}
 
-        {!isDesktop && space === 'official' && category === null && <SignalTrendingSection scope="official" />}
         </div>
       </SignalPullToRefresh>
       </main>
-      {isDesktop && (
-        <aside className="sticky top-20 w-72 shrink-0">
-          {space === 'official' && <SignalTrendingSection scope="official" vertical />}
-        </aside>
-      )}
       </div>
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}
