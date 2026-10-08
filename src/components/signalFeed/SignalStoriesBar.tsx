@@ -55,11 +55,11 @@ export function SignalStoriesBar({
 
   if (stories === null) {
     return (
-      <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex shrink-0 flex-col items-center gap-1">
-            <div className="skeleton h-14 w-14 rounded-full" />
-            <div className="skeleton h-2.5 w-9 rounded-md" />
+      <div className="no-scrollbar -mx-2.5 mb-3 flex snap-x scroll-pl-2.5 gap-3.5 overflow-x-auto px-2.5 pb-1 pt-0.5 sm:-mx-4 sm:scroll-pl-4 sm:px-4 lg:mx-0 lg:scroll-pl-0 lg:px-0">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex shrink-0 flex-col items-center gap-1.5">
+            <div className="skeleton h-[68px] w-[68px] rounded-full" />
+            <div className="skeleton h-2.5 w-10 rounded-md" />
           </div>
         ))}
       </div>
@@ -70,13 +70,13 @@ export function SignalStoriesBar({
 
   return (
     <>
-      <div className="no-scrollbar mb-3 flex gap-3 overflow-x-auto pb-1">
+      <div className="no-scrollbar -mx-2.5 mb-3 flex snap-x scroll-pl-2.5 gap-3.5 overflow-x-auto px-2.5 pb-1 pt-0.5 sm:-mx-4 sm:scroll-pl-4 sm:px-4 lg:mx-0 lg:scroll-pl-0 lg:px-0">
         {canCreate && (
-          <Tap onClick={onOpenComposer} scale={0.93} className="flex shrink-0 flex-col items-center gap-1">
-            <span className="grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-line-strong text-ink-soft transition-colors hover:border-accent hover:text-accent-700">
-              <Icon name="plus" size={20} />
+          <Tap onClick={onOpenComposer} scale={0.93} className="flex shrink-0 snap-start flex-col items-center gap-1.5">
+            <span className="grid h-[68px] w-[68px] place-items-center rounded-full bg-ink text-accent-bright shadow-[0_8px_20px_-8px_rgba(0,0,0,0.5)] ring-4 ring-bg">
+              <Icon name="plus" size={26} strokeWidth={2.4} />
             </span>
-            <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">Add Story</span>
+            <span className="line-clamp-2 w-[72px] text-center text-[11.5px] font-medium leading-tight text-ink-soft">Add Story</span>
           </Tap>
         )}
         {stories.map((story, i) => {
@@ -96,10 +96,10 @@ export function SignalStoriesBar({
             ? 'bg-accent-700'
             : story.viewedByMe
               ? 'bg-line-strong opacity-70'
-              : 'bg-accent-bright';
+              : 'bg-[conic-gradient(from_210deg,#00d447,#8dffb0,#00d447)] shadow-[0_0_14px_-2px_rgba(0,212,71,0.55)]';
           return (
-            <Tap key={story.id} onClick={() => setOpenIndex(i)} scale={0.93} className="flex shrink-0 flex-col items-center gap-1">
-              <span className={`grid h-14 w-14 place-items-center rounded-full p-[2.5px] transition-opacity ${ringClass}`}>
+            <Tap key={story.id} onClick={() => setOpenIndex(i)} scale={0.93} className="flex shrink-0 snap-start flex-col items-center gap-1.5">
+              <span className={`grid h-[68px] w-[68px] place-items-center rounded-full p-[3px] transition-opacity ${ringClass}`}>
                 <span className="grid h-full w-full place-items-center overflow-hidden rounded-full border-2 border-surface bg-panel">
                   {/* The one shared-element transition in SIGNAL's Story
                       flow: this exact avatar morphs (position + size) into
@@ -112,11 +112,11 @@ export function SignalStoriesBar({
                       swiping to a *different* Story inside the viewer
                       doesn't also need this bar to track live position. */}
                   <SharedAvatar id={`story-avatar-${story.id}`} active={openIndex !== i}>
-                    <SignalIdentityAvatar identity={identity} size={50} />
+                    <SignalIdentityAvatar identity={identity} size={58} />
                   </SharedAvatar>
                 </span>
               </span>
-              <span className="max-w-[60px] truncate text-[10.5px] font-medium text-ink-soft">{isMine ? 'You' : identity.name}</span>
+              <span className="max-w-[72px] truncate text-[11.5px] font-medium text-ink-soft">{isMine ? 'You' : identity.name}</span>
             </Tap>
           );
         })}

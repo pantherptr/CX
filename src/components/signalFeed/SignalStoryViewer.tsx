@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
@@ -60,6 +61,7 @@ export function SignalStoryViewer({
   const { pathname } = useLocation();
   const { session } = useAuth();
   const reduceMotion = !!useReducedMotion();
+  useLightStatusBar();
   const [storyIndex, setStoryIndex] = useState(startIndex);
   // Story -> Profile -> Story: opening a profile from here must not
   // unmount (and lose) this viewer's position — see useHideForNavigation's
@@ -442,7 +444,8 @@ export function SignalStoryViewer({
             <button
               onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
               aria-label={muted ? 'Unmute' : 'Mute'}
-              className="absolute bottom-4 right-4 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
+              style={{ bottom: 'max(env(safe-area-inset-bottom), 16px)' }}
+              className="absolute right-4 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white ring-1 ring-white/15 backdrop-blur-md transition-colors hover:bg-black/60"
             >
               <Icon name={muted ? 'volumeOff' : 'volume'} size={17} />
             </button>
@@ -452,7 +455,7 @@ export function SignalStoryViewer({
           <button onClick={() => handleZoneClick('next')} aria-label="Next" className="absolute inset-y-0 right-0 w-1/3" />
 
           {!isPending && !isBlocked && slide.caption && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pb-8 pt-16">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-5 pt-20" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 24px)' }}>
               <p className="text-body leading-relaxed text-white"><Ugc text={slide.caption} /></p>
             </div>
           )}
@@ -463,7 +466,8 @@ export function SignalStoryViewer({
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="btn btn-accent-bright btn-sm absolute bottom-8 left-1/2 -translate-x-1/2"
+              style={{ bottom: 'max(env(safe-area-inset-bottom), 32px)' }}
+              className="btn btn-accent-bright btn-sm absolute left-1/2 -translate-x-1/2"
             >
               {slide.ctaLabel}
             </a>
@@ -534,7 +538,7 @@ export function SignalStoryViewer({
               <button
                 onClick={(e) => { e.stopPropagation(); setManualPaused((p) => !p); }}
                 aria-label={manualPaused ? 'Play' : 'Pause'}
-                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <Icon name={manualPaused ? 'play' : 'pause'} size={17} />
               </button>
@@ -546,7 +550,7 @@ export function SignalStoryViewer({
                 <button
                   onClick={(e) => { e.stopPropagation(); setInsightsOpen(true); }}
                   aria-label="Story insights"
-                  className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="grid h-10 w-10 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <Icon name="chart" size={17} />
                 </button>
@@ -556,7 +560,7 @@ export function SignalStoryViewer({
                   onClick={handleDelete}
                   disabled={deleting}
                   aria-label="Delete story"
-                  className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                  className="grid h-10 w-10 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   <Icon name="trash" size={18} />
                 </button>
@@ -564,7 +568,7 @@ export function SignalStoryViewer({
               <button
                 onClick={onClose}
                 aria-label="Close"
-                className="grid h-9 w-9 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                className="grid h-10 w-10 place-items-center rounded-full text-white/85 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <Icon name="x" size={22} />
               </button>
@@ -587,7 +591,8 @@ export function SignalStoryViewer({
             whileTap={reduceMotion ? undefined : { scale: 0.85 }}
             animate={isRespected && !reduceMotion ? { scale: [1, 1.25, 1] } : { scale: 1 }}
             transition={SPRING_SNAPPY}
-            className={`absolute bottom-20 right-4 z-20 grid h-11 w-11 place-items-center rounded-full backdrop-blur-sm transition-colors ${isRespected ? 'bg-accent-bright text-noir' : 'bg-black/40 text-white hover:bg-black/60'}`}
+            style={{ bottom: 'calc(max(env(safe-area-inset-bottom), 16px) + 56px)' }}
+            className={`absolute right-4 z-20 grid h-12 w-12 place-items-center rounded-full ring-1 backdrop-blur-md transition-colors ${isRespected ? 'bg-accent-bright text-noir ring-accent-bright' : 'bg-black/40 text-white ring-white/15 hover:bg-black/60'}`}
           >
             <Icon name="like" size={19} fill={isRespected} />
           </motion.button>
