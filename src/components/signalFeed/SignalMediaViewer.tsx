@@ -8,6 +8,9 @@ import { SharedAvatar } from '../motionKit';
 const SWIPE_NAV_PX = 60;
 /** Downward travel that closes the viewer on release. */
 const SWIPE_CLOSE_PX = 110;
+const MAX_ZOOM = 4;
+const DOUBLE_TAP_ZOOM = 2.5;
+const DOUBLE_TAP_MS = 280;
 
 /** A simple fullscreen image/video viewer — tap any post media to open it
  *  here. Same `fixed inset-0` full-viewport overlay pattern used
@@ -33,6 +36,11 @@ export function SignalMediaViewer({
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [zoom, setZoom] = useState({ s: 1, x: 0, y: 0 });
+  const [zooming, setZooming] = useState(false);
+  const pinch = useRef<{ d0: number; s0: number } | null>(null);
+  const pan = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
+  const lastTap = useRef(0);
   const gesture = useRef<{ x: number; y: number; axis: 'x' | 'y' | null } | null>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -50,6 +58,11 @@ export function SignalMediaViewer({
   const showsInitialImage = index === startIndex && !isVideo;
 
   const step = (delta: number) => setIndex((i) => (i + delta + images.length) % images.length);
+  const resetZoom = () => setZoom({ s: 1, x: 0, y: 0 });
+  const toggleZoom = () => setZoom((z) => (z.s > 1 ? { s: 1, x: 0, y: 0 } : { s: DOUBLE_TAP_ZOOM, x: 0, y: 0 }));
+  useEffect(() => {
+    resetZoom();
+  }, [index]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,10 +79,52 @@ export function SignalMediaViewer({
     };
   }, [many, images.length]);
 
+  const touchDistance = (e: ReactTouchEvent) =>
+    Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+
   const onTouchStart = (e: ReactTouchEvent) => {
+    if (!isVideo) {
+      if (e.touches.length === 2) {
+        pinch.current = { d0: touchDistance(e), s0: zoom.s };
+        pan.current = null;
+        gesture.current = null;
+        setZooming(true);
+        return;
+      }
+      const now = Date.now();
+      if (now - lastTap.current < DOUBLE_TAP_MS) {
+        lastTap.current = 0;
+        toggleZoom();
+        return;
+      }
+      lastTap.current = now;
+      if (zoom.s > 1) {
+        pan.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx: zoom.x, ty: zoom.y };
+        setZooming(true);
+        return;
+      }
+    }
     gesture.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, axis: null };
   };
   const onTouchMove = (e: ReactTouchEvent) => {
+    if (pinch.current && e.touches.length === 2) {
+      const s = Math.min(MAX_ZOOM, Math.max(1, pinch.current.s0 * (touchDistance(e) / pinch.current.d0)));
+      setZoom((z) => ({ s, x: s <= 1 ? 0 : z.x, y: s <= 1 ? 0 : z.y }));
+      return;
+    }
+    const start = pan.current;
+    if (start) {
+      const dx = e.touches[0].clientX - start.x;
+      const dy = e.touches[0].clientY - start.y;
+      const limX = (window.innerWidth * (zoom.s - 1)) / 2;
+      const limY = (window.innerHeight * (zoom.s - 1)) / 2;
+      setZoom((z) => ({
+        s: z.s,
+        x: Math.max(-limX, Math.min(limX, start.tx + dx)),
+        y: Math.max(-limY, Math.min(limY, start.ty + dy)),
+      }));
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
     const dx = e.touches[0].clientX - g.x;
@@ -81,7 +136,16 @@ export function SignalMediaViewer({
     // rather than going dead, so the gesture never feels ignored.
     setDrag(g.axis === 'x' ? { x: many ? dx : dx / 4, y: 0 } : { x: 0, y: Math.max(0, dy) });
   };
-  const onTouchEnd = () => {
+  const onTouchEnd = (e: ReactTouchEvent) => {
+    if (pinch.current || pan.current) {
+      if (e.touches.length === 0) {
+        pinch.current = null;
+        pan.current = null;
+        setZooming(false);
+        setZoom((z) => (z.s < 1.05 ? { s: 1, x: 0, y: 0 } : z));
+      }
+      return;
+    }
     const axis = gesture.current?.axis;
     gesture.current = null;
     if (!dragging) return;
@@ -141,6 +205,10 @@ export function SignalMediaViewer({
             <video key={images[index]} src={images[index]} controls autoPlay playsInline className="max-h-full max-w-full object-contain" />
           ) : (
             <SharedAvatar id={sharedId} active={showsInitialImage}>
+              <div
+                onDoubleClick={toggleZoom}
+                style={{ transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.s})`, transition: zooming ? 'none' : 'transform 220ms var(--ease-out-expo)', cursor: zoom.s > 1 ? 'zoom-out' : 'zoom-in' }}
+              >
               <Img
                 src={images[index]}
                 alt=""
@@ -152,6 +220,7 @@ export function SignalMediaViewer({
                   </div>
                 }
               />
+              </div>
             </SharedAvatar>
           )}
         </div>

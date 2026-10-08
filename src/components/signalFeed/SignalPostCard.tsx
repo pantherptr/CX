@@ -232,6 +232,9 @@ function PostVideo({
   const [errored, setErrored] = useState(false);
   const [muted, setMuted] = useState(true);
   const [aspect, setAspect] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const userPausedRef = useRef(false);
 
   useEffect(() => {
@@ -294,9 +297,32 @@ function PostVideo({
           if (!fixedAspect && v.videoWidth && v.videoHeight) setAspect(full ? v.videoWidth / v.videoHeight : Math.max(v.videoWidth / v.videoHeight, MIN_MEDIA_ASPECT));
         }}
         onError={() => setErrored(true)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onTimeUpdate={(e) => {
+          const v = e.currentTarget;
+          if (!v.duration || !Number.isFinite(v.duration)) return;
+          setProgress(v.currentTime / v.duration);
+          setRemaining(Math.max(0, Math.ceil(v.duration - v.currentTime)));
+        }}
         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
         className={`h-full w-full cursor-pointer object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
       />
+      {loaded && !playing && (
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+            <Icon name="play" size={22} fill />
+          </span>
+        </span>
+      )}
+      {remaining !== null && (
+        <span className="pointer-events-none absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm">
+          {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, '0')}
+        </span>
+      )}
+      <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-white/25">
+        <span className="block h-full bg-white transition-[width] duration-200 ease-linear" style={{ width: `${progress * 100}%` }} />
+      </span>
       <button
         onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
         aria-label={muted ? 'Unmute' : 'Mute'}
