@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
 import { Img, useCountUp } from '../motion';
 import { VerifiedBadge } from '../primitives';
@@ -18,19 +19,19 @@ function CountUp({ value, children }: { value: number; children?: ReactNode }) {
   );
 }
 
-/** One of the three figures under a profile's name. */
-function StatTile({ value, label, onClick, suffix }: { value: number; label: string; onClick?: () => void; suffix?: string }) {
+/** One figure in the stats card under a profile's name. */
+function StatCell({ value, label, onClick, suffix, decimals }: { value: number; label: string; onClick?: () => void; suffix?: string; decimals?: number }) {
   const body = (
     <>
-      <p className="font-display text-2xl font-semibold leading-none text-ink">
-        <CountUp value={value}>{suffix}</CountUp>
+      <p className="font-display text-[1.6rem] font-semibold leading-none text-ink">
+        {decimals !== undefined ? <>{value.toFixed(decimals)}{suffix}</> : <CountUp value={value}>{suffix}</CountUp>}
       </p>
       <p className="mt-1.5 text-caption font-medium text-muted">{label}</p>
     </>
   );
-  const cls = 'rounded-2xl border border-line bg-surface px-3 py-3.5 text-center shadow-hair';
+  const cls = 'px-2 py-4 text-center';
   return onClick ? (
-    <button onClick={onClick} className={`pressable ${cls} transition-colors hover:border-line-strong`}>{body}</button>
+    <button onClick={onClick} className={`pressable ${cls} transition-colors active:bg-panel`}>{body}</button>
   ) : (
     <div className={cls}>{body}</div>
   );
@@ -87,6 +88,8 @@ export function SignalProfileHero({
   const photo = coverUrl ?? avatarUrl;
   const separateAvatar = Boolean(coverUrl && avatarUrl);
   const scrolled = scrollTop > 260;
+  // the cover is a dark photo: light status-bar text until it scrolls away
+  useLightStatusBar(!scrolled);
   const drift = Math.min(scrollTop, 520) * 0.28;
 
   const glass = scrolled ? 'bg-panel text-ink-soft hover:bg-panel-2' : 'bg-black/35 text-white backdrop-blur-md hover:bg-black/50';
@@ -95,7 +98,7 @@ export function SignalProfileHero({
     <>
       {/* Floating bar — over the photo at first, a compact name bar once scrolled */}
       <div
-        className={`sticky top-0 z-20 -mb-[3.75rem] flex h-[3.75rem] items-center gap-3 px-3 pt-safe transition-colors duration-200 ${
+        className={`sticky top-0 z-20 -mb-[calc(3.75rem+env(safe-area-inset-top,0px))] flex h-[calc(3.75rem+env(safe-area-inset-top,0px))] items-center gap-3 px-3 pt-safe transition-colors duration-200 ${
           scrolled ? 'border-b border-line bg-surface/92 backdrop-blur-md' : ''
         }`}
       >
@@ -112,7 +115,7 @@ export function SignalProfileHero({
       </div>
 
       {/* Cover */}
-      <div className="relative h-[27rem] overflow-hidden bg-noir sm:mt-3 sm:h-[31rem] sm:rounded-t-[2rem]">
+      <div className="relative h-[25rem] overflow-hidden bg-noir sm:mt-3 sm:h-[31rem] sm:rounded-t-[2rem]">
         <div className="absolute inset-0" style={{ transform: `translate3d(0, ${drift}px, 0) scale(1.08)` }}>
           {photo ? (
             <Img
@@ -167,11 +170,14 @@ export function SignalProfileHero({
         )}
 
         {(followers || following || hostStats) && (
-          <div className={`mt-5 grid gap-2.5 ${hostStats ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
-            {followers && <StatTile value={followers.count} label="Followers" onClick={followers.onOpen} />}
-            {following && <StatTile value={following.count} label="Following" onClick={following.onOpen} />}
-            {hostStats && <StatTile value={hostStats.rating} label="Rating" suffix=" ★" />}
-            {hostStats && <StatTile value={hostStats.trips} label="Trips" />}
+          <div
+            className="mt-5 grid divide-x divide-line overflow-hidden rounded-2xl border border-line bg-surface shadow-hair"
+            style={{ gridTemplateColumns: `repeat(${(followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 2 : 0)}, minmax(0, 1fr))` }}
+          >
+            {followers && <StatCell value={followers.count} label="Followers" onClick={followers.onOpen} />}
+            {following && <StatCell value={following.count} label="Following" onClick={following.onOpen} />}
+            {hostStats && <StatCell value={hostStats.rating} label="Rating" suffix=" ★" decimals={1} />}
+            {hostStats && <StatCell value={hostStats.trips} label="Trips" />}
           </div>
         )}
 
