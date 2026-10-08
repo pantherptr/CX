@@ -1229,8 +1229,8 @@ function SecurityPanel() {
           ) : (
             roster.map((r) => (
               <div key={r.name} className="flex items-center gap-2 rounded-lg bg-panel/60 px-3 py-2">
-                <Icon name="verified" size={15} className="text-accent-bright" />
                 <span className="text-body font-medium text-ink">{r.name}</span>
+                <VerifiedBadge role="owner" size={15} />
                 <span className="badge badge-accent ml-auto">Owner</span>
               </div>
             ))

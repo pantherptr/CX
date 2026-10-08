@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 import { Modal } from './primitives';
+import { CxMark } from './CxBadge';
 import { KeysCta } from './signalFeed/KeysCta';
 import { useLocale } from '../lib/i18n';
 import { stampPlace } from '../lib/cityCountry';
@@ -91,7 +92,7 @@ export function TripStamp({ stamp, tilted = true }: { stamp: TripStampData; tilt
           <div className="mt-2.5 flex items-center justify-between gap-3 whitespace-nowrap text-[8.5px] font-bold uppercase tracking-[0.14em]">
             <span>{formatTripPeriod(stamp.startDate, stamp.endDate, lang)}</span>
             <span className="flex items-center gap-1 opacity-75">
-              <Icon name="check" size={9} strokeWidth={3.2} /> {t('Verified trip')}
+              <CxMark tier="verified" size={9} /> {t('Verified trip')}
             </span>
           </div>
         </div>

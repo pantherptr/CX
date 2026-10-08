@@ -544,13 +544,7 @@ function OfficialVoiceHeader({
       <div>
         <div className="flex items-center justify-center gap-1.5">
           <span className="font-display text-feature font-semibold text-ink">{isCx ? 'CX' : 'Assistant'}</span>
-          {isCx ? (
-            <span className="inline-grid h-4 w-4 place-items-center rounded-full bg-accent-bright text-noir">
-              <Icon name="check" size={11} strokeWidth={3.2} />
-            </span>
-          ) : (
-            <VerifiedBadge role="assistant" size={16} />
-          )}
+          <VerifiedBadge role={isCx ? 'cx' : 'assistant'} size={18} />
         </div>
         <p style={{ opacity: 1 - compress }} className="mt-2 max-w-xs text-detail text-muted">
           {isCx ? 'The official CX Rent brand account.' : 'CX Rent’s official AI assistant.'}

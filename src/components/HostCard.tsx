@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Host } from '../data/types';
 import { Icon } from './Icon';
 import { Img } from './motion';
+import { VerifiedBadge } from './primitives';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { findOrCreateCxConversation } from '../lib/data/messages';
@@ -60,15 +61,11 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
               <Icon name="user" size={26} />
             </span>
           )}
-          {host.verified && (
-            <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-surface bg-accent text-white">
-              <Icon name="check" size={13} strokeWidth={3} />
-            </span>
-          )}
         </div>
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-display text-lg font-semibold text-ink">{host.name}</h3>
+            {host.verified && <VerifiedBadge role="host" size={16} />}
             {host.isSuperhost && <span className="badge badge-accent">Superhost</span>}
           </div>
           <p className="text-detail text-muted">Host since {host.joined}</p>

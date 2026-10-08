@@ -6,12 +6,13 @@ import { useApp } from '../../lib/store';
 import { stampPlace } from '../../lib/cityCountry';
 import { fetchUserStamps, setStampVisibility, syncMyTripStamps, type TripStampData } from '../../lib/data/tripMemories';
 import { TripStampGrid } from '../TripStamp';
+import { CxMark } from '../CxBadge';
 
 export function VerifiedTripBadge({ className = '' }: { className?: string }) {
   const { t } = useLocale();
   return (
     <span className={`inline-flex items-center gap-1 rounded-full bg-accent-050 px-2.5 py-1 text-caption font-semibold text-accent-700 ${className}`}>
-      <Icon name="check" size={11} strokeWidth={3} /> {t('Verified CX trip')}
+      <CxMark tier="verified" size={11} /> {t('Verified CX trip')}
     </span>
   );
 }
