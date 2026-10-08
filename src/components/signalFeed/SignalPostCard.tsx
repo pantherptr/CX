@@ -13,6 +13,7 @@ import {
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
 import { ThumbsUpIcon } from '../ThumbsUpIcon';
+import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
@@ -422,7 +423,6 @@ export function SignalPostCard({
   const [busy, setBusy] = useState(false);
   const { t } = useLocale();
   const tr = useManualTranslate([post.title, post.body]);
-  const [savePop, setSavePop] = useState(false);
 
   const isExclusive = post.category === 'exclusive';
   const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
@@ -476,6 +476,9 @@ export function SignalPostCard({
   // stays above the thumb for as long as the Respect stands.
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
+  const [savePlay, setSavePlay] = useState(0);
+  const [sharePlay, setSharePlay] = useState(0);
+  const [viewPlay, setViewPlay] = useState(0);
   const fireStamp = () => {
     setStampKey((k) => k + 1);
     setRespectPlay((k) => k + 1);
@@ -560,9 +563,8 @@ export function SignalPostCard({
     const before = mySaves;
     setMySaves(before + 1);
     onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
-    setSavePop(true);
+    setSavePlay((k) => k + 1);
     vibrateTap();
-    window.setTimeout(() => setSavePop(false), 220);
     const { count, error } = await addEmpirePostSave(post.id);
     if (error) {
       setMySaves(before);
@@ -619,6 +621,7 @@ export function SignalPostCard({
   const handleTeamView = async () => {
     const before = myViews;
     setMyViews(before + 1);
+    setViewPlay((k) => k + 1);
     onChanged({ ...post, viewCount: post.viewCount + 1 });
     vibrateTap();
     const { count, error } = await addEmpirePostView(post.id);
@@ -683,15 +686,15 @@ export function SignalPostCard({
   const handleSave = async () => {
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
     if (!post.savedByMe) {
-      setSavePop(true);
+      setSavePlay((k) => k + 1);
       vibrateTap();
-      window.setTimeout(() => setSavePop(false), 220);
     }
     const { error } = post.isDemo ? await toggleSignalDemoPostSave(post.id) : await toggleEmpirePostSave(post.id);
     if (error) onChanged(post);
   };
 
   const handleShare = async () => {
+    setSharePlay((k) => k + 1);
     const url = `${window.location.origin}/signal/post/${post.id}`;
     const shareData = { title: post.title || 'CX Rent — Signal', text: post.body.slice(0, 140), url };
     if (navigator.share) {
@@ -1084,7 +1087,7 @@ export function SignalPostCard({
                 mySaves > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
               }`}
             >
-              <Icon name="bookmark" size={20} fill={mySaves > 0} className={`shrink-0 transition-transform ${mySaves > 0 ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              <BookmarkIcon size={20} filled={mySaves > 0} playKey={savePlay} className="shrink-0" />
               {countOf(post.saveCount)}
             </Tap>
           ) : (
@@ -1096,7 +1099,7 @@ export function SignalPostCard({
                 post.savedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
               }`}
             >
-              <Icon name="bookmark" size={20} fill={post.savedByMe} className={`shrink-0 transition-transform ${post.savedByMe ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              <BookmarkIcon size={20} filled={post.savedByMe} playKey={savePlay} className="shrink-0" />
               {countOf(post.saveCount)}
             </Tap>
           )}
@@ -1113,12 +1116,12 @@ export function SignalPostCard({
                 aria-label="Add a view — hold to remove yours"
                 className="pressable flex min-h-11 select-none items-center gap-1.5 rounded-full px-3 text-[14px] text-faint"
               >
-                <Icon name="eye" size={18} className="shrink-0" />
+                <EyeIcon size={18} playKey={viewPlay} className="shrink-0" />
                 {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
               </button>
             ) : (
               <span className="flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-faint">
-                <Icon name="eye" size={18} className="shrink-0" />
+                <EyeIcon size={18} className="shrink-0" />
                 {countOf(post.viewCount)}
               </span>
             ))}
@@ -1145,8 +1148,7 @@ export function SignalPostCard({
             aria-label="Share"
             className="flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] text-ink-soft transition-colors hover:text-accent-700"
           >
-            <Icon name="share" size={21} className="shrink-0" />
-            {countOf(post.shareCount)}
+            <ShareIcon size={21} playKey={sharePlay} className="shrink-0" />
           </Tap>
         </div>
       </div>
