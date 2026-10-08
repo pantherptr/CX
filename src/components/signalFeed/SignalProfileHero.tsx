@@ -189,7 +189,7 @@ export function SignalProfileHero({
           </p>
         )}
 
-        {(followers || following || hostStats || postsCount !== undefined) && (
+        {(followers || following || hostStats) && (
           <div
             className="mt-5 grid divide-x divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_16px_36px_-24px_rgba(0,0,0,0.35)]"
             style={{ gridTemplateColumns: `repeat(${(postsCount !== undefined ? 1 : 0) + (followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 2 : 0)}, minmax(0, 1fr))` }}

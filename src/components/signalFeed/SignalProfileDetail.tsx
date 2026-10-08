@@ -214,8 +214,62 @@ export function SignalProfileDetail({
     }
   };
 
+  const [view, setView] = useState<'list' | 'grid'>('list');
+  const allPosts = [...(pinnedPost ? [pinnedPost] : []), ...(restPosts ?? [])];
+  const isVideoUrl = (u: string) => /\.(mp4|mov|webm|m4v)(\?|$)/i.test(u);
+  const gridView = (
+    <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-2xl">
+      {allPosts.map((post) => {
+        const img = post.mediaUrls.find((u) => !isVideoUrl(u));
+        const vid = post.mediaUrls.find(isVideoUrl);
+        return (
+          <button
+            key={post.id}
+            type="button"
+            onClick={() => navigate(`/signal/post/${post.id}`)}
+            className="pressable group relative aspect-square overflow-hidden bg-panel"
+          >
+            {img ? (
+              <Img src={img} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>} />
+            ) : vid ? (
+              <video src={vid} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full items-center p-2.5 text-left text-caption font-medium leading-snug text-ink-soft line-clamp-5">{post.title || post.body}</span>
+            )}
+            {vid && !img && (
+              <span className="pointer-events-none absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white"><Icon name="play" size={11} fill /></span>
+            )}
+            {post.mediaUrls.length > 1 && (
+              <span className="pointer-events-none absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/55 text-white"><Icon name="grid" size={11} /></span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const postsSection = (
     <div>
+      {allPosts.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <div className="inline-flex gap-0.5 rounded-full bg-panel p-1" role="group" aria-label="View">
+            {(['list', 'grid'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                aria-label={v === 'list' ? 'List' : 'Grid'}
+                className={`grid h-8 w-10 place-items-center rounded-full transition-colors ${view === v ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'}`}
+              >
+                <Icon name={v === 'list' ? 'menu' : 'grid'} size={16} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {view === 'grid' && allPosts.length > 0 ? gridView : (
+        <>
       {pinnedPost && (
         <div className="mb-3">
           <p className="mb-2 flex items-center gap-1.5 px-0.5 text-caption font-medium text-faint">
@@ -251,6 +305,8 @@ export function SignalProfileDetail({
           onDeleted={(id) => setPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
         />
       ))}
+        </>
+      )}
     </div>
   );
 
