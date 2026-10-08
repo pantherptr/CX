@@ -640,29 +640,29 @@ export function SignalPostCard({
         </div>
       )}
 
-      <div className="flex items-start gap-2.5 p-3 pb-2 sm:px-4">
+      <div className="flex items-start gap-3 p-3 pb-2 sm:px-4">
         <Link to={signalProfileHref(post, profileBase)} viewTransition className="shrink-0">
-          <SignalIdentityAvatar identity={identity} size={36} />
+          <SignalIdentityAvatar identity={identity} size={44} />
         </Link>
-        <div className="min-w-0 flex-1">
-          <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex items-center gap-1.5 hover:underline">
-            <span className="truncate font-display font-semibold text-ink">{identity.name}</span>
-            <SignalIdentityBadge identity={identity} />
-          </Link>
-          {identity.username && (
-            <Link to={signalProfileHref(post, profileBase)} viewTransition className="block truncate text-caption text-faint hover:underline">
-              @{identity.username}
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="flex items-center justify-between gap-2">
+            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 items-center gap-1.5 hover:underline">
+              <span className="truncate font-display text-[16px] font-semibold text-ink">{identity.name}</span>
+              <SignalIdentityBadge identity={identity} />
             </Link>
-          )}
-          <p className="truncate text-caption text-muted">
+            <span className="shrink-0 text-caption tabular-nums text-faint">{timeAgo(post.createdAt)}</span>
+          </div>
+          <p className="mt-0.5 truncate text-caption text-muted">
+            {identity.username && (
+              <Link to={signalProfileHref(post, profileBase)} viewTransition className="hover:underline">@{identity.username}</Link>
+            )}
+            {identity.username && ' · '}
             {identity.subtitle}
-            {' · '}
             {/* Community posts carry no real editorial category (the
                 server forces a hidden 'community' placeholder value —
                 see create_empire_post) — only Official's own News/
                 Update/etc. content ever shows one. */}
-            {post.publisherType !== 'self' && `${categoryLabel(post.category)} · `}
-            {timeAgo(post.createdAt)}
+            {post.publisherType !== 'self' && ` · ${categoryLabel(post.category)}`}
             {post.editedAt && ' · Edited'}
             {post.isArchived && ' · Archived'}
           </p>
@@ -741,12 +741,19 @@ export function SignalPostCard({
         )}
       </div>
 
+      {post.title && (
+        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
+      )}
+      <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
+        {tr.texts[1]}
+      </p>
+
       {tr.available && (
         <button
           type="button"
           onClick={tr.toggle}
           disabled={tr.status === 'loading'}
-          className="mx-3 mb-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-accent-700 transition-colors hover:text-accent sm:mx-4"
+          className="mx-3 mb-2 -mt-0.5 inline-flex items-center gap-1.5 text-caption font-medium text-faint transition-colors hover:text-ink sm:mx-4"
         >
           <Icon name="globe" size={13} />
           {tr.status === 'loading' ? t('Translating…') : tr.on ? t('See original') : t('Translate')}
@@ -755,12 +762,6 @@ export function SignalPostCard({
       {tr.available && tr.status === 'failed' && (
         <p className="px-3 pb-1.5 text-caption text-muted sm:px-4">{t('Translation unavailable')}</p>
       )}
-      {post.title && (
-        <h3 className={`px-3 pb-1 font-display font-semibold text-ink sm:px-4 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
-      )}
-      <p className={`whitespace-pre-wrap break-words px-3 pb-2 leading-relaxed text-ink sm:px-4 ${featured ? 'text-detail' : 'text-body'} ${featured && !post.title ? 'line-clamp-3' : ''}`}>
-        {tr.texts[1]}
-      </p>
 
       {post.vehicle && (
         <Link
