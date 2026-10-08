@@ -754,6 +754,18 @@
     .signal-sweep-bar { animation: none; opacity: 0; }
   }
 
+  /* The "RESPECTED" rubber stamp: slams down large and tilted, settles, holds, fades. */
+  .respect-stamp { transform-origin: 20% 80%; animation: respect-stamp 1.7s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+  @keyframes respect-stamp {
+    0% { opacity: 0; transform: scale(2.4) rotate(-18deg); }
+    14% { opacity: 1; transform: scale(0.92) rotate(-8deg); }
+    22% { transform: scale(1.04) rotate(-7deg); }
+    30% { transform: scale(1) rotate(-8deg); }
+    78% { opacity: 1; transform: scale(1) rotate(-8deg); }
+    100% { opacity: 0; transform: scale(1) translateY(-8px) rotate(-8deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .respect-stamp { animation: none; transform: rotate(-8deg); } }
+
   /* The pull-to-refresh bat flapping while the feed reloads. */
   .bat-flap { transform-origin: 50% 40%; animation: bat-flap 0.34s ease-in-out infinite; }
   @keyframes bat-flap {

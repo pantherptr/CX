@@ -459,6 +459,7 @@ export function SignalPostCard({
   const handleRespect = async () => {
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     if (!post.likedByMe) {
+      fireStamp();
       setLikeBounce(true);
       vibrateTap();
       window.setTimeout(() => setLikeBounce(false), 300);
@@ -472,6 +473,15 @@ export function SignalPostCard({
   // button takes them all back. Everyone else keeps the one-tap toggle above.
   const isTeamViewer = Boolean(viewerProfile?.is_owner || viewerProfile?.is_admin) && !post.isDemo;
   const [myRespects, setMyRespects] = useState(0);
+  // The "RESPECTED" rubber stamp that lands above the thumb whenever a Respect is given.
+  const [stampKey, setStampKey] = useState(0);
+  const stampTimerRef = useRef<number | undefined>(undefined);
+  const fireStamp = () => {
+    window.clearTimeout(stampTimerRef.current);
+    setStampKey((k) => k + 1);
+    stampTimerRef.current = window.setTimeout(() => setStampKey(0), 1700);
+  };
+  useEffect(() => () => window.clearTimeout(stampTimerRef.current), []);
   const holdTimerRef = useRef<number | undefined>(undefined);
   const heldRespectRef = useRef(false);
   useEffect(() => {
@@ -486,6 +496,7 @@ export function SignalPostCard({
     const before = myRespects;
     setMyRespects(before + 1);
     onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + 1 });
+    fireStamp();
     setLikeBounce(true);
     vibrateTap();
     window.setTimeout(() => setLikeBounce(false), 300);
@@ -1015,44 +1026,108 @@ export function SignalPostCard({
         )
       )}
 
-      {/* The engagement row, in the social-card style: icon + number for
-          Respect, Comment (Owner only), Share on the left; views and the
-          Save bookmark on the right. Numbers are public totals — never who.
-          The team's repeat Respect/Save/View taps (hold to take back) live on
-          the same buttons. */}
+      {/* The engagement row: Respect, Save and Views together on the left;
+          Comment (Owner only) and Share on the right. Numbers are public
+          totals — never who. The team's repeat Respect/Save/View taps (hold
+          to take back) live on the same buttons. Giving a Respect stamps
+          "RESPECTED" above the thumb for a moment. */}
       <div className="flex items-center justify-between px-3 pb-3 pt-1 sm:px-4">
         <div className="flex items-center gap-0.5">
-          {/* SIGNAL's signature interaction — "Respect": a thumbs-up, filled
-              and CX green once given, with a quick pop when it lands. */}
+          <div className="relative">
+            {stampKey > 0 && (
+              <span
+                key={stampKey}
+                aria-hidden="true"
+                className="respect-stamp pointer-events-none absolute -top-9 left-1 z-20 whitespace-nowrap rounded-md border-2 border-accent-bright bg-surface/95 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.16em] text-accent-700 shadow-[0_6px_16px_-6px_rgba(0,212,71,0.55)]"
+              >
+                Respected
+              </span>
+            )}
+            {isTeamViewer ? (
+              <Tap
+                onClick={respectClick}
+                onPointerDown={respectPressStart}
+                onPointerUp={respectPressEnd}
+                onPointerLeave={respectPressEnd}
+                onPointerCancel={respectPressEnd}
+                scale={0.92}
+                aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
+                className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                  myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+                }`}
+              >
+                <Icon name="like" size={21} fill={myRespects > 0} className={`shrink-0 transition-transform ${myRespects > 0 ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+                {countOf(post.likeCount)}
+              </Tap>
+            ) : (
+              <Tap
+                onClick={handleRespect}
+                scale={0.92}
+                aria-label={post.likedByMe ? 'Respected' : 'Respect'}
+                className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
+                  post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+                }`}
+              >
+                <Icon name="like" size={21} fill={post.likedByMe} className={`shrink-0 transition-transform ${post.likedByMe ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+                {countOf(post.likeCount)}
+              </Tap>
+            )}
+          </div>
+
           {isTeamViewer ? (
             <Tap
-              onClick={respectClick}
-              onPointerDown={respectPressStart}
-              onPointerUp={respectPressEnd}
-              onPointerLeave={respectPressEnd}
-              onPointerCancel={respectPressEnd}
+              onClick={saveClick}
+              onPointerDown={savePressStart}
+              onPointerUp={savePressEnd}
+              onPointerLeave={savePressEnd}
+              onPointerCancel={savePressEnd}
               scale={0.92}
-              aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
+              aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
               className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+                mySaves > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
               }`}
             >
-              <Icon name="like" size={21} fill={myRespects > 0} className={`shrink-0 transition-transform ${myRespects > 0 ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
-              {countOf(post.likeCount)}
+              <Icon name="bookmark" size={20} fill={mySaves > 0} className={`shrink-0 transition-transform ${mySaves > 0 ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              {countOf(post.saveCount)}
             </Tap>
           ) : (
             <Tap
-              onClick={handleRespect}
+              onClick={handleSave}
               scale={0.92}
-              aria-label={post.likedByMe ? 'Respected' : 'Respect'}
+              aria-label={post.savedByMe ? 'Saved' : 'Save'}
               className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
+                post.savedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
               }`}
             >
-              <Icon name="like" size={21} fill={post.likedByMe} className={`shrink-0 transition-transform ${post.likedByMe ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
-              {countOf(post.likeCount)}
+              <Icon name="bookmark" size={20} fill={post.savedByMe} className={`shrink-0 transition-transform ${post.savedByMe ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
+              {countOf(post.saveCount)}
             </Tap>
           )}
+
+          {(post.viewCount > 0 || isTeamViewer) &&
+            (isTeamViewer ? (
+              <button
+                type="button"
+                onClick={viewClick}
+                onPointerDown={viewPressStart}
+                onPointerUp={viewPressEnd}
+                onPointerLeave={viewPressEnd}
+                onPointerCancel={viewPressEnd}
+                aria-label="Add a view — hold to remove yours"
+                className="pressable flex min-h-11 select-none items-center gap-1.5 rounded-full px-3 text-[14px] text-faint"
+              >
+                <Icon name="eye" size={18} className="shrink-0" />
+                {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
+              </button>
+            ) : (
+              <span className="flex min-h-11 items-center gap-1.5 px-3 text-[14px] text-faint">
+                <Icon name="eye" size={18} className="shrink-0" />
+                {countOf(post.viewCount)}
+              </span>
+            ))}
+        </div>
+
+        <div className="flex items-center gap-0.5">
           {/* Owner-only — add_empire_post_comment enforces this server-side;
               hiding it for everyone else is just honest UI. No demo
               equivalent (see signalDemo.ts). */}
@@ -1076,59 +1151,6 @@ export function SignalPostCard({
             <Icon name="share" size={21} className="shrink-0" />
             {countOf(post.shareCount)}
           </Tap>
-        </div>
-
-        <div className="flex items-center gap-0.5">
-          {(post.viewCount > 0 || isTeamViewer) &&
-            (isTeamViewer ? (
-              <button
-                type="button"
-                onClick={viewClick}
-                onPointerDown={viewPressStart}
-                onPointerUp={viewPressEnd}
-                onPointerLeave={viewPressEnd}
-                onPointerCancel={viewPressEnd}
-                aria-label="Add a view — hold to remove yours"
-                className="pressable flex min-h-11 select-none items-center gap-1.5 rounded-full px-2.5 text-[13px] text-faint"
-              >
-                <Icon name="eye" size={16} className="shrink-0" />
-                {countOf(post.viewCount) ?? <span className="tabular-nums">0</span>}
-              </button>
-            ) : (
-              <span className="flex min-h-11 items-center gap-1.5 px-2.5 text-[13px] text-faint">
-                <Icon name="eye" size={16} className="shrink-0" />
-                {countOf(post.viewCount)}
-              </span>
-            ))}
-          {isTeamViewer ? (
-            <Tap
-              onClick={saveClick}
-              onPointerDown={savePressStart}
-              onPointerUp={savePressEnd}
-              onPointerLeave={savePressEnd}
-              onPointerCancel={savePressEnd}
-              scale={0.92}
-              aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to remove` : 'Save'}
-              className={`flex min-h-11 select-none items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                mySaves > 0 ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-              }`}
-            >
-              <Icon name="bookmark" size={20} fill={mySaves > 0} className={`shrink-0 transition-transform ${mySaves > 0 ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
-              {countOf(post.saveCount)}
-            </Tap>
-          ) : (
-            <Tap
-              onClick={handleSave}
-              scale={0.92}
-              aria-label={post.savedByMe ? 'Saved' : 'Save'}
-              className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-[15px] transition-colors ${
-                post.savedByMe ? 'bg-accent-050 text-accent-700' : 'text-ink-soft hover:bg-panel'
-              }`}
-            >
-              <Icon name="bookmark" size={20} fill={post.savedByMe} className={`shrink-0 transition-transform ${post.savedByMe ? 'scale-110' : ''} ${savePop ? 'animate-save-pop' : ''}`} />
-              {countOf(post.saveCount)}
-            </Tap>
-          )}
         </div>
       </div>
 
