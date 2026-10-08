@@ -133,7 +133,7 @@ export function SignalProfileHero({
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
 
-        <div className={`absolute inset-x-5 bottom-12 text-white sm:inset-x-8 sm:bottom-14 ${separateAvatar ? 'pr-20 sm:pr-24' : ''}`}>
+        <div className="absolute inset-x-5 bottom-12 text-white sm:inset-x-8 sm:bottom-14">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             {role && (
               <span className="rounded-full bg-white/15 px-3 py-1 text-caption font-semibold backdrop-blur-md">{ROLE_LABEL[role]}</span>
@@ -156,10 +156,28 @@ export function SignalProfileHero({
       {/* The sheet that slides up over the cover */}
       <div className="relative -mt-8 rounded-t-[2rem] bg-bg px-5 pb-4 pt-6 sm:px-8">
         {separateAvatar && (
-          <div className="-mt-14 mb-3 flex justify-end sm:-mt-16">
-            <span className="inline-block rounded-full bg-bg p-1">
-              <Img src={avatarUrl!} alt="" className="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20" fallback={<span className="grid h-16 w-16 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={26} /></span>} />
-            </span>
+          <div className="-mt-16 mb-4 flex justify-start sm:-mt-[4.5rem]">
+            {(() => {
+              const face = (
+                <Img
+                  src={avatarUrl!}
+                  alt=""
+                  className="h-[5.5rem] w-[5.5rem] rounded-full object-cover sm:h-28 sm:w-28"
+                  fallback={<span className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full bg-panel text-ink-soft sm:h-28 sm:w-28"><Icon name="user" size={32} /></span>}
+                />
+              );
+              return hasActiveStory ? (
+                <button
+                  onClick={onOpenStory}
+                  aria-label="View Story"
+                  className="pressable rounded-full bg-[conic-gradient(from_210deg,#00d447,#8dffb0,#00d447)] p-[3px] shadow-[0_0_22px_-4px_rgba(0,212,71,0.6)]"
+                >
+                  <span className="block rounded-full bg-bg p-[3px]">{face}</span>
+                </button>
+              ) : (
+                <span className="inline-block rounded-full bg-bg p-1 shadow-[0_12px_28px_-14px_rgba(0,0,0,0.5)]">{face}</span>
+              );
+            })()}
           </div>
         )}
 
