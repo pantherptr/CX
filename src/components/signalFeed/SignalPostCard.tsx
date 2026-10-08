@@ -12,6 +12,7 @@ import {
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
+import { ThumbsUpIcon } from '../ThumbsUpIcon';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
@@ -419,7 +420,6 @@ export function SignalPostCard({
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [likeBounce, setLikeBounce] = useState(false);
   const { t } = useLocale();
   const tr = useManualTranslate([post.title, post.body]);
   const [savePop, setSavePop] = useState(false);
@@ -460,9 +460,7 @@ export function SignalPostCard({
     onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     if (!post.likedByMe) {
       fireStamp();
-      setLikeBounce(true);
       vibrateTap();
-      window.setTimeout(() => setLikeBounce(false), 300);
     }
     const { error } = post.isDemo ? await toggleSignalDemoPostLike(post.id) : await toggleEmpirePostLike(post.id);
     if (error) onChanged(post);
@@ -475,10 +473,12 @@ export function SignalPostCard({
   const [myRespects, setMyRespects] = useState(0);
   // The "RESPECTED" rubber stamp that lands above the thumb whenever a Respect is given.
   const [stampKey, setStampKey] = useState(0);
+  const [respectPlay, setRespectPlay] = useState(0);
   const stampTimerRef = useRef<number | undefined>(undefined);
   const fireStamp = () => {
     window.clearTimeout(stampTimerRef.current);
     setStampKey((k) => k + 1);
+    setRespectPlay((k) => k + 1);
     stampTimerRef.current = window.setTimeout(() => setStampKey(0), 1700);
   };
   useEffect(() => () => window.clearTimeout(stampTimerRef.current), []);
@@ -497,9 +497,7 @@ export function SignalPostCard({
     setMyRespects(before + 1);
     onChanged({ ...post, likedByMe: true, likeCount: post.likeCount + 1 });
     fireStamp();
-    setLikeBounce(true);
     vibrateTap();
-    window.setTimeout(() => setLikeBounce(false), 300);
     const { count, error } = await addEmpirePostRespect(post.id);
     if (error) {
       setMyRespects(before);
@@ -1056,7 +1054,7 @@ export function SignalPostCard({
                   myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
                 }`}
               >
-                <Icon name="like" size={21} fill={myRespects > 0} className={`shrink-0 transition-transform ${myRespects > 0 ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+                <ThumbsUpIcon size={21} filled={myRespects > 0} playKey={respectPlay} className="shrink-0" />
                 {countOf(post.likeCount)}
               </Tap>
             ) : (
@@ -1068,7 +1066,7 @@ export function SignalPostCard({
                   post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'
                 }`}
               >
-                <Icon name="like" size={21} fill={post.likedByMe} className={`shrink-0 transition-transform ${post.likedByMe ? 'scale-110' : ''} ${likeBounce ? 'animate-respect-pop' : ''}`} />
+                <ThumbsUpIcon size={21} filled={post.likedByMe} playKey={respectPlay} className="shrink-0" />
                 {countOf(post.likeCount)}
               </Tap>
             )}
