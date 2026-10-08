@@ -16,6 +16,7 @@ import { ThumbsUpIcon } from '../ThumbsUpIcon';
 import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
+import { PostText } from './PostText';
 import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -1069,7 +1070,7 @@ export function SignalPostCard({
             ref={bodyRef}
             className={`whitespace-pre-wrap break-words leading-relaxed text-ink ${featured || detail ? 'text-detail' : 'text-body'} ${detail ? 'sm:text-copy' : ''} ${featured && !post.title ? 'line-clamp-3' : clampText && !textExpanded ? 'line-clamp-6' : ''}`}
           >
-            {tr.texts[1]}
+            <PostText text={tr.texts[1]} />
           </p>
           {clampText && textClamped && !textExpanded && (
             <button type="button" onClick={(e) => { e.stopPropagation(); setTextExpanded(true); }} className="pressable mt-1 text-detail font-semibold text-accent-700">

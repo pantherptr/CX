@@ -14,6 +14,7 @@ import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunit
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
+import { SIGNAL_SEARCH_EVENT } from '../components/signalFeed/PostText';
 import { SignalAnalyticsSheet } from '../components/signalFeed/SignalAnalyticsSheet';
 import { SignalPostDetail } from '../components/signalFeed/SignalPostDetail';
 import { SignalProfileDetail } from '../components/signalFeed/SignalProfileDetail';
@@ -159,6 +160,14 @@ export default function Signal() {
   const [storyComposerOpen, setStoryComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => {
+    const open = (e: Event) => {
+      setSearchQuery(String((e as CustomEvent).detail ?? ''));
+      setSearchOpen(true);
+    };
+    window.addEventListener(SIGNAL_SEARCH_EVENT, open);
+    return () => window.removeEventListener(SIGNAL_SEARCH_EVENT, open);
+  }, []);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [myPostsOpen, setMyPostsOpen] = useState(false);
