@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../Icon';
 import { useActiveEmpireStories } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
-import { SignalIdentityAvatar, ProfileAvatar, AvatarWithBadge, identityBadgeRole } from './SignalIdentityBadge';
+import { SignalIdentityAvatar, SignalIdentityBadge, ProfileAvatar } from './SignalIdentityBadge';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalStoryCreator } from './SignalStoryCreator';
 import { useAuth } from '../../lib/auth';
@@ -104,7 +104,6 @@ export function SignalStoriesBar({
               : 'bg-[conic-gradient(from_210deg,#00d447,#8dffb0,#00d447)] shadow-[0_0_14px_-2px_rgba(0,212,71,0.55)]';
           return (
             <Tap key={story.id} onClick={() => setOpenIndex(i)} scale={0.93} className="flex shrink-0 snap-start flex-col items-center gap-1.5">
-              <AvatarWithBadge role={identityBadgeRole(identity)} avatarSize={58} ringClass="bg-bg ring-bg">
               <span className={`grid h-[68px] w-[68px] place-items-center rounded-full p-[3px] transition-opacity ${ringClass}`}>
                 <span className="grid h-full w-full place-items-center overflow-hidden rounded-full border-2 border-surface bg-panel">
                   {/* The one shared-element transition in SIGNAL's Story
@@ -122,8 +121,10 @@ export function SignalStoriesBar({
                   </SharedAvatar>
                 </span>
               </span>
-              </AvatarWithBadge>
-              <span className="max-w-[72px] truncate text-[11.5px] font-medium text-ink-soft">{isMine ? 'You' : identity.name}</span>
+              <span className="flex max-w-[78px] items-center justify-center gap-1 text-[11.5px] font-medium text-ink-soft">
+                <span className="truncate">{isMine ? 'You' : identity.name}</span>
+                {!isMine && <SignalIdentityBadge identity={identity} size={13} />}
+              </span>
             </Tap>
           );
         })}

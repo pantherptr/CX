@@ -246,7 +246,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                             <div className="min-w-0">
                               <div className="flex items-center gap-1">
                                 <span className="truncate text-[15px] font-semibold text-ink">{p.fullName}</span>
-                                {role && <VerifiedBadge role={role} size={13} />}
+                                {role && <VerifiedBadge role={role} size={16} />}
                               </div>
                               <p className="truncate text-caption text-faint">
                                 {p.username && `@${p.username}`}

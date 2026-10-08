@@ -50,11 +50,11 @@ export function SignalPublisherPicker({
                 active ? 'border-accent-bright bg-accent-bright/10' : 'border-line hover:border-line-strong hover:bg-panel/50'
               }`}
             >
-              <span className="relative">
-                <SignalIdentityAvatar identity={identity} size={40} />
-                <span className="absolute -bottom-0.5 -right-0.5"><SignalIdentityBadge identity={identity} size={15} /></span>
+              <SignalIdentityAvatar identity={identity} size={40} />
+              <span className={`flex max-w-full items-center justify-center gap-1 text-caption font-semibold ${active ? 'text-ink' : 'text-ink-soft'}`}>
+                <span className="truncate">{identity.name}</span>
+                <SignalIdentityBadge identity={identity} size={14} />
               </span>
-              <span className={`truncate text-caption font-semibold ${active ? 'text-ink' : 'text-ink-soft'}`}>{identity.name}</span>
             </button>
           );
         })}

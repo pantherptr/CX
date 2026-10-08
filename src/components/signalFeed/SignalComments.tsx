@@ -153,7 +153,7 @@ export function SignalComments({
                   <div className="flex flex-wrap items-baseline gap-1.5">
                     <Link to={commentProfileHref(c, profileBase)} viewTransition className="flex items-center gap-1 hover:underline">
                       <span className="text-detail font-semibold text-ink">{identity.name}</span>
-                      <SignalIdentityBadge identity={identity} size={12} />
+                      <SignalIdentityBadge identity={identity} size={14} />
                     </Link>
                     {identity.username && (
                       <Link to={commentProfileHref(c, profileBase)} viewTransition className="text-caption text-faint hover:underline">

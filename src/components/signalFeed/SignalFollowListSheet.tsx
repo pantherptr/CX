@@ -78,7 +78,7 @@ export function SignalFollowListSheet({
                   <ProfileAvatar src={u.avatarUrl} size={40} />
                   <span className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate text-detail font-semibold text-ink">{u.fullName}</span>
-                    {role && <VerifiedBadge role={role} size={13} />}
+                    {role && <VerifiedBadge role={role} size={16} />}
                   </span>
                 </Link>
               );

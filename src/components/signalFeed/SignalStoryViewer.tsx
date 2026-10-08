@@ -6,7 +6,7 @@ import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
 import { markEmpireStoryViewed, deleteEmpireStory, toggleEmpireStoryRespect, type EmpireStory } from '../../lib/data/empireStories';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
-import { SignalIdentityAvatar, SignalIdentityBadge, AvatarWithBadge, identityBadgeRole } from './SignalIdentityBadge';
+import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { StoryTextSlide } from './StoryTextSlide';
 import { StoryCanvas } from './StoryCanvas';
 import { SignalStoryInsights } from './SignalStoryInsights';
@@ -544,14 +544,12 @@ export function SignalStoryViewer({
           <div className="pointer-events-auto flex h-14 items-center gap-2.5 px-4">
             <button onClick={openProfile} className="pressable flex min-w-0 items-center gap-2.5 text-left">
               <SharedAvatar id={`story-avatar-${initialStoryId}`} active={story.id === initialStoryId}>
-                <AvatarWithBadge role={identityBadgeRole(identity)} avatarSize={32} ringClass="bg-black ring-black/70">
-                  <SignalIdentityAvatar identity={identity} size={32} />
-                </AvatarWithBadge>
+                <SignalIdentityAvatar identity={identity} size={32} />
               </SharedAvatar>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
-                  <SignalIdentityBadge identity={identity} size={13} />
+                  <SignalIdentityBadge identity={identity} size={16} />
                   <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                 </div>
                 {tripLabels.get(story.id) && (

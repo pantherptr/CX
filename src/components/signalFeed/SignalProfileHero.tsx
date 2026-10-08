@@ -4,7 +4,6 @@ import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
 import { Img, useCountUp } from '../motion';
 import { VerifiedBadge } from '../primitives';
-import { AvatarWithBadge } from './SignalIdentityBadge';
 import { compact } from '../../lib/format';
 import { Ugc } from '../../lib/i18n/ugc';
 
@@ -117,7 +116,7 @@ export function SignalProfileHero({
         </button>
         <div className={`flex min-w-0 flex-1 items-center gap-2 transition-opacity duration-200 ${scrolled ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
           <span className="truncate font-display font-semibold text-ink">{name}</span>
-          {role && <VerifiedBadge role={role} size={15} />}
+          {role && <VerifiedBadge role={role} size={16} />}
         </div>
         <button onClick={onShare} aria-label="Share profile" className={`pressable grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors ${glass}`}>
           <Icon name="share" size={18} />
@@ -157,7 +156,7 @@ export function SignalProfileHero({
           </div>
           <div className="flex items-center gap-2.5">
             <h1 className="min-w-0 truncate font-display text-[2rem] font-semibold leading-[1.05] tracking-[-0.02em] sm:text-5xl">{name}</h1>
-            {role && <VerifiedBadge role={role} size={24} />}
+            {role && <VerifiedBadge role={role} size={18} />}
           </div>
           {username && <p className="mt-1 text-body text-white/70">@{username}</p>}
         </div>
@@ -187,7 +186,7 @@ export function SignalProfileHero({
               ) : (
                 <span className="inline-block rounded-full bg-bg p-1 shadow-[0_12px_28px_-14px_rgba(0,0,0,0.5)]">{face}</span>
               );
-              return <AvatarWithBadge role={role} avatarSize={88} ringClass="bg-bg ring-bg">{avatarNode}</AvatarWithBadge>;
+              return avatarNode;
             })()}
           </div>
         )}

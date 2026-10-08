@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
@@ -121,33 +120,7 @@ export function identityBadgeRole(identity: SignalIdentity): VerifiedRole | null
   return officialRole(identity.type as 'cx' | 'assistant');
 }
 
-export function SignalIdentityBadge({ identity, size = 14 }: { identity: SignalIdentity; size?: number }) {
+export function SignalIdentityBadge({ identity, size = 16 }: { identity: SignalIdentity; size?: number }) {
   const role = identityBadgeRole(identity);
   return role ? <VerifiedBadge role={role} size={size} /> : null;
-}
-
-/** An avatar with its badge pinned discreetly to the bottom-right corner,
- *  sized to the avatar (about 14px on small ones, up to 26px on a profile
- *  photo). No badge, no overlay — never a placeholder. */
-export function AvatarWithBadge({
-  role,
-  avatarSize,
-  ringClass = 'bg-surface ring-surface',
-  children,
-}: {
-  role: VerifiedRole | null;
-  avatarSize: number;
-  ringClass?: string;
-  children: ReactNode;
-}) {
-  if (!role) return <>{children}</>;
-  const size = Math.min(26, Math.max(14, Math.round(avatarSize * 0.38)));
-  return (
-    <span className="relative inline-flex shrink-0">
-      {children}
-      <span className={`absolute -bottom-[3px] -right-[3px] grid place-items-center rounded-full p-[1.5px] ring-2 ${ringClass}`}>
-        <VerifiedBadge role={role} size={size} />
-      </span>
-    </span>
-  );
 }
