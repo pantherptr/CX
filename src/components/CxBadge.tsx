@@ -1,9 +1,9 @@
 import { useId } from 'react';
 import { useLocale } from '../lib/i18n';
 
-/** The CX bat — the one from the logo — as the verification mark, on its own
- *  with no seal around it, a check set in its centre. Grey for members, green
- *  for hosts, gold for the CX team. Pure SVG, no raster. */
+/** The CX verification mark: the bat from the logo, drawn compact and faceted
+ *  in satin metal, with a small engraved plate on its chest holding the check.
+ *  Grey for members, green for hosts, gold for the CX team. Pure SVG. */
 export type CxTier = 'verified' | 'host' | 'team';
 
 const TIER_ORDER: CxTier[] = ['verified', 'host', 'team'];
@@ -17,25 +17,25 @@ export const CX_TIER_LABEL: Record<CxTier, string> = {
   team: 'Official CX team',
 };
 
-// The logo bat, traced on a 1000 × 357 canvas: wide angular wings, two ear
-// peaks beside a small head, a point at the bottom centre.
+// A 100 × 64 canvas, symmetric about x = 50: two ear points beside a small
+// head, angular wings with two scallops each side, a point at the bottom.
 const BAT =
-  'M18 288 L232 33 L338 80 L435 18 L472 70 Q500 52 528 70 L565 18 L662 80 L768 33 L982 288 L850 250 L730 282 L595 236 L500 340 L405 236 L270 282 L150 250 Z';
-// The upper wing facets, lightened a little, as in the logo's faceted look.
-const FACETS = 'M18 288 L232 33 L338 80 L435 18 L405 236 Z M982 288 L768 33 L662 80 L565 18 L595 236 Z';
+  'M50 12 L56.5 2 L60 13 L67 10 L77 3 L99 41 L89 36 L80 44 L70 36 L62 47 L50 62 L38 47 L30 36 L20 44 L11 36 L1 41 L23 3 L33 10 L40 13 L43.5 2 Z';
+// Lighter upper wing planes and a darker underside, for the faceted look.
+const PLANES_LIGHT = 'M1 41 L23 3 L33 10 L40 13 L38 30 Z M99 41 L77 3 L67 10 L60 13 L62 30 Z';
+const PLANES_DARK = 'M1 41 L11 36 L20 44 L30 36 L38 47 L40 30 L38 30 Z M99 41 L89 36 L80 44 L70 36 L62 47 L60 30 L62 30 Z';
+const TOP_EDGE = 'M1 41 L23 3 L33 10 L40 13 L43.5 2 L50 12 L56.5 2 L60 13 L67 10 L77 3 L99 41';
+const CHECK = 'M42.6 31.2 L48 36.6 L58 24.6';
 
-// The top contour only, for a thin highlight along the upper edge.
-const TOP_EDGE = 'M18 288 L232 33 L338 80 L435 18 L472 70 Q500 52 528 70 L565 18 L662 80 L768 33 L982 288';
-// The check, set over the bat's body and a little onto the inner wings.
-const CHECK = 'M398 168 L471 252 L606 86';
+interface Metal { top: string; bottom: string; edge: string; plate: string; plateRing: string; check: string }
 
-const METAL: Record<CxTier, { top: string; bottom: string; edge: string; check: string; checkEdge: string }> = {
-  // satin graphite / silver, white check
-  verified: { top: '#c9ced6', bottom: '#69707a', edge: 'rgba(44,48,54,0.6)', check: '#ffffff', checkEdge: 'rgba(38,42,48,0.85)' },
-  // emerald, white check
-  host: { top: '#66c788', bottom: '#1b6638', edge: 'rgba(6,44,22,0.6)', check: '#ffffff', checkEdge: 'rgba(8,52,26,0.85)' },
-  // gold, cream check
-  team: { top: '#f5dc88', bottom: '#a5802a', edge: 'rgba(86,62,8,0.65)', check: '#fff8e0', checkEdge: 'rgba(92,66,8,0.9)' },
+const METAL: Record<CxTier, Metal> = {
+  // satin graphite / silver
+  verified: { top: '#d7dbe1', bottom: '#79808a', edge: 'rgba(40,44,52,0.55)', plate: 'rgba(22,26,34,0.5)', plateRing: 'rgba(255,255,255,0.45)', check: '#ffffff' },
+  // emerald
+  host: { top: '#6cc88c', bottom: '#1f6b40', edge: 'rgba(6,42,22,0.55)', plate: 'rgba(4,36,18,0.5)', plateRing: 'rgba(255,255,255,0.4)', check: '#ffffff' },
+  // gold
+  team: { top: '#f3dd92', bottom: '#ae8830', edge: 'rgba(84,60,8,0.55)', plate: 'rgba(60,40,4,0.5)', plateRing: 'rgba(255,248,224,0.55)', check: '#fff9e6' },
 };
 
 export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size?: number; className?: string }) {
@@ -43,10 +43,10 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const label = t(CX_TIER_LABEL[tier]);
   const m = METAL[tier];
-  const width = Math.round(size * 2 * 10) / 10;
-  const height = Math.round(size * 2 * 0.357 * 10) / 10;
+  const width = Math.round(size * 1.75 * 10) / 10;
+  const height = Math.round(width * 0.64 * 10) / 10;
   return (
-    <svg width={width} height={height} viewBox="0 0 1000 357" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
+    <svg width={width} height={height} viewBox="0 0 100 64" role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
       <title>{label}</title>
       <defs>
         <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
@@ -54,12 +54,14 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
           <stop offset="1" stopColor={m.bottom} />
         </linearGradient>
       </defs>
-      <path d={BAT} fill={`url(#${uid}g)`} stroke={m.edge} strokeWidth="14" strokeLinejoin="round" />
-      <path d={FACETS} fill="#ffffff" fillOpacity="0.2" />
-      <path d={TOP_EDGE} fill="none" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
-      {/* the check: a dark edge first, so it stays legible on any metal, then the check itself */}
-      <path d={CHECK} fill="none" stroke={m.checkEdge} strokeWidth="78" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={CHECK} fill="none" stroke={m.check} strokeWidth="46" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={BAT} fill={`url(#${uid}g)`} stroke={m.edge} strokeWidth="1.1" strokeLinejoin="round" />
+      <path d={PLANES_LIGHT} fill="#ffffff" fillOpacity="0.16" />
+      <path d={PLANES_DARK} fill="#000000" fillOpacity="0.1" />
+      <path d={TOP_EDGE} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.7" strokeLinejoin="round" strokeLinecap="round" />
+      {/* the chest plate and its engraved check */}
+      <circle cx="50" cy="31" r="12" fill={m.plate} stroke={m.plateRing} strokeWidth="0.9" />
+      <path d={CHECK} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" transform="translate(0 0.7)" />
+      <path d={CHECK} fill="none" stroke={m.check} strokeWidth="4.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
