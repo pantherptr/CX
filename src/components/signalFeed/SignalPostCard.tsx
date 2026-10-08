@@ -550,7 +550,7 @@ export function SignalPostCard({
   // Everyone sees how many Respects / Saves / Views a post has — never who
   // gave them. (Who is private; see 0076 for how notifications treat it.)
   const countOf = (n: number) =>
-    n > 0 ? <span className="font-medium tabular-nums">{compact(n)}</span> : null;
+    n > 0 ? <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span> : null;
 
   // Saves work the same way for the team (0075): tap = +1, hold = remove all.
   const [mySaves, setMySaves] = useState(0);
@@ -1184,11 +1184,21 @@ export function SignalPostCard({
           dashboard: this is a glance, not an analytics screen (see
           SignalAnalyticsSheet for the site-wide breakdown). */}
       {canManage && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-1.5 text-[11px] text-faint sm:px-4">
-          <span className="font-semibold uppercase tracking-wide">Performance</span>
-          <span>{compact(post.likeCount)} likes</span>
-          <span>{compact(post.saveCount)} saves</span>
-          <span>{compact(post.shareCount)} shares</span>
+        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 sm:px-5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>
+          <div className="flex items-center gap-4 text-ink-soft">
+            {([
+              ['eye', post.viewCount],
+              ['like', post.likeCount],
+              ['bookmark', post.saveCount],
+              ['share', post.shareCount],
+            ] as const).map(([icon, n]) => (
+              <span key={icon} className="inline-flex items-center gap-1.5">
+                <Icon name={icon} size={15} className="text-faint" />
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
