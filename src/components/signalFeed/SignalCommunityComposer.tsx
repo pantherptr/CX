@@ -19,6 +19,7 @@ import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
 import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
+import { loadHashtags } from '../../lib/data/hashtags';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
 const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this scrolls inside instead
@@ -104,6 +105,19 @@ export function SignalCommunityComposer({
 
   // A poll (2–4 options) rides along with a new post; the post's text is the question.
   const [pollOptions, setPollOptions] = useState<string[] | null>(null);
+  const [tagPool, setTagPool] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    loadHashtags().then((tags) => { if (!cancelled) setTagPool(tags); });
+    return () => { cancelled = true; };
+  }, []);
+  const tagTyping = body.match(/(?:^|\s)#([\p{L}\p{N}_]*)$/u);
+  const tagPrefix = tagTyping ? `#${tagTyping[1].toLowerCase()}` : null;
+  const tagSuggestions = tagPrefix === null ? [] : tagPool.filter((tg) => tg.startsWith(tagPrefix) && tg !== tagPrefix).slice(0, 6);
+  const pickTag = (tag: string) => {
+    setBody((b) => b.replace(/#[\p{L}\p{N}_]*$/u, `${tag} `));
+    textareaRef.current?.focus();
+  };
   const pollValid = !pollOptions || (cleanPollOptions(pollOptions).length >= 2 && body.trim().length > 0);
   const totalMedia = existingPaths.length + pending.length;
   const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
@@ -363,6 +377,22 @@ export function SignalCommunityComposer({
             className={`mt-[9px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[16px] leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0 ${isOpen ? '' : 'pr-24'}`}
             style={{ height: MAX_COLLAPSED_HEIGHT, maxHeight: MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
           />
+
+          {tagSuggestions.length > 0 && (
+            <div className="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
+              {tagSuggestions.map((tg) => (
+                <button
+                  key={tg}
+                  type="button"
+                  onMouseDown={holdFocus}
+                  onClick={() => pickTag(tg)}
+                  className="pressable shrink-0 rounded-full bg-accent-050 px-3 py-1.5 text-detail font-semibold text-accent-700"
+                >
+                  {tg}
+                </button>
+              ))}
+            </div>
+          )}
 
           <AnimatePresence initial={false}>
             {isOpen && (existingUrls.length > 0 || pending.length > 0) && (

@@ -27,6 +27,7 @@ const ROWS: Row[] = [
   ["Sort", "Ordina", "Sortează", "Ordenar"],
     ["Sample", "Esempio", "Exemplu", "Ejemplo"],
     ["or", "o", "sau", "o"],
+    ["Profile not found", "Profilo non trovato", "Profilul nu a fost găsit", "Perfil no encontrado"],
   // ---- Collections grid ----
   ["All saved", "Tutti i salvati", "Toate salvările", "Todo lo guardado"],
   // ---- Empty feed ----
