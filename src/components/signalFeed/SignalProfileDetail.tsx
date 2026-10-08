@@ -8,17 +8,18 @@ import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
 import { fetchHostCars } from '../../lib/data/cars';
 import { findOrCreateConversation } from '../../lib/data/messages';
-import { fetchEmpirePostsByAuthor, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpirePost } from '../../lib/data/empireFeed';
 import { fetchSignalDemoProfile, fetchSignalDemoPostsByAuthor, type SignalDemoProfile } from '../../lib/data/signalDemo';
 import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empireStories';
 import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
+import { SignalPostSkeleton } from './SignalPostSkeleton';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
 import { SignalProfileHero } from './SignalProfileHero';
-import { Tap } from '../motionKit';
+import { Tap, motion } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 
@@ -154,8 +155,16 @@ export function SignalProfileDetail({
   const demo = !isOfficialVoice && loaded && profile === null ? demoProfile : null;
   const heroMode = Boolean(realProfile || demo);
   const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
-  const [tab, setTab] = useState<'posts' | 'vehicles'>('posts');
-  const activeTab = tab === 'vehicles' && hasVehicles ? 'vehicles' : 'posts';
+  const [tab, setTab] = useState<'posts' | 'vehicles' | 'saved'>('posts');
+  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(isMe ? ['saved'] : [])]) as ('posts' | 'vehicles' | 'saved')[];
+  const activeTab = tabs.includes(tab) ? tab : 'posts';
+  const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
+  useEffect(() => {
+    if (activeTab !== 'saved' || savedPosts) return;
+    let cancelled = false;
+    fetchEmpireSavedPosts().then((rows) => { if (!cancelled) setSavedPosts(rows); }).catch(() => { if (!cancelled) setSavedPosts([]); });
+    return () => { cancelled = true; };
+  }, [activeTab, savedPosts]);
 
   const role: 'owner' | 'admin' | 'host' | 'client' | null = realProfile
     ? realProfile.isOwner ? 'owner' : realProfile.isAdmin ? 'admin' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : null
@@ -275,26 +284,48 @@ export function SignalProfileDetail({
     </div>
   );
 
+  const savedSection = (
+    <div>
+      {savedPosts === null && (
+        <>
+          <SignalPostSkeleton />
+          <SignalPostSkeleton />
+        </>
+      )}
+      {savedPosts && savedPosts.length === 0 && <p className="py-14 text-center text-body text-muted">Nothing saved yet.</p>}
+      {savedPosts?.map((post) => (
+        <SignalPostCard
+          key={post.id}
+          post={post}
+          canManage={canManage}
+          onChanged={(updated) => setSavedPosts((prev) => (prev ?? []).map((p) => (p.id === updated.id ? updated : p)))}
+          onDeleted={(id) => setSavedPosts((prev) => (prev ?? []).filter((p) => p.id !== id))}
+        />
+      ))}
+    </div>
+  );
+
   const below = (
     <>
-      {hasVehicles && (
-        <div className="mb-4 flex gap-1 rounded-xl bg-panel p-1" role="tablist">
-          {(['posts', 'vehicles'] as const).map((id) => (
+      {tabs.length > 1 && (
+        <div className="mb-4 flex border-b border-line" role="tablist">
+          {tabs.map((id) => (
             <button
               key={id}
               role="tab"
               aria-selected={activeTab === id}
               onClick={() => setTab(id)}
-              className={`flex-1 rounded-lg py-2 text-detail font-semibold transition-colors ${
-                activeTab === id ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'
-              }`}
+              className={`relative flex-1 py-3 text-detail font-semibold transition-colors ${activeTab === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
-              {id === 'posts' ? 'Posts' : 'Vehicles'}
+              {id === 'posts' ? 'Posts' : id === 'vehicles' ? 'Vehicles' : 'Saved'}
+              {activeTab === id && (
+                <motion.span layoutId="profile-tab-underline" className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-accent-bright" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />
+              )}
             </button>
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : vehiclesSection}
+      {activeTab === 'posts' ? postsSection : activeTab === 'vehicles' ? vehiclesSection : savedSection}
     </>
   );
 
