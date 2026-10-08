@@ -34,7 +34,20 @@ interface DemoPostRow {
   saved_by_me: boolean;
 }
 
+/** Sample posts can't be viewed/counted for real, so their numbers are sample
+ *  values too — derived from the post's id so a given post always shows the
+ *  same figures, never a different number on each load. */
+function demoStats(row: DemoPostRow) {
+  let h = 0;
+  for (let i = 0; i < row.id.length; i += 1) h = (h * 31 + row.id.charCodeAt(i)) >>> 0;
+  const likes = row.like_count > 0 ? row.like_count : 9 + (h % 58);
+  const saves = row.save_count > 0 ? row.save_count : 2 + ((h >>> 5) % 17);
+  const views = 160 + (h % 1900) + likes * 14;
+  return { likes, saves, views };
+}
+
 function mapDemoPost(row: DemoPostRow): EmpirePost {
+  const stats = demoStats(row);
   return {
     id: row.id,
     authorId: row.demo_author_id,
@@ -59,10 +72,10 @@ function mapDemoPost(row: DemoPostRow): EmpirePost {
     createdAt: row.created_at,
     updatedAt: row.created_at,
     editedAt: null,
-    likeCount: row.like_count,
+    likeCount: stats.likes,
     commentCount: 0,
-    saveCount: row.save_count,
-    viewCount: 0,
+    saveCount: stats.saves,
+    viewCount: stats.views,
     shareCount: 0,
     likedByMe: row.liked_by_me,
     savedByMe: row.saved_by_me,
