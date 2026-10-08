@@ -10,13 +10,15 @@ import { Icon, type IconName } from '../Icon';
 import { Img } from '../motion';
 import { motion, AnimatePresence, SPRING_SMOOTH, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
 import { MiniMap } from './MiniMap';
+import { CarRoadbook } from '../CarRoadbook';
 
-type Tab = 'rent' | 'info' | 'specs' | 'reviews';
+type Tab = 'rent' | 'info' | 'specs' | 'reviews' | 'roadbook';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'rent', label: 'Rent details' },
   { id: 'info', label: 'Vehicle info' },
   { id: 'specs', label: 'Specifications' },
   { id: 'reviews', label: 'Reviews' },
+  { id: 'roadbook', label: 'Roadbook' },
 ];
 const DURATIONS = [
   { days: 1, label: 'Daily' },
@@ -198,6 +200,8 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                       {car.description && <p className="mt-4 text-body leading-relaxed text-muted text-pretty"><Ugc text={car.description} /></p>}
                     </div>
                   )}
+
+                  {tab === 'roadbook' && <CarRoadbook carId={car.id} carSlug={car.slug} />}
 
                   {tab === 'reviews' && (
                     <div>

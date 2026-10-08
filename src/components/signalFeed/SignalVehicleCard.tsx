@@ -8,6 +8,7 @@ import { useCompare } from '../../lib/compareStore';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { compact } from '../../lib/format';
+import { KeysCta } from './KeysCta';
 
 /** The car a post is about, with the three things you'd want to do next: book
  *  it, add it to Compare, or write to its host — the chat opens inside CX with
@@ -89,6 +90,11 @@ export function SignalVehicleCard({ vehicle, authorId, isOwnPost }: { vehicle: E
           </button>
         )}
       </div>
+      {!isOwnPost && (
+        <div className="border-t border-line p-2.5">
+          <KeysCta carId={vehicle.id} carSlug={vehicle.slug} className="w-full" />
+        </div>
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { useVerification, submitVerification } from '../lib/data/verification';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
+import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
 import { parseISO } from '../lib/calendarGrid';
 
 const phaseBadge: Record<TripPhase, string> = {
@@ -346,6 +347,8 @@ export default function TripDetails() {
             <p className="mt-1 text-detail text-muted">Booking {booking.reference}</p>
           </div>
         </div>
+
+        {phase === 'completed' && session && <TripMemoryPrompt booking={booking} />}
 
         {phase === 'upcoming' && (
           <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-accent/15 bg-accent-050 px-5 py-4">

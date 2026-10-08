@@ -14,6 +14,7 @@ import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empire
 import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
 import { SignalPostSkeleton } from './SignalPostSkeleton';
+import { SignalKeychainTab } from './SignalKeychainTab';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
@@ -155,8 +156,8 @@ export function SignalProfileDetail({
   const demo = !isOfficialVoice && loaded && profile === null ? demoProfile : null;
   const heroMode = Boolean(realProfile || demo);
   const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
-  const [tab, setTab] = useState<'posts' | 'vehicles' | 'saved'>('posts');
-  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(isMe ? ['saved'] : [])]) as ('posts' | 'vehicles' | 'saved')[];
+  const [tab, setTab] = useState<'posts' | 'vehicles' | 'saved' | 'keychain'>('posts');
+  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(isMe ? ['saved'] : []), ...(realProfile ? ['keychain'] : [])]) as ('posts' | 'vehicles' | 'saved' | 'keychain')[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
   useEffect(() => {
@@ -375,7 +376,7 @@ export function SignalProfileDetail({
               onClick={() => setTab(id)}
               className={`relative flex-1 py-3 text-detail font-semibold transition-colors ${activeTab === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
-              {id === 'posts' ? 'Posts' : id === 'vehicles' ? 'Vehicles' : 'Saved'}
+              {id === 'posts' ? 'Posts' : id === 'vehicles' ? 'Vehicles' : id === 'saved' ? 'Saved' : 'Keychain'}
               {activeTab === id && (
                 <motion.span layoutId="profile-tab-underline" className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-accent-bright" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />
               )}
@@ -383,7 +384,7 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : activeTab === 'vehicles' ? vehiclesSection : savedSection}
+      {activeTab === 'posts' ? postsSection : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
     </>
   );
 

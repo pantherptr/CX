@@ -13,6 +13,7 @@ import { SignalStoryInsights } from './SignalStoryInsights';
 import { useAuth } from '../../lib/auth';
 import { motion, SharedAvatar, useHideForNavigation, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 import { Ugc } from '../../lib/i18n/ugc';
+import { fetchStoryTripLabels } from '../../lib/data/tripMemories';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -115,6 +116,15 @@ export function SignalStoryViewer({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const story = stories[storyIndex];
+  // "On the Road · Verified trip": only the general city, only if the author chose it.
+  const [tripLabels, setTripLabels] = useState<Map<string, string>>(new Map());
+  const storyIdsKey = stories.map((x) => x.id).join(',');
+  useEffect(() => {
+    let cancelled = false;
+    fetchStoryTripLabels(stories.map((x) => x.id)).then((m) => { if (!cancelled) setTripLabels(m); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storyIdsKey]);
   // The shared-element morph (see SignalStoriesBar's matching comment)
   // only ever connects to the ONE tile that was actually tapped —
   // `startIndex` is stable for this viewer instance's whole lifetime, so
@@ -542,6 +552,11 @@ export function SignalStoryViewer({
                   <SignalIdentityBadge identity={identity} size={13} />
                   <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                 </div>
+                {tripLabels.get(story.id) && (
+                  <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] font-semibold text-accent-bright">
+                    <Icon name="key" size={10} /> On the Road · Verified trip · {tripLabels.get(story.id)}
+                  </p>
+                )}
                 {story.title && <p className="truncate text-caption text-white/70">{story.title}</p>}
               </div>
             </button>

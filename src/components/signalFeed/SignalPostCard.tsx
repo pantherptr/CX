@@ -17,6 +17,8 @@ import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
 import { PostText } from './PostText';
+import { fetchTripBadge, formatTripPeriod, type TripBadge } from '../../lib/data/tripMemories';
+import { VerifiedTripBadge } from './SignalKeychainTab';
 import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
@@ -461,6 +463,13 @@ export function SignalPostCard({
   const { pathname } = useLocation();
   const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const navigate = useNavigate();
+  const [tripBadge, setTripBadge] = useState<TripBadge | null>(null);
+  useEffect(() => {
+    if (post.isDemo || !post.vehicle) return;
+    let cancelled = false;
+    fetchTripBadge(post.id).then((b) => { if (!cancelled) setTripBadge(b); });
+    return () => { cancelled = true; };
+  }, [post.id, post.isDemo, post.vehicle]);
   const [textExpanded, setTextExpanded] = useState(false);
   const [textClamped, setTextClamped] = useState(false);
   const bodyRef = useRef<HTMLParagraphElement>(null);
@@ -1097,6 +1106,15 @@ export function SignalPostCard({
       )}
       {tr.available && tr.status === 'failed' && (
         <p className="px-4 pb-1.5 text-caption text-muted sm:px-5">{t('Translation unavailable')}</p>
+      )}
+
+      {tripBadge && (
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3 sm:px-5">
+          <VerifiedTripBadge />
+          <span className="inline-flex items-center gap-1 text-caption font-medium text-muted">
+            <Icon name="pin" size={11} /> {tripBadge.city} · {formatTripPeriod(tripBadge.startDate, tripBadge.endDate, lang)}
+          </span>
+        </div>
       )}
 
       {!post.isDemo && <SignalPollView postId={post.id} isOwnPost={isOwnPost} />}

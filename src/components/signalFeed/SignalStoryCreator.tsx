@@ -16,6 +16,7 @@ import { SignalStoryCamera } from './SignalStoryCamera';
 import { StoryCanvas } from './StoryCanvas';
 import { STORY_BG_STYLES } from './StoryTextSlide';
 import { useAuth } from '../../lib/auth';
+import { fetchMyActiveTrip, tagStoryOnTheRoad } from '../../lib/data/tripMemories';
 
 const MAX_SLIDES = 10;
 const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
@@ -74,6 +75,15 @@ export function SignalStoryCreator({
   const [stage, setStage] = useState<'camera' | 'editor'>('camera');
   const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
   const [viewOnce, setViewOnce] = useState(false);
+  // "On the Road": only offered while one of your own bookings is under way.
+  const [activeTrip, setActiveTrip] = useState<{ bookingId: string; city: string } | null>(null);
+  const [onTheRoad, setOnTheRoad] = useState(false);
+  useEffect(() => {
+    if (mode !== 'self') return;
+    let cancelled = false;
+    fetchMyActiveTrip().then((t) => { if (!cancelled) setActiveTrip(t); });
+    return () => { cancelled = true; };
+  }, [mode]);
   const [slides, setSlides] = useState<StagedSlide[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -225,6 +235,9 @@ export function SignalStoryCreator({
         // One slide failing shouldn't abandon the rest already uploaded.
       }
     }
+    if (succeeded > 0 && onTheRoad && activeTrip) {
+      await tagStoryOnTheRoad(storyId);
+    }
     setPublishing(false);
     if (succeeded === 0) {
       setError('Could not upload your Story — check your connection and try again.');
@@ -294,6 +307,9 @@ export function SignalStoryCreator({
             onPublisherChange={setPublisherType}
             viewOnce={viewOnce}
             onViewOnceChange={setViewOnce}
+            tripCity={activeTrip?.city ?? null}
+            onTheRoad={onTheRoad}
+            onTheRoadChange={setOnTheRoad}
             ownerName={profile?.full_name || 'Owner'}
             ownerAvatarUrl={profile?.avatar_url ?? null}
             slides={slides}
@@ -364,6 +380,9 @@ function EditorStage({
   onPublisherChange,
   viewOnce,
   onViewOnceChange,
+  tripCity,
+  onTheRoad,
+  onTheRoadChange,
   ownerName,
   ownerAvatarUrl,
   slides,
@@ -384,6 +403,9 @@ function EditorStage({
   onPublisherChange: (t: SignalPublisherType) => void;
   viewOnce: boolean;
   onViewOnceChange: (v: boolean) => void;
+  tripCity: string | null;
+  onTheRoad: boolean;
+  onTheRoadChange: (v: boolean) => void;
   ownerName: string;
   ownerAvatarUrl: string | null;
   slides: StagedSlide[];
@@ -539,6 +561,23 @@ function EditorStage({
               </button>
             </div>
           </div>
+
+          {tripCity && (
+            <button
+              type="button"
+              onClick={() => onTheRoadChange(!onTheRoad)}
+              aria-pressed={onTheRoad}
+              className={`flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left ring-1 backdrop-blur-md transition-colors ${onTheRoad ? 'bg-accent-bright/20 ring-accent-bright/60' : 'bg-black/35 ring-white/10'}`}
+            >
+              <span className="min-w-0">
+                <span className="block text-caption font-semibold text-white">On the Road · Verified trip</span>
+                <span className="block truncate text-caption text-white/65">Shows only “{tripCity}” — never an exact position.</span>
+              </span>
+              <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full ${onTheRoad ? 'bg-accent-bright text-noir' : 'bg-white/10 text-transparent'}`}>
+                <Icon name="check" size={14} strokeWidth={3} />
+              </span>
+            </button>
+          )}
 
           {mode === 'official' && (
             <div className="rounded-2xl bg-white/[0.06] p-2">
