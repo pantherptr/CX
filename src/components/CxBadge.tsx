@@ -1,11 +1,9 @@
 import { useId } from 'react';
 import { useLocale } from '../lib/i18n';
 
-/** The CX Chrome Mark: a small satin-metal seal with a key-slot notch at the
- *  top, a thin double rim, a very faint highlight at the top-left and the CX
- *  bat engraved at its centre. One shape for every tier — only the metal
- *  changes: grey for members, green for hosts, gold for the CX team.
- *  Pure SVG, no raster. */
+/** The CX bat — the one from the logo — as the verification mark, on its own
+ *  with no seal around it. Members get half a bat, hosts the whole bat in
+ *  green, the CX team the whole bat in gold. Pure SVG, no raster. */
 export type CxTier = 'verified' | 'host' | 'team';
 
 const TIER_ORDER: CxTier[] = ['verified', 'host', 'team'];
@@ -19,28 +17,17 @@ export const CX_TIER_LABEL: Record<CxTier, string> = {
   team: 'Official CX team',
 };
 
-// Outer seal: a circle (r 10.4) with a 3-wide slot cut into the top edge.
-const SEAL = 'M13.5 1.71 L13.5 3.6 L10.5 3.6 L10.5 1.71 A10.4 10.4 0 1 0 13.5 1.71 Z';
-// The bat: two ears, a scalloped wingspan, a small tail. Centred on (12, 12).
+// The logo bat, traced on a 1000 × 357 canvas: wide angular wings, two ear
+// peaks beside a small head, a point at the bottom centre.
 const BAT =
-  'M12 8.4 L13.3 6.9 L13.5 8.6 C15.3 8.3 18.2 8.8 19.9 10.7 L17.2 12.4 L16 11.4 L14.4 13.6 L13.2 12.7 L12.7 15.4 L12 16.5 L11.3 15.4 L10.8 12.7 L9.6 13.6 L8 11.4 L6.8 12.4 L4.1 10.7 C5.8 8.8 8.7 8.3 10.5 8.6 L10.7 6.9 Z';
+  'M18 288 L232 33 L338 80 L435 18 L472 70 Q500 52 528 70 L565 18 L662 80 L768 33 L982 288 L850 250 L730 282 L595 236 L500 340 L405 236 L270 282 L150 250 Z';
+// The upper wing facets, lightened a little, as in the logo's faceted look.
+const FACETS = 'M18 288 L232 33 L338 80 L435 18 L405 236 Z M982 288 L768 33 L662 80 L565 18 L595 236 Z';
 
-interface Metal {
-  rim: [string, string];     // outer rim, top-left → bottom-right
-  face: [string, string];    // satin face, top → bottom
-  hairline: string;          // the thin line between rim and face
-  mark: string;              // the engraved bat
-  markShade: string;
-  rimWidth: number;          // how much of the radius the rim takes
-}
-
-const METAL: Record<CxTier, Metal> = {
-  // members: graphite / satin silver
-  verified: { rim: ['#eceef1', '#7a8088'], face: ['#a9aeb6', '#646a72'], hairline: 'rgba(40,44,50,0.45)', mark: '#f4f6f9', markShade: 'rgba(20,22,26,0.45)', rimWidth: 1.5 },
-  // hosts: satin emerald, ivory bat
-  host: { rim: ['#cfe6d4', '#2f7048'], face: ['#4aa467', '#1d5f39'], hairline: 'rgba(8,48,24,0.5)', mark: '#f5faf5', markShade: 'rgba(5,35,16,0.5)', rimWidth: 1.5 },
-  // CX team: satin gold, dark bat for contrast
-  team: { rim: ['#f4e3a6', '#9c7a28'], face: ['#dcb95c', '#a8842c'], hairline: 'rgba(80,58,10,0.55)', mark: '#1c1608', markShade: 'rgba(255,240,190,0.55)', rimWidth: 1.5 },
+const METAL: Record<CxTier, { top: string; bottom: string; edge: string }> = {
+  verified: { top: '#c3c8d0', bottom: '#6d737b', edge: 'rgba(44,48,54,0.55)' },   // satin graphite / silver
+  host: { top: '#62c283', bottom: '#1d6a3c', edge: 'rgba(6,44,22,0.55)' },         // emerald
+  team: { top: '#f3d982', bottom: '#a8832b', edge: 'rgba(86,62,8,0.6)' },          // gold
 };
 
 export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size?: number; className?: string }) {
@@ -48,27 +35,28 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const label = t(CX_TIER_LABEL[tier]);
   const m = METAL[tier];
-  const faceR = 10.4 - m.rimWidth;
+  const half = tier === 'verified';
+  const viewW = half ? 500 : 1000;
+  const width = Math.round(size * 1.7 * (viewW / 1000) * 10) / 10;
+  const height = Math.round(size * 1.7 * 0.357 * 10) / 10;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={label} className={`shrink-0 ${className}`}>
+    <svg width={width} height={height} viewBox={`0 0 ${viewW} 357`} role="img" aria-label={label} className={`shrink-0 overflow-visible ${className}`}>
       <title>{label}</title>
       <defs>
-        <linearGradient id={`${uid}r`} x1="0.1" y1="0" x2="0.9" y2="1">
-          <stop offset="0" stopColor={m.rim[0]} />
-          <stop offset="1" stopColor={m.rim[1]} />
+        <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={m.top} />
+          <stop offset="1" stopColor={m.bottom} />
         </linearGradient>
-        <linearGradient id={`${uid}f`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={m.face[0]} />
-          <stop offset="1" stopColor={m.face[1]} />
-        </linearGradient>
+        {half && (
+          <clipPath id={`${uid}c`}>
+            <rect x="0" y="0" width="500" height="357" />
+          </clipPath>
+        )}
       </defs>
-      <path d={SEAL} fill={`url(#${uid}r)`} />
-      <circle cx="12" cy="12.5" r={faceR} fill={`url(#${uid}f)`} stroke={m.hairline} strokeWidth="0.45" />
-      {/* the faintest reflection, top-left */}
-      <path d="M6.3 10.2 A6.4 6.4 0 0 1 10.6 6.3" fill="none" stroke="#ffffff" strokeOpacity={0.42} strokeWidth="1" strokeLinecap="round" />
-      {/* the bat, engraved: a soft shade just below, then the bat itself */}
-      <path d={BAT} fill={m.markShade} transform="translate(0 0.5)" />
-      <path d={BAT} fill={m.mark} stroke={m.mark} strokeWidth="0.4" strokeLinejoin="round" />
+      <g clipPath={half ? `url(#${uid}c)` : undefined}>
+        <path d={BAT} fill={`url(#${uid}g)`} stroke={m.edge} strokeWidth="14" strokeLinejoin="round" />
+        <path d={FACETS} fill="#ffffff" fillOpacity="0.2" />
+      </g>
     </svg>
   );
 }
