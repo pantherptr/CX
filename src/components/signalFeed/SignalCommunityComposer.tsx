@@ -326,7 +326,26 @@ export function SignalCommunityComposer({
   );
 
   return (
-    <motion.div layout={!reduceMotion} transition={SPRING_SMOOTH} className={`mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`}>
+    <motion.div layout={!reduceMotion} transition={SPRING_SMOOTH} className={`relative mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`}>
+      {!isOpen && (
+        <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center">
+          <label aria-label="Add photo or video" className="pressable grid h-10 w-10 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050">
+            <Icon name="image" size={21} />
+            <input
+              type="file"
+              accept={[...ACCEPTED_TYPES, ...VIDEO_MIME_TYPES].join(',')}
+              multiple
+              className="hidden"
+              onChange={(e) => { void addMediaFiles(e.target.files); e.target.value = ''; }}
+            />
+          </label>
+          {!editing && (
+            <Tap onClick={() => setPollOptions(['', ''])} aria-label="Add a poll" className="grid h-10 w-10 place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050">
+              <Icon name="chart" size={21} />
+            </Tap>
+          )}
+        </div>
+      )}
       <div className="flex items-start gap-3">
         {profile?.avatar_url ? (
           <ProfileAvatar src={profile.avatar_url} size={40} />
@@ -341,7 +360,7 @@ export function SignalCommunityComposer({
             onBlur={handleBlur}
             placeholder="Share something…"
             rows={1}
-            className="mt-[9px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[16px] leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0"
+            className={`mt-[9px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[16px] leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0 ${isOpen ? '' : 'pr-24'}`}
             style={{ height: MAX_COLLAPSED_HEIGHT, maxHeight: MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
           />
 
