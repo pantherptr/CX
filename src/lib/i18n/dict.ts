@@ -9,6 +9,18 @@ import type { Lang } from './countries';
 type Row = [en: string, it: string, ro: string, es: string];
 
 const ROWS: Row[] = [
+  // ---- Aggregated notifications ----
+  ["and {count} other", "e {count} altro", "și încă {count}", "y {count} más"],
+  ["and {count} others", "e altri {count}", "și alți {count}", "y {count} más"],
+  ["Someone started following you", "Qualcuno ha iniziato a seguirti", "Cineva a început să te urmărească", "Alguien empezó a seguirte"],
+  ["Your post received a Respect", "Il tuo post ha ricevuto un Respect", "Postarea ta a primit un Respect", "Tu publicación recibió un Respect"],
+  ["Your post received a comment", "Il tuo post ha ricevuto un commento", "Postarea ta a primit un comentariu", "Tu publicación recibió un comentario"],
+  ["Your post was shared", "Il tuo post è stato condiviso", "Postarea ta a fost distribuită", "Tu publicación fue compartida"],
+  ["Your post was saved", "Il tuo post è stato salvato", "Postarea ta a fost salvată", "Tu publicación fue guardada"],
+  ["Your post received {count} Respects", "Il tuo post ha ricevuto {count} Respect", "Postarea ta a primit {count} Respect-uri", "Tu publicación recibió {count} Respects"],
+  ["Your post received {count} comments", "Il tuo post ha ricevuto {count} commenti", "Postarea ta a primit {count} comentarii", "Tu publicación recibió {count} comentarios"],
+  ["Your post was shared {count} times", "Il tuo post è stato condiviso {count} volte", "Postarea ta a fost distribuită de {count} ori", "Tu publicación fue compartida {count} veces"],
+  ["Your post was saved {count} times", "Il tuo post è stato salvato {count} volte", "Postarea ta a fost salvată de {count} ori", "Tu publicación fue guardada {count} veces"],
   // ---- Navbar, drawer, footer ----
   ['Cars', 'Auto', 'Mașini', 'Coches'],
   ['How It Works', 'Come funziona', 'Cum funcționează', 'Cómo funciona'],

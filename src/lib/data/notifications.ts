@@ -20,6 +20,9 @@ export interface SignalNotification {
   type: NotificationType;
   createdAt: string;
   readAt: string | null;
+  /** How many times this event has happened since it was last read (0074-style
+   *  aggregation — see 0078). 1 for a plain, un-aggregated notification. */
+  count: number;
   actorId: string | null;
   actorName: string;
   actorAvatarUrl: string | null;
@@ -43,6 +46,7 @@ interface NotificationRow {
   type: NotificationType;
   created_at: string;
   read_at: string | null;
+  count: number;
   actor_id: string | null;
   actor_name: string | null;
   actor_avatar_url: string | null;
@@ -61,6 +65,7 @@ function mapNotification(row: NotificationRow): SignalNotification {
     type: row.type,
     createdAt: row.created_at,
     readAt: row.read_at,
+    count: row.count ?? 1,
     actorId: row.actor_id,
     // `actorId` is null when the actor stays private (not connected to the
     // recipient) — the server never sends their identity in that case.

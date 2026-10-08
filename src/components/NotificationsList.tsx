@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocale } from '../lib/i18n';
 import { EmptyState, VerifiedBadge, type VerifiedRole } from './primitives';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
@@ -46,13 +47,25 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-violet-500 text-white' },
 };
 
-/** What a notification says when the person behind it stays private. */
+/** What a notification says when the person behind it stays private, or
+ *  when several people did the same thing (0078 aggregates these while
+ *  unread) — never names a count of people, just the event. */
 const ANON_TEXT: Record<NotificationType, string> = {
   follow: 'Someone started following you',
   post_respect: 'Your post received a Respect',
   post_comment: 'Your post received a comment',
   post_share: 'Your post was shared',
   post_save: 'Your post was saved',
+};
+/** The count>1 version of the same four — a fresh English string per
+ *  event/count so it reads naturally in every language, with `{count}`
+ *  filled in via `t()`. */
+const ANON_TEXT_MANY: Record<NotificationType, string> = {
+  follow: 'Someone started following you',
+  post_respect: 'Your post received {count} Respects',
+  post_comment: 'Your post received {count} comments',
+  post_share: 'Your post was shared {count} times',
+  post_save: 'Your post was saved {count} times',
 };
 
 type TabId = 'all' | 'unread' | 'follows' | 'activity';
@@ -93,6 +106,8 @@ export function NotificationsList({
   /** Tighter padding for the small sheet context vs. the full page. */
   compact?: boolean;
 }) {
+  const { t } = useLocale();
+  const anonText = (n: SignalNotification) => (n.count > 1 ? t(ANON_TEXT_MANY[n.type], { count: n.count }) : t(ANON_TEXT[n.type]));
   const [tab, setTab] = useState<TabId>('all');
   const [menuFor, setMenuFor] = useState<string | null>(null);
 
@@ -190,7 +205,7 @@ export function NotificationsList({
                       }`}
                     >
                       {isUnread && <span aria-hidden="true" className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-accent-bright" />}
-                      <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorId ? n.actorName : ANON_TEXT[n.type]}>
+                      <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorId ? n.actorName : anonText(n)}>
                         {!n.actorId ? (
                           <span className={`grid h-12 w-12 place-items-center rounded-full ${copy.badge}`}>
                             <Icon name={copy.icon} size={22} />
@@ -212,8 +227,8 @@ export function NotificationsList({
                           </span>
                         )}
                         {n.actorId && (
-                          <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] w-[22px] place-items-center rounded-full ring-2 ring-surface ${copy.badge}`}>
-                            <Icon name={copy.icon} size={12} />
+                          <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] min-w-[22px] place-items-center rounded-full px-1 ring-2 ring-surface ${copy.badge}`}>
+                            {n.count > 1 ? <span className="text-[11px] font-bold leading-none">{n.count}</span> : <Icon name={copy.icon} size={12} />}
                           </span>
                         )}
                       </button>
@@ -227,10 +242,14 @@ export function NotificationsList({
                                 <VerifiedBadge role={role} size={13} />
                               </span>
                             )}{' '}
-                            <span className="text-ink-soft">{copy.verb}</span>
+                            <span className="text-ink-soft">
+                              {n.count > 1 && t(n.count > 2 ? 'and {count} others' : 'and {count} other', { count: n.count - 1 })}
+                              {n.count > 1 ? ' ' : ''}
+                              {copy.verb}
+                            </span>
                           </p>
                         ) : (
-                          <p className="text-[15px] font-semibold leading-snug text-ink">{ANON_TEXT[n.type]}</p>
+                          <p className="text-[15px] font-semibold leading-snug text-ink">{anonText(n)}</p>
                         )}
                         {n.actorUsername && <p className="mt-0.5 text-caption text-faint">@{n.actorUsername}</p>}
                         {n.postPreview && (
