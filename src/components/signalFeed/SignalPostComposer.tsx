@@ -151,8 +151,12 @@ export function SignalPostComposer({
   };
 
   const handleSubmit = async () => {
-    if (!body.trim()) {
-      setError('Write something before publishing.');
+    if (!body.trim() && existingPaths.length + pending.length === 0) {
+      setError('Add a photo, a video or some text before publishing.');
+      return;
+    }
+    if (pollOptions && !body.trim()) {
+      setError('A poll needs its question — write it in the text.');
       return;
     }
     if (pollOptions && cleanPollOptions(pollOptions).length < 2) {
