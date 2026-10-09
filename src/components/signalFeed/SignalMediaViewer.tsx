@@ -28,10 +28,13 @@ export function SignalMediaViewer({
   images,
   startIndex,
   onClose,
+  sharedKey = '',
 }: {
   images: string[];
   startIndex: number;
   onClose: () => void;
+  /** The post's id — keeps the shared-element id unique when two posts show the same photo. */
+  sharedKey?: string;
 }) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -54,7 +57,7 @@ export function SignalMediaViewer({
   // different image in a multi-image post just stops sharing the id
   // (plain `<img>`, no morph), same scoped-down pattern Stories uses for
   // swiping past the originally-opened one.
-  const sharedId = `post-media-${images[startIndex]}`;
+  const sharedId = `post-media-${sharedKey ? `${sharedKey}-` : ''}${images[startIndex]}`;
   const showsInitialImage = index === startIndex && !isVideo;
 
   const step = (delta: number) => setIndex((i) => (i + delta + images.length) % images.length);

@@ -949,12 +949,12 @@ export function SignalPostCard({
   return (
     <article
       onClick={handleCardClick}
-      className={`card relative mb-5 animate-fade-up overflow-hidden rounded-3xl p-0 ${detail || featured ? '' : 'cursor-pointer'} shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34),0_1px_2px_rgba(0,0,0,0.05)] ${
+      className={`relative animate-fade-up overflow-hidden bg-surface ${detail || featured ? '' : 'cursor-pointer'} ${
         featured
-          ? 'ring-2 ring-accent-bright/50 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)]'
+          ? 'card mb-5 rounded-3xl p-0 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)] ring-2 ring-accent-bright/50'
           : isExclusive
-            ? 'ring-1 ring-[#c9971c]/40'
-            : 'ring-1 ring-black/[0.06]'
+            ? 'card mb-5 rounded-3xl p-0 shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34)] ring-1 ring-[#c9971c]/40'
+            : `border-b border-line transition-colors ${detail ? '' : 'active:bg-panel/40 sm:hover:bg-panel/25'}`
       }`}
     >
       {/* The one card on the whole feed that should read as "CX's own" —
@@ -973,28 +973,24 @@ export function SignalPostCard({
         </div>
       )}
 
-      <div className="flex items-start gap-3 px-4 pb-3 pt-4 sm:px-5">
+      <div className="flex items-start gap-3 px-4 pb-2.5 pt-3.5 sm:px-5">
         <Link to={signalProfileHref(post, profileBase)} viewTransition aria-label={post.authorName} className="shrink-0">
-          <span className="block rounded-full ring-2 ring-surface"><SignalIdentityAvatar identity={identity} size={42} /></span>
+          <SignalIdentityAvatar identity={identity} size={40} />
         </Link>
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="flex items-center justify-between gap-2">
-            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 items-center gap-1.5 hover:underline">
-              <span className="truncate font-display text-[16px] font-semibold text-ink">{identity.name}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 max-w-[68%] shrink-0 items-center gap-1.5 hover:underline">
+              <span className="min-w-0 truncate font-display text-[15.5px] font-semibold leading-tight text-ink">{identity.name}</span>
               <SignalIdentityBadge identity={identity} />
             </Link>
+            <span className="min-w-0 flex-1 truncate text-[13.5px] text-muted">
+              {identity.username ? `@${identity.username}` : identity.subtitle}
+              {` · ${timeAgo(post.createdAt)}`}
+              {post.editedAt && ' · Edited'}
+              {post.isArchived && ' · Archived'}
+              {post.isDemo && ` · ${t('Sample')}`}
+            </span>
           </div>
-          <p className="mt-0.5 truncate text-caption text-muted">
-            {identity.username && (
-              <Link to={signalProfileHref(post, profileBase)} viewTransition className="hover:underline">@{identity.username}</Link>
-            )}
-            {identity.username && ' · '}
-            {identity.subtitle}
-            {` · ${timeAgo(post.createdAt)}`}
-            {post.editedAt && ' · Edited'}
-            {post.isArchived && ' · Archived'}
-            {post.isDemo && ` · ${t('Sample')}`}
-          </p>
         </div>
         {/* Every item here (Edit/Pin/Feature/Archive/Delete/Report) acts
             on a real empire_posts row — none of it applies to a demo
@@ -1077,7 +1073,7 @@ export function SignalPostCard({
         <div className="px-4 pb-3 sm:px-5">
           <p
             ref={bodyRef}
-            className={`whitespace-pre-wrap break-words leading-relaxed text-ink ${featured || detail ? 'text-detail' : 'text-body'} ${detail ? 'sm:text-copy' : ''} ${featured && !post.title ? 'line-clamp-3' : clampText && !textExpanded ? 'line-clamp-6' : ''}`}
+            className={`whitespace-pre-wrap break-words leading-relaxed text-ink ${featured ? 'text-detail' : detail ? 'text-[16px]' : 'text-[15px]'} ${featured && !post.title ? 'line-clamp-3' : clampText && !textExpanded ? 'line-clamp-6' : ''}`}
           >
             <PostText text={tr.texts[1]} />
           </p>
@@ -1122,7 +1118,8 @@ export function SignalPostCard({
       {post.vehicle && <SignalVehicleCard vehicle={post.vehicle} authorId={post.authorId} isOwnPost={isOwnPost} />}
 
       {post.mediaUrls.length > 0 && (
-        detail && !featured ? (
+        <div className={featured ? '' : 'mx-4 mb-3 overflow-hidden rounded-2xl border border-line sm:mx-5'}>
+        {detail && !featured ? (
           <div className="flex flex-col gap-1">
             {post.mediaUrls.map((url, i) =>
               mediaKindFromPath(url) === 'video' ? (
@@ -1136,7 +1133,7 @@ export function SignalPostCard({
                   className="aspect-[4/5]"
                   onClick={() => setViewerIndex(i)}
                   onDoubleTap={handleDoubleTapRespect}
-                  sharedId={i === 0 ? `post-media-${url}` : undefined}
+                  sharedId={i === 0 ? `post-media-${post.id}-${url}` : undefined}
                   sharedActive={viewerIndex === null}
                 />
               ),
@@ -1151,7 +1148,7 @@ export function SignalPostCard({
               className="aspect-[16/10] w-full"
               onClick={() => setViewerIndex(0)}
               onDoubleTap={handleDoubleTapRespect}
-              sharedId={`post-media-${post.mediaUrls[0]}`}
+              sharedId={`post-media-${post.id}-${post.mediaUrls[0]}`}
               sharedActive={viewerIndex === null}
             />
           )
@@ -1165,13 +1162,14 @@ export function SignalPostCard({
               onDoubleTap={handleDoubleTapRespect}
               className="aspect-[4/5]"
               dynamicAspect
-              sharedId={`post-media-${post.mediaUrls[0]}`}
+              sharedId={`post-media-${post.id}-${post.mediaUrls[0]}`}
               sharedActive={viewerIndex === null}
             />
           )
         ) : (
           <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} onDoubleTap={handleDoubleTapRespect} />
-        )
+        )}
+        </div>
       )}
 
       {/* The engagement row: Respect, Save, Views, (Comment — Owner only) and
@@ -1380,7 +1378,7 @@ export function SignalPostCard({
       )}
 
       {viewerIndex !== null && (
-        <SignalMediaViewer images={post.mediaUrls} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
+        <SignalMediaViewer images={post.mediaUrls} sharedKey={post.id} startIndex={viewerIndex} onClose={() => setViewerIndex(null)} />
       )}
 
       {shareSheetOpen && <SignalSharePostSheet post={post} onClose={() => setShareSheetOpen(false)} />}
