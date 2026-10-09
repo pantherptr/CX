@@ -248,8 +248,7 @@ export default function Signal() {
 
   const navItems: { label: string; icon: IconName; active?: boolean; groupEnd?: boolean; onSelect: () => void }[] = [
           { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
-          { label: 'Community', icon: 'users', active: space === 'community', onSelect: () => navigate('/signal/community') },
-          { label: 'Spotlight', icon: 'sparkles', groupEnd: true, onSelect: () => navigate('/signal/spotlight', { state: { from: pathname } }) },
+          { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
           // My Profile leads the personal-shortcuts section — the one row
           // every signed-in visitor has, regardless of publishing rights,
           // so it's the first thing under the Official/Community divider
