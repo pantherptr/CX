@@ -50,15 +50,14 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
       <motion.span
         initial={{ opacity: 0 }}
         animate={ring}
-        className="pointer-events-none absolute rounded-full border border-accent-bright"
+        className="pointer-events-none absolute rounded-full border border-ink/40"
         style={{ width: size * 1.1, height: size * 1.1 }}
       />
       <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
         {filled ? (
           <>
-            {/* saved: black with a CX-green edge and a faint green sheen */}
-            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="#0b0d0c" stroke="#00d447" strokeWidth="2.4" />
-            <path d="M8.6 5.8h6.8" stroke="#00d447" strokeWidth="1" opacity="0.55" />
+            {/* saved: plain solid black — no colour */}
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="#0b0b0c" />
           </>
         ) : (
           <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="currentColor" />
