@@ -344,6 +344,9 @@ export function BottomNav() {
         // opacity, so nothing in the feed reflows.
         transform: compact ? `translateY(${10 - lift}px) scale(0.84)` : `translateY(${-lift}px)`,
         transformOrigin: '50% 100%',
+        // The wrapper is pointer-events:none so the page under it stays usable;
+        // the bar itself must take taps.
+        pointerEvents: 'auto',
         transition: `transform 280ms ${EASE}`,
       }}
       // Any touch on the small dock brings it back to full size; the tap
