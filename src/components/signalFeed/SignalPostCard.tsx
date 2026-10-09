@@ -558,6 +558,12 @@ export function SignalPostCard({
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
   const [savePlay, setSavePlay] = useState(0);
+  const [viewsInfo, setViewsInfo] = useState(false);
+  useEffect(() => {
+    if (!viewsInfo) return;
+    const id = window.setTimeout(() => setViewsInfo(false), 4000);
+    return () => window.clearTimeout(id);
+  }, [viewsInfo]);
   // Tap = save quietly; hold Save to file the post in a collection.
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [sharePlay, setSharePlay] = useState(0);
@@ -643,7 +649,7 @@ export function SignalPostCard({
     const amt = tapAmount(before);
     setMySaves(before + amt);
     onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + amt });
-    setSavePlay((k) => k + 1);
+    setSavePlay(Date.now());
     
     vibrateTap();
     const { count, error } = await addEmpirePostSave(post.id, amt);
@@ -789,7 +795,7 @@ export function SignalPostCard({
       setCollectionsOpen(true);
       if (!post.savedByMe) {
         onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
-        setSavePlay((k) => k + 1);
+        setSavePlay(Date.now());
         void toggleEmpirePostSave(post.id).then(({ error }) => { if (error) onChanged(post); });
       }
     }, 450);
@@ -806,8 +812,7 @@ export function SignalPostCard({
   const handleSave = async () => {
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
     if (!post.savedByMe) {
-      setSavePlay((k) => k + 1);
-      
+      setSavePlay(Date.now());
       vibrateTap();
     }
     const { error } = post.isDemo ? await toggleSignalDemoPostSave(post.id) : await toggleEmpirePostSave(post.id);
@@ -1192,9 +1197,30 @@ export function SignalPostCard({
                   </span>
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1">
-                  <span className={`${BAR_ICON}`}><EyeIcon size={15} className="shrink-0 text-faint" /></span>
-                  <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.viewCount)}</span>
+                <span className="relative inline-flex">
+                  <button
+                    type="button"
+                    onClick={() => setViewsInfo((v) => !v)}
+                    aria-label={t('Views')}
+                    aria-expanded={viewsInfo}
+                    className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
+                  >
+                    <span className={BAR_ICON}><EyeIcon size={15} className="shrink-0 text-faint" /></span>
+                    <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.viewCount)}</span>
+                  </button>
+                  {viewsInfo && (
+                    <>
+                      <span aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setViewsInfo(false)} />
+                      <span
+                        role="tooltip"
+                        className="absolute bottom-full left-0 z-20 mb-1 w-56 animate-scale-in rounded-xl bg-ink px-3 py-2 text-left text-[12.5px] leading-snug text-white shadow-pop"
+                      >
+                        <span className="block font-semibold">{t('Views')}</span>
+                        <span className="block text-white/75">{t('How many people have seen this post.')}</span>
+                        <span aria-hidden="true" className="absolute -bottom-1 left-4 h-2 w-2 rotate-45 bg-ink" />
+                      </span>
+                    </>
+                  )}
                 </span>
               ))}
           {/* Respect — the stamp sits just above it while a Respect stands */}

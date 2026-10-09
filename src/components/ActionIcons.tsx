@@ -1,4 +1,4 @@
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { motion, useAnimation, useReducedMotion, type Variants } from 'motion/react';
 
 /** The animated companions of ThumbsUpIcon for SIGNAL's other post actions
@@ -32,17 +32,29 @@ const svgProps = {
 /** Save: a quick, quiet press — no jump. `filled` paints it solid. */
 export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
   const uid = useId().replace(/:/g, '');
-  const controls = usePlay(playKey);
-  const v: Variants = {
-    normal: { y: 0, scale: 1, rotate: 0 },
-    animate: {
-      scale: [1, 0.9, 1.06, 1],
-      transition: { duration: 0.28, ease: 'easeOut' },
-    },
-  };
+  const press = useAnimation();
+  const ring = useAnimation();
+  const reduced = useReducedMotion();
+  // `playKey` is the timestamp of the Save tap: play once per tap, and only if
+  // it was just now (a remount long after must stay still).
+  const lastKey = useRef(0);
+  useEffect(() => {
+    if (!playKey || playKey === lastKey.current) return;
+    lastKey.current = playKey;
+    if (Date.now() - playKey > 700 || reduced) return;
+    void press.start({ scale: [1, 0.86, 1.1, 1], transition: { duration: 0.32, ease: 'easeOut' } });
+    void ring.start({ opacity: [0.45, 0], scale: [0.6, 1.9], transition: { duration: 0.5, ease: 'easeOut' } });
+    return () => { lastKey.current = 0; };
+  }, [playKey, reduced, press, ring]);
   return (
-    <span className={`inline-flex items-center justify-center ${className}`} aria-hidden="true">
-      <motion.svg {...svgProps} width={size} height={size} variants={v} initial="normal" animate={controls} style={{ transformOrigin: 'center' }}>
+    <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={ring}
+        className="pointer-events-none absolute rounded-full border border-accent-bright"
+        style={{ width: size * 1.1, height: size * 1.1 }}
+      />
+      <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
         {filled ? (
           <>
             <defs>
