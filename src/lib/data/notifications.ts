@@ -15,7 +15,7 @@ import { supabase } from '../supabase';
 
 export type NotificationType =
   | 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save'
-  | 'circle' | 'follow_accepted' | 'vision_selected' | 'vision_featured';
+  | 'circle' | 'follow_accepted' | 'follow_request' | 'vision_selected' | 'vision_featured';
 
 export interface SignalNotification {
   id: string;
@@ -40,6 +40,8 @@ export interface SignalNotification {
   visionId: string | null;
   /** False when what it points at was deleted or is no longer visible to you — open the safe state, not the content. */
   available: boolean;
+  /** A follow request still waiting for you to accept or decline it. */
+  pendingRequest: boolean;
   /** A short preview of the post this notification refers to, if any —
    *  `null` for a follow (no post involved) or if the post was since
    *  deleted (the FK is `on delete cascade`, so in practice the whole
@@ -65,6 +67,7 @@ interface NotificationRow {
   post_body: string | null;
   vision_id?: string | null;
   available?: boolean;
+  pending_request?: boolean;
 }
 
 function mapNotification(row: NotificationRow): SignalNotification {
@@ -87,6 +90,7 @@ function mapNotification(row: NotificationRow): SignalNotification {
     postId: row.post_id,
     visionId: row.vision_id ?? null,
     available: row.available ?? true,
+    pendingRequest: row.pending_request ?? false,
     postPreview: row.post_body ? row.post_body.slice(0, 120) : null,
   };
 }

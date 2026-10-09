@@ -18,6 +18,8 @@ import { SignalKeychainTab } from './SignalKeychainTab';
 import { SignalVisionsTab } from './SignalVisionsTab';
 import { fetchVisionsEnabled } from '../../lib/data/visions';
 import { fetchRelation, type Relation } from '../../lib/data/privacy';
+import { toggleBlock } from '../../lib/data/signalProfile';
+import { PostActionMenu } from './PostActionMenu';
 import { useLocale } from '../../lib/i18n';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
@@ -221,6 +223,23 @@ export function SignalProfileDetail({
     fetchRelation(realProfile.id).then((r) => { if (!cancelled) setRelation(r); });
     return () => { cancelled = true; };
   }, [realProfile?.id, isMe, followersCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Block / unblock — from the "…" next to Follow.
+  const [blockedByMe, setBlockedByMe] = useState(false);
+  useEffect(() => { setBlockedByMe(Boolean(realProfile?.blockedByMe)); }, [realProfile?.id, realProfile?.blockedByMe]);
+  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
+  const doToggleBlock = async () => {
+    if (!realProfile) return;
+    const { blocked, error } = await toggleBlock(realProfile.id);
+    if (error || blocked === null) {
+      toast({ title: 'Could not update the block', desc: error ?? undefined, icon: 'info' });
+      return;
+    }
+    setBlockedByMe(blocked);
+    setRelation('none');
+    toast({ title: blocked ? 'Blocked' : 'Unblocked', icon: 'check' });
+  };
+  // A private profile shows its content to followers only; a blocked one shows nothing.
+  const lockedPrivate = Boolean(realProfile && !isMe && realProfile.isPrivate && realProfile.followStatus !== 'following' && !canManage);
 
   const share = async () => {
     const url = window.location.href;
@@ -390,7 +409,20 @@ export function SignalProfileDetail({
     </div>
   );
 
-  const below = (
+  const below = blockedByMe ? (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="lock" size={22} /></span>
+      <p className="mt-4 font-display text-lead font-semibold text-ink">You blocked this account</p>
+      <p className="mt-1 max-w-[18rem] text-detail text-muted">You can't see each other's posts, Stories or Visions.</p>
+      <button type="button" onClick={() => void doToggleBlock()} className="btn btn-secondary mt-4 rounded-full px-5">Unblock</button>
+    </div>
+  ) : lockedPrivate ? (
+    <div className="flex flex-col items-center px-6 py-14 text-center">
+      <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="lock" size={22} /></span>
+      <p className="mt-4 font-display text-lead font-semibold text-ink">This account is private</p>
+      <p className="mt-1 max-w-[18rem] text-detail text-muted">Follow to see their posts, Stories and Visions.</p>
+    </div>
+  ) : (
     <>
       {tabs.length > 1 && (
         <div className="mb-4 flex border-b border-line" role="tablist">
@@ -452,10 +484,20 @@ export function SignalProfileDetail({
                     <FollowButton
                       userId={realProfile.id}
                       initialFollowing={realProfile.followedByMe}
+                      initialRequested={realProfile.followStatus === 'requested'}
                       variant="wide"
                       onChange={(following) => setFollowersCount((c) => c + (following ? 1 : -1))}
                     />
                   </div>
+                  <Tap
+                    onClick={(e) => setMoreAnchor(e.currentTarget as HTMLElement)}
+                    scale={0.96}
+                    aria-label="More"
+                    aria-haspopup="menu"
+                    className="grid w-12 shrink-0 place-items-center rounded-2xl border border-line bg-surface text-ink shadow-hair transition-colors hover:border-line-strong"
+                  >
+                    <Icon name="moreHorizontal" size={20} />
+                  </Tap>
                   {chatCar && (
                     <Tap
                       onClick={() => void openChat()}
@@ -532,6 +574,14 @@ export function SignalProfileDetail({
           onSaved={(updates) =>
             setProfile((prev) => (prev && prev !== 'error' ? { ...prev, ...updates } : prev))
           }
+        />
+      )}
+
+      {moreAnchor && realProfile && (
+        <PostActionMenu
+          anchor={moreAnchor}
+          onClose={() => setMoreAnchor(null)}
+          groups={[[{ icon: 'lock', label: blockedByMe ? 'Unblock' : 'Block', danger: !blockedByMe, onClick: () => void doToggleBlock() }]]}
         />
       )}
 

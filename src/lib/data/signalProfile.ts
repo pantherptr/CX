@@ -33,6 +33,10 @@ export interface SignalProfile {
   followersCount: number;
   followingCount: number;
   followedByMe: boolean;
+  /** Private profile: only followers see its content; following it sends a request. */
+  isPrivate: boolean;
+  followStatus: 'following' | 'requested' | 'none';
+  blockedByMe: boolean;
 }
 
 interface SignalProfileJson {
@@ -56,6 +60,9 @@ interface SignalProfileJson {
   followers_count: number;
   following_count: number;
   followed_by_me: boolean;
+  is_private?: boolean;
+  follow_status?: 'following' | 'requested' | 'none';
+  blocked_by_me?: boolean;
 }
 
 export async function fetchSignalProfile(userId: string): Promise<SignalProfile | null> {
@@ -86,16 +93,46 @@ export async function fetchSignalProfile(userId: string): Promise<SignalProfile 
     followersCount: row.followers_count,
     followingCount: row.following_count,
     followedByMe: row.followed_by_me,
+    isPrivate: Boolean(row.is_private),
+    followStatus: row.follow_status ?? (row.followed_by_me ? 'following' : 'none'),
+    blockedByMe: Boolean(row.blocked_by_me),
   };
 }
 
 /** Toggles the caller following `userId` — returns the new state (true =
  *  now following). Real server-side enforcement lives in the RPC itself
  *  (no self-follow, target must exist); this is a thin wrapper only. */
+export type FollowStatus = 'following' | 'requested' | 'none';
+
+/** Follow, unfollow, send a request to a private profile, or cancel that request —
+ *  whichever applies. The server decides (see toggle_follow, 0096). */
+export async function toggleFollow(userId: string): Promise<{ status: FollowStatus | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('toggle_follow', { p_followee_id: userId });
+  if (error) return { status: null, error: error.message };
+  return { status: data as FollowStatus, error: null };
+}
+
+/** Kept for the callers that only care "am I following now?". */
 export async function toggleProfileFollow(userId: string): Promise<{ following: boolean | null; error: string | null }> {
-  const { data, error } = await supabase.rpc('toggle_profile_follow', { p_followee_id: userId });
-  if (error) return { following: null, error: error.message };
-  return { following: data as boolean, error: null };
+  const r = await toggleFollow(userId);
+  return { following: r.status === null ? null : r.status === 'following', error: r.error };
+}
+
+export async function respondToFollowRequest(requesterId: string, accept: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('respond_follow_request', { p_requester_id: requesterId, p_accept: accept });
+  return { error: error ? error.message : null };
+}
+
+export async function setMyProfilePrivate(isPrivate: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_my_profile_private', { p_private: isPrivate });
+  return { error: error ? error.message : null };
+}
+
+/** Blocks the person, or lifts the block. Returns whether they are now blocked. */
+export async function toggleBlock(userId: string): Promise<{ blocked: boolean | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('toggle_block', { p_user_id: userId });
+  if (error) return { blocked: null, error: error.message };
+  return { blocked: Boolean(data), error: null };
 }
 
 export interface FollowListUser {

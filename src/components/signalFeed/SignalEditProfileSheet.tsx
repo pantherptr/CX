@@ -4,7 +4,8 @@ import { MotionSheet, Tap, SharedAvatar, motion, AnimatePresence, useReducedMoti
 import { ProfileAvatar } from './SignalIdentityBadge';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
-import { uploadSignalAvatar, uploadSignalCover, updateSignalProfile, checkUsernameAvailable, setSignalUsername } from '../../lib/data/signalProfile';
+import { uploadSignalAvatar, uploadSignalCover, updateSignalProfile, checkUsernameAvailable, setSignalUsername, fetchSignalProfile, setMyProfilePrivate } from '../../lib/data/signalProfile';
+import { Switch } from '../primitives';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 import { fetchVisionsEnabled, setMyVisionsEnabled } from '../../lib/data/visions';
 import { useLocale } from '../../lib/i18n';
@@ -77,6 +78,22 @@ export function SignalEditProfileSheet({
   const { toast } = useApp();
   const reduceMotion = useReducedMotion();
   const { t } = useLocale();
+  const [isPrivate, setIsPrivate] = useState(false);
+  useEffect(() => {
+    const uid = session?.user.id;
+    if (!uid) return;
+    let cancelled = false;
+    fetchSignalProfile(uid).then((p) => { if (!cancelled && p) setIsPrivate(p.isPrivate); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [session?.user.id]);
+  const togglePrivate = async (next: boolean) => {
+    setIsPrivate(next);
+    const { error } = await setMyProfilePrivate(next);
+    if (error) {
+      setIsPrivate(!next);
+      toast({ title: 'Could not update privacy', desc: error, icon: 'info' });
+    }
+  };
   const [visionsOn, setVisionsOn] = useState(false);
   const [visionsBusy, setVisionsBusy] = useState(false);
   useEffect(() => {
@@ -422,6 +439,15 @@ export function SignalEditProfileSheet({
                 <BioRing value={bio.length} max={BIO_MAX} />
               </div>
             </div>
+          </div>
+
+          {/* Private profile — people must ask to follow you */}
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+            <div className="min-w-0">
+              <p className="text-body font-semibold text-on-noir">{t('Private profile')}</p>
+              <p className="mt-1 text-caption leading-relaxed text-on-noir-muted">{t('Only people you accept can follow you and see your posts, Stories and Visions.')}</p>
+            </div>
+            <Switch checked={isPrivate} onChange={(v) => void togglePrivate(v)} label={t('Private profile')} />
           </div>
 
           {/* CX Visions — opt-in portfolio; untouched unless the user taps it */}

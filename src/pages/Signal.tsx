@@ -11,6 +11,7 @@ import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
+import { SignalPeopleShelf } from '../components/signalFeed/SignalPeopleShelf';
 import { SignalSpotlightPageLink, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
 import { useSpotlightFeed, useSpotlightPosts, mergeSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
@@ -418,6 +419,7 @@ export default function Signal() {
 
         {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
         {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}
+        <SignalPeopleShelf profileBase={base} />
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever

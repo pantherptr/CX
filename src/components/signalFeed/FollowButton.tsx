@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toggleProfileFollow } from '../../lib/data/signalProfile';
+import { toggleFollow } from '../../lib/data/signalProfile';
 import { vibrateTap } from '../motion';
 import { Icon } from '../Icon';
 import { Tap, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
@@ -13,47 +13,57 @@ import { Tap, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
 export function FollowButton({
   userId,
   initialFollowing,
+  initialRequested = false,
   size = 'md',
   variant = 'default',
   onChange,
 }: {
   userId: string;
   initialFollowing: boolean;
+  /** A request to a private profile is waiting for an answer. */
+  initialRequested?: boolean;
   size?: 'sm' | 'md';
   /** `card`: the full-width button on the dark profile card. */
   variant?: 'default' | 'card' | 'wide';
   onChange?: (following: boolean) => void;
 }) {
   const [following, setFollowing] = useState(initialFollowing);
+  const [requested, setRequested] = useState(initialRequested);
+  const on = following || requested;
   const [busy, setBusy] = useState(false);
   const [justFollowed, setJustFollowed] = useState(false);
   const reduceMotion = useReducedMotion();
 
   const handleClick = async () => {
     if (busy) return;
-    const next = !following;
-    setFollowing(next);
-    if (next) {
+    const was = { following, requested };
+    // Optimistic guess: a tap on an "on" button turns it off; otherwise follow (the server may turn it into a request).
+    const goOn = !on;
+    setFollowing(goOn);
+    setRequested(false);
+    if (goOn) {
       vibrateTap();
       setJustFollowed(true);
       window.setTimeout(() => setJustFollowed(false), 200);
     }
     setBusy(true);
-    const { following: confirmed, error } = await toggleProfileFollow(userId);
+    const { status, error } = await toggleFollow(userId);
     setBusy(false);
-    if (error || confirmed === null) {
-      setFollowing(!next);
+    if (error || status === null) {
+      setFollowing(was.following);
+      setRequested(was.requested);
       return;
     }
-    setFollowing(confirmed);
-    onChange?.(confirmed);
+    setFollowing(status === 'following');
+    setRequested(status === 'requested');
+    onChange?.(status === 'following');
   };
 
   return (
     <Tap
       onClick={handleClick}
       disabled={busy}
-      aria-pressed={following}
+      aria-pressed={on}
       scale={0.93}
       // The "just followed" confirmation bump is its own `animate` target
       // (a real Motion-driven transform), not a Tailwind `scale-*` class —
@@ -65,28 +75,28 @@ export function FollowButton({
       className={`group font-semibold disabled:opacity-60 ${
         variant === 'wide'
           ? `flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-body ${
-              following
+              on
                 ? 'border border-line-strong bg-surface text-ink-soft hover:border-danger/40 hover:text-danger'
                 : 'bg-ink text-white hover:bg-ink/90'
             }`
           : variant === 'card'
           ? `flex w-full items-center justify-center gap-1.5 rounded-xl py-3.5 text-body ${
-              following
+              on
                 ? 'border border-white/25 bg-white/10 text-on-noir hover:border-white/50'
                 : 'bg-white text-noir hover:bg-white/90'
             }`
           : `rounded-full ${size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'} ${
-              following
+              on
                 ? 'border border-line text-ink-soft hover:border-danger/40 hover:bg-danger/5 hover:text-danger'
                 : 'bg-ink text-white hover:bg-ink/90'
             }`
       }`}
       style={{ transition: 'background-color 200ms, color 200ms, border-color 200ms' }}
     >
-      {following ? (
+      {on ? (
         <>
-          <span className="group-hover:hidden">Following</span>
-          <span className="hidden group-hover:inline">Unfollow</span>
+          <span className="group-hover:hidden">{requested ? 'Requested' : 'Following'}</span>
+          <span className="hidden group-hover:inline">{requested ? 'Cancel request' : 'Unfollow'}</span>
         </>
       ) : variant === 'card' || variant === 'wide' ? (
         <>

@@ -5,6 +5,7 @@ import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from './motionKit';
 import type { SignalNotification, NotificationType } from '../lib/data/notifications';
+import { respondToFollowRequest } from '../lib/data/signalProfile';
 
 /** Same precedence every other SIGNAL identity surface (posts, comments,
  *  search) already uses — Owner outranks Admin outranks Host outranks
@@ -47,6 +48,7 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-violet-500 text-white' },
   circle: { icon: 'sparkles', verb: '', badge: 'bg-ink text-white' },
   follow_accepted: { icon: 'check', verb: 'accepted your request', badge: 'bg-ink text-white' },
+  follow_request: { icon: 'user', verb: 'asked to follow you', badge: 'bg-ink text-white' },
   vision_selected: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
   vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
 };
@@ -62,6 +64,7 @@ const ANON_TEXT: Record<NotificationType, string> = {
   post_save: 'Your post was saved',
   circle: 'You are now in CX Circle',
   follow_accepted: 'Your request was accepted',
+  follow_request: 'Someone asked to follow you',
   vision_selected: 'Your Vision was selected for Signal Spotlight',
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
 };
@@ -76,6 +79,7 @@ const ANON_TEXT_MANY: Record<NotificationType, string> = {
   post_save: 'Your post was saved {count} times',
   circle: 'You are now in CX Circle',
   follow_accepted: 'Your request was accepted',
+  follow_request: 'Someone asked to follow you',
   vision_selected: 'Your Vision was selected for Signal Spotlight',
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
 };
@@ -88,7 +92,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'activity', label: 'Activity' },
 ];
 
-const isFollowKind = (n: SignalNotification) => n.type === 'follow' || n.type === 'circle' || n.type === 'follow_accepted';
+const isFollowKind = (n: SignalNotification) => n.type === 'follow' || n.type === 'circle' || n.type === 'follow_accepted' || n.type === 'follow_request';
 const matches = (n: SignalNotification, tab: TabId) =>
   tab === 'all' ? true : tab === 'unread' ? !n.readAt : tab === 'follows' ? isFollowKind(n) : !isFollowKind(n);
 
@@ -123,6 +127,15 @@ export function NotificationsList({
   const anonText = (n: SignalNotification) => (n.count > 1 ? t(ANON_TEXT_MANY[n.type], { count: n.count }) : t(ANON_TEXT[n.type]));
   const [tab, setTab] = useState<TabId>('all');
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // Accepting / declining a follow request right from the notification.
+  const [answered, setAnswered] = useState<Record<string, 'accepted' | 'declined'>>({});
+  const answer = async (n: SignalNotification, accept: boolean) => {
+    if (!n.actorId) return;
+    setAnswered((a) => ({ ...a, [n.id]: accept ? 'accepted' : 'declined' }));
+    const { error } = await respondToFollowRequest(n.actorId, accept);
+    if (error) setAnswered((a) => { const next = { ...a }; delete next[n.id]; return next; });
+    else onMarkRead?.(n.id);
+  };
 
   if (notifications === null) {
     return (
@@ -271,6 +284,31 @@ export function NotificationsList({
                         {!n.available && <p className="mt-1 text-caption text-faint">{t('This content is no longer available')}</p>}
                         {n.postPreview && (
                           <p className="mt-2 line-clamp-2 rounded-xl bg-panel px-3 py-2 text-detail text-ink-soft">“{n.postPreview}”</p>
+                        )}
+                        {n.type === 'follow_request' && n.actorId && answered[n.id] && (
+                          <span className="mt-2 inline-flex items-center gap-1.5 text-detail text-muted">
+                            <Icon name="check" size={14} strokeWidth={2.5} /> {answered[n.id] === 'accepted' ? t('You accepted the request') : t('You declined the request')}
+                          </span>
+                        )}
+                        {n.type === 'follow_request' && n.actorId && n.pendingRequest && !answered[n.id] && (
+                          <span className="mt-2.5 flex gap-2">
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => { e.stopPropagation(); void answer(n, true); }}
+                              className="inline-flex min-h-9 items-center rounded-full bg-ink px-4 text-detail font-semibold text-white"
+                            >
+                              {t('Accept')}
+                            </span>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => { e.stopPropagation(); void answer(n, false); }}
+                              className="inline-flex min-h-9 items-center rounded-full border border-line px-4 text-detail font-semibold text-ink-soft"
+                            >
+                              {t('Decline')}
+                            </span>
+                          </span>
                         )}
                         {n.type === 'follow' && n.actorId && (
                           <span className="mt-2.5 inline-flex min-h-9 items-center rounded-full bg-ink px-4 text-detail font-semibold text-white">
