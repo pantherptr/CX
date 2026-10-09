@@ -21,7 +21,7 @@ import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
 import { loadHashtags } from '../../lib/data/hashtags';
 import { VisibilityPicker } from './VisibilityPicker';
-import { DEFAULT_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
+import { DEFAULT_POST_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
 import { useLocale } from '../../lib/i18n';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
@@ -125,7 +125,7 @@ export function SignalCommunityComposer({
   const pollValid = !pollOptions || (cleanPollOptions(pollOptions).length >= 2 && body.trim().length > 0);
   const totalMedia = existingPaths.length + pending.length;
   // Who may see it — new posts start with followers only.
-  const [visibility, setVisibility] = useState<Visibility>(DEFAULT_VISIBILITY);
+  const [visibility, setVisibility] = useState<Visibility>(DEFAULT_POST_VISIBILITY);
   useEffect(() => {
     if (!editing) return;
     let cancelled = false;

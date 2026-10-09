@@ -18,7 +18,9 @@ import { supabase } from '../supabase';
 export type Visibility = 'public' | 'followers' | 'circle' | 'private';
 export type ContentType = 'post' | 'story' | 'vision';
 
-/** New posts and new Visions start with followers only. */
+/** A new post starts public — the feed is the same normal feed for everyone — and its author can narrow it. */
+export const DEFAULT_POST_VISIBILITY: Visibility = 'public';
+/** A new Vision starts with followers only; public is a choice. */
 export const DEFAULT_VISIBILITY: Visibility = 'followers';
 
 export const VISIBILITY_OPTIONS: { value: Visibility; label: string; hint: string }[] = [
@@ -65,17 +67,6 @@ export async function fetchRelation(userId: string): Promise<Relation> {
   const { data, error } = await supabase.rpc('fetch_relation', { p_user_id: userId });
   if (error || typeof data !== 'string') return 'none';
   return data as Relation;
-}
-
-/** The personal feed: drops community posts from people you do not follow, unless they are
- *  one of the few good public posts open to discovery (see `signal_feed_hidden`, 0094).
- *  Official CX content is never dropped. Fails open if the server rule is missing. */
-export async function withoutOutOfFeed<T extends { id: string }>(items: T[]): Promise<T[]> {
-  if (items.length === 0) return items;
-  const { data, error } = await supabase.rpc('signal_feed_hidden', { p_ids: items.map((i) => i.id) });
-  if (error || !Array.isArray(data) || data.length === 0) return items;
-  const hidden = new Set(data as string[]);
-  return items.filter((i) => !hidden.has(i.id));
 }
 
 export interface PersonSuggestion {

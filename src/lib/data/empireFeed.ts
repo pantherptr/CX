@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { roleFromFlags, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
-import { withoutHidden, withoutOutOfFeed } from './privacy';
+import { withoutHidden } from './privacy';
 
 /**
  * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
@@ -50,8 +50,6 @@ export const withoutSpotlightPosts = <T extends { body: string }>(rows: T[]): T[
 /** What a normal feed list shows: no Spotlight marker posts, nothing the viewer may not see. */
 const viewablePosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withoutHidden('post', withoutSpotlightPosts(rows));
 
-/** The personal feed on top of that: only people you follow, you, official CX, and the few good public posts of strangers. */
-const feedPosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withoutOutOfFeed(await viewablePosts(rows));
 
 /** `create_empire_post` rejects an empty body, but a post may be just a photo or
  *  video. A media-only post is stored with this invisible character instead;
@@ -374,7 +372,7 @@ async function pullMergedPage(
 ): Promise<{ rows: EmpirePost[]; more: boolean }> {
   const rows: EmpirePost[] = [];
   while (rows.length < pageSize) {
-    await topUpFeedSourceStream(stream.real, fetchRealPage, feedPosts);
+    await topUpFeedSourceStream(stream.real, fetchRealPage, viewablePosts);
     if (demoEligible) {
       await topUpFeedSourceStream(stream.demo, (cursor) => fetchSignalDemoPosts(FEED_PAGE_SIZE, cursor?.createdAt, cursor?.id));
     }
@@ -473,7 +471,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       const current = postsRef.current;
       if (!current || current.length === 0) return;
       try {
-        const peek = await feedPosts(await fetchEmpireFeed(5, undefined, category, { scope, authorKind }));
+        const peek = await viewablePosts(await fetchEmpireFeed(5, undefined, category, { scope, authorKind }));
         if (cancelled || peek.length === 0 || peek[0].id === current[0]?.id) return;
         const known = new Set(current.map((p) => p.id));
         const fresh = peek.filter((p) => !known.has(p.id));
@@ -504,7 +502,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
    *  for a later `loadMore` to emit a second time. */
   const loadNewPosts = useCallback(async () => {
     try {
-      const rows = await feedPosts(await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }));
+      const rows = await viewablePosts(await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }));
       setPosts((prev) => {
         const existingIds = new Set((prev ?? []).map((p) => p.id));
         const fresh = rows.filter((r) => !existingIds.has(r.id));

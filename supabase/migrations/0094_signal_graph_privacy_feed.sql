@@ -1,14 +1,16 @@
 -- Signal as a real social graph (step 1).
 --
+-- The feed itself is NOT narrowed: a new member sees the normal feed, everyone in it,
+-- verified or not. What the graph changes is who may see what a person chose to keep
+-- for followers / CX Circle / themselves (0092), who sees the follower numbers, and who
+-- gets named when someone reacts.
+--
 -- 1. Follower privacy: only a person sees their own follower / following numbers
 --    and lists. Everyone else gets nothing (the follow button still works).
 -- 2. Who reacted: a Respect or a Save from someone who follows you (or follows you
 --    back) names them; from a stranger you only learn "your post received N new
 --    Respects" — a stranger's Save tells you nothing at all.
--- 3. The personal feed: community posts come from people you follow, from you, or
---    from the few good public posts of strangers ("discovery"); official CX content
---    is always there. Done by one server rule, signal_feed_hidden().
--- 4. People to follow: friends-of-friends first, then well-followed hosts and
+-- 3. People to follow: friends-of-friends first, then well-followed hosts and
 --    verified accounts. API only for now.
 --
 -- Builds on 0052, 0072, 0092, 0093.
@@ -200,31 +202,7 @@ as $$
 $$;
 grant execute on function public.fetch_my_notifications(integer, timestamptz) to authenticated;
 
--- -------------------------------------------------- 3. the personal feed
--- Of these community posts, which should NOT appear in my feed? Official CX content
--- is never hidden here. A community post stays if it is mine, from someone I follow,
--- or is one of the few good PUBLIC posts of strangers (discovery: public and at
--- least 3 Respects). Team members keep seeing everything for moderation.
-create or replace function public.signal_feed_hidden(p_ids uuid[])
-returns uuid[]
-language sql stable security definer set search_path = public
-as $$
-  select coalesce(array_agg(p.id), '{}'::uuid[])
-  from public.empire_posts p
-  where auth.uid() is not null
-    and p.id = any(p_ids)
-    and p.publisher_type = 'self'
-    and p.author_id <> auth.uid()
-    and not public.is_admin(auth.uid())
-    and not exists (select 1 from public.profile_follows f where f.follower_id = auth.uid() and f.followee_id = p.author_id)
-    and not (
-      coalesce((select cv.visibility from public.signal_content_visibility cv where cv.content_type = 'post' and cv.content_id = p.id), 'public') = 'public'
-      and (select count(*) from public.empire_post_likes l where l.post_id = p.id) >= 3
-    );
-$$;
-grant execute on function public.signal_feed_hidden(uuid[]) to authenticated;
-
--- -------------------------------------------------- 4. people to follow
+-- -------------------------------------------------- 3. people to follow
 create or replace function public.fetch_people_suggestions(p_limit integer default 12)
 returns table (
   id uuid, full_name text, avatar_url text, username text,
