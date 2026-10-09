@@ -37,7 +37,7 @@ export function SignalMediaViewer({
   /** The post's id — keeps the shared-element id unique when two posts show the same photo. */
   sharedKey?: string;
   /** Optional title/caption per item (CX Visions) — shown under the media. */
-  captions?: ({ title: string | null; caption: string | null } | null)[];
+  captions?: ({ title: string | null; caption: string | null; badge?: string | null } | null)[];
 }) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -251,10 +251,11 @@ export function SignalMediaViewer({
         )}
       </div>
 
-      {captions?.[index] && (captions[index]!.title || captions[index]!.caption) && (
+      {captions?.[index] && (captions[index]!.title || captions[index]!.caption || captions[index]!.badge) && (
         <div className="mx-auto w-full max-w-xl shrink-0 px-5 pb-2 pt-3 text-center text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
           {captions[index]!.title && <p className="font-display text-[17px] font-semibold leading-snug">{captions[index]!.title}</p>}
           {captions[index]!.caption && <p className="mt-1 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
+          {captions[index]!.badge && <p className="mt-2 text-micro font-semibold uppercase tracking-[0.2em] text-accent-bright">{captions[index]!.badge}</p>}
         </div>
       )}
 

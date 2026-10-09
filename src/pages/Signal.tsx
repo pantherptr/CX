@@ -11,6 +11,8 @@ import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
+import { SignalSpotlightCard } from '../components/signalFeed/SignalSpotlightCard';
+import { useSpotlightFeed, mergeSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
@@ -85,6 +87,7 @@ export default function Signal() {
   // Official has no category filter any more — the feed is always "all".
   const [category] = useState<EmpireCategory | null>(null);
 
+  const spotlights = useSpotlightFeed();
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
@@ -487,17 +490,21 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {posts.map((post) => (
-              <SignalPostCard
-                key={post.id}
-                post={post}
-                canManage={canManage}
-                onChanged={(updated) => patchPost(post.id, updated)}
-                onDeleted={(id) => removePost(id)}
-                onPinToggled={resyncAfterPin}
-                onFeaturedToggled={resyncAfterFeature}
-              />
-            ))}
+            {(space === 'official' ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
+              item.kind === 'spotlight' ? (
+                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} />
+              ) : (
+                <SignalPostCard
+                  key={item.post.id}
+                  post={item.post}
+                  canManage={canManage}
+                  onChanged={(updated) => patchPost(item.post.id, updated)}
+                  onDeleted={(id) => removePost(id)}
+                  onPinToggled={resyncAfterPin}
+                  onFeaturedToggled={resyncAfterFeature}
+                />
+              ),
+            )}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-4">
                 {loadingMore && <SignalPostSkeleton />}

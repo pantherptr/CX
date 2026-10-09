@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { SignalLogo } from '../SignalLogo';
@@ -169,7 +169,10 @@ export function SignalProfileDetail({
     fetchVisionsEnabled(realProfile.id).then((on) => { if (!cancelled) setVisionsEnabled(on); });
     return () => { cancelled = true; };
   }, [realProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [tab, setTab] = useState<ProfileTab>('posts');
+  // A Signal Spotlight card links here with ?vision=<id>: land on that Vision.
+  const [searchParams] = useSearchParams();
+  const deepLinkVision = searchParams.get('vision');
+  const [tab, setTab] = useState<ProfileTab>(deepLinkVision ? 'visions' : 'posts');
   const tabs = (['posts', ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
@@ -397,7 +400,7 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
+      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
     </>
   );
 

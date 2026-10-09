@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
-import { addVision, deleteVision, fetchVisions, type Vision } from '../../lib/data/visions';
+import { addVision, deleteVision, fetchVisions, updateVision, type Vision, type VisionLink } from '../../lib/data/visions';
+import { fetchUserStamps, syncMyTripStamps, type TripStampData } from '../../lib/data/tripMemories';
+import { fetchHostCars } from '../../lib/data/cars';
+import { useAuth } from '../../lib/auth';
+import { Switch } from '../primitives';
 import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import { useLocale } from '../../lib/i18n';
 import { useApp } from '../../lib/store';
@@ -19,7 +23,7 @@ const MAX_VIDEO_SEC = 300;
  *  the same fullscreen media viewer the feed uses, swipeable through the whole
  *  portfolio, with the title and caption underneath. No counts, badges or
  *  reactions anywhere. */
-export function SignalVisionsTab({ userId, isMe }: { userId: string; isMe: boolean }) {
+export function SignalVisionsTab({ userId, isMe, openVisionId }: { userId: string; isMe: boolean; openVisionId?: string | null }) {
   const [items, setItems] = useState<Vision[] | null>(null);
   const [adding, setAdding] = useState(false);
   const refresh = useCallback(async () => {
@@ -36,7 +40,9 @@ export function SignalVisionsTab({ userId, isMe }: { userId: string; isMe: boole
       <VisionsGrid
         items={items}
         isMe={isMe}
+        initialOpenId={openVisionId}
         onAdd={() => setAdding(true)}
+        onChanged={() => void refresh()}
         onDeleted={(id) => setItems((prev) => (prev ?? []).filter((v) => v.id !== id))}
       />
       {adding && <VisionUploadSheet onClose={() => setAdding(false)} onAdded={() => { setAdding(false); void refresh(); }} />}
@@ -46,17 +52,30 @@ export function SignalVisionsTab({ userId, isMe }: { userId: string; isMe: boole
 
 /** The portfolio layout itself — presentation plus the owner's "manage" mode. */
 export function VisionsGrid({
-  items, isMe, onAdd, onDeleted,
+  items, isMe, onAdd, onDeleted, onChanged, initialOpenId,
 }: {
   items: Vision[] | null;
   isMe: boolean;
   onAdd?: () => void;
   onDeleted?: (id: string) => void;
+  onChanged?: () => void;
+  /** Deep link (a Spotlight card) — open this Vision once the list is in. */
+  initialOpenId?: string | null;
 }) {
   const { t } = useLocale();
   const { toast } = useApp();
   const [openAt, setOpenAt] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
+  const [editing, setEditing] = useState<Vision | null>(null);
+  const consumedDeepLink = useRef(false);
+  useEffect(() => {
+    if (!items || !initialOpenId || consumedDeepLink.current) return;
+    const i = items.findIndex((v) => v.id === initialOpenId);
+    if (i >= 0) {
+      consumedDeepLink.current = true;
+      setOpenAt(i);
+    }
+  }, [items, initialOpenId]);
 
   const remove = async (v: Vision) => {
     if (!window.confirm(t('Remove this from your Visions?'))) return;
@@ -136,15 +155,30 @@ export function VisionsGrid({
                     <span className="pointer-events-none absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"><Icon name="play" size={10} fill /></span>
                   )}
                 </button>
+                {v.spotlighted && !managing && (
+                  <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+                    <Icon name="sparkles" size={10} /> Spotlight
+                  </span>
+                )}
                 {managing && (
-                  <button
-                    type="button"
-                    onClick={() => void remove(v)}
-                    aria-label={t('Remove')}
-                    className="absolute left-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur-sm transition-colors hover:bg-danger"
-                  >
-                    <Icon name="trash" size={16} />
-                  </button>
+                  <div className="absolute left-2 top-2 flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(v)}
+                      aria-label={t('Edit')}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur-sm transition-colors hover:bg-black/85"
+                    >
+                      <Icon name="edit" size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void remove(v)}
+                      aria-label={t('Remove')}
+                      className="grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white backdrop-blur-sm transition-colors hover:bg-danger"
+                    >
+                      <Icon name="trash" size={16} />
+                    </button>
+                  </div>
                 )}
               </div>
             );
@@ -152,10 +186,12 @@ export function VisionsGrid({
         </div>
       )}
 
+      {editing && <VisionEditSheet vision={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); onChanged?.(); }} />}
+
       {items && openAt !== null && items[openAt] && (
         <SignalMediaViewer
           images={items.map((v) => v.mediaUrl)}
-          captions={items.map((v) => ({ title: v.title, caption: v.caption }))}
+          captions={items.map((v) => ({ title: v.title, caption: v.caption, badge: v.spotlighted ? t('Selected for Signal Spotlight') : null }))}
           sharedKey="visions"
           startIndex={openAt}
           onClose={() => setOpenAt(null)}
@@ -174,6 +210,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
   const [staged, setStaged] = useState<Staged[]>([]);
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
+  const [link, setLink] = useState<VisionLink>({ tripStampId: null, carId: null, spotlight: false });
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -213,7 +250,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
     const single = staged.length === 1;
     for (let i = 0; i < staged.length; i++) {
       const s = staged[i];
-      const { error: err } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '');
+      const { error: err } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '', single ? link : undefined);
       if (err) {
         setError(err);
         setProgress(null);
@@ -271,6 +308,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
           <div className="mt-4 space-y-2">
             <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder={t('Title (optional)')} className="input !py-3 font-display font-semibold" disabled={busy} />
             <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 400))} rows={3} placeholder={t('Caption — place, camera, story… (optional)')} className="input resize-none !py-3" disabled={busy} />
+            <VisionLinkFields link={link} onChange={setLink} disabled={busy} />
           </div>
         )}
 
@@ -283,6 +321,111 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
           className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50"
         >
           {progress ? `${t('Uploading')} ${progress.done}/${progress.total}…` : t('Add to Visions')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** "Link to" (a verified trip, or one of your own listed cars) and the optional
+ *  Spotlight candidacy. The candidacy only exists once a link is chosen — that
+ *  link is what makes a Vision eligible. */
+function VisionLinkFields({ link, onChange, disabled }: { link: VisionLink; onChange: (l: VisionLink) => void; disabled?: boolean }) {
+  const { t } = useLocale();
+  const { session, profile } = useAuth();
+  const uid = session?.user.id;
+  const [stamps, setStamps] = useState<TripStampData[]>([]);
+  const [cars, setCars] = useState<{ id: string; label: string }[]>([]);
+
+  useEffect(() => {
+    if (!uid) return;
+    let cancelled = false;
+    (async () => {
+      await syncMyTripStamps().catch(() => undefined);
+      const [st, hc] = await Promise.all([
+        fetchUserStamps(uid).catch(() => [] as TripStampData[]),
+        profile?.is_host ? fetchHostCars(uid).catch(() => []) : Promise.resolve([]),
+      ]);
+      if (cancelled) return;
+      setStamps(st);
+      setCars(hc.map((c) => ({ id: c.id, label: `${c.make} ${c.model} ${c.year}` })));
+    })();
+    return () => { cancelled = true; };
+  }, [uid, profile?.is_host]);
+
+  if (stamps.length === 0 && cars.length === 0) return null;
+  const value = link.tripStampId ? `stamp:${link.tripStampId}` : link.carId ? `car:${link.carId}` : '';
+  const linked = Boolean(value);
+  const pick = (v: string) => {
+    if (!v) onChange({ tripStampId: null, carId: null, spotlight: false });
+    else if (v.startsWith('stamp:')) onChange({ ...link, tripStampId: v.slice(6), carId: null });
+    else onChange({ ...link, tripStampId: null, carId: v.slice(4) });
+  };
+  return (
+    <div className="rounded-2xl border border-line bg-panel/50 p-3">
+      <label className="block">
+        <span className="field-label">{t('Link to')}</span>
+        <select value={value} onChange={(e) => pick(e.target.value)} disabled={disabled} className="input mt-1.5 !py-3">
+          <option value="">{t('Nothing')}</option>
+          {stamps.length > 0 && (
+            <optgroup label={t('Verified trips')}>
+              {stamps.map((s) => <option key={s.id} value={`stamp:${s.id}`}>{`${s.car.make} ${s.car.model} · ${s.city}`}</option>)}
+            </optgroup>
+          )}
+          {cars.length > 0 && (
+            <optgroup label={t('My cars')}>
+              {cars.map((c) => <option key={c.id} value={`car:${c.id}`}>{c.label}</option>)}
+            </optgroup>
+          )}
+        </select>
+      </label>
+      {linked && (
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
+          <div className="min-w-0">
+            <p className="text-detail font-semibold text-ink">{t('Nominate for Signal Spotlight')}</p>
+            <p className="mt-0.5 text-caption text-muted">{t('Allow the CX team to select this content.')}</p>
+          </div>
+          <Switch checked={link.spotlight} onChange={(v) => onChange({ ...link, spotlight: v })} disabled={disabled} label={t('Nominate for Signal Spotlight')} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Edit a Vision's title, caption, link and Spotlight candidacy. */
+function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose: () => void; onSaved: () => void }) {
+  const { t } = useLocale();
+  const { toast } = useApp();
+  const [title, setTitle] = useState(vision.title ?? '');
+  const [caption, setCaption] = useState(vision.caption ?? '');
+  const [link, setLink] = useState<VisionLink>({ tripStampId: vision.tripStampId, carId: vision.carId, spotlight: vision.spotlightEligible });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await updateVision(vision.id, title, caption, link);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Could not save', desc: error, icon: 'info' });
+      return;
+    }
+    onSaved();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[320] flex items-end justify-center bg-black/55 sm:items-center" role="dialog" aria-modal="true" onClick={saving ? undefined : onClose}>
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-bg p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-pop sm:max-w-lg sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="font-display text-[20px] font-semibold text-ink">{t('Edit Vision')}</h3>
+          <button type="button" onClick={onClose} disabled={saving} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full text-muted hover:bg-panel hover:text-ink"><Icon name="x" size={18} /></button>
+        </div>
+        <div className="mt-4 space-y-2">
+          <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder={t('Title (optional)')} className="input !py-3 font-display font-semibold" disabled={saving} />
+          <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 400))} rows={3} placeholder={t('Caption — place, camera, story… (optional)')} className="input resize-none !py-3" disabled={saving} />
+          <VisionLinkFields link={link} onChange={setLink} disabled={saving} />
+        </div>
+        <button type="button" onClick={save} disabled={saving} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
+          {saving ? t('Saving…') : t('Save')}
         </button>
       </div>
     </div>
