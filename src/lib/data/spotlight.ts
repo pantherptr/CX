@@ -154,21 +154,21 @@ function slotHash(id: string, salt: number): number {
 }
 
 /** Scatters Spotlights through a feed instead of pinning them to the top. Each one gets its own
- *  random spot — somewhere between the 2nd and the 8th post, and always a few posts after the
- *  previous Spotlight — so the feed reads like any other: posts, now and then one of CX's picks.
+ *  random spot — the first after 4 to 9 posts, then a good stretch of ordinary posts before the
+ *  next — so the feed reads like any other: posts, and every so often one of CX's picks.
  *  The posts' own order is never touched. A spot that is not reached yet (the feed has not
  *  loaded that far) simply waits; once the feed has no more pages the rest go at the end. */
 export function scatterSpotlights<P>(
   posts: P[], spotlights: SpotlightCardData[], hasMore: boolean,
 ): ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] {
-  // Newest pick first, but at a random distance from the start.
+  // Newest pick first. Rare and scattered: the first one after 4..9 posts, then 7..13 posts of
+  // plain feed before the next, each at its own random distance.
   const picks = [...spotlights].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
   const slots: { at: number; spotlight: SpotlightCardData }[] = [];
-  let at = 1 + (slotHash('first', 1) % 3); // the first one comes after 1..3 posts + its own offset
+  let at = 4 + (slotHash('first', 1) % 6);
   for (const sp of picks) {
-    at += 1 + (slotHash(sp.entryId, 7) % 4); // 2nd..7th post
     slots.push({ at, spotlight: sp });
-    at += 3; // always a few posts before the next one
+    at += 7 + (slotHash(sp.entryId, 7) % 7);
   }
   const out: ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] = [];
   let next = 0;
