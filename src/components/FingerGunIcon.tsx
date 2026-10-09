@@ -50,16 +50,21 @@ export function FingerGunIcon({
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="overflow-visible"
         initial="rest"
         animate={controls}
       >
-        <motion.g variants={handVariants} style={{ originX: 0.15, originY: 0.95 }}>
+        <motion.g variants={handVariants} style={{ originX: 0.15, originY: 0.9 }}>
+          {filled && <rect x="9.5" y="9.5" width="6" height="9" fill="currentColor" stroke="none" />}
           <path
-            d="M6.5 11.4V5.4a1.65 1.65 0 0 1 3.3 0v3.2h10.1a1.8 1.8 0 0 1 0 3.6h-5c1.5 0 1.5 2.7 0 2.7 1.5 0 1.5 2.7 0 2.7 1.3 0 1.3 2.4 0 2.4H9.2a3.7 3.7 0 0 1-3.7-3.7v-2.9c0-1 .4-1.6 1-2Z"
+            d="M12 8h8.5a1.5 1.5 0 0 1 0 3H13m.5 0h2a1.5 1.5 0 0 1 0 3H13m1.5 0a1.5 1.5 0 0 1 0 3H13"
+            fill={filled ? 'currentColor' : 'none'}
+          />
+          <path
+            d="M13.5 17a1.5 1.5 0 1 1 0 3H9a6 6 0 0 1-6-6v-2v.208a6 6 0 0 1 2.7-5.012L6 7q.718-.468 5.728-3.286a1.5 1.5 0 0 1 2.022.536c.44.734.325 1.674-.28 2.28L12 8"
             fill={filled ? 'currentColor' : 'none'}
           />
         </motion.g>
@@ -69,9 +74,9 @@ export function FingerGunIcon({
           stroke="currentColor"
           strokeWidth="1.7"
         >
-          <path d="M23 10.4h1.3" />
-          <path d="M22.6 8.4l1.1-1.3" />
-          <path d="M22.6 12.4l1.1 1.3" />
+          <path d="M23 9.5h1.3" />
+          <path d="M22.7 7.5l1.1-1.3" />
+          <path d="M22.7 11.5l1.1 1.3" />
         </motion.g>
       </motion.svg>
     </span>
