@@ -55,6 +55,8 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
   collab_invite: { icon: 'users', verb: 'invited you to collaborate on a publication.', badge: 'bg-ink text-white' },
   collab_left: { icon: 'users', verb: 'left the collaboration', badge: 'bg-ink text-white' },
+  ad_approved: { icon: 'trending', verb: '', badge: 'bg-accent-bright text-white' },
+  ad_rejected: { icon: 'info', verb: '', badge: 'bg-ink text-white' },
 };
 
 /** What a notification says when the person behind it stays private, or
@@ -73,6 +75,8 @@ const ANON_TEXT: Record<NotificationType, string> = {
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
   collab_invite: 'You were invited to collaborate on a publication',
   collab_left: 'A collaborator left the collaboration',
+  ad_approved: 'Your sponsorship was approved — it is live',
+  ad_rejected: 'Your sponsorship was not approved — you were refunded',
 };
 /** The count>1 version of the same four — a fresh English string per
  *  event/count so it reads naturally in every language, with `{count}`
@@ -90,6 +94,8 @@ const ANON_TEXT_MANY: Record<NotificationType, string> = {
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
   collab_invite: 'You were invited to collaborate on a publication',
   collab_left: 'A collaborator left the collaboration',
+  ad_approved: 'Your sponsorship was approved — it is live',
+  ad_rejected: 'Your sponsorship was not approved — you were refunded',
 };
 
 type TabId = 'all' | 'unread' | 'follows' | 'activity';

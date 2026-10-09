@@ -169,6 +169,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
   const meta = paymentIntent.metadata as Record<string, string>;
 
+  // A sponsored Signal post (api/create-ad-payment.ts): paid, now waiting for an Owner/Admin.
+  if (meta.kind === 'signal_ad') {
+    const { error } = await supabase
+      .from('signal_ads')
+      .update({ status: 'pending_review', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent.id })
+      .eq('id', meta.adId)
+      .eq('status', 'awaiting_payment');
+    if (error) {
+      console.error('[stripe-webhook] could not mark the ad as paid', meta.adId, error);
+      return res.status(500).json({ error: 'Could not record this payment.' });
+    }
+    return res.status(200).json({ received: true });
+  }
+
   if (!meta.carId || !meta.renterId || !meta.startDate || !meta.endDate) {
     console.error('[stripe-webhook] payment_intent.succeeded with incomplete metadata', paymentIntent.id);
     return res.status(400).json({ error: 'Incomplete booking metadata on this payment.' });

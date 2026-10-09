@@ -6,8 +6,9 @@ import { useAuth } from '../lib/auth';
 import { VerificationsPanel, UsersPanel, BookingsPanel, CarsPanel } from '../components/admin/panels';
 import { SignalDemoPanel } from '../components/admin/SignalDemoPanel';
 import { SpotlightPanel } from '../components/admin/SpotlightPanel';
+import { AdsPanel } from '../components/admin/AdsPanel';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'signal-demo';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'signal-demo';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
@@ -15,6 +16,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'bookings', label: 'Bookings', icon: 'trips' },
   { id: 'cars', label: 'Cars', icon: 'cars' },
   { id: 'spotlight', label: 'Spotlight', icon: 'star' },
+  { id: 'ads', label: 'Sponsored', icon: 'euro' },
   { id: 'signal-demo', label: 'Signal Demo', icon: 'sparkles' },
 ];
 
@@ -63,6 +65,7 @@ export default function AdminDashboard() {
         {tab === 'bookings' && <BookingsPanel />}
         {tab === 'cars' && <CarsPanel />}
         {tab === 'spotlight' && <SpotlightPanel />}
+        {tab === 'ads' && <AdsPanel />}
         {tab === 'signal-demo' && <SignalDemoPanel />}
       </div>
     </div>

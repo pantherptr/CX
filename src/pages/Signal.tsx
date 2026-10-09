@@ -13,6 +13,9 @@ import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer'
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalPeopleShelf } from '../components/signalFeed/SignalPeopleShelf';
 import { SignalSpotlightPageLink, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
+import { SignalAdsSheet } from '../components/signalFeed/SignalAdsSheet';
+import { SponsoredPost } from '../components/signalFeed/SponsoredPost';
+import { useActiveAds, scatterAds } from '../lib/data/ads';
 import { useSpotlightFeed, useSpotlightPosts, scatterSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
@@ -91,6 +94,7 @@ export default function Signal() {
   const [category] = useState<EmpireCategory | null>(null);
 
   const spotlights = useSpotlightFeed();
+  const sponsoredAds = useActiveAds(space === 'community');
   const spotlightPosts = useSpotlightPosts(spotlights);
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   // Community is a ranked feed (a fresh mix of new and older posts on every refresh) or just the people you follow.
@@ -181,6 +185,7 @@ export default function Signal() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [myPostsOpen, setMyPostsOpen] = useState(false);
   const [savedOpen, setSavedOpen] = useState(false);
+  const [adsOpen, setAdsOpen] = useState(false);
 
   useEffect(() => {
     if (session) markEmpireFeedSeen();
@@ -266,6 +271,9 @@ export default function Signal() {
                 icon: 'chart' as const,
                 onSelect: () => setTeamTapMode(tapMode === 'double' ? 'single' : 'double'),
               }]
+            : []),
+          ...(canManage || canPublishSelf
+            ? [{ label: t('Sponsorships'), icon: 'trending' as const, onSelect: () => setAdsOpen(true) }]
             : []),
           ...(canManage || canPublishSelf
             ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
@@ -537,8 +545,10 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {scatterSpotlights(posts, spotlights, hasMore).map((item) =>
-              item.kind === 'spotlight' ? (
+            {scatterAds(scatterSpotlights(posts, spotlights, hasMore), space === 'community' ? sponsoredAds.ads : [], hasMore).map((item) =>
+              'kind' in item && item.kind === 'ad' ? (
+                <SponsoredPost key={`ad-${item.ad.adId}`} ad={item.ad} canManage={canManage} onChanged={(p) => sponsoredAds.patch(item.ad.adId, p)} onDeleted={() => sponsoredAds.remove(item.ad.adId)} />
+              ) : item.kind === 'spotlight' ? (
                 spotlightPosts.posts[item.spotlight.entryId] ? (
                   // The team's real post for this Spotlight — a post like any other (Respect, comments, saves…), just a special one.
                   <SignalPostCard
@@ -595,6 +605,8 @@ export default function Signal() {
           onClose={() => setMyPostsOpen(false)}
         />
       )}
+
+      {adsOpen && <SignalAdsSheet onClose={() => setAdsOpen(false)} />}
 
       {savedOpen && (
         <SignalPostListOverlay

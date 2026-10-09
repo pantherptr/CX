@@ -16,7 +16,7 @@ import { supabase } from '../supabase';
 export type NotificationType =
   | 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save'
   | 'circle' | 'follow_accepted' | 'follow_request' | 'vision_selected' | 'vision_featured'
-  | 'collab_invite' | 'collab_left';
+  | 'collab_invite' | 'collab_left' | 'ad_approved' | 'ad_rejected';
 
 export interface SignalNotification {
   id: string;

@@ -37,6 +37,7 @@ import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
 import { useManualTranslate } from '../../lib/i18n/ugc';
 import { useLocale } from '../../lib/i18n';
+import { SponsorPostSheet } from './SponsorPostSheet';
 import { collabHandle, leaveCollab, removeCollab } from '../../lib/data/collab';
 
 /** Where tapping a post's identity block should go — the two official-
@@ -448,6 +449,7 @@ export function SignalPostCard({
   onFeaturedToggled,
   spotlight,
   spotlightAll,
+  sponsored = false,
 }: {
   post: EmpirePost;
   canManage: boolean;
@@ -462,6 +464,8 @@ export function SignalPostCard({
    *  (the post itself is only a marker); Respect, comments, saves and sharing are the post's own. */
   spotlight?: SpotlightCardData;
   spotlightAll?: SpotlightCardData[];
+  /** Shown as a paid placement in the feed (marked "Sponsored"). */
+  sponsored?: boolean;
 }) {
   // The team post behind a Spotlight carries only a marker — never show it as text.
   const isSpotlightPost = post.body === SPOTLIGHT_POST_MARKER;
@@ -490,6 +494,7 @@ export function SignalPostCard({
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [sponsorOpen, setSponsorOpen] = useState(false);
   const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const { t, lang } = useLocale();
@@ -983,6 +988,9 @@ export function SignalPostCard({
     // sheet/copy-link lives on the always-visible Share button; this is the
     // "send it to a real CX Rent conversation" path.
     [{ icon: 'send', label: 'Share to Messages', onClick: () => setShareSheetOpen(true) }],
+    ...(isOwnPost && post.publisherType === 'self' && !isSpotlightPost && !post.isDemo && !sponsored
+      ? [[{ icon: 'trending', label: t('Sponsor this post'), onClick: () => setSponsorOpen(true) } as PostMenuItem]]
+      : []),
     ...(isCollaborator
       ? [[{ icon: 'logout', label: t('Leave collaboration'), onClick: () => void handleLeaveCollab() } as PostMenuItem]]
       : isOwnPost && collab
@@ -1057,6 +1065,9 @@ export function SignalPostCard({
               {post.isDemo && ` · ${t('Sample')}`}
             </span>
           </div>
+          {sponsored && (
+            <div className="mt-0.5 text-[12.5px] font-semibold leading-tight text-faint">{t('Sponsored')}</div>
+          )}
           {collab?.status === 'pending' && isOwnPost && (
             <div className="mt-0.5 flex items-center gap-1 text-[12.5px] leading-tight text-faint">
               <Icon name="clock" size={12} /> {t('Collaboration pending')}
@@ -1394,6 +1405,7 @@ export function SignalPostCard({
       )}
 
       {shareSheetOpen && <SignalSharePostSheet post={post} onClose={() => setShareSheetOpen(false)} />}
+      {sponsorOpen && <SponsorPostSheet postId={post.id} onClose={() => setSponsorOpen(false)} />}
 
       {commentsSheetOpen && (
         <SignalCommentsSheet
