@@ -59,8 +59,8 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
           <>
             <defs>
               <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#12e254" />
-                <stop offset="1" stopColor="#00a63a" />
+                <stop offset="0" stopColor="#22f066" />
+                <stop offset="1" stopColor="#00c43f" />
               </linearGradient>
               <linearGradient id={`${uid}c`} x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stopColor="#f2f5f7" />
