@@ -12,7 +12,7 @@ import {
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
-import { FingerGunIcon } from '../FingerGunIcon';
+import { HandshakeIcon } from '../HandshakeIcon';
 import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
@@ -1202,7 +1202,7 @@ export function SignalPostCard({
               className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
             >
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <FingerGunIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
+                <HandshakeIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
               </span>
             </Tap>
           ) : (
@@ -1213,7 +1213,7 @@ export function SignalPostCard({
               className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
             >
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <FingerGunIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
+                <HandshakeIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
               </span>
             </Tap>
           )}
