@@ -12,7 +12,7 @@ import {
 } from '../../lib/data/empireFeed';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
-import { FingerGunIcon } from '../FingerGunIcon';
+import { RespectIcon } from '../RespectIcon';
 import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
@@ -1200,22 +1200,22 @@ export function SignalPostCard({
               onPointerLeave={respectPressEnd}
               onPointerCancel={respectPressEnd}
               scale={0.94}
-              aria-label={myRespects > 0 ? `Respect (${myRespects}) — hold to remove` : 'Respect'}
+              aria-label={myRespects > 0 ? 'Rimuovi Respect' : 'Esprimi Respect'}
               className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
             >
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <FingerGunIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
+                <RespectIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
               </span>
             </Tap>
           ) : (
             <Tap
               onClick={handleRespect}
               scale={0.94}
-              aria-label={post.likedByMe ? 'Respected' : 'Respect'}
+              aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
               className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
             >
               <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <FingerGunIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
+                <RespectIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
               </span>
             </Tap>
           )}
