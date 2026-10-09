@@ -3,7 +3,9 @@ import { DashboardShell } from '../components/DashboardShell';
 import { SignalS } from '../components/SignalLogo';
 import { NotificationsList } from '../components/NotificationsList';
 import { useAuth } from '../lib/auth';
-import { useMyNotifications, type SignalNotification } from '../lib/data/notifications';
+import { useMyNotifications, notificationPath, type SignalNotification } from '../lib/data/notifications';
+import { useApp } from '../lib/store';
+import { useLocale } from '../lib/i18n';
 
 /** A real notification feed, generated entirely by actual interactions —
  *  see 0054_notifications.sql. Replaces the old hardcoded empty state
@@ -15,14 +17,20 @@ import { useMyNotifications, type SignalNotification } from '../lib/data/notific
 export default function Notifications() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useApp();
+  const { t } = useLocale();
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
 
   const unreadCount = notifications?.filter((n) => !n.readAt).length ?? 0;
 
   const openNotification = (n: SignalNotification) => {
     markRead(n.id);
-    if (n.postId) navigate(`/signal/post/${n.postId}`);
-    else if (n.actorId) navigate(`/signal/profile/${n.actorId}`);
+    if (!n.available) {
+      toast({ title: t('This content is no longer available'), icon: 'info' });
+      return;
+    }
+    const path = notificationPath(n, '/signal', session?.user.id);
+    if (path) navigate(path);
   };
 
   return (

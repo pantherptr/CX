@@ -5,7 +5,9 @@ import { NotificationsList } from '../NotificationsList';
 import { useSheetDrag } from '../motion';
 import { useHideForNavigation } from '../motionKit';
 import { useAuth } from '../../lib/auth';
-import { useMyNotifications, type SignalNotification } from '../../lib/data/notifications';
+import { useMyNotifications, notificationPath, type SignalNotification } from '../../lib/data/notifications';
+import { useApp } from '../../lib/store';
+import { useLocale } from '../../lib/i18n';
 
 /** Notifications, reached from inside Signal, as the same compact
  *  bottom-sheet every other Signal action (Share, Analytics) already
@@ -18,6 +20,8 @@ import { useMyNotifications, type SignalNotification } from '../../lib/data/noti
  *  Signal entirely and having to navigate all the way back in. */
 export function SignalNotificationsSheet({ onClose, base }: { onClose: () => void; base: string }) {
   const { session } = useAuth();
+  const { toast } = useApp();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { handlers: dragHandlers, style: dragStyle, closing, requestClose } = useSheetDrag(onClose);
@@ -34,9 +38,14 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
 
   const openNotification = (n: SignalNotification) => {
     markRead(n.id);
+    if (!n.available) {
+      toast({ title: t('This content is no longer available'), icon: 'info' });
+      return;
+    }
+    const path = notificationPath(n, base, session?.user.id);
+    if (!path) return;
     hideForNavigation();
-    if (n.postId) navigate(`${base}/post/${n.postId}`, { viewTransition: true });
-    else if (n.actorId) navigate(`${base}/profile/${n.actorId}`, { viewTransition: true });
+    navigate(path, { viewTransition: true });
   };
 
   return (

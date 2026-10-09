@@ -45,6 +45,10 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   post_comment: { icon: 'message', verb: 'commented on your post', badge: 'bg-sky-500 text-white' },
   post_share: { icon: 'share', verb: 'shared your post', badge: 'bg-amber-500 text-white' },
   post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-violet-500 text-white' },
+  circle: { icon: 'sparkles', verb: '', badge: 'bg-ink text-white' },
+  follow_accepted: { icon: 'check', verb: 'accepted your request', badge: 'bg-ink text-white' },
+  vision_selected: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
+  vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
 };
 
 /** What a notification says when the person behind it stays private, or
@@ -52,20 +56,28 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
  *  unread) — never names a count of people, just the event. */
 const ANON_TEXT: Record<NotificationType, string> = {
   follow: 'Someone started following you',
-  post_respect: 'Your post received a Respect',
+  post_respect: 'Your post received 1 new Respect',
   post_comment: 'Your post received a comment',
   post_share: 'Your post was shared',
   post_save: 'Your post was saved',
+  circle: 'You are now in CX Circle',
+  follow_accepted: 'Your request was accepted',
+  vision_selected: 'Your Vision was selected for Signal Spotlight',
+  vision_featured: 'Your Vision is now featured on Signal Spotlight',
 };
 /** The count>1 version of the same four — a fresh English string per
  *  event/count so it reads naturally in every language, with `{count}`
  *  filled in via `t()`. */
 const ANON_TEXT_MANY: Record<NotificationType, string> = {
   follow: 'Someone started following you',
-  post_respect: 'Your post received {count} Respects',
+  post_respect: 'Your post received {count} new Respects',
   post_comment: 'Your post received {count} comments',
   post_share: 'Your post was shared {count} times',
   post_save: 'Your post was saved {count} times',
+  circle: 'You are now in CX Circle',
+  follow_accepted: 'Your request was accepted',
+  vision_selected: 'Your Vision was selected for Signal Spotlight',
+  vision_featured: 'Your Vision is now featured on Signal Spotlight',
 };
 
 type TabId = 'all' | 'unread' | 'follows' | 'activity';
@@ -76,8 +88,9 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'activity', label: 'Activity' },
 ];
 
+const isFollowKind = (n: SignalNotification) => n.type === 'follow' || n.type === 'circle' || n.type === 'follow_accepted';
 const matches = (n: SignalNotification, tab: TabId) =>
-  tab === 'all' ? true : tab === 'unread' ? !n.readAt : tab === 'follows' ? n.type === 'follow' : n.type !== 'follow';
+  tab === 'all' ? true : tab === 'unread' ? !n.readAt : tab === 'follows' ? isFollowKind(n) : !isFollowKind(n);
 
 /** The notifications panel: a "mark all as read" action, tabs with live
  *  counts, and one row per event — the actor's photo with a small badge
@@ -128,7 +141,7 @@ export function NotificationsList({
   }
 
   const unread = notifications.filter((n) => !n.readAt);
-  const count = (id: TabId) => (id === 'unread' ? unread.length : id === 'follows' ? unread.filter((n) => n.type === 'follow').length : id === 'activity' ? unread.filter((n) => n.type !== 'follow').length : 0);
+  const count = (id: TabId) => (id === 'unread' ? unread.length : id === 'follows' ? unread.filter(isFollowKind).length : id === 'activity' ? unread.filter((n) => !isFollowKind(n)).length : 0);
   const shown = notifications.filter((n) => matches(n, tab));
 
   return (
@@ -234,9 +247,13 @@ export function NotificationsList({
                       </button>
 
                       <button onClick={() => onOpen(n)} className="min-w-0 flex-1 text-left">
-                        {n.actorId ? (
+                        {n.actorId && n.type === 'circle' ? (
+                          <p className="text-[15px] font-semibold leading-snug text-ink">
+                            {t('You and {name} are now in CX Circle', { name: n.actorUsername ? `@${n.actorUsername}` : n.actorName })}
+                          </p>
+                        ) : n.actorId ? (
                           <p className="text-[15px] leading-snug text-ink">
-                            <span className="font-semibold">{n.actorName}</span>
+                            <span className="font-semibold">{n.actorUsername ? `@${n.actorUsername}` : n.actorName}</span>
                             {role && (
                               <span className="mx-1 inline-flex translate-y-[2px] align-baseline">
                                 <VerifiedBadge role={role} size={13} />
@@ -251,7 +268,7 @@ export function NotificationsList({
                         ) : (
                           <p className="text-[15px] font-semibold leading-snug text-ink">{anonText(n)}</p>
                         )}
-                        {n.actorUsername && <p className="mt-0.5 text-caption text-faint">@{n.actorUsername}</p>}
+                        {!n.available && <p className="mt-1 text-caption text-faint">{t('This content is no longer available')}</p>}
                         {n.postPreview && (
                           <p className="mt-2 line-clamp-2 rounded-xl bg-panel px-3 py-2 text-detail text-ink-soft">“{n.postPreview}”</p>
                         )}
@@ -291,7 +308,7 @@ export function NotificationsList({
                                 onClick={() => { setMenuFor(null); onOpen(n); }}
                                 className="flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 text-left text-detail text-ink transition-colors hover:bg-panel"
                               >
-                                <Icon name="arrowUpRight" size={15} /> {n.postId ? 'Open post' : 'Open profile'}
+                                <Icon name="arrowUpRight" size={15} /> {n.visionId ? 'Open Vision' : n.postId ? 'Open post' : 'Open profile'}
                               </button>
                             </div>
                           </>

@@ -13,7 +13,9 @@ import { supabase } from '../supabase';
  * directly, matching this app's "every write through an RPC" convention.
  */
 
-export type NotificationType = 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save';
+export type NotificationType =
+  | 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save'
+  | 'circle' | 'follow_accepted' | 'vision_selected' | 'vision_featured';
 
 export interface SignalNotification {
   id: string;
@@ -34,6 +36,10 @@ export interface SignalNotification {
   actorIsHost: boolean;
   actorIsVerifiedClient: boolean;
   postId: string | null;
+  /** The Vision a Spotlight notification points at. */
+  visionId: string | null;
+  /** False when what it points at was deleted or is no longer visible to you — open the safe state, not the content. */
+  available: boolean;
   /** A short preview of the post this notification refers to, if any —
    *  `null` for a follow (no post involved) or if the post was since
    *  deleted (the FK is `on delete cascade`, so in practice the whole
@@ -57,6 +63,8 @@ interface NotificationRow {
   actor_is_verified_client?: boolean;
   post_id: string | null;
   post_body: string | null;
+  vision_id?: string | null;
+  available?: boolean;
 }
 
 function mapNotification(row: NotificationRow): SignalNotification {
@@ -77,8 +85,38 @@ function mapNotification(row: NotificationRow): SignalNotification {
     actorIsHost: row.actor_is_host ?? false,
     actorIsVerifiedClient: row.actor_is_verified_client ?? false,
     postId: row.post_id,
+    visionId: row.vision_id ?? null,
+    available: row.available ?? true,
     postPreview: row.post_body ? row.post_body.slice(0, 120) : null,
   };
+}
+
+/** Where a notification leads, or null when there is nothing to open. */
+export function notificationPath(n: SignalNotification, base: string, myId: string | undefined): string | null {
+  if (n.type === 'vision_selected' || n.type === 'vision_featured') {
+    return myId && n.visionId ? `${base}/profile/${myId}?vision=${n.visionId}` : null;
+  }
+  if (n.postId) return `${base}/post/${n.postId}`;
+  if (n.actorId) return `${base}/profile/${n.actorId}`;
+  return null;
+}
+
+/** The five groups of Activity the person can switch on or off (kept on the server, so a
+ *  switched-off kind is never created). */
+export interface NotificationPrefs { followers: boolean; requests: boolean; circle: boolean; respects: boolean; visions: boolean }
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { followers: true, requests: true, circle: true, respects: true, visions: true };
+
+export async function fetchNotificationPrefs(): Promise<NotificationPrefs> {
+  const { data, error } = await supabase.rpc('get_my_notification_prefs');
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return DEFAULT_NOTIFICATION_PREFS;
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...(row as Partial<NotificationPrefs>) };
+}
+
+export async function saveNotificationPrefs(p: NotificationPrefs): Promise<void> {
+  await supabase.rpc('set_my_notification_prefs', {
+    p_followers: p.followers, p_requests: p.requests, p_circle: p.circle, p_respects: p.respects, p_visions: p.visions,
+  });
 }
 
 const PAGE_SIZE = 30;

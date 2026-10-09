@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { DEFAULT_NOTIFICATION_PREFS, fetchNotificationPrefs, saveNotificationPrefs, type NotificationPrefs } from '../lib/data/notifications';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
@@ -28,6 +29,8 @@ const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
 ];
 const SECTION_IDS = new Set<string>(SECTIONS.map((s) => s.id));
 const NOTIF_KEY = 'cx.notification-prefs';
+// The five Signal Activity groups live on the server (a switched-off kind is never created).
+const SIGNAL_PREF_KEYS = ['followers', 'requests', 'circle', 'respects', 'visions'] as const;
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
@@ -69,6 +72,18 @@ export default function Settings() {
     try { localStorage.setItem(NOTIF_KEY, JSON.stringify(next)); } catch { /* ignore */ }
     return next;
   });
+  // Signal Activity preferences: read from the server, saved to the server on each change.
+  const [signalPrefs, setSignalPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
+  useEffect(() => {
+    let cancelled = false;
+    fetchNotificationPrefs().then((p) => { if (!cancelled) setSignalPrefs(p); });
+    return () => { cancelled = true; };
+  }, []);
+  const flipSignal = (k: (typeof SIGNAL_PREF_KEYS)[number]) => {
+    const next = { ...signalPrefs, [k]: !signalPrefs[k] };
+    setSignalPrefs(next);
+    void saveNotificationPrefs(next);
+  };
 
   const [pwd, setPwd] = useState({ next: '', confirm: '' });
   const [pwdSaving, setPwdSaving] = useState(false);
@@ -337,6 +352,25 @@ export default function Settings() {
                     ))}
                   </Group>
                   <p className="mt-3 px-1 text-caption text-muted">{t('These choices are saved on this device.')}</p>
+                  <p className="mt-6 px-1 text-caption font-semibold uppercase tracking-wide text-muted">{t('Signal Activity')}</p>
+                  <Group>
+                    {([
+                      { k: 'followers', t: 'New followers', d: 'When someone starts following you.' },
+                      { k: 'requests', t: 'Accepted requests', d: 'When a follow request of yours is accepted.' },
+                      { k: 'circle', t: 'CX Circle', d: 'When you and someone follow each other.' },
+                      { k: 'respects', t: 'Grouped Respects', d: 'One note for the new Respects on your post — never who.' },
+                      { k: 'visions', t: 'Visions & Spotlight', d: 'When CX selects or features one of your Visions.' },
+                    ] as const).map((r) => (
+                      <label key={r.k} className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3.5">
+                        <div className="min-w-0">
+                          <p className="text-body font-medium text-ink">{t(r.t)}</p>
+                          <p className="text-detail text-muted">{t(r.d)}</p>
+                        </div>
+                        <Switch checked={signalPrefs[r.k]} onChange={() => flipSignal(r.k)} label={r.t} />
+                      </label>
+                    ))}
+                  </Group>
+                  <p className="mt-3 px-1 text-caption text-muted">{t('These choices are saved to your account.')}</p>
                 </>
               )}
 
