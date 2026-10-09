@@ -127,9 +127,12 @@ function useMeasuredSize(ref: React.RefObject<HTMLElement | null>): { width: num
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // Layout size, not getBoundingClientRect: that one includes the compact
+    // dock's scale() and would squash the glass shape mid-animation.
     const update = () => {
-      const r = el.getBoundingClientRect();
-      setSize({ width: r.width, height: r.height });
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      setSize((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -211,21 +214,33 @@ const SIGNAL_ROUTE = /^\/signal(\/|$)/;
 // to a compact icon dock (never hides it), scrolling back up restores it.
 // Small jitters never flip state — only a clear, sustained scroll does.
 // Passive listener + rAF throttle; React only re-renders when it flips.
-const COMPACT_THRESHOLD = 24; // px of sustained one-direction movement before flipping
+const SHRINK_AFTER = 36; // px of sustained downward scrolling before the dock shrinks
+const RESTORE_AFTER = 10; // px of upward scrolling is enough to bring it back
 const TOP_GUARD = 64; // always full size near the very top
+const MAX_STEP = 220; // a single-frame jump this large is a layout shift (toolbar), not a scroll
+const COOLDOWN_MS = 220; // never flip twice in quick succession
 
 function useSignalScrollCompact(active: boolean, pathname: string): { compact: boolean; expand: () => void } {
   const [compact, setCompact] = useState(false);
+  const compactRef = useRef(false);
   const lastY = useRef(0);
   const accum = useRef(0);
   const dir = useRef<1 | -1 | 0>(0);
+  const lastFlip = useRef(0);
   const ticking = useRef(false);
+
+  const set = useCallback((next: boolean) => {
+    if (compactRef.current === next) return;
+    compactRef.current = next;
+    lastFlip.current = performance.now();
+    setCompact(next);
+  }, []);
 
   const expand = useCallback(() => {
     accum.current = 0;
     dir.current = 0;
-    setCompact(false);
-  }, []);
+    set(false);
+  }, [set]);
 
   // A new screen always starts with the full bar.
   useEffect(() => {
@@ -234,7 +249,7 @@ function useSignalScrollCompact(active: boolean, pathname: string): { compact: b
 
   useEffect(() => {
     if (!active) {
-      setCompact(false);
+      set(false);
       return;
     }
     lastY.current = window.scrollY;
@@ -246,30 +261,37 @@ function useSignalScrollCompact(active: boolean, pathname: string): { compact: b
       ticking.current = true;
       requestAnimationFrame(() => {
         ticking.current = false;
-        const y = window.scrollY;
-        const delta = y - lastY.current;
-        lastY.current = y;
-        if (y <= TOP_GUARD) {
-          accum.current = 0;
-          dir.current = 0;
-          setCompact(false);
+        const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const rawY = window.scrollY;
+        // iOS rubber-bands past both ends of the page: that is not a scroll.
+        if (rawY < 0 || rawY > maxY) {
+          lastY.current = Math.min(Math.max(rawY, 0), maxY);
           return;
         }
-        if (Math.abs(delta) < 1) return;
+        const delta = rawY - lastY.current;
+        lastY.current = rawY;
+        if (rawY <= TOP_GUARD) {
+          accum.current = 0;
+          dir.current = 0;
+          set(false);
+          return;
+        }
+        if (Math.abs(delta) < 1 || Math.abs(delta) > MAX_STEP) return;
         const nextDir = delta > 0 ? 1 : -1;
         if (nextDir !== dir.current) {
           dir.current = nextDir;
           accum.current = 0;
         }
         accum.current += Math.abs(delta);
-        if (accum.current < COMPACT_THRESHOLD) return;
-        setCompact(nextDir === 1);
+        if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
+        if (nextDir === 1 && accum.current >= SHRINK_AFTER) set(true);
+        else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
       });
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [active]);
+  }, [active, set]);
 
   return { compact, expand };
 }
@@ -344,6 +366,9 @@ export function BottomNav() {
         // opacity, so nothing in the feed reflows.
         transform: compact ? `translateY(${10 - lift}px) scale(0.84)` : `translateY(${-lift}px)`,
         transformOrigin: '50% 100%',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
         // The wrapper is pointer-events:none so the page under it stays usable;
         // the bar itself must take taps.
         pointerEvents: 'auto',
