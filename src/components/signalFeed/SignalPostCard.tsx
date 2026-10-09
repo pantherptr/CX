@@ -1007,7 +1007,8 @@ export function SignalPostCard({
                 ]
               : []),
           ] as PostMenuItem[],
-          ...(canManage
+          // Pin to top / Feature are Official-only: they put a post in the Official announcement slots.
+          ...(canManage && post.publisherType !== 'self'
             ? [[
                 { icon: 'pinned', label: post.isPinned ? 'Unpin' : 'Pin to top', onClick: () => void handlePinToggle() },
                 { icon: 'sparkles', label: post.isFeatured ? 'Unfeature' : 'Feature this post', onClick: () => void handleFeatureToggle() },
