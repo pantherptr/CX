@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { withoutHidden } from './privacy';
 import type { SignalPublisherType } from './signalIdentity';
 
 /**
@@ -177,7 +178,7 @@ function mapStory(row: StoryRow): EmpireStory {
 export async function fetchActiveEmpireStories(): Promise<EmpireStory[]> {
   const { data, error } = await supabase.rpc('fetch_active_empire_stories');
   if (error) throw error;
-  return (data as StoryRow[]).map(mapStory);
+  return withoutHidden('story', (data as StoryRow[]).map(mapStory));
 }
 
 export function useActiveEmpireStories() {

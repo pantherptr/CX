@@ -20,6 +20,9 @@ import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
 import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
 import { loadHashtags } from '../../lib/data/hashtags';
+import { VisibilityPicker } from './VisibilityPicker';
+import { DEFAULT_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
+import { useLocale } from '../../lib/i18n';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
 const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this scrolls inside instead
@@ -81,6 +84,7 @@ export function SignalCommunityComposer({
 }) {
   const { profile } = useAuth();
   const { toast } = useApp();
+  const { t } = useLocale();
   const reduceMotion = useReducedMotion();
   const objectUrls = useRef<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -120,6 +124,14 @@ export function SignalCommunityComposer({
   };
   const pollValid = !pollOptions || (cleanPollOptions(pollOptions).length >= 2 && body.trim().length > 0);
   const totalMedia = existingPaths.length + pending.length;
+  // Who may see it — new posts start with followers only.
+  const [visibility, setVisibility] = useState<Visibility>(DEFAULT_VISIBILITY);
+  useEffect(() => {
+    if (!editing) return;
+    let cancelled = false;
+    fetchMyVisibility('post', [editing.id]).then((m) => { if (!cancelled) setVisibility(m.get(editing.id) ?? 'public'); });
+    return () => { cancelled = true; };
+  }, [editing]);
   const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
@@ -286,6 +298,7 @@ export function SignalCommunityComposer({
         setError(result.error ?? 'Something went wrong — try again.');
         return;
       }
+      void setContentVisibility('post', result.post.id, visibility);
       if (!editing && pollOptions) {
         const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
         if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
@@ -470,6 +483,13 @@ export function SignalCommunityComposer({
                 </p>
               )}
             </>
+          )}
+
+          {isOpen && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-caption text-faint">{t('Who can see this')}</span>
+              <VisibilityPicker value={visibility} onChange={setVisibility} disabled={submitting} />
+            </div>
           )}
 
           {mediaError && <p className="mt-1.5 text-caption font-medium text-danger">{mediaError}</p>}

@@ -9,6 +9,8 @@ import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import { useLocale } from '../../lib/i18n';
 import { useApp } from '../../lib/store';
 import { SignalMediaViewer } from './SignalMediaViewer';
+import { VisibilityPicker } from './VisibilityPicker';
+import { DEFAULT_VISIBILITY, type Visibility } from '../../lib/data/privacy';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -177,6 +179,11 @@ export function VisionsGrid({
                     <span className="pointer-events-none absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"><Icon name="play" size={10} fill /></span>
                   )}
                 </button>
+                {isMe && v.visibility && v.visibility !== 'public' && !managing && (
+                  <span aria-hidden="true" className="pointer-events-none absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+                    <Icon name={v.visibility === 'private' ? 'lock' : v.visibility === 'circle' ? 'sparkles' : 'users'} size={11} />
+                  </span>
+                )}
                 {v.title && !managing && (
                   <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pb-2 pt-8">
                     <span translate="no" className="line-clamp-1 text-[12px] font-medium text-white/95">{v.title}</span>
@@ -238,6 +245,8 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   const [link, setLink] = useState<VisionLink>({ tripStampId: null, carId: null });
+  // New Visions start with followers only — public is a choice.
+  const [visibility, setVisibility] = useState<Visibility>(DEFAULT_VISIBILITY);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -277,7 +286,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
     const single = staged.length === 1;
     for (let i = 0; i < staged.length; i++) {
       const s = staged[i];
-      const { error: err } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '', single ? link : undefined);
+      const { error: err } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '', single ? link : undefined, visibility);
       if (err) {
         setError(err);
         setProgress(null);
@@ -336,6 +345,13 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
             <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder={t('Title (optional)')} className="input !py-3 font-display font-semibold" disabled={busy} />
             <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 400))} rows={3} placeholder={t('Caption — place, camera, story… (optional)')} className="input resize-none !py-3" disabled={busy} />
             <VisionLinkFields link={link} onChange={setLink} disabled={busy} />
+          </div>
+        )}
+
+        {staged.length > 0 && (
+          <div className="mt-4 flex items-center gap-2">
+            <span className="text-caption text-faint">{t('Who can see this')}</span>
+            <VisibilityPicker value={visibility} onChange={setVisibility} disabled={busy} />
           </div>
         )}
 
@@ -415,11 +431,12 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
   const [title, setTitle] = useState(vision.title ?? '');
   const [caption, setCaption] = useState(vision.caption ?? '');
   const [link, setLink] = useState<VisionLink>({ tripStampId: vision.tripStampId, carId: vision.carId });
+  const [visibility, setVisibility] = useState<Visibility>((vision.visibility ?? 'public') as Visibility);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     setSaving(true);
-    const { error } = await updateVision(vision.id, title, caption, link);
+    const { error } = await updateVision(vision.id, title, caption, link, visibility);
     setSaving(false);
     if (error) {
       toast({ title: 'Could not save', desc: error, icon: 'info' });
@@ -439,6 +456,10 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
           <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder={t('Title (optional)')} className="input !py-3 font-display font-semibold" disabled={saving} />
           <textarea value={caption} onChange={(e) => setCaption(e.target.value.slice(0, 400))} rows={3} placeholder={t('Caption — place, camera, story… (optional)')} className="input resize-none !py-3" disabled={saving} />
           <VisionLinkFields link={link} onChange={setLink} disabled={saving} />
+          <div className="flex items-center gap-2 pt-1">
+            <span className="text-caption text-faint">{t('Who can see this')}</span>
+            <VisibilityPicker value={visibility} onChange={setVisibility} disabled={saving} />
+          </div>
         </div>
         <button type="button" onClick={save} disabled={saving} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
           {saving ? t('Saving…') : t('Save')}

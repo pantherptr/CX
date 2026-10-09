@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import type { Visibility } from './privacy';
 
 /**
  * CX Visions — a personal, professional portfolio on a profile, separate
@@ -35,6 +36,8 @@ export interface Vision {
   carId: string | null;
   /** CX selected it — a Spotlight of it is live in the feed. */
   spotlighted: boolean;
+  /** Yours only: who may see it. */
+  visibility: Visibility;
 }
 
 /** What a Vision may be linked to (both optional) — it only supplies the city
@@ -55,6 +58,7 @@ interface VisionRow {
   trip_stamp_id: string | null;
   car_id: string | null;
   spotlighted: boolean;
+  visibility: Visibility | null;
 }
 
 const urlFor = (path: string) => supabase.storage.from(VISIONS_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -65,12 +69,12 @@ export async function fetchVisions(authorId: string, limit = 60): Promise<Vision
   return (data as VisionRow[]).map((r) => ({
     id: r.id, authorId: r.author_id, mediaUrl: urlFor(r.media_path), mediaKind: r.media_kind,
     title: r.title, caption: r.caption, createdAt: r.created_at,
-    tripStampId: r.trip_stamp_id, carId: r.car_id, spotlighted: Boolean(r.spotlighted),
+    tripStampId: r.trip_stamp_id, carId: r.car_id, spotlighted: Boolean(r.spotlighted), visibility: r.visibility ?? 'public',
   }));
 }
 
 /** Uploads one file into the signed-in user's own folder and records it. */
-export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink): Promise<{ error: string | null }> {
+export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink, visibility: Visibility = 'followers'): Promise<{ error: string | null }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) return { error: 'Not signed in' };
@@ -79,7 +83,7 @@ export async function addVision(file: File, kind: 'image' | 'video', title: stri
   const up = await supabase.storage.from(VISIONS_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
   if (up.error) return { error: up.error.message };
   const { error } = await supabase.rpc('add_vision', { p_media_path: path, p_media_kind: kind, p_title: title, p_caption: caption,
-    p_trip_stamp_id: link?.tripStampId ?? null, p_car_id: link?.carId ?? null,
+    p_trip_stamp_id: link?.tripStampId ?? null, p_car_id: link?.carId ?? null, p_visibility: visibility,
   });
   if (error) {
     await supabase.storage.from(VISIONS_BUCKET).remove([path]);
@@ -88,10 +92,10 @@ export async function addVision(file: File, kind: 'image' | 'video', title: stri
   return { error: null };
 }
 
-export async function updateVision(id: string, title: string, caption: string, link?: VisionLink): Promise<{ error: string | null }> {
+export async function updateVision(id: string, title: string, caption: string, link?: VisionLink, visibility?: Visibility): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('update_vision', {
     p_id: id, p_title: title, p_caption: caption,
-    p_trip_stamp_id: link?.tripStampId ?? null, p_car_id: link?.carId ?? null,
+    p_trip_stamp_id: link?.tripStampId ?? null, p_car_id: link?.carId ?? null, p_visibility: visibility ?? null,
   });
   return { error: error ? error.message : null };
 }

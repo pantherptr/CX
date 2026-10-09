@@ -1276,7 +1276,6 @@ export function SignalPostCard({
               <span className={BAR_ICON}>
                 <BookmarkIcon size={15} filled={mySaves > 0} playKey={savePlay} />
               </span>
-              <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.saveCount)}</span>
             </Tap>
           ) : (
             <Tap
@@ -1293,7 +1292,6 @@ export function SignalPostCard({
               <span className={BAR_ICON}>
                 <BookmarkIcon size={15} filled={post.savedByMe} playKey={savePlay} />
               </span>
-              <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.saveCount)}</span>
             </Tap>
           )}
         </div>

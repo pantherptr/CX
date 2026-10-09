@@ -31,6 +31,13 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Just you", "Solo tu", "Doar tu", "Solo tú"],
+  ["Only people you follow back", "Solo chi segui anche tu", "Doar persoanele pe care le urmărești și tu", "Solo quienes sigues también"],
+  ["People who follow you", "Chi ti segue", "Persoanele care te urmăresc", "Quienes te siguen"],
+  ["Anyone on Signal", "Chiunque su Signal", "Oricine pe Signal", "Cualquiera en Signal"],
+  ["CX Circle", "CX Circle", "CX Circle", "CX Circle"],
+  ["Followers", "Follower", "Urmăritori", "Seguidores"],
+  ["Who can see this", "Chi può vederlo", "Cine poate vedea asta", "Quién puede verlo"],
   ["Videos", "Video", "Videoclipuri", "Vídeos"],
   ["Photos", "Foto", "Poze", "Fotos"],
   ["All", "Tutte", "Toate", "Todas"],

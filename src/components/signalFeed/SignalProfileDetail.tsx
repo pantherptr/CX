@@ -17,6 +17,7 @@ import { SignalPostSkeleton } from './SignalPostSkeleton';
 import { SignalKeychainTab } from './SignalKeychainTab';
 import { SignalVisionsTab } from './SignalVisionsTab';
 import { fetchVisionsEnabled } from '../../lib/data/visions';
+import { fetchRelation, type Relation } from '../../lib/data/privacy';
 import { useLocale } from '../../lib/i18n';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
@@ -209,8 +210,16 @@ export function SignalProfileDetail({
       setOpeningChat(false);
     }
   };
-  const canBeFollowed = Boolean(realProfile && !isMe && (realProfile.isHost || realProfile.isVerifiedClient));
-  const showFollowCounts = Boolean(realProfile && (realProfile.isHost || realProfile.isVerifiedClient));
+  // Anyone can follow anyone: Followers and CX Circle (a mutual follow) are what privacy is built on.
+  const canBeFollowed = Boolean(realProfile && !isMe);
+  const showFollowCounts = Boolean(realProfile);
+  const [relation, setRelation] = useState<Relation>('none');
+  useEffect(() => {
+    if (!realProfile || isMe) { setRelation('none'); return; }
+    let cancelled = false;
+    fetchRelation(realProfile.id).then((r) => { if (!cancelled) setRelation(r); });
+    return () => { cancelled = true; };
+  }, [realProfile?.id, isMe, followersCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const share = async () => {
     const url = window.location.href;
@@ -431,6 +440,12 @@ export function SignalProfileDetail({
                   Edit profile
                 </Tap>
               ) : realProfile && canBeFollowed ? (
+                <div>
+                  {relation === 'mutual' && (
+                    <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-caption font-semibold text-white backdrop-blur-md">
+                      <Icon name="sparkles" size={12} /> CX Circle
+                    </p>
+                  )}
                 <div className="flex items-stretch gap-2.5">
                   <div className="min-w-0 flex-1">
                     <FollowButton
@@ -451,6 +466,7 @@ export function SignalProfileDetail({
                       Message
                     </Tap>
                   )}
+                </div>
                 </div>
               ) : undefined
             }
