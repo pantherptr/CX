@@ -23,6 +23,7 @@ import { SignalVehicleCard } from './SignalVehicleCard';
 import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
+import { PostActionMenu, type PostMenuItem } from './PostActionMenu';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
@@ -557,6 +558,7 @@ export function SignalPostCard({
   // stays above the thumb for as long as the Respect stands.
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [savePlay, setSavePlay] = useState(0);
   const [viewsInfo, setViewsInfo] = useState(false);
   useEffect(() => {
@@ -941,6 +943,33 @@ export function SignalPostCard({
     );
   }
 
+  const menuGroups: PostMenuItem[][] = [
+    // Share-to-Messages is the one entry every viewer gets — the native share
+    // sheet/copy-link lives on the always-visible Share button; this is the
+    // "send it to a real CX Rent conversation" path.
+    [{ icon: 'send', label: 'Share to Messages', onClick: () => setShareSheetOpen(true) }],
+    ...(canModerate
+      ? [
+          [
+            { icon: 'edit', label: 'Edit post', onClick: () => setEditing(true) },
+            ...(isOwnPost
+              ? [
+                  { icon: 'pinned', label: post.pinnedToProfile ? 'Unpin from profile' : 'Pin to my profile', onClick: () => void handleProfilePinToggle(), fill: post.pinnedToProfile },
+                  { icon: 'package', label: post.isArchived ? 'Unarchive' : 'Archive', onClick: () => void handleArchiveToggle() },
+                ]
+              : []),
+          ] as PostMenuItem[],
+          ...(canManage
+            ? [[
+                { icon: 'pinned', label: post.isPinned ? 'Unpin' : 'Pin to top', onClick: () => void handlePinToggle() },
+                { icon: 'sparkles', label: post.isFeatured ? 'Unfeature' : 'Feature this post', onClick: () => void handleFeatureToggle() },
+              ] as PostMenuItem[]]
+            : []),
+          [{ icon: 'trash', label: 'Delete post', onClick: () => void handleDelete(), danger: true }] as PostMenuItem[],
+        ]
+      : [[{ icon: 'info', label: 'Report post', onClick: () => void handleReport() }] as PostMenuItem[]]),
+  ];
+
   return (
     <article
       onClick={handleCardClick}
@@ -998,67 +1027,17 @@ export function SignalPostCard({
         {Boolean(session?.user.id) && !post.isDemo && (
           <div className="relative shrink-0">
             <button
+              ref={menuBtnRef}
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Post options"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
               disabled={busy}
-              className="grid h-8 w-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel"
+              className={`pressable -mr-1 grid h-10 w-10 place-items-center rounded-full transition-colors ${menuOpen ? 'bg-panel text-ink' : 'text-ink-soft hover:bg-panel'}`}
             >
-              <Icon name="moreHorizontal" size={18} />
+              <Icon name="moreHorizontal" size={20} />
             </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-9 z-20 w-52 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
-                  {/* Share-to-Messages is the one entry every viewer gets
-                      regardless of ownership — the native share sheet/
-                      copy-link already lives on the always-visible Share
-                      button below, this is specifically the "send it to
-                      a real CX Rent conversation" path from the brief. */}
-                  <button onClick={() => { setMenuOpen(false); setShareSheetOpen(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                    <Icon name="send" size={15} /> Share to Messages
-                  </button>
-                  {canModerate ? (
-                    <>
-                      <button onClick={() => { setMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                        <Icon name="edit" size={15} /> Edit post
-                      </button>
-                      {isOwnPost && (
-                        <>
-                          <button onClick={handleProfilePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                            <Icon name="pinned" size={15} fill={post.pinnedToProfile} /> {post.pinnedToProfile ? 'Unpin from profile' : 'Pin to my profile'}
-                          </button>
-                          <button onClick={handleArchiveToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                            <Icon name="package" size={15} /> {post.isArchived ? 'Unarchive' : 'Archive'}
-                          </button>
-                        </>
-                      )}
-                      {canManage && (
-                        <>
-                          <button onClick={handlePinToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                            <Icon name="pinned" size={15} /> {post.isPinned ? 'Unpin' : 'Pin to top'}
-                          </button>
-                          <button onClick={handleFeatureToggle} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                            <Icon name="sparkles" size={15} /> {post.isFeatured ? 'Unfeature' : 'Feature this post'}
-                          </button>
-                        </>
-                      )}
-                      <button onClick={handleDelete} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-danger transition-colors hover:bg-danger/5 active:bg-danger/5">
-                        <Icon name="trash" size={15} /> Delete post
-                      </button>
-                    </>
-                  ) : (
-                    // A regular viewer, not the author or a moderator —
-                    // Save already has its own always-visible button in
-                    // the action row below, so the only thing left to
-                    // offer here is Report (same RPC/pattern
-                    // SignalComments.tsx already uses for a comment).
-                    <button onClick={handleReport} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-detail text-ink transition-colors hover:bg-panel active:bg-panel">
-                      <Icon name="info" size={15} /> Report post
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
+            {menuOpen && <PostActionMenu anchor={menuBtnRef.current} groups={menuGroups} onClose={() => setMenuOpen(false)} />}
           </div>
         )}
       </div>
