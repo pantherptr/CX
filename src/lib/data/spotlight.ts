@@ -125,3 +125,22 @@ export function useSpotlightFeed(): SpotlightCardData[] {
   }, []);
   return items;
 }
+
+/** Slots Spotlights into an already-ordered post list by date — each one goes
+ *  before the first post older than it, so the posts' own order is never
+ *  touched. A Spotlight older than everything loaded so far waits until the
+ *  feed has no more pages (otherwise it would jump ahead of posts still to load). */
+export function mergeSpotlights<P extends { createdAt: string }>(
+  posts: P[], spotlights: SpotlightCardData[], hasMore: boolean,
+): ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] {
+  const out: ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] = [];
+  const pending = [...spotlights].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  for (const post of posts) {
+    while (pending.length > 0 && pending[0].publishedAt >= post.createdAt) {
+      out.push({ kind: 'spotlight', spotlight: pending.shift()! });
+    }
+    out.push({ kind: 'post', post });
+  }
+  if (!hasMore) for (const s of pending) out.push({ kind: 'spotlight', spotlight: s });
+  return out;
+}
