@@ -24,6 +24,8 @@ import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { PostActionMenu, type PostMenuItem } from './PostActionMenu';
+import { SignalSpotlightCard } from './SignalSpotlightCard';
+import type { SpotlightCardData } from '../../lib/data/spotlight';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
@@ -442,6 +444,8 @@ export function SignalPostCard({
   onDeleted,
   onPinToggled,
   onFeaturedToggled,
+  spotlight,
+  spotlightAll,
 }: {
   post: EmpirePost;
   canManage: boolean;
@@ -452,6 +456,10 @@ export function SignalPostCard({
   onDeleted: (postId: string) => void;
   onPinToggled?: () => void;
   onFeaturedToggled?: () => void;
+  /** This is a Signal Spotlight's team post: draw the Vision card where the media goes
+   *  (the post itself is only a marker); Respect, comments, saves and sharing are the post's own. */
+  spotlight?: SpotlightCardData;
+  spotlightAll?: SpotlightCardData[];
 }) {
   const { toast } = useApp();
   const { session, profile: viewerProfile } = useAuth();
@@ -951,7 +959,7 @@ export function SignalPostCard({
     ...(canModerate
       ? [
           [
-            { icon: 'edit', label: 'Edit post', onClick: () => setEditing(true) },
+            ...(spotlight ? [] : [{ icon: 'edit', label: 'Edit post', onClick: () => setEditing(true) } as PostMenuItem]),
             ...(isOwnPost
               ? [
                   { icon: 'pinned', label: post.pinnedToProfile ? 'Unpin from profile' : 'Pin to my profile', onClick: () => void handleProfilePinToggle(), fill: post.pinnedToProfile },
@@ -1042,10 +1050,16 @@ export function SignalPostCard({
         )}
       </div>
 
-      {post.title && (
+      {spotlight && (
+        <div className="px-3 pb-3">
+          <SignalSpotlightCard data={spotlight} all={spotlightAll} embedded compact />
+        </div>
+      )}
+
+      {post.title && !spotlight && (
         <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
-      {post.body.trim() !== '' && (
+      {post.body.trim() !== '' && !spotlight && (
         <div className="px-4 pb-3 sm:px-5">
           <p
             ref={bodyRef}
@@ -1061,7 +1075,7 @@ export function SignalPostCard({
         </div>
       )}
 
-      {tr.available && post.body.trim() !== '' && (
+      {tr.available && post.body.trim() !== '' && !spotlight && (
         <div className="px-4 pb-3 sm:px-5">
           <button
             type="button"

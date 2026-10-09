@@ -16,7 +16,7 @@ import { SharedAvatar } from '../motionKit';
  *  to the creator's Visions. When the feed has several Spotlights the viewer lets
  *  you swipe from one to the next, and the photo grows out of the card it was
  *  tapped on. */
-export function SignalSpotlightCard({ data, all, inRail = false, compact = false }: { data: SpotlightCardData; all?: SpotlightCardData[]; inRail?: boolean; compact?: boolean }) {
+export function SignalSpotlightCard({ data, all, inRail = false, compact = false, embedded = false }: { data: SpotlightCardData; all?: SpotlightCardData[]; inRail?: boolean; compact?: boolean; embedded?: boolean }) {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -51,7 +51,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
         onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); } }}
         aria-label={`${t('Signal Spotlight')}${data.title ? ` — ${data.title}` : ''}`}
-        className={`group relative ${compact ? 'aspect-[4/3]' : 'aspect-[4/5]'} w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail ? '' : compact ? 'mb-3' : 'mb-5'} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
+        className={`group relative ${compact ? 'aspect-[4/3]' : 'aspect-[4/5]'} w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail || embedded ? '' : compact ? 'mb-3' : 'mb-5'} ${embedded ? 'rounded-3xl' : ''} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
       >
         {data.mediaKind === 'video' ? (
           <video src={data.mediaUrl} muted playsInline loop autoPlay preload="metadata" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
@@ -71,6 +71,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
 
         {/* publisher + eyebrow */}
         <div className={`absolute inset-x-0 top-0 sm:p-6 ${compact ? 'p-3.5' : 'p-4'}`}>
+          {!embedded && (
           <div className="flex items-center gap-2.5">
             <Img
               src={data.publisherAvatar ?? '/brand/avatar-cx.webp'}
@@ -81,7 +82,8 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
             <span className={`font-display font-semibold ${compact ? 'text-[14px]' : 'text-[16px]'}`}>{data.publisherLabel}</span>
             <VerifiedBadge role="cx" size={17} />
           </div>
-          <p className={`inline-flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-white/90 ${compact ? 'mt-2.5' : 'mt-4'}`}>
+          )}
+          <p className={`inline-flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-white/90 ${embedded ? '' : compact ? 'mt-2.5' : 'mt-4'}`}>
             <span aria-hidden="true" className="h-px w-6 bg-white/60" />
             {t('Signal Spotlight')}{city ? ` · ${city}` : ''}
           </p>

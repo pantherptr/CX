@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { createEmpirePost, fetchEmpirePostById, SPOTLIGHT_POST_MARKER, type EmpirePost } from './empireFeed';
 
 /**
  * Signal Spotlight — CX's editorial selection of a Vision (0087). An entry is
@@ -14,6 +15,8 @@ export interface SpotlightCardData {
   entryId: string;
   visionId: string;
   publishedAt: string;
+  /** The CX team's real post for this Spotlight (takes Respect, comments…), if it has one. */
+  postId: string | null;
   publisherLabel: string;
   publisherAvatar: string | null;
   curatedBy: string | null;
@@ -27,7 +30,7 @@ export interface SpotlightCardData {
 }
 
 interface FeedRow {
-  entry_id: string; vision_id: string; published_at: string;
+  entry_id: string; vision_id: string; published_at: string; post_id: string | null;
   publisher_label: string | null; publisher_avatar: string | null; curated_by: string | null; city: string | null; editorial_title: string | null;
   media_path: string; media_kind: 'image' | 'video';
   creator_id: string; creator_username: string | null; car_label: string | null;
@@ -37,7 +40,7 @@ export async function fetchSpotlightFeed(limit = 6): Promise<SpotlightCardData[]
   const { data, error } = await supabase.rpc('fetch_spotlight_feed', { p_limit: limit });
   if (error || !data) return [];
   return (data as FeedRow[]).map((r) => ({
-    entryId: r.entry_id, visionId: r.vision_id, publishedAt: r.published_at,
+    entryId: r.entry_id, visionId: r.vision_id, publishedAt: r.published_at, postId: r.post_id,
     publisherLabel: r.publisher_label ?? 'CX Team', publisherAvatar: r.publisher_avatar,
     curatedBy: r.curated_by, city: r.city, title: r.editorial_title,
     mediaUrl: urlFor(r.media_path), mediaKind: r.media_kind,
@@ -102,11 +105,24 @@ export async function fetchSpotlightPublishers(): Promise<SpotlightPublisher[]> 
 export async function publishSpotlight(input: {
   visionId: string; publisherId: string; curatedBy: string; city: string; title: string;
 }): Promise<{ error: string | null }> {
-  const { error } = await supabase.rpc('publish_spotlight', {
+  const { data, error } = await supabase.rpc('publish_spotlight', {
     p_vision_id: input.visionId, p_publisher_id: input.publisherId,
     p_curated_by: input.curatedBy, p_city: input.city, p_title: input.title,
   });
-  return { error: error ? error.message : null };
+  if (error) return { error: error.message };
+  // The first time, also create the team's real post for it (just a marker — the
+  // photo and creator are always read from the Vision). If this step fails the
+  // Spotlight is still live, only without Respect/comments.
+  const res = data as { entry_id?: string; post_id?: string | null } | null;
+  if (res?.entry_id && !res.post_id) {
+    const made = await createEmpirePost({
+      category: 'news', title: input.title || undefined, body: SPOTLIGHT_POST_MARKER, publisherType: 'cx',
+    });
+    if (made.post) {
+      await supabase.rpc('set_spotlight_post', { p_entry_id: res.entry_id, p_post_id: made.post.id });
+    }
+  }
+  return { error: null };
 }
 
 /** `archived` takes it off the feed but keeps it; `removed` drops it (and a
@@ -144,4 +160,26 @@ export function mergeSpotlights<P extends { createdAt: string }>(
   }
   if (!hasMore) for (const s of pending) out.push({ kind: 'spotlight', spotlight: s });
   return out;
+}
+
+/** The team posts behind the Spotlights, loaded once, keyed by entry id — so a
+ *  feed can render a Spotlight as a real post (Respect, comments…). */
+export function useSpotlightPosts(spotlights: SpotlightCardData[]) {
+  const [posts, setPosts] = useState<Record<string, EmpirePost>>({});
+  const key = spotlights.map((s) => `${s.entryId}:${s.postId ?? ''}`).join('|');
+  useEffect(() => {
+    let cancelled = false;
+    const withPost = spotlights.filter((s) => s.postId);
+    if (withPost.length === 0) { setPosts({}); return; }
+    Promise.all(withPost.map((s) => fetchEmpirePostById(s.postId!).catch(() => null))).then((rows) => {
+      if (cancelled) return;
+      const next: Record<string, EmpirePost> = {};
+      withPost.forEach((s, i) => { const p = rows[i]; if (p) next[s.entryId] = p; });
+      setPosts(next);
+    });
+    return () => { cancelled = true; };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const patch = (entryId: string, post: EmpirePost) => setPosts((prev) => ({ ...prev, [entryId]: post }));
+  const remove = (entryId: string) => setPosts((prev) => { const n = { ...prev }; delete n[entryId]; return n; });
+  return { posts, patch, remove };
 }

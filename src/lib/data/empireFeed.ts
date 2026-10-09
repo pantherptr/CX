@@ -40,6 +40,12 @@ export const EMPIRE_CATEGORIES: { value: EmpireCategory; label: string }[] = [
 const MEDIA_BUCKET = 'empire-post-media';
 const FEED_PAGE_SIZE = 20;
 
+/** The body of a Signal Spotlight's team post — it carries no text of its own;
+ *  the card is drawn from the Spotlight entry. Lists that aren't showing the
+ *  special card (Official, search, profiles) drop these posts. */
+export const SPOTLIGHT_POST_MARKER = '[[signal-spotlight]]';
+export const withoutSpotlightPosts = <T extends { body: string }>(rows: T[]): T[] => rows.filter((r) => r.body !== SPOTLIGHT_POST_MARKER);
+
 /** `create_empire_post` rejects an empty body, but a post may be just a photo or
  *  video. A media-only post is stored with this invisible character instead;
  *  every row read from the database goes through `fromStoredBody` so the rest
@@ -328,13 +334,16 @@ function isStreamDrained(stream: FeedSourceStream): boolean {
 async function topUpFeedSourceStream(
   stream: FeedSourceStream,
   fetchPage: (cursor: StreamCursor | undefined) => Promise<EmpirePost[]>,
+  /** Applied AFTER the cursor/exhausted bookkeeping, so dropping rows never
+   *  makes a full page look short. */
+  filterRows?: (rows: EmpirePost[]) => EmpirePost[],
 ): Promise<void> {
   if (stream.exhausted || stream.buffer.length > 0) return;
   const rows = await fetchPage(stream.cursor);
-  stream.buffer = rows;
   const last = rows[rows.length - 1];
   if (last) stream.cursor = { createdAt: last.createdAt, id: last.id };
   if (rows.length < FEED_PAGE_SIZE) stream.exhausted = true;
+  stream.buffer = filterRows ? filterRows(rows) : rows;
 }
 
 /** One real+demo merge stream for the lifetime of a single `useEmpireFeed`
@@ -358,7 +367,7 @@ async function pullMergedPage(
 ): Promise<{ rows: EmpirePost[]; more: boolean }> {
   const rows: EmpirePost[] = [];
   while (rows.length < pageSize) {
-    await topUpFeedSourceStream(stream.real, fetchRealPage);
+    await topUpFeedSourceStream(stream.real, fetchRealPage, withoutSpotlightPosts);
     if (demoEligible) {
       await topUpFeedSourceStream(stream.demo, (cursor) => fetchSignalDemoPosts(FEED_PAGE_SIZE, cursor?.createdAt, cursor?.id));
     }
@@ -457,7 +466,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       const current = postsRef.current;
       if (!current || current.length === 0) return;
       try {
-        const peek = await fetchEmpireFeed(5, undefined, category, { scope, authorKind });
+        const peek = withoutSpotlightPosts(await fetchEmpireFeed(5, undefined, category, { scope, authorKind }));
         if (cancelled || peek.length === 0 || peek[0].id === current[0]?.id) return;
         const known = new Set(current.map((p) => p.id));
         const fresh = peek.filter((p) => !known.has(p.id));
@@ -488,7 +497,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
    *  for a later `loadMore` to emit a second time. */
   const loadNewPosts = useCallback(async () => {
     try {
-      const rows = await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind });
+      const rows = withoutSpotlightPosts(await fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }));
       setPosts((prev) => {
         const existingIds = new Set((prev ?? []).map((p) => p.id));
         const fresh = rows.filter((r) => !existingIds.has(r.id));
@@ -875,7 +884,7 @@ export async function reportEmpireContent(target: { postId: string } | { comment
 export async function fetchEmpirePostsByAuthor(authorId: string, limit = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
   const { data, error } = await supabase.rpc('fetch_empire_posts_by_author', { p_author_id: authorId, p_limit: limit, p_before: before ?? null });
   if (error) throw error;
-  return (data as EmpirePostRow[]).map(mapEmpirePost);
+  return withoutSpotlightPosts((data as EmpirePostRow[]).map(mapEmpirePost));
 }
 
 export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
@@ -1035,7 +1044,7 @@ export function useEmpireTrendingPosts(scopeOpts?: EmpireFeedScope, limit = 5) {
 export async function searchEmpirePosts(query: string, category?: EmpireCategory | null, limit = 20): Promise<EmpirePost[]> {
   const { data, error } = await supabase.rpc('search_empire_posts', { p_query: query, p_category: category ?? null, p_limit: limit });
   if (error) throw error;
-  return (data as EmpirePostRow[]).map(mapEmpirePost);
+  return withoutSpotlightPosts((data as EmpirePostRow[]).map(mapEmpirePost));
 }
 
 // ---- Single-post fetch — powers the /empire/post/:id deep link. `null`

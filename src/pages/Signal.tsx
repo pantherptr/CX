@@ -12,7 +12,7 @@ import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBa
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalSpotlightSection, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
-import { useSpotlightFeed, mergeSpotlights } from '../lib/data/spotlight';
+import { useSpotlightFeed, useSpotlightPosts, mergeSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
@@ -90,6 +90,7 @@ export default function Signal() {
   const [category] = useState<EmpireCategory | null>(null);
 
   const spotlights = useSpotlightFeed();
+  const spotlightPosts = useSpotlightPosts(spotlights);
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
   const communityFeed = useEmpireFeed(null, { scope: 'community' });
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
@@ -497,7 +498,20 @@ export default function Signal() {
           <>
             {(space === 'community' || isPhone ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
               item.kind === 'spotlight' ? (
-                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} compact={isPhone} />
+                spotlightPosts.posts[item.spotlight.entryId] ? (
+                  // The team's real post for this Spotlight — a post like any other (Respect, comments, saves…), just a special one.
+                  <SignalPostCard
+                    key={`spotlight-${item.spotlight.entryId}`}
+                    post={spotlightPosts.posts[item.spotlight.entryId]}
+                    canManage={canManage}
+                    spotlight={item.spotlight}
+                    spotlightAll={spotlights}
+                    onChanged={(updated) => spotlightPosts.patch(item.spotlight.entryId, updated)}
+                    onDeleted={() => spotlightPosts.remove(item.spotlight.entryId)}
+                  />
+                ) : (
+                  <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} compact={isPhone} />
+                )
               ) : (
                 <SignalPostCard
                   key={item.post.id}
