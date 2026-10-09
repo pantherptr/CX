@@ -11,7 +11,6 @@ import { Modal, Stars } from '../components/primitives';
 import { Img } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
-import { CarRoadbook } from '../components/CarRoadbook';
 import { HostCard } from '../components/HostCard';
 import { HostLocked } from '../components/HostLocked';
 import { Group, Row } from '../components/IosList';
@@ -383,12 +382,6 @@ export default function CarDetails() {
                   </div>
                 </section>
               )}
-
-              {/* Roadbook — the car's memory, written by verified trips */}
-              <section className="mt-9">
-                <h2 className="mb-3 px-1 font-display text-lg font-semibold text-ink">{t('Roadbook')}</h2>
-                <CarRoadbook carId={car.id} carSlug={car.slug} />
-              </section>
 
               {/* Similar — a swipeable row */}
               {similar.length > 0 && (
