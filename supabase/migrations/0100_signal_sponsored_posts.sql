@@ -10,8 +10,8 @@
 --
 -- A sponsored post is the same post (Respect, comments, saves all work) — it is only shown
 -- in the Community feed now and then, marked "Sponsored", while it is live. Nothing about
--- the post itself changes. The payment side lives in api/create-ad-payment.ts,
--- api/stripe-webhook.ts (marks it paid) and api/review-ad.ts (approve / reject / cancel).
+-- the post itself changes. The payment side lives in api/signal-ads.ts (pay, approve, reject, cancel),
+-- api/stripe-webhook.ts (marks it paid).
 
 create table if not exists public.signal_ads (
   id uuid primary key default gen_random_uuid(),

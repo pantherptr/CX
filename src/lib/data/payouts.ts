@@ -70,11 +70,12 @@ export async function fetchConnectOnboardingLink(accessToken: string): Promise<{
 
 /** Re-checks the account directly against Stripe — called right after
  *  the host returns from onboarding, for instant feedback ahead of the
- *  Connect webhook. See api/connect-account-status.ts. */
+ *  Connect webhook. See api/connect-onboarding-link.ts (action: 'status'). */
 export async function refreshConnectStatus(accessToken: string): Promise<{ payoutsEnabled: boolean } | { error: string }> {
-  const res = await fetch(apiUrl('/api/connect-account-status'), {
+  const res = await fetch(apiUrl('/api/connect-onboarding-link'), {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ action: 'status' }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) return { error: body?.error ?? 'Could not check payout status.' };

@@ -16,6 +16,10 @@ import { applyCors } from './_lib/cors.js';
  * already has an account but hasn't finished onboarding, this just issues
  * a fresh Account Link for the same account rather than creating a
  * second one.
+ *
+ * Also answers `{ action: 'status' }`: re-checks the host's payout account directly against
+ * Stripe (called when the host lands back from onboarding, ahead of the Connect webhook).
+ * It lives here because Vercel's Hobby plan allows only 12 serverless functions.
  */
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
 
@@ -36,10 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const siteUrl = process.env.SITE_URL;
+  const wantsStatus = ((req.body ?? {}) as { action?: string }).action === 'status';
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !process.env.STRIPE_SECRET_KEY) {
     return res.status(500).json({ error: 'Payouts are not configured on this server yet.' });
   }
-  if (!siteUrl) {
+  if (!siteUrl && !wantsStatus) {
     return res.status(500).json({ error: 'SITE_URL is not set — onboarding needs somewhere to send the host back to.' });
   }
 
@@ -59,6 +64,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // direct client writes (trg_lock_connect_columns, 0068) since it must
   // only ever be set by this endpoint or the Connect webhook.
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+
+  if (wantsStatus) {
+    const { data: row } = await supabase.from('profiles').select('stripe_connect_account_id').eq('id', user.id).maybeSingle();
+    if (!row?.stripe_connect_account_id) return res.status(200).json({ payoutsEnabled: false });
+    try {
+      const account = await stripe.accounts.retrieve(row.stripe_connect_account_id);
+      const payoutsEnabled = Boolean(account.payouts_enabled);
+      await supabase.from('profiles').update({ stripe_connect_payouts_enabled: payoutsEnabled }).eq('id', user.id);
+      return res.status(200).json({ payoutsEnabled });
+    } catch (err) {
+      console.error('[connect-status] Stripe lookup failed for', user.id, err);
+      return res.status(502).json({ error: 'Could not check payout account status.' });
+    }
+  }
 
   try {
     const { data: profile } = await supabase

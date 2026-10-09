@@ -23,10 +23,10 @@ export type AdStatus = 'pending_review' | 'active' | 'ended' | 'rejected' | 'can
 export interface AdCheckout { clientSecret: string; adId: string; amount: number; currency: string }
 
 export async function createAdPayment(input: { postId: string; dailyCents: number; days: number }, accessToken: string): Promise<AdCheckout> {
-  const res = await fetch(apiUrl('/api/create-ad-payment'), {
+  const res = await fetch(apiUrl('/api/signal-ads'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ action: 'pay', ...input }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.error ?? 'Could not start the payment. Please try again.');
@@ -35,10 +35,10 @@ export async function createAdPayment(input: { postId: string; dailyCents: numbe
 
 /** approve / reject (Owner, Admin) or cancel (the advertiser, before review). */
 export async function reviewAd(adId: string, action: 'approve' | 'reject' | 'cancel', accessToken: string, reason?: string): Promise<{ error: string | null }> {
-  const res = await fetch(apiUrl('/api/review-ad'), {
+  const res = await fetch(apiUrl('/api/signal-ads'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ adId, action, reason }),
+    body: JSON.stringify({ action, adId, reason }),
   });
   const body = await res.json().catch(() => null);
   return { error: res.ok ? null : (body?.error ?? 'Something went wrong.') };

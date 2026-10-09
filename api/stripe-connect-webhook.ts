@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js';
  * "Connect" in the Stripe dashboard with its own signing secret
  * (STRIPE_CONNECT_WEBHOOK_SECRET).
  *
- * api/connect-account-status.ts already gives a host instant feedback
+ * api/connect-onboarding-link.ts already gives a host instant feedback
  * right after onboarding; this is what keeps stripe_connect_payouts_enabled
  * correct afterwards too — an Express account can go from enabled back to
  * disabled if Stripe later flags something (a KYC document expiring, a

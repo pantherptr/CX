@@ -169,7 +169,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
   const meta = paymentIntent.metadata as Record<string, string>;
 
-  // A sponsored Signal post (api/create-ad-payment.ts): paid, now waiting for an Owner/Admin.
+  // A sponsored Signal post (api/signal-ads.ts): paid, now waiting for an Owner/Admin.
   if (meta.kind === 'signal_ad') {
     const { error } = await supabase
       .from('signal_ads')
