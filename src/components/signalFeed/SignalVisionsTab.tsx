@@ -353,7 +353,13 @@ function VisionLinkFields({ link, onChange, disabled }: { link: VisionLink; onCh
     return () => { cancelled = true; };
   }, [uid, profile?.is_host]);
 
-  if (stamps.length === 0 && cars.length === 0) return null;
+  if (stamps.length === 0 && cars.length === 0) {
+    return (
+      <p className="rounded-2xl border border-line bg-panel/50 px-3.5 py-3 text-caption leading-relaxed text-muted">
+        {t('To nominate a Vision for Signal Spotlight, link it to a verified CX trip (or, as a Host, to one of your cars).')}
+      </p>
+    );
+  }
   const value = link.tripStampId ? `stamp:${link.tripStampId}` : link.carId ? `car:${link.carId}` : '';
   const linked = Boolean(value);
   const pick = (v: string) => {
