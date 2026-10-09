@@ -66,7 +66,7 @@ function timeAgo(iso: string): string {
 // The action row: plain icon + number, evenly spread, only the colour changes
 // when an action is active — like the reference tweet card, just in CX green.
 const ACTION = 'group flex min-h-11 select-none items-center gap-1 text-[14px] font-medium transition-colors';
-const BAR_ICON = 'grid h-8 w-8 place-items-center rounded-full transition-colors';
+const BAR_ICON = 'grid h-9 w-9 place-items-center rounded-full transition-colors';
 
 const MIN_MEDIA_ASPECT = 4 / 5;
 const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
@@ -1173,7 +1173,7 @@ export function SignalPostCard({
           removes the extras you added; the +N counts them). */}
       {respected && <div aria-hidden="true" className="h-6" />}
       <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-1 sm:px-5">
-        <div className="flex items-center gap-3 text-ink-soft">
+        <div className="flex items-center gap-2.5 text-ink-soft">
             {(isTeamViewer ? (
                 <button
                   type="button"
@@ -1183,17 +1183,17 @@ export function SignalPostCard({
                   onPointerLeave={viewPressEnd}
                   onPointerCancel={viewPressEnd}
                   aria-label="Add a view — hold to remove yours"
-                  className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
+                  className="pressable inline-flex min-h-9 select-none items-center gap-1"
                 >
-                  <EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-ink-soft" />
+                  <span className={`${BAR_ICON} -ml-1.5`}><EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-ink-soft" /></span>
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
                   </span>
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1.5">
-                  <EyeIcon size={18} className="shrink-0 text-ink-soft" />
+                <span className="inline-flex items-center gap-1">
+                  <span className={`${BAR_ICON} -ml-1.5`}><EyeIcon size={18} className="shrink-0 text-ink-soft" /></span>
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                 </span>
               ))}
@@ -1220,7 +1220,7 @@ export function SignalPostCard({
                 aria-label={myRespects > 0 ? 'Rimuovi Respect' : 'Esprimi Respect'}
                 className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
               >
-                <span className={`${BAR_ICON} -ml-1.5`}>
+                <span className={BAR_ICON}>
                   <RespectIcon size={15} filled={myRespects > 0} playKey={respectPlay} />
                 </span>
                 <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
@@ -1232,7 +1232,7 @@ export function SignalPostCard({
                 aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
                 className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
               >
-                <span className={`${BAR_ICON} -ml-1.5`}>
+                <span className={BAR_ICON}>
                   <RespectIcon size={15} filled={post.likedByMe} playKey={respectPlay} />
                 </span>
                 <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
