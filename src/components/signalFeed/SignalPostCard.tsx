@@ -1210,7 +1210,7 @@ export function SignalPostCard({
                   aria-label="Add a view — hold to remove yours"
                   className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                 >
-                  <EyeIcon size={16} playKey={viewPlay} className="shrink-0 text-faint" />
+                  <EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-faint" />
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
@@ -1218,7 +1218,7 @@ export function SignalPostCard({
                 </button>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
-                  <EyeIcon size={16} className="shrink-0 text-faint" />
+                  <EyeIcon size={18} className="shrink-0 text-faint" />
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                 </span>
               ))}
@@ -1246,7 +1246,7 @@ export function SignalPostCard({
                 className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
               >
                 <span className={`${BAR_ICON} -ml-1.5`}>
-                  <RespectIcon size={19} filled={myRespects > 0} playKey={respectPlay} />
+                  <RespectIcon size={15} filled={myRespects > 0} playKey={respectPlay} />
                 </span>
                 <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
               </Tap>
@@ -1258,7 +1258,7 @@ export function SignalPostCard({
                 className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
               >
                 <span className={`${BAR_ICON} -ml-1.5`}>
-                  <RespectIcon size={19} filled={post.likedByMe} playKey={respectPlay} />
+                  <RespectIcon size={15} filled={post.likedByMe} playKey={respectPlay} />
                 </span>
                 <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
               </Tap>
