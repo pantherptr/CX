@@ -37,6 +37,7 @@ import { Img, vibrateTap } from '../motion';
 import { Tap, SharedAvatar } from '../motionKit';
 import { useManualTranslate } from '../../lib/i18n/ugc';
 import { useLocale } from '../../lib/i18n';
+import { collabHandle, leaveCollab, removeCollab } from '../../lib/data/collab';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -524,6 +525,10 @@ export function SignalPostCard({
   // pin/feature/Performance-line privileges. Admin keeps everything.
   const isOwnPost = Boolean(session?.user.id) && post.authorId === session?.user.id;
   const canModerate = canManage || isOwnPost;
+  // CX Collab: the second person on this post. Pending is only ever sent to the author.
+  const collab = post.collab ?? null;
+  const collabAccepted = collab?.status === 'accepted' ? collab : null;
+  const isCollaborator = Boolean(collabAccepted) && collabAccepted!.collaborator.id === session?.user.id;
 
   // Fire-and-forget — markEmpirePostViewed is dedup'd server-side
   // (empire_post_views is keyed on post_id + user_id), so a re-render or
@@ -873,6 +878,25 @@ export function SignalPostCard({
     else onDeleted(post.id);
   };
 
+  const handleLeaveCollab = async () => {
+    setMenuOpen(false);
+    if (!window.confirm(t('Leave this collaboration? It stays with the author but disappears from your profile.'))) return;
+    setBusy(true);
+    const { error } = await leaveCollab('post', post.id);
+    setBusy(false);
+    if (error) toast({ title: 'Could not leave', desc: error, icon: 'info' });
+    else onDeleted(post.id);
+  };
+
+  const handleRemoveCollab = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    const { error } = await removeCollab('post', post.id);
+    setBusy(false);
+    if (error) toast({ title: 'Could not remove', desc: error, icon: 'info' });
+    else onChanged({ ...post, collab: null });
+  };
+
   const handleReport = async () => {
     setMenuOpen(false);
     const { error } = await reportEmpireContent({ postId: post.id }, 'Reported from Signal');
@@ -959,6 +983,11 @@ export function SignalPostCard({
     // sheet/copy-link lives on the always-visible Share button; this is the
     // "send it to a real CX Rent conversation" path.
     [{ icon: 'send', label: 'Share to Messages', onClick: () => setShareSheetOpen(true) }],
+    ...(isCollaborator
+      ? [[{ icon: 'logout', label: t('Leave collaboration'), onClick: () => void handleLeaveCollab() } as PostMenuItem]]
+      : isOwnPost && collab
+        ? [[{ icon: 'users', label: t('Remove collaborator'), onClick: () => void handleRemoveCollab() } as PostMenuItem]]
+        : []),
     ...(canModerate
       ? [
           [
@@ -1021,13 +1050,18 @@ export function SignalPostCard({
           </div>
           <div className="mt-0.5 min-w-0 truncate text-[13px] leading-tight text-muted">
             <span>
-              {identity.username ? `@${identity.username} · ` : ''}
+              {collabAccepted ? `${collabHandle(collabAccepted.primary)} × ${collabHandle(collabAccepted.collaborator)} · ` : identity.username ? `@${identity.username} · ` : ''}
               {timeAgo(post.createdAt)}
               {post.editedAt && ' · Edited'}
               {post.isArchived && ' · Archived'}
               {post.isDemo && ` · ${t('Sample')}`}
             </span>
           </div>
+          {collab?.status === 'pending' && isOwnPost && (
+            <div className="mt-0.5 flex items-center gap-1 text-[12.5px] leading-tight text-faint">
+              <Icon name="clock" size={12} /> {t('Collaboration pending')}
+            </div>
+          )}
         </div>
         {/* Every item here (Edit/Pin/Feature/Archive/Delete/Report) acts
             on a real empire_posts row — none of it applies to a demo

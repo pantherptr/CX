@@ -15,7 +15,8 @@ import { supabase } from '../supabase';
 
 export type NotificationType =
   | 'follow' | 'post_respect' | 'post_comment' | 'post_share' | 'post_save'
-  | 'circle' | 'follow_accepted' | 'follow_request' | 'vision_selected' | 'vision_featured';
+  | 'circle' | 'follow_accepted' | 'follow_request' | 'vision_selected' | 'vision_featured'
+  | 'collab_invite' | 'collab_left';
 
 export interface SignalNotification {
   id: string;
@@ -97,6 +98,10 @@ function mapNotification(row: NotificationRow): SignalNotification {
 
 /** Where a notification leads, or null when there is nothing to open. */
 export function notificationPath(n: SignalNotification, base: string, myId: string | undefined): string | null {
+  if ((n.type === 'collab_invite' || n.type === 'collab_left') && n.visionId && !n.postId) {
+    const owner = n.type === 'collab_invite' ? n.actorId : myId;
+    return owner ? `${base}/profile/${owner}?vision=${n.visionId}` : null;
+  }
   if (n.type === 'vision_selected' || n.type === 'vision_featured') {
     return myId && n.visionId ? `${base}/profile/${myId}?vision=${n.visionId}` : null;
   }

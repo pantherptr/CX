@@ -12,6 +12,14 @@ import { SignalMediaViewer } from './SignalMediaViewer';
 import { SpotlightLogo } from '../SpotlightLogo';
 import { VisibilityPicker } from './VisibilityPicker';
 import { DEFAULT_VISIBILITY, type Visibility } from '../../lib/data/privacy';
+import { CollabPicker } from './CollabPicker';
+import { collabHandle, inviteCollaborator, leaveCollab, removeCollab, type CollabInfo, type CollabPerson } from '../../lib/data/collab';
+
+/** "@marco × @luca" for an accepted Collab, "Collaboration pending" for the author's open invitation. */
+function collabLine(c: CollabInfo | null | undefined, t: (s: string) => string): string | null {
+  if (!c) return null;
+  return c.status === 'accepted' ? `${collabHandle(c.primary)} × ${collabHandle(c.collaborator)}` : t('Collaboration pending');
+}
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -66,6 +74,8 @@ export function VisionsGrid({
 }) {
   const { t } = useLocale();
   const { toast } = useApp();
+  const { profile } = useAuth();
+  const myId = profile?.id;
   const [openAt, setOpenAt] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [editing, setEditing] = useState<Vision | null>(null);
@@ -91,6 +101,16 @@ export function VisionsGrid({
       return;
     }
     onDeleted?.(v.id);
+  };
+
+  const leave = async (v: Vision) => {
+    if (!window.confirm(t('Leave this collaboration? It stays with the author but disappears from your profile.'))) return;
+    const { error } = await leaveCollab('vision', v.id);
+    if (error) {
+      toast({ title: 'Could not leave', desc: error, icon: 'info' });
+      return;
+    }
+    onChanged?.();
   };
 
   return (
@@ -185,9 +205,10 @@ export function VisionsGrid({
                     <Icon name={v.visibility === 'private' ? 'lock' : v.visibility === 'circle' ? 'sparkles' : 'users'} size={11} />
                   </span>
                 )}
-                {v.title && !managing && (
+                {(v.title || v.collab) && !managing && (
                   <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pb-2 pt-8">
-                    <span translate="no" className="line-clamp-1 text-[12px] font-medium text-white/95">{v.title}</span>
+                    {v.title && <span translate="no" className="line-clamp-1 text-[12px] font-medium text-white/95">{v.title}</span>}
+                    {v.collab && <span translate="no" className="line-clamp-1 text-[11px] text-white/75">{collabLine(v.collab, t)}</span>}
                   </span>
                 )}
                 {v.spotlighted && !managing && (
@@ -195,7 +216,16 @@ export function VisionsGrid({
                     <Icon name="sparkles" size={10} /> Spotlight
                   </span>
                 )}
-                {managing && (
+                {managing && v.authorId !== myId && (
+                  <button
+                    type="button"
+                    onClick={() => void leave(v)}
+                    className="absolute left-2 top-2 inline-flex min-h-9 items-center rounded-full bg-black/65 px-3 text-[12px] font-semibold text-white backdrop-blur-sm transition-colors hover:bg-danger"
+                  >
+                    {t('Leave collab')}
+                  </button>
+                )}
+                {managing && v.authorId === myId && (
                   <div className="absolute left-2 top-2 flex gap-1.5">
                     <button
                       type="button"
@@ -226,7 +256,7 @@ export function VisionsGrid({
       {shown && openAt !== null && shown[openAt] && (
         <SignalMediaViewer
           images={shown.map((v) => v.mediaUrl)}
-          captions={shown.map((v) => ({ title: v.title, caption: v.caption, badge: v.spotlighted ? t('Selected for Signal Spotlight') : null }))}
+          captions={shown.map((v) => ({ title: v.title, caption: v.caption, badge: v.spotlighted ? t('Selected for Signal Spotlight') : collabLine(v.collab, t) }))}
           sharedKey="visions"
           startIndex={openAt}
           onClose={() => setOpenAt(null)}
@@ -242,12 +272,15 @@ interface Staged { file: File; preview: string; kind: 'image' | 'video' }
  *  several → they go in together, untitled. */
 export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
   const { t } = useLocale();
+  const { toast } = useApp();
   const [staged, setStaged] = useState<Staged[]>([]);
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   const [link, setLink] = useState<VisionLink>({ tripStampId: null, carId: null });
   // New Visions start with followers only — public is a choice.
   const [visibility, setVisibility] = useState<Visibility>(DEFAULT_VISIBILITY);
+  // CX Collab: one person from your CX Circle, for a single Vision.
+  const [collaborator, setCollaborator] = useState<CollabPerson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -287,11 +320,15 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
     const single = staged.length === 1;
     for (let i = 0; i < staged.length; i++) {
       const s = staged[i];
-      const { error: err } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '', single ? link : undefined, visibility);
+      const { error: err, id } = await addVision(s.file, s.kind, single ? title : '', single ? caption : '', single ? link : undefined, visibility);
       if (err) {
         setError(err);
         setProgress(null);
         return;
+      }
+      if (single && collaborator && id) {
+        const inv = await inviteCollaborator('vision', id, collaborator.id);
+        if (inv.error) toast({ title: 'Added, but the invitation could not be sent', desc: inv.error, icon: 'info' });
       }
       setProgress({ done: i + 1, total: staged.length });
     }
@@ -353,6 +390,12 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
           <div className="mt-4 flex items-center gap-2">
             <span className="text-caption text-faint">{t('Who can see this')}</span>
             <VisibilityPicker value={visibility} onChange={setVisibility} disabled={busy} />
+          </div>
+        )}
+
+        {staged.length === 1 && (
+          <div className="mt-2">
+            <CollabPicker value={collaborator} onChange={setCollaborator} visibility={visibility} disabled={busy} />
           </div>
         )}
 
@@ -462,6 +505,23 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
             <VisibilityPicker value={visibility} onChange={setVisibility} disabled={saving} />
           </div>
         </div>
+        {vision.collab && (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-panel px-3.5 py-2.5">
+            <span translate="no" className="min-w-0 truncate text-detail text-ink-soft">{collabLine(vision.collab, t)}</span>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={async () => {
+                const { error } = await removeCollab('vision', vision.id);
+                if (error) toast({ title: 'Could not remove', desc: error, icon: 'info' });
+                else onSaved();
+              }}
+              className="shrink-0 text-detail font-semibold text-danger"
+            >
+              {t('Remove collaborator')}
+            </button>
+          </div>
+        )}
         <button type="button" onClick={save} disabled={saving} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
           {saving ? t('Saving…') : t('Save')}
         </button>

@@ -21,6 +21,8 @@ import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
 import { loadHashtags } from '../../lib/data/hashtags';
 import { VisibilityPicker } from './VisibilityPicker';
+import { CollabPicker, collabAllowed } from './CollabPicker';
+import { inviteCollaborator, type CollabInfo, type CollabPerson } from '../../lib/data/collab';
 import { DEFAULT_POST_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
 import { useLocale } from '../../lib/i18n';
 
@@ -126,6 +128,8 @@ export function SignalCommunityComposer({
   const totalMedia = existingPaths.length + pending.length;
   // Who may see it — new posts start with followers only.
   const [visibility, setVisibility] = useState<Visibility>(DEFAULT_POST_VISIBILITY);
+  // CX Collab: one optional person from your CX Circle, invited once the post is up.
+  const [collaborator, setCollaborator] = useState<CollabPerson | null>(null);
   useEffect(() => {
     if (!editing) return;
     let cancelled = false;
@@ -229,6 +233,7 @@ export function SignalCommunityComposer({
 
   const resetDraft = () => {
     setBody('');
+    setCollaborator(null);
     setPollOptions(null);
     pending.forEach((m) => URL.revokeObjectURL(m.preview));
     setPending([]);
@@ -298,7 +303,16 @@ export function SignalCommunityComposer({
         setError(result.error ?? 'Something went wrong — try again.');
         return;
       }
-      void setContentVisibility('post', result.post.id, visibility);
+      let collab: CollabInfo | null = null;
+      if (!editing && collaborator && collabAllowed(visibility)) {
+        // The visibility is stored first: Collab only exists on public / followers content.
+        await setContentVisibility('post', result.post.id, visibility);
+        const inv = await inviteCollaborator('post', result.post.id, collaborator.id);
+        if (inv.error) toast({ title: 'The post is up, but the invitation could not be sent', desc: inv.error, icon: 'info' });
+        else collab = { status: 'pending', primary: { id: profile?.id ?? '', name: profile?.full_name || 'CX user', username: profile?.username ?? null }, collaborator };
+      } else {
+        void setContentVisibility('post', result.post.id, visibility);
+      }
       if (!editing && pollOptions) {
         const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
         if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
@@ -321,6 +335,7 @@ export function SignalCommunityComposer({
         authorIsHost: editing.authorIsHost, authorIsVerifiedClient: editing.authorIsVerifiedClient,
         pinnedToProfile: editing.pinnedToProfile, isArchived: editing.isArchived,
         vehicle: selectedVehicle,
+        collab: collabAllowed(visibility) ? editing.collab ?? null : null,
       } : {
         ...result.post,
         authorName: profile?.full_name || 'CX Rent user',
@@ -332,6 +347,7 @@ export function SignalCommunityComposer({
         authorIsHost: Boolean(profile?.is_host),
         authorIsVerifiedClient: Boolean(profile?.is_verified_client),
         vehicle: selectedVehicle,
+        collab,
       };
       if (!editing) {
         vibrateTap();
@@ -489,6 +505,12 @@ export function SignalCommunityComposer({
             <div className="mt-3 flex items-center gap-2">
               <span className="text-caption text-faint">{t('Who can see this')}</span>
               <VisibilityPicker value={visibility} onChange={setVisibility} disabled={submitting} />
+            </div>
+          )}
+
+          {isOpen && !editing && (
+            <div className="mt-2">
+              <CollabPicker value={collaborator} onChange={setCollaborator} visibility={visibility} disabled={submitting} />
             </div>
           )}
 

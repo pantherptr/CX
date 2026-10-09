@@ -6,6 +6,8 @@ import { Img } from './motion';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from './motionKit';
 import type { SignalNotification, NotificationType } from '../lib/data/notifications';
 import { respondToFollowRequest } from '../lib/data/signalProfile';
+import { respondToCollabInvite } from '../lib/data/collab';
+import { useApp } from '../lib/store';
 
 /** Same precedence every other SIGNAL identity surface (posts, comments,
  *  search) already uses — Owner outranks Admin outranks Host outranks
@@ -51,6 +53,8 @@ const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: stri
   follow_request: { icon: 'user', verb: 'asked to follow you', badge: 'bg-ink text-white' },
   vision_selected: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
   vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
+  collab_invite: { icon: 'users', verb: 'invited you to collaborate on a publication.', badge: 'bg-ink text-white' },
+  collab_left: { icon: 'users', verb: 'left the collaboration', badge: 'bg-ink text-white' },
 };
 
 /** What a notification says when the person behind it stays private, or
@@ -67,6 +71,8 @@ const ANON_TEXT: Record<NotificationType, string> = {
   follow_request: 'Someone asked to follow you',
   vision_selected: 'Your Vision was selected for Signal Spotlight',
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
+  collab_invite: 'You were invited to collaborate on a publication',
+  collab_left: 'A collaborator left the collaboration',
 };
 /** The count>1 version of the same four — a fresh English string per
  *  event/count so it reads naturally in every language, with `{count}`
@@ -82,6 +88,8 @@ const ANON_TEXT_MANY: Record<NotificationType, string> = {
   follow_request: 'Someone asked to follow you',
   vision_selected: 'Your Vision was selected for Signal Spotlight',
   vision_featured: 'Your Vision is now featured on Signal Spotlight',
+  collab_invite: 'You were invited to collaborate on a publication',
+  collab_left: 'A collaborator left the collaboration',
 };
 
 type TabId = 'all' | 'unread' | 'follows' | 'activity';
@@ -135,6 +143,18 @@ export function NotificationsList({
     const { error } = await respondToFollowRequest(n.actorId, accept);
     if (error) setAnswered((a) => { const next = { ...a }; delete next[n.id]; return next; });
     else onMarkRead?.(n.id);
+  };
+  // Accepting / declining a CX Collab invitation right from the notification.
+  const { toast } = useApp();
+  const answerCollab = async (n: SignalNotification, accept: boolean) => {
+    const id = n.postId ?? n.visionId;
+    if (!id) return;
+    setAnswered((a) => ({ ...a, [n.id]: accept ? 'accepted' : 'declined' }));
+    const { error } = await respondToCollabInvite(n.postId ? 'post' : 'vision', id, accept);
+    if (error) {
+      setAnswered((a) => { const next = { ...a }; delete next[n.id]; return next; });
+      toast({ title: 'Could not answer the invitation', desc: error, icon: 'info' });
+    } else onMarkRead?.(n.id);
   };
 
   if (notifications === null) {
@@ -275,7 +295,7 @@ export function NotificationsList({
                             <span className="text-ink-soft">
                               {n.count > 1 && t(n.count > 2 ? 'and {count} others' : 'and {count} other', { count: n.count - 1 })}
                               {n.count > 1 ? ' ' : ''}
-                              {copy.verb}
+                              {t(copy.verb)}
                             </span>
                           </p>
                         ) : (
@@ -309,6 +329,34 @@ export function NotificationsList({
                               {t('Decline')}
                             </span>
                           </span>
+                        )}
+                        {n.type === 'collab_invite' && n.actorId && n.available && answered[n.id] && (
+                          <span className="mt-2 inline-flex items-center gap-1.5 text-detail text-muted">
+                            <Icon name="check" size={14} strokeWidth={2.5} /> {answered[n.id] === 'accepted' ? t('You accepted the invitation') : t('You declined the invitation')}
+                          </span>
+                        )}
+                        {n.type === 'collab_invite' && n.actorId && n.available && n.pendingRequest && !answered[n.id] && (
+                          <>
+                            <p className="mt-2 text-detail text-muted">{t('This publication will be shown to the followers of both profiles.')}</p>
+                            <span className="mt-2.5 flex gap-2">
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => { e.stopPropagation(); void answerCollab(n, true); }}
+                                className="inline-flex min-h-9 items-center rounded-full bg-ink px-4 text-detail font-semibold text-white"
+                              >
+                                {t('Accept')}
+                              </span>
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => { e.stopPropagation(); void answerCollab(n, false); }}
+                                className="inline-flex min-h-9 items-center rounded-full border border-line px-4 text-detail font-semibold text-ink-soft"
+                              >
+                                {t('Decline')}
+                              </span>
+                            </span>
+                          </>
                         )}
                         {n.type === 'follow' && n.actorId && (
                           <span className="mt-2.5 inline-flex min-h-9 items-center rounded-full bg-ink px-4 text-detail font-semibold text-white">

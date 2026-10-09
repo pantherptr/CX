@@ -4,6 +4,7 @@ import { roleFromFlags, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
 import { withoutHidden } from './privacy';
+import { withCollabs, type CollabInfo } from './collab';
 
 /**
  * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
@@ -48,7 +49,7 @@ export const SPOTLIGHT_POST_MARKER = '[[signal-spotlight]]';
 export const withoutSpotlightPosts = <T extends { body: string }>(rows: T[]): T[] => rows.filter((r) => r.body !== SPOTLIGHT_POST_MARKER);
 
 /** What a normal feed list shows: no Spotlight marker posts, nothing the viewer may not see. */
-const viewablePosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withoutHidden('post', withoutSpotlightPosts(rows));
+const viewablePosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withCollabs('post', await withoutHidden('post', withoutSpotlightPosts(rows)));
 
 
 /** `create_empire_post` rejects an empty body, but a post may be just a photo or
@@ -61,6 +62,8 @@ export const fromStoredBody = (body: string) => body.replace(/\u200B/g, '');
 
 export interface EmpirePost {
   id: string;
+  /** CX Collab: the second person on this post (accepted), or a pending invitation (author only). */
+  collab?: CollabInfo | null;
   authorId: string;
   authorName: string;
   authorAvatarUrl: string | null;
@@ -947,7 +950,7 @@ export async function fetchEmpirePostsByAuthor(authorId: string, limit = FEED_PA
 export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: string): Promise<EmpirePost[]> {
   const { data, error } = await supabase.rpc('fetch_empire_saved_posts', { p_limit: limit, p_before: before ?? null });
   if (error) throw error;
-  return withoutHidden('post', (data as EmpirePostRow[]).map(mapEmpirePost));
+  return withCollabs('post', await withoutHidden('post', (data as EmpirePostRow[]).map(mapEmpirePost)));
 }
 
 /** Uploads one composer image/video to the public `empire-post-media`
@@ -1112,7 +1115,8 @@ export async function fetchEmpirePostById(postId: string): Promise<EmpirePost | 
   const { data, error } = await supabase.rpc('fetch_empire_post_by_id', { p_post_id: postId });
   if (error) throw error;
   const rows = data as EmpirePostRow[];
-  return rows.length > 0 ? mapEmpirePost(rows[0]) : null;
+  if (rows.length === 0) return null;
+  return (await withCollabs('post', [mapEmpirePost(rows[0])]))[0];
 }
 
 // ---- Owner/Admin analytics — one compact aggregate object, not a

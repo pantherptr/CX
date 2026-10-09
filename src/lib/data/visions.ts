@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { Visibility } from './privacy';
+import { withCollabs, type CollabInfo } from './collab';
 
 /**
  * CX Visions — a personal, professional portfolio on a profile, separate
@@ -38,6 +39,8 @@ export interface Vision {
   spotlighted: boolean;
   /** Yours only: who may see it. */
   visibility: Visibility;
+  /** CX Collab: the second person on this Vision (accepted), or a pending invitation (author only). */
+  collab?: CollabInfo | null;
 }
 
 /** What a Vision may be linked to (both optional) — it only supplies the city
@@ -66,15 +69,15 @@ const urlFor = (path: string) => supabase.storage.from(VISIONS_BUCKET).getPublic
 export async function fetchVisions(authorId: string, limit = 60): Promise<Vision[]> {
   const { data, error } = await supabase.rpc('fetch_visions', { p_author_id: authorId, p_limit: limit, p_before: null });
   if (error || !data) return [];
-  return (data as VisionRow[]).map((r) => ({
+  return withCollabs('vision', (data as VisionRow[]).map((r) => ({
     id: r.id, authorId: r.author_id, mediaUrl: urlFor(r.media_path), mediaKind: r.media_kind,
     title: r.title, caption: r.caption, createdAt: r.created_at,
     tripStampId: r.trip_stamp_id, carId: r.car_id, spotlighted: Boolean(r.spotlighted), visibility: r.visibility ?? 'public',
-  }));
+  })));
 }
 
 /** Uploads one file into the signed-in user's own folder and records it. */
-export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink, visibility: Visibility = 'followers'): Promise<{ error: string | null }> {
+export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink, visibility: Visibility = 'followers'): Promise<{ error: string | null; id?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) return { error: 'Not signed in' };
@@ -82,14 +85,14 @@ export async function addVision(file: File, kind: 'image' | 'video', title: stri
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
   const up = await supabase.storage.from(VISIONS_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
   if (up.error) return { error: up.error.message };
-  const { error } = await supabase.rpc('add_vision', { p_media_path: path, p_media_kind: kind, p_title: title, p_caption: caption,
+  const { data: newId, error } = await supabase.rpc('add_vision', { p_media_path: path, p_media_kind: kind, p_title: title, p_caption: caption,
     p_trip_stamp_id: link?.tripStampId ?? null, p_car_id: link?.carId ?? null, p_visibility: visibility,
   });
   if (error) {
     await supabase.storage.from(VISIONS_BUCKET).remove([path]);
     return { error: error.message };
   }
-  return { error: null };
+  return { error: null, id: typeof newId === 'string' ? newId : undefined };
 }
 
 export async function updateVision(id: string, title: string, caption: string, link?: VisionLink, visibility?: Visibility): Promise<{ error: string | null }> {
