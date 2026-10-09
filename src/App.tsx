@@ -339,6 +339,7 @@ export default function App() {
             with the item focused in an overlay, rather than a standalone
             page, so "back" always returns to a live, scroll-preserved
             feed underneath. */}
+        <Route path="/signal/spotlight" element={<Signal />} />
         <Route path="/signal/post/:postId" element={<Signal />} />
         <Route path="/signal/highlight/:highlightId" element={<Signal />} />
         <Route path="/signal/profile/:authorId" element={<Signal />} />

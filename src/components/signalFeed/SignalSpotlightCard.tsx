@@ -5,7 +5,7 @@ import { Img } from '../motion';
 import { VerifiedBadge } from '../primitives';
 import { useLocale } from '../../lib/i18n';
 import { fetchVisions, type Vision } from '../../lib/data/visions';
-import type { SpotlightCardData } from '../../lib/data/spotlight';
+import { fetchSpotlightFeed, type SpotlightCardData } from '../../lib/data/spotlight';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { SharedAvatar } from '../motionKit';
 
@@ -125,30 +125,83 @@ export function SignalSpotlightCard({ data, all, inRail = false }: { data: Spotl
   );
 }
 
-/** The Spotlight section — its own block above the posts, in Official and in
- *  Community alike (a Spotlight published by the CX team goes everywhere).
- *  One Spotlight is a single wide card; several make a swipeable row. Opening
- *  one and closing it brings you straight back here, in the feed. */
-export function SignalSpotlightSection({ items }: { items: SpotlightCardData[] }) {
+/** A small, quiet entry to the Spotlight page — shown in Official and Community
+ *  whenever the CX team has published something. It carries the newest one's
+ *  photo and title; tapping it opens the Spotlight page (and closing that page
+ *  brings you back to the feed you left from). */
+export function SignalSpotlightTeaser({ items }: { items: SpotlightCardData[] }) {
   const { t } = useLocale();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   if (items.length === 0) return null;
+  const latest = items[0];
   return (
-    <section aria-label={t('Signal Spotlight')} className="mb-6">
-      <div className="mb-2.5 flex items-center gap-2 px-1">
-        <Icon name="sparkles" size={14} className="text-ink" />
-        <h2 className="text-micro font-semibold uppercase tracking-[0.3em] text-ink">{t('Signal Spotlight')}</h2>
+    <button
+      type="button"
+      onClick={() => navigate('/signal/spotlight', { state: { from: pathname } })}
+      className="pressable group mb-4 flex w-full items-center gap-3.5 rounded-2xl border border-line bg-surface p-2.5 pr-4 text-left shadow-hair transition-colors hover:border-line-strong"
+    >
+      <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-noir">
+        {latest.mediaKind === 'video' ? (
+          <video src={latest.mediaUrl} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+        ) : (
+          <Img src={latest.mediaUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" fallback={<span className="grid h-full w-full place-items-center text-white/50"><Icon name="image" size={18} /></span>} />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.26em] text-ink">
+          <Icon name="sparkles" size={12} /> {t('Signal Spotlight')}
+        </span>
+        <span translate="no" className="mt-1 block truncate font-display text-[16px] font-semibold leading-tight text-ink">
+          {latest.title || `${t('Vision by')} ${latest.creatorUsername ? `@${latest.creatorUsername}` : t('a CX creator')}`}
+        </span>
+        <span className="mt-0.5 block truncate text-caption text-muted">
+          {[latest.city, items.length > 1 ? `+${items.length - 1}` : null].filter(Boolean).join(' · ') || t('Selected by CX')}
+        </span>
+      </span>
+      <Icon name="chevronRight" size={18} className="shrink-0 text-faint transition-transform duration-300 group-hover:translate-x-0.5" />
+    </button>
+  );
+}
+
+/** The Spotlight page: every Spotlight CX has published, as large cards. It opens
+ *  over the feed you came from (same pattern as a profile or a post) and closing
+ *  it returns you there. */
+export function SignalSpotlightPage({ onClose }: { onClose: () => void }) {
+  const { t } = useLocale();
+  const [items, setItems] = useState<SpotlightCardData[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchSpotlightFeed(20).then((rows) => { if (!cancelled) setItems(rows); });
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+      <header className="sticky top-0 z-10 flex min-h-14 items-center gap-2 border-b border-line bg-bg/90 px-3 pt-safe backdrop-blur-xl">
+        <button type="button" onClick={onClose} aria-label="Back" className="pressable grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-panel">
+          <Icon name="chevronLeft" size={22} />
+        </button>
+        <h1 className="flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-ink">
+          <Icon name="sparkles" size={14} /> {t('Signal Spotlight')}
+        </h1>
+      </header>
+      <div className="mx-auto w-full max-w-2xl px-4 pb-16 pt-5">
+        <p className="mb-5 px-1 font-display text-[22px] font-semibold leading-tight tracking-tight text-ink">{t('Selected by CX.')}</p>
+        {items === null && (
+          <>
+            <span className="skeleton mb-5 block aspect-[4/5] w-full rounded-[28px] sm:aspect-[16/10]" />
+            <span className="skeleton mb-5 block aspect-[4/5] w-full rounded-[28px] sm:aspect-[16/10]" />
+          </>
+        )}
+        {items && items.length === 0 && <p className="py-20 text-center text-body text-muted">{t('Nothing selected yet.')}</p>}
+        {items?.map((d) => <SignalSpotlightCard key={d.entryId} data={d} all={items} />)}
       </div>
-      {items.length === 1 ? (
-        <SignalSpotlightCard data={items[0]} all={items} inRail />
-      ) : (
-        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-          {items.map((d) => (
-            <div key={d.entryId} className="w-[84%] shrink-0 snap-center sm:w-[62%]">
-              <SignalSpotlightCard data={d} all={items} inRail />
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+    </div>
   );
 }

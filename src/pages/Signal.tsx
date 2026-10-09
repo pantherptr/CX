@@ -11,7 +11,7 @@ import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
-import { SignalSpotlightSection } from '../components/signalFeed/SignalSpotlightCard';
+import { SignalSpotlightTeaser, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
 import { useSpotlightFeed } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
@@ -65,7 +65,7 @@ export default function Signal() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const { pathname } = useLocation();
+  const { pathname, state: navState } = useLocation();
   const { postId, highlightId, authorId } = useParams<{ postId?: string; highlightId?: string; authorId?: string }>();
   const space: 'official' | 'community' = pathname.startsWith('/signal/community') ? 'community' : 'official';
   const base = space === 'community' ? '/signal/community' : '/signal';
@@ -248,7 +248,8 @@ export default function Signal() {
 
   const navItems: { label: string; icon: IconName; active?: boolean; groupEnd?: boolean; onSelect: () => void }[] = [
           { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
-          { label: 'Community', icon: 'users', active: space === 'community', groupEnd: true, onSelect: () => navigate('/signal/community') },
+          { label: 'Community', icon: 'users', active: space === 'community', onSelect: () => navigate('/signal/community') },
+          { label: 'Spotlight', icon: 'sparkles', groupEnd: true, onSelect: () => navigate('/signal/spotlight', { state: { from: pathname } }) },
           // My Profile leads the personal-shortcuts section — the one row
           // every signed-in visitor has, regardless of publishing rights,
           // so it's the first thing under the Official/Community divider
@@ -413,8 +414,8 @@ export default function Signal() {
           />
         )}
 
-        {/* Signal Spotlight — its own section, in Official AND Community */}
-        <SignalSpotlightSection items={spotlights} />
+        {/* Signal Spotlight — a small entry to its own page, in Official AND Community */}
+        <SignalSpotlightTeaser items={spotlights} />
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
@@ -516,6 +517,10 @@ export default function Signal() {
       </SignalPullToRefresh>
       </main>
       </div>
+
+      {pathname === '/signal/spotlight' && (
+        <SignalSpotlightPage onClose={() => navigate((navState as { from?: string } | null)?.from ?? '/signal', { viewTransition: true })} />
+      )}
 
       {postId && <SignalPostDetail postId={postId} canManage={canManage} onClose={closeOverlay} />}
 

@@ -31,6 +31,10 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Spotlight", "Spotlight", "Spotlight", "Spotlight"],
+  ["Nothing selected yet.", "Ancora niente di selezionato.", "Nimic selectat încă.", "Aún no hay nada seleccionado."],
+  ["Selected by CX", "Scelto da CX", "Ales de CX", "Elegido por CX"],
+  ["Selected by CX.", "Scelte da CX.", "Alese de CX.", "Elegidas por CX."],
   ["See more from", "Vedi altro di", "Vezi mai mult de la", "Ver más de"],
   ["optional", "facoltativo", "opțional", "opcional"],
   ["The world, through your lens.", "Il mondo, visto da te.", "Lumea, prin ochii tăi.", "El mundo, a través de tu mirada."],
