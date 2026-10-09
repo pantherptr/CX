@@ -1,3 +1,4 @@
+import { RespectGlyph } from './RespectGlyph';
 import type { CSSProperties } from 'react';
 import {
   Search, Calendar, MapPin, Star, Heart, ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
@@ -77,6 +78,10 @@ interface IconProps {
 
 export function Icon({ name, size = 20, className, style, strokeWidth = 1.8, fill }: IconProps) {
   const isFilled = fill ?? FILLED.includes(name);
+
+  if (name === 'like') {
+    return <RespectGlyph height={Math.round(size * 1.15)} on={Boolean(isFilled)} className={className} style={style} />;
+  }
 
   if (name === 'instagram' || name === 'linkedin' || name === 'twitter') {
     return (

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'motion/react';
-import respectOn from '../assets/respect/respect-on.png';
-import respectOff from '../assets/respect/respect-off.png';
+import { RespectGlyph } from './RespectGlyph';
 
 /** The Respect reaction: CX's pointing hand — thumb up, two fingers out, a
  *  chequered racing cuff. Idle it is the graphite outline; once Respected it
@@ -72,14 +71,9 @@ export function RespectIcon({
         <path d="M5 7h6" />
         <path d="M3 13 7 10" />
       </motion.svg>
-      <motion.img
-        src={filled ? respectOn : respectOff}
-        alt=""
-        draggable={false}
-        animate={controls}
-        initial={false}
-        style={{ height: h, width: 'auto', maxWidth: 'none', originX: 0.15, originY: 0.9 }}
-      />
+      <motion.span animate={controls} initial={false} style={{ display: 'inline-flex', originX: 0.15, originY: 0.9 }}>
+        <RespectGlyph height={h} on={filled} />
+      </motion.span>
     </span>
   );
 }
