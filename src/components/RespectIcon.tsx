@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'motion/react';
 import respectOn from '../assets/respect/respect-on.png';
 import respectOff from '../assets/respect/respect-off.png';
@@ -24,8 +24,16 @@ export function RespectIcon({
   const ring = useAnimation();
   const reduced = useReducedMotion();
 
+  // `playKey` is the timestamp (ms) of the tap that fired it, 0 = never. The
+  // card can remount this icon right as it is tapped, so a mount must still
+  // play if the tap was just now — but a mount long after a tap (scrolling,
+  // other posts re-rendering) must not. The ref makes each tap play once.
+  const lastKey = useRef(0);
   useEffect(() => {
-    if (playKey > 0 && !reduced) {
+    if (!playKey || playKey === lastKey.current) return;
+    lastKey.current = playKey;
+    if (Date.now() - playKey > 700) return;
+    if (!reduced) {
       void controls.start({
         rotate: [0, -20, -20, 5, 0],
         x: [0, -2.5, -2.5, 0.5, 0],

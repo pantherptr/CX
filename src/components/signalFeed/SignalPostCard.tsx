@@ -572,7 +572,7 @@ export function SignalPostCard({
   const [viewPlay, setViewPlay] = useState(0);
   const fireStamp = () => {
     setStampKey((k) => k + 1);
-    setRespectPlay((k) => k + 1);
+    setRespectPlay(Date.now());
   };
   const holdTimerRef = useRef<number | undefined>(undefined);
   const heldRespectRef = useRef(false);
