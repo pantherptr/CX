@@ -66,7 +66,7 @@ function timeAgo(iso: string): string {
 // The action row: plain icon + number, evenly spread, only the colour changes
 // when an action is active — like the reference tweet card, just in CX green.
 const ACTION = 'group flex min-h-11 select-none items-center gap-1 text-[14px] font-medium transition-colors';
-const ICON_WRAP = 'grid h-9 w-9 place-items-center rounded-full transition-colors';
+const BAR_ICON = 'grid h-8 w-8 place-items-center rounded-full transition-colors';
 
 const MIN_MEDIA_ASPECT = 4 / 5;
 const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
@@ -1174,118 +1174,6 @@ export function SignalPostCard({
         </div>
       )}
 
-      {/* The engagement row: Respect, Save, Views, (Comment — Owner only) and
-          Share, spread evenly. Numbers are public totals — never who, and no
-          count on Share. The team's repeat Respect/Save/View taps (hold to
-          take back) live on the same buttons. A "RESPECTED" stamp sits above
-          the thumb while a Respect stands. */}
-      <div className={`flex items-center justify-between px-4 pb-2 transition-[padding] duration-200 sm:px-5 ${respected ? 'pt-7' : 'pt-1'}`}>
-        <div className="flex items-center gap-1">
-        <div className="relative">
-          {respected && (
-            <span
-              key={stampKey}
-              aria-hidden="true"
-              style={stampKey > 0 ? undefined : { transform: 'rotate(-8deg)' }}
-              className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[26px] left-0 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
-            >
-              Respected
-            </span>
-          )}
-          {isTeamViewer ? (
-            <Tap
-              onClick={respectClick}
-              onPointerDown={respectPressStart}
-              onPointerUp={respectPressEnd}
-              onPointerLeave={respectPressEnd}
-              onPointerCancel={respectPressEnd}
-              scale={0.94}
-              aria-label={myRespects > 0 ? 'Rimuovi Respect' : 'Esprimi Respect'}
-              className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
-            >
-              <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <RespectIcon size={20} filled={myRespects > 0} playKey={respectPlay} />
-              </span>
-            </Tap>
-          ) : (
-            <Tap
-              onClick={handleRespect}
-              scale={0.94}
-              aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
-              className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
-            >
-              <span className={`${ICON_WRAP} -ml-2 group-hover:bg-accent-050`}>
-                <RespectIcon size={20} filled={post.likedByMe} playKey={respectPlay} />
-              </span>
-            </Tap>
-          )}
-        </div>
-
-        {isTeamViewer ? (
-          <Tap
-            onClick={saveClick}
-            onPointerDown={savePressStart}
-            onPointerUp={savePressEnd}
-            onPointerLeave={savePressEnd}
-            onPointerCancel={savePressEnd}
-            scale={0.94}
-            aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to choose a collection` : 'Save — hold to choose a collection'}
-            className={`${ACTION} ${mySaves > 0 ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
-          >
-            <span className={`${ICON_WRAP} group-hover:bg-panel`}>
-              <BookmarkIcon size={19} filled={mySaves > 0} playKey={savePlay} />
-            </span>
-          </Tap>
-        ) : (
-          <Tap
-            onClick={saveTap}
-            onPointerDown={collectPressStart}
-            onPointerUp={collectPressEnd}
-            onPointerLeave={collectPressEnd}
-            onPointerCancel={collectPressEnd}
-            onContextMenu={(e: { preventDefault: () => void }) => e.preventDefault()}
-            scale={0.94}
-            aria-label={post.savedByMe ? 'Saved — hold to choose a collection' : 'Save — hold to choose a collection'}
-            className={`${ACTION} select-none [-webkit-touch-callout:none] ${post.savedByMe ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
-          >
-            <span className={`${ICON_WRAP} group-hover:bg-panel`}>
-              <BookmarkIcon size={19} filled={post.savedByMe} playKey={savePlay} />
-            </span>
-          </Tap>
-        )}
-
-        </div>
-
-        <div className="flex items-center gap-1">
-        {/* Owner-only — add_empire_post_comment enforces this server-side;
-            hiding it for everyone else is just honest UI. No demo
-            equivalent (see signalDemo.ts). */}
-        {isOwnerViewer && !post.isDemo && (
-          <Tap
-            onClick={() => setCommentsSheetOpen(true)}
-            scale={0.94}
-            aria-label="Comment"
-            className={`${ACTION} text-ink-soft hover:text-sky-600`}
-          >
-            <span className={`${ICON_WRAP} group-hover:bg-sky-50`}>
-              <Icon name="message" size={19} />
-            </span>
-          </Tap>
-        )}
-
-        <Tap
-          onClick={handleShare}
-          scale={0.94}
-          aria-label="Share"
-          className={`${ACTION} text-ink-soft hover:text-accent-700`}
-        >
-          <span className={`${ICON_WRAP} -mr-2 group-hover:bg-accent-050`}>
-            <ShareIcon size={19} playKey={sharePlay} />
-          </span>
-        </Tap>
-        </div>
-      </div>
-
       {collectionHint && !post.isDemo && (
         <div data-no-open className="mx-4 mb-2 flex animate-fade-up items-center justify-between gap-3 rounded-xl bg-panel px-3.5 py-2 sm:mx-5">
           <span className="flex items-center gap-1.5 text-detail font-medium text-ink-soft">
@@ -1308,9 +1196,9 @@ export function SignalPostCard({
           Shares and the "Performance" label for Owner/Admin. It fills in as
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
-      {(
-        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 sm:px-5">
-          <div className="flex items-center gap-4 text-ink-soft">
+      {respected && <div aria-hidden="true" className="h-6" />}
+      <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-1 sm:px-5">
+        <div className="flex items-center gap-3 text-ink-soft">
             {(isTeamViewer ? (
                 <button
                   type="button"
@@ -1334,22 +1222,115 @@ export function SignalPostCard({
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                 </span>
               ))}
-            {([
-              ['like', post.likeCount, true],
-              ['bookmark', post.saveCount, true],
-              ['share', post.shareCount, false],
-            ] as const)
-              .filter(([, , isPublic]) => isPublic || canManage)
-              .map(([icon, n]) => (
-                <span key={icon} className="inline-flex items-center gap-1.5">
-                  <Icon name={icon} size={15} className="shrink-0 text-faint" />
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(n)}</span>
+          {/* Respect — the stamp sits just above it while a Respect stands */}
+          <div className="relative">
+            {respected && (
+              <span
+                key={stampKey}
+                aria-hidden="true"
+                style={stampKey > 0 ? undefined : { transform: 'rotate(-8deg)' }}
+                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[34px] left-0 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
+              >
+                Respected
+              </span>
+            )}
+            {isTeamViewer ? (
+              <Tap
+                onClick={respectClick}
+                onPointerDown={respectPressStart}
+                onPointerUp={respectPressEnd}
+                onPointerLeave={respectPressEnd}
+                onPointerCancel={respectPressEnd}
+                scale={0.94}
+                aria-label={myRespects > 0 ? 'Rimuovi Respect' : 'Esprimi Respect'}
+                className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
+              >
+                <span className={`${BAR_ICON} -ml-1.5`}>
+                  <RespectIcon size={19} filled={myRespects > 0} playKey={respectPlay} />
                 </span>
-              ))}
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
+              </Tap>
+            ) : (
+              <Tap
+                onClick={handleRespect}
+                scale={0.94}
+                aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
+                className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
+              >
+                <span className={`${BAR_ICON} -ml-1.5`}>
+                  <RespectIcon size={19} filled={post.likedByMe} playKey={respectPlay} />
+                </span>
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
+              </Tap>
+            )}
           </div>
-          {canManage && <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>}
+
+          {isTeamViewer ? (
+            <Tap
+              onClick={saveClick}
+              onPointerDown={savePressStart}
+              onPointerUp={savePressEnd}
+              onPointerLeave={savePressEnd}
+              onPointerCancel={savePressEnd}
+              scale={0.94}
+              aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to choose a collection` : 'Save — hold to choose a collection'}
+              className={`${ACTION} ${mySaves > 0 ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+            >
+              <span className={BAR_ICON}>
+                <BookmarkIcon size={18} filled={mySaves > 0} playKey={savePlay} />
+              </span>
+              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.saveCount)}</span>
+            </Tap>
+          ) : (
+            <Tap
+              onClick={saveTap}
+              onPointerDown={collectPressStart}
+              onPointerUp={collectPressEnd}
+              onPointerLeave={collectPressEnd}
+              onPointerCancel={collectPressEnd}
+              onContextMenu={(e: { preventDefault: () => void }) => e.preventDefault()}
+              scale={0.94}
+              aria-label={post.savedByMe ? 'Saved — hold to choose a collection' : 'Save — hold to choose a collection'}
+              className={`${ACTION} select-none [-webkit-touch-callout:none] ${post.savedByMe ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+            >
+              <span className={BAR_ICON}>
+                <BookmarkIcon size={18} filled={post.savedByMe} playKey={savePlay} />
+              </span>
+              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.saveCount)}</span>
+            </Tap>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-1">
+          {canManage && <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>}
+          {/* Owner-only — add_empire_post_comment enforces this server-side;
+              hiding it for everyone else is just honest UI. No demo
+              equivalent (see signalDemo.ts). */}
+          {isOwnerViewer && !post.isDemo && (
+            <Tap
+              onClick={() => setCommentsSheetOpen(true)}
+              scale={0.94}
+              aria-label="Comment"
+              className={`${ACTION} text-ink-soft hover:text-sky-600`}
+            >
+              <span className={BAR_ICON}>
+                <Icon name="message" size={18} />
+              </span>
+            </Tap>
+          )}
+          <Tap
+            onClick={handleShare}
+            scale={0.94}
+            aria-label="Share"
+            className={`${ACTION} text-ink-soft hover:text-accent-700`}
+          >
+            <span className={`${BAR_ICON} ${canManage ? '' : '-mr-1.5'}`}>
+              <ShareIcon size={18} playKey={sharePlay} />
+            </span>
+            {canManage && <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.shareCount)}</span>}
+          </Tap>
+        </div>
+      </div>
 
       {/* Owner/CX-team comments are public — they render right here,
           automatically, for every viewer the moment at least one exists,
