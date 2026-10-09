@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["See more from", "Vedi altro di", "Vezi mai mult de la", "Ver más de"],
   ["optional", "facoltativo", "opțional", "opcional"],
   ["The world, through your lens.", "Il mondo, visto da te.", "Lumea, prin ochii tăi.", "El mundo, a través de tu mirada."],
   ["Your photo and video portfolio inside CX. Show your best shots — verified accounts can be featured by CX in Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Mostra i tuoi scatti migliori: gli account verificati possono essere scelti da CX per Signal Spotlight.", "Portofoliul tău foto și video în CX. Arată-ți cele mai bune cadre: conturile verificate pot fi alese de CX pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Muestra tus mejores tomas: las cuentas verificadas pueden ser elegidas por CX para Signal Spotlight."],

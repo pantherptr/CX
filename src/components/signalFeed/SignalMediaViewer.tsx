@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { mediaKindFromPath } from '../../lib/data/empireFeed';
@@ -30,6 +30,7 @@ export function SignalMediaViewer({
   onClose,
   sharedKey = '',
   captions,
+  footer,
 }: {
   images: string[];
   startIndex: number;
@@ -38,6 +39,8 @@ export function SignalMediaViewer({
   sharedKey?: string;
   /** Optional title/caption per item (CX Visions) — shown under the media. */
   captions?: ({ title: string | null; caption: string | null; badge?: string | null } | null)[];
+  /** Optional extra row under the caption (e.g. a link to the creator). */
+  footer?: ReactNode;
 }) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -253,11 +256,13 @@ export function SignalMediaViewer({
 
       {captions?.[index] && (captions[index]!.title || captions[index]!.caption || captions[index]!.badge) && (
         <div className="mx-auto w-full max-w-xl shrink-0 px-5 pb-2 pt-3 text-center text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
-          {captions[index]!.title && <p className="font-display text-[17px] font-semibold leading-snug">{captions[index]!.title}</p>}
-          {captions[index]!.caption && <p className="mt-1 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
+          {captions[index]!.title && <p translate="no" className="font-display text-[17px] font-semibold leading-snug">{captions[index]!.title}</p>}
+          {captions[index]!.caption && <p translate="no" className="mt-1 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
           {captions[index]!.badge && <p className="mt-2 text-micro font-semibold uppercase tracking-[0.2em] text-accent-bright">{captions[index]!.badge}</p>}
         </div>
       )}
+
+      {footer && <div className="flex shrink-0 justify-center px-5 pb-3 pt-1">{footer}</div>}
 
       {many && images.length <= 12 && (
         <div className="flex shrink-0 justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2" aria-hidden="true">
