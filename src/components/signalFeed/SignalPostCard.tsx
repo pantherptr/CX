@@ -979,13 +979,15 @@ export function SignalPostCard({
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 max-w-[68%] shrink-0 items-center gap-1.5 hover:underline">
+            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 max-w-full items-center gap-1.5 hover:underline">
               <span className="min-w-0 truncate font-display text-[15.5px] font-semibold leading-tight text-ink">{identity.name}</span>
               <SignalIdentityBadge identity={identity} />
             </Link>
-            <span className="min-w-0 flex-1 truncate text-[13.5px] text-muted">
-              {identity.username ? `@${identity.username}` : identity.subtitle}
-              {` · ${timeAgo(post.createdAt)}`}
+          </div>
+          <div className="mt-0.5 min-w-0 truncate text-[13px] leading-tight text-muted">
+            <span>
+              {identity.username ? `@${identity.username} · ` : identity.subtitle ? `${identity.subtitle} · ` : ''}
+              {timeAgo(post.createdAt)}
               {post.editedAt && ' · Edited'}
               {post.isArchived && ' · Archived'}
               {post.isDemo && ` · ${t('Sample')}`}
