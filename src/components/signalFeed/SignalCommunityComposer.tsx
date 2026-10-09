@@ -93,6 +93,9 @@ export function SignalCommunityComposer({
   const blurTimerRef = useRef<number>(0);
 
   const [focused, setFocused] = useState(false);
+  // Tapping the "who can see this" / Collab pickers takes focus off the text box; without this the
+  // composer would fold itself away (and the picker with it) before the menu could open.
+  const [pickerHold, setPickerHold] = useState(false);
   const [body, setBody] = useState(editing?.body ?? '');
   const [existingPaths, setExistingPaths] = useState<string[]>(editing?.mediaPaths ?? []);
   const [existingUrls, setExistingUrls] = useState<string[]>(editing?.mediaUrls ?? []);
@@ -136,7 +139,7 @@ export function SignalCommunityComposer({
     fetchMyVisibility('post', [editing.id]).then((m) => { if (!cancelled) setVisibility(m.get(editing.id) ?? 'public'); });
     return () => { cancelled = true; };
   }, [editing]);
-  const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
+  const isOpen = Boolean(editing) || expanded || focused || pickerHold || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
@@ -232,6 +235,8 @@ export function SignalCommunityComposer({
   };
 
   const resetDraft = () => {
+    pickerHoldRef.current = false;
+    setPickerHold(false);
     setBody('');
     setCollaborator(null);
     setPollOptions(null);
@@ -250,9 +255,13 @@ export function SignalCommunityComposer({
   // the mousedown's default keeps focus exactly where it already is
   // instead of racing a blur event against the click that follows it.
   const holdFocus = (e: React.MouseEvent) => e.preventDefault();
+  const pickerHoldRef = useRef(false);
+  const holdForPicker = () => { pickerHoldRef.current = true; setPickerHold(true); };
 
   const handleFocus = () => {
     window.clearTimeout(blurTimerRef.current);
+    pickerHoldRef.current = false;
+    setPickerHold(false);
     if (!focused && !expanded) onExpand?.();
     setFocused(true);
   };
@@ -266,6 +275,7 @@ export function SignalCommunityComposer({
     setFocused(false);
     if (editing) return;
     blurTimerRef.current = window.setTimeout(() => {
+      if (pickerHoldRef.current) return;
       if (body.trim().length === 0 && totalMedia === 0) onCollapse?.();
     }, 160);
   };
@@ -276,6 +286,8 @@ export function SignalCommunityComposer({
     if (hasDraft && !window.confirm('Discard this post?')) return;
     resetDraft();
     setFocused(false);
+    pickerHoldRef.current = false;
+    setPickerHold(false);
     onCollapse?.();
   };
 
@@ -502,14 +514,14 @@ export function SignalCommunityComposer({
           )}
 
           {isOpen && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex items-center gap-2" onPointerDownCapture={holdForPicker}>
               <span className="text-caption text-faint">{t('Who can see this')}</span>
               <VisibilityPicker value={visibility} onChange={setVisibility} disabled={submitting} />
             </div>
           )}
 
           {isOpen && !editing && (
-            <div className="mt-2">
+            <div className="mt-2" onPointerDownCapture={holdForPicker}>
               <CollabPicker value={collaborator} onChange={setCollaborator} visibility={visibility} disabled={submitting} />
             </div>
           )}
