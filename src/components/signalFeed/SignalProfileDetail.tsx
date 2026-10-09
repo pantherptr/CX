@@ -15,6 +15,9 @@ import type { Car } from '../../data/types';
 import { SignalPostCard } from './SignalPostCard';
 import { SignalPostSkeleton } from './SignalPostSkeleton';
 import { SignalKeychainTab } from './SignalKeychainTab';
+import { SignalVisionsTab } from './SignalVisionsTab';
+import { fetchVisionsEnabled } from '../../lib/data/visions';
+import { useLocale } from '../../lib/i18n';
 import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
@@ -156,8 +159,18 @@ export function SignalProfileDetail({
   const demo = !isOfficialVoice && loaded && profile === null ? demoProfile : null;
   const heroMode = Boolean(realProfile || demo);
   const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
-  const [tab, setTab] = useState<'posts' | 'vehicles' | 'saved' | 'keychain'>('posts');
-  const tabs = (['posts', ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ('posts' | 'vehicles' | 'saved' | 'keychain')[];
+  type ProfileTab = 'posts' | 'vehicles' | 'saved' | 'keychain' | 'visions';
+  const { t } = useLocale();
+  // CX Visions — an opt-in portfolio tab; absent until its owner switches it on.
+  const [visionsEnabled, setVisionsEnabled] = useState(false);
+  useEffect(() => {
+    if (!realProfile) { setVisionsEnabled(false); return; }
+    let cancelled = false;
+    fetchVisionsEnabled(realProfile.id).then((on) => { if (!cancelled) setVisionsEnabled(on); });
+    return () => { cancelled = true; };
+  }, [realProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [tab, setTab] = useState<ProfileTab>('posts');
+  const tabs = (['posts', ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
   useEffect(() => {
@@ -376,7 +389,7 @@ export function SignalProfileDetail({
               onClick={() => setTab(id)}
               className={`relative flex-1 py-3 text-detail font-semibold transition-colors ${activeTab === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
-              {id === 'posts' ? 'Posts' : id === 'vehicles' ? 'Vehicles' : id === 'saved' ? 'Saved' : 'Keychain'}
+              {id === 'posts' ? 'Posts' : id === 'visions' ? t('Visions') : id === 'vehicles' ? 'Vehicles' : id === 'saved' ? 'Saved' : 'Keychain'}
               {activeTab === id && (
                 <motion.span layoutId="profile-tab-underline" className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-accent-bright" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />
               )}
@@ -384,7 +397,7 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
+      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
     </>
   );
 
@@ -495,6 +508,7 @@ export function SignalProfileDetail({
         <SignalEditProfileSheet
           initialCoverUrl={profile && profile !== 'error' ? profile.coverUrl : null}
           onClose={() => setEditProfileOpen(false)}
+          onVisionsChange={(on) => { setVisionsEnabled(on); if (!on && tab === 'visions') setTab('posts'); }}
           onSaved={(updates) =>
             setProfile((prev) => (prev && prev !== 'error' ? { ...prev, ...updates } : prev))
           }

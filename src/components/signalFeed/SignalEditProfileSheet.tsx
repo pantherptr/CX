@@ -6,6 +6,8 @@ import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { uploadSignalAvatar, uploadSignalCover, updateSignalProfile, checkUsernameAvailable, setSignalUsername } from '../../lib/data/signalProfile';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
+import { fetchVisionsEnabled, setMyVisionsEnabled } from '../../lib/data/visions';
+import { useLocale } from '../../lib/i18n';
 
 const BIO_MAX = 200;
 // Mirrors validate_signal_username's own rules exactly (0059's own
@@ -57,10 +59,13 @@ export function SignalEditProfileSheet({
   onClose,
   onSaved,
   initialCoverUrl = null,
+  onVisionsChange,
 }: {
   onClose: () => void;
   /** The current cover photo, if the profile has one. */
   initialCoverUrl?: string | null;
+  /** Visions was switched on/off here — the profile page shows/hides its tab. */
+  onVisionsChange?: (enabled: boolean) => void;
   /** Fires right after each successful write (photo saves immediately on
    *  pick, username+bio together on the header Save) so the profile page
    *  showing this sheet can patch its own already-fetched state directly
@@ -71,6 +76,29 @@ export function SignalEditProfileSheet({
   const { session, profile, refreshProfile } = useAuth();
   const { toast } = useApp();
   const reduceMotion = useReducedMotion();
+  const { t } = useLocale();
+  const [visionsOn, setVisionsOn] = useState(false);
+  const [visionsBusy, setVisionsBusy] = useState(false);
+  useEffect(() => {
+    const uid = session?.user.id;
+    if (!uid) return;
+    let cancelled = false;
+    fetchVisionsEnabled(uid).then((on) => { if (!cancelled) setVisionsOn(on); });
+    return () => { cancelled = true; };
+  }, [session?.user.id]);
+  const toggleVisions = async () => {
+    if (visionsBusy) return;
+    setVisionsBusy(true);
+    const next = !visionsOn;
+    const { error } = await setMyVisionsEnabled(next);
+    setVisionsBusy(false);
+    if (error) {
+      toast({ title: 'Could not update Visions', desc: error, icon: 'info' });
+      return;
+    }
+    setVisionsOn(next);
+    onVisionsChange?.(next);
+  };
   // A short local "closing" flag, exactly like useSheetDrag's own —
   // MotionSheet needs `open` to flip false while still mounted so its
   // exit animation can play, then reports back via `onExitComplete` once
@@ -394,6 +422,25 @@ export function SignalEditProfileSheet({
                 <BioRing value={bio.length} max={BIO_MAX} />
               </div>
             </div>
+          </div>
+
+          {/* CX Visions — opt-in portfolio; untouched unless the user taps it */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
+            <p className="text-micro font-semibold uppercase tracking-[0.24em] text-on-noir-muted">CX Visions</p>
+            <p className="mt-2 text-detail leading-relaxed text-on-noir">
+              {visionsOn ? t('Visions is on. Your selected photos and videos appear in your Visions tab.') : t('Collect your shots and videos in a personal space.')}
+            </p>
+            <Tap
+              onClick={toggleVisions}
+              disabled={visionsBusy}
+              scale={0.97}
+              className={`mt-3 inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-detail font-semibold transition-colors disabled:opacity-60 ${
+                visionsOn ? 'border border-white/15 text-on-noir hover:border-white/40 hover:bg-white/5' : 'bg-white text-noir hover:bg-white/90'
+              }`}
+            >
+              {visionsOn ? t('Turn off Visions') : t('Turn on Visions')}
+            </Tap>
+            {visionsOn && <p className="mt-2 text-caption text-on-noir-muted">{t('Turning it off hides the tab; your selection is kept.')}</p>}
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import { ProfileAvatar } from './SignalIdentityBadge';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, SPRING_SNAPPY, Tap } from '../motionKit';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
+import { useVisionChoice, VisionsOption } from './VisionsOption';
 import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
 import { loadHashtags } from '../../lib/data/hashtags';
@@ -120,6 +121,7 @@ export function SignalCommunityComposer({
   };
   const pollValid = !pollOptions || (cleanPollOptions(pollOptions).length >= 2 && body.trim().length > 0);
   const totalMedia = existingPaths.length + pending.length;
+  const vision = useVisionChoice(editing?.id);
   const isOpen = Boolean(editing) || expanded || focused || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
@@ -286,6 +288,7 @@ export function SignalCommunityComposer({
         setError(result.error ?? 'Something went wrong — try again.');
         return;
       }
+      await vision.apply(result.post.id, mediaPaths.length > 0);
       if (!editing && pollOptions) {
         const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
         if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
@@ -326,6 +329,12 @@ export function SignalCommunityComposer({
         setJustPublished(true);
         window.setTimeout(() => setJustPublished(false), 260);
         resetDraft();
+      }
+      // A "Visions only" post lives in the portfolio, not in the feed — don't
+      // slot it into the list the composer sits on.
+      if (!editing && vision.hidesFromFeed(mediaPaths.length > 0)) {
+        toast({ title: 'Added to Visions', icon: 'check' });
+        return;
       }
       onDone(finalPost);
     } finally {
@@ -471,6 +480,8 @@ export function SignalCommunityComposer({
               )}
             </>
           )}
+
+          {isOpen && <VisionsOption choice={vision} hasMedia={totalMedia > 0} />}
 
           {mediaError && <p className="mt-1.5 text-caption font-medium text-danger">{mediaError}</p>}
           {error && <p className="mt-1.5 text-caption font-medium text-danger">{error}</p>}
