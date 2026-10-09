@@ -20,7 +20,8 @@ import {
   type AdminBooking,
   type AdminCar,
 } from '../../lib/data/admin';
-import { setVerifiedClient } from '../../lib/data/owner';
+import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
+import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
 
 /**
  * Shared between AdminDashboard and OwnerDashboard — these panels (and
@@ -163,8 +164,12 @@ export function VerificationsPanel() {
   );
 }
 
-export function UsersPanel() {
+/** `canManageRoles` (the Owner's Users tab) adds a "⋯" menu per person: verify or
+ *  un-verify them, make them admin or take it away. The plain admin dashboard
+ *  keeps its single Verify button. */
+export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolean } = {}) {
   const { toast } = useApp();
+  const [menu, setMenu] = useState<{ user: AdminUser; anchor: HTMLElement } | null>(null);
   const [items, setItems] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -186,6 +191,27 @@ export function UsersPanel() {
     setItems((prev) => (prev ?? []).map((x) => (x.id === u.id ? { ...x, isVerifiedClient: !x.isVerifiedClient } : x)));
   };
 
+  const toggleAdmin = async (u: AdminUser) => {
+    setBusyId(u.id);
+    const { error: err } = await setUserAdmin(u.id, !u.isAdmin);
+    setBusyId(null);
+    if (err) {
+      toast({ title: 'Could not change admin', desc: err, icon: 'info' });
+      return;
+    }
+    setItems((prev) => (prev ?? []).map((x) => (x.id === u.id ? { ...x, isAdmin: !x.isAdmin } : x)));
+    toast({ title: u.isAdmin ? `${u.fullName} is no longer an admin` : `${u.fullName} is now an admin`, icon: 'checkCircle' });
+  };
+
+  const menuGroups = (u: AdminUser): PostMenuItem[][] => [
+    [
+      { icon: 'verified', label: u.isVerifiedClient ? 'Remove verification' : 'Verify client', onClick: () => void toggleVerifiedClient(u) },
+      ...(!u.isOwner
+        ? [{ icon: 'shield', label: u.isAdmin ? 'Remove admin' : 'Make admin', onClick: () => void toggleAdmin(u), danger: u.isAdmin } as PostMenuItem]
+        : []),
+    ],
+  ];
+
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
   if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
   if (items.length === 0) return <div className="card"><EmptyState size="md" icon="info" title="No users yet." className="p-10" /></div>;
@@ -202,19 +228,38 @@ export function UsersPanel() {
           <div className="flex shrink-0 items-center gap-1.5">
             {u.isAdmin && <span className="badge badge-accent"><Icon name="shield" size={12} /> Admin</span>}
             {u.isHost && <span className="badge bg-panel-2 text-ink-soft"><Icon name="cars" size={12} /> Host</span>}
-            {!u.isAdmin && (
-              <button
-                onClick={() => toggleVerifiedClient(u)}
-                disabled={busyId === u.id}
-                className={`badge disabled:opacity-50 ${u.isVerifiedClient ? 'badge-accent' : 'bg-panel-2 text-ink-soft hover:bg-panel'}`}
-                title={u.isVerifiedClient ? 'Revoke Verified Client — lets them publish to Signal' : 'Grant Verified Client — lets them publish to Signal'}
-              >
-                <Icon name="verified" size={12} /> {u.isVerifiedClient ? 'Verified Client' : 'Verify Client'}
-              </button>
+            {canManageRoles ? (
+              <>
+                {u.isVerifiedClient && <span className="badge badge-accent"><Icon name="verified" size={12} /> Verified Client</span>}
+                {!u.isOwner && (
+                  <button
+                    type="button"
+                    onClick={(e) => setMenu({ user: u, anchor: e.currentTarget })}
+                    disabled={busyId === u.id}
+                    aria-label={`Actions for ${u.fullName}`}
+                    aria-haspopup="menu"
+                    className="grid h-9 w-9 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel disabled:opacity-50"
+                  >
+                    <Icon name="moreHorizontal" size={18} />
+                  </button>
+                )}
+              </>
+            ) : (
+              !u.isAdmin && (
+                <button
+                  onClick={() => toggleVerifiedClient(u)}
+                  disabled={busyId === u.id}
+                  className={`badge disabled:opacity-50 ${u.isVerifiedClient ? 'badge-accent' : 'bg-panel-2 text-ink-soft hover:bg-panel'}`}
+                  title={u.isVerifiedClient ? 'Revoke Verified Client — lets them publish to Signal' : 'Grant Verified Client — lets them publish to Signal'}
+                >
+                  <Icon name="verified" size={12} /> {u.isVerifiedClient ? 'Verified Client' : 'Verify Client'}
+                </button>
+              )
             )}
           </div>
         </div>
       ))}
+      {menu && <PostActionMenu anchor={menu.anchor} groups={menuGroups(menu.user)} onClose={() => setMenu(null)} />}
     </div>
   );
 }

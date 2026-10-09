@@ -142,6 +142,12 @@ export async function setVerifiedClient(userId: string, value: boolean, userName
   return { error: error?.message ?? null };
 }
 
+/** Owner only — appoint or remove an admin. The audit-log row is written by the RPC itself. */
+export async function setUserAdmin(userId: string, value: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('owner_set_admin', { p_user_id: userId, p_value: value });
+  return { error: error?.message ?? null };
+}
+
 export async function setHostSuspended(hostId: string, suspended: boolean, hostName: string): Promise<{ error: string | null }> {
   const { error } = await supabase.from('profiles').update({ suspended }).eq('id', hostId);
   if (!error) void logOwnerAction(suspended ? 'suspend_host' : 'unsuspend_host', 'host', hostId, { hostName });

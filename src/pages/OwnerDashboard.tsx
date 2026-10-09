@@ -1490,7 +1490,7 @@ export default function OwnerDashboard() {
         {tab === 'hosts' && <HostsPanel />}
         {tab === 'vehicles' && <VehiclesPanel initialManagingId={openVehicleId} />}
         {tab === 'bookings' && <BookingsPanel />}
-        {tab === 'users' && <UsersPanel />}
+        {tab === 'users' && <UsersPanel canManageRoles />}
         {tab === 'verifications' && <VerificationsPanel />}
         {tab === 'reports' && <ReportsPanel />}
         {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} onOpenCount={setOpenFlags} />}
