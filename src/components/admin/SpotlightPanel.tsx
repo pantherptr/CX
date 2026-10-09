@@ -21,6 +21,8 @@ export function SpotlightPanel() {
   const [publishers, setPublishers] = useState<SpotlightPublisher[]>([]);
   const [selected, setSelected] = useState<SpotlightCandidate | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const liveThisWeek = (items ?? []).filter((v) => v.status === 'published' && v.entryPublishedAt && new Date(v.entryPublishedAt).getTime() >= weekAgo).length;
 
   const load = async () => {
     const { items: rows, error } = await fetchSpotlightQueue();
@@ -48,6 +50,19 @@ export function SpotlightPanel() {
       <div className="mb-4">
         <h2 className="font-display text-lead font-semibold text-ink">Signal Spotlight</h2>
         <p className="mt-1 text-detail text-muted">Every public Vision from a verified account. Select one to publish it to the Signal feed as a CX Spotlight — the creator doesn't need to do anything.</p>
+        <div className="mt-3 flex items-start gap-3 rounded-2xl border border-line bg-panel/60 px-4 py-3">
+          <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon name="sparkles" size={13} /></span>
+          <div className="min-w-0 text-detail">
+            <p className="font-semibold text-ink">One or two a week — sometimes none</p>
+            <p className="mt-0.5 text-muted">Pick only what is genuinely beautiful and professional enough to deserve the extra visibility. It is fine to skip a week.</p>
+            {items && (
+              <p className="mt-1.5 text-caption font-semibold text-ink-soft">
+                Published in the last 7 days: {liveThisWeek}
+                {liveThisWeek > 2 ? ' — already above the usual one or two' : ''}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {loadError && <p className="mb-3 rounded-xl bg-danger/10 px-3 py-2 text-detail text-danger">{loadError}</p>}

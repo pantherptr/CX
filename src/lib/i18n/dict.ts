@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["How Spotlight works", "Come funziona Spotlight", "Cum funcționează Spotlight", "Cómo funciona Spotlight"],
+  ["Picked from the public Visions of verified accounts.", "Si sceglie tra le Vision pubbliche degli account verificati.", "Se alege dintre Vision-urile publice ale conturilor verificate.", "Se elige entre las Visions públicas de cuentas verificadas."],
+  ["Every week the CX team picks one or two Visions for Signal Spotlight — sometimes none. Quality and professionalism decide; the best work gets more visibility.", "Ogni settimana il team CX sceglie una o due Vision per Signal Spotlight, a volte nessuna. Contano qualità e professionalità: i lavori migliori ottengono più visibilità.", "În fiecare săptămână echipa CX alege una sau două Vision pentru Signal Spotlight, uneori niciuna. Contează calitatea și profesionalismul: cele mai bune lucrări primesc mai multă vizibilitate.", "Cada semana el equipo de CX elige una o dos Visions para Signal Spotlight, a veces ninguna. Deciden la calidad y el profesionalismo: el mejor trabajo gana más visibilidad."],
   ["See all", "Vedi tutto", "Vezi tot", "Ver todo"],
   ["Spotlight", "Spotlight", "Spotlight", "Spotlight"],
   ["Nothing selected yet.", "Ancora niente di selezionato.", "Nimic selectat încă.", "Aún no hay nada seleccionado."],

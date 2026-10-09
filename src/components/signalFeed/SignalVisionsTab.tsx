@@ -112,6 +112,8 @@ export function VisionsGrid({
         )}
       </header>
 
+      {isMe && <SpotlightRules />}
+
       {items === null && (
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <span key={i} className="skeleton aspect-[4/5] rounded-sm" />)}
@@ -415,6 +417,23 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
         <button type="button" onClick={save} disabled={saving} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
           {saving ? t('Saving…') : t('Save')}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** What Signal Spotlight is and how CX picks — shown to the Vision's owner. */
+function SpotlightRules() {
+  const { t } = useLocale();
+  return (
+    <div className="mb-5 flex gap-3 rounded-2xl border border-line bg-panel/50 px-3.5 py-3">
+      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon name="sparkles" size={13} /></span>
+      <div className="min-w-0">
+        <p className="text-micro font-semibold uppercase tracking-[0.22em] text-ink">{t('How Spotlight works')}</p>
+        <p className="mt-1 text-caption leading-relaxed text-muted">
+          {t('Every week the CX team picks one or two Visions for Signal Spotlight — sometimes none. Quality and professionalism decide; the best work gets more visibility.')}
+        </p>
+        <p className="mt-1 text-caption leading-relaxed text-faint">{t('Picked from the public Visions of verified accounts.')}</p>
       </div>
     </div>
   );
