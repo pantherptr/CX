@@ -5,7 +5,6 @@ import { addVision, deleteVision, fetchVisions, updateVision, type Vision, type 
 import { fetchUserStamps, syncMyTripStamps, type TripStampData } from '../../lib/data/tripMemories';
 import { fetchHostCars } from '../../lib/data/cars';
 import { useAuth } from '../../lib/auth';
-import { Switch } from '../primitives';
 import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import { useLocale } from '../../lib/i18n';
 import { useApp } from '../../lib/store';
@@ -210,7 +209,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
   const [staged, setStaged] = useState<Staged[]>([]);
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
-  const [link, setLink] = useState<VisionLink>({ tripStampId: null, carId: null, spotlight: false });
+  const [link, setLink] = useState<VisionLink>({ tripStampId: null, carId: null });
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -327,9 +326,8 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
   );
 }
 
-/** "Link to" (a verified trip, or one of your own listed cars) and the optional
- *  Spotlight candidacy. The candidacy only exists once a link is chosen — that
- *  link is what makes a Vision eligible. */
+/** Optional "Link to" (a verified trip, or one of your own listed cars) — it only
+ *  lets a Spotlight show the city and the car. Nothing to fill in to be considered. */
 function VisionLinkFields({ link, onChange, disabled }: { link: VisionLink; onChange: (l: VisionLink) => void; disabled?: boolean }) {
   const { t } = useLocale();
   const { session, profile } = useAuth();
@@ -353,24 +351,17 @@ function VisionLinkFields({ link, onChange, disabled }: { link: VisionLink; onCh
     return () => { cancelled = true; };
   }, [uid, profile?.is_host]);
 
-  if (stamps.length === 0 && cars.length === 0) {
-    return (
-      <p className="rounded-2xl border border-line bg-panel/50 px-3.5 py-3 text-caption leading-relaxed text-muted">
-        {t('To nominate a Vision for Signal Spotlight, link it to a verified CX trip (or, as a Host, to one of your cars).')}
-      </p>
-    );
-  }
+  if (stamps.length === 0 && cars.length === 0) return null;
   const value = link.tripStampId ? `stamp:${link.tripStampId}` : link.carId ? `car:${link.carId}` : '';
-  const linked = Boolean(value);
   const pick = (v: string) => {
-    if (!v) onChange({ tripStampId: null, carId: null, spotlight: false });
-    else if (v.startsWith('stamp:')) onChange({ ...link, tripStampId: v.slice(6), carId: null });
-    else onChange({ ...link, tripStampId: null, carId: v.slice(4) });
+    if (!v) onChange({ tripStampId: null, carId: null });
+    else if (v.startsWith('stamp:')) onChange({ tripStampId: v.slice(6), carId: null });
+    else onChange({ tripStampId: null, carId: v.slice(4) });
   };
   return (
     <div className="rounded-2xl border border-line bg-panel/50 p-3">
       <label className="block">
-        <span className="field-label">{t('Link to')}</span>
+        <span className="field-label">{t('Link to')} <span className="font-normal text-faint">({t('optional')})</span></span>
         <select value={value} onChange={(e) => pick(e.target.value)} disabled={disabled} className="input mt-1.5 !py-3">
           <option value="">{t('Nothing')}</option>
           {stamps.length > 0 && (
@@ -385,15 +376,6 @@ function VisionLinkFields({ link, onChange, disabled }: { link: VisionLink; onCh
           )}
         </select>
       </label>
-      {linked && (
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
-          <div className="min-w-0">
-            <p className="text-detail font-semibold text-ink">{t('Nominate for Signal Spotlight')}</p>
-            <p className="mt-0.5 text-caption text-muted">{t('Allow the CX team to select this content.')}</p>
-          </div>
-          <Switch checked={link.spotlight} onChange={(v) => onChange({ ...link, spotlight: v })} disabled={disabled} label={t('Nominate for Signal Spotlight')} />
-        </div>
-      )}
     </div>
   );
 }
@@ -404,7 +386,7 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
   const { toast } = useApp();
   const [title, setTitle] = useState(vision.title ?? '');
   const [caption, setCaption] = useState(vision.caption ?? '');
-  const [link, setLink] = useState<VisionLink>({ tripStampId: vision.tripStampId, carId: vision.carId, spotlight: vision.spotlightEligible });
+  const [link, setLink] = useState<VisionLink>({ tripStampId: vision.tripStampId, carId: vision.carId });
   const [saving, setSaving] = useState(false);
 
   const save = async () => {

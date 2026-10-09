@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["optional", "facoltativo", "opțional", "opcional"],
   ["To nominate a Vision for Signal Spotlight, link it to a verified CX trip (or, as a Host, to one of your cars).", "Per candidare una Vision a Signal Spotlight, collegala a un viaggio CX verificato (o, se sei Host, a una tua auto).", "Pentru a nominaliza o Vision la Signal Spotlight, leag-o de o călătorie CX verificată (sau, ca Host, de una dintre mașinile tale).", "Para nominar una Vision a Signal Spotlight, vincúlala a un viaje CX verificado (o, si eres Host, a uno de tus coches)."],
   ["The world, through your lens.", "Il mondo, visto da te.", "Lumea, prin ochii tăi.", "El mundo, a través de tu mirada."],
   ["Your photo and video portfolio inside CX. Show your best shots, link them to your trips and nominate them for Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Mostra i tuoi scatti migliori, collegali ai tuoi viaggi e candidali a Signal Spotlight.", "Portofoliul tău foto și video în CX. Arată-ți cele mai bune cadre, leagă-le de călătoriile tale și nominalizează-le pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Muestra tus mejores tomas, vincúlalas a tus viajes y nomínalas a Signal Spotlight."],

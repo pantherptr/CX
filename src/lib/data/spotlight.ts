@@ -57,6 +57,8 @@ export interface SpotlightCandidate {
   creatorId: string;
   creatorName: string;
   creatorUsername: string | null;
+  /** Which verification made it eligible: CX Team / Verified Host / Verified Client. */
+  badge: string | null;
   city: string | null;
   carLabel: string | null;
   entryId: string | null;
@@ -68,7 +70,7 @@ export interface SpotlightCandidate {
 
 interface QueueRow {
   vision_id: string; media_path: string; media_kind: 'image' | 'video'; title: string | null; caption: string | null; vision_created_at: string;
-  creator_id: string; creator_name: string | null; creator_username: string | null;
+  creator_id: string; creator_name: string | null; creator_username: string | null; badge: string | null;
   city: string | null; car_label: string | null;
   entry_id: string | null; entry_status: string | null; entry_title: string | null; entry_publisher: string | null;
 }
@@ -80,7 +82,7 @@ export async function fetchSpotlightQueue(): Promise<{ items: SpotlightCandidate
     error: null,
     items: (data as QueueRow[]).map((r) => ({
       visionId: r.vision_id, mediaUrl: urlFor(r.media_path), mediaKind: r.media_kind, title: r.title, caption: r.caption,
-      createdAt: r.vision_created_at, creatorId: r.creator_id, creatorName: r.creator_name ?? 'CX user', creatorUsername: r.creator_username,
+      createdAt: r.vision_created_at, creatorId: r.creator_id, creatorName: r.creator_name ?? 'CX user', creatorUsername: r.creator_username, badge: r.badge,
       city: r.city, carLabel: r.car_label, entryId: r.entry_id,
       status: (r.entry_status ?? 'candidate') as SpotlightCandidate['status'],
       entryTitle: r.entry_title, entryPublisher: r.entry_publisher,

@@ -7,12 +7,12 @@ import {
 } from '../../lib/data/spotlight';
 
 const STATUS_LABEL: Record<SpotlightCandidate['status'], string> = {
-  candidate: 'Candidate', draft: 'Draft', published: 'Live in feed', archived: 'Archived',
+  candidate: 'Available', draft: 'Draft', published: 'Live in feed', archived: 'Archived',
 };
 
 /** Signal Spotlight queue — Owner/Admin only (mounted inside AdminDashboard,
  *  itself behind AdminRoute; every RPC re-checks is_admin() server-side).
- *  Shows only Visions their creators nominated. Nothing here changes a
+ *  Shows the public Visions of verified accounts (Verified Client, Verified Host, CX Team). Nothing here changes a
  *  Vision: publishing creates an editorial entry that points at it,
  *  archiving/removing only affects that entry. */
 export function SpotlightPanel() {
@@ -33,7 +33,7 @@ export function SpotlightPanel() {
   }, []);
 
   const act = async (v: SpotlightCandidate, status: 'archived' | 'removed') => {
-    const verb = status === 'archived' ? 'Archive this Spotlight?' : 'Remove this nomination?';
+    const verb = status === 'archived' ? 'Archive this Spotlight?' : 'Hide this Vision from the Spotlight list?';
     if (!window.confirm(verb)) return;
     const { error } = await setSpotlightStatus(v.visionId, status);
     if (error) {
@@ -47,13 +47,13 @@ export function SpotlightPanel() {
     <div>
       <div className="mb-4">
         <h2 className="font-display text-lead font-semibold text-ink">Signal Spotlight</h2>
-        <p className="mt-1 text-detail text-muted">Visions their creators nominated. Select one to publish it to the Signal feed as a CX Spotlight.</p>
+        <p className="mt-1 text-detail text-muted">Every public Vision from a verified account. Select one to publish it to the Signal feed as a CX Spotlight — the creator doesn't need to do anything.</p>
       </div>
 
       {loadError && <p className="mb-3 rounded-xl bg-danger/10 px-3 py-2 text-detail text-danger">{loadError}</p>}
       {items === null && <p className="py-10 text-center text-detail text-muted">Loading…</p>}
       {items && items.length === 0 && !loadError && (
-        <p className="rounded-2xl border border-dashed border-line px-4 py-12 text-center text-detail text-muted">No nominated Visions right now.</p>
+        <p className="rounded-2xl border border-dashed border-line px-4 py-12 text-center text-detail text-muted">No Visions from verified accounts yet.</p>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -74,6 +74,7 @@ export function SpotlightPanel() {
               <p className="truncate text-caption text-muted">
                 {v.creatorName}{v.creatorUsername ? ` · @${v.creatorUsername}` : ''}
               </p>
+              {v.badge && <p className="inline-flex items-center gap-1 text-caption font-semibold text-accent-700"><Icon name="verified" size={12} /> {v.badge}</p>}
               <p className="truncate text-caption text-muted">
                 {[v.city, v.carLabel].filter(Boolean).join(' · ') || '—'}
               </p>
