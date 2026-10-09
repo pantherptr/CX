@@ -6,6 +6,8 @@ import { searchEmpirePosts, type EmpirePost } from '../../lib/data/empireFeed';
 import { searchSignalPeople, type SignalPeopleResult } from '../../lib/data/signalProfile';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import { FollowButton } from './FollowButton';
+import { useLocale } from '../../lib/i18n';
+import { fetchPeopleSuggestions, type PersonSuggestion } from '../../lib/data/privacy';
 import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD } from '../motionKit';
 
 function personRole(p: SignalPeopleResult): VerifiedRole | null {
@@ -90,6 +92,7 @@ function ResultsFade({ stateKey, children }: { stateKey: string; children: React
  *  opened. The explicit close button (top-left) is the only thing that
  *  actually unmounts it. */
 export function SignalSearchOverlay({ query }: { query: string }) {
+  const { t } = useLocale();
   const reduceMotion = useReducedMotion();
   const { pathname } = useLocation();
   const profileBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
@@ -145,6 +148,13 @@ export function SignalSearchOverlay({ query }: { query: string }) {
   };
 
   const trimmed = query.trim();
+  // "People to follow" — friends of friends first, then well-followed hosts and verified accounts.
+  const [suggestions, setSuggestions] = useState<PersonSuggestion[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchPeopleSuggestions(8).then((rows) => { if (!cancelled) setSuggestions(rows); });
+    return () => { cancelled = true; };
+  }, []);
   const peopleState = peopleSearching ? 'loading' : !people ? 'idle' : people.length === 0 ? 'empty' : 'results';
   const postsState = postsSearching ? 'loading' : !posts ? 'idle' : posts.length === 0 ? 'empty' : 'results';
 
@@ -161,7 +171,8 @@ export function SignalSearchOverlay({ query }: { query: string }) {
     >
       <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-4">
         {!trimmed ? (
-          recent.length > 0 ? (
+          <div className="flex flex-col gap-6">
+          {recent.length > 0 ? (
             <div>
               <p className="mb-2 px-1 text-detail font-semibold text-muted">Recent</p>
               <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
@@ -205,7 +216,37 @@ export function SignalSearchOverlay({ query }: { query: string }) {
               <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="search" size={24} /></span>
               <p className="max-w-[16rem] text-detail text-muted">Search Signal — people, news, cars, offers…</p>
             </div>
-          )
+          )}
+          {suggestions.length > 0 && (
+            <div>
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">People to follow</p>
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
+                {suggestions.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel">
+                    <Link to={`${profileBase}/profile/${p.id}`} viewTransition onClick={hideForNavigation} className="flex min-w-0 flex-1 items-center gap-2.5">
+                      {p.avatarUrl ? (
+                        <Img src={p.avatarUrl} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={19} /></span>} />
+                      ) : (
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={19} /></span>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="truncate text-[15px] font-semibold text-ink">{p.fullName}</span>
+                          {(p.isHost || p.isVerifiedClient) && <VerifiedBadge role={p.isHost ? 'host' : 'client'} size={16} />}
+                        </div>
+                        <p className="truncate text-caption text-faint">
+                          {p.username ? `@${p.username}` : ''}
+                          {p.mutualFollows > 0 ? `${p.username ? ' · ' : ''}${t('Followed by {n} you follow', { n: p.mutualFollows })}` : ''}
+                        </p>
+                      </div>
+                    </Link>
+                    <FollowButton userId={p.id} initialFollowing={false} size="sm" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          </div>
         ) : (
           <div className="flex flex-col gap-5">
             <div>
@@ -249,9 +290,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                               </p>
                             </div>
                           </Link>
-                          {(p.isHost || p.isVerifiedClient) && (
-                            <FollowButton userId={p.id} initialFollowing={p.followedByMe} size="sm" />
-                          )}
+                          <FollowButton userId={p.id} initialFollowing={p.followedByMe} size="sm" />
                         </div>
                       );
                     })}
