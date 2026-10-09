@@ -558,16 +558,8 @@ export function SignalPostCard({
   const [stampKey, setStampKey] = useState(0);
   const [respectPlay, setRespectPlay] = useState(0);
   const [savePlay, setSavePlay] = useState(0);
-  // After a Save, a short line offers to file the post in a collection.
-  const [collectionHint, setCollectionHint] = useState(false);
+  // Tap = save quietly; hold Save to file the post in a collection.
   const [collectionsOpen, setCollectionsOpen] = useState(false);
-  const hintTimerRef = useRef<number | undefined>(undefined);
-  const offerCollections = () => {
-    setCollectionHint(true);
-    window.clearTimeout(hintTimerRef.current);
-    hintTimerRef.current = window.setTimeout(() => setCollectionHint(false), 6000);
-  };
-  useEffect(() => () => window.clearTimeout(hintTimerRef.current), []);
   const [sharePlay, setSharePlay] = useState(0);
   const [viewPlay, setViewPlay] = useState(0);
   const fireStamp = () => {
@@ -652,7 +644,7 @@ export function SignalPostCard({
     setMySaves(before + amt);
     onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + amt });
     setSavePlay((k) => k + 1);
-    offerCollections();
+    
     vibrateTap();
     const { count, error } = await addEmpirePostSave(post.id, amt);
     if (error) {
@@ -688,7 +680,6 @@ export function SignalPostCard({
         toast({ title: 'Sample posts can’t be added to collections', icon: 'info' });
         return;
       }
-      setCollectionHint(false);
       setCollectionsOpen(true);
       if (mySaves === 0 && !post.isDemo) void handleTeamSave();
     }, 450);
@@ -795,7 +786,6 @@ export function SignalPostCard({
         toast({ title: 'Sample posts can’t be added to collections', icon: 'info' });
         return;
       }
-      setCollectionHint(false);
       setCollectionsOpen(true);
       if (!post.savedByMe) {
         onChanged({ ...post, savedByMe: true, saveCount: post.saveCount + 1 });
@@ -817,7 +807,7 @@ export function SignalPostCard({
     onChanged({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
     if (!post.savedByMe) {
       setSavePlay((k) => k + 1);
-      offerCollections();
+      
       vibrateTap();
     }
     const { error } = post.isDemo ? await toggleSignalDemoPostSave(post.id) : await toggleEmpirePostSave(post.id);
@@ -1174,21 +1164,6 @@ export function SignalPostCard({
         </div>
       )}
 
-      {collectionHint && !post.isDemo && (
-        <div data-no-open className="mx-4 mb-2 flex animate-fade-up items-center justify-between gap-3 rounded-xl bg-panel px-3.5 py-2 sm:mx-5">
-          <span className="flex items-center gap-1.5 text-detail font-medium text-ink-soft">
-            <Icon name="check" size={14} strokeWidth={3} className="text-accent-700" /> Saved
-          </span>
-          <button
-            type="button"
-            onClick={() => { setCollectionHint(false); setCollectionsOpen(true); }}
-            className="pressable inline-flex min-h-8 items-center gap-1 text-detail font-semibold text-accent-700"
-          >
-            Add to a collection <Icon name="chevronRight" size={14} />
-          </button>
-        </div>
-      )}
-
       {detail && <p className="px-4 pb-3 pt-3 text-caption text-muted sm:px-5">{postedAt}</p>}
 
       {/* The stats bar under every post: a plain row of icon + number — views,
@@ -1210,7 +1185,7 @@ export function SignalPostCard({
                   aria-label="Add a view — hold to remove yours"
                   className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                 >
-                  <EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-faint" />
+                  <EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-ink-soft" />
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
@@ -1218,7 +1193,7 @@ export function SignalPostCard({
                 </button>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
-                  <EyeIcon size={18} className="shrink-0 text-faint" />
+                  <EyeIcon size={18} className="shrink-0 text-ink-soft" />
                   <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
                 </span>
               ))}
