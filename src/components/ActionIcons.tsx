@@ -29,10 +29,12 @@ const svgProps = {
   strokeLinejoin: 'round' as const,
 };
 
-/** Save: a quick, quiet press — no jump. `filled` paints it solid. */
+/** Save: the icon only presses (no jump); the life is in the background — a soft
+ *  disc swells behind it, two rings ripple out and a ring of dots flies off, all
+ *  in neutral ink. `filled` paints it solid black. */
 export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
   const press = useAnimation();
-  const ring = useAnimation();
+  const burst = useAnimation();
   const reduced = useReducedMotion();
   // `playKey` is the timestamp of the Save tap: play once per tap, and only if
   // it was just now (a remount long after must stay still).
@@ -42,17 +44,42 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
     lastKey.current = playKey;
     if (Date.now() - playKey > 700 || reduced) return;
     void press.start({ scale: [1, 0.86, 1.1, 1], transition: { duration: 0.32, ease: 'easeOut' } });
-    void ring.start({ opacity: [0.45, 0], scale: [0.6, 1.9], transition: { duration: 0.5, ease: 'easeOut' } });
+    void burst.start('go');
     return () => { lastKey.current = 0; };
-  }, [playKey, reduced, press, ring]);
+  }, [playKey, reduced, press, burst]);
   return (
     <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={ring}
-        className="pointer-events-none absolute rounded-full border border-ink/40"
-        style={{ width: size * 1.1, height: size * 1.1 }}
-      />
+      {/* background burst — behind the icon, never moves it */}
+      <motion.span variants={{ idle: {}, go: {} }} initial="idle" animate={burst} className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
+        <motion.span
+          variants={{ idle: { opacity: 0, scale: 0.3 }, go: { opacity: [0, 0.16, 0], scale: [0.3, 2.3, 2.9], transition: { duration: 0.65, ease: 'easeOut' } } }}
+          className="absolute rounded-full bg-ink"
+          style={{ width: size * 1.3, height: size * 1.3 }}
+        />
+        {[0, 0.08].map((delay) => (
+          <motion.span
+            key={delay}
+            variants={{ idle: { opacity: 0, scale: 0.5 }, go: { opacity: [0.5, 0], scale: [0.5, 2.6], transition: { duration: 0.6, delay, ease: 'easeOut' } } }}
+            className="absolute rounded-full border border-ink/50"
+            style={{ width: size * 1.1, height: size * 1.1 }}
+          />
+        ))}
+        {Array.from({ length: 10 }).map((_, i) => {
+          const a = (i / 10) * Math.PI * 2 + (i % 2 ? 0.15 : 0);
+          const d = size * (i % 2 ? 1.35 : 1.0);
+          return (
+            <motion.span
+              key={i}
+              variants={{
+                idle: { opacity: 0, x: 0, y: 0, scale: 0.4 },
+                go: { opacity: [0, 1, 0], x: Math.cos(a) * d, y: Math.sin(a) * d, scale: [0.4, 1, 0.2], transition: { duration: 0.6, ease: 'easeOut', delay: 0.03 } },
+              }}
+              className="absolute rounded-full bg-ink"
+              style={{ width: i % 2 ? 3 : 4, height: i % 2 ? 3 : 4 }}
+            />
+          );
+        })}
+      </motion.span>
       <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
         {filled ? (
           <>
