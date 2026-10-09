@@ -32,9 +32,8 @@ const ROWS: Row[] = [
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
   ["optional", "facoltativo", "opțional", "opcional"],
-  ["To nominate a Vision for Signal Spotlight, link it to a verified CX trip (or, as a Host, to one of your cars).", "Per candidare una Vision a Signal Spotlight, collegala a un viaggio CX verificato (o, se sei Host, a una tua auto).", "Pentru a nominaliza o Vision la Signal Spotlight, leag-o de o călătorie CX verificată (sau, ca Host, de una dintre mașinile tale).", "Para nominar una Vision a Signal Spotlight, vincúlala a un viaje CX verificado (o, si eres Host, a uno de tus coches)."],
   ["The world, through your lens.", "Il mondo, visto da te.", "Lumea, prin ochii tăi.", "El mundo, a través de tu mirada."],
-  ["Your photo and video portfolio inside CX. Show your best shots, link them to your trips and nominate them for Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Mostra i tuoi scatti migliori, collegali ai tuoi viaggi e candidali a Signal Spotlight.", "Portofoliul tău foto și video în CX. Arată-ți cele mai bune cadre, leagă-le de călătoriile tale și nominalizează-le pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Muestra tus mejores tomas, vincúlalas a tus viajes y nomínalas a Signal Spotlight."],
+  ["Your photo and video portfolio inside CX. Show your best shots — verified accounts can be featured by CX in Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Mostra i tuoi scatti migliori: gli account verificati possono essere scelti da CX per Signal Spotlight.", "Portofoliul tău foto și video în CX. Arată-ți cele mai bune cadre: conturile verificate pot fi alese de CX pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Muestra tus mejores tomas: las cuentas verificadas pueden ser elegidas por CX para Signal Spotlight."],
   ["Edit", "Modifica", "Editează", "Editar"],
   ["Edit Vision", "Modifica Vision", "Editează Vision", "Editar Vision"],
   ["Save", "Salva", "Salvează", "Guardar"],
@@ -44,7 +43,6 @@ const ROWS: Row[] = [
   ["Nothing", "Niente", "Nimic", "Nada"],
   ["Verified trips", "Viaggi verificati", "Călătorii verificate", "Viajes verificados"],
   ["My cars", "Le mie auto", "Mașinile mele", "Mis coches"],
-  ["Nominate for Signal Spotlight", "Candidalo a Signal Spotlight", "Nominalizează pentru Signal Spotlight", "Nominar a Signal Spotlight"],
   ["Allow the CX team to select this content.", "Permetti al team CX di selezionare questo contenuto.", "Permite echipei CX să selecteze acest conținut.", "Permite al equipo de CX seleccionar este contenido."],
   ["Shot on CX", "Shot on CX", "Shot on CX", "Shot on CX"],
   ["Signal Spotlight", "Signal Spotlight", "Signal Spotlight", "Signal Spotlight"],

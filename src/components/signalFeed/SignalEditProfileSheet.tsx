@@ -431,7 +431,7 @@ export function SignalEditProfileSheet({
             <p className="mt-1.5 text-detail leading-relaxed text-on-noir-muted">
               {visionsOn
                 ? t('Visions is on. Add your photos and videos from the Visions tab on your profile.')
-                : t('Your photo and video portfolio inside CX. Show your best shots, link them to your trips and nominate them for Signal Spotlight.')}
+                : t('Your photo and video portfolio inside CX. Show your best shots — verified accounts can be featured by CX in Signal Spotlight.')}
             </p>
             <Tap
               onClick={toggleVisions}
