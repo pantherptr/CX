@@ -715,7 +715,7 @@ export function SignalPostCard({
     const before = myViews;
     const amt = tapAmount(before);
     setMyViews(before + amt);
-    setViewPlay((k) => k + 1);
+    setViewPlay(Date.now());
     onChanged({ ...post, viewCount: post.viewCount + amt });
     vibrateTap();
     const { count, error } = await addEmpirePostView(post.id, amt);
@@ -1199,19 +1199,20 @@ export function SignalPostCard({
                 <span className="relative inline-flex">
                   <button
                     type="button"
-                    onClick={() => setViewsInfo((v) => !v)}
+                    onClick={() => { setViewsInfo((v) => !v); setViewPlay(Date.now()); }}
                     aria-label={t('Views')}
                     aria-expanded={viewsInfo}
                     className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                   >
-                    <span className={BAR_ICON}><EyeIcon size={15} className="shrink-0 text-faint" /></span>
+                    <span className={BAR_ICON}><EyeIcon size={15} playKey={viewPlay} className="shrink-0 text-faint" /></span>
                     <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.viewCount)}</span>
                   </button>
                   {viewsInfo && (
                     <>
-                      <span aria-hidden="true" className="fixed inset-0 z-10" onClick={() => setViewsInfo(false)} />
+                      <span aria-hidden="true" data-no-open className="fixed inset-0 z-10" onClick={() => setViewsInfo(false)} />
                       <span
                         role="tooltip"
+                        data-no-open
                         className="absolute bottom-full left-0 z-20 mb-1 w-56 animate-scale-in rounded-xl bg-ink px-3 py-2 text-left text-[12.5px] leading-snug text-white shadow-pop"
                       >
                         <span className="block font-semibold">{t('Views')}</span>

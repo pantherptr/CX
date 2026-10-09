@@ -29,28 +29,11 @@ const svgProps = {
   strokeLinejoin: 'round' as const,
 };
 
-/** Save: the icon only presses (no jump); the life is in the background — a soft
- *  disc swells behind it, two rings ripple out and a ring of dots flies off, all
- *  in neutral ink. `filled` paints it solid black. */
-export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
-  const press = useAnimation();
-  const burst = useAnimation();
-  const reduced = useReducedMotion();
-  // `playKey` is the timestamp of the Save tap: play once per tap, and only if
-  // it was just now (a remount long after must stay still).
-  const lastKey = useRef(0);
-  useEffect(() => {
-    if (!playKey || playKey === lastKey.current) return;
-    lastKey.current = playKey;
-    if (Date.now() - playKey > 700 || reduced) return;
-    void press.start({ scale: [1, 0.86, 1.1, 1], transition: { duration: 0.32, ease: 'easeOut' } });
-    void burst.start('go');
-    return () => { lastKey.current = 0; };
-  }, [playKey, reduced, press, burst]);
+/** The neutral background burst behind an icon on tap: a soft disc, two ripples
+ *  and a ring of dots. Behind the icon, never moves it. Driven by `controls.start('go')`. */
+function BackgroundBurst({ size, controls }: { size: number; controls: ReturnType<typeof useAnimation> }) {
   return (
-    <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
-      {/* background burst — behind the icon, never moves it */}
-      <motion.span variants={{ idle: {}, go: {} }} initial="idle" animate={burst} className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
+      <motion.span variants={{ idle: {}, go: {} }} initial="idle" animate={controls} className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
         <motion.span
           variants={{ idle: { opacity: 0, scale: 0.3 }, go: { opacity: [0, 0.16, 0], scale: [0.3, 2.3, 2.9], transition: { duration: 0.65, ease: 'easeOut' } } }}
           className="absolute rounded-full bg-ink"
@@ -80,6 +63,30 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
           );
         })}
       </motion.span>
+  );
+}
+
+/** Save: the icon only presses (no jump); the life is in the background — a soft
+ *  disc swells behind it, two rings ripple out and a ring of dots flies off, all
+ *  in neutral ink. `filled` paints it solid black. */
+export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
+  const press = useAnimation();
+  const burst = useAnimation();
+  const reduced = useReducedMotion();
+  // `playKey` is the timestamp of the Save tap: play once per tap, and only if
+  // it was just now (a remount long after must stay still).
+  const lastKey = useRef(0);
+  useEffect(() => {
+    if (!playKey || playKey === lastKey.current) return;
+    lastKey.current = playKey;
+    if (Date.now() - playKey > 700 || reduced) return;
+    void press.start({ scale: [1, 0.86, 1.1, 1], transition: { duration: 0.32, ease: 'easeOut' } });
+    void burst.start('go');
+    return () => { lastKey.current = 0; };
+  }, [playKey, reduced, press, burst]);
+  return (
+    <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
+      <BackgroundBurst size={size} controls={burst} />
       <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
         {filled ? (
           <>
@@ -118,18 +125,40 @@ export function ShareIcon({ size = 21, playKey = 0, className = '' }: IconProps)
   );
 }
 
-/** Views: the eye blinks. */
+/** Views: on tap the eye winks — the lid closes, the eye tips a little, then pops
+ *  back open with a tiny sparkle — over the same neutral background burst Save has.
+ *  `playKey` is the tap's timestamp; plays once per tap, never on a late remount. */
 export function EyeIcon({ size = 18, playKey = 0, className = '' }: IconProps) {
-  const controls = usePlay(playKey);
-  const v: Variants = {
-    normal: { scaleY: 1 },
-    animate: { scaleY: [1, 0.12, 1, 0.12, 1], transition: { duration: 0.55, ease: 'easeInOut' } },
-  };
+  const wink = useAnimation();
+  const burst = useAnimation();
+  const spark = useAnimation();
+  const reduced = useReducedMotion();
+  const lastKey = useRef(0);
+  useEffect(() => {
+    if (!playKey || playKey === lastKey.current) return;
+    lastKey.current = playKey;
+    if (Date.now() - playKey > 700 || reduced) return;
+    void wink.start({
+      scaleY: [1, 0.08, 0.08, 1.12, 1],
+      rotate: [0, -8, -8, 3, 0],
+      transition: { duration: 0.5, times: [0, 0.3, 0.55, 0.8, 1], ease: 'easeInOut' },
+    });
+    void burst.start('go');
+    void spark.start({ opacity: [0, 1, 1, 0], scale: [0.2, 1.1, 1, 0.6], y: [2, -2, -3, -5], transition: { duration: 0.6, delay: 0.3, ease: 'easeOut' } });
+    return () => { lastKey.current = 0; };
+  }, [playKey, reduced, wink, burst, spark]);
   return (
-    <span className={`inline-flex items-center justify-center ${className}`} aria-hidden="true">
-      <motion.svg {...svgProps} width={size} height={size} variants={v} initial="normal" animate={controls} style={{ transformOrigin: 'center' }}>
+    <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
+      <BackgroundBurst size={size} controls={burst} />
+      <motion.svg {...svgProps} width={size} height={size} initial={false} animate={wink} style={{ transformOrigin: 'center' }}>
         <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
         <circle cx="12" cy="12" r="3" />
+      </motion.svg>
+      <motion.svg
+        viewBox="0 0 10 10" width={size * 0.5} height={size * 0.5} initial={{ opacity: 0 }} animate={spark}
+        className="pointer-events-none absolute -right-1 -top-1.5" fill="currentColor"
+      >
+        <path d="M5 0 6.2 3.8 10 5 6.2 6.2 5 10 3.8 6.2 0 5 3.8 3.8Z" />
       </motion.svg>
     </span>
   );
