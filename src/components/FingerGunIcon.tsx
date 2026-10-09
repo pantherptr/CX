@@ -58,13 +58,15 @@ export function FingerGunIcon({
         animate={controls}
       >
         <motion.g variants={handVariants} style={{ originX: 0.15, originY: 0.9 }}>
-          {filled && <rect x="9.5" y="8" width="6" height="10" fill="currentColor" stroke="none" />}
+          {filled && <rect x="9" y="8" width="7" height="10" fill="currentColor" stroke="none" />}
+          {/* the two extended fingers and the curled one beneath */}
           <path
-            d="M12 8h8.5a1.5 1.5 0 0 1 0 3H13m.5 0h5.5a1.5 1.5 0 0 1 0 3H13m1.5 0a1.5 1.5 0 0 1 0 3H13"
+            d="M12 8h8.5a1.5 1.5 0 0 1 0 3H13m.5 0h6.5a1.5 1.5 0 0 1 0 3H13m1.5 0a1.5 1.5 0 0 1 0 3H13"
             fill={filled ? 'currentColor' : 'none'}
           />
+          {/* the palm and the thumb, lying on top and a little drawn back */}
           <path
-            d="M13.5 17a1.5 1.5 0 1 1 0 3H9a6 6 0 0 1-6-6v-2v.208a6 6 0 0 1 2.7-5.012l-.6-2.9a1.6 1.6 0 0 1 3.2 0L12 8"
+            d="M13.5 17a1.5 1.5 0 1 1 0 3H9a6 6 0 0 1-6-6v-2v.208a6 6 0 0 1 2.7-5.012L5.9 7.1q.7-.45 4.6-3.2a1.5 1.5 0 0 1 2.02.54c.44.734.325 1.674-.28 2.28L12 8"
             fill={filled ? 'currentColor' : 'none'}
           />
         </motion.g>
@@ -74,9 +76,9 @@ export function FingerGunIcon({
           stroke="currentColor"
           strokeWidth="1.7"
         >
-          <path d="M23 9.5h1.3" />
-          <path d="M22.7 7.5l1.1-1.3" />
-          <path d="M22.7 11.5l1.1 1.3" />
+          <path d="M22.9 9.5h1.3" />
+          <path d="M22.5 7.5l1.1-1.3" />
+          <path d="M22.5 11.5l1.1 1.3" />
         </motion.g>
       </motion.svg>
     </span>
