@@ -765,6 +765,11 @@
   }
   @media (prefers-reduced-motion: reduce) { .respect-stamp { animation: none; } }
 
+  /* A very slow drift on a Spotlight photo so the card feels alive. */
+  .spotlight-drift { animation: spotlight-drift 26s ease-in-out infinite alternate; }
+  @keyframes spotlight-drift { from { transform: scale(1.0) translate3d(0, 0, 0); } to { transform: scale(1.07) translate3d(-1.2%, -1%, 0); } }
+  @media (prefers-reduced-motion: reduce) { .spotlight-drift { animation: none; } }
+
   /* The pull-to-refresh bat flapping while the feed reloads. */
   .bat-flap { transform-origin: 50% 40%; animation: bat-flap 0.34s ease-in-out infinite; }
   @keyframes bat-flap {

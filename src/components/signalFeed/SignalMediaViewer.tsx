@@ -255,14 +255,18 @@ export function SignalMediaViewer({
       </div>
 
       {captions?.[index] && (captions[index]!.title || captions[index]!.caption || captions[index]!.badge) && (
-        <div className="mx-auto w-full max-w-xl shrink-0 px-5 pb-2 pt-3 text-center text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
-          {captions[index]!.title && <p translate="no" className="font-display text-[17px] font-semibold leading-snug">{captions[index]!.title}</p>}
-          {captions[index]!.caption && <p translate="no" className="mt-1 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
-          {captions[index]!.badge && <p className="mt-2 text-micro font-semibold uppercase tracking-[0.2em] text-accent-bright">{captions[index]!.badge}</p>}
+        <div key={index} className="mx-auto w-full max-w-xl shrink-0 animate-fade-up px-5 pb-2 pt-4 text-left text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
+          {captions[index]!.badge && (
+            <p className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-bright backdrop-blur-sm">
+              <Icon name="sparkles" size={11} /> {captions[index]!.badge}
+            </p>
+          )}
+          {captions[index]!.title && <p translate="no" className="font-display text-[24px] font-semibold leading-[1.1] tracking-tight">{captions[index]!.title}</p>}
+          {captions[index]!.caption && <p translate="no" className="mt-1.5 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
         </div>
       )}
 
-      {footer && <div className="flex shrink-0 justify-center px-5 pb-3 pt-1">{typeof footer === 'function' ? footer(index) : footer}</div>}
+      {footer && <div className="mx-auto flex w-full max-w-xl shrink-0 justify-start px-5 pb-3 pt-1">{typeof footer === 'function' ? footer(index) : footer}</div>}
 
       {many && images.length <= 12 && (
         <div className="flex shrink-0 justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2" aria-hidden="true">

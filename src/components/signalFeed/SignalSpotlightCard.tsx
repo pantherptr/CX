@@ -60,13 +60,14 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
             <Img
               src={data.mediaUrl}
               alt={data.title ?? ''}
-              className="h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]"
+              className="spotlight-drift h-full w-full object-cover"
               fallback={<span className="absolute inset-0 grid place-items-center text-white/50"><Icon name="image" size={28} /></span>}
             />
           </SharedAvatar>
         )}
         {/* depth: dark at the top and bottom where the text sits, a faint glass edge all round */}
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/0 to-black/85" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/0 via-45% to-black/90" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[28px] ring-1 ring-inset ring-white/15" />
 
         {/* publisher + eyebrow */}
@@ -90,9 +91,11 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
           {data.curatedBy && !compact && <p translate="no" className="mt-1.5 text-caption text-white/65">{t('Curated by')} {data.curatedBy}</p>}
         </div>
 
-        {data.mediaKind === 'video' && (
-          <span aria-hidden="true" className="pointer-events-none absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md sm:right-6 sm:top-6"><Icon name="play" size={14} fill /></span>
-        )}
+        {/* "picked by CX" chip — the video mark rides in it */}
+        <span aria-hidden="true" className={`pointer-events-none absolute inline-flex items-center gap-1.5 rounded-full bg-white/12 font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md ring-1 ring-white/20 ${compact ? 'right-3.5 top-3.5 px-2.5 py-1 text-[9px]' : 'right-4 top-4 px-3 py-1.5 text-[10px] sm:right-6 sm:top-6'}`}>
+          {data.mediaKind === 'video' ? <Icon name="play" size={10} fill /> : <Icon name="sparkles" size={10} />}
+          {t('Picked by CX')}
+        </span>
 
         {/* title + credit + CTA */}
         <div className={`absolute inset-x-0 bottom-0 sm:p-6 ${compact ? 'p-3.5' : 'p-4'}`}>
@@ -100,7 +103,8 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
           <p translate="no" className="mt-3 text-detail font-medium text-white/90">{t('Vision by')} {handle}</p>
           <p translate="no" className="mt-0.5 text-caption text-white/60">{sub}</p>
           <span className={`inline-flex items-center gap-2 rounded-full bg-white font-semibold text-noir ${compact ? 'mt-3 min-h-9 px-4 text-caption' : 'mt-4 min-h-11 px-5 text-detail'} transition-all duration-300 group-hover:gap-3 group-hover:bg-white/95`}>
-            {t('Watch Vision')} <Icon name="arrowUpRight" size={15} />
+            {t('Watch Vision')}
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-noir text-white transition-transform duration-300 group-hover:rotate-45"><Icon name="arrowUpRight" size={13} /></span>
           </span>
         </div>
       </article>

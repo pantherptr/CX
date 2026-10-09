@@ -66,12 +66,16 @@ export function VisionsGrid({
   const [openAt, setOpenAt] = useState<number | null>(null);
   const [managing, setManaging] = useState(false);
   const [editing, setEditing] = useState<Vision | null>(null);
+  const [kind, setKind] = useState<'all' | 'image' | 'video'>('all');
+  const hasBoth = Boolean(items && items.some((v) => v.mediaKind === 'image') && items.some((v) => v.mediaKind === 'video'));
+  const shown = items ? (kind === 'all' || !hasBoth ? items : items.filter((v) => v.mediaKind === kind)) : null;
   const consumedDeepLink = useRef(false);
   useEffect(() => {
     if (!items || !initialOpenId || consumedDeepLink.current) return;
     const i = items.findIndex((v) => v.id === initialOpenId);
     if (i >= 0) {
       consumedDeepLink.current = true;
+      setKind('all');
       setOpenAt(i);
     }
   }, [items, initialOpenId]);
@@ -114,6 +118,23 @@ export function VisionsGrid({
 
       {isMe && <SpotlightRules />}
 
+      {hasBoth && (
+        <div className="mb-3 flex items-center gap-1.5" role="tablist" aria-label="Filter">
+          {([['all', t('All')], ['image', t('Photos')], ['video', t('Videos')]] as const).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={kind === k}
+              onClick={() => setKind(k)}
+              className={`pressable min-h-9 rounded-full px-3.5 text-caption font-semibold transition-colors ${kind === k ? 'bg-ink text-white' : 'bg-panel text-ink-soft hover:text-ink'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {items === null && (
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <span key={i} className="skeleton aspect-[4/5] rounded-sm" />)}
@@ -133,14 +154,14 @@ export function VisionsGrid({
         </div>
       )}
 
-      {items && items.length > 0 && (
+      {shown && shown.length > 0 && (
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 sm:grid-flow-dense">
-          {items.map((v, i) => {
+          {shown.map((v, i) => {
             const isVideo = v.mediaKind === 'video';
             // Only with two tiles after it to sit beside — otherwise the big tile would have no height.
-            const feature = i % 5 === 0 && i + 2 < items.length;
+            const feature = i % 5 === 0 && i + 2 < shown.length;
             return (
-              <div key={v.id} className={`relative aspect-[4/5] ${feature ? 'sm:col-span-2 sm:row-span-2 sm:aspect-auto' : ''}`}>
+              <div key={v.id} style={{ animationDelay: `${Math.min(i, 10) * 45}ms` }} className={`relative aspect-[4/5] animate-fade-up [animation-fill-mode:backwards] ${feature ? 'sm:col-span-2 sm:row-span-2 sm:aspect-auto' : ''}`}>
                 <button
                   type="button"
                   onClick={() => (managing ? undefined : setOpenAt(i))}
@@ -156,8 +177,13 @@ export function VisionsGrid({
                     <span className="pointer-events-none absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"><Icon name="play" size={10} fill /></span>
                   )}
                 </button>
+                {v.title && !managing && (
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pb-2 pt-8">
+                    <span translate="no" className="line-clamp-1 text-[12px] font-medium text-white/95">{v.title}</span>
+                  </span>
+                )}
                 {v.spotlighted && !managing && (
-                  <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+                  <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
                     <Icon name="sparkles" size={10} /> Spotlight
                   </span>
                 )}
@@ -189,10 +215,10 @@ export function VisionsGrid({
 
       {editing && <VisionEditSheet vision={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); onChanged?.(); }} />}
 
-      {items && openAt !== null && items[openAt] && (
+      {shown && openAt !== null && shown[openAt] && (
         <SignalMediaViewer
-          images={items.map((v) => v.mediaUrl)}
-          captions={items.map((v) => ({ title: v.title, caption: v.caption, badge: v.spotlighted ? t('Selected for Signal Spotlight') : null }))}
+          images={shown.map((v) => v.mediaUrl)}
+          captions={shown.map((v) => ({ title: v.title, caption: v.caption, badge: v.spotlighted ? t('Selected for Signal Spotlight') : null }))}
           sharedKey="visions"
           startIndex={openAt}
           onClose={() => setOpenAt(null)}
