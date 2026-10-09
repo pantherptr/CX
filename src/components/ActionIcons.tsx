@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { motion, useAnimation, useReducedMotion, type Variants } from 'motion/react';
 
 /** The animated companions of ThumbsUpIcon for SIGNAL's other post actions
@@ -31,6 +31,7 @@ const svgProps = {
 
 /** Save: the bookmark drops in with a spring and settles. `filled` paints it solid. */
 export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
+  const uid = useId().replace(/:/g, '');
   const controls = usePlay(playKey);
   const v: Variants = {
     normal: { y: 0, scale: 1, rotate: 0 },
@@ -44,7 +45,26 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
   return (
     <span className={`inline-flex items-center justify-center ${className}`} aria-hidden="true">
       <motion.svg {...svgProps} width={size} height={size} variants={v} initial="normal" animate={controls} style={{ transformOrigin: 'center' }}>
-        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill={filled ? 'currentColor' : 'none'} />
+        {filled ? (
+          <>
+            <defs>
+              <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#12e254" />
+                <stop offset="1" stopColor="#00a63a" />
+              </linearGradient>
+              <linearGradient id={`${uid}c`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#f2f5f7" />
+                <stop offset="0.5" stopColor="#aab2b9" />
+                <stop offset="1" stopColor="#e6eaed" />
+              </linearGradient>
+            </defs>
+            {/* saved: CX green with the same thin chrome edge as the Respect hand */}
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill={`url(#${uid}g)`} stroke={`url(#${uid}c)`} strokeWidth="1.2" />
+            <path d="M8.6 5.8h6.8" stroke="#fff" strokeWidth="1" opacity="0.55" />
+          </>
+        ) : (
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="none" />
+        )}
       </motion.svg>
     </span>
   );
