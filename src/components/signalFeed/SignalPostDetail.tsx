@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
-import { fetchEmpirePostById, fetchEmpireFeed, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchEmpirePostById, fetchEmpireFeed, withoutSpotlightPosts, SPOTLIGHT_POST_MARKER, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchSpotlightFeed, type SpotlightCardData } from '../../lib/data/spotlight';
 import { fetchSignalDemoPostById, fetchSignalDemoPosts } from '../../lib/data/signalDemo';
 import { useLocale } from '../../lib/i18n';
 import { SignalPostCard } from './SignalPostCard';
@@ -29,6 +30,14 @@ export function SignalPostDetail({
   const [post, setPost] = useState<EmpirePost | null | 'error'>(null);
   const [loaded, setLoaded] = useState(false);
   const [related, setRelated] = useState<EmpirePost[] | null>(null);
+  // A Signal Spotlight's team post: its card is drawn from the Spotlight entry.
+  const [spotlight, setSpotlight] = useState<SpotlightCardData | null>(null);
+  useEffect(() => {
+    if (!post || post === 'error' || post.body !== SPOTLIGHT_POST_MARKER) { setSpotlight(null); return; }
+    let cancelled = false;
+    fetchSpotlightFeed(20).then((rows) => { if (!cancelled) setSpotlight(rows.find((r) => r.postId === post.id) ?? null); });
+    return () => { cancelled = true; };
+  }, [post]);
   const { toast } = useApp();
   const { t } = useLocale();
   const { pathname } = useLocation();
@@ -52,7 +61,7 @@ export function SignalPostDetail({
         if (p) {
           const rows = p.isDemo ? fetchSignalDemoPosts(7) : fetchEmpireFeed(7, undefined, undefined, { scope });
           rows
-            .then((list) => !cancelled && setRelated(list.filter((r) => r.id !== p.id).slice(0, 5)))
+            .then((list) => !cancelled && setRelated(withoutSpotlightPosts(list).filter((r) => r.id !== p.id).slice(0, 5)))
             .catch(() => !cancelled && setRelated([]));
         }
       })
@@ -115,6 +124,8 @@ export function SignalPostDetail({
               detail
               post={post}
               canManage={canManage}
+              spotlight={spotlight ?? undefined}
+              spotlightAll={spotlight ? [spotlight] : undefined}
               onChanged={(updated) => setPost(updated)}
               onDeleted={onClose}
             />

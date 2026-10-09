@@ -26,6 +26,7 @@ import { SignalMediaViewer } from './SignalMediaViewer';
 import { PostActionMenu, type PostMenuItem } from './PostActionMenu';
 import { SignalSpotlightCard } from './SignalSpotlightCard';
 import type { SpotlightCardData } from '../../lib/data/spotlight';
+import { SPOTLIGHT_POST_MARKER } from '../../lib/data/empireFeed';
 import { SignalSharePostSheet } from './SignalSharePostSheet';
 import { SignalCommentsSheet } from './SignalCommentsSheet';
 import { SignalComments } from './SignalComments';
@@ -461,6 +462,8 @@ export function SignalPostCard({
   spotlight?: SpotlightCardData;
   spotlightAll?: SpotlightCardData[];
 }) {
+  // The team post behind a Spotlight carries only a marker — never show it as text.
+  const isSpotlightPost = post.body === SPOTLIGHT_POST_MARKER;
   const { toast } = useApp();
   const { session, profile: viewerProfile } = useAuth();
   // Comment CREATION is Owner-only (see 0057_signal_owner_only_comments.sql)
@@ -959,7 +962,7 @@ export function SignalPostCard({
     ...(canModerate
       ? [
           [
-            ...(spotlight ? [] : [{ icon: 'edit', label: 'Edit post', onClick: () => setEditing(true) } as PostMenuItem]),
+            ...(isSpotlightPost ? [] : [{ icon: 'edit', label: 'Edit post', onClick: () => setEditing(true) } as PostMenuItem]),
             ...(isOwnPost
               ? [
                   { icon: 'pinned', label: post.pinnedToProfile ? 'Unpin from profile' : 'Pin to my profile', onClick: () => void handleProfilePinToggle(), fill: post.pinnedToProfile },
@@ -1052,14 +1055,14 @@ export function SignalPostCard({
 
       {spotlight && (
         <div className="px-3 pb-3">
-          <SignalSpotlightCard data={spotlight} all={spotlightAll} embedded compact />
+          <SignalSpotlightCard data={spotlight} all={spotlightAll} embedded compact={!detail} />
         </div>
       )}
 
-      {post.title && !spotlight && (
+      {post.title && !isSpotlightPost && (
         <h3 className={`px-4 pb-1 font-display font-semibold text-ink sm:px-5 ${featured ? 'text-feature' : 'text-lead'}`}>{tr.texts[0]}</h3>
       )}
-      {post.body.trim() !== '' && !spotlight && (
+      {post.body.trim() !== '' && !isSpotlightPost && (
         <div className="px-4 pb-3 sm:px-5">
           <p
             ref={bodyRef}
@@ -1075,7 +1078,7 @@ export function SignalPostCard({
         </div>
       )}
 
-      {tr.available && post.body.trim() !== '' && !spotlight && (
+      {tr.available && post.body.trim() !== '' && !isSpotlightPost && (
         <div className="px-4 pb-3 sm:px-5">
           <button
             type="button"
