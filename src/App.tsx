@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, useLocation, Navigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -194,11 +194,18 @@ function useSplash(minMs = 2200) {
     };
   }, [visible]);
 
+  // The clock starts when the splash's artwork is on screen (`ready`), so the whole
+  // animation always plays; and never waits longer than a few seconds for the page's
+  // other resources (slow fonts or photos used to leave it hanging).
+  const [ready, setReady] = useState(false);
+  const onReady = useCallback(() => setReady(true), []);
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !ready) return;
     const start = performance.now();
-    let raf = 0;
+    let fired = false;
     const finish = () => {
+      if (fired) return;
+      fired = true;
       const wait = Math.max(0, minMs - (performance.now() - start));
       window.setTimeout(() => {
         setHiding(true);
@@ -206,15 +213,16 @@ function useSplash(minMs = 2200) {
         window.setTimeout(() => setVisible(false), 520);
       }, wait);
     };
+    const cap = window.setTimeout(finish, 3500);
     if (document.readyState === 'complete') finish();
     else window.addEventListener('load', finish, { once: true });
     return () => {
-      cancelAnimationFrame(raf);
+      window.clearTimeout(cap);
       window.removeEventListener('load', finish);
     };
-  }, [visible, minMs]);
+  }, [visible, ready, minMs]);
 
-  return { visible, hiding };
+  return { visible, hiding, onReady };
 }
 
 export default function App() {
@@ -241,7 +249,7 @@ export default function App() {
     !/^\/(book|list-your-car|settings|login|signup|empire|host\/cars)(\/|$)/.test(location.pathname);
   return (
     <>
-      {splash.visible && <PremiumInitialLoader hiding={splash.hiding} />}
+      {splash.visible && <PremiumInitialLoader hiding={splash.hiding} onReady={splash.onReady} />}
       <ScrollToTop />
       <BatPullToRefresh enabled={pullEnabled && !splash.visible} onRefresh={() => { setRefreshNonce((n) => n + 1); return new Promise<void>((r) => window.setTimeout(r, 600)); }} />
       {/* Outer safety net — the inner ErrorBoundary below only covers the

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+
 /**
  * The loading system.
  *
@@ -39,9 +41,23 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
  *  so they stack pixel-perfectly): `cx-logo-letters.png` and
  *  `cx-logo-key.png`.
  */
-export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
+export function PremiumInitialLoader({ hiding, onReady }: { hiding: boolean; onReady?: () => void }) {
+  // The animation only starts once the artwork has actually loaded (or after a short
+  // fallback), so it never plays on invisible images and then pops in half-way through.
+  const [ready, setReady] = useState(false);
+  const loaded = useRef(0);
+  const markLoaded = () => {
+    loaded.current += 1;
+    if (loaded.current >= 3) setReady(true);
+  };
+  useEffect(() => {
+    const t = window.setTimeout(() => setReady(true), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+  useEffect(() => { if (ready) onReady?.(); }, [ready, onReady]);
   return (
     <div
+      data-ready={ready}
       className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-bg transition-[opacity,transform] duration-500 ease-out ${
         hiding ? 'pointer-events-none scale-[1.02] opacity-0' : 'opacity-100'
       }`}
@@ -54,8 +70,8 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
         style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.16), rgba(0,212,71,0.05) 55%, transparent 100%)' }}
       />
       <div className="relative" style={{ width: 'clamp(190px, 62vw, 300px)', aspectRatio: '1633 / 318' }}>
-        <img src="/brand/cx-logo-letters.png" alt="" draggable={false} className="cx-reveal absolute inset-0 h-full w-full select-none object-contain" />
-        <img src="/brand/cx-logo-key.png" alt="" draggable={false} className="cx-key absolute inset-0 h-full w-full select-none object-contain" />
+        <img src="/brand/cx-logo-letters.png" alt="" draggable={false} className="cx-reveal absolute inset-0 h-full w-full select-none object-contain" onLoad={markLoaded} onError={markLoaded} />
+        <img src="/brand/cx-logo-key.png" alt="" draggable={false} className="cx-key absolute inset-0 h-full w-full select-none object-contain" onLoad={markLoaded} onError={markLoaded} />
         <span
           aria-hidden="true"
           className="signal-sweep-mask pointer-events-none absolute inset-0"
@@ -76,7 +92,7 @@ export function PremiumInitialLoader({ hiding }: { hiding: boolean }) {
         <div className="cx-car absolute left-1/2 top-1/2 w-[112px]">
           <span className="cx-trail pointer-events-none absolute right-[86%] top-1/2 h-[7px] w-28 -translate-y-1/2 rounded-full" />
           <span className="cx-beam pointer-events-none absolute left-[88%] top-1/2 h-10 w-24 -translate-y-1/2" />
-          <img src="/brand/loader-car.webp" alt="" draggable={false} className="cx-car-body relative block w-full select-none" />
+          <img src="/brand/loader-car.webp" alt="" draggable={false} className="cx-car-body relative block w-full select-none" onLoad={markLoaded} onError={markLoaded} />
         </div>
       </div>
     </div>

@@ -845,6 +845,8 @@
     clip-path: polygon(0 38%, 100% 0, 100% 100%, 0 62%);
     filter: blur(1px);
   }
+  /* Hold every splash animation at its first frame until the artwork is loaded. */
+  [data-ready='false'] .cx-reveal, [data-ready='false'] .cx-key, [data-ready='false'] .cx-road, [data-ready='false'] .cx-car, [data-ready='false'] .cx-road-dashes, [data-ready='false'] .cx-bloom, [data-ready='false'] .signal-sweep-bar { animation-play-state: paused; }
   @media (prefers-reduced-motion: reduce) {
     .cx-reveal, .cx-key, .cx-bloom, .cx-road, .cx-car, .cx-road-dashes { animation: none; }
   }
