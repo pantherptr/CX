@@ -1176,7 +1176,6 @@ export function SignalPostCard({
           Shares and the "Performance" label for Owner/Admin. It fills in as
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
-      {respected && <div aria-hidden="true" className="h-6" />}
       <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-0.5 sm:px-5">
         <div className="flex items-center gap-4 text-ink-soft">
             {(isTeamViewer ? (
@@ -1223,18 +1222,8 @@ export function SignalPostCard({
                   )}
                 </span>
               ))}
-          {/* Respect — the stamp sits just above it while a Respect stands */}
-          <div className="relative">
-            {respected && (
-              <span
-                key={stampKey}
-                aria-hidden="true"
-                style={stampKey > 0 ? undefined : { transform: 'rotate(-8deg)' }}
-                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[34px] left-0 z-10 whitespace-nowrap rounded-[5px] border-[1.5px] border-accent-bright bg-surface px-1.5 py-px text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-accent-700 shadow-[0_4px_12px_-5px_rgba(0,212,71,0.55)]`}
-              >
-                Respected
-              </span>
-            )}
+          {/* Respect — while a Respect stands, its stamp is pressed right beside it */}
+          <div className="relative flex items-center gap-2">
             {isTeamViewer ? (
               <Tap
                 onClick={respectClick}
@@ -1263,6 +1252,16 @@ export function SignalPostCard({
                 </span>
                 <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.likeCount)}</span>
               </Tap>
+            )}
+            {respected && (
+              <span
+                key={stampKey}
+                aria-hidden="true"
+                style={stampKey > 0 ? undefined : { transform: 'rotate(-6deg)' }}
+                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none -ml-1 inline-block whitespace-nowrap rounded-[4px] border-[1.5px] border-accent-bright bg-accent-050 px-1.5 py-[2px] text-[9.5px] font-black uppercase leading-none tracking-[0.2em] text-accent-700 shadow-[inset_0_0_0_1.5px_var(--color-accent-050),inset_0_0_0_2.5px_rgba(0,212,71,0.4)]`}
+              >
+                Respected
+              </span>
             )}
           </div>
 
