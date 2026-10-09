@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react';
 import {
   motion,
   AnimatePresence,
@@ -138,7 +138,9 @@ export function Tap({
   children?: ReactNode;
 } & HTMLMotionProps<'button'>) {
   const reduceMotion = useReducedMotion();
-  const MotionTag = motion.create(as);
+  // One component per tag type — creating it inside every render made React remount the
+  // button on each re-render (a scrolling page lost its taps, and anchors went stale).
+  const MotionTag = useMemo(() => motion.create(as), [as]);
   // Reduced motion drops the press/hover *gestures* (purely decorative)
   // but keeps rendering a real motion component rather than falling back
   // to a plain tag — a caller-supplied `animate` (FollowButton's "just

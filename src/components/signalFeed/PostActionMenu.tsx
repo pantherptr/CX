@@ -29,6 +29,8 @@ export function PostActionMenu({
       setIsPhone(window.innerWidth < 640);
       if (!anchor) return;
       const r = anchor.getBoundingClientRect();
+      // A detached or hidden anchor reports an empty box — keep the popover on screen anyway.
+      if (!anchor.isConnected || (r.width === 0 && r.height === 0)) { setPos({ top: 72, right: 16 }); return; }
       setPos({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
     };
     place();
