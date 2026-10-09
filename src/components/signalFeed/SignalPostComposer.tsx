@@ -13,7 +13,6 @@ import { fireConfetti } from '../../lib/confetti';
 import { SignalPollEditor, cleanPollOptions } from './SignalPollEditor';
 import { createEmpirePoll } from '../../lib/data/empirePolls';
 import { useApp } from '../../lib/store';
-import { useVisionChoice, VisionsOption } from './VisionsOption';
 
 // Shared with SignalCommunityComposer (the compact native composer used
 // for Community) — one source of truth for these limits rather than two
@@ -79,7 +78,6 @@ export function SignalPostComposer({
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   const totalMedia = existingPaths.length + pending.length;
-  const vision = useVisionChoice(editing?.id);
 
   const addImageFiles = (list: FileList | null) => {
     if (!list) return;
@@ -180,7 +178,6 @@ export function SignalPostComposer({
         setError(result.error ?? 'Something went wrong — try again.');
         return;
       }
-      await vision.apply(result.post.id, mediaPaths.length > 0);
       if (!editing && pollOptions) {
         const pr = await createEmpirePoll(result.post.id, cleanPollOptions(pollOptions));
         if (pr.error) toast({ title: 'The post is up, but the poll could not be added', desc: pr.error, icon: 'info' });
@@ -335,8 +332,6 @@ export function SignalPostComposer({
           </button>
         )}
       </div>
-
-      <VisionsOption choice={vision} hasMedia={totalMedia > 0} />
 
       {error && <p className="mt-3 text-detail font-medium text-danger">{error}</p>}
 

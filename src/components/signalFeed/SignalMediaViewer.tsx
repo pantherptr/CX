@@ -29,12 +29,15 @@ export function SignalMediaViewer({
   startIndex,
   onClose,
   sharedKey = '',
+  captions,
 }: {
   images: string[];
   startIndex: number;
   onClose: () => void;
   /** The post's id — keeps the shared-element id unique when two posts show the same photo. */
   sharedKey?: string;
+  /** Optional title/caption per item (CX Visions) — shown under the media. */
+  captions?: ({ title: string | null; caption: string | null } | null)[];
 }) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -248,7 +251,14 @@ export function SignalMediaViewer({
         )}
       </div>
 
-      {many && (
+      {captions?.[index] && (captions[index]!.title || captions[index]!.caption) && (
+        <div className="mx-auto w-full max-w-xl shrink-0 px-5 pb-2 pt-3 text-center text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
+          {captions[index]!.title && <p className="font-display text-[17px] font-semibold leading-snug">{captions[index]!.title}</p>}
+          {captions[index]!.caption && <p className="mt-1 text-detail leading-relaxed text-white/70">{captions[index]!.caption}</p>}
+        </div>
+      )}
+
+      {many && images.length <= 12 && (
         <div className="flex shrink-0 justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2" aria-hidden="true">
           {images.map((_, i) => (
             <span

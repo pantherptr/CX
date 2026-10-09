@@ -1,13 +1,15 @@
 import { supabase } from '../supabase';
 
 /**
- * CX Visions — an optional visual portfolio on a profile. A Vision is an
- * ordinary post (same media, Respect, comments) flagged through a side table
- * (0085_signal_visions.sql); nothing about posts themselves changes.
+ * CX Visions — a personal, professional portfolio on a profile, separate
+ * from posts (0085 = the opt-in switch, 0086 = the portfolio itself). A
+ * Vision is its own item in its own storage bucket; it never appears in the
+ * Signal feed.
  *
- * Every function here fails soft: until the migration has been run (or if
- * a call errors) Visions simply looks switched off and no post is hidden.
+ * Reads fail soft: until the migration has run, Visions just looks off.
  */
+
+const VISIONS_BUCKET = 'signal-visions';
 
 export async function fetchVisionsEnabled(userId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('fetch_visions_enabled', { p_user_id: userId });
@@ -20,38 +22,62 @@ export async function setMyVisionsEnabled(enabled: boolean): Promise<{ error: st
   return { error: error ? error.message : null };
 }
 
-/** Flag (or unflag) one of my own posts. `visionOnly` hides it from the feed. */
-export async function setPostVision(postId: string, isVision: boolean, visionOnly = false): Promise<{ error: string | null }> {
-  const { error } = await supabase.rpc('set_post_vision', { p_post_id: postId, p_is_vision: isVision, p_vision_only: visionOnly });
+export interface Vision {
+  id: string;
+  authorId: string;
+  mediaUrl: string;
+  mediaKind: 'image' | 'video';
+  title: string | null;
+  caption: string | null;
+  createdAt: string;
+}
+
+interface VisionRow {
+  id: string;
+  author_id: string;
+  media_path: string;
+  media_kind: 'image' | 'video';
+  title: string | null;
+  caption: string | null;
+  created_at: string;
+}
+
+const urlFor = (path: string) => supabase.storage.from(VISIONS_BUCKET).getPublicUrl(path).data.publicUrl;
+
+export async function fetchVisions(authorId: string, limit = 60): Promise<Vision[]> {
+  const { data, error } = await supabase.rpc('fetch_visions', { p_author_id: authorId, p_limit: limit, p_before: null });
+  if (error || !data) return [];
+  return (data as VisionRow[]).map((r) => ({
+    id: r.id, authorId: r.author_id, mediaUrl: urlFor(r.media_path), mediaKind: r.media_kind,
+    title: r.title, caption: r.caption, createdAt: r.created_at,
+  }));
+}
+
+/** Uploads one file into the signed-in user's own folder and records it. */
+export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string): Promise<{ error: string | null }> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) return { error: 'Not signed in' };
+  const ext = file.name.split('.').pop()?.toLowerCase() || (kind === 'video' ? 'mp4' : 'jpg');
+  const path = `${uid}/${crypto.randomUUID()}.${ext}`;
+  const up = await supabase.storage.from(VISIONS_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
+  if (up.error) return { error: up.error.message };
+  const { error } = await supabase.rpc('add_vision', { p_media_path: path, p_media_kind: kind, p_title: title, p_caption: caption });
+  if (error) {
+    await supabase.storage.from(VISIONS_BUCKET).remove([path]);
+    return { error: error.message };
+  }
+  return { error: null };
+}
+
+export async function updateVision(id: string, title: string, caption: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('update_vision', { p_id: id, p_title: title, p_caption: caption });
   return { error: error ? error.message : null };
 }
 
-export interface PostVisionFlag {
-  isVision: boolean;
-  visionOnly: boolean;
-}
-
-/** Which of these posts are Visions (and Visions-only). Absent id = a normal post. */
-export async function fetchPostVisionFlags(postIds: string[]): Promise<Map<string, PostVisionFlag>> {
-  const out = new Map<string, PostVisionFlag>();
-  if (postIds.length === 0) return out;
-  const { data, error } = await supabase.rpc('fetch_post_vision_flags', { p_post_ids: postIds });
-  if (error || !data) return out;
-  for (const r of data as { post_id: string; vision_only: boolean }[]) out.set(r.post_id, { isVision: true, visionOnly: r.vision_only });
-  return out;
-}
-
-/** Drops the posts that live only in Visions — used by every list that
- *  shows a normal feed (Signal feed, a profile's Posts tab, search). */
-export async function withoutVisionOnly<T extends { id: string }>(posts: T[]): Promise<T[]> {
-  if (posts.length === 0) return posts;
-  const flags = await fetchPostVisionFlags(posts.map((p) => p.id));
-  if (flags.size === 0) return posts;
-  return posts.filter((p) => !flags.get(p.id)?.visionOnly);
-}
-
-export async function fetchVisionPostIds(authorId: string, limit = 60): Promise<string[]> {
-  const { data, error } = await supabase.rpc('fetch_vision_post_ids', { p_author_id: authorId, p_limit: limit });
-  if (error || !data) return [];
-  return (data as { post_id: string }[]).map((r) => r.post_id);
+export async function deleteVision(id: string): Promise<{ error: string | null }> {
+  const { data, error } = await supabase.rpc('delete_vision', { p_id: id });
+  if (error) return { error: error.message };
+  if (typeof data === 'string' && data) await supabase.storage.from(VISIONS_BUCKET).remove([data]);
+  return { error: null };
 }

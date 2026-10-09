@@ -428,7 +428,7 @@ export function SignalEditProfileSheet({
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
             <p className="text-micro font-semibold uppercase tracking-[0.24em] text-on-noir-muted">CX Visions</p>
             <p className="mt-2 text-detail leading-relaxed text-on-noir">
-              {visionsOn ? t('Visions is on. Your selected photos and videos appear in your Visions tab.') : t('Collect your shots and videos in a personal space.')}
+              {visionsOn ? t('Visions is on. Add your photos and videos from the Visions tab on your profile.') : t('Collect your shots and videos in a personal space.')}
             </p>
             <Tap
               onClick={toggleVisions}
