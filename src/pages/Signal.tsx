@@ -492,7 +492,7 @@ export default function Signal() {
           <>
             {(space === 'official' ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
               item.kind === 'spotlight' ? (
-                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} />
+                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} />
               ) : (
                 <SignalPostCard
                   key={item.post.id}

@@ -40,7 +40,7 @@ export function SignalMediaViewer({
   /** Optional title/caption per item (CX Visions) — shown under the media. */
   captions?: ({ title: string | null; caption: string | null; badge?: string | null } | null)[];
   /** Optional extra row under the caption (e.g. a link to the creator). */
-  footer?: ReactNode;
+  footer?: ReactNode | ((index: number) => ReactNode);
 }) {
   const [index, setIndex] = useState(startIndex);
   const [drag, setDrag] = useState({ x: 0, y: 0 });
@@ -262,7 +262,7 @@ export function SignalMediaViewer({
         </div>
       )}
 
-      {footer && <div className="flex shrink-0 justify-center px-5 pb-3 pt-1">{footer}</div>}
+      {footer && <div className="flex shrink-0 justify-center px-5 pb-3 pt-1">{typeof footer === 'function' ? footer(index) : footer}</div>}
 
       {many && images.length <= 12 && (
         <div className="flex shrink-0 justify-center gap-1.5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2" aria-hidden="true">

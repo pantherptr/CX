@@ -7,19 +7,25 @@ import { useLocale } from '../../lib/i18n';
 import { fetchVisions, type Vision } from '../../lib/data/visions';
 import type { SpotlightCardData } from '../../lib/data/spotlight';
 import { SignalMediaViewer } from './SignalMediaViewer';
+import { SharedAvatar } from '../motionKit';
 
 /** A Signal Spotlight in the feed: CX's editorial pick of a Vision. Photo or
  *  video first, a title and almost no text — no reactions, comments, counts or
  *  sharing. Tapping anywhere (or "Watch Vision") opens the ORIGINAL Vision right
  *  here in the fullscreen viewer, with its own title and caption, and a link on
- *  to the creator's Visions. */
-export function SignalSpotlightCard({ data }: { data: SpotlightCardData }) {
+ *  to the creator's Visions. When the feed has several Spotlights the viewer lets
+ *  you swipe from one to the next, and the photo grows out of the card it was
+ *  tapped on. */
+export function SignalSpotlightCard({ data, all }: { data: SpotlightCardData; all?: SpotlightCardData[] }) {
   const { t } = useLocale();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [vision, setVision] = useState<Vision | null>(null);
   const city = data.city?.trim();
   const sub = [data.carLabel, t('Shot on CX')].filter(Boolean).join(' · ');
+  const list = all && all.length > 0 ? all : [data];
+  const startIndex = Math.max(0, list.findIndex((x) => x.entryId === data.entryId));
+  const handleOf = (d: SpotlightCardData) => (d.creatorUsername ? `@${d.creatorUsername}` : t('a CX creator'));
   const handle = data.creatorUsername ? `@${data.creatorUsername}` : t('a CX creator');
 
   // The creator's own title/caption for the Vision — fetched only once it is opened.
@@ -32,7 +38,7 @@ export function SignalSpotlightCard({ data }: { data: SpotlightCardData }) {
     return () => { cancelled = true; };
   }, [open, vision, data.creatorId, data.visionId]);
 
-  const goToProfile = () => navigate(`/signal/profile/${data.creatorId}?vision=${data.visionId}`);
+  const goToProfile = (d: SpotlightCardData) => navigate(`/signal/profile/${d.creatorId}?vision=${d.visionId}`);
 
   return (
     <>
@@ -47,12 +53,14 @@ export function SignalSpotlightCard({ data }: { data: SpotlightCardData }) {
         {data.mediaKind === 'video' ? (
           <video src={data.mediaUrl} muted playsInline loop autoPlay preload="metadata" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
         ) : (
-          <Img
-            src={data.mediaUrl}
-            alt={data.title ?? ''}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]"
-            fallback={<span className="absolute inset-0 grid place-items-center text-white/50"><Icon name="image" size={28} /></span>}
-          />
+          <SharedAvatar as="div" id={`post-media-spotlight-${data.entryId}-${data.mediaUrl}`} active={!open} className="absolute inset-0">
+            <Img
+              src={data.mediaUrl}
+              alt={data.title ?? ''}
+              className="h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]"
+              fallback={<span className="absolute inset-0 grid place-items-center text-white/50"><Icon name="image" size={28} /></span>}
+            />
+          </SharedAvatar>
         )}
         {/* depth: dark at the top and bottom where the text sits, a faint glass edge all round */}
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/0 to-black/85" />
@@ -94,17 +102,17 @@ export function SignalSpotlightCard({ data }: { data: SpotlightCardData }) {
 
       {open && (
         <SignalMediaViewer
-          images={[data.mediaUrl]}
-          startIndex={0}
+          images={list.map((d) => d.mediaUrl)}
+          startIndex={startIndex}
           sharedKey={`spotlight-${data.entryId}`}
-          captions={[{
-            title: vision?.title || data.title,
-            caption: vision?.caption || `${t('Vision by')} ${handle}${data.carLabel ? ` · ${data.carLabel}` : ''}`,
+          captions={list.map((d, i) => ({
+            title: i === startIndex ? (vision?.title || d.title) : d.title,
+            caption: i === startIndex && vision?.caption ? vision.caption : `${t('Vision by')} ${handleOf(d)}${d.carLabel ? ` · ${d.carLabel}` : ''}`,
             badge: t('Selected for Signal Spotlight'),
-          }]}
-          footer={(
-            <button type="button" onClick={goToProfile} className="pressable inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white/12 px-4 text-detail font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20">
-              {t('See more from')} {handle} <Icon name="arrowUpRight" size={14} />
+          }))}
+          footer={(i) => (
+            <button type="button" onClick={() => goToProfile(list[i] ?? data)} className="pressable inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white/12 px-4 text-detail font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20">
+              {t('See more from')} {handleOf(list[i] ?? data)} <Icon name="arrowUpRight" size={14} />
             </button>
           )}
           onClose={() => setOpen(false)}
