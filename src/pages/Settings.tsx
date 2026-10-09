@@ -358,7 +358,7 @@ export default function Settings() {
                       { k: 'followers', t: 'New followers', d: 'When someone starts following you.' },
                       { k: 'requests', t: 'Accepted requests', d: 'When a follow request of yours is accepted.' },
                       { k: 'circle', t: 'CX Circle', d: 'When you and someone follow each other.' },
-                      { k: 'respects', t: 'Grouped Respects', d: 'One note for the new Respects on your post — never who.' },
+                      { k: 'respects', t: 'Grouped Respects', d: 'Respects from people who do not follow you come as one note — never who.' },
                       { k: 'visions', t: 'Visions & Spotlight', d: 'When CX selects or features one of your Visions.' },
                     ] as const).map((r) => (
                       <label key={r.k} className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3.5">

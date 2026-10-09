@@ -66,3 +66,35 @@ export async function fetchRelation(userId: string): Promise<Relation> {
   if (error || typeof data !== 'string') return 'none';
   return data as Relation;
 }
+
+/** The personal feed: drops community posts from people you do not follow, unless they are
+ *  one of the few good public posts open to discovery (see `signal_feed_hidden`, 0094).
+ *  Official CX content is never dropped. Fails open if the server rule is missing. */
+export async function withoutOutOfFeed<T extends { id: string }>(items: T[]): Promise<T[]> {
+  if (items.length === 0) return items;
+  const { data, error } = await supabase.rpc('signal_feed_hidden', { p_ids: items.map((i) => i.id) });
+  if (error || !Array.isArray(data) || data.length === 0) return items;
+  const hidden = new Set(data as string[]);
+  return items.filter((i) => !hidden.has(i.id));
+}
+
+export interface PersonSuggestion {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  username: string | null;
+  isHost: boolean;
+  isVerifiedClient: boolean;
+  /** How many people you follow also follow them. */
+  mutualFollows: number;
+}
+
+/** People worth following: friends-of-friends first, then well-followed hosts and verified accounts. */
+export async function fetchPeopleSuggestions(limit = 12): Promise<PersonSuggestion[]> {
+  const { data, error } = await supabase.rpc('fetch_people_suggestions', { p_limit: limit });
+  if (error || !data) return [];
+  return (data as { id: string; full_name: string | null; avatar_url: string | null; username: string | null; is_host: boolean; is_verified_client: boolean; mutual_follows: number }[]).map((r) => ({
+    id: r.id, fullName: r.full_name ?? 'CX user', avatarUrl: r.avatar_url, username: r.username,
+    isHost: r.is_host, isVerifiedClient: r.is_verified_client, mutualFollows: r.mutual_follows,
+  }));
+}

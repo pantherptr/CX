@@ -34,7 +34,7 @@ const ROWS: Row[] = [
   ["These choices are saved to your account.", "Queste scelte sono salvate nel tuo account.", "Aceste alegeri sunt salvate în contul tău.", "Estas opciones se guardan en tu cuenta."],
   ["When CX selects or features one of your Visions.", "Quando CX seleziona o mette in evidenza una tua Vision.", "Când CX selectează sau pune în evidență un Vision de-al tău.", "Cuando CX selecciona o destaca una de tus Visions."],
   ["Visions & Spotlight", "Visions e Spotlight", "Visions și Spotlight", "Visions y Spotlight"],
-  ["One note for the new Respects on your post — never who.", "Un solo avviso per i nuovi Respect sul tuo post, mai di chi.", "O singură notificare pentru Respect-urile noi, niciodată de la cine.", "Un solo aviso por los nuevos Respect de tu publicación, nunca de quién."],
+  ["Respects from people who do not follow you come as one note — never who.", "I Respect di chi non ti segue arrivano in un solo avviso, mai con il nome.", "Respect-urile de la cei care nu te urmăresc vin într-o singură notificare, niciodată cu numele.", "Los Respect de quien no te sigue llegan en un solo aviso, nunca con el nombre."],
   ["Grouped Respects", "Respect aggregati", "Respect-uri grupate", "Respect agrupados"],
   ["When you and someone follow each other.", "Quando tu e qualcuno vi seguite a vicenda.", "Când tu și cineva vă urmăriți reciproc.", "Cuando tú y alguien os seguís mutuamente."],
   ["When a follow request of yours is accepted.", "Quando una tua richiesta di follow viene accettata.", "Când o cerere de urmărire a ta este acceptată.", "Cuando se acepta una solicitud tuya de seguimiento."],

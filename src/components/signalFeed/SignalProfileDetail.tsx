@@ -212,7 +212,8 @@ export function SignalProfileDetail({
   };
   // Anyone can follow anyone: Followers and CX Circle (a mutual follow) are what privacy is built on.
   const canBeFollowed = Boolean(realProfile && !isMe);
-  const showFollowCounts = Boolean(realProfile);
+  // Follower and following numbers and lists belong to the person alone.
+  const showFollowCounts = Boolean(realProfile && isMe);
   const [relation, setRelation] = useState<Relation>('none');
   useEffect(() => {
     if (!realProfile || isMe) { setRelation('none'); return; }
