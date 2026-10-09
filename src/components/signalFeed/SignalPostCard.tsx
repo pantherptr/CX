@@ -65,8 +65,8 @@ function timeAgo(iso: string): string {
 // max-height is a second, independent safety net for wide desktop cards.
 // The action row: plain icon + number, evenly spread, only the colour changes
 // when an action is active — like the reference tweet card, just in CX green.
-const ACTION = 'group flex min-h-11 select-none items-center gap-1 text-[14px] font-medium transition-colors';
-const BAR_ICON = 'grid h-9 w-9 place-items-center rounded-full transition-colors';
+const BAR_ICON = 'inline-grid place-items-center';
+const BAR_ACTION = 'group flex min-h-9 select-none items-center gap-1.5 text-faint transition-colors';
 
 const MIN_MEDIA_ASPECT = 4 / 5;
 const MEDIA_MAX_HEIGHT_CLASS = 'max-h-[420px] sm:max-h-[520px]';
@@ -1172,8 +1172,8 @@ export function SignalPostCard({
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
       {respected && <div aria-hidden="true" className="h-6" />}
-      <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-1 sm:px-5">
-        <div className="flex items-center gap-2.5 text-ink-soft">
+      <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-0.5 sm:px-5">
+        <div className="flex items-center gap-4 text-ink-soft">
             {(isTeamViewer ? (
                 <button
                   type="button"
@@ -1183,18 +1183,18 @@ export function SignalPostCard({
                   onPointerLeave={viewPressEnd}
                   onPointerCancel={viewPressEnd}
                   aria-label="Add a view — hold to remove yours"
-                  className="pressable inline-flex min-h-9 select-none items-center gap-1"
+                  className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                 >
-                  <span className={`${BAR_ICON} -ml-1.5`}><EyeIcon size={18} playKey={viewPlay} className="shrink-0 text-ink-soft" /></span>
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
+                  <span className={`${BAR_ICON}`}><EyeIcon size={15} playKey={viewPlay} className="shrink-0 text-faint" /></span>
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.viewCount)}</span>
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
                   </span>
                 </button>
               ) : (
                 <span className="inline-flex items-center gap-1">
-                  <span className={`${BAR_ICON} -ml-1.5`}><EyeIcon size={18} className="shrink-0 text-ink-soft" /></span>
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.viewCount)}</span>
+                  <span className={`${BAR_ICON}`}><EyeIcon size={15} className="shrink-0 text-faint" /></span>
+                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.viewCount)}</span>
                 </span>
               ))}
           {/* Respect — the stamp sits just above it while a Respect stands */}
@@ -1218,24 +1218,24 @@ export function SignalPostCard({
                 onPointerCancel={respectPressEnd}
                 scale={0.94}
                 aria-label={myRespects > 0 ? 'Rimuovi Respect' : 'Esprimi Respect'}
-                className={`${ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
+                className={`${BAR_ACTION} ${myRespects > 0 ? 'text-accent-700' : 'text-faint hover:text-accent-700'}`}
               >
                 <span className={BAR_ICON}>
-                  <RespectIcon size={15} filled={myRespects > 0} playKey={respectPlay} />
+                  <RespectIcon size={14} filled={myRespects > 0} playKey={respectPlay} />
                 </span>
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.likeCount)}</span>
               </Tap>
             ) : (
               <Tap
                 onClick={handleRespect}
                 scale={0.94}
                 aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
-                className={`${ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-ink-soft hover:text-accent-700'}`}
+                className={`${BAR_ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-faint hover:text-accent-700'}`}
               >
                 <span className={BAR_ICON}>
-                  <RespectIcon size={15} filled={post.likedByMe} playKey={respectPlay} />
+                  <RespectIcon size={14} filled={post.likedByMe} playKey={respectPlay} />
                 </span>
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.likeCount)}</span>
+                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.likeCount)}</span>
               </Tap>
             )}
           </div>
@@ -1249,12 +1249,12 @@ export function SignalPostCard({
               onPointerCancel={savePressEnd}
               scale={0.94}
               aria-label={mySaves > 0 ? `Save (${mySaves}) — hold to choose a collection` : 'Save — hold to choose a collection'}
-              className={`${ACTION} ${mySaves > 0 ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+              className={`${BAR_ACTION} ${mySaves > 0 ? 'text-ink' : 'text-faint hover:text-ink'}`}
             >
               <span className={BAR_ICON}>
-                <BookmarkIcon size={18} filled={mySaves > 0} playKey={savePlay} />
+                <BookmarkIcon size={15} filled={mySaves > 0} playKey={savePlay} />
               </span>
-              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.saveCount)}</span>
+              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.saveCount)}</span>
             </Tap>
           ) : (
             <Tap
@@ -1266,17 +1266,17 @@ export function SignalPostCard({
               onContextMenu={(e: { preventDefault: () => void }) => e.preventDefault()}
               scale={0.94}
               aria-label={post.savedByMe ? 'Saved — hold to choose a collection' : 'Save — hold to choose a collection'}
-              className={`${ACTION} select-none [-webkit-touch-callout:none] ${post.savedByMe ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+              className={`${BAR_ACTION} select-none [-webkit-touch-callout:none] ${post.savedByMe ? 'text-ink' : 'text-faint hover:text-ink'}`}
             >
               <span className={BAR_ICON}>
-                <BookmarkIcon size={18} filled={post.savedByMe} playKey={savePlay} />
+                <BookmarkIcon size={15} filled={post.savedByMe} playKey={savePlay} />
               </span>
-              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.saveCount)}</span>
+              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.saveCount)}</span>
             </Tap>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4">
           {canManage && <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>}
           {/* Owner-only — add_empire_post_comment enforces this server-side;
               hiding it for everyone else is just honest UI. No demo
@@ -1286,10 +1286,10 @@ export function SignalPostCard({
               onClick={() => setCommentsSheetOpen(true)}
               scale={0.94}
               aria-label="Comment"
-              className={`${ACTION} text-ink-soft hover:text-sky-600`}
+              className={`${BAR_ACTION} text-faint hover:text-sky-600`}
             >
               <span className={BAR_ICON}>
-                <Icon name="message" size={18} />
+                <Icon name="message" size={15} />
               </span>
             </Tap>
           )}
@@ -1297,12 +1297,12 @@ export function SignalPostCard({
             onClick={handleShare}
             scale={0.94}
             aria-label="Share"
-            className={`${ACTION} text-ink-soft hover:text-accent-700`}
+            className={`${BAR_ACTION} text-faint hover:text-accent-700`}
           >
-            <span className={`${BAR_ICON} ${canManage ? '' : '-mr-1.5'}`}>
-              <ShareIcon size={18} playKey={sharePlay} />
+            <span className={`${BAR_ICON} `}>
+              <ShareIcon size={15} playKey={sharePlay} />
             </span>
-            {canManage && <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight">{compact(post.shareCount)}</span>}
+            {canManage && <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.shareCount)}</span>}
           </Tap>
         </div>
       </div>
