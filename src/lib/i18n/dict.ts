@@ -31,8 +31,8 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
-  ["For those who shoot.", "Per chi fotografa.", "Pentru cei care fotografiază.", "Para quien fotografía."],
-  ["Your photo and video portfolio inside CX. For photographers, videomakers and enthusiasts: show your best work, link it to your trips and nominate it for Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Per fotografi, videomaker e appassionati: mostra i tuoi lavori migliori, collegali ai tuoi viaggi e candidali a Signal Spotlight.", "Portofoliul tău foto și video în CX. Pentru fotografi, videomakeri și pasionați: arată-ți cele mai bune lucrări, leagă-le de călătoriile tale și nominalizează-le pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Para fotógrafos, videomakers y aficionados: muestra tu mejor trabajo, vincúlalo a tus viajes y nomínalo a Signal Spotlight."],
+  ["The world, through your lens.", "Il mondo, visto da te.", "Lumea, prin ochii tăi.", "El mundo, a través de tu mirada."],
+  ["Your photo and video portfolio inside CX. Show your best shots, link them to your trips and nominate them for Signal Spotlight.", "Il tuo portfolio di foto e video dentro CX. Mostra i tuoi scatti migliori, collegali ai tuoi viaggi e candidali a Signal Spotlight.", "Portofoliul tău foto și video în CX. Arată-ți cele mai bune cadre, leagă-le de călătoriile tale și nominalizează-le pentru Signal Spotlight.", "Tu portafolio de fotos y vídeos dentro de CX. Muestra tus mejores tomas, vincúlalas a tus viajes y nomínalas a Signal Spotlight."],
   ["Edit", "Modifica", "Editează", "Editar"],
   ["Edit Vision", "Modifica Vision", "Editează Vision", "Editar Vision"],
   ["Save", "Salva", "Salvează", "Guardar"],

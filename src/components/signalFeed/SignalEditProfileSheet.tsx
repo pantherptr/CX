@@ -427,11 +427,11 @@ export function SignalEditProfileSheet({
           {/* CX Visions — opt-in portfolio; untouched unless the user taps it */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4">
             <p className="text-micro font-semibold uppercase tracking-[0.24em] text-on-noir-muted">CX Visions</p>
-            <p className="mt-2 font-display text-[17px] font-semibold leading-snug text-on-noir">{t('For those who shoot.')}</p>
+            <p className="mt-2 font-display text-[17px] font-semibold leading-snug text-on-noir">{t('The world, through your lens.')}</p>
             <p className="mt-1.5 text-detail leading-relaxed text-on-noir-muted">
               {visionsOn
                 ? t('Visions is on. Add your photos and videos from the Visions tab on your profile.')
-                : t('Your photo and video portfolio inside CX. For photographers, videomakers and enthusiasts: show your best work, link it to your trips and nominate it for Signal Spotlight.')}
+                : t('Your photo and video portfolio inside CX. Show your best shots, link them to your trips and nominate them for Signal Spotlight.')}
             </p>
             <Tap
               onClick={toggleVisions}
