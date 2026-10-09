@@ -46,6 +46,9 @@ export function RespectIcon({
         transition: { duration: 0.42, times: [0, 0.22, 0.5, 1], ease: 'easeOut', delay: 0.04 },
       });
     }
+    // StrictMode (dev) runs effect → cleanup → effect on one instance; forgetting
+    // the key here lets that second run replay instead of being swallowed.
+    return () => { lastKey.current = 0; };
   }, [playKey, reduced, controls, ring]);
 
   const h = Math.round(size * 1.2);
