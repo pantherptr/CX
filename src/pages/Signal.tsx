@@ -353,6 +353,8 @@ export default function Signal() {
             one motion vocabulary, not a second one invented for this. */}
         <div key={space} className="animate-fade-up">
         {space === 'official' && <SignalHighlightsBar canManage={canManage} />}
+        {/* A new member sees who to follow right at the top of Official too, above the announcements. */}
+        {space === 'official' && <SignalPeopleShelf profileBase={base} />}
 
         {space === 'official' && pinned.post && (
           <SignalPostCard
@@ -456,7 +458,7 @@ export default function Signal() {
             </div>
           </div>
         )}
-        <SignalPeopleShelf profileBase={base} />
+        {space === 'community' && <SignalPeopleShelf profileBase={base} />}
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
