@@ -50,7 +50,7 @@ export function FingerGunIcon({
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.9"
+        strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="overflow-visible"
@@ -59,10 +59,9 @@ export function FingerGunIcon({
       >
         <motion.g variants={handVariants} style={{ originX: 0.15, originY: 0.95 }}>
           <path
-            d="M7.2 8.4V4.2a1.6 1.6 0 0 1 3.2 0v4H20.6a1.7 1.7 0 0 1 0 3.4H14.6a1.5 1.5 0 0 1 0 3 1.5 1.5 0 0 1 0 3 1.5 1.5 0 0 1 0 3H8.2a3 3 0 0 1-3-3v-6.2a3 3 0 0 1 2-3Z"
+            d="M6.5 11.4V5.4a1.65 1.65 0 0 1 3.3 0v3.2h10.1a1.8 1.8 0 0 1 0 3.6h-5c1.5 0 1.5 2.7 0 2.7 1.5 0 1.5 2.7 0 2.7 1.3 0 1.3 2.4 0 2.4H9.2a3.7 3.7 0 0 1-3.7-3.7v-2.9c0-1 .4-1.6 1-2Z"
             fill={filled ? 'currentColor' : 'none'}
           />
-          <path d="M10.4 14.6h4.2M10.4 17.6h4.2" stroke={filled ? 'var(--color-surface)' : 'currentColor'} strokeWidth="1.3" />
         </motion.g>
         <motion.g
           variants={flashVariants}
@@ -70,9 +69,9 @@ export function FingerGunIcon({
           stroke="currentColor"
           strokeWidth="1.7"
         >
-          <path d="M22.9 9.9h1.4" />
-          <path d="M22.5 7.9l1.1-1.3" />
-          <path d="M22.5 11.9l1.1 1.3" />
+          <path d="M23 10.4h1.3" />
+          <path d="M22.6 8.4l1.1-1.3" />
+          <path d="M22.6 12.4l1.1 1.3" />
         </motion.g>
       </motion.svg>
     </span>
