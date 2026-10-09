@@ -11,7 +11,7 @@ import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
-import { SignalSpotlightSection, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
+import { SignalSpotlightPageLink, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
 import { useSpotlightFeed, useSpotlightPosts, mergeSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
@@ -416,8 +416,8 @@ export default function Signal() {
           />
         )}
 
-        {/* Signal Spotlight — wide screens, Official: a section of its own. Phones and Community: a card among the posts (below). */}
-        {space === 'official' && !isPhone && <SignalSpotlightSection items={spotlights} />}
+        {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
+        {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
@@ -496,7 +496,7 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {(space === 'community' || isPhone ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
+            {mergeSpotlights(posts, spotlights, hasMore).map((item) =>
               item.kind === 'spotlight' ? (
                 spotlightPosts.posts[item.spotlight.entryId] ? (
                   // The team's real post for this Spotlight — a post like any other (Respect, comments, saves…), just a special one.

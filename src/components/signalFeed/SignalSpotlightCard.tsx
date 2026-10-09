@@ -131,41 +131,23 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
   );
 }
 
-/** Official's Spotlight section — a block of its own above the posts, like the
- *  editorial sections Official always had. One Spotlight is a single wide card;
- *  several make a swipeable row. "See all" opens the Spotlight page. (In
- *  Community a Spotlight is just a card among the posts instead.) */
-export function SignalSpotlightSection({ items }: { items: SpotlightCardData[] }) {
+/** Official only: a small entry to the Spotlight page, where every Spotlight CX has
+ *  published is kept together. In the feeds themselves a Spotlight is just a post
+ *  that scrolls by date like any other. */
+export function SignalSpotlightPageLink({ count }: { count: number }) {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  if (items.length === 0) return null;
+  if (count === 0) return null;
   return (
-    <section aria-label={t('Signal Spotlight')} className="mb-6">
-      <div className="mb-2.5 flex items-center justify-between gap-3 px-1">
-        <h2 className="flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-ink">
-          <Icon name="sparkles" size={14} /> {t('Signal Spotlight')}
-        </h2>
-        <button
-          type="button"
-          onClick={() => navigate('/signal/spotlight', { state: { from: pathname } })}
-          className="pressable inline-flex min-h-9 items-center gap-1 text-detail font-semibold text-muted hover:text-ink"
-        >
-          {t('See all')} <Icon name="chevronRight" size={15} />
-        </button>
-      </div>
-      {items.length === 1 ? (
-        <SignalSpotlightCard data={items[0]} all={items} inRail />
-      ) : (
-        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-          {items.map((d) => (
-            <div key={d.entryId} className="w-[84%] shrink-0 snap-center sm:w-[62%]">
-              <SignalSpotlightCard data={d} all={items} inRail />
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+    <button
+      type="button"
+      onClick={() => navigate('/signal/spotlight', { state: { from: pathname } })}
+      className="pressable mb-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-caption font-semibold text-ink shadow-hair transition-colors hover:border-line-strong"
+    >
+      <Icon name="sparkles" size={13} /> {t('Signal Spotlight')} <span className="text-faint">· {count}</span>
+      <Icon name="chevronRight" size={14} className="text-faint" />
+    </button>
   );
 }
 
