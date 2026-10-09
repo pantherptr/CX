@@ -93,7 +93,9 @@ export default function Signal() {
   const spotlights = useSpotlightFeed();
   const spotlightPosts = useSpotlightPosts(spotlights);
   const officialFeed = useEmpireFeed(category, { scope: 'official' });
-  const communityFeed = useEmpireFeed(null, { scope: 'community' });
+  // Community is a ranked feed (a fresh mix of new and older posts on every refresh) or just the people you follow.
+  const [feedMode, setFeedMode] = useState<'foryou' | 'following'>('foryou');
+  const communityFeed = useEmpireFeed(null, { scope: 'community', ranked: feedMode });
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
 
@@ -419,6 +421,22 @@ export default function Signal() {
 
         {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
         {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}
+        {space === 'community' && (
+          <div className="mb-3 inline-flex rounded-full bg-panel p-1" role="tablist" aria-label={t('Feed')}>
+            {([['foryou', t('For you')], ['following', t('Following')]] as const).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={feedMode === m}
+                onClick={() => { if (feedMode !== m) { setFeedMode(m); window.scrollTo({ top: 0 }); } }}
+                className={`pressable min-h-9 rounded-full px-4 text-detail font-semibold transition-colors ${feedMode === m ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <SignalPeopleShelf profileBase={base} />
 
         {/* Real new content, quietly detected in the background — never

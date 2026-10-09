@@ -265,6 +265,9 @@ function mapEmpirePost(row: EmpirePostRow): EmpirePost {
 export interface EmpireFeedScope {
   scope?: 'official' | 'community';
   authorKind?: 'host' | 'verified_client';
+  /** 'foryou': a ranked mix of new and older posts that reshuffles on every refresh (the X way);
+   *  'following': newest first, only people you follow. Omitted = the plain newest-first feed. */
+  ranked?: 'foryou' | 'following';
 }
 
 /** `beforeId` is the tie-break half of a real keyset cursor (see
@@ -282,6 +285,20 @@ export async function fetchEmpireFeed(
     p_limit: limit, p_before: before ?? null, p_category: category ?? null,
     p_publisher_scope: scopeOpts?.scope ?? null, p_author_kind: scopeOpts?.authorKind ?? null,
     p_before_id: beforeId ?? null,
+  });
+  if (error) throw error;
+  return (data as EmpirePostRow[]).map(mapEmpirePost);
+}
+
+/** The ranked feeds (0097). `seed` and `since` fix one load: the same pair always gives the same
+ *  order, so scrolling never repeats or skips; a new pair (a refresh) gives a new mix. */
+export async function fetchForYouFeed(opts: {
+  limit: number; offset: number; seed: number; since: string; mode: 'foryou' | 'following';
+  scope?: 'official' | 'community'; authorKind?: 'host' | 'verified_client';
+}): Promise<EmpirePost[]> {
+  const { data, error } = await supabase.rpc('fetch_for_you_feed', {
+    p_limit: opts.limit, p_offset: opts.offset, p_seed: opts.seed, p_since: opts.since, p_mode: opts.mode,
+    p_publisher_scope: opts.scope ?? 'community', p_author_kind: opts.authorKind ?? null,
   });
   if (error) throw error;
   return (data as EmpirePostRow[]).map(mapEmpirePost);
@@ -397,6 +414,9 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   const setNewPostsAvailable = useCallback((v: boolean) => { if (!v) setNewPostsInfo(null); }, []);
   const scope = scopeOpts?.scope;
   const authorKind = scopeOpts?.authorKind;
+  const ranked = scopeOpts?.ranked;
+  // One ranked load = one seed + one moment + how far we have read.
+  const rankedRef = useRef({ seed: 0, since: '', offset: 0, demo: createFeedSourceStream() });
   // Read inside the poll without making the effect below re-run (and thus
   // re-arm its interval) on every single post that loads — same ref
   // indirection Signal.tsx's own infinite-scroll observer already uses.
@@ -418,12 +438,35 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   const demoEligible = scope === 'community';
   const streamRef = useRef(createMergedStream());
 
+  /** One page of a ranked feed: the next slice of this load's ordering, topped up with Community's
+   *  demo filler only when the real posts run short (so a quiet community never looks empty). */
+  const pullRanked = useCallback(async (reset: boolean): Promise<{ rows: EmpirePost[]; more: boolean }> => {
+    if (reset) rankedRef.current = { seed: Math.floor(Math.random() * 2147483000), since: new Date().toISOString(), offset: 0, demo: createFeedSourceStream() };
+    const r = rankedRef.current;
+    const raw = await fetchForYouFeed({ limit: FEED_PAGE_SIZE, offset: r.offset, seed: r.seed, since: r.since, mode: ranked ?? 'foryou', scope, authorKind });
+    r.offset += raw.length;
+    let rows = await viewablePosts(raw);
+    let more = raw.length === FEED_PAGE_SIZE;
+    if (!more && demoEligible && ranked !== 'following') {
+      while (rows.length < FEED_PAGE_SIZE) {
+        await topUpFeedSourceStream(r.demo, (cursor) => fetchSignalDemoPosts(FEED_PAGE_SIZE, cursor?.createdAt, cursor?.id));
+        const next = r.demo.buffer.shift();
+        if (!next) break;
+        rows = [...rows, next];
+      }
+      more = !isStreamDrained(r.demo);
+    }
+    return { rows, more };
+  }, [ranked, scope, authorKind, demoEligible]);
+
   const loadInitial = useCallback(async () => {
     streamRef.current = createMergedStream();
     try {
-      const { rows, more } = await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, () =>
-        fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }),
-      );
+      const { rows, more } = ranked
+        ? await pullRanked(true)
+        : await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, () =>
+            fetchEmpireFeed(FEED_PAGE_SIZE, undefined, category, { scope, authorKind }),
+          );
       setPosts(rows);
       setHasMore(more);
       setNewPostsAvailable(false);
@@ -432,7 +475,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       setHasMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, scope, authorKind, demoEligible]);
+  }, [category, scope, authorKind, demoEligible, ranked, pullRanked]);
 
   useEffect(() => {
     setPosts(null);
@@ -443,10 +486,16 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const { rows, more } = await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, (cursor) =>
-        fetchEmpireFeed(FEED_PAGE_SIZE, cursor?.createdAt, category, { scope, authorKind }, cursor?.id),
-      );
-      setPosts((prev) => [...(prev ?? []), ...rows]);
+      const { rows, more } = ranked
+        ? await pullRanked(false)
+        : await pullMergedPage(streamRef.current, FEED_PAGE_SIZE, demoEligible, (cursor) =>
+            fetchEmpireFeed(FEED_PAGE_SIZE, cursor?.createdAt, category, { scope, authorKind }, cursor?.id),
+          );
+      // a ranked reshuffle never lists the same post twice in one load
+      setPosts((prev) => {
+        const have = new Set((prev ?? []).map((p) => p.id));
+        return [...(prev ?? []), ...rows.filter((r) => !have.has(r.id))];
+      });
       setHasMore(more);
     } catch {
       setHasMore(false);
@@ -454,7 +503,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       setLoadingMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [posts, loadingMore, hasMore, category, scope, authorKind, demoEligible]);
+  }, [posts, loadingMore, hasMore, category, scope, authorKind, demoEligible, ranked, pullRanked]);
 
   // Keyed on primitives, not `posts` itself (which gets a new identity on
   // every page load/patch) — the interval is armed once per feed/filter
@@ -464,7 +513,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   // request on a peek nobody can see the result of yet).
   const hasPosts = Boolean(posts && posts.length > 0);
   useEffect(() => {
-    if (!hasPosts) return;
+    if (!hasPosts || ranked === 'following') return;
     let cancelled = false;
     const tick = async () => {
       if (document.visibilityState !== 'visible') return;
@@ -487,7 +536,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [hasPosts, category, scope, authorKind]);
+  }, [hasPosts, category, scope, authorKind, ranked]);
 
   /** Merges in whatever's actually new since the feed last loaded —
    *  refetches the first page and prepends only the rows not already
