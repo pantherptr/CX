@@ -51,7 +51,7 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
       <motion.span
         initial={{ opacity: 0 }}
         animate={ring}
-        className="pointer-events-none absolute rounded-full border border-accent-bright"
+        className="pointer-events-none absolute rounded-full border border-[#e8b02a]"
         style={{ width: size * 1.1, height: size * 1.1 }}
       />
       <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
@@ -59,8 +59,8 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
           <>
             <defs>
               <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#22f066" />
-                <stop offset="1" stopColor="#00c43f" />
+                <stop offset="0" stopColor="#ffd65a" />
+                <stop offset="1" stopColor="#d9961a" />
               </linearGradient>
               <linearGradient id={`${uid}c`} x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stopColor="#f2f5f7" />
@@ -68,7 +68,7 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
                 <stop offset="1" stopColor="#e6eaed" />
               </linearGradient>
             </defs>
-            {/* saved: CX green with the same thin chrome edge as the Respect hand */}
+            {/* saved: gold with the same thin chrome edge as the Respect hand */}
             <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill={`url(#${uid}g)`} stroke={`url(#${uid}c)`} strokeWidth="1.2" />
             <path d="M8.6 5.8h6.8" stroke="#fff" strokeWidth="1" opacity="0.55" />
           </>
