@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { VerifiedBadge } from '../primitives';
@@ -16,9 +16,12 @@ import { SharedAvatar } from '../motionKit';
  *  to the creator's Visions. When the feed has several Spotlights the viewer lets
  *  you swipe from one to the next, and the photo grows out of the card it was
  *  tapped on. */
-export function SignalSpotlightCard({ data, all }: { data: SpotlightCardData; all?: SpotlightCardData[] }) {
+export function SignalSpotlightCard({ data, all, inRail = false }: { data: SpotlightCardData; all?: SpotlightCardData[]; inRail?: boolean }) {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  // Open the profile in the space you came from, so closing it lands back on this same feed.
+  const spaceBase = pathname.startsWith('/signal/community') ? '/signal/community' : '/signal';
   const [open, setOpen] = useState(false);
   const [vision, setVision] = useState<Vision | null>(null);
   const city = data.city?.trim();
@@ -38,7 +41,7 @@ export function SignalSpotlightCard({ data, all }: { data: SpotlightCardData; al
     return () => { cancelled = true; };
   }, [open, vision, data.creatorId, data.visionId]);
 
-  const goToProfile = (d: SpotlightCardData) => navigate(`/signal/profile/${d.creatorId}?vision=${d.visionId}`);
+  const goToProfile = (d: SpotlightCardData) => navigate(`${spaceBase}/profile/${d.creatorId}?vision=${d.visionId}`);
 
   return (
     <>
@@ -48,7 +51,7 @@ export function SignalSpotlightCard({ data, all }: { data: SpotlightCardData; al
         onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); } }}
         aria-label={`${t('Signal Spotlight')}${data.title ? ` — ${data.title}` : ''}`}
-        className="group relative mb-5 aspect-[4/5] w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]"
+        className={`group relative aspect-[4/5] w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail ? '' : 'mb-5'} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
       >
         {data.mediaKind === 'video' ? (
           <video src={data.mediaUrl} muted playsInline loop autoPlay preload="metadata" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
@@ -119,5 +122,33 @@ export function SignalSpotlightCard({ data, all }: { data: SpotlightCardData; al
         />
       )}
     </>
+  );
+}
+
+/** The Spotlight section — its own block above the posts, in Official and in
+ *  Community alike (a Spotlight published by the CX team goes everywhere).
+ *  One Spotlight is a single wide card; several make a swipeable row. Opening
+ *  one and closing it brings you straight back here, in the feed. */
+export function SignalSpotlightSection({ items }: { items: SpotlightCardData[] }) {
+  const { t } = useLocale();
+  if (items.length === 0) return null;
+  return (
+    <section aria-label={t('Signal Spotlight')} className="mb-6">
+      <div className="mb-2.5 flex items-center gap-2 px-1">
+        <Icon name="sparkles" size={14} className="text-ink" />
+        <h2 className="text-micro font-semibold uppercase tracking-[0.3em] text-ink">{t('Signal Spotlight')}</h2>
+      </div>
+      {items.length === 1 ? (
+        <SignalSpotlightCard data={items[0]} all={items} inRail />
+      ) : (
+        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {items.map((d) => (
+            <div key={d.entryId} className="w-[84%] shrink-0 snap-center sm:w-[62%]">
+              <SignalSpotlightCard data={d} all={items} inRail />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

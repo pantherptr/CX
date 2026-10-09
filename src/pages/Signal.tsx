@@ -11,8 +11,8 @@ import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
-import { SignalSpotlightCard } from '../components/signalFeed/SignalSpotlightCard';
-import { useSpotlightFeed, mergeSpotlights } from '../lib/data/spotlight';
+import { SignalSpotlightSection } from '../components/signalFeed/SignalSpotlightCard';
+import { useSpotlightFeed } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
@@ -413,6 +413,9 @@ export default function Signal() {
           />
         )}
 
+        {/* Signal Spotlight — its own section, in Official AND Community */}
+        <SignalSpotlightSection items={spotlights} />
+
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
             the user is currently reading), just a tap-to-load pill that
@@ -490,21 +493,17 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {(space === 'official' ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
-              item.kind === 'spotlight' ? (
-                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} />
-              ) : (
-                <SignalPostCard
-                  key={item.post.id}
-                  post={item.post}
-                  canManage={canManage}
-                  onChanged={(updated) => patchPost(item.post.id, updated)}
-                  onDeleted={(id) => removePost(id)}
-                  onPinToggled={resyncAfterPin}
-                  onFeaturedToggled={resyncAfterFeature}
-                />
-              ),
-            )}
+            {posts.map((post) => (
+              <SignalPostCard
+                key={post.id}
+                post={post}
+                canManage={canManage}
+                onChanged={(updated) => patchPost(post.id, updated)}
+                onDeleted={(id) => removePost(id)}
+                onPinToggled={resyncAfterPin}
+                onFeaturedToggled={resyncAfterFeature}
+              />
+            ))}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-4">
                 {loadingMore && <SignalPostSkeleton />}
