@@ -13,7 +13,7 @@ import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer'
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
 import { SignalPeopleShelf } from '../components/signalFeed/SignalPeopleShelf';
 import { SignalSpotlightPageLink, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
-import { useSpotlightFeed, useSpotlightPosts, mergeSpotlights } from '../lib/data/spotlight';
+import { useSpotlightFeed, useSpotlightPosts, scatterSpotlights } from '../lib/data/spotlight';
 import { SignalPostCard } from '../components/signalFeed/SignalPostCard';
 import { SignalPostSkeleton } from '../components/signalFeed/SignalPostSkeleton';
 import { SignalSearchOverlay } from '../components/signalFeed/SignalSearchOverlay';
@@ -498,7 +498,7 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {mergeSpotlights(posts, spotlights, hasMore, (sp) => spotlightPosts.posts[sp.entryId]).map((item) =>
+            {scatterSpotlights(posts, spotlights, hasMore).map((item) =>
               item.kind === 'spotlight' ? (
                 spotlightPosts.posts[item.spotlight.entryId] ? (
                   // The team's real post for this Spotlight — a post like any other (Respect, comments, saves…), just a special one.

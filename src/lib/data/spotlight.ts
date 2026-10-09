@@ -143,29 +143,42 @@ export function useSpotlightFeed(): SpotlightCardData[] {
   return items;
 }
 
-/** Slots Spotlights into an already-ordered post list by date, exactly like posts:
- *  each goes before the first post older than it, so the posts' own order is never
- *  touched, and as newer posts arrive it sinks with the rest. A Spotlight's date is
- *  its team post's own creation time when there is one (so re-publishing from the
- *  admin never makes it jump), otherwise the time it was published. Dates are
- *  compared as real instants, not as text. A Spotlight older than everything loaded
- *  so far waits until the feed has no more pages, so it never jumps ahead of posts
- *  still to load. */
-export function mergeSpotlights<P extends { createdAt: string }>(
+// One random seed per page load: Spotlights land in different places each time the app is
+// opened, but never move while you scroll.
+const SCATTER_SEED = Math.floor(Math.random() * 0x7fffffff);
+
+function slotHash(id: string, salt: number): number {
+  let h = (SCATTER_SEED ^ salt) >>> 0;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
+  return h;
+}
+
+/** Scatters Spotlights through a feed instead of pinning them to the top. Each one gets its own
+ *  random spot — somewhere between the 2nd and the 8th post, and always a few posts after the
+ *  previous Spotlight — so the feed reads like any other: posts, now and then one of CX's picks.
+ *  The posts' own order is never touched. A spot that is not reached yet (the feed has not
+ *  loaded that far) simply waits; once the feed has no more pages the rest go at the end. */
+export function scatterSpotlights<P>(
   posts: P[], spotlights: SpotlightCardData[], hasMore: boolean,
-  postOf?: (s: SpotlightCardData) => { createdAt: string } | undefined,
 ): ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] {
-  const when = (s: SpotlightCardData) => Date.parse(postOf?.(s)?.createdAt ?? s.publishedAt) || 0;
-  const out: ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] = [];
-  const pending = [...spotlights].sort((a, b) => when(b) - when(a));
-  for (const post of posts) {
-    const t = Date.parse(post.createdAt) || 0;
-    while (pending.length > 0 && when(pending[0]) >= t) {
-      out.push({ kind: 'spotlight', spotlight: pending.shift()! });
-    }
-    out.push({ kind: 'post', post });
+  // Newest pick first, but at a random distance from the start.
+  const picks = [...spotlights].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  const slots: { at: number; spotlight: SpotlightCardData }[] = [];
+  let at = 1 + (slotHash('first', 1) % 3); // the first one comes after 1..3 posts + its own offset
+  for (const sp of picks) {
+    at += 1 + (slotHash(sp.entryId, 7) % 4); // 2nd..7th post
+    slots.push({ at, spotlight: sp });
+    at += 3; // always a few posts before the next one
   }
-  if (!hasMore) for (const s of pending) out.push({ kind: 'spotlight', spotlight: s });
+  const out: ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] = [];
+  let next = 0;
+  posts.forEach((post, i) => {
+    while (next < slots.length && slots[next].at <= i) out.push({ kind: 'spotlight', spotlight: slots[next++].spotlight });
+    out.push({ kind: 'post', post });
+  });
+  if (!hasMore) {
+    while (next < slots.length) out.push({ kind: 'spotlight', spotlight: slots[next++].spotlight });
+  }
   return out;
 }
 
