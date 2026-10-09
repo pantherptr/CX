@@ -1222,7 +1222,7 @@ export function SignalPostCard({
                   )}
                 </span>
               ))}
-          {/* Respect — while a Respect stands, its stamp is pressed right beside it */}
+          {/* Respect — while a Respect stands, its stamp is pressed on the line between the post and this bar, above the hand */}
           <div className="relative flex items-center gap-2">
             {isTeamViewer ? (
               <Tap
@@ -1258,7 +1258,7 @@ export function SignalPostCard({
                 key={stampKey}
                 aria-hidden="true"
                 style={stampKey > 0 ? undefined : { transform: 'rotate(-6deg)' }}
-                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none -ml-1 inline-block whitespace-nowrap rounded-[4px] border-[1.5px] border-accent-bright bg-accent-050 px-1.5 py-[2px] text-[9.5px] font-black uppercase leading-none tracking-[0.2em] text-accent-700 shadow-[inset_0_0_0_1.5px_var(--color-accent-050),inset_0_0_0_2.5px_rgba(0,212,71,0.4)]`}
+                className={`${stampKey > 0 ? 'respect-stamp' : ''} pointer-events-none absolute -top-[15px] left-1 z-10 whitespace-nowrap rounded-[4px] border-[1.5px] border-accent-bright bg-accent-050 px-1.5 py-[2px] text-[9.5px] font-black uppercase leading-none tracking-[0.2em] text-accent-700 shadow-[inset_0_0_0_1.5px_var(--color-accent-050),inset_0_0_0_2.5px_rgba(0,212,71,0.4)]`}
               >
                 Respected
               </span>
