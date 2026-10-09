@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
 import { useTeamTapMode, setTeamTapMode } from '../lib/teamTapMode';
-import { useMediaQuery } from '../components/motion';
+import { useMediaQuery, vibrateTap } from '../components/motion';
 import { Tap, AnimatePresence, motion } from '../components/motionKit';
 import { SignalLogo, SignalSHero } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
@@ -422,19 +422,38 @@ export default function Signal() {
         {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
         {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}
         {space === 'community' && (
-          <div className="mb-3 inline-flex rounded-full bg-panel p-1" role="tablist" aria-label={t('Feed')}>
-            {([['foryou', t('For you')], ['following', t('Following')]] as const).map(([m, label]) => (
-              <button
-                key={m}
-                type="button"
-                role="tab"
-                aria-selected={feedMode === m}
-                onClick={() => { if (feedMode !== m) { setFeedMode(m); window.scrollTo({ top: 0 }); } }}
-                className={`pressable min-h-9 rounded-full px-4 text-detail font-semibold transition-colors ${feedMode === m ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'}`}
-              >
-                {label}
-              </button>
-            ))}
+          // Like X's two tabs: full width, a sliding underline, and it stays under the header while you scroll.
+          <div
+            className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-20 -mx-4 mb-3 border-b border-line bg-bg/90 px-4 backdrop-blur-xl lg:top-16 sm:mx-0 sm:px-0"
+            role="tablist"
+            aria-label={t('Feed')}
+          >
+            <div className="grid grid-cols-2">
+              {([['foryou', t('For you')], ['following', t('Following')]] as const).map(([m, label]) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={feedMode === m}
+                  onClick={() => {
+                    if (feedMode === m) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+                    vibrateTap();
+                    setFeedMode(m);
+                    window.scrollTo({ top: 0 });
+                  }}
+                  className="pressable relative min-h-12 text-[15px] font-semibold transition-colors active:bg-panel/50"
+                >
+                  <span className={`transition-colors ${feedMode === m ? 'text-ink' : 'text-muted'}`}>{label}</span>
+                  {feedMode === m && (
+                    <motion.span
+                      layoutId="feed-mode-underline"
+                      className="absolute inset-x-8 bottom-[-1px] h-[3px] rounded-full bg-accent-bright"
+                      transition={{ type: 'spring', stiffness: 520, damping: 38 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         <SignalPeopleShelf profileBase={base} />
