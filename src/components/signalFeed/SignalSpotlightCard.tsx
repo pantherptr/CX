@@ -4,6 +4,7 @@ import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { VerifiedBadge } from '../primitives';
 import { useLocale } from '../../lib/i18n';
+import { SpotlightLogo } from '../SpotlightLogo';
 import { fetchVisions, type Vision } from '../../lib/data/visions';
 import { fetchSpotlightFeed, type SpotlightCardData } from '../../lib/data/spotlight';
 import { SignalMediaViewer } from './SignalMediaViewer';
@@ -145,7 +146,7 @@ export function SignalSpotlightPageLink({ count }: { count: number }) {
       onClick={() => navigate('/signal/spotlight', { state: { from: pathname } })}
       className="pressable mb-3 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-caption font-semibold text-ink shadow-hair transition-colors hover:border-line-strong"
     >
-      <Icon name="sparkles" size={13} /> {t('Signal Spotlight')} <span className="text-faint">· {count}</span>
+      <SpotlightLogo size={16} /> {t('Signal Spotlight')} <span className="text-faint">· {count}</span>
       <Icon name="chevronRight" size={14} className="text-faint" />
     </button>
   );
@@ -174,8 +175,8 @@ export function SignalSpotlightPage({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={onClose} aria-label="Back" className="pressable grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-panel">
           <Icon name="chevronLeft" size={22} />
         </button>
-        <h1 className="flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-ink">
-          <Icon name="sparkles" size={14} /> {t('Signal Spotlight')}
+        <h1 aria-label={t('Signal Spotlight')} className="text-ink">
+          <SpotlightLogo variant="lockup" size={26} />
         </h1>
       </header>
       <div className="mx-auto w-full max-w-2xl px-4 pb-16 pt-5">

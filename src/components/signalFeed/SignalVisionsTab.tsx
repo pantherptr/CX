@@ -9,6 +9,7 @@ import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
 import { useLocale } from '../../lib/i18n';
 import { useApp } from '../../lib/store';
 import { SignalMediaViewer } from './SignalMediaViewer';
+import { SpotlightLogo } from '../SpotlightLogo';
 import { VisibilityPicker } from './VisibilityPicker';
 import { DEFAULT_VISIBILITY, type Visibility } from '../../lib/data/privacy';
 
@@ -474,7 +475,7 @@ function SpotlightRules() {
   const { t } = useLocale();
   return (
     <div className="mb-5 flex gap-3 rounded-2xl border border-line bg-panel/50 px-3.5 py-3">
-      <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white"><Icon name="sparkles" size={13} /></span>
+      <span className="mt-0.5 shrink-0 text-ink"><SpotlightLogo size={28} /></span>
       <div className="min-w-0">
         <p className="text-micro font-semibold uppercase tracking-[0.22em] text-ink">{t('How Spotlight works')}</p>
         <p className="mt-1 text-caption leading-relaxed text-muted">
