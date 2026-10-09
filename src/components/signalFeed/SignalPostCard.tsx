@@ -1186,7 +1186,7 @@ export function SignalPostCard({
                   className="pressable inline-flex min-h-9 select-none items-center gap-1.5"
                 >
                   <span className={`${BAR_ICON}`}><EyeIcon size={15} playKey={viewPlay} className="shrink-0 text-faint" /></span>
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.viewCount)}</span>
+                  <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.viewCount)}</span>
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent-bright px-1 text-[10px] font-bold leading-none text-white">
                     {myViews > 1 ? `+${myViews - 1}` : '+'}
                   </span>
@@ -1194,7 +1194,7 @@ export function SignalPostCard({
               ) : (
                 <span className="inline-flex items-center gap-1">
                   <span className={`${BAR_ICON}`}><EyeIcon size={15} className="shrink-0 text-faint" /></span>
-                  <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.viewCount)}</span>
+                  <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.viewCount)}</span>
                 </span>
               ))}
           {/* Respect — the stamp sits just above it while a Respect stands */}
@@ -1223,7 +1223,7 @@ export function SignalPostCard({
                 <span className={BAR_ICON}>
                   <RespectIcon size={14} filled={myRespects > 0} playKey={respectPlay} />
                 </span>
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.likeCount)}</span>
+                <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.likeCount)}</span>
               </Tap>
             ) : (
               <Tap
@@ -1235,7 +1235,7 @@ export function SignalPostCard({
                 <span className={BAR_ICON}>
                   <RespectIcon size={14} filled={post.likedByMe} playKey={respectPlay} />
                 </span>
-                <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.likeCount)}</span>
+                <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.likeCount)}</span>
               </Tap>
             )}
           </div>
@@ -1254,7 +1254,7 @@ export function SignalPostCard({
               <span className={BAR_ICON}>
                 <BookmarkIcon size={15} filled={mySaves > 0} playKey={savePlay} />
               </span>
-              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.saveCount)}</span>
+              <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.saveCount)}</span>
             </Tap>
           ) : (
             <Tap
@@ -1271,7 +1271,7 @@ export function SignalPostCard({
               <span className={BAR_ICON}>
                 <BookmarkIcon size={15} filled={post.savedByMe} playKey={savePlay} />
               </span>
-              <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.saveCount)}</span>
+              <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.saveCount)}</span>
             </Tap>
           )}
         </div>
@@ -1302,7 +1302,7 @@ export function SignalPostCard({
             <span className={`${BAR_ICON} `}>
               <ShareIcon size={15} playKey={sharePlay} />
             </span>
-            {canManage && <span className="text-[14px] font-semibold tabular-nums leading-none tracking-tight text-ink-soft">{compact(post.shareCount)}</span>}
+            {canManage && <span className="font-display text-[15.5px] font-semibold tabular-nums leading-none tracking-[0.02em] text-ink">{compact(post.shareCount)}</span>}
           </Tap>
         </div>
       </div>

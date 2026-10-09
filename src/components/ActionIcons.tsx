@@ -29,17 +29,15 @@ const svgProps = {
   strokeLinejoin: 'round' as const,
 };
 
-/** Save: the bookmark drops in with a spring and settles. `filled` paints it solid. */
+/** Save: a quick, quiet press — no jump. `filled` paints it solid. */
 export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
   const uid = useId().replace(/:/g, '');
   const controls = usePlay(playKey);
   const v: Variants = {
     normal: { y: 0, scale: 1, rotate: 0 },
     animate: {
-      y: [0, -7, 2, -2, 0],
-      scale: [1, 1.12, 0.94, 1.04, 1],
-      rotate: [0, -6, 4, -2, 0],
-      transition: { duration: 0.7, ease: 'easeInOut' },
+      scale: [1, 0.9, 1.06, 1],
+      transition: { duration: 0.28, ease: 'easeOut' },
     },
   };
   return (
