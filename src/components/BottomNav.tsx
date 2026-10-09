@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
@@ -207,25 +207,34 @@ export function useBottomNavVisible() {
 // scroll listener below only ever attaches on these routes.
 const SIGNAL_ROUTE = /^\/signal(\/|$)/;
 
-// Direction-aware, threshold-gated hide/show — small jitters (a few px,
-// a momentum-scroll wobble) never flip state; only a clear, sustained
-// scroll in one direction does. Passive listener + rAF throttle keeps
-// this off the main thread's critical path (no React re-render happens
-// on most scroll events — only the rare ones that actually cross the
-// threshold or re-enter the top guard call setHidden at all).
-const HIDE_THRESHOLD = 24; // px of sustained one-direction movement before flipping
-const TOP_GUARD = 64; // always show near the very top, regardless of direction
+// Direction-aware, threshold-gated: scrolling down the feed shrinks the bar
+// to a compact icon dock (never hides it), scrolling back up restores it.
+// Small jitters never flip state — only a clear, sustained scroll does.
+// Passive listener + rAF throttle; React only re-renders when it flips.
+const COMPACT_THRESHOLD = 24; // px of sustained one-direction movement before flipping
+const TOP_GUARD = 64; // always full size near the very top
 
-function useSignalScrollHide(active: boolean): boolean {
-  const [hidden, setHidden] = useState(false);
+function useSignalScrollCompact(active: boolean, pathname: string): { compact: boolean; expand: () => void } {
+  const [compact, setCompact] = useState(false);
   const lastY = useRef(0);
   const accum = useRef(0);
   const dir = useRef<1 | -1 | 0>(0);
   const ticking = useRef(false);
 
+  const expand = useCallback(() => {
+    accum.current = 0;
+    dir.current = 0;
+    setCompact(false);
+  }, []);
+
+  // A new screen always starts with the full bar.
+  useEffect(() => {
+    expand();
+  }, [pathname, expand]);
+
   useEffect(() => {
     if (!active) {
-      setHidden(false);
+      setCompact(false);
       return;
     }
     lastY.current = window.scrollY;
@@ -243,7 +252,7 @@ function useSignalScrollHide(active: boolean): boolean {
         if (y <= TOP_GUARD) {
           accum.current = 0;
           dir.current = 0;
-          setHidden(false);
+          setCompact(false);
           return;
         }
         if (Math.abs(delta) < 1) return;
@@ -253,8 +262,8 @@ function useSignalScrollHide(active: boolean): boolean {
           accum.current = 0;
         }
         accum.current += Math.abs(delta);
-        if (accum.current < HIDE_THRESHOLD) return;
-        setHidden(nextDir === 1);
+        if (accum.current < COMPACT_THRESHOLD) return;
+        setCompact(nextDir === 1);
       });
     };
 
@@ -262,13 +271,13 @@ function useSignalScrollHide(active: boolean): boolean {
     return () => window.removeEventListener('scroll', onScroll);
   }, [active]);
 
-  return hidden;
+  return { compact, expand };
 }
 
 export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
-  const scrollHidden = useSignalScrollHide(visible && SIGNAL_ROUTE.test(pathname));
+  const { compact, expand } = useSignalScrollCompact(visible && SIGNAL_ROUTE.test(pathname), pathname);
   const { session } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
@@ -330,18 +339,16 @@ export function BottomNav() {
         // content reflows or jumps as this slides away; the bar's own
         // height plus the safe-area inset and floating gap it sits above
         // clears it completely on every device without a hardcoded value.
-        transform: scrollHidden
-          ? `translateY(calc(100% + env(safe-area-inset-bottom, 0px) + ${BAR_BOTTOM_GAP + 8}px))`
-          : `translateY(${-lift}px)`,
-        opacity: scrollHidden ? 0 : 1,
-        pointerEvents: scrollHidden ? 'none' : 'auto',
-        // `visibility: hidden` once the slide-out finishes, so a bar that
-        // is only invisible (opacity 0) can't still be sampled by iOS
-        // Safari as a fixed element at the bottom and tint its toolbar.
-        visibility: scrollHidden ? 'hidden' : 'visible',
-        transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}, visibility 0s linear ${scrollHidden ? '220ms' : '0s'}`,
+        // Compact while scrolling down: the whole capsule scales down from its
+        // bottom edge and drops a little, labels fade — pure transform and
+        // opacity, so nothing in the feed reflows.
+        transform: compact ? `translateY(${10 - lift}px) scale(0.84)` : `translateY(${-lift}px)`,
+        transformOrigin: '50% 100%',
+        transition: `transform 280ms ${EASE}`,
       }}
-      aria-hidden={scrollHidden || undefined}
+      // Any touch on the small dock brings it back to full size; the tap
+      // itself still goes through to whatever was touched.
+      onPointerDownCapture={() => { if (compact) expand(); }}
       aria-label="Primary"
     >
       {/* Reusable shape definition for the whole bar's one fill — see
@@ -460,7 +467,7 @@ export function BottomNav() {
                     // centered in this slot without a manual nudge.
                     width: 23,
                     height: 23,
-                    transform: active ? 'translate(0, -13px) scale(1.08)' : 'translate(0, -9px)',
+                    transform: `translate(0, ${(active ? -13 : -9) + (compact ? 7 : 0)}px) scale(${active ? 1.08 : 1})`,
                     transitionTimingFunction: EASE,
                   }}
                 >
@@ -497,6 +504,7 @@ export function BottomNav() {
                 <span
                   className="text-micro font-bold transition-all duration-300"
                   style={{
+                    opacity: compact ? 0 : 1,
                     letterSpacing: '0.12em',
                     color: active ? 'var(--color-accent-bright)' : 'var(--color-accent-700)',
                     textShadow: active ? '0 0 12px rgba(0,212,71,0.45)' : 'none',
@@ -516,7 +524,7 @@ export function BottomNav() {
               className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
               aria-current={active ? 'page' : undefined}
             >
-              <span className="relative">
+              <span className="relative transition-transform duration-300" style={{ transform: compact ? 'translateY(9px)' : 'none', transitionTimingFunction: EASE }}>
                 <Icon
                   name={it.icon}
                   size={23}
@@ -532,9 +540,10 @@ export function BottomNav() {
                 )}
               </span>
               <span
-                className={`text-micro font-bold tracking-wide transition-colors duration-300 ${
+                className={`text-micro font-bold tracking-wide transition-all duration-300 ${
                   active ? 'text-accent' : 'text-ink-soft'
                 }`}
+                style={{ opacity: compact ? 0 : 1 }}
               >
                 {it.label}
               </span>
