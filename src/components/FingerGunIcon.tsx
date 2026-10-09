@@ -58,13 +58,13 @@ export function FingerGunIcon({
         animate={controls}
       >
         <motion.g variants={handVariants} style={{ originX: 0.15, originY: 0.9 }}>
-          {filled && <rect x="9.5" y="9.5" width="6" height="9" fill="currentColor" stroke="none" />}
+          {filled && <rect x="9.5" y="8" width="6" height="10" fill="currentColor" stroke="none" />}
           <path
-            d="M12 8h8.5a1.5 1.5 0 0 1 0 3H13m.5 0h2a1.5 1.5 0 0 1 0 3H13m1.5 0a1.5 1.5 0 0 1 0 3H13"
+            d="M12 8h8.5a1.5 1.5 0 0 1 0 3H13m.5 0h5.5a1.5 1.5 0 0 1 0 3H13m1.5 0a1.5 1.5 0 0 1 0 3H13"
             fill={filled ? 'currentColor' : 'none'}
           />
           <path
-            d="M13.5 17a1.5 1.5 0 1 1 0 3H9a6 6 0 0 1-6-6v-2v.208a6 6 0 0 1 2.7-5.012L6 7q.718-.468 5.728-3.286a1.5 1.5 0 0 1 2.022.536c.44.734.325 1.674-.28 2.28L12 8"
+            d="M13.5 17a1.5 1.5 0 1 1 0 3H9a6 6 0 0 1-6-6v-2v.208a6 6 0 0 1 2.7-5.012l-.6-2.9a1.6 1.6 0 0 1 3.2 0L12 8"
             fill={filled ? 'currentColor' : 'none'}
           />
         </motion.g>
