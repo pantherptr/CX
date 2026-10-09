@@ -496,7 +496,7 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {mergeSpotlights(posts, spotlights, hasMore).map((item) =>
+            {mergeSpotlights(posts, spotlights, hasMore, (sp) => spotlightPosts.posts[sp.entryId]).map((item) =>
               item.kind === 'spotlight' ? (
                 spotlightPosts.posts[item.spotlight.entryId] ? (
                   // The team's real post for this Spotlight — a post like any other (Respect, comments, saves…), just a special one.

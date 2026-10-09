@@ -143,17 +143,24 @@ export function useSpotlightFeed(): SpotlightCardData[] {
   return items;
 }
 
-/** Slots Spotlights into an already-ordered post list by date — each one goes
- *  before the first post older than it, so the posts' own order is never
- *  touched. A Spotlight older than everything loaded so far waits until the
- *  feed has no more pages (otherwise it would jump ahead of posts still to load). */
+/** Slots Spotlights into an already-ordered post list by date, exactly like posts:
+ *  each goes before the first post older than it, so the posts' own order is never
+ *  touched, and as newer posts arrive it sinks with the rest. A Spotlight's date is
+ *  its team post's own creation time when there is one (so re-publishing from the
+ *  admin never makes it jump), otherwise the time it was published. Dates are
+ *  compared as real instants, not as text. A Spotlight older than everything loaded
+ *  so far waits until the feed has no more pages, so it never jumps ahead of posts
+ *  still to load. */
 export function mergeSpotlights<P extends { createdAt: string }>(
   posts: P[], spotlights: SpotlightCardData[], hasMore: boolean,
+  postOf?: (s: SpotlightCardData) => { createdAt: string } | undefined,
 ): ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] {
+  const when = (s: SpotlightCardData) => Date.parse(postOf?.(s)?.createdAt ?? s.publishedAt) || 0;
   const out: ({ kind: 'post'; post: P } | { kind: 'spotlight'; spotlight: SpotlightCardData })[] = [];
-  const pending = [...spotlights].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  const pending = [...spotlights].sort((a, b) => when(b) - when(a));
   for (const post of posts) {
-    while (pending.length > 0 && pending[0].publishedAt >= post.createdAt) {
+    const t = Date.parse(post.createdAt) || 0;
+    while (pending.length > 0 && when(pending[0]) >= t) {
       out.push({ kind: 'spotlight', spotlight: pending.shift()! });
     }
     out.push({ kind: 'post', post });
