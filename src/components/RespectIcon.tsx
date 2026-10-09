@@ -2,7 +2,7 @@ import { useEffect, useId } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'motion/react';
 
 /** The Respect reaction: a hand pointing right — index and middle fingers out,
- *  thumb up, ring and little fingers curled — with a small racing cuff at the
+ *  thumb up, ring and little fingers curled — with a small chequered racing cuff at the
  *  wrist. Idle it is a graphite outline; active it is CX green with a thin
  *  chrome edge and one small metallic highlight. When `playKey` changes it
  *  gives a 200ms press (0.92 → 1.06 → 1) and one faint green ring that fades.
@@ -31,12 +31,17 @@ export function RespectIcon({
   }, [playKey, reduced, controls, ring]);
 
   const graphite = '#3d4349';
+  // Open palm, thumb up, index + middle out, ring + little curled below.
   const HAND =
-    'M5.5 10H7V5.7a1.5 1.5 0 0 1 3 0V8.7h10.6a1.35 1.35 0 0 1 0 2.7H20a1.35 1.35 0 0 1 0 2.7h-4.6a1.4 1.4 0 0 1 0 2.8h-.9a1.3 1.3 0 0 1 0 2.5H8.5a3 3 0 0 1-3-3Z';
+    'M6.4 12.4C6.2 9.6 7.6 7 8.6 5C9.2 3.6 10.4 2.9 11.5 3.3c1.1.4.9 1.8.5 2.8l-.9 2.5 1.5.5h7.8a1.35 1.35 0 0 1 0 2.7h.7a1.35 1.35 0 0 1 0 2.7H14.8a1.5 1.5 0 0 1 0 3h-.3a1.4 1.4 0 0 1 0 2.8H11C9.4 20.6 7.8 19.8 6.4 19Z';
+  const SEP = 'M12.6 11.7h7.9M12.4 14.4h2.4M12.4 17.4h2';
+  // racing cuff: 2 × 4 chequer
+  const squares: Array<[number, number]> = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) if ((r + c) % 2 === 0) squares.push([2.6 + c * 1.6, 12.9 + r * 1.65]);
 
   return (
     <span className={`inline-flex items-center justify-center ${className}`} aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 -1 24 24" className="overflow-visible">
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" className="overflow-visible">
         <defs>
           <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#12e254" />
@@ -55,18 +60,23 @@ export function RespectIcon({
         <motion.g animate={controls} initial={false} style={{ originX: 0.5, originY: 0.5 }} strokeLinecap="round" strokeLinejoin="round">
           {filled ? (
             <>
-              <rect x="1.5" y="9.2" width="4" height="9.8" rx="1" fill="#00762c" stroke={`url(#${uid}c)`} strokeWidth="0.7" />
+              <g transform="rotate(-8 4.2 16)">
+                <rect x="2" y="12.2" width="4.4" height="7.4" rx="0.9" fill="#0d1210" stroke={`url(#${uid}c)`} strokeWidth="0.6" />
+                {squares.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1.4" height="1.4" fill="#d9dee2" />)}
+                <path d="M2.3 12.5v6.8" stroke="#12e254" strokeWidth="0.5" />
+              </g>
               <path d={HAND} fill={`url(#${uid}g)`} stroke={`url(#${uid}c)`} strokeWidth="0.7" />
-              <path d="M11 11.4h9M11.5 14.1h8M11.5 16.9h2.5M7 10v1" stroke="#00762c" strokeWidth="0.6" opacity="0.55" fill="none" />
-              <path d="M11.5 9.5h7.5" stroke="#fff" strokeWidth="0.7" opacity="0.6" fill="none" />
-              <path d="M2.9 10.4v7.2M4.1 10.4v7.2" stroke={`url(#${uid}c)`} strokeWidth="0.6" fill="none" />
+              <path d={SEP} stroke="#00762c" strokeWidth="0.6" opacity="0.6" fill="none" />
+              <path d="M13.5 9.9h6.3M10.6 4.4l-.9 2" stroke="#fff" strokeWidth="0.7" opacity="0.55" fill="none" />
             </>
           ) : (
             <>
-              <rect x="1.5" y="9.2" width="4" height="9.8" rx="1" fill="none" stroke={graphite} strokeWidth="1.4" />
-              <path d={HAND} fill="none" stroke={graphite} strokeWidth="1.4" />
-              <path d="M11 11.4h9M11.5 14.1h8M11.5 16.9h2.5" stroke={graphite} strokeWidth="1.1" fill="none" />
-              <path d="M2.9 11v6M4.1 11v6" stroke={graphite} strokeWidth="0.8" fill="none" />
+              <g transform="rotate(-8 4.2 16)">
+                <rect x="2" y="12.2" width="4.4" height="7.4" rx="0.9" fill="none" stroke={graphite} strokeWidth="1.2" />
+                {squares.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="1.4" height="1.4" fill={graphite} />)}
+              </g>
+              <path d={HAND} fill="none" stroke={graphite} strokeWidth="1.3" />
+              <path d={SEP} stroke={graphite} strokeWidth="1" fill="none" />
             </>
           )}
         </motion.g>
