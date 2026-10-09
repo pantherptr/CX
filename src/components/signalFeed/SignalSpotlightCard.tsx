@@ -16,7 +16,7 @@ import { SharedAvatar } from '../motionKit';
  *  to the creator's Visions. When the feed has several Spotlights the viewer lets
  *  you swipe from one to the next, and the photo grows out of the card it was
  *  tapped on. */
-export function SignalSpotlightCard({ data, all, inRail = false }: { data: SpotlightCardData; all?: SpotlightCardData[]; inRail?: boolean }) {
+export function SignalSpotlightCard({ data, all, inRail = false, compact = false }: { data: SpotlightCardData; all?: SpotlightCardData[]; inRail?: boolean; compact?: boolean }) {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -51,7 +51,7 @@ export function SignalSpotlightCard({ data, all, inRail = false }: { data: Spotl
         onClick={() => setOpen(true)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); } }}
         aria-label={`${t('Signal Spotlight')}${data.title ? ` — ${data.title}` : ''}`}
-        className={`group relative aspect-[4/5] w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail ? '' : 'mb-5'} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
+        className={`group relative ${compact ? 'aspect-[4/3]' : 'aspect-[4/5]'} w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail ? '' : compact ? 'mb-3' : 'mb-5'} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
       >
         {data.mediaKind === 'video' ? (
           <video src={data.mediaUrl} muted playsInline loop autoPlay preload="metadata" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
@@ -70,22 +70,22 @@ export function SignalSpotlightCard({ data, all, inRail = false }: { data: Spotl
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[28px] ring-1 ring-inset ring-white/15" />
 
         {/* publisher + eyebrow */}
-        <div className="absolute inset-x-0 top-0 p-4 sm:p-6">
+        <div className={`absolute inset-x-0 top-0 sm:p-6 ${compact ? 'p-3.5' : 'p-4'}`}>
           <div className="flex items-center gap-2.5">
             <Img
               src={data.publisherAvatar ?? '/brand/avatar-cx.webp'}
               alt=""
-              className="h-9 w-9 rounded-full object-cover ring-1 ring-white/35"
+              className={`rounded-full object-cover ring-1 ring-white/35 ${compact ? 'h-7 w-7' : 'h-9 w-9'}`}
               fallback={<span className="grid h-9 w-9 place-items-center rounded-full bg-white/15"><Icon name="sparkles" size={14} /></span>}
             />
-            <span className="font-display text-[16px] font-semibold">{data.publisherLabel}</span>
+            <span className={`font-display font-semibold ${compact ? 'text-[14px]' : 'text-[16px]'}`}>{data.publisherLabel}</span>
             <VerifiedBadge role="cx" size={17} />
           </div>
-          <p className="mt-4 inline-flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-white/90">
+          <p className={`inline-flex items-center gap-2 text-micro font-semibold uppercase tracking-[0.3em] text-white/90 ${compact ? 'mt-2.5' : 'mt-4'}`}>
             <span aria-hidden="true" className="h-px w-6 bg-white/60" />
             {t('Signal Spotlight')}{city ? ` · ${city}` : ''}
           </p>
-          {data.curatedBy && <p translate="no" className="mt-1.5 text-caption text-white/65">{t('Curated by')} {data.curatedBy}</p>}
+          {data.curatedBy && !compact && <p translate="no" className="mt-1.5 text-caption text-white/65">{t('Curated by')} {data.curatedBy}</p>}
         </div>
 
         {data.mediaKind === 'video' && (
@@ -93,11 +93,11 @@ export function SignalSpotlightCard({ data, all, inRail = false }: { data: Spotl
         )}
 
         {/* title + credit + CTA */}
-        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
-          {data.title && <h3 translate="no" className="max-w-[18ch] font-display text-[34px] font-semibold leading-[1.02] tracking-tight sm:text-[42px]">{data.title}</h3>}
+        <div className={`absolute inset-x-0 bottom-0 sm:p-6 ${compact ? 'p-3.5' : 'p-4'}`}>
+          {data.title && <h3 translate="no" className={`max-w-[18ch] font-display font-semibold leading-[1.02] tracking-tight sm:text-[42px] ${compact ? 'text-[26px]' : 'text-[34px]'}`}>{data.title}</h3>}
           <p translate="no" className="mt-3 text-detail font-medium text-white/90">{t('Vision by')} {handle}</p>
           <p translate="no" className="mt-0.5 text-caption text-white/60">{sub}</p>
-          <span className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-detail font-semibold text-noir transition-all duration-300 group-hover:gap-3 group-hover:bg-white/95">
+          <span className={`inline-flex items-center gap-2 rounded-full bg-white font-semibold text-noir ${compact ? 'mt-3 min-h-9 px-4 text-caption' : 'mt-4 min-h-11 px-5 text-detail'} transition-all duration-300 group-hover:gap-3 group-hover:bg-white/95`}>
             {t('Watch Vision')} <Icon name="arrowUpRight" size={15} />
           </span>
         </div>

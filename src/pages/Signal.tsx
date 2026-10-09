@@ -65,6 +65,8 @@ export default function Signal() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
+  // On a phone Spotlight is a smaller card that scrolls with the posts, in both spaces.
+  const isPhone = useMediaQuery('(max-width: 639px)');
   const { pathname, state: navState } = useLocation();
   const { postId, highlightId, authorId } = useParams<{ postId?: string; highlightId?: string; authorId?: string }>();
   const space: 'official' | 'community' = pathname.startsWith('/signal/community') ? 'community' : 'official';
@@ -413,8 +415,8 @@ export default function Signal() {
           />
         )}
 
-        {/* Signal Spotlight — Official: a section of its own. Community: a card among the posts (below). */}
-        {space === 'official' && <SignalSpotlightSection items={spotlights} />}
+        {/* Signal Spotlight — wide screens, Official: a section of its own. Phones and Community: a card among the posts (below). */}
+        {space === 'official' && !isPhone && <SignalSpotlightSection items={spotlights} />}
 
         {/* Real new content, quietly detected in the background — never
             auto-prepended (that would move the feed underneath whatever
@@ -493,9 +495,9 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {(space === 'community' ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
+            {(space === 'community' || isPhone ? mergeSpotlights(posts, spotlights, hasMore) : posts.map((post) => ({ kind: 'post' as const, post }))).map((item) =>
               item.kind === 'spotlight' ? (
-                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} />
+                <SignalSpotlightCard key={`spotlight-${item.spotlight.entryId}`} data={item.spotlight} all={spotlights} compact={isPhone} />
               ) : (
                 <SignalPostCard
                   key={item.post.id}
