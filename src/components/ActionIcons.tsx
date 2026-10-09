@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, useAnimation, useReducedMotion, type Variants } from 'motion/react';
 
 /** The animated companions of ThumbsUpIcon for SIGNAL's other post actions
@@ -31,7 +31,6 @@ const svgProps = {
 
 /** Save: a quick, quiet press — no jump. `filled` paints it solid. */
 export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className = '' }: IconProps & { filled?: boolean }) {
-  const uid = useId().replace(/:/g, '');
   const press = useAnimation();
   const ring = useAnimation();
   const reduced = useReducedMotion();
@@ -51,26 +50,15 @@ export function BookmarkIcon({ size = 20, filled = false, playKey = 0, className
       <motion.span
         initial={{ opacity: 0 }}
         animate={ring}
-        className="pointer-events-none absolute rounded-full border border-[#e8b02a]"
+        className="pointer-events-none absolute rounded-full border border-accent-bright"
         style={{ width: size * 1.1, height: size * 1.1 }}
       />
       <motion.svg {...svgProps} width={size} height={size} initial={false} animate={press} style={{ transformOrigin: 'center' }}>
         {filled ? (
           <>
-            <defs>
-              <linearGradient id={`${uid}g`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ffd65a" />
-                <stop offset="1" stopColor="#d9961a" />
-              </linearGradient>
-              <linearGradient id={`${uid}c`} x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#f2f5f7" />
-                <stop offset="0.5" stopColor="#aab2b9" />
-                <stop offset="1" stopColor="#e6eaed" />
-              </linearGradient>
-            </defs>
-            {/* saved: gold with the same thin chrome edge as the Respect hand */}
-            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill={`url(#${uid}g)`} stroke={`url(#${uid}c)`} strokeWidth="1.2" />
-            <path d="M8.6 5.8h6.8" stroke="#fff" strokeWidth="1" opacity="0.55" />
+            {/* saved: black with a CX-green edge and a faint green sheen */}
+            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="#0b0d0c" stroke="#00d447" strokeWidth="2.4" />
+            <path d="M8.6 5.8h6.8" stroke="#00d447" strokeWidth="1" opacity="0.55" />
           </>
         ) : (
           <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" fill="currentColor" />
