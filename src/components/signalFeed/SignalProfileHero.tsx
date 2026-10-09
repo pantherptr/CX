@@ -144,7 +144,7 @@ export function SignalProfileHero({
 
         <div className="absolute inset-x-5 bottom-12 text-white sm:inset-x-8 sm:bottom-14">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            {role && (
+            {role && role !== 'client' && (
               <span className="rounded-full bg-white/15 px-3 py-1 text-caption font-semibold backdrop-blur-md">{ROLE_LABEL[role]}</span>
             )}
             {hasActiveStory && (

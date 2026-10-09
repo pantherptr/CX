@@ -981,7 +981,7 @@ export function SignalPostCard({
           </div>
           <div className="mt-0.5 min-w-0 truncate text-[13px] leading-tight text-muted">
             <span>
-              {identity.username ? `@${identity.username} · ` : identity.subtitle ? `${identity.subtitle} · ` : ''}
+              {identity.username ? `@${identity.username} · ` : ''}
               {timeAgo(post.createdAt)}
               {post.editedAt && ' · Edited'}
               {post.isArchived && ' · Archived'}

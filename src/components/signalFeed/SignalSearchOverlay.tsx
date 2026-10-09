@@ -8,10 +8,6 @@ import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import { FollowButton } from './FollowButton';
 import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD } from '../motionKit';
 
-const ROLE_LABEL: Record<VerifiedRole, string> = {
-  owner: 'Owner', owner_assistant: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client', assistant: 'Assistant', cx: 'CX',
-};
-
 function personRole(p: SignalPeopleResult): VerifiedRole | null {
   return p.isOwner ? 'owner' : p.isAdmin ? 'admin' : p.isHost ? 'host' : p.isVerifiedClient ? 'client' : null;
 }
@@ -250,8 +246,6 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                               </div>
                               <p className="truncate text-caption text-faint">
                                 {p.username && `@${p.username}`}
-                                {p.username && role ? ' · ' : ''}
-                                {role && ROLE_LABEL[role]}
                               </p>
                             </div>
                           </Link>
