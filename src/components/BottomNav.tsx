@@ -39,9 +39,9 @@ interface Item {
 // primary tab more than a passive wishlist does; Saved Cars is still one
 // tap away via Profile's menu, same as My Trips, Rewards and Payments.
 const items: Item[] = [
-  { label: 'Home', to: '/dashboard', icon: 'grid', match: (p, h) => p === '/dashboard' && h === '' },
-  { label: 'Explore', to: '/browse', icon: 'search', match: (p) => p === '/browse' },
-  { label: 'Signal', to: '/signal', icon: 'trophy', match: (p) => p === '/signal' },
+  { label: 'Home', to: '/dashboard', icon: 'house', match: (p, h) => p === '/dashboard' && h === '' },
+  { label: 'Explore', to: '/browse', icon: 'compass', match: (p) => p === '/browse' },
+  { label: 'Signal', to: '/signal', icon: 'trophy', match: (p) => /^\/signal(\/|$)/.test(p) },
   { label: 'Messages', to: '/messages', icon: 'message', match: (p) => p === '/messages' },
   { label: 'Profile', to: '/settings', icon: 'user', match: (p) => p === '/settings' },
 ];
@@ -468,7 +468,7 @@ export function BottomNav() {
               <Link
                 key={it.label}
                 to={it.to}
-                onClick={(e) => onTabClick(e, active)}
+                onClick={(e) => onTabClick(e, active && pathname === '/signal')}
                 className="pressable relative z-10 flex flex-col items-center justify-center py-[18px]"
                 aria-label="Signal"
                 aria-current={active ? 'page' : undefined}
@@ -539,12 +539,12 @@ export function BottomNav() {
               key={it.label}
               to={it.to}
               onClick={(e) => onTabClick(e, active)}
-              className="pressable relative z-10 flex items-center justify-center py-3"
+              className="relative z-10 flex items-center justify-center py-2.5"
               aria-label={it.label}
               aria-current={active ? 'page' : undefined}
             >
               {/* No names under the icons: the icon alone says where it goes, the active one gets a soft green disc. */}
-              <span className={`relative grid h-11 w-11 place-items-center rounded-full transition-colors duration-300 ${active ? 'bg-accent/10' : ''}`}>
+              <span className={`relative grid h-12 w-12 place-items-center rounded-full transition-[background-color,transform] duration-300 active:scale-90 ${active ? 'bg-accent/12 shadow-[inset_0_0_0_1px_rgba(0,212,71,0.18)]' : ''}`}>
                 <Icon
                   name={it.icon}
                   size={25}

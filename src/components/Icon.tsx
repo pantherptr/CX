@@ -12,7 +12,7 @@ import {
   Play, Volume2, VolumeX, Truck, Package, Tag,
   GitCompare, Target, Handshake, Building2, Plane,
   Bookmark, Share2, MoreHorizontal, Pencil, Trash2, Pin, Image, Eye, ThumbsUp,
-  SwitchCamera, EyeOff,
+  SwitchCamera, EyeOff, House,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,7 +31,7 @@ export type IconName =
   | 'minus' | 'truck' | 'package' | 'tag' | 'compare'
   | 'target' | 'handshake' | 'building' | 'plane'
   | 'bookmark' | 'share' | 'moreHorizontal' | 'edit' | 'trash' | 'pinned' | 'image' | 'eye' | 'eyeOff' | 'like'
-  | 'cameraFlip';
+  | 'cameraFlip' | 'house';
 
 /**
  * Every icon in the product renders through the same Lucide set — one
@@ -62,7 +62,7 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   target: Target, handshake: Handshake, building: Building2, plane: Plane,
   bookmark: Bookmark, share: Share2, moreHorizontal: MoreHorizontal,
   edit: Pencil, trash: Trash2, pinned: Pin, image: Image, eye: Eye, eyeOff: EyeOff, like: ThumbsUp,
-  cameraFlip: SwitchCamera,
+  cameraFlip: SwitchCamera, house: House,
 };
 
 const FILLED: IconName[] = ['star', 'heart', 'bolt', 'instant', 'flame', 'apple', 'play', 'pause', 'bookmark', 'pinned'];
