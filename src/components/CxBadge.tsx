@@ -26,6 +26,13 @@ const PLANES_LIGHT = 'M1 41 L23 3 L33 10 L40 13 L38 30 Z M99 41 L77 3 L67 10 L60
 const PLANES_DARK = 'M1 41 L11 36 L20 44 L30 36 L38 47 L40 30 L38 30 Z M99 41 L89 36 L80 44 L70 36 L62 47 L60 30 L62 30 Z';
 const TOP_EDGE = 'M1 41 L23 3 L33 10 L40 13 L43.5 2 L50 12 L56.5 2 L60 13 L67 10 L77 3 L99 41';
 
+/** Each tier has its own seal, same artwork recoloured: silver, emerald, gold. */
+const SEAL_SRC: Record<CxTier, string> = {
+  verified: '/verified-seal-member.png',
+  host: '/verified-seal-host.png',
+  team: '/owner-verified.png',
+};
+
 interface Metal { top: string; bottom: string; edge: string; plate: string; plateRing: string; check: string }
 
 const METAL: Record<CxTier, Metal> = {
@@ -66,7 +73,7 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
       <path d={PLANES_DARK} fill="#000000" fillOpacity="0.1" />
       <path d={TOP_EDGE} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.7" strokeLinejoin="round" strokeLinecap="round" />
       {/* the gold verified seal sits in the middle of the bat (the bat itself is unchanged) */}
-      <image href="/owner-verified.png" x="32" y="13" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
+      <image href={SEAL_SRC[tier]} x="32" y="13" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
     </svg>
   );
 }
