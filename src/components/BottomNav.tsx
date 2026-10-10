@@ -451,7 +451,7 @@ export function BottomNav() {
           content as well would only add dead space under the icons. */}
       <div className="relative grid grid-cols-5">
         <span
-          className="pointer-events-none absolute top-1.5 h-1 w-6 -translate-x-1/2 rounded-full bg-accent transition-all duration-300"
+          className="pointer-events-none absolute bottom-1 h-1 w-1 -translate-x-1/2 rounded-full bg-accent transition-all duration-300"
           style={{
             left: normalActiveIndex >= 0 ? `${(normalActiveIndex + 0.5) * (100 / items.length)}%` : '-100%',
             opacity: normalActiveIndex >= 0 ? 1 : 0,
@@ -469,7 +469,8 @@ export function BottomNav() {
                 key={it.label}
                 to={it.to}
                 onClick={(e) => onTabClick(e, active)}
-                className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
+                className="pressable relative z-10 flex flex-col items-center justify-center py-[18px]"
+                aria-label="Signal"
                 aria-current={active ? 'page' : undefined}
               >
                 <span
@@ -495,7 +496,7 @@ export function BottomNav() {
                     // centered in this slot without a manual nudge.
                     width: 23,
                     height: 23,
-                    transform: `translate(0, ${(active ? -13 : -9) + (compact ? 7 : 0)}px) scale(${active ? 1.08 : 1})`,
+                    transform: `translate(0, ${active ? -11 : -8}px) scale(${active ? 1.08 : 1})`,
                     transitionTimingFunction: EASE,
                   }}
                 >
@@ -529,17 +530,6 @@ export function BottomNav() {
                     </span>
                   )}
                 </span>
-                <span
-                  className="text-micro font-bold transition-all duration-300"
-                  style={{
-                    opacity: compact ? 0 : 1,
-                    letterSpacing: '0.12em',
-                    color: active ? 'var(--color-accent-bright)' : 'var(--color-accent-700)',
-                    textShadow: active ? '0 0 12px rgba(0,212,71,0.45)' : 'none',
-                  }}
-                >
-                  SIGNAL
-                </span>
               </Link>
             );
           }
@@ -549,31 +539,25 @@ export function BottomNav() {
               key={it.label}
               to={it.to}
               onClick={(e) => onTabClick(e, active)}
-              className="pressable relative z-10 flex flex-col items-center justify-center gap-1.5 py-3"
+              className="pressable relative z-10 flex items-center justify-center py-3"
+              aria-label={it.label}
               aria-current={active ? 'page' : undefined}
             >
-              <span className="relative transition-transform duration-300" style={{ transform: compact ? 'translateY(9px)' : 'none', transitionTimingFunction: EASE }}>
+              {/* No names under the icons: the icon alone says where it goes, the active one gets a soft green disc. */}
+              <span className={`relative grid h-11 w-11 place-items-center rounded-full transition-colors duration-300 ${active ? 'bg-accent/10' : ''}`}>
                 <Icon
                   name={it.icon}
-                  size={23}
+                  size={25}
                   className={`transition-all duration-300 ease-out ${
                     active ? 'scale-110 text-accent' : 'text-ink-soft'
                   }`}
                   strokeWidth={active ? 2.1 : 1.75}
                 />
                 {it.label === 'Messages' && unreadCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
+                  <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
-              </span>
-              <span
-                className={`text-micro font-bold tracking-wide transition-all duration-300 ${
-                  active ? 'text-accent' : 'text-ink-soft'
-                }`}
-                style={{ opacity: compact ? 0 : 1 }}
-              >
-                {it.label}
               </span>
             </Link>
           );
