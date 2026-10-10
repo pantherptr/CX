@@ -218,6 +218,8 @@ const SHRINK_AFTER = 40; // px of sustained downward scrolling before it folds
 const RESTORE_AFTER = 12; // px of upward scrolling is enough to open it again
 const TOP_GUARD = 64; // always open near the very top
 const MAX_STEP = 220; // a single-frame jump this large is a layout shift (browser toolbar), not a scroll
+const SWIPE_FOLD = 56; // px the finger moves up (page scrolls down) before the dock folds
+const SWIPE_OPEN = 28; // px the finger moves down before it opens again
 const COOLDOWN_MS = 260; // never flip twice in quick succession
 
 function useDockFold(active: boolean, pathname: string): { folded: boolean; open: () => void } {
@@ -271,6 +273,36 @@ function useDockFold(active: boolean, pathname: string): { folded: boolean; open
         else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
       });
     };
+    // On a phone the finger decides, not the scroll position: momentum scrolling, iOS rubber-banding
+    // and the feed growing under you all move scrollY, and following them made the dock flip back and
+    // forth for a moment. One swipe = at most one fold or one open, and nothing after the finger lifts.
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+    let lastTouchY = 0;
+    let run = 0; // how far the finger has travelled in its current direction
+    const onTouchStart = (e: TouchEvent) => { lastTouchY = e.touches[0]?.clientY ?? 0; run = 0; };
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY ?? lastTouchY;
+      const dy = y - lastTouchY; // finger up = negative = the page goes down
+      lastTouchY = y;
+      if (dy === 0) return;
+      if (Math.sign(dy) !== Math.sign(run)) run = 0;
+      run += dy;
+      if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
+      if (run <= -SWIPE_FOLD && window.scrollY > TOP_GUARD) { set(true); run = 0; }
+      else if (run >= SWIPE_OPEN) { set(false); run = 0; }
+    };
+    const onTopCheck = () => { if (window.scrollY <= TOP_GUARD) set(false); };
+
+    if (coarse) {
+      window.addEventListener('touchstart', onTouchStart, { passive: true });
+      window.addEventListener('touchmove', onTouchMove, { passive: true });
+      window.addEventListener('scroll', onTopCheck, { passive: true });
+      return () => {
+        window.removeEventListener('touchstart', onTouchStart);
+        window.removeEventListener('touchmove', onTouchMove);
+        window.removeEventListener('scroll', onTopCheck);
+      };
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [active, set]);
