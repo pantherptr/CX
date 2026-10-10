@@ -287,7 +287,7 @@ export default function Home() {
   const orbit = useMemo(() => {
     const items: OrbitItem[] = [
       { kind: 'status', ring: 'outer', angle: 132, label: t('Trip completed') },
-      { kind: 'card', ring: 'outer', angle: 112.6, emoji: '📍', },
+      { kind: 'card', ring: 'outer', angle: 112.6, emoji: '🔑', },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
       { kind: 'pill', ring: 'outer', angle: 67.6, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
       { kind: 'avatar', ring: 'outer', angle: 50.9, src: memoji(9), alt: '', color: '#c4bceb' },
@@ -295,12 +295,12 @@ export default function Home() {
       { kind: 'avatar', ring: 'inner', angle: 137.2, src: memoji(19), alt: '', color: '#ffdcb6' },
       { kind: 'pill', ring: 'inner', angle: 116.6, icon: '🔥', label: t('Roadbook') },
       { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
-      { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🔑' },
+      { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🗺️' },
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
     const compactItems: OrbitItem[] = [
       { kind: 'avatar', ring: 'outer', angle: 148, src: memoji(9), alt: '', color: '#c4bceb', size: 56 },
-      { kind: 'card', ring: 'outer', angle: 122, emoji: '📍' },
+      { kind: 'card', ring: 'outer', angle: 122, emoji: '🔑' },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
       { kind: 'pill', ring: 'outer', angle: 58, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
       { kind: 'avatar', ring: 'outer', angle: 32, src: memoji(19), alt: '', color: '#ffdcb6', size: 56 },
