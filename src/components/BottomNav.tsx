@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
@@ -204,12 +205,89 @@ export function useBottomNavVisible() {
   return Boolean(session) && isMobile && !suppressed;
 }
 
+// ---- Dock morph (experiment) -------------------------------------------------
+// On Signal, scrolling down folds the whole dock into one small circle that holds just
+// the S: the four tabs slide into it, the green curve above melts into its ring. Scrolling
+// back up (or tapping the circle) lets everything fly back to its place. Flip this to
+// `false` to get the plain, always-open dock back.
+const DOCK_MORPH = true;
+const CIRCLE = 60; // px, the folded dock
+const MORPH_SPRING = { type: 'spring' as const, stiffness: 240, damping: 27, mass: 0.95 };
+const SIGNAL_ROUTE = /^\/signal(\/|$)/;
+const SHRINK_AFTER = 40; // px of sustained downward scrolling before it folds
+const RESTORE_AFTER = 12; // px of upward scrolling is enough to open it again
+const TOP_GUARD = 64; // always open near the very top
+const MAX_STEP = 220; // a single-frame jump this large is a layout shift (browser toolbar), not a scroll
+const COOLDOWN_MS = 260; // never flip twice in quick succession
+
+function useDockFold(active: boolean, pathname: string): { folded: boolean; open: () => void } {
+  const [folded, setFolded] = useState(false);
+  const foldedRef = useRef(false);
+  const lastY = useRef(0);
+  const accum = useRef(0);
+  const dir = useRef<1 | -1 | 0>(0);
+  const lastFlip = useRef(0);
+  const ticking = useRef(false);
+
+  const set = useCallback((next: boolean) => {
+    if (foldedRef.current === next) return;
+    foldedRef.current = next;
+    lastFlip.current = performance.now();
+    setFolded(next);
+  }, []);
+
+  const open = useCallback(() => {
+    accum.current = 0;
+    dir.current = 0;
+    set(false);
+  }, [set]);
+
+  // A new screen always starts open.
+  useEffect(() => { open(); }, [pathname, open]);
+
+  useEffect(() => {
+    if (!active) { set(false); return; }
+    lastY.current = window.scrollY;
+    accum.current = 0;
+    dir.current = 0;
+    const onScroll = () => {
+      if (ticking.current) return;
+      ticking.current = true;
+      requestAnimationFrame(() => {
+        ticking.current = false;
+        const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const rawY = window.scrollY;
+        // iOS rubber-bands past both ends of the page: that is not a scroll.
+        if (rawY < 0 || rawY > maxY) { lastY.current = Math.min(Math.max(rawY, 0), maxY); return; }
+        const delta = rawY - lastY.current;
+        lastY.current = rawY;
+        if (rawY <= TOP_GUARD) { accum.current = 0; dir.current = 0; set(false); return; }
+        if (Math.abs(delta) < 1 || Math.abs(delta) > MAX_STEP) return;
+        const nextDir = delta > 0 ? 1 : -1;
+        if (nextDir !== dir.current) { dir.current = nextDir; accum.current = 0; }
+        accum.current += Math.abs(delta);
+        if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
+        if (nextDir === 1 && accum.current >= SHRINK_AFTER) set(true);
+        else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [active, set]);
+
+  return { folded, open };
+}
+
 export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
   const { session, profile } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
+  const reduceMotion = useReducedMotion();
+  const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname);
+  const folded = fold.folded;
+  const morph = reduceMotion ? { duration: 0 } : MORPH_SPRING;
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge
   // here too the moment the pathname lands on /signal, rather than
@@ -314,9 +392,22 @@ export function BottomNav() {
           edges too), a real regression. The bump's own glow lives purely
           on the rim stroke below, which already traces just the bump's
           own contour. */}
-      <div
+      <motion.div
         className="glass pointer-events-none absolute inset-x-0 bottom-0"
-        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)', transformOrigin: '50% 100%' }}
+        initial={false}
+        animate={{ scaleX: folded ? CIRCLE / navWidth : 1, opacity: folded ? 0 : 1 }}
+        transition={morph}
+      />
+
+      {/* The folded dock: one circle holding only the S, ringed in the same green as the curve. */}
+      <motion.div
+        aria-hidden="true"
+        className="glass pointer-events-none absolute bottom-1 rounded-full border border-accent-bright/60 shadow-[0_0_20px_-4px_rgba(0,212,71,0.55)]"
+        style={{ width: CIRCLE, height: CIRCLE, left: '50%', x: '-50%', transformOrigin: '50% 50%' }}
+        initial={false}
+        animate={{ scale: folded ? 1 : 0.5, opacity: folded ? 1 : 0 }}
+        transition={morph}
       />
 
       {/* The visible rim of that same raised section — traces the identical
@@ -326,9 +417,16 @@ export function BottomNav() {
           times; it turns into the bright green active indicator on Signal.
           A comfortable, deliberate gap (never touching the logo) is built
           into HILL_RISE/the logo's own translateY below. */}
+      <motion.div
+        className="pointer-events-none absolute inset-x-0"
+        style={{ top: -HILL_RISE, height: HILL_RISE, transformOrigin: '50% 100%' }}
+        initial={false}
+        animate={{ opacity: folded ? 0 : 1, scaleX: folded ? 0.2 : 1, y: folded ? HILL_RISE : 0 }}
+        transition={morph}
+      >
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
-        style={{ top: -HILL_RISE, width: `${HILL_WIDTH_FRACTION * 100}%`, height: HILL_RISE }}
+        style={{ top: 0, width: `${HILL_WIDTH_FRACTION * 100}%`, height: HILL_RISE }}
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         aria-hidden="true"
@@ -349,6 +447,7 @@ export function BottomNav() {
           }}
         />
       </svg>
+      </motion.div>
 
       {/* Sliding active indicator for the four normal tabs — a small
           solid pill baseline-underline. Signal never uses this: its own
@@ -367,13 +466,17 @@ export function BottomNav() {
               <Link
                 key={it.label}
                 to={it.to}
-                onClick={(e) => onTabClick(e, active && pathname === '/signal')}
+                onClick={(e) => {
+                  // Folded: the S is the whole dock — a tap opens it again.
+                  if (folded) { e.preventDefault(); fold.open(); haptics.tick(); return; }
+                  onTabClick(e, active && pathname === '/signal');
+                }}
                 className="pressable relative z-10 flex flex-col items-center justify-center py-[18px]"
                 aria-label="Signal"
                 aria-current={active ? 'page' : undefined}
               >
                 <span
-                  className="relative transition-all duration-300"
+                  className="relative transition-all duration-[460ms]"
                   style={{
                     // Fixed at the same 23px the normal icons reserve, so
                     // Signal's own label sits on the identical baseline as
@@ -395,7 +498,7 @@ export function BottomNav() {
                     // centered in this slot without a manual nudge.
                     width: 23,
                     height: 23,
-                    transform: `translate(0, ${active ? -11 : -8}px) scale(${active ? 1.08 : 1})`,
+                    transform: folded ? 'translate(0, 0) scale(1.22)' : `translate(0, ${active ? -11 : -8}px) scale(${active ? 1.08 : 1})`,
                     transitionTimingFunction: EASE,
                   }}
                 >
@@ -438,12 +541,23 @@ export function BottomNav() {
               key={it.label}
               to={it.to}
               onClick={(e) => onTabClick(e, active)}
-              className="relative z-10 flex items-center justify-center py-2.5"
+              className={`relative z-10 flex items-center justify-center py-2.5 ${folded ? 'pointer-events-none' : ''}`}
               aria-label={it.label}
+              tabIndex={folded ? -1 : undefined}
               aria-current={active ? 'page' : undefined}
             >
               {/* No names under the icons: the icon alone says where it goes; the active one turns green. */}
-              <span className={`relative grid h-12 w-12 place-items-center transition-opacity duration-150 active:opacity-50`}>
+<motion.span
+                className="relative grid h-12 w-12 place-items-center transition-opacity duration-150 active:opacity-50"
+                initial={false}
+                animate={{
+                  // Folded: every tab slides to the middle and disappears into the S.
+                  x: folded ? navWidth * (0.5 - (i + 0.5) / items.length) : 0,
+                  scale: folded ? 0.15 : 1,
+                  opacity: folded ? 0 : 1,
+                }}
+                transition={reduceMotion ? { duration: 0 } : { ...MORPH_SPRING, delay: folded ? Math.abs(i - SIGNAL_INDEX) === 1 ? 0.03 : 0 : Math.abs(i - SIGNAL_INDEX) === 1 ? 0.05 : 0.1 }}
+              >
                 {it.label === 'Profile' && profile?.avatar_url ? (
                   // Your own photo instead of the generic person icon.
                   <img
@@ -467,7 +581,7 @@ export function BottomNav() {
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
-              </span>
+              </motion.span>
             </Link>
           );
         })}
