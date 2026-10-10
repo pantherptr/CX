@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car as CarIcon, Compass, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
+import { Car as CarIcon, Compass, ShieldCheck, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
 import CommunityOrbit, { type OrbitItem, type OrbitStat, type OrbitTag } from '../components/ui/builders-community-hero';
 import { Icon, type IconName } from '../components/Icon';
 import { SignalS } from '../components/SignalLogo';
@@ -287,9 +287,9 @@ export default function Home() {
   const orbit = useMemo(() => {
     const items: OrbitItem[] = [
       { kind: 'status', ring: 'outer', angle: 132, label: t('Trip completed') },
-      { kind: 'card', ring: 'outer', angle: 112.6, emoji: '🚗', },
+      { kind: 'card', ring: 'outer', angle: 112.6, emoji: '📍', },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
-      { kind: 'pill', ring: 'outer', angle: 67.6, icon: '⭐', label: t('Top rated') },
+      { kind: 'pill', ring: 'outer', angle: 67.6, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
       { kind: 'avatar', ring: 'outer', angle: 50.9, src: memoji(9), alt: '', color: '#c4bceb' },
       { kind: 'pill', ring: 'outer', angle: 35.2, icon: <MessageSquareText size={13} strokeWidth={2} />, label: t('Respect') },
       { kind: 'avatar', ring: 'inner', angle: 137.2, src: memoji(19), alt: '', color: '#ffdcb6' },
@@ -300,9 +300,9 @@ export default function Home() {
     ];
     const compactItems: OrbitItem[] = [
       { kind: 'avatar', ring: 'outer', angle: 148, src: memoji(9), alt: '', color: '#c4bceb', size: 56 },
-      { kind: 'card', ring: 'outer', angle: 122, emoji: '🚗' },
+      { kind: 'card', ring: 'outer', angle: 122, emoji: '📍' },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
-      { kind: 'pill', ring: 'outer', angle: 58, icon: '⭐', label: t('Top rated') },
+      { kind: 'pill', ring: 'outer', angle: 58, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
       { kind: 'avatar', ring: 'outer', angle: 32, src: memoji(19), alt: '', color: '#ffdcb6', size: 56 },
       { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
     ];
