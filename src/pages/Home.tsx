@@ -1,5 +1,7 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Car as CarIcon, Compass, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
+import CommunityOrbit, { type OrbitItem, type OrbitStat, type OrbitTag } from '../components/ui/builders-community-hero';
 import { Icon, type IconName } from '../components/Icon';
 import { SignalS } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
@@ -221,8 +223,26 @@ const HOME_FAQ_QUESTIONS = [
 ];
 const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).filter((f): f is (typeof faqs)[number] => !!f);
 
+/** Mounts its children the first time it scrolls into view, so the orbit's entrance animation plays when you get there. */
+function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || seen) return;
+    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
+    const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { setSeen(true); io.disconnect(); } }, { rootMargin: '0px 0px -15% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+  return <div ref={ref} style={seen ? undefined : { minHeight }}>{seen ? children : null}</div>;
+}
+
+const memoji = (n: number) => `https://raw.githubusercontent.com/alohe/memojis/main/png/memo_${n}.png`;
+
 export default function Home() {
   const { t } = useLocale();
+  const navigate = useNavigate();
   const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
   const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
@@ -257,6 +277,35 @@ export default function Home() {
     }));
     return { items };
   }, [allCars]);
+
+  // The community orbit: only real figures (cars on the platform, cities, languages).
+  const orbit = useMemo(() => {
+    const items: OrbitItem[] = [
+      { kind: 'status', ring: 'outer', angle: 132, label: t('Trip completed') },
+      { kind: 'card', ring: 'outer', angle: 112.6, emoji: '🚗', },
+      { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
+      { kind: 'pill', ring: 'outer', angle: 67.6, icon: '⭐', label: t('Top rated') },
+      { kind: 'avatar', ring: 'outer', angle: 50.9, src: memoji(9), alt: '', color: '#c4bceb' },
+      { kind: 'pill', ring: 'outer', angle: 35.2, icon: <MessageSquareText size={13} strokeWidth={2} />, label: t('Respect') },
+      { kind: 'avatar', ring: 'inner', angle: 137.2, src: memoji(19), alt: '', color: '#ffdcb6' },
+      { kind: 'pill', ring: 'inner', angle: 116.6, icon: '🔥', label: t('Roadbook') },
+      { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
+      { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🔑' },
+      { kind: 'check', ring: 'inner', angle: 41.8 },
+    ];
+    const stats: OrbitStat[] = [
+      { value: String(allCars?.length ?? 0), label: t('Cars') },
+      { value: String(catalogue.cityNames.length), label: t('Cities') },
+      { value: '4', label: t('Languages') },
+    ];
+    const tags: OrbitTag[] = [
+      { icon: <Users strokeWidth={2} />, label: t('Signal community'), onClick: () => navigate('/signal/community') },
+      { icon: <CarIcon strokeWidth={2} />, label: t('Browse cars'), onClick: () => navigate('/browse') },
+      { icon: <KeyRound strokeWidth={2} />, label: t('Become a host'), onClick: () => navigate('/list-your-car') },
+      { icon: <Compass strokeWidth={2} />, label: t('Roadbook'), onClick: () => navigate('/signal/community') },
+    ];
+    return { items, stats, tags };
+  }, [allCars, navigate, t]);
 
   return (
     <div>
@@ -732,6 +781,18 @@ export default function Home() {
             </ul>
           </div>
         </Reveal>
+      </section>
+
+      {/* ================= COMMUNITY — the orbit ================= */}
+      <section className="container-page section-tight">
+        <WhenVisible minHeight={560}>
+        <CommunityOrbit
+          items={orbit.items}
+          stats={orbit.stats}
+          tags={orbit.tags}
+          headline={<>{t('Where drivers and hosts')}<br className="hidden sm:block" /> {t('share the road')}</>}
+        />
+        </WhenVisible>
       </section>
 
       {/* ================= WHERE CX IS LIVE — the globe ================= */}
