@@ -1751,6 +1751,13 @@
     -webkit-backdrop-filter: blur(16px) saturate(160%);
   }
 
+  /* The mobile dock's surface: an almost opaque white, deliberately WITHOUT backdrop-filter.
+     A blurred backdrop on a fixed element that resizes while the page scrolls makes iOS Safari
+     re-blur every frame and flicker; a plain fill morphs (and scrolls) perfectly smoothly. */
+  .dock-surface {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
   /* Dark frosted surface — the mobile bottom nav's own chrome. Deliberately
      near-black rather than the light `.glass` so its white/green icon
      language (see BottomNav) always has the contrast it needs regardless

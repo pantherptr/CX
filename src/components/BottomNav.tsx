@@ -398,7 +398,7 @@ export function BottomNav() {
           nothing is ever stretched or squashed: it just narrows into the circle and widens back,
           and B fades in once A has reached full width (and out the instant folding starts). */}
       <motion.div
-        className="glass pointer-events-none absolute inset-x-0 bottom-0"
+        className="dock-surface pointer-events-none absolute inset-x-0 bottom-0"
         style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
         initial={false}
         animate={{ opacity: folded ? 0 : 1 }}
@@ -406,7 +406,7 @@ export function BottomNav() {
       />
       <motion.div
         aria-hidden="true"
-        className="glass pointer-events-none absolute rounded-full border"
+        className="dock-surface pointer-events-none absolute rounded-full border"
         style={{ left: '50%', x: '-50%' }}
         initial={false}
         animate={{
