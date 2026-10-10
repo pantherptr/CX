@@ -300,7 +300,7 @@ export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
   const { compact, expand } = useSignalScrollCompact(visible && SIGNAL_ROUTE.test(pathname), pathname);
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
 
@@ -545,6 +545,15 @@ export function BottomNav() {
             >
               {/* No names under the icons: the icon alone says where it goes, the active one gets a soft green disc. */}
               <span className={`relative grid h-12 w-12 place-items-center rounded-full transition-[background-color,transform] duration-300 active:scale-90 ${active ? 'bg-accent/12 shadow-[inset_0_0_0_1px_rgba(0,212,71,0.18)]' : ''}`}>
+                {it.label === 'Profile' && profile?.avatar_url ? (
+                  // Your own photo instead of the generic person icon.
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    draggable={false}
+                    className={`h-[30px] w-[30px] rounded-full object-cover transition-all duration-300 ${active ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : 'ring-1 ring-line-strong'}`}
+                  />
+                ) : (
                 <Icon
                   name={it.icon}
                   size={25}
@@ -553,6 +562,7 @@ export function BottomNav() {
                   }`}
                   strokeWidth={active ? 2.1 : 1.75}
                 />
+                )}
                 {it.label === 'Messages' && unreadCount > 0 && (
                   <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center rounded-full border-2 border-surface bg-accent px-0.5 text-[9px] font-bold leading-none text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
