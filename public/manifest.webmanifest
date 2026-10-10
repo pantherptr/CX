@@ -1,6 +1,6 @@
 {
-  "name": "CX Rent",
-  "short_name": "CX",
+  "name": "CX BAT",
+  "short_name": "CX BAT",
   "description": "Rent exceptional cars from local owners, wherever the road takes you.",
   "id": "/",
   "start_url": "/?source=pwa",

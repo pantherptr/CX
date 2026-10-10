@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // — they must match exactly.
 const config: CapacitorConfig = {
   appId: 'com.cxrent.app',
-  appName: 'CX Rent',
+  appName: 'CX BAT',
   webDir: 'dist',
   ios: {
     // Matches the app's existing warm off-white surface (--color-bg in
