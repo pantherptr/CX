@@ -554,12 +554,23 @@ export function BottomNav() {
                 className="relative grid h-12 w-12 place-items-center transition-opacity duration-150 active:opacity-50"
                 initial={false}
                 animate={{
-                  // Folded: every tab slides to the middle and disappears into the S.
+                  // Folded: every tab slides toward the middle while it fades out — it is gone
+                  // before it gets there, so nothing is left sitting on top of the S.
                   x: folded ? navWidth * (0.5 - (i + 0.5) / items.length) : 0,
-                  scale: folded ? 0.15 : 1,
+                  scale: folded ? 0.55 : 1,
                   opacity: folded ? 0 : 1,
                 }}
-                transition={reduceMotion ? { duration: 0 } : { ...MORPH_SPRING, delay: folded ? Math.abs(i - SIGNAL_INDEX) === 1 ? 0.03 : 0 : Math.abs(i - SIGNAL_INDEX) === 1 ? 0.05 : 0.1 }}
+                transition={
+                  reduceMotion
+                    ? { duration: 0 }
+                    : {
+                        x: { ...MORPH_SPRING, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.02 : 0 },
+                        scale: { ...MORPH_SPRING, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.02 : 0 },
+                        opacity: folded
+                          ? { duration: 0.14, ease: 'easeIn' }
+                          : { duration: 0.2, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.06 : 0.1 },
+                      }
+                }
               >
                 {it.label === 'Profile' && profile?.avatar_url ? (
                   // Your own photo instead of the generic person icon.
