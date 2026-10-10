@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Road trip this weekend?", "Gita questo weekend?", "Escapadă în weekend?", "¿Escapada este fin de semana?"],
   ["Secure payments", "Pagamenti sicuri", "Plăți securizate", "Pagos seguros"],
   ["Team", "Team", "Echipa", "Equipo"],
   ["Hosts", "Host", "Gazde", "Anfitriones"],

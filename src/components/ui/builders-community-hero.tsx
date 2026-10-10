@@ -16,6 +16,8 @@ export interface OrbitAvatarItem extends OrbitBase {
   alt?: string;
   color: string;
   size?: number;
+  /** A real photo (not an illustration): shown as is, centred. */
+  photo?: boolean;
 }
 
 /** A round chip holding any node — a brand mark, a logo. */
@@ -110,7 +112,7 @@ function arcPath(g: Geometry, r: number) {
   return `M ${g.center.x - dx} ${g.h} A ${r} ${r} 0 0 1 ${g.center.x + dx} ${g.h}`;
 }
 
-function OrbitAvatar({ src, alt, color, size = 72 }: OrbitAvatarItem) {
+function OrbitAvatar({ src, alt, color, size = 72, photo }: OrbitAvatarItem) {
   return (
     <div
       className="rounded-full border border-black/[0.07] bg-white p-[3px] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
@@ -121,7 +123,7 @@ function OrbitAvatar({ src, alt, color, size = 72 }: OrbitAvatarItem) {
           src={src}
           alt={alt ?? ''}
           draggable={false}
-          className="h-full w-full translate-y-[8%] scale-[1.08] select-none object-cover object-top"
+          className={`h-full w-full select-none object-cover ${photo ? 'object-center' : 'translate-y-[8%] scale-[1.08] object-top'}`}
         />
       </div>
     </div>

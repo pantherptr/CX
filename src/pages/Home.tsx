@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } 
 import { Link, useNavigate } from 'react-router-dom';
 import { Car as CarIcon, Compass, ShieldCheck, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
 import { SignalS } from '../components/SignalLogo';
-import { SpotlightLogo } from '../components/SpotlightLogo';
 import { RespectGlyph } from '../components/RespectGlyph';
 import CommunityOrbit, { type OrbitItem, type OrbitStat, type OrbitTag } from '../components/ui/builders-community-hero';
 import { Icon, type IconName } from '../components/Icon';
@@ -291,21 +290,20 @@ export default function Home() {
       { kind: 'card', ring: 'outer', angle: 112.6, icon: <RespectGlyph height={26} on /> },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
       { kind: 'pill', ring: 'outer', angle: 67.6, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
-      { kind: 'badge', ring: 'outer', angle: 50.9, color: '#e8f6ed', content: <SignalS size={34} /> },
+      { kind: 'avatar', ring: 'outer', angle: 50.9, src: avatar(32), alt: '', color: '#d9e6dd', photo: true },
       { kind: 'pill', ring: 'outer', angle: 35.2, icon: <MessageSquareText size={13} strokeWidth={2} />, label: t('Respect') },
-      { kind: 'badge', ring: 'inner', angle: 137.2, color: '#f0f0f2', content: <img src="/brand/cx-bat.webp" alt="" draggable={false} className="h-[62%] w-[62%] select-none object-contain" /> },
+      { kind: 'avatar', ring: 'inner', angle: 137.2, src: avatar(12), alt: '', color: '#e5e3dc', photo: true },
       { kind: 'pill', ring: 'inner', angle: 116.6, icon: '🔥', label: t('Roadbook') },
-      { kind: 'badge', ring: 'inner', angle: 90, color: '#eef2f0', size: 48, content: <SpotlightLogo size={28} /> },
+      { kind: 'pill', ring: 'inner', angle: 90, icon: '💬', label: t('Road trip this weekend?') },
       { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🗺️' },
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
     const compactItems: OrbitItem[] = [
-      { kind: 'badge', ring: 'outer', angle: 148, color: '#e8f6ed', size: 56, content: <SignalS size={30} /> },
+      { kind: 'avatar', ring: 'outer', angle: 148, src: avatar(32), alt: '', color: '#d9e6dd', size: 56, photo: true },
       { kind: 'card', ring: 'outer', angle: 122, icon: <RespectGlyph height={26} on /> },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
-      { kind: 'pill', ring: 'outer', angle: 58, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
-      { kind: 'badge', ring: 'outer', angle: 32, color: '#f0f0f2', size: 56, content: <img src="/brand/cx-bat.webp" alt="" draggable={false} className="h-[62%] w-[62%] select-none object-contain" /> },
-      { kind: 'badge', ring: 'inner', angle: 90, color: '#eef2f0', size: 48, content: <SpotlightLogo size={28} /> },
+      { kind: 'avatar', ring: 'outer', angle: 32, src: avatar(12), alt: '', color: '#e5e3dc', size: 56, photo: true },
+      { kind: 'pill', ring: 'inner', angle: 90, icon: '💬', label: t('Road trip this weekend?') },
     ];
     const stats: OrbitStat[] = [
       { value: COMMUNITY_TEAM, label: t('Team') },
