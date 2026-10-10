@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
 import { useTeamTapMode, setTeamTapMode } from '../lib/teamTapMode';
 import { useMediaQuery, vibrateTap } from '../components/motion';
 import { Tap, AnimatePresence, motion } from '../components/motionKit';
-import { SignalLogo, SignalSHero } from '../components/SignalLogo';
+import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
 import { SignalPostComposer } from '../components/signalFeed/SignalPostComposer';
 import { SignalCommunityComposer } from '../components/signalFeed/SignalCommunityComposer';
+import { SignalGate } from '../components/signalFeed/SignalGate';
 import { SignalPeopleShelf } from '../components/signalFeed/SignalPeopleShelf';
 import { SignalSpotlightPageLink, SignalSpotlightCard, SignalSpotlightPage } from '../components/signalFeed/SignalSpotlightCard';
 import { SignalAdsSheet } from '../components/signalFeed/SignalAdsSheet';
@@ -222,40 +223,7 @@ export default function Signal() {
   // brief calls out to avoid.
   const closeOverlay = () => navigate(base, { viewTransition: true });
 
-  if (!session) {
-    return (
-      <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-noir px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-center">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(60% 42% at 50% 36%, rgba(0,212,71,0.20), transparent 70%), radial-gradient(50% 30% at 50% 100%, rgba(0,212,71,0.08), transparent 70%)' }}
-        />
-        <Link
-          to="/"
-          aria-label="Close SIGNAL"
-          className="pressable absolute right-8 top-8 hidden h-10 w-10 place-items-center rounded-full border border-white/15 text-on-noir transition-colors hover:bg-white/10 lg:grid"
-        >
-          <Icon name="x" size={18} />
-        </Link>
-        <div className="relative flex w-full max-w-sm flex-col items-center">
-          <div className="animate-scale-in">
-            <SignalSHero height={112} />
-          </div>
-          <p className="mt-9 text-detail font-bold uppercase tracking-[0.28em] text-accent-bright">CX SIGNAL</p>
-          <h1 className="mt-3 font-display text-[2rem] font-semibold leading-[1.08] text-on-noir text-balance sm:text-4xl">The official voice of CX Rent.</h1>
-          <p className="mt-3 max-w-xs text-copy leading-relaxed text-on-noir-muted">
-            News, announcements and new cars, straight from the team.
-          </p>
-          <Link to="/login" state={{ from: { pathname: '/signal' } }} className="btn btn-accent-bright btn-lg mt-9 w-full">
-            Sign In <Icon name="arrowRight" size={17} />
-          </Link>
-          <Link to="/" className="mt-2 inline-flex min-h-11 items-center text-detail font-medium text-on-noir-muted hover:text-on-noir">
-            ← Back to CX Rent
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!session) return <SignalGate />;
 
   const navItems: { label: string; icon: IconName; active?: boolean; groupEnd?: boolean; onSelect: () => void }[] = [
           { label: 'Official', icon: 'shield', active: space === 'official', onSelect: () => navigate('/signal') },
