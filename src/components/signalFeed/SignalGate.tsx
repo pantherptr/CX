@@ -89,7 +89,7 @@ export function SignalGate() {
             {FEATURES.map((f, i) => (
               <li key={f.title} className={`flex items-start gap-4 px-5 py-4 text-left ${i > 0 ? 'border-t border-white/10' : ''}`}>
                 <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-accent-bright/12 text-accent-bright ring-1 ring-accent-bright/25">
-                  {f.title === 'Spotlight' ? <SpotlightLogo size={26} /> : <Icon name={f.icon} size={18} />}
+                  {f.title === 'Spotlight' ? <SpotlightLogo size={32} /> : <Icon name={f.icon} size={18} />}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[15px] font-semibold leading-snug text-on-noir">{t(f.title)}</span>

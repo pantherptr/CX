@@ -1,4 +1,6 @@
-/** The Signal Spotlight mark: the S under a green stage light (public/brand/spotlight-logo.png).
+/** The Signal Spotlight mark: the CX bat on a stage, in a green spotlight (public/brand/spotlight-logo.webp).
+ *  It is a picture on black, so it always sits in a softly rounded square — like an app icon — and
+ *  reads the same on light and dark surfaces.
  *
  *  `mark`   — the symbol alone (header icons, chips, badges)
  *  `lockup` — the symbol with the SPOTLIGHT wordmark and "BY CX" beside it */
@@ -13,14 +15,14 @@ export function SpotlightLogo({
 }) {
   const mark = (
     <img
-      src="/brand/spotlight-logo.png"
+      src="/brand/spotlight-logo.webp"
       alt=""
       aria-hidden="true"
       draggable={false}
       width={size}
       height={size}
-      className="shrink-0 select-none object-contain"
-      style={{ width: size, height: size }}
+      className="shrink-0 select-none object-cover shadow-[0_0_0_1px_rgba(255,255,255,0.08)]"
+      style={{ width: size, height: size, borderRadius: '22%' }}
     />
   );
 
