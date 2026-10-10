@@ -311,7 +311,12 @@ export function BottomNav() {
   // Lift the bar above browser chrome that covers the layout viewport's
   // bottom. A gap this big is a keyboard, not browser chrome, so the bar
   // stays put for those.
-  const lift = viewportGap > 0 && viewportGap <= MAX_CHROME_GAP ? viewportGap : 0;
+  const liveLift = viewportGap > 0 && viewportGap <= MAX_CHROME_GAP ? viewportGap : 0;
+  // Safari's toolbar grows and shrinks as you scroll; following it made the dock hop up and down
+  // right when it folds or opens. The dock keeps the HIGHEST position it has needed, so it is always
+  // clear of the toolbar and never moves again after that.
+  const [lift, setLift] = useState(liveLift);
+  useEffect(() => { setLift((prev) => (liveLift > prev ? liveLift : prev)); }, [liveLift]);
   // End caps are true semicircles: radius = half the flat bar's height, so
   // the glass is a stadium capsule. Per-axis fractions because the clip-path
   // is in objectBoundingBox units over a non-square box.
