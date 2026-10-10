@@ -94,7 +94,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
 
         {/* "picked by CX" chip — the video mark rides in it */}
         <span aria-hidden="true" className={`pointer-events-none absolute inline-flex items-center gap-1.5 rounded-full bg-white/12 font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md ring-1 ring-white/20 ${compact ? 'right-3.5 top-3.5 px-2.5 py-1 text-[9px]' : 'right-4 top-4 px-3 py-1.5 text-[10px] sm:right-6 sm:top-6'}`}>
-          {data.mediaKind === 'video' ? <Icon name="play" size={10} fill /> : <Icon name="sparkles" size={10} />}
+          {data.mediaKind === 'video' ? <Icon name="play" size={10} fill /> : <SpotlightLogo size={14} />}
           {t('Picked by CX')}
         </span>
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { Logo } from '../components/primitives';
+import { SpotlightLogo } from '../components/SpotlightLogo';
 import { useAuth } from '../lib/auth';
 import { VerificationsPanel, UsersPanel, BookingsPanel, CarsPanel } from '../components/admin/panels';
 import { SignalDemoPanel } from '../components/admin/SignalDemoPanel';
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
                 tab === t.id ? 'bg-ink text-white' : 'text-ink-soft hover:bg-white'
               }`}
             >
-              <Icon name={t.icon} size={16} /> {t.label}
+              {t.id === 'spotlight' ? <SpotlightLogo size={20} /> : <Icon name={t.icon} size={16} />} {t.label}
             </button>
           ))}
         </nav>

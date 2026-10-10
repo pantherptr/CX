@@ -3,6 +3,7 @@ import { useLocale } from '../lib/i18n';
 import { EmptyState, VerifiedBadge, type VerifiedRole } from './primitives';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
+import { SpotlightLogo } from './SpotlightLogo';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from './motionKit';
 import type { SignalNotification, NotificationType } from '../lib/data/notifications';
 import { respondToFollowRequest } from '../lib/data/signalProfile';
@@ -260,7 +261,7 @@ export function NotificationsList({
                       <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorId ? n.actorName : anonText(n)}>
                         {!n.actorId ? (
                           <span className={`grid h-12 w-12 place-items-center rounded-full ${copy.badge}`}>
-                            <Icon name={copy.icon} size={22} />
+                            {n.type === 'vision_selected' || n.type === 'vision_featured' ? <SpotlightLogo size={30} /> : <Icon name={copy.icon} size={22} />}
                           </span>
                         ) : n.actorAvatarUrl ? (
                           <Img
@@ -280,7 +281,7 @@ export function NotificationsList({
                         )}
                         {n.actorId && (
                           <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] min-w-[22px] place-items-center rounded-full px-1 ring-2 ring-surface ${copy.badge}`}>
-                            {n.count > 1 ? <span className="text-[11px] font-bold leading-none">{n.count}</span> : <Icon name={copy.icon} size={12} />}
+                            {n.count > 1 ? <span className="text-[11px] font-bold leading-none">{n.count}</span> : n.type === 'vision_selected' || n.type === 'vision_featured' ? <SpotlightLogo size={16} /> : <Icon name={copy.icon} size={12} />}
                           </span>
                         )}
                       </button>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import { Icon } from '../Icon';
+import { SpotlightLogo } from '../SpotlightLogo';
 import { Img } from '../motion';
 import { mediaKindFromPath } from '../../lib/data/empireFeed';
 import { SharedAvatar } from '../motionKit';
@@ -258,7 +259,7 @@ export function SignalMediaViewer({
         <div key={index} className="mx-auto w-full max-w-xl shrink-0 animate-fade-up px-5 pb-2 pt-4 text-left text-white transition-opacity duration-200" style={{ opacity: drag.y > 0 ? 0 : 1 }}>
           {captions[index]!.badge && (
             <p className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-accent-bright backdrop-blur-sm">
-              <Icon name="sparkles" size={11} /> {captions[index]!.badge}
+              {/spotlight/i.test(captions[index]!.badge!) ? <SpotlightLogo size={18} /> : <Icon name="sparkles" size={11} />} {captions[index]!.badge}
             </p>
           )}
           {captions[index]!.title && <p translate="no" className="font-display text-[24px] font-semibold leading-[1.1] tracking-tight">{captions[index]!.title}</p>}

@@ -213,7 +213,7 @@ export function VisionsGrid({
                 )}
                 {v.spotlighted && !managing && (
                   <span className="pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
-                    <Icon name="sparkles" size={10} /> Spotlight
+                    <SpotlightLogo size={16} /> Spotlight
                   </span>
                 )}
                 {managing && v.authorId !== myId && (
