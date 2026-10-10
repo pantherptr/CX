@@ -239,7 +239,7 @@ function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: 
 }
 
 // Headline figures of the community orbit — edit here.
-const COMMUNITY_MEMBERS = '264';
+const COMMUNITY_MEMBERS = '97';
 const COMMUNITY_HOSTS = '37+';
 const COMMUNITY_DOWNLOADS = '34K+';
 
