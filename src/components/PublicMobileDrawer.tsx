@@ -2,12 +2,20 @@ import { FlyingMark } from './FlyingMark';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
-import { SignalS } from './SignalLogo';
+import { NavIconTile, SignalNavCard, navRowClass } from './NavParts';
+import type { IconName } from './Icon';
 import { ConciergeLauncher } from './Concierge';
 import { useViewportBottomGap } from '../lib/useViewportGap';
 import { useScramble } from '../lib/useScramble';
 import { useLocale } from '../lib/i18n';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from './motionKit';
+
+const LINK_ICON: Record<string, IconName> = {
+  '/browse': 'cars',
+  '/how-it-works': 'route',
+  '/list-your-car': 'key',
+  '/about': 'info',
+};
 
 /** Logged-out mobile menu. Split out of Navbar so it (and the animation
  *  library it needs) loads on first open instead of with every page. */
@@ -89,45 +97,27 @@ export default function PublicMobileDrawer({
                 {/* -------- Nav — plain rows + hairline dividers, no cards.
                     List Your Car gets a quiet green tint (an important
                     business action) without turning into its own block. -------- */}
-                <nav className="flex flex-col">
+                <nav className="flex flex-col gap-0.5">
+                  <SignalNavCard onClick={() => onClose()} subtitle={t('Community')} />
                   {links.map((l) => {
                     const isListCar = l.to === '/list-your-car';
                     return (
                       <NavLink
                         key={l.to}
                         to={l.to}
-                        className={({ isActive }) =>
-                          `flex items-center justify-between border-b border-line py-3.5 text-body font-medium transition-[color,opacity] active:opacity-55 ${
-                            isActive ? 'text-ink' : isListCar ? 'text-accent-700 hover:text-accent' : 'text-ink-soft hover:text-ink'
-                          }`
-                        }
+                        onClick={() => onClose()}
+                        className={({ isActive }) => navRowClass(isActive)}
                       >
-                        {t(l.label)}
-                        <Icon name="chevronRight" size={16} className={isListCar ? 'text-accent' : 'text-faint'} />
+                        {({ isActive }) => (
+                          <>
+                            <NavIconTile icon={LINK_ICON[l.to] ?? 'compass'} active={isActive} accent={isListCar} />
+                            <span className={`flex-1 ${isListCar && !isActive ? 'text-accent-700' : ''}`}>{t(l.label)}</span>
+                            <Icon name="chevronRight" size={16} className="text-faint" />
+                          </>
+                        )}
                       </NavLink>
                     );
                   })}
-
-                  {/* SIGNAL — a distinct destination, not an ad: same row
-                      rhythm as the links above it, just a two-line label
-                      and the SIGNAL mark standing in for an icon. */}
-                  <NavLink
-                    to="/signal"
-                    className={({ isActive }) =>
-                      `flex items-center justify-between border-b border-line py-3.5 transition-[color,opacity] active:opacity-55 ${
-                        isActive ? 'text-ink' : 'text-ink-soft hover:text-ink'
-                      }`
-                    }
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <SignalS size={26} />
-                      <span>
-                        <span className="block text-body font-semibold leading-tight text-ink">SIGNAL</span>
-                        <span className="block text-caption leading-tight text-muted">{t('Community')}</span>
-                      </span>
-                    </span>
-                    <Icon name="chevronRight" size={16} className="text-accent" />
-                  </NavLink>
                 </nav>
               </div>
 

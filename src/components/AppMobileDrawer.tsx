@@ -3,23 +3,18 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Img } from './motion';
 import { Logo } from './primitives';
-import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { customerNav, hostNav, type NavItem } from '../lib/nav';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useViewportBottomGap } from '../lib/useViewportGap';
 import { haptics } from '../lib/native';
+import { NavIconTile, SignalNavCard, navRowClass } from './NavParts';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH, ActivePill } from './motionKit';
 
 /** A flick or a drag past this far to the right closes the drawer — the
  *  same direction it slid in from, so the gesture undoes the entrance. */
 const DRAG_CLOSE_PX = 90;
 const DRAG_CLOSE_VELOCITY = 500;
-
-const linkClass = (isActive: boolean) =>
-  `flex items-center gap-3 rounded-xl px-3 py-2.5 text-body transition-colors active:bg-panel ${
-    isActive ? 'bg-panel font-semibold text-ink' : 'font-medium text-ink-soft hover:bg-panel'
-  }`;
 
 /** Which single item is "you are here". NavLink alone can't decide this:
  *  it ignores the hash (so Overview, My Trips, Saved and Rewards — all
@@ -192,27 +187,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                   Admin panel
                 </NavLink>
               ) : null}
-              <NavLink
-                to="/signal"
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
-                    isActive
-                      ? 'border-accent-bright bg-accent-bright/15 text-ink'
-                      : 'border-accent-bright/30 bg-accent-bright/[0.06] text-ink hover:border-accent-bright/55 hover:bg-accent-bright/10'
-                  }`
-                }
-              >
-                <span
-                  className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[12px] transition-opacity duration-300 group-hover:opacity-100"
-                  style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
-                />
-                <span className="flex items-center gap-3">
-                  <SignalS size={22} className="transition-transform duration-300 group-hover:scale-110" />
-                  <span className="tracking-wide">SIGNAL</span>
-                </span>
-                <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </NavLink>
+              <SignalNavCard onClick={onClose} />
               <ul className="flex flex-col gap-0.5">
                 {nav.map((n) => {
                   const isActive = n.label === activeLabel;
@@ -222,12 +197,12 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                         to={n.to}
                         onClick={onClose}
                         aria-current={isActive ? 'page' : undefined}
-                        className={linkClass(isActive)}
+                        className={navRowClass(isActive)}
                       >
-                        <Icon name={n.icon} size={19} className={isActive ? 'text-accent' : 'text-muted'} />
+                        <NavIconTile icon={n.icon} active={isActive} />
                         <span className="flex-1">{n.label}</span>
                         {n.badge && (
-                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-label font-semibold text-white">
+                          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-label font-semibold text-white">
                             {n.badge}
                           </span>
                         )}
@@ -240,15 +215,15 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
               <Link
                 to="/help"
                 onClick={onClose}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium text-ink-soft transition-colors hover:bg-panel active:bg-panel"
+                className={navRowClass(false)}
               >
-                <Icon name="headset" size={19} className="text-muted" />
+                <NavIconTile icon="headset" />
                 Help &amp; Support
               </Link>
             </nav>
 
             <div className="shrink-0 border-t border-line p-3 pb-safe">
-              <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+              <div className="flex items-center gap-3 rounded-2xl bg-panel/60 px-2.5 py-2">
                 {displayAvatar ? (
                   <Img
                     src={displayAvatar}

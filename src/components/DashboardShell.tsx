@@ -2,13 +2,13 @@ import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
-import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { Img, useCountUp } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useUnreadNotificationCount } from '../lib/data/notifications';
 import { customerNav, hostNav } from '../lib/nav';
 import { AppMobileDrawer } from './AppMobileDrawer';
+import { NavIconTile, SignalNavCard, navRowClass } from './NavParts';
 
 export function greeting(): string {
   const h = new Date().getHours();
@@ -60,28 +60,8 @@ export function DashboardShell({
         <div className="hairline" />
       </div>
       <nav className="flex-1 overflow-y-auto p-3">
-        <NavLink
-          to="/signal"
-          onClick={() => setOpen(false)}
-          className={({ isActive }) =>
-            `group relative mb-3 flex items-center justify-between overflow-hidden rounded-xl border px-3 py-2.5 text-body font-bold transition-all duration-300 ${
-              isActive
-                ? 'border-accent-bright bg-accent-bright/15 text-ink'
-                : 'border-accent-bright/30 bg-accent-bright/[0.06] text-ink hover:border-accent-bright/55 hover:bg-accent-bright/10'
-            }`
-          }
-        >
-          <span
-            className="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-[12px] transition-opacity duration-300 group-hover:opacity-100"
-            style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.3), transparent 75%)' }}
-          />
-          <span className="flex items-center gap-3">
-            <SignalS size={22} className="transition-transform duration-300 group-hover:scale-110" />
-            <span className="tracking-wide">SIGNAL</span>
-          </span>
-          <Icon name="chevronRight" size={16} className="text-accent-700 transition-transform duration-300 group-hover:translate-x-0.5" />
-        </NavLink>
-        <p className="px-3 py-2 text-label font-semibold uppercase tracking-wide text-faint">
+        <SignalNavCard onClick={() => setOpen(false)} />
+        <p className="px-2 pb-2 pt-1 text-label font-semibold uppercase tracking-[0.16em] text-faint">
           {variant === 'customer' ? 'Traveller' : 'Hosting'}
         </p>
         <ul className="flex flex-col gap-0.5">
@@ -92,14 +72,13 @@ export function DashboardShell({
                 <NavLink
                   to={n.to}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-body font-medium transition-colors ${
-                    isActive ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'
-                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={navRowClass(isActive)}
                 >
-                  <Icon name={n.icon} size={19} className={isActive ? 'text-white' : 'text-muted'} />
+                  <NavIconTile icon={n.icon} active={isActive} />
                   <span className="flex-1">{n.label}</span>
                   {n.badge && (
-                    <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-label font-semibold ${isActive ? 'bg-white/20 text-white' : 'bg-accent text-white'}`}>
+                    <span className="grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-label font-semibold text-white">
                       {n.badge}
                     </span>
                   )}
@@ -134,7 +113,7 @@ export function DashboardShell({
 
         {!(isHost && variant === 'customer') && (
         <div className="mt-4 px-1">
-          <div className="rounded-2xl border border-line bg-panel/60 p-4">
+          <div className="rounded-2xl border border-accent/15 bg-gradient-to-br from-accent-050 to-panel/60 p-4">
             <p className="text-detail font-medium text-ink">
               {variant === 'customer' ? 'Earn with your car' : 'Grow your fleet'}
             </p>
@@ -152,7 +131,7 @@ export function DashboardShell({
       </nav>
 
       <div className="border-t border-line p-3">
-        <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+        <div className="flex items-center gap-3 rounded-2xl bg-panel/60 px-2.5 py-2">
           {displayAvatar ? (
             <Img
               src={displayAvatar}
