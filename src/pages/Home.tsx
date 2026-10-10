@@ -238,6 +238,10 @@ function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: 
   return <div ref={ref} style={seen ? undefined : { minHeight }}>{seen ? children : null}</div>;
 }
 
+// Headline figures of the community orbit — edit here.
+const COMMUNITY_MEMBERS = '264';
+const COMMUNITY_DOWNLOADS = '97K+';
+
 const memoji = (n: number) => `https://raw.githubusercontent.com/alohe/memojis/main/png/memo_${n}.png`;
 
 export default function Home() {
@@ -294,9 +298,9 @@ export default function Home() {
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
     const stats: OrbitStat[] = [
-      { value: String(allCars?.length ?? 0), label: t('Cars') },
+      { value: COMMUNITY_MEMBERS, label: t('Members') },
       { value: String(catalogue.cityNames.length), label: t('Cities') },
-      { value: '4', label: t('Languages') },
+      { value: COMMUNITY_DOWNLOADS, label: t('Downloads') },
     ];
     const tags: OrbitTag[] = [
       { icon: <Users strokeWidth={2} />, label: t('Signal community'), onClick: () => navigate('/signal/community') },
