@@ -317,7 +317,6 @@ export function BottomNav() {
     [pathname, hash],
   );
   const signalActive = activeIndex === SIGNAL_INDEX;
-  const normalActiveIndex = signalActive ? -1 : activeIndex;
 
   const navRef = useRef<HTMLElement>(null);
   const { width: measuredNavWidth, height: measuredNavHeight } = useMeasuredSize(navRef);
@@ -450,15 +449,6 @@ export function BottomNav() {
           home indicator by `<nav>`'s own `bottom` offset, so padding the
           content as well would only add dead space under the icons. */}
       <div className="relative grid grid-cols-5">
-        <span
-          className="pointer-events-none absolute bottom-1 h-1 w-1 -translate-x-1/2 rounded-full bg-accent transition-all duration-300"
-          style={{
-            left: normalActiveIndex >= 0 ? `${(normalActiveIndex + 0.5) * (100 / items.length)}%` : '-100%',
-            opacity: normalActiveIndex >= 0 ? 1 : 0,
-            transitionTimingFunction: EASE,
-          }}
-        />
-
         {items.map((it, i) => {
           const active = i === activeIndex;
           const isSignal = i === SIGNAL_INDEX;
@@ -543,8 +533,8 @@ export function BottomNav() {
               aria-label={it.label}
               aria-current={active ? 'page' : undefined}
             >
-              {/* No names under the icons: the icon alone says where it goes, the active one gets a soft green disc. */}
-              <span className={`relative grid h-12 w-12 place-items-center rounded-full transition-[background-color,transform] duration-300 active:scale-90 ${active ? 'bg-accent/12 shadow-[inset_0_0_0_1px_rgba(0,212,71,0.18)]' : ''}`}>
+              {/* No names under the icons: the icon alone says where it goes; the active one turns green. */}
+              <span className={`relative grid h-12 w-12 place-items-center transition-opacity duration-150 active:opacity-50`}>
                 {it.label === 'Profile' && profile?.avatar_url ? (
                   // Your own photo instead of the generic person icon.
                   <img
