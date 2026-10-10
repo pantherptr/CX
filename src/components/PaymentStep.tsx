@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
 import { eur } from '../lib/format';
@@ -31,6 +31,8 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
   const stripe = useStripe();
   const elements = useElements();
   const [localError, setLocalError] = useState<string | null>(null);
+  // Apple Pay / Google Pay buttons — shown only when this device + browser can actually use one.
+  const [hasWallet, setHasWallet] = useState(false);
 
   const handlePay = async () => {
     if (!stripe || !elements || submitting) return;
@@ -67,7 +69,18 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
           <span className="text-detail text-muted">You pay today</span>
           <span className="font-display text-lead font-semibold text-ink">{amount != null ? eur(amount) : '—'}</span>
         </div>
-        <PaymentElement />
+        {/* Apple Pay / Google Pay: one tap with the card already in the wallet. Hidden when unavailable. */}
+        <div className={hasWallet ? 'mb-5' : 'hidden'}>
+          <ExpressCheckoutElement
+            onReady={({ availablePaymentMethods }) => setHasWallet(Boolean(availablePaymentMethods && (availablePaymentMethods.applePay || availablePaymentMethods.googlePay)))}
+            onConfirm={() => void handlePay()}
+            options={{ buttonType: { applePay: 'book', googlePay: 'book' }, buttonHeight: 50, layout: { maxColumns: 1, maxRows: 2 } }}
+          />
+          <div className="mt-5 flex items-center gap-3 text-caption font-medium text-faint">
+            <span className="h-px flex-1 bg-line" /> or pay by card <span className="h-px flex-1 bg-line" />
+          </div>
+        </div>
+        <PaymentElement options={{ wallets: { applePay: 'never', googlePay: 'never' } }} />
         {deposit != null && deposit > 0 && (
           <p className="mt-5 flex items-start gap-2 rounded-xl bg-panel px-3.5 py-2.5 text-detail text-muted">
             <Icon name="shield" size={16} className="mt-0.5 shrink-0 text-accent" />
