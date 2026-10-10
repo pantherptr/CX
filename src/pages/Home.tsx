@@ -239,7 +239,7 @@ function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: 
 }
 
 // Headline figures of the community orbit — edit here.
-const COMMUNITY_MEMBERS = '97';
+const COMMUNITY_TEAM = '97';
 const COMMUNITY_HOSTS = '37+';
 const COMMUNITY_DOWNLOADS = '34K+';
 
@@ -299,7 +299,7 @@ export default function Home() {
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
     const stats: OrbitStat[] = [
-      { value: COMMUNITY_MEMBERS, label: t('Members') },
+      { value: COMMUNITY_TEAM, label: t('Team') },
       { value: COMMUNITY_HOSTS, label: t('Hosts') },
       { value: COMMUNITY_DOWNLOADS, label: t('Downloads') },
     ];
