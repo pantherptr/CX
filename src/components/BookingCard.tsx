@@ -94,11 +94,6 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
           <span className="text-[26px] font-semibold text-ink">{eur(car.pricePerDay)}</span>
           <span className="text-copy text-muted"> / day</span>
         </div>
-        <span className="inline-flex items-center gap-1 text-detail font-medium text-ink">
-          <Icon name="star" size={14} className="text-star" />
-          {car.rating.toFixed(2)}
-          <span className="font-normal text-muted">· {car.trips} trips</span>
-        </span>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-line-strong">

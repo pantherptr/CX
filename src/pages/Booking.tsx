@@ -837,9 +837,6 @@ export default function Booking() {
               <div className="min-w-0">
                 <h3 className="truncate font-medium text-ink">{car.make} {car.model}</h3>
                 <p className="text-detail text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
-                <span className="mt-1 inline-flex items-center gap-1 text-caption text-muted">
-                  <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(2)} · {car.trips} trips
-                </span>
               </div>
             </div>
             <div className="border-t border-line px-4 py-3.5">
