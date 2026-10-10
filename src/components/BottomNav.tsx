@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
@@ -200,7 +199,6 @@ export function useBottomNavVisible() {
 // `false` to get the plain, always-open dock back.
 const DOCK_MORPH = true;
 const CIRCLE = 60; // px, the folded dock
-const MORPH_SPRING = { type: 'spring' as const, stiffness: 240, damping: 27, mass: 0.95 };
 const SIGNAL_ROUTE = /^\/signal(\/|$)/;
 const SHRINK_AFTER = 56; // px of sustained downward scrolling before it folds
 const RESTORE_AFTER = 22; // px of upward scrolling is enough to open it again
@@ -208,8 +206,11 @@ const TOP_GUARD = 64; // always open near the very top
 const MAX_STEP = 220; // a single-frame jump this large is a layout shift (browser toolbar), not a scroll
 const COOLDOWN_MS = 420; // never flip twice in quick succession
 
-function useDockFold(active: boolean, pathname: string): { folded: boolean; open: () => void } {
-  const [folded, setFolded] = useState(false);
+/** Folds / opens the dock WITHOUT a React render: the decision is written straight onto the nav as
+ *  `data-folded`, and every movement is a CSS transition on transform/opacity (see `.dock-*` in
+ *  index.css) that the compositor runs on its own — nothing on the JS thread to stutter while the
+ *  page is scrolling. */
+function useDockFold(active: boolean, pathname: string, navRef: React.RefObject<HTMLElement | null>) {
   const foldedRef = useRef(false);
   const lastY = useRef(0);
   const accum = useRef(0);
@@ -221,8 +222,9 @@ function useDockFold(active: boolean, pathname: string): { folded: boolean; open
     if (foldedRef.current === next) return;
     foldedRef.current = next;
     lastFlip.current = performance.now();
-    setFolded(next);
-  }, []);
+    const el = navRef.current;
+    if (el) el.dataset.folded = next ? 'true' : 'false';
+  }, [navRef]);
 
   const open = useCallback(() => {
     accum.current = 0;
@@ -263,7 +265,7 @@ function useDockFold(active: boolean, pathname: string): { folded: boolean; open
     return () => window.removeEventListener('scroll', onScroll);
   }, [active, set]);
 
-  return { folded, open };
+  return { foldedRef, open };
 }
 
 export function BottomNav() {
@@ -272,9 +274,8 @@ export function BottomNav() {
   const { session, profile } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
-  const reduceMotion = useReducedMotion();
-  const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname);
-  const folded = fold.folded;
+  const navRef = useRef<HTMLElement>(null);
+  const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname, navRef);
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge
   // here too the moment the pathname lands on /signal, rather than
@@ -290,7 +291,6 @@ export function BottomNav() {
   );
   const signalActive = activeIndex === SIGNAL_INDEX;
 
-  const navRef = useRef<HTMLElement>(null);
   const { width: measuredNavWidth, height: measuredNavHeight } = useMeasuredSize(navRef);
   const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
   const navWidth = measuredNavWidth || FALLBACK_NAV_WIDTH;
@@ -321,7 +321,8 @@ export function BottomNav() {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 h-0 lg:hidden">
     <nav
       ref={navRef}
-      className="absolute"
+      data-folded="false"
+      className="dock absolute"
       style={{
         left: BAR_SIDE_GAP,
         right: BAR_SIDE_GAP,
@@ -345,7 +346,6 @@ export function BottomNav() {
         // The wrapper is pointer-events:none so the page under it stays usable;
         // the bar itself must take taps.
         pointerEvents: 'auto',
-        transition: `transform 280ms ${EASE}`,
       }}
       aria-label="Primary"
     >
@@ -381,21 +381,14 @@ export function BottomNav() {
           B — the capsule with the raised curve, shown whenever the dock is open — narrows toward
           the middle and fades as it folds; A — the small ringed circle that holds the S — grows
           in from the middle at the same time. Opening is the same thing played backwards. */}
-      <motion.div
-        className="dock-surface pointer-events-none absolute inset-x-0 bottom-0"
-        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)', transformOrigin: '50% 100%', willChange: 'transform, opacity' }}
-        initial={false}
-        animate={{ opacity: folded ? 0 : 1, scaleX: folded ? 0.3 : 1 }}
-        // the surface that is arriving fades in first; the one leaving is removed only after that, so the dock never dips or blinks
-        transition={reduceMotion ? { duration: 0 } : { scaleX: MORPH_SPRING, opacity: folded ? { duration: 0.01, delay: 0.16 } : { duration: 0.16, delay: 0 } }}
+      <div
+        className="dock-surface dock-b pointer-events-none absolute inset-x-0 bottom-0"
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
       />
-      <motion.div
+      <div
         aria-hidden="true"
-        className="dock-surface pointer-events-none absolute rounded-full border border-accent-bright/60 shadow-[0_0_20px_-4px_rgba(0,212,71,0.55)]"
-        style={{ width: CIRCLE, height: CIRCLE, left: '50%', x: '-50%', bottom: (navHeight - CIRCLE) / 2, willChange: 'transform, opacity' }}
-        initial={false}
-        animate={{ opacity: folded ? 1 : 0, scale: folded ? 1 : 0.4 }}
-        transition={reduceMotion ? { duration: 0 } : { scale: MORPH_SPRING, opacity: folded ? { duration: 0.16, delay: 0 } : { duration: 0.01, delay: 0.16 } }}
+        className="dock-surface dock-a pointer-events-none absolute rounded-full border border-accent-bright/60 shadow-[0_0_20px_-4px_rgba(0,212,71,0.55)]"
+        style={{ width: CIRCLE, height: CIRCLE, left: '50%', marginLeft: -CIRCLE / 2, bottom: (navHeight - CIRCLE) / 2 }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
@@ -405,13 +398,7 @@ export function BottomNav() {
           times; it turns into the bright green active indicator on Signal.
           A comfortable, deliberate gap (never touching the logo) is built
           into HILL_RISE/the logo's own translateY below. */}
-      <motion.div
-        className="pointer-events-none absolute inset-x-0"
-        style={{ top: -HILL_RISE, height: HILL_RISE, transformOrigin: '50% 100%' }}
-        initial={false}
-        animate={{ opacity: folded ? 0 : 1, y: folded ? HILL_RISE : 0 }}
-        transition={reduceMotion ? { duration: 0 } : folded ? { duration: 0.12 } : { duration: 0.2, delay: 0.16 }}
-      >
+      <div className="dock-rim pointer-events-none absolute inset-x-0" style={{ top: -HILL_RISE, height: HILL_RISE }}>
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
         style={{ top: 0, width: `${HILL_WIDTH_FRACTION * 100}%`, height: HILL_RISE }}
@@ -435,7 +422,7 @@ export function BottomNav() {
           }}
         />
       </svg>
-      </motion.div>
+      </div>
 
       {/* Sliding active indicator for the four normal tabs — a small
           solid pill baseline-underline. Signal never uses this: its own
@@ -456,7 +443,7 @@ export function BottomNav() {
                 to={it.to}
                 onClick={(e) => {
                   // Folded: the S is the whole dock — a tap opens it again.
-                  if (folded) { e.preventDefault(); fold.open(); haptics.tick(); return; }
+                  if (fold.foldedRef.current) { e.preventDefault(); fold.open(); haptics.tick(); return; }
                   onTabClick(e, active && pathname === '/signal');
                 }}
                 className="pressable relative z-10 flex flex-col items-center justify-center py-[18px]"
@@ -464,7 +451,7 @@ export function BottomNav() {
                 aria-current={active ? 'page' : undefined}
               >
                 <span
-                  className="relative transition-all duration-[460ms]"
+                  className="dock-logo relative"
                   style={{
                     // Fixed at the same 23px the normal icons reserve, so
                     // Signal's own label sits on the identical baseline as
@@ -486,8 +473,8 @@ export function BottomNav() {
                     // centered in this slot without a manual nudge.
                     width: 23,
                     height: 23,
-                    transform: folded ? 'translate(0, 0) scale(1.22)' : `translate(0, ${active ? -11 : -8}px) scale(${active ? 1.08 : 1})`,
-                    transitionTimingFunction: EASE,
+                    ['--ly' as string]: `${active ? -11 : -8}px`,
+                    ['--ls' as string]: active ? 1.08 : 1,
                   }}
                 >
                   {/* Deliberately NOTHING else lives in this box besides
@@ -529,33 +516,18 @@ export function BottomNav() {
               key={it.label}
               to={it.to}
               onClick={(e) => onTabClick(e, active)}
-              className={`relative z-10 flex items-center justify-center py-2.5 ${folded ? 'pointer-events-none' : ''}`}
+              className="dock-link relative z-10 flex items-center justify-center py-2.5"
               aria-label={it.label}
-              tabIndex={folded ? -1 : undefined}
               aria-current={active ? 'page' : undefined}
             >
               {/* No names under the icons: the icon alone says where it goes; the active one turns green. */}
-<motion.span
-                className="relative grid h-12 w-12 place-items-center transition-opacity duration-150 active:opacity-50"
-                initial={false}
-                animate={{
-                  // Folded: every tab slides toward the middle while it fades out — it is gone
-                  // before it gets there, so nothing is left sitting on top of the S.
-                  x: folded ? navWidth * (0.5 - (i + 0.5) / items.length) : 0,
-                  scale: folded ? 0.55 : 1,
-                  opacity: folded ? 0 : 1,
+<span
+                className="dock-tab relative grid h-12 w-12 place-items-center active:opacity-50"
+                style={{
+                  // Folded: every tab slides toward the middle while it fades out (see .dock-tab).
+                  ['--dx' as string]: `${navWidth * (0.5 - (i + 0.5) / items.length)}px`,
+                  ['--dd' as string]: Math.abs(i - SIGNAL_INDEX) === 1 ? '20ms' : '0ms',
                 }}
-                transition={
-                  reduceMotion
-                    ? { duration: 0 }
-                    : {
-                        x: { ...MORPH_SPRING, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.02 : 0 },
-                        scale: { ...MORPH_SPRING, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.02 : 0 },
-                        opacity: folded
-                          ? { duration: 0.14, ease: 'easeIn' }
-                          : { duration: 0.2, delay: Math.abs(i - SIGNAL_INDEX) === 1 ? 0.06 : 0.1 },
-                      }
-                }
               >
                 {it.label === 'Profile' && profile?.avatar_url ? (
                   // Your own photo instead of the generic person icon.
@@ -580,7 +552,7 @@ export function BottomNav() {
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
-              </motion.span>
+              </span>
             </Link>
           );
         })}

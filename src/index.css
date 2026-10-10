@@ -1758,6 +1758,27 @@
     background: rgba(255, 255, 255, 0.95);
   }
 
+  /* ---- The dock fold (BottomNav): only transform + opacity transitions, driven by one
+     `data-folded` attribute on the nav, so they run on the compositor and never wait for
+     JavaScript (no stutter while the page scrolls). The arriving surface fades in first, the
+     leaving one is removed only afterwards, so the dock never dips or blinks. */
+  .dock { --dock-ease: cubic-bezier(0.22, 1, 0.36, 1); }
+  .dock-b, .dock-a, .dock-rim, .dock-tab, .dock-logo { backface-visibility: hidden; will-change: transform, opacity; }
+  .dock-b { transform-origin: 50% 100%; opacity: 1; transition: opacity 0.16s linear, transform 0.42s var(--dock-ease); }
+  .dock-a { opacity: 0; transform: scale(0.4); transition: opacity 0.01s linear 0.16s, transform 0.42s var(--dock-ease); }
+  .dock-rim { opacity: 1; transition: opacity 0.2s linear 0.16s, transform 0.42s var(--dock-ease); }
+  .dock-tab { transition: transform 0.42s var(--dock-ease) var(--dd, 0ms), opacity 0.2s linear calc(var(--dd, 0ms) + 0.08s), color 0.3s; }
+  .dock-logo { transform: translate(0, var(--ly, -8px)) scale(var(--ls, 1)); transition: transform 0.46s var(--dock-ease); }
+  .dock[data-folded='true'] .dock-b { opacity: 0; transform: scaleX(0.3); transition: opacity 0.01s linear 0.16s, transform 0.42s var(--dock-ease); }
+  .dock[data-folded='true'] .dock-a { opacity: 1; transform: scale(1); transition: opacity 0.16s linear, transform 0.42s var(--dock-ease); }
+  .dock[data-folded='true'] .dock-rim { opacity: 0; transform: translateY(12px); transition: opacity 0.12s linear, transform 0.3s var(--dock-ease); }
+  .dock[data-folded='true'] .dock-tab { opacity: 0; transform: translate3d(var(--dx, 0px), 0, 0) scale(0.55); transition: transform 0.42s var(--dock-ease) var(--dd, 0ms), opacity 0.14s ease-in; }
+  .dock[data-folded='true'] .dock-logo { transform: translate(0, 0) scale(1.22); }
+  .dock[data-folded='true'] .dock-link { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .dock-b, .dock-a, .dock-rim, .dock-tab, .dock-logo { transition: none !important; }
+  }
+
   /* Dark frosted surface — the mobile bottom nav's own chrome. Deliberately
      near-black rather than the light `.glass` so its white/green icon
      language (see BottomNav) always has the contrast it needs regardless
