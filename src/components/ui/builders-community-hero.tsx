@@ -61,6 +61,8 @@ export interface OrbitTag {
 
 export interface CommunityOrbitProps {
   items: OrbitItem[];
+  /** What to show on a phone instead (a narrower stage, fewer chips). Falls back to `items`. */
+  compactItems?: OrbitItem[];
   stats: OrbitStat[];
   headline: ReactNode;
   tags?: OrbitTag[];
@@ -68,25 +70,33 @@ export interface CommunityOrbitProps {
   className?: string;
 }
 
-const STAGE_W = 1200;
-const STAGE_H = 490;
-const CENTER = { x: 600, y: 620 };
-const RADIUS: Record<OrbitRing, number> = { outer: 492, inner: 404 };
+interface Geometry {
+  w: number;
+  h: number;
+  center: { x: number; y: number };
+  radius: Record<OrbitRing, number>;
+  statsTop: number;
+}
 
-function positionOnRing(ring: OrbitRing, angle: number): CSSProperties {
+const WIDE: Geometry = { w: 1200, h: 490, center: { x: 600, y: 620 }, radius: { outer: 492, inner: 404 }, statsTop: 393 };
+// A phone gets its own, narrower stage (and its own set of items) so nothing is shrunk to illegibility.
+const COMPACT: Geometry = { w: 420, h: 252, center: { x: 210, y: 262 }, radius: { outer: 205, inner: 150 }, statsTop: 172 };
+const COMPACT_BELOW = 700;
+
+function positionOnRing(g: Geometry, ring: OrbitRing, angle: number): CSSProperties {
   const rad = (angle * Math.PI) / 180;
-  const r = RADIUS[ring];
+  const r = g.radius[ring];
   return {
-    left: CENTER.x + r * Math.cos(rad),
-    top: CENTER.y - r * Math.sin(rad),
+    left: g.center.x + r * Math.cos(rad),
+    top: g.center.y - r * Math.sin(rad),
   };
 }
 
 // The arc runs from the left, over the top, to the right.
-function arcPath(r: number) {
-  const dy = CENTER.y - STAGE_H;
+function arcPath(g: Geometry, r: number) {
+  const dy = g.center.y - g.h;
   const dx = Math.sqrt(r * r - dy * dy);
-  return `M ${CENTER.x - dx} ${STAGE_H} A ${r} ${r} 0 0 1 ${CENTER.x + dx} ${STAGE_H}`;
+  return `M ${g.center.x - dx} ${g.h} A ${r} ${r} 0 0 1 ${g.center.x + dx} ${g.h}`;
 }
 
 function OrbitAvatar({ src, alt, color, size = 72 }: OrbitAvatarItem) {
@@ -205,6 +215,7 @@ const reveal = {
  *  Laid out on a fixed 1200px stage that scales down to fit its frame. */
 export default function CommunityOrbit({
   items,
+  compactItems,
   stats,
   headline,
   tags = [],
@@ -213,12 +224,20 @@ export default function CommunityOrbit({
 }: CommunityOrbitProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [compact, setCompact] = useState(false);
+  const g = compact ? COMPACT : WIDE;
+  const shown = compact && compactItems ? compactItems : items;
 
   // Fixed size to start with, then shrunk to fit the frame.
   useLayoutEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    const measure = () => setScale(Math.min(1, Math.max(minScale, frame.clientWidth / STAGE_W)));
+    const measure = () => {
+      const isCompact = frame.clientWidth < COMPACT_BELOW;
+      const geo = isCompact ? COMPACT : WIDE;
+      setCompact(isCompact);
+      setScale(Math.min(1, Math.max(isCompact ? 0.5 : minScale, frame.clientWidth / geo.w)));
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(frame);
@@ -230,22 +249,22 @@ export default function CommunityOrbit({
       <div
         ref={frameRef}
         className="relative mx-auto w-full max-w-[1200px] overflow-hidden"
-        style={{ height: STAGE_H * scale }}
+        style={{ height: g.h * scale }}
       >
         <div
           className="absolute left-1/2 top-0"
           style={{
-            width: STAGE_W,
-            height: STAGE_H,
+            width: g.w,
+            height: g.h,
             transform: `translateX(-50%) scale(${scale})`,
             transformOrigin: 'top center',
           }}
         >
           <svg
             className="pointer-events-none absolute inset-0"
-            width={STAGE_W}
-            height={STAGE_H}
-            viewBox={`0 0 ${STAGE_W} ${STAGE_H}`}
+            width={g.w}
+            height={g.h}
+            viewBox={`0 0 ${g.w} ${g.h}`}
             fill="none"
             style={{
               maskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)',
@@ -253,7 +272,7 @@ export default function CommunityOrbit({
             }}
           >
             <motion.path
-              d={arcPath(RADIUS.outer)}
+              d={arcPath(g, g.radius.outer)}
               className="stroke-[#e4e4e4]"
               strokeWidth={2}
               initial={{ pathLength: 0 }}
@@ -261,7 +280,7 @@ export default function CommunityOrbit({
               transition={{ duration: 1.4, ease: 'easeOut' }}
             />
             <motion.path
-              d={arcPath(RADIUS.inner)}
+              d={arcPath(g, g.radius.inner)}
               className="stroke-[#dcdcdc]"
               strokeWidth={3}
               initial={{ pathLength: 0 }}
@@ -270,11 +289,11 @@ export default function CommunityOrbit({
             />
           </svg>
 
-          {items.map((item, i) => (
+          {shown.map((item, i) => (
             <motion.div
-              key={i}
+              key={`${compact}-${i}`}
               className="absolute -translate-x-1/2 -translate-y-1/2"
-              style={positionOnRing(item.ring, item.angle)}
+              style={positionOnRing(g, item.ring, item.angle)}
               initial={{ opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.5 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
@@ -294,7 +313,7 @@ export default function CommunityOrbit({
             </motion.div>
           ))}
 
-          <div className="absolute left-1/2 top-[393px] grid -translate-x-1/2 auto-cols-fr grid-flow-col gap-7">
+          <div className={`absolute left-1/2 grid w-max -translate-x-1/2 auto-cols-fr grid-flow-col ${compact ? 'gap-6' : 'gap-7'}`} style={{ top: g.statsTop }}>
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}
@@ -304,7 +323,7 @@ export default function CommunityOrbit({
                 animate="show"
                 transition={{ duration: 0.6, delay: 0.9 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               >
-                <span className="text-[48px] font-medium leading-none tracking-[-0.02em] text-[#0b2921] tabular-nums">
+                <span className={`${compact ? 'text-[40px]' : 'text-[48px]'} font-medium leading-none tracking-[-0.02em] text-[#0b2921] tabular-nums`}>
                   <CountUp value={s.value} delay={0.9 + i * 0.12} />
                 </span>
                 <span className="mt-[15px] text-[14px] leading-none text-[#5e6966]">{s.label}</span>
@@ -315,7 +334,7 @@ export default function CommunityOrbit({
       </div>
 
       <motion.h2
-        className="mx-auto mt-2 max-w-[600px] text-center font-display text-[26px] font-[450] leading-[1.18] tracking-[-0.01em] sm:text-[34px]"
+        className="mx-auto mt-5 max-w-[600px] sm:mt-2 text-center font-display text-[26px] font-[450] leading-[1.18] tracking-[-0.01em] sm:text-[34px]"
         variants={reveal}
         initial="hidden"
         animate="show"

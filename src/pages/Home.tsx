@@ -298,6 +298,14 @@ export default function Home() {
       { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🔑' },
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
+    const compactItems: OrbitItem[] = [
+      { kind: 'avatar', ring: 'outer', angle: 148, src: memoji(9), alt: '', color: '#c4bceb', size: 56 },
+      { kind: 'card', ring: 'outer', angle: 122, emoji: '🚗' },
+      { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
+      { kind: 'pill', ring: 'outer', angle: 58, icon: '⭐', label: t('Top rated') },
+      { kind: 'avatar', ring: 'outer', angle: 32, src: memoji(19), alt: '', color: '#ffdcb6', size: 56 },
+      { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
+    ];
     const stats: OrbitStat[] = [
       { value: COMMUNITY_TEAM, label: t('Team') },
       { value: COMMUNITY_HOSTS, label: t('Hosts') },
@@ -309,7 +317,7 @@ export default function Home() {
       { icon: <KeyRound strokeWidth={2} />, label: t('Become a host'), onClick: () => navigate('/list-your-car') },
       { icon: <Compass strokeWidth={2} />, label: t('Roadbook'), onClick: () => navigate('/signal/community') },
     ];
-    return { items, stats, tags };
+    return { items, compactItems, stats, tags };
   }, [allCars, navigate, t]);
 
   return (
@@ -793,6 +801,7 @@ export default function Home() {
         <WhenVisible minHeight={560}>
         <CommunityOrbit
           items={orbit.items}
+          compactItems={orbit.compactItems}
           stats={orbit.stats}
           tags={orbit.tags}
           headline={<>{t('Where drivers and hosts')}<br className="hidden sm:block" /> {t('share the road')}</>}
