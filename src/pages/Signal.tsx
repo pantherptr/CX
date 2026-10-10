@@ -320,25 +320,67 @@ export default function Signal() {
 
       <div className="mx-auto flex w-full max-w-[1180px] flex-1 items-start gap-8 lg:px-8 lg:py-6">
       {isDesktop && (
-        <aside className="sticky top-20 w-56 shrink-0">
-          <nav aria-label="SIGNAL" className="flex flex-col gap-0.5">
-            {navItems.map((it) => (
-              <div key={it.label}>
-                <button
-                  type="button"
-                  onClick={it.onSelect}
-                  aria-current={it.active ? 'page' : undefined}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body transition-colors hover:bg-panel ${
-                    it.active ? 'bg-panel font-semibold text-ink' : 'font-medium text-ink-soft'
-                  }`}
-                >
-                  <Icon name={it.icon} size={18} />
-                  {it.label}
-                </button>
-                {it.groupEnd && <div className="mx-3 my-2 border-t border-line" />}
-              </div>
-            ))}
-          </nav>
+        <aside className="sticky top-20 w-60 shrink-0">
+          {(() => {
+            // Same layout as the phone's S menu: your card, the two spaces side by side, then the rest.
+            const firstEnd = navItems.findIndex((i) => i.groupEnd);
+            const spaces = firstEnd >= 0 ? navItems.slice(0, firstEnd + 1) : [];
+            const afterSpaces = firstEnd >= 0 ? navItems.slice(firstEnd + 1) : navItems;
+            const me = afterSpaces.find((i) => i.icon === 'user');
+            const rest = afterSpaces.filter((i) => i !== me);
+            return (
+              <nav aria-label="SIGNAL" className="rounded-3xl border border-line bg-surface p-2 shadow-hair">
+                {me && (
+                  <button
+                    type="button"
+                    onClick={me.onSelect}
+                    className="pressable flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors hover:bg-panel"
+                  >
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={20} /></span>
+                    )}
+                    <span className="min-w-0">
+                      <span translate="no" className="block truncate font-display text-[15px] font-semibold leading-tight text-ink">{profile?.full_name || me.label}</span>
+                      <span className="mt-0.5 block truncate text-caption text-muted">{profile?.username ? `@${profile.username}` : me.label}</span>
+                    </span>
+                    <Icon name="chevronRight" size={16} className="ml-auto shrink-0 text-faint" />
+                  </button>
+                )}
+                {spaces.length > 0 && (
+                  <div className="mx-1 mb-1.5 mt-1 grid gap-1 rounded-2xl bg-panel p-1" style={{ gridTemplateColumns: `repeat(${spaces.length}, minmax(0, 1fr))` }}>
+                    {spaces.map((it) => (
+                      <button
+                        key={it.label}
+                        type="button"
+                        onClick={it.onSelect}
+                        aria-current={it.active ? 'page' : undefined}
+                        className={`pressable flex min-h-10 items-center justify-center gap-1.5 rounded-xl text-detail font-semibold transition-[background-color,color,box-shadow] ${
+                          it.active ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'
+                        }`}
+                      >
+                        <Icon name={it.icon} size={15} />
+                        {it.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="my-1 border-t border-line" />
+                {rest.map((it) => (
+                  <button
+                    key={it.label}
+                    type="button"
+                    onClick={it.onSelect}
+                    className="pressable flex min-h-12 w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-panel"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-panel text-ink-soft"><Icon name={it.icon} size={17} /></span>
+                    {it.label}
+                  </button>
+                ))}
+              </nav>
+            );
+          })()}
         </aside>
       )}
       <main className="w-full min-w-0 max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4 lg:max-w-2xl lg:flex-none lg:px-0 lg:py-0">
