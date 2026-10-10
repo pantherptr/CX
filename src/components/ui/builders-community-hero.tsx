@@ -78,9 +78,9 @@ interface Geometry {
   statsTop: number;
 }
 
-const WIDE: Geometry = { w: 1200, h: 490, center: { x: 600, y: 620 }, radius: { outer: 492, inner: 404 }, statsTop: 393 };
+const WIDE: Geometry = { w: 1200, h: 490, center: { x: 600, y: 620 }, radius: { outer: 492, inner: 404 }, statsTop: 400 };
 // A phone gets its own, narrower stage (and its own set of items) so nothing is shrunk to illegibility.
-const COMPACT: Geometry = { w: 420, h: 252, center: { x: 210, y: 262 }, radius: { outer: 205, inner: 150 }, statsTop: 172 };
+const COMPACT: Geometry = { w: 420, h: 252, center: { x: 210, y: 262 }, radius: { outer: 205, inner: 150 }, statsTop: 192 };
 const COMPACT_BELOW = 700;
 
 function positionOnRing(g: Geometry, ring: OrbitRing, angle: number): CSSProperties {
@@ -313,7 +313,7 @@ export default function CommunityOrbit({
             </motion.div>
           ))}
 
-          <div className={`absolute left-1/2 grid w-max -translate-x-1/2 auto-cols-fr grid-flow-col ${compact ? 'gap-6' : 'gap-7'}`} style={{ top: g.statsTop }}>
+          <div className={`absolute left-1/2 grid w-max -translate-x-1/2 auto-cols-fr grid-flow-col ${compact ? 'gap-7' : 'gap-7'}`} style={{ top: g.statsTop }}>
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}
@@ -323,10 +323,10 @@ export default function CommunityOrbit({
                 animate="show"
                 transition={{ duration: 0.6, delay: 0.9 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               >
-                <span className={`${compact ? 'text-[40px]' : 'text-[48px]'} font-medium leading-none tracking-[-0.02em] text-[#0b2921] tabular-nums`}>
+                <span className={`${compact ? 'text-[26px]' : 'text-[40px]'} font-medium leading-none tracking-[-0.02em] text-[#0b2921] tabular-nums`}>
                   <CountUp value={s.value} delay={0.9 + i * 0.12} />
                 </span>
-                <span className="mt-[15px] text-[14px] leading-none text-[#5e6966]">{s.label}</span>
+                <span className={`${compact ? 'mt-2 text-[12px]' : 'mt-[15px] text-[14px]'} leading-none text-[#5e6966]`}>{s.label}</span>
               </motion.div>
             ))}
           </div>
