@@ -241,7 +241,7 @@ function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: 
 // Headline figures of the community orbit — edit here.
 const COMMUNITY_MEMBERS = '264';
 const COMMUNITY_HOSTS = '37+';
-const COMMUNITY_DOWNLOADS = '128+';
+const COMMUNITY_DOWNLOADS = '34K+';
 
 const memoji = (n: number) => `https://raw.githubusercontent.com/alohe/memojis/main/png/memo_${n}.png`;
 
