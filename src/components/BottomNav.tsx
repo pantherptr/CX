@@ -287,7 +287,6 @@ export function BottomNav() {
   const reduceMotion = useReducedMotion();
   const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname);
   const folded = fold.folded;
-  const morph = reduceMotion ? { duration: 0 } : MORPH_SPRING;
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge
   // here too the moment the pathname lands on /signal, rather than
@@ -392,22 +391,33 @@ export function BottomNav() {
           edges too), a real regression. The bump's own glow lives purely
           on the rim stroke below, which already traces just the bump's
           own contour. */}
+      {/* The dock's glass comes in two pieces that never fight each other:
+          B — the capsule with the raised curve (the clip-path shape), shown whenever the dock is
+          open; and A — a plain rounded capsule that is the only thing visible while the dock
+          morphs, and that IS the circle when it is folded. A's real width/height animate, so
+          nothing is ever stretched or squashed: it just narrows into the circle and widens back,
+          and B fades in once A has reached full width (and out the instant folding starts). */}
       <motion.div
         className="glass pointer-events-none absolute inset-x-0 bottom-0"
-        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)', transformOrigin: '50% 100%' }}
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
         initial={false}
-        animate={{ scaleX: folded ? CIRCLE / navWidth : 1, opacity: folded ? 0 : 1 }}
-        transition={morph}
+        animate={{ opacity: folded ? 0 : 1 }}
+        transition={reduceMotion ? { duration: 0 } : folded ? { duration: 0.08 } : { duration: 0.16, delay: 0.14 }}
       />
-
-      {/* The folded dock: one circle holding only the S, ringed in the same green as the curve. */}
       <motion.div
         aria-hidden="true"
-        className="glass pointer-events-none absolute bottom-1 rounded-full border border-accent-bright/60 shadow-[0_0_20px_-4px_rgba(0,212,71,0.55)]"
-        style={{ width: CIRCLE, height: CIRCLE, left: '50%', x: '-50%', transformOrigin: '50% 50%' }}
+        className="glass pointer-events-none absolute rounded-full border"
+        style={{ left: '50%', x: '-50%' }}
         initial={false}
-        animate={{ scale: folded ? 1 : 0.5, opacity: folded ? 1 : 0 }}
-        transition={morph}
+        animate={{
+          width: folded ? CIRCLE : navWidth,
+          height: folded ? CIRCLE : navHeight,
+          bottom: folded ? (navHeight - CIRCLE) / 2 : 0,
+          opacity: folded ? 1 : 0,
+          borderColor: folded ? 'rgba(0,212,71,0.6)' : 'rgba(0,212,71,0)',
+          boxShadow: folded ? '0 0 20px -4px rgba(0,212,71,0.55)' : '0 0 0px 0px rgba(0,212,71,0)',
+        }}
+        transition={reduceMotion ? { duration: 0 } : { ...MORPH_SPRING, opacity: { duration: 0.12, delay: folded ? 0 : 0.22 } }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
@@ -421,8 +431,8 @@ export function BottomNav() {
         className="pointer-events-none absolute inset-x-0"
         style={{ top: -HILL_RISE, height: HILL_RISE, transformOrigin: '50% 100%' }}
         initial={false}
-        animate={{ opacity: folded ? 0 : 1, scaleX: folded ? 0.2 : 1, y: folded ? HILL_RISE : 0 }}
-        transition={morph}
+        animate={{ opacity: folded ? 0 : 1, y: folded ? HILL_RISE : 0 }}
+        transition={reduceMotion ? { duration: 0 } : folded ? { duration: 0.12 } : { duration: 0.2, delay: 0.16 }}
       >
       <svg
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 overflow-visible"
