@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
@@ -204,102 +204,9 @@ export function useBottomNavVisible() {
   return Boolean(session) && isMobile && !suppressed;
 }
 
-// SIGNAL's feed is media-heavy (video/image posts) and wants every extra
-// bit of vertical space while scrolling — the rest of the app's screens
-// weren't asked for this and keep the nav permanently visible, so the
-// scroll listener below only ever attaches on these routes.
-const SIGNAL_ROUTE = /^\/signal(\/|$)/;
-
-// Direction-aware, threshold-gated: scrolling down the feed shrinks the bar
-// to a compact icon dock (never hides it), scrolling back up restores it.
-// Small jitters never flip state — only a clear, sustained scroll does.
-// Passive listener + rAF throttle; React only re-renders when it flips.
-const SHRINK_AFTER = 36; // px of sustained downward scrolling before the dock shrinks
-const RESTORE_AFTER = 10; // px of upward scrolling is enough to bring it back
-const TOP_GUARD = 64; // always full size near the very top
-const MAX_STEP = 220; // a single-frame jump this large is a layout shift (toolbar), not a scroll
-const COOLDOWN_MS = 220; // never flip twice in quick succession
-
-function useSignalScrollCompact(active: boolean, pathname: string): { compact: boolean; expand: () => void } {
-  const [compact, setCompact] = useState(false);
-  const compactRef = useRef(false);
-  const lastY = useRef(0);
-  const accum = useRef(0);
-  const dir = useRef<1 | -1 | 0>(0);
-  const lastFlip = useRef(0);
-  const ticking = useRef(false);
-
-  const set = useCallback((next: boolean) => {
-    if (compactRef.current === next) return;
-    compactRef.current = next;
-    lastFlip.current = performance.now();
-    setCompact(next);
-  }, []);
-
-  const expand = useCallback(() => {
-    accum.current = 0;
-    dir.current = 0;
-    set(false);
-  }, [set]);
-
-  // A new screen always starts with the full bar.
-  useEffect(() => {
-    expand();
-  }, [pathname, expand]);
-
-  useEffect(() => {
-    if (!active) {
-      set(false);
-      return;
-    }
-    lastY.current = window.scrollY;
-    accum.current = 0;
-    dir.current = 0;
-
-    const onScroll = () => {
-      if (ticking.current) return;
-      ticking.current = true;
-      requestAnimationFrame(() => {
-        ticking.current = false;
-        const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        const rawY = window.scrollY;
-        // iOS rubber-bands past both ends of the page: that is not a scroll.
-        if (rawY < 0 || rawY > maxY) {
-          lastY.current = Math.min(Math.max(rawY, 0), maxY);
-          return;
-        }
-        const delta = rawY - lastY.current;
-        lastY.current = rawY;
-        if (rawY <= TOP_GUARD) {
-          accum.current = 0;
-          dir.current = 0;
-          set(false);
-          return;
-        }
-        if (Math.abs(delta) < 1 || Math.abs(delta) > MAX_STEP) return;
-        const nextDir = delta > 0 ? 1 : -1;
-        if (nextDir !== dir.current) {
-          dir.current = nextDir;
-          accum.current = 0;
-        }
-        accum.current += Math.abs(delta);
-        if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
-        if (nextDir === 1 && accum.current >= SHRINK_AFTER) set(true);
-        else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
-      });
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [active, set]);
-
-  return { compact, expand };
-}
-
 export function BottomNav() {
   const visible = useBottomNavVisible();
   const { pathname, hash } = useLocation();
-  const { compact, expand } = useSignalScrollCompact(visible && SIGNAL_ROUTE.test(pathname), pathname);
   const { session, profile } = useAuth();
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
@@ -347,7 +254,7 @@ export function BottomNav() {
     // The only fixed element is now this transparent full-screen wrapper;
     // the bar itself is absolutely positioned inside it, so there is no
     // coloured fixed element at the edge to sample.
-    <div className="pointer-events-none fixed inset-0 z-50 lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 h-0 lg:hidden">
     <nav
       ref={navRef}
       className="absolute"
@@ -363,11 +270,14 @@ export function BottomNav() {
         // Compact while scrolling down: the whole capsule scales down from its
         // bottom edge and drops a little, labels fade — pure transform and
         // opacity, so nothing in the feed reflows.
-        transform: compact ? `translateY(${10 - lift}px) scale(0.84)` : `translateY(${-lift}px)`,
-        transformOrigin: '50% 100%',
-        willChange: 'transform',
+        // The dock never reacts to scrolling: it is the same size and in the same place
+        // whichever way you scroll. Its own layer (translate3d) keeps Safari from repainting
+        // it with the page; the only thing that ever moves it is the browser's own toolbar
+        // (`lift`, settled once the toolbar stops).
+        transform: `translate3d(0, ${-lift}px, 0)`,
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
+        contain: 'layout style',
         // The wrapper is pointer-events:none so the page under it stays usable;
         // the bar itself must take taps.
         pointerEvents: 'auto',
@@ -375,7 +285,6 @@ export function BottomNav() {
       }}
       // Any touch on the small dock brings it back to full size; the tap
       // itself still goes through to whatever was touched.
-      onPointerDownCapture={() => { if (compact) expand(); }}
       aria-label="Primary"
     >
       {/* Reusable shape definition for the whole bar's one fill — see
