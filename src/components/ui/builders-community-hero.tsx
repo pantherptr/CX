@@ -18,6 +18,14 @@ export interface OrbitAvatarItem extends OrbitBase {
   size?: number;
 }
 
+/** A round chip holding any node — a brand mark, a logo. */
+export interface OrbitBadgeItem extends OrbitBase {
+  kind: 'badge';
+  content: ReactNode;
+  color: string;
+  size?: number;
+}
+
 export interface OrbitPillItem extends OrbitBase {
   kind: 'pill';
   /** Icon or emoji in front of the text. */
@@ -44,6 +52,7 @@ export interface OrbitCheckItem extends OrbitBase {
 
 export type OrbitItem =
   | OrbitAvatarItem
+  | OrbitBadgeItem
   | OrbitPillItem
   | OrbitCardItem
   | OrbitStatusItem
@@ -119,6 +128,19 @@ function OrbitAvatar({ src, alt, color, size = 72 }: OrbitAvatarItem) {
   );
 }
 
+function OrbitBadge({ content, color, size = 72 }: OrbitBadgeItem) {
+  return (
+    <div
+      className="rounded-full border border-black/[0.07] bg-white p-[3px] shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+      style={{ width: size, height: size }}
+    >
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full" style={{ backgroundColor: color }}>
+        {content}
+      </div>
+    </div>
+  );
+}
+
 function OrbitPill({ icon, label }: OrbitPillItem) {
   return (
     <div className="flex min-h-[27px] items-center gap-2 whitespace-nowrap rounded-full border border-black/[0.08] bg-white px-2.5 py-[5px] text-[12.5px] font-medium text-[#6c6c78] shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
@@ -163,6 +185,8 @@ function renderItem(item: OrbitItem) {
   switch (item.kind) {
     case 'avatar':
       return <OrbitAvatar {...item} />;
+    case 'badge':
+      return <OrbitBadge {...item} />;
     case 'pill':
       return <OrbitPill {...item} />;
     case 'card':

@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Car as CarIcon, Compass, ShieldCheck, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
+import { SignalS } from '../components/SignalLogo';
+import { SpotlightLogo } from '../components/SpotlightLogo';
 import { RespectGlyph } from '../components/RespectGlyph';
 import CommunityOrbit, { type OrbitItem, type OrbitStat, type OrbitTag } from '../components/ui/builders-community-hero';
 import { Icon, type IconName } from '../components/Icon';
-import { SignalS } from '../components/SignalLogo';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img } from '../components/motion';
@@ -244,7 +245,6 @@ const COMMUNITY_TEAM = '97';
 const COMMUNITY_HOSTS = '37+';
 const COMMUNITY_DOWNLOADS = '34K+';
 
-const memoji = (n: number) => `https://raw.githubusercontent.com/alohe/memojis/main/png/memo_${n}.png`;
 
 export default function Home() {
   const { t } = useLocale();
@@ -291,21 +291,21 @@ export default function Home() {
       { kind: 'card', ring: 'outer', angle: 112.6, icon: <RespectGlyph height={26} on /> },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
       { kind: 'pill', ring: 'outer', angle: 67.6, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
-      { kind: 'avatar', ring: 'outer', angle: 50.9, src: memoji(9), alt: '', color: '#c4bceb' },
+      { kind: 'badge', ring: 'outer', angle: 50.9, color: '#e8f6ed', content: <SignalS size={34} /> },
       { kind: 'pill', ring: 'outer', angle: 35.2, icon: <MessageSquareText size={13} strokeWidth={2} />, label: t('Respect') },
-      { kind: 'avatar', ring: 'inner', angle: 137.2, src: memoji(19), alt: '', color: '#ffdcb6' },
+      { kind: 'badge', ring: 'inner', angle: 137.2, color: '#f0f0f2', content: <img src="/brand/cx-bat.webp" alt="" draggable={false} className="h-[62%] w-[62%] select-none object-contain" /> },
       { kind: 'pill', ring: 'inner', angle: 116.6, icon: '🔥', label: t('Roadbook') },
-      { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
+      { kind: 'badge', ring: 'inner', angle: 90, color: '#eef2f0', size: 48, content: <SpotlightLogo size={28} /> },
       { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🗺️' },
       { kind: 'check', ring: 'inner', angle: 41.8 },
     ];
     const compactItems: OrbitItem[] = [
-      { kind: 'avatar', ring: 'outer', angle: 148, src: memoji(9), alt: '', color: '#c4bceb', size: 56 },
+      { kind: 'badge', ring: 'outer', angle: 148, color: '#e8f6ed', size: 56, content: <SignalS size={30} /> },
       { kind: 'card', ring: 'outer', angle: 122, icon: <RespectGlyph height={26} on /> },
       { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
       { kind: 'pill', ring: 'outer', angle: 58, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
-      { kind: 'avatar', ring: 'outer', angle: 32, src: memoji(19), alt: '', color: '#ffdcb6', size: 56 },
-      { kind: 'avatar', ring: 'inner', angle: 90, src: memoji(35), alt: '', color: '#c0cef3', size: 48 },
+      { kind: 'badge', ring: 'outer', angle: 32, color: '#f0f0f2', size: 56, content: <img src="/brand/cx-bat.webp" alt="" draggable={false} className="h-[62%] w-[62%] select-none object-contain" /> },
+      { kind: 'badge', ring: 'inner', angle: 90, color: '#eef2f0', size: 48, content: <SpotlightLogo size={28} /> },
     ];
     const stats: OrbitStat[] = [
       { value: COMMUNITY_TEAM, label: t('Team') },
