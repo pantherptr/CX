@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Hosts", "Host", "Gazde", "Anfitriones"],
   ["Members", "Membri", "Membri", "Miembros"],
   ["Downloads", "Download", "Descărcări", "Descargas"],
   ["Top rated", "I più votati", "Cele mai apreciate", "Mejor valorados"],

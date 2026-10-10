@@ -240,7 +240,8 @@ function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: 
 
 // Headline figures of the community orbit — edit here.
 const COMMUNITY_MEMBERS = '264';
-const COMMUNITY_DOWNLOADS = '97K+';
+const COMMUNITY_HOSTS = '37+';
+const COMMUNITY_DOWNLOADS = '128+';
 
 const memoji = (n: number) => `https://raw.githubusercontent.com/alohe/memojis/main/png/memo_${n}.png`;
 
@@ -299,7 +300,7 @@ export default function Home() {
     ];
     const stats: OrbitStat[] = [
       { value: COMMUNITY_MEMBERS, label: t('Members') },
-      { value: String(catalogue.cityNames.length), label: t('Cities') },
+      { value: COMMUNITY_HOSTS, label: t('Hosts') },
       { value: COMMUNITY_DOWNLOADS, label: t('Downloads') },
     ];
     const tags: OrbitTag[] = [
