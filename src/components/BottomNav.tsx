@@ -401,7 +401,8 @@ export function BottomNav() {
         style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)', transformOrigin: '50% 100%', willChange: 'transform, opacity' }}
         initial={false}
         animate={{ opacity: folded ? 0 : 1, scaleX: folded ? 0.3 : 1 }}
-        transition={reduceMotion ? { duration: 0 } : { scaleX: MORPH_SPRING, opacity: { duration: folded ? 0.16 : 0.22, delay: folded ? 0 : 0.04 } }}
+        // the surface that is arriving fades in first; the one leaving is removed only after that, so the dock never dips or blinks
+        transition={reduceMotion ? { duration: 0 } : { scaleX: MORPH_SPRING, opacity: folded ? { duration: 0.01, delay: 0.16 } : { duration: 0.16, delay: 0 } }}
       />
       <motion.div
         aria-hidden="true"
@@ -409,7 +410,7 @@ export function BottomNav() {
         style={{ width: CIRCLE, height: CIRCLE, left: '50%', x: '-50%', bottom: (navHeight - CIRCLE) / 2, willChange: 'transform, opacity' }}
         initial={false}
         animate={{ opacity: folded ? 1 : 0, scale: folded ? 1 : 0.4 }}
-        transition={reduceMotion ? { duration: 0 } : { scale: MORPH_SPRING, opacity: { duration: folded ? 0.2 : 0.14, delay: folded ? 0.06 : 0 } }}
+        transition={reduceMotion ? { duration: 0 } : { scale: MORPH_SPRING, opacity: folded ? { duration: 0.16, delay: 0 } : { duration: 0.01, delay: 0.16 } }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
