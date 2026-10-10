@@ -11,7 +11,6 @@ import { useUnreadMessageCount } from '../lib/data/messages';
 // still-unrenamed backend tables/RPCs 1:1, so relabeling it here would
 // describe a rename that never actually happened underneath.
 import { useEmpireUnreadCount } from '../lib/data/empireFeed';
-import { useViewportBottomGap } from '../lib/useViewportGap';
 import { Capacitor } from '@capacitor/core';
 import { haptics } from '../lib/native';
 
@@ -157,17 +156,6 @@ const FALLBACK_NAV_WIDTH = 360;
 const BAR_SIDE_GAP = 12; // px between the capsule and each screen edge
 const BAR_BOTTOM_GAP = 12; // px between the capsule and the safe-area edge
 
-// Some mobile browsers (iOS Safari especially, with its floating/compact
-// toolbar) shrink the VISUAL viewport without changing `env(safe-area-
-// inset-bottom)` at all — that constant only ever covers the home
-// indicator, never the browser's own floating chrome on top of it. A
-// `position: fixed` element still anchors to the LAYOUT viewport's edge,
-// so `visualViewport` (via `useViewportBottomGap`) is the live signal for
-// how much of the screen that chrome is covering; the bar is lifted by
-// exactly that much, up to this cap (anything larger is a keyboard, which
-// the bar deliberately ignores).
-const MAX_CHROME_GAP = 120;
-
 // Installed to the home screen (PWA) there is no browser toolbar under the
 // page, so the capsule sits much lower: just above the home indicator, the
 // way a native tab bar does, instead of floating a full safe-area higher.
@@ -214,13 +202,11 @@ const DOCK_MORPH = true;
 const CIRCLE = 60; // px, the folded dock
 const MORPH_SPRING = { type: 'spring' as const, stiffness: 240, damping: 27, mass: 0.95 };
 const SIGNAL_ROUTE = /^\/signal(\/|$)/;
-const SHRINK_AFTER = 40; // px of sustained downward scrolling before it folds
-const RESTORE_AFTER = 12; // px of upward scrolling is enough to open it again
+const SHRINK_AFTER = 56; // px of sustained downward scrolling before it folds
+const RESTORE_AFTER = 22; // px of upward scrolling is enough to open it again
 const TOP_GUARD = 64; // always open near the very top
 const MAX_STEP = 220; // a single-frame jump this large is a layout shift (browser toolbar), not a scroll
-const SWIPE_FOLD = 56; // px the finger moves up (page scrolls down) before the dock folds
-const SWIPE_OPEN = 28; // px the finger moves down before it opens again
-const COOLDOWN_MS = 260; // never flip twice in quick succession
+const COOLDOWN_MS = 420; // never flip twice in quick succession
 
 function useDockFold(active: boolean, pathname: string): { folded: boolean; open: () => void } {
   const [folded, setFolded] = useState(false);
@@ -273,36 +259,6 @@ function useDockFold(active: boolean, pathname: string): { folded: boolean; open
         else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
       });
     };
-    // On a phone the finger decides, not the scroll position: momentum scrolling, iOS rubber-banding
-    // and the feed growing under you all move scrollY, and following them made the dock flip back and
-    // forth for a moment. One swipe = at most one fold or one open, and nothing after the finger lifts.
-    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
-    let lastTouchY = 0;
-    let run = 0; // how far the finger has travelled in its current direction
-    const onTouchStart = (e: TouchEvent) => { lastTouchY = e.touches[0]?.clientY ?? 0; run = 0; };
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0]?.clientY ?? lastTouchY;
-      const dy = y - lastTouchY; // finger up = negative = the page goes down
-      lastTouchY = y;
-      if (dy === 0) return;
-      if (Math.sign(dy) !== Math.sign(run)) run = 0;
-      run += dy;
-      if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
-      if (run <= -SWIPE_FOLD && window.scrollY > TOP_GUARD) { set(true); run = 0; }
-      else if (run >= SWIPE_OPEN) { set(false); run = 0; }
-    };
-    const onTopCheck = () => { if (window.scrollY <= TOP_GUARD) set(false); };
-
-    if (coarse) {
-      window.addEventListener('touchstart', onTouchStart, { passive: true });
-      window.addEventListener('touchmove', onTouchMove, { passive: true });
-      window.addEventListener('scroll', onTopCheck, { passive: true });
-      return () => {
-        window.removeEventListener('touchstart', onTouchStart);
-        window.removeEventListener('touchmove', onTouchMove);
-        window.removeEventListener('scroll', onTopCheck);
-      };
-    }
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [active, set]);
@@ -339,16 +295,10 @@ export function BottomNav() {
   const navHeight = measuredNavHeight || FALLBACK_NAV_HEIGHT;
   const navWidth = measuredNavWidth || FALLBACK_NAV_WIDTH;
   const backdropHeight = navHeight + HILL_RISE;
-  const viewportGap = useViewportBottomGap();
-  // Lift the bar above browser chrome that covers the layout viewport's
-  // bottom. A gap this big is a keyboard, not browser chrome, so the bar
-  // stays put for those.
-  const liveLift = viewportGap > 0 && viewportGap <= MAX_CHROME_GAP ? viewportGap : 0;
-  // Safari's toolbar grows and shrinks as you scroll; following it made the dock hop up and down
-  // right when it folds or opens. The dock keeps the HIGHEST position it has needed, so it is always
-  // clear of the toolbar and never moves again after that.
-  const [lift, setLift] = useState(liveLift);
-  useEffect(() => { setLift((prev) => (liveLift > prev ? liveLift : prev)); }, [liveLift]);
+  // The dock sits at the bottom edge, full stop. It used to be lifted by however much of the layout
+  // viewport Safari's toolbar covers, but on current iOS the browser already keeps bottom-fixed
+  // elements clear of its toolbar; adding our own lift on top floated the dock far above the bottom
+  // and made it hop when the toolbar changed size. Nothing here reacts to the browser chrome now.
   // End caps are true semicircles: radius = half the flat bar's height, so
   // the glass is a stadium capsule. Per-axis fractions because the clip-path
   // is in objectBoundingBox units over a non-square box.
@@ -387,8 +337,8 @@ export function BottomNav() {
         // The dock never reacts to scrolling: it is the same size and in the same place
         // whichever way you scroll. Its own layer (translate3d) keeps Safari from repainting
         // it with the page; the only thing that ever moves it is the browser's own toolbar
-        // (`lift`, settled once the toolbar stops).
-        transform: `translate3d(0, ${-lift}px, 0)`,
+        // (nothing at all: the browser keeps it clear of its own toolbar).
+        transform: 'translate3d(0, 0, 0)',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
         contain: 'layout style',
@@ -397,8 +347,6 @@ export function BottomNav() {
         pointerEvents: 'auto',
         transition: `transform 280ms ${EASE}`,
       }}
-      // Any touch on the small dock brings it back to full size; the tap
-      // itself still goes through to whatever was touched.
       aria-label="Primary"
     >
       {/* Reusable shape definition for the whole bar's one fill — see
