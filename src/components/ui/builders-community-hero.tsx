@@ -27,7 +27,9 @@ export interface OrbitPillItem extends OrbitBase {
 
 export interface OrbitCardItem extends OrbitBase {
   kind: 'card';
-  emoji: string;
+  emoji?: string;
+  /** A custom icon instead of an emoji. */
+  icon?: ReactNode;
   badge?: string | number;
 }
 
@@ -126,10 +128,10 @@ function OrbitPill({ icon, label }: OrbitPillItem) {
   );
 }
 
-function OrbitCard({ emoji, badge }: OrbitCardItem) {
+function OrbitCard({ emoji, icon, badge }: OrbitCardItem) {
   return (
     <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-xl border border-black/[0.08] bg-[#f7f7f8] text-[22px] leading-none shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-      <span className="select-none">{emoji}</span>
+      <span className="select-none">{icon ?? emoji}</span>
       {badge !== undefined && (
         <span className="absolute -bottom-[5px] -right-2 flex h-[18px] items-center gap-0.5 rounded-[5px] border border-black/[0.08] bg-white px-1.5 text-[10px] font-medium leading-none text-[#7a7a7a] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
           <ArrowUp size={9} strokeWidth={2.2} />
