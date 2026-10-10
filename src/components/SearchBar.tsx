@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useLocale } from '../lib/i18n';
+import { DateRangeField } from './DateRangePicker';
 
 const cities = ['Milan', 'Rome', 'Florence', 'Paris', 'Barcelona', 'Munich', 'Amsterdam'];
 const types = ['Any type', 'Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -67,9 +68,6 @@ export function SearchBar({
   const selectCls = `w-full appearance-none bg-transparent text-copy font-medium outline-none cursor-pointer -ml-0.5 ${
     dark ? 'text-white [color-scheme:dark]' : 'text-ink'
   }`;
-  const dateCls = `w-full bg-transparent text-copy font-medium outline-none cursor-pointer ${
-    dark ? 'text-white [color-scheme:dark]' : 'text-ink'
-  }`;
 
   return (
     <div
@@ -92,13 +90,13 @@ export function SearchBar({
           </select>
         </Field>
 
-        <Field label={t('Pick-up')} icon="calendar">
-          <input type="date" value={pickup} min={today()} onChange={(e) => setPickup(e.target.value)} className={dateCls} />
-        </Field>
-
-        <Field label={t('Return')} icon="calendar">
-          <input type="date" value={ret} min={pickup} onChange={(e) => setRet(e.target.value)} className={dateCls} />
-        </Field>
+        <DateRangeField
+          start={pickup}
+          end={ret}
+          minDate={today()}
+          dark={dark}
+          onApply={(a, b) => { setPickup(a); setRet(b); }}
+        />
 
         <Field label={t('Car type')} icon="car">
           <select value={type} onChange={(e) => setType(e.target.value)} className={selectCls}>
