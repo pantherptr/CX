@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '../Icon';
 import { CxsLogo } from '../CxsLogo';
+import { useAuth } from '../../lib/auth';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 
 /** This edge tab is a real but non-obvious affordance — worth one quiet
@@ -75,6 +76,14 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const { profile } = useAuth();
+  // Split what the page gives us: the spaces (up to the first divider), your profile, and the rest.
+  const firstEnd = items.findIndex((i) => i.groupEnd);
+  const spaces = firstEnd >= 0 ? items.slice(0, firstEnd + 1) : [];
+  const afterSpaces = firstEnd >= 0 ? items.slice(firstEnd + 1) : items;
+  const profileItem = afterSpaces.find((i) => i.icon === 'user');
+  const rest = afterSpaces.filter((i) => i !== profileItem);
+
   const select = (fn: () => void) => {
     setOpen(false);
     fn();
@@ -91,8 +100,6 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
 
   return (
     <div ref={rootRef} className="fixed left-0 top-1/2 z-40 -translate-y-1/2">
-      {open && <div className="fixed inset-0 z-0" onClick={() => setOpen(false)} />}
-
       {hint && !open && (
         <span className="pointer-events-none absolute left-0 top-1/2 h-16 w-8 -translate-y-1/2 animate-quick-control-pulse rounded-r-2xl ring-2 ring-accent-bright/60" />
       )}
@@ -113,29 +120,80 @@ export function SignalQuickControl({ items }: { items: QuickControlItem[] }) {
       <AnimatePresence>
         {open && (
           <motion.div
+            className="fixed inset-0 z-0 bg-black/25 backdrop-blur-[2px]"
+            initial={reduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        {open && (
+          <motion.div
             role="menu"
-            className="absolute left-0 top-1/2 z-10 w-44 origin-left overflow-hidden rounded-2xl border border-line bg-surface shadow-pop"
-            style={{ marginLeft: '2rem' }}
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: '-50%' }}
-            animate={{ opacity: 1, scale: 1, y: '-50%' }}
-            exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9, y: '-50%' }}
+            aria-label="Signal"
+            className="absolute left-0 top-1/2 z-10 max-h-[78dvh] w-[17.5rem] origin-left overflow-y-auto overscroll-contain rounded-3xl border border-line bg-surface p-2 shadow-pop"
+            style={{ marginLeft: '2.25rem' }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.92, x: -12, y: '-50%' }}
+            animate={{ opacity: 1, scale: 1, x: 0, y: '-50%' }}
+            exit={reduceMotion ? undefined : { opacity: 0, scale: 0.92, x: -12, y: '-50%' }}
             transition={reduceMotion ? { duration: 0 } : SPRING_SNAPPY}
           >
-            <p className="px-4 pb-1.5 pt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-faint">Signal</p>
-            {items.map((item) => (
-              <div key={item.label}>
-                <button
-                  role="menuitem"
-                  onClick={() => select(item.onSelect)}
-                  className={`pressable flex w-full items-center gap-2.5 px-4 py-3 text-left text-detail font-medium transition-colors ${
-                    item.active ? 'bg-accent-050 text-accent-700' : 'text-ink hover:bg-panel'
-                  }`}
-                >
-                  <Icon name={item.icon} size={17} className={item.active ? 'text-accent-700' : 'text-ink-soft'} />
-                  {item.label}
-                </button>
-                {item.groupEnd && <div className="mx-4 border-t border-line" />}
+            {/* who you are — a tap goes to your profile */}
+            {profileItem && (
+              <button
+                role="menuitem"
+                onClick={() => select(profileItem.onSelect)}
+                className="pressable flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition-colors hover:bg-panel"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={20} /></span>
+                )}
+                <span className="min-w-0">
+                  <span translate="no" className="block truncate font-display text-[15px] font-semibold leading-tight text-ink">{profile?.full_name || profileItem.label}</span>
+                  <span className="mt-0.5 block truncate text-caption text-muted">
+                    {profile?.username ? `@${profile.username}` : profileItem.label}
+                  </span>
+                </span>
+                <Icon name="chevronRight" size={16} className="ml-auto shrink-0 text-faint" />
+              </button>
+            )}
+
+            {/* the two spaces, side by side */}
+            {spaces.length > 0 && (
+              <div className="mx-1 mb-1.5 mt-1 grid gap-1 rounded-2xl bg-panel p-1" style={{ gridTemplateColumns: `repeat(${spaces.length}, minmax(0, 1fr))` }} role="group">
+                {spaces.map((item) => (
+                  <button
+                    key={item.label}
+                    role="menuitem"
+                    aria-current={item.active ? 'page' : undefined}
+                    onClick={() => select(item.onSelect)}
+                    className={`pressable flex min-h-10 items-center justify-center gap-1.5 rounded-xl text-detail font-semibold transition-[background-color,color,box-shadow] ${
+                      item.active ? 'bg-surface text-ink shadow-hair' : 'text-muted hover:text-ink'
+                    }`}
+                  >
+                    <Icon name={item.icon} size={15} />
+                    {item.label}
+                  </button>
+                ))}
               </div>
+            )}
+
+            <div className="my-1 border-t border-line" />
+
+            {rest.map((item) => (
+              <button
+                key={item.label}
+                role="menuitem"
+                onClick={() => select(item.onSelect)}
+                className="pressable flex min-h-12 w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-panel active:bg-panel"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-panel text-ink-soft"><Icon name={item.icon} size={17} /></span>
+                {item.label}
+              </button>
             ))}
           </motion.div>
         )}
