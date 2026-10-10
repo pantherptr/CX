@@ -391,33 +391,25 @@ export function BottomNav() {
           edges too), a real regression. The bump's own glow lives purely
           on the rim stroke below, which already traces just the bump's
           own contour. */}
-      {/* The dock's glass comes in two pieces that never fight each other:
-          B — the capsule with the raised curve (the clip-path shape), shown whenever the dock is
-          open; and A — a plain rounded capsule that is the only thing visible while the dock
-          morphs, and that IS the circle when it is folded. A's real width/height animate, so
-          nothing is ever stretched or squashed: it just narrows into the circle and widens back,
-          and B fades in once A has reached full width (and out the instant folding starts). */}
+      {/* The dock's surface in two pieces, animated with transform + opacity ONLY (nothing that
+          triggers layout or repaint while the page scrolls — the cheapest thing a phone can do):
+          B — the capsule with the raised curve, shown whenever the dock is open — narrows toward
+          the middle and fades as it folds; A — the small ringed circle that holds the S — grows
+          in from the middle at the same time. Opening is the same thing played backwards. */}
       <motion.div
         className="dock-surface pointer-events-none absolute inset-x-0 bottom-0"
-        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)' }}
+        style={{ height: backdropHeight, clipPath: 'url(#signal-nav-clip)', transformOrigin: '50% 100%', willChange: 'transform, opacity' }}
         initial={false}
-        animate={{ opacity: folded ? 0 : 1 }}
-        transition={reduceMotion ? { duration: 0 } : folded ? { duration: 0.08 } : { duration: 0.16, delay: 0.14 }}
+        animate={{ opacity: folded ? 0 : 1, scaleX: folded ? 0.3 : 1 }}
+        transition={reduceMotion ? { duration: 0 } : { scaleX: MORPH_SPRING, opacity: { duration: folded ? 0.16 : 0.22, delay: folded ? 0 : 0.04 } }}
       />
       <motion.div
         aria-hidden="true"
-        className="dock-surface pointer-events-none absolute rounded-full border"
-        style={{ left: '50%', x: '-50%' }}
+        className="dock-surface pointer-events-none absolute rounded-full border border-accent-bright/60 shadow-[0_0_20px_-4px_rgba(0,212,71,0.55)]"
+        style={{ width: CIRCLE, height: CIRCLE, left: '50%', x: '-50%', bottom: (navHeight - CIRCLE) / 2, willChange: 'transform, opacity' }}
         initial={false}
-        animate={{
-          width: folded ? CIRCLE : navWidth,
-          height: folded ? CIRCLE : navHeight,
-          bottom: folded ? (navHeight - CIRCLE) / 2 : 0,
-          opacity: folded ? 1 : 0,
-          borderColor: folded ? 'rgba(0,212,71,0.6)' : 'rgba(0,212,71,0)',
-          boxShadow: folded ? '0 0 20px -4px rgba(0,212,71,0.55)' : '0 0 0px 0px rgba(0,212,71,0)',
-        }}
-        transition={reduceMotion ? { duration: 0 } : { ...MORPH_SPRING, opacity: { duration: 0.12, delay: folded ? 0 : 0.22 } }}
+        animate={{ opacity: folded ? 1 : 0, scale: folded ? 1 : 0.4 }}
+        transition={reduceMotion ? { duration: 0 } : { scale: MORPH_SPRING, opacity: { duration: folded ? 0.2 : 0.14, delay: folded ? 0.06 : 0 } }}
       />
 
       {/* The visible rim of that same raised section — traces the identical
