@@ -324,8 +324,11 @@ export function BottomNav() {
       data-folded="false"
       className="dock absolute"
       style={{
-        left: BAR_SIDE_GAP,
-        right: BAR_SIDE_GAP,
+        // Phone: the whole width minus the side gaps. Tablet: a centred capsule of a sensible
+        // width instead of one stretched across the screen.
+        left: '50%',
+        width: `min(calc(100% - ${BAR_SIDE_GAP * 2}px), 520px)`,
+        marginLeft: 'calc(min(calc(100% - 24px), 520px) / -2)',
         bottom: BAR_BOTTOM,
         // Pure transform/opacity — never touches layout or the page's
         // own reserved bottom padding, so nothing about the feed's

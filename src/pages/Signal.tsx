@@ -383,7 +383,7 @@ export default function Signal() {
           })()}
         </aside>
       )}
-      <main className="w-full min-w-0 max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4 lg:max-w-2xl lg:flex-none lg:px-0 lg:py-0">
+      <main className="mx-auto w-full min-w-0 max-w-xl flex-1 px-2.5 py-2.5 sm:px-4 sm:py-4 lg:mx-0 lg:max-w-2xl lg:flex-none lg:px-0 lg:py-0">
       <SignalPullToRefresh onRefresh={handleRefresh}>
         <SignalStoriesBar
           scope={space}
