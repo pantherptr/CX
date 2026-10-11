@@ -9,41 +9,62 @@ import { useLocale } from '../../lib/i18n';
 import { fetchSignalProfile } from '../../lib/data/signalProfile';
 import { fetchPeopleSuggestions, type PersonSuggestion } from '../../lib/data/privacy';
 
-const DISMISS_KEY = 'cx.signal.people-shelf-dismissed';
+const DISMISS_KEY = 'cx.signal.people-shelf-dismissed-at';
+const DISMISS_FOR_MS = 3 * 24 * 60 * 60 * 1000;
+/** Someone who follows fewer accounts than this sees the shelf at the very top of the feed;
+ *  everyone else sees it inside the feed, after the first posts — never gone, just out of the way. */
+const TOP_UNDER = 5;
 
-/** A short row of people worth following, shown at the top of the feed to someone who
- *  does not follow anybody yet — so a new member has somewhere to start. It disappears
- *  on its own once they follow someone, and can be dismissed. */
-export function SignalPeopleShelf({ profileBase }: { profileBase: string }) {
+const dismissedRecently = () => {
+  try {
+    const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
+    return at > 0 && Date.now() - at < DISMISS_FOR_MS;
+  } catch { return false; }
+};
+
+// Kept for a few minutes so a refresh (or switching Official ↔ Community) does not blink the row
+// out and back in, and does not ask the server again each time.
+let cache: { uid: string; at: number; following: number; people: PersonSuggestion[] } | null = null;
+const FRESH_MS = 5 * 60 * 1000;
+
+/** A short row of people worth following. `top` is for members who follow few accounts; `inline`
+ *  is placed inside the feed (after the first posts) for everyone else. Dismissing it hides it for
+ *  three days, not forever. */
+export function SignalPeopleShelf({ profileBase, placement = 'top' }: { profileBase: string; placement?: 'top' | 'inline' }) {
   const { t } = useLocale();
   const { session } = useAuth();
   const uid = session?.user.id;
-  const [people, setPeople] = useState<PersonSuggestion[]>([]);
-  const [dismissed, setDismissed] = useState(() => {
-    try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; }
-  });
+  const fresh = cache && uid && cache.uid === uid && Date.now() - cache.at < FRESH_MS ? cache : null;
+  const [people, setPeople] = useState<PersonSuggestion[]>(fresh?.people ?? []);
+  const [following, setFollowing] = useState<number | null>(fresh ? fresh.following : null);
+  const [dismissed, setDismissed] = useState(dismissedRecently);
 
   useEffect(() => {
     if (!uid || dismissed) return;
+    if (fresh) return;
     let cancelled = false;
     (async () => {
       const me = await fetchSignalProfile(uid).catch(() => null);
-      // Only for someone who follows nobody yet.
-      if (cancelled || !me || me.followingCount > 0) return;
-      const rows = await fetchPeopleSuggestions(10);
-      if (!cancelled) setPeople(rows);
+      if (cancelled || !me) return;
+      const rows = await fetchPeopleSuggestions(12);
+      if (cancelled) return;
+      cache = { uid, at: Date.now(), following: me.followingCount, people: rows };
+      setFollowing(me.followingCount);
+      setPeople(rows);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid, dismissed]);
 
-  if (dismissed || people.length === 0) return null;
+  if (dismissed || people.length === 0 || following === null) return null;
+  if (placement === 'top' ? following >= TOP_UNDER : following < TOP_UNDER) return null;
   const dismiss = () => {
     setDismissed(true);
-    try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch { /* ignore */ }
   };
 
   return (
-    <section aria-label={t('People to follow')} className="mb-4 rounded-2xl border border-line bg-surface p-3.5 shadow-hair">
+    <section aria-label={t('People to follow')} className={`rounded-2xl border border-line bg-surface p-3.5 shadow-hair ${placement === 'top' ? 'mb-4' : 'my-3'}`}>
       <div className="mb-3 flex items-center justify-between gap-3 px-0.5">
         <h2 className="text-detail font-semibold text-ink">{t('People to follow')}</h2>
         <button type="button" onClick={dismiss} aria-label={t('Dismiss')} className="pressable grid h-8 w-8 place-items-center rounded-full text-faint hover:bg-panel hover:text-ink-soft">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
@@ -555,8 +555,9 @@ export default function Signal() {
           </div>
         ) : (
           <>
-            {scatterAds(scatterSpotlights(posts, spotlights, hasMore), space === 'community' ? sponsoredAds.ads : [], hasMore).map((item) =>
-              'kind' in item && item.kind === 'ad' ? (
+            {scatterAds(scatterSpotlights(posts, spotlights, hasMore), space === 'community' ? sponsoredAds.ads : [], hasMore).map((item, idx) => (
+              <Fragment key={'kind' in item && item.kind === 'ad' ? `ad-${item.ad.adId}` : 'kind' in item && item.kind === 'spotlight' ? `spotlight-${item.spotlight.entryId}` : `post-${item.post.id}`}>
+              {'kind' in item && item.kind === 'ad' ? (
                 <SponsoredPost key={`ad-${item.ad.adId}`} ad={item.ad} canManage={canManage} onChanged={(p) => sponsoredAds.patch(item.ad.adId, p)} onDeleted={() => sponsoredAds.remove(item.ad.adId)} />
               ) : item.kind === 'spotlight' ? (
                 spotlightPosts.posts[item.spotlight.entryId] ? (
@@ -583,8 +584,11 @@ export default function Signal() {
                   onPinToggled={resyncAfterPin}
                   onFeaturedToggled={resyncAfterFeature}
                 />
-              ),
-            )}
+              )}
+              {idx === 7 && <SignalPeopleShelf profileBase={base} placement="inline" />}
+              </Fragment>
+            ))}
+            {posts.length < 8 && <SignalPeopleShelf profileBase={base} placement="inline" />}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-4">
                 {loadingMore && <SignalPostSkeleton />}
