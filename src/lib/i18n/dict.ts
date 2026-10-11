@@ -831,6 +831,26 @@ const ROWS: Row[] = [
   ["your renter", "il tuo cliente", "clientul tău", "tu cliente"],
   ["your host", "il tuo host", "gazda ta", "tu anfitrión"],
   ["day", "giorno", "zi", "día"],
+
+  // ---- Boarding pass ----
+  ["Ready for\nthe road", "Pronto per\nla strada", "Gata de\ndrum", "Listo para\nla carretera"],
+  ["Your CX\nboarding pass", "Il tuo boarding\npass CX", "Cartea ta CX\nde îmbarcare", "Tu tarjeta de\nembarque CX"],
+  ["Booking", "Prenotazione", "Rezervare", "Reserva"],
+  ["Guest", "Ospite", "Oaspete", "Invitado"],
+  ["Days", "Giorni", "Zile", "Días"],
+  ["Gearbox", "Cambio", "Cutie de viteze", "Cambio"],
+  ["Hosted by {name}", "Host: {name}", "Gazdă: {name}", "Anfitrión: {name}"],
+  ["Confirmed", "Confermata", "Confirmată", "Confirmada"],
+  ["Boarding pass", "Boarding pass", "Cartea de îmbarcare", "Tarjeta de embarque"],
+  ["Passenger", "Passeggero", "Pasager", "Pasajero"],
+  ["Vehicle", "Veicolo", "Vehicul", "Vehículo"],
+  ["Reference", "Riferimento", "Referință", "Referencia"],
+  ["Place", "Luogo", "Loc", "Lugar"],
+  ["Pick-up spot", "Punto di ritiro", "Punct de ridicare", "Punto de recogida"],
+  ["Tear here", "Strappa qui", "Rupe aici", "Rasga aquí"],
+  ["Tear off the stub", "Strappa il tagliando", "Rupe talonul", "Rasga el talón"],
+  ["Reattach the stub", "Riattacca il tagliando", "Reatașează talonul", "Vuelve a pegar el talón"],
+  ["Front", "Fronte", "Față", "Anverso"],
 ];
 
 export const DICT: Record<Exclude<Lang, 'en'>, Record<string, string>> = { it: {}, ro: {}, es: {} };

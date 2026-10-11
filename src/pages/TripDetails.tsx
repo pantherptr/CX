@@ -3,6 +3,7 @@ import { refundFor, POLICY_INFO } from '../lib/cancellationPolicy';
 import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { TripMap } from '../components/TripMap';
+import { BoardingPassCard } from '../components/BoardingPassCard';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -325,6 +326,28 @@ export default function TripDetails() {
           </div>
         )}
         </Reveal>
+
+        {/* The ticket */}
+        {(phase === 'upcoming' || phase === 'active') && (
+          <Reveal delay={20}>
+            <div className="mt-6">
+              <BoardingPassCard
+                b={{
+                  reference: booking.reference,
+                  startDate: booking.startDate,
+                  endDate: booking.endDate,
+                  fulfillmentType: booking.fulfillmentType,
+                  deliveryAddress: booking.deliveryAddress,
+                  pickupLocation: booking.pickupLocation,
+                  totalPrice: booking.totalPrice,
+                  passengerName: booking.renter.name,
+                  hostName: booking.host.name,
+                  car: { year: booking.car.year, make: booking.car.make, model: booking.car.model, city: booking.car.city, location: booking.car.location },
+                }}
+              />
+            </div>
+          </Reveal>
+        )}
 
         {/* Before your trip */}
         {phase === 'upcoming' && (

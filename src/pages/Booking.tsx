@@ -29,6 +29,7 @@ import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
 import { LicenceForm } from '../components/VerificationFlow';
 import { TripMap } from '../components/TripMap';
+import { BoardingPassCard } from '../components/BoardingPassCard';
 import { AddressInput } from '../components/AddressInput';
 import { MiniMap, type MapPoint } from '../components/browse/MiniMap';
 import { CITY_COORDS } from '../data/cityCoords';
@@ -502,6 +503,27 @@ export default function Booking() {
             Booking <span className="font-medium text-ink">{confirmed.reference}</span> is confirmed.
           </motion.p>
         </div>
+
+        {/* The ticket: the moment the booking is complete */}
+        <motion.div initial={{ opacity: 0, y: 18, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ ...SPRING_SMOOTH, delay: 0.3 }} className="mt-8">
+          <BoardingPassCard
+            b={{
+              reference: confirmed.reference,
+              startDate: confirmed.startDate,
+              endDate: confirmed.endDate,
+              fulfillmentType: confirmed.fulfillmentType,
+              deliveryAddress: confirmed.deliveryAddress,
+              pickupLocation: confirmed.pickupLocation,
+              totalPrice: confirmed.totalPrice,
+              passengerName: driver.name || profile?.full_name || '',
+              hostName: host.name,
+              car: {
+                year: car.year, make: car.make, model: car.model, seats: car.seats, transmission: car.transmission,
+                city: car.city, location: car.location, lat: car.lat, lng: car.lng,
+              },
+            }}
+          />
+        </motion.div>
 
         {/* Where the car is, and the road to you when it is delivered */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.3 }} className="mt-9">
