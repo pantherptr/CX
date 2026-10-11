@@ -25,10 +25,10 @@ export function FlyingMark({
 }) {
   const f = flutter === 2 ? 'fly-fast' : '';
   return (
-    <span className={`relative inline-block ${className}`} aria-hidden={alt ? undefined : true}>
+    <span className={`fly-spot relative inline-block ${className}`} aria-hidden={alt ? undefined : true}>
       <span className={`fly-bob block h-full ${f}`}>
         <span className={`fly-sway block h-full ${f}`}>
-          <img src={src} alt={alt} width={width} height={height} draggable={false} className={`fly-beat block h-full w-auto select-none ${f}`} />
+          <img data-spot src={src} alt={alt} width={width} height={height} draggable={false} className={`fly-beat block h-full w-auto select-none ${f}`} />
         </span>
       </span>
       {shadow && <span className="fly-shadow pointer-events-none absolute -bottom-2 left-1/2 h-2.5 w-[46%] rounded-[50%] bg-ink/25 blur-[5px]" />}

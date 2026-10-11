@@ -185,16 +185,30 @@ export default function Home() {
                 <span className="hidden sm:block">{t('to your heart.')}</span>
               </p>
 
-              {/* The car, in front of both */}
-              <img
-                src="/hero-car.webp?v=3"
-                alt={t('A premium CX car')}
-                width={859}
-                height={386}
-                fetchPriority="high"
-                draggable={false}
-                className="absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_38px_30px_rgba(14,28,20,0.42)] sm:top-[50%] sm:w-[74%]"
-              />
+              {/* The car, in front of both: it drives in from the right, brakes to a stop, headlights
+                  switch on and the exhaust backfires twice (CSS only, see .hero-car in index.css). */}
+              <div
+                className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[74%]"
+                style={{ aspectRatio: '859 / 386' }}
+              >
+                <div className="hero-car-body relative h-full w-full">
+                  <span aria-hidden className="hero-beam" style={{ top: '18%' }} />
+                  <span aria-hidden className="hero-beam" style={{ top: '81%' }} />
+                  <span aria-hidden className="hero-tail" style={{ top: '19%', left: '90.5%' }} />
+                  <span aria-hidden className="hero-tail" style={{ top: '78%', left: '93%' }} />
+                  <span aria-hidden className="hero-flame" style={{ top: '43%', animationDelay: '2.65s' }} />
+                  <span aria-hidden className="hero-flame" style={{ top: '57%', animationDelay: '2.8s' }} />
+                  <img
+                    src="/hero-car.webp?v=3"
+                    alt={t('A premium CX car')}
+                    width={859}
+                    height={386}
+                    fetchPriority="high"
+                    draggable={false}
+                    className="relative block h-full w-full drop-shadow-[0_38px_30px_rgba(14,28,20,0.42)]"
+                  />
+                </div>
+              </div>
 
               {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
               <div className="absolute bottom-[26%] left-0 hidden max-w-[11rem] sm:block">
