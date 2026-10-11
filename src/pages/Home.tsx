@@ -239,7 +239,6 @@ export default function Home() {
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
                 <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('Available')}</span>
                 <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{t('Worldwide')}</span>
-                <span className="text-detail text-muted">{t('wherever hosts list')}</span>
               </div>
             </div>
           </Reveal>
@@ -253,7 +252,7 @@ export default function Home() {
                     <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                     <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
                   </span>
-                  {t('Available worldwide, wherever hosts list their cars')}
+                  {t('Wherever there’s a road, there’s a CX.')}
                 </span>
               </Reveal>
               <Reveal delay={240} className="reveal-blur">

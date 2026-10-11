@@ -359,8 +359,7 @@ const ROWS: Row[] = [
   // ---- Home: hero ----
   ['Available', 'Disponibile', 'Disponibil', 'Disponible'],
   ['Worldwide', 'In tutto il mondo', 'În toată lumea', 'En todo el mundo'],
-  ['wherever hosts list', 'dove ci sono host', 'oriunde sunt gazde', 'donde haya anfitriones'],
-  ['Available worldwide, wherever hosts list their cars', 'Disponibile in tutto il mondo, ovunque gli host pubblichino le loro auto', 'Disponibil în toată lumea, oriunde gazdele își listează mașinile', 'Disponible en todo el mundo, donde los anfitriones publiquen sus coches'],
+  ['Wherever there’s a road, there’s a CX.', 'Ovunque c’è una strada, c’è una CX.', 'Oriunde e un drum, e un CX.', 'Donde hay una carretera, hay un CX.'],
   ['Premium cars from verified hosts, around the world.', 'Auto premium da host verificati, in tutto il mondo.', 'Mașini premium de la gazde verificate, în toată lumea.', 'Coches premium de anfitriones verificados, en todo el mundo.'],
   ['The premium marketplace for car rental, worldwide.', 'Il marketplace premium per il noleggio auto, in tutto il mondo.', 'Piața premium pentru închirierea de mașini, în toată lumea.', 'El marketplace premium de alquiler de coches, en todo el mundo.'],
   ['The premium way to move around the world.', 'Il modo premium di muoversi per il mondo.', 'Modul premium de a te mișca prin lume.', 'La forma premium de moverte por el mundo.'],
