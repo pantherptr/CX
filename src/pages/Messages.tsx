@@ -367,6 +367,14 @@ export default function Messages() {
     scroll(mockScrollRef.current);
   }, [messages?.length, pendingForActive.length, activeId, mobileChat]);
 
+  // When the keyboard opens or closes the chat box changes height; if you were at the bottom of the
+  // thread you stay at the bottom (otherwise the last messages slide behind the composer).
+  const atBottom = useRef(true);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && atBottom.current) el.scrollTop = el.scrollHeight;
+  }, [vv.height]);
+
   // iOS-style edge swipe: drag from the left edge to the right to go back.
   const edgeSwipe = useRef<{ x: number; y: number } | null>(null);
 
@@ -385,11 +393,25 @@ export default function Messages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, session?.user.id, messages?.length]);
 
+  // While a phone chat is open the page behind is frozen in place (position: fixed at its current
+  // scroll offset). With nothing to scroll, iOS cannot "scroll the field into view" when you tap the
+  // composer — that scroll, plus our box following it, was the jump you saw the moment you touched it.
   useEffect(() => {
     if (!mobileChat || window.matchMedia('(min-width: 640px)').matches) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    const y = window.scrollY;
+    const b = document.body.style;
+    const prev = { position: b.position, top: b.top, width: b.width, overflow: b.overflow };
+    b.position = 'fixed';
+    b.top = `-${y}px`;
+    b.width = '100%';
+    b.overflow = 'hidden';
+    return () => {
+      b.position = prev.position;
+      b.top = prev.top;
+      b.width = prev.width;
+      b.overflow = prev.overflow;
+      window.scrollTo(0, y);
+    };
   }, [mobileChat]);
 
   const closeConvo = () => {
@@ -609,7 +631,7 @@ export default function Messages() {
         {mobileChat && active && (
           <div
             data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
-            style={{ top: vv.top, height: vv.height }}
+            style={{ top: 0, height: vv.height, transform: vv.top ? `translate3d(0, ${vv.top}px, 0)` : undefined }}
             onTouchStart={(e) => {
               const t = e.touches[0];
               edgeSwipe.current = t.clientX < 28 ? { x: t.clientX, y: t.clientY } : null;
@@ -655,7 +677,14 @@ export default function Messages() {
               )}
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-3">
+            <div
+              ref={scrollRef}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+              }}
+              className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-3"
+            >
               <Thread
                 ownerIdentity={!!profile?.is_owner}
                 large
