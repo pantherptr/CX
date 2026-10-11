@@ -635,6 +635,9 @@ export default function Messages() {
         </div>
 
         {mobileChat && active && (
+          <>
+          {/* Opaque floor under the chat so the page behind never shows through the keyboard's accessory-bar gap. */}
+          <div aria-hidden className="fixed inset-0 z-[199] bg-[#f4f5f2]" />
           <div
             data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
             style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)' }}
@@ -749,6 +752,7 @@ export default function Messages() {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
       {newMessageOpen && session && (
