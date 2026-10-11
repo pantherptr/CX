@@ -15,6 +15,7 @@ import { Browser as CapacitorBrowser } from '@capacitor/browser';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { registerPushToken, unregisterPushToken } from './push';
 import { requestPersistentStorage } from './sessionStorage';
+import { touchDevice } from './data/devices';
 
 const PROFILE_CACHE = 'cx.profile.v1';
 
@@ -189,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         hadSession.current = true;
         void loadProfile(data.session.user.id);
         void registerPushToken(data.session.user.id);
+        void touchDevice();
       } else {
         // Nothing stored: clear the cache so a stale profile never outlives its sign-in.
         try { window.localStorage.removeItem(PROFILE_CACHE); } catch { /* ignore */ }
@@ -205,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event !== 'TOKEN_REFRESHED') {
           void loadProfile(next.user.id);
           void registerPushToken(next.user.id);
+          void touchDevice();
         }
         return;
       }

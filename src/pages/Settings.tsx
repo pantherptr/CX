@@ -18,6 +18,7 @@ import { eur } from '../lib/format';
 import { haptics } from '../lib/native';
 import { apiUrl } from '../lib/api';
 import { shrinkImage } from '../lib/shrinkImage';
+import { DevicesPanel } from '../components/DevicesPanel';
 
 type SectionId = 'personal' | 'driver' | 'notifications' | 'payments' | 'preferences' | 'security';
 const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
@@ -424,6 +425,7 @@ export default function Settings() {
 
               {section === 'security' && (
                 <>
+                  <DevicesPanel />
                   <div className="mt-5 divide-y divide-line overflow-hidden rounded-[22px] border border-line bg-surface">
                     <Field label={t('New password')} hint={t('At least 8 characters.')}><input type="password" autoComplete="new-password" value={pwd.next} onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))} placeholder="••••••••" className={fieldInput} /></Field>
                     <Field label={t('Confirm new password')}><input type="password" autoComplete="new-password" value={pwd.confirm} onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))} placeholder="••••••••" className={fieldInput} /></Field>
