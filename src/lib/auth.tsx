@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -13,6 +14,9 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { Browser as CapacitorBrowser } from '@capacitor/browser';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { registerPushToken, unregisterPushToken } from './push';
+import { requestPersistentStorage } from './sessionStorage';
+
+const PROFILE_CACHE = 'cx.profile.v1';
 
 const NOT_CONFIGURED_ERROR =
   'Sign-in is not set up yet — Supabase keys are missing from .env.local.';
@@ -97,8 +101,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    setProfile((data as Profile | null) ?? null);
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    // A failed request (network just woke up) must not wipe a profile we already have.
+    if (error && !data) return;
+    const next = (data as Profile | null) ?? null;
+    setProfile(next);
+    try {
+      if (next) window.localStorage.setItem(PROFILE_CACHE, JSON.stringify(next));
+    } catch { /* storage unavailable */ }
+  }, []);
+
+  // ---- Session manager -------------------------------------------------------------------
+  // Coming back to Safari after leaving it used to land people signed out. The causes this
+  // guards against: (1) the token refresh failing for a moment while the network wakes up, which
+  // the client reports as "no session" even though the sign-in is still valid; (2) a stray
+  // event with a null session; (3) the page being rebuilt by iOS, which re-resolves the session
+  // from storage. A sign-in now only ends when the server says so (refresh token rejected) after
+  // re-checking, or when the person presses sign out.
+  const hadSession = useRef(false);
+  const signingOut = useRef(false);
+  const verifying = useRef<Promise<void> | null>(null);
+
+  /** The session is gone from where we looked — look again (with patience) before believing it. */
+  const confirmSignedOut = useCallback(() => {
+    if (verifying.current) return verifying.current;
+    const run = async () => {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        if (attempt > 0) await new Promise((r) => window.setTimeout(r, 700 * attempt));
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setSession(data.session);
+          return;
+        }
+        // The server refusing the refresh token is final; only network trouble is worth retrying.
+        const { error } = await supabase.auth.refreshSession();
+        if (!error) return; // refreshSession fires TOKEN_REFRESHED, which restores the session
+        if (!/network|fetch|timeout|failed to/i.test(error.message)) break;
+      }
+      hadSession.current = false;
+      setSession(null);
+      setProfile(null);
+      try { window.localStorage.removeItem(PROFILE_CACHE); } catch { /* ignore */ }
+    };
+    verifying.current = run().finally(() => { verifying.current = null; });
+    return verifying.current;
   }, []);
 
   useEffect(() => {
@@ -107,33 +153,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    requestPersistentStorage();
     let cancelled = false;
 
-    supabase.auth.getSession().then(({ data }) => {
+    // Instant first paint for someone who was signed in: the last profile we saw.
+    try {
+      const cached = window.localStorage.getItem(PROFILE_CACHE);
+      if (cached) setProfile(JSON.parse(cached) as Profile);
+    } catch { /* ignore */ }
+
+    supabase.auth.getSession().then(async ({ data }) => {
       if (cancelled) return;
+      // No session although this device was signed in a moment ago (cached profile present):
+      // most likely the first refresh hit a sleeping network. Keep the app on its loading state
+      // and look again before sending anyone to the login page.
+      if (!data.session) {
+        let wasSignedIn = false;
+        try { wasSignedIn = Boolean(window.localStorage.getItem(PROFILE_CACHE)); } catch { /* ignore */ }
+        if (wasSignedIn) {
+          hadSession.current = true;
+          await confirmSignedOut();
+          if (cancelled) return;
+          const again = await supabase.auth.getSession();
+          if (again.data.session) {
+            setSession(again.data.session);
+            void loadProfile(again.data.session.user.id);
+            void registerPushToken(again.data.session.user.id);
+            setLoading(false);
+            return;
+          }
+        }
+      }
       setSession(data.session);
       if (data.session) {
+        hadSession.current = true;
         void loadProfile(data.session.user.id);
         void registerPushToken(data.session.user.id);
+      } else {
+        // Nothing stored: clear the cache so a stale profile never outlives its sign-in.
+        try { window.localStorage.removeItem(PROFILE_CACHE); } catch { /* ignore */ }
+        setProfile(null);
       }
       setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next);
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       if (next) {
-        void loadProfile(next.user.id);
-        void registerPushToken(next.user.id);
-      } else {
-        setProfile(null);
+        hadSession.current = true;
+        setSession(next);
+        // TOKEN_REFRESHED fires every hour — no need to reload the profile for it.
+        if (event !== 'TOKEN_REFRESHED') {
+          void loadProfile(next.user.id);
+          void registerPushToken(next.user.id);
+        }
+        return;
       }
+      if (signingOut.current || !hadSession.current) {
+        setSession(null);
+        setProfile(null);
+        return;
+      }
+      void confirmSignedOut();
     });
+
+    // Back from the background / the network came back: make sure the session is alive, and
+    // refresh it early if it is about to lapse.
+    const onResume = () => {
+      if (document.visibilityState === 'hidden' || !hadSession.current || signingOut.current) return;
+      void (async () => {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          void confirmSignedOut();
+          return;
+        }
+        const left = (data.session.expires_at ?? 0) - Math.floor(Date.now() / 1000);
+        if (left < 90) await supabase.auth.refreshSession();
+      })();
+    };
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('pageshow', onResume);
+    window.addEventListener('online', onResume);
+    window.addEventListener('focus', onResume);
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('pageshow', onResume);
+      window.removeEventListener('online', onResume);
+      window.removeEventListener('focus', onResume);
     };
-  }, [loadProfile]);
+  }, [loadProfile, confirmSignedOut]);
 
   // Catches Google's redirect back into the app after the system-browser
   // consent flow below (native only — the web build's redirect is a plain
@@ -216,8 +326,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Runs before auth.signOut() so the delete still carries this user's
     // own session — deleting under RLS after sign-out would have no
     // identity to check auth.uid() against.
-    await unregisterPushToken();
-    await supabase.auth.signOut();
+    signingOut.current = true;
+    try {
+      await unregisterPushToken();
+      await supabase.auth.signOut();
+    } finally {
+      hadSession.current = false;
+      signingOut.current = false;
+      try { window.localStorage.removeItem(PROFILE_CACHE); } catch { /* ignore */ }
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {

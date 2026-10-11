@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { authStorage } from './secureStorage';
+import { sessionStorageAdapter } from './sessionStorage';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -22,9 +22,9 @@ if (!isSupabaseConfigured) {
 // call site is gated behind `isSupabaseConfigured` so the placeholder is
 // never actually used to make a request.
 //
-// `authStorage` is only set on the native iOS build, where it points the
-// session at the Keychain instead of the default localStorage — see
-// src/lib/secureStorage.ts.
+// The session is stored by sessionStorageAdapter: Keychain on the native iOS
+// build (src/lib/secureStorage.ts), localStorage + an IndexedDB mirror on the web
+// (src/lib/sessionStorage.ts) so Safari trimming one copy never signs anyone out.
 export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder', {
-  auth: { storage: authStorage },
+  auth: { storage: sessionStorageAdapter, persistSession: true, autoRefreshToken: true },
 });
