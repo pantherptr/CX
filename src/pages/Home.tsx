@@ -1,4 +1,3 @@
-import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
 import { Icon, type IconName } from '../components/Icon';
@@ -12,13 +11,10 @@ import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { Car } from '../data/types';
-import { CITY_COORDS } from '../data/cityCoords';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
 
-const globePlaces = catalogue.cityNames.filter((c) => CITY_COORDS[c]).map((c) => ({ name: c, coords: CITY_COORDS[c] }));
-const CityGlobe = lazy(() => import('../components/home/CityGlobe').then((m) => ({ default: m.CityGlobe })));
 
 /** The SIGNAL preview: a Story and two posts, fanned side by side, built
  *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
@@ -154,7 +150,6 @@ export default function Home() {
   const { t } = useLocale();
   const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
-  const [globeCity, setGlobeCity] = useState<string>(catalogue.cityNames[0] ?? '');
 
   // A real car photo for the delivery story (second-best rated so it
   // differs from the first fleet card).
@@ -549,43 +544,6 @@ export default function Home() {
             </ul>
           </div>
         </Reveal>
-      </section>
-
-      {/* ================= WHERE CX IS LIVE — the globe ================= */}
-      <section className="container-page section">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <Reveal>
-            <p className="eyebrow">{t('Where CX is live')}</p>
-            <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-              {t('{n} European cities, one key.', { n: catalogue.cities })}
-            </h2>
-            <p className="mt-3 max-w-md text-copy leading-relaxed text-muted">
-              {t('Pick up in {city}, drive on to the next. Drag the globe to look around.', { city: globeCity || t('your city') })}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              {catalogue.cityNames.map((c) => (
-                <Link
-                  key={c}
-                  to={`/browse?city=${encodeURIComponent(c)}`}
-                  data-active={c === globeCity}
-                  className="chip"
-                >
-                  {c}
-                </Link>
-              ))}
-            </div>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Link to="/browse" className="btn btn-accent-bright btn-lg">
-                {t('Find a car')} <Icon name="arrowRight" size={17} />
-              </Link>
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <Suspense fallback={<div className="mx-auto aspect-square w-full max-w-[26rem] rounded-full skeleton" />}>
-              <CityGlobe places={globePlaces} onCityChange={setGlobeCity} />
-            </Suspense>
-          </Reveal>
-        </div>
       </section>
 
       {/* ================= FAQ — the real answers from the Help Center ================= */}
