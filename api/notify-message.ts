@@ -38,6 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const b = req.body as { userId?: string; title?: string; body?: string; url?: string };
     if (!url || !key || !b.userId || !b.title) return res.status(400).json({ error: 'Bad request' });
     const admin = createClient(url, key, { auth: { persistSession: false } });
+    const prefs = await getNotificationPrefs(admin, b.userId);
+    if (!prefs.push) return res.status(200).json({ sent: false });
     await sendPushToUser(admin, b.userId, { title: b.title, body: b.body ?? '', data: { url: b.url ?? '/' } });
     return res.status(200).json({ sent: true });
   }
