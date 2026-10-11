@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { sendPickupReminderEmail, sendReturnReminderEmail } from './_lib/email.js';
 import { notifyUser } from './_lib/push.js';
+import { getUserLang } from './_lib/texts.js';
 
 /**
  * The daily housekeeping sweep — everything here runs once a day rather
@@ -89,6 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const carLabel = row.car ? `${row.car.year} ${row.car.make} ${row.car.model}` : 'your car';
     if (email) {
       await sendPickupReminderEmail(email, {
+        lang: await getUserLang(supabase, row.renter_id),
         reference: row.reference,
         carLabel,
         startDate: row.start_date,
@@ -125,6 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const carLabel = row.car ? `${row.car.year} ${row.car.make} ${row.car.model}` : 'your car';
     if (email) {
       await sendReturnReminderEmail(email, {
+        lang: await getUserLang(supabase, row.renter_id),
         reference: row.reference,
         carLabel,
         startDate: row.start_date,

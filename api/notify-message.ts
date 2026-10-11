@@ -93,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (async () => {
         const { data } = await admin.auth.admin.getUserById(userId);
         const email = data?.user?.email;
-        if (email) await sendVerificationDecisionEmail(email, { kind, decision, reason });
+        if (email) await sendVerificationDecisionEmail(email, { kind, decision, reason, lang });
       })(),
     ]);
     return res.status(200).json({ sent: true });

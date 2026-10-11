@@ -32,7 +32,7 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 0098 collab · 0099 team boost notifications · 0100 sponsored posts · 0101 unpin community posts ·
 0102 host commission + payout ledger · 0103 owner payout overview · 0104 chat photos/delete/report ·
 0105 user devices · 0106 identity + licence verification · 0107 car catalogue (names/specs) ·
-0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs.
+0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts).
 Code is written to fail soft before a migration is run.
 
 ## Features worth knowing
@@ -60,6 +60,16 @@ Code is written to fail soft before a migration is run.
 - Web Push: `public/sw.js`, `src/lib/webPush.ts`; env `VITE_VAPID_PUBLIC_KEY`, `VAPID_PUBLIC_KEY`,
   `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. iPhone needs the site on the Home Screen.
 - Optional DB→push fan-out: fill `notify_config` (url + secret) and set `NOTIFY_FANOUT_SECRET` on Vercel.
+
+## Languages
+- UI is English-keyed: `src/lib/i18n/dict.ts` rows `[en, it, ro, es]` (+ `auto/*.json` for the rest, applied
+  by the DOM translator). English is selectable from the country map (UK) and via "Continue in English".
+- Dates/numbers follow the chosen language through `uiLocale()` (never hard-code `'en-GB'`; note `src/lib/format.ts`
+  is imported by the server, so its imports need `.js`).
+- Server-written texts (push, inbox, CX chat messages, emails) are per language: `api/_lib/texts.ts`,
+  `cx_texts` table + `cx_text()` in SQL, `tx()` in `api/_lib/email.ts`. The app saves the language with
+  `save_my_language` (see `NotificationToaster`).
+- When you add UI text, add a row to `dict.ts` (it/ro/es) in the same change.
 
 ## Open items / ideas
 - Go-live checklist (domain `cxworld.eu`, Resend sender domain, APNs keys for push, legal pages, Stripe live).

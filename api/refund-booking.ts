@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { applyCors } from './_lib/cors.js';
 import { sendBookingRefundedEmail } from './_lib/email.js';
 import { notifyUser } from './_lib/push.js';
+import { getUserLang } from './_lib/texts.js';
 
 /**
  * Owner/Admin-only: issues a real Stripe refund for a booking's rental
@@ -130,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         pickupLocation: booking.pickup_location || '',
         totalPrice: Number(booking.total_price),
       };
-      if (renterAuth?.user?.email) await sendBookingRefundedEmail(renterAuth.user.email, tripBase);
+      if (renterAuth?.user?.email) await sendBookingRefundedEmail(renterAuth.user.email, { ...tripBase, lang: await getUserLang(supabase, booking.renter_id) });
       await notifyUser(supabase, booking.renter_id, {
         kind: 'booking_refunded',
         key: 'booking_refunded',

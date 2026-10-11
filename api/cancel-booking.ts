@@ -5,6 +5,7 @@ import { refundFor, isPolicy } from './_lib/cancellationPolicy.js';
 import { applyCors } from './_lib/cors.js';
 import { sendBookingCancelledEmail } from './_lib/email.js';
 import { notifyUser } from './_lib/push.js';
+import { getUserLang } from './_lib/texts.js';
 
 /**
  * Server-side cancellation with an automatic, policy-based refund.
@@ -197,12 +198,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const notifyRenter = !isRenter;
     const notifyHost = !isHost;
 
+    const [renterLang, hostLang] = await Promise.all([getUserLang(supabase, updated.renter_id), getUserLang(supabase, updated.host_id)]);
     await Promise.all([
       notifyRenter && renterAuth?.user?.email
-        ? sendBookingCancelledEmail(renterAuth.user.email, { ...tripBase, otherPartyName: hostProfile?.full_name || 'Your host' })
+        ? sendBookingCancelledEmail(renterAuth.user.email, { ...tripBase, lang: renterLang, otherPartyName: hostProfile?.full_name || 'Your host' })
         : Promise.resolve(),
       notifyHost && hostAuth?.user?.email
-        ? sendBookingCancelledEmail(hostAuth.user.email, { ...tripBase, otherPartyName: renterProfile?.full_name || 'The renter' })
+        ? sendBookingCancelledEmail(hostAuth.user.email, { ...tripBase, lang: hostLang, otherPartyName: renterProfile?.full_name || 'The renter' })
         : Promise.resolve(),
       notifyRenter
         ? notifyUser(supabase, updated.renter_id, {

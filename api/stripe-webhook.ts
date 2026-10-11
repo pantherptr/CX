@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sendBookingConfirmedEmail, sendNewBookingHostEmail } from './_lib/email.js';
 import { notifyUser } from './_lib/push.js';
+import { getUserLang } from './_lib/texts.js';
 
 /**
  * The refundable security deposit — see
@@ -327,13 +328,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const renterEmail = renterAuth?.user?.email;
       const hostEmail = hostAuth?.user?.email;
+      const [renterLang, hostLang] = await Promise.all([getUserLang(supabase, meta.renterId), getUserLang(supabase, booking.host_id)]);
 
       await Promise.all([
         renterEmail
-          ? sendBookingConfirmedEmail(renterEmail, { ...tripBase, otherPartyName: hostProfile?.full_name || 'your host' })
+          ? sendBookingConfirmedEmail(renterEmail, { ...tripBase, lang: renterLang, otherPartyName: hostProfile?.full_name || 'your host' })
           : Promise.resolve(),
         hostEmail
-          ? sendNewBookingHostEmail(hostEmail, { ...tripBase, otherPartyName: renterProfile?.full_name || 'A renter' })
+          ? sendNewBookingHostEmail(hostEmail, { ...tripBase, lang: hostLang, otherPartyName: renterProfile?.full_name || 'A renter' })
           : Promise.resolve(),
         notifyUser(supabase, meta.renterId, {
           kind: 'booking_confirmed',

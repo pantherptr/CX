@@ -3,6 +3,7 @@ import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
 import { shrinkImage } from '../shrinkImage';
 import { catalogHeroUrl, loadCatalog } from './catalog';
+import { uiLocale } from '../i18n/uiLocale';
 import type { Car, Host, Review } from '../../data/types';
 
 /**
@@ -103,7 +104,7 @@ async function promoteDueListings(): Promise<void> {
 }
 
 const reviewDate = (iso: string) =>
-  new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(new Date(iso));
+  new Intl.DateTimeFormat(uiLocale(), { month: 'long', year: 'numeric' }).format(new Date(iso));
 
 function mapReview(row: ReviewRow): Review {
   return {
