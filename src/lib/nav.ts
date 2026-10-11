@@ -18,7 +18,7 @@ export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
   { label: 'Payments', to: '/settings#payments', icon: 'card' },
   { label: 'Rewards', to: '/dashboard#rewards', icon: 'gift' },
-  { label: 'Profile', to: '/settings', icon: 'user' },
+  { label: 'Profile', to: '/settings#personal', icon: 'user' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
 ];
 
@@ -30,6 +30,6 @@ export const hostNav = (unreadCount: number): NavItem[] => [
   { label: 'Calendar', to: '/host#calendar', icon: 'calendar' },
   { label: 'Messages', to: '/messages', icon: 'message', badge: unreadCount || undefined },
   { label: 'Earnings', to: '/host#earnings', icon: 'euro' },
-  { label: 'Profile', to: '/settings', icon: 'user' },
+  { label: 'Profile', to: '/settings#personal', icon: 'user' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
 ];
