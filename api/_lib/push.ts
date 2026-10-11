@@ -2,6 +2,7 @@ import { createSign } from 'crypto';
 import http2 from 'http2';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
+import { getUserLang, text } from './texts.js';
 
 /**
  * Push notifications over APNs, using Node's own `crypto` and `http2`
@@ -202,11 +203,28 @@ const isTripKind = (kind: string) => /^(booking_|pickup_|return_|handover_|depos
 export async function notifyUser(
   supabase: SupabaseClient,
   userId: string,
-  n: { kind: string; title: string; body: string; url?: string; push?: boolean },
+  n: {
+    kind: string;
+    /** A key of api/_lib/texts.ts — wording is picked in the person's own language. */
+    key?: string;
+    vars?: Record<string, string | number>;
+    /** English fallback / explicit wording when there is no key. */
+    title?: string;
+    body?: string;
+    url?: string;
+    push?: boolean;
+  },
 ): Promise<void> {
+  let title = n.title ?? '';
+  let body = n.body ?? '';
+  if (n.key) {
+    const lang = await getUserLang(supabase, userId);
+    const t = text(n.key, lang, n.vars);
+    if (t) { title = t.title; body = t.body; }
+  }
   try {
     await supabase.from('app_notifications').insert({
-      user_id: userId, kind: n.kind, title: n.title, body: n.body, url: n.url ?? null, skip_push: true,
+      user_id: userId, kind: n.kind, title, body, url: n.url ?? null, skip_push: true,
     });
   } catch (err) {
     console.error('[notify] inbox insert failed', n.kind, err);
@@ -214,7 +232,7 @@ export async function notifyUser(
   if (n.push !== false) {
     const prefs = await getNotificationPrefs(supabase, userId);
     if (prefs.push && (prefs.trips || !isTripKind(n.kind))) {
-      await sendPushToUser(supabase, userId, { title: n.title, body: n.body, data: { url: n.url ?? '/' } });
+      await sendPushToUser(supabase, userId, { title, body, data: { url: n.url ?? '/' } });
     }
   }
 }

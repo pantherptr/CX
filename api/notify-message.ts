@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { applyCors } from './_lib/cors.js';
 import { sendPushToUser, getNotificationPrefs } from './_lib/push.js';
+import { getUserLang, text } from './_lib/texts.js';
 import { sendVerificationDecisionEmail } from './_lib/email.js';
 
 /**
@@ -81,10 +82,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     const what = kind === 'identity' ? 'identity' : 'driving licence';
     const approved = decision === 'approved';
+    const lang = await getUserLang(admin, userId);
+    const vt = text(`${approved ? 'verif_ok' : 'verif_no'}_${kind}`, lang, { reason: (reason || '').slice(0, 120) });
     await Promise.all([
       sendPushToUser(admin, userId, {
-        title: approved ? `Your ${what} is verified ✓` : `Your ${what} needs a new photo`,
-        body: approved ? (kind === 'identity' ? 'Your profile now has the verified badge.' : 'You are ready to rent.') : (reason || 'Tap to see why and send it again.').slice(0, 120),
+        title: vt?.title ?? (approved ? `Your ${what} is verified ✓` : `Your ${what} needs a new photo`),
+        body: vt?.body || (approved ? 'You are ready to rent.' : (reason || 'Tap to see why and send it again.').slice(0, 120)),
         data: { url: approved ? '/settings#verification' : `/settings#${kind === 'identity' ? 'verification' : 'licence'}` },
       }),
       (async () => {
@@ -115,9 +118,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: car } = await admin.from('cars').select('host_id, make, model').eq('id', carId).maybeSingle();
     if (!car) return res.status(404).json({ error: 'Not found.' });
     const approved = decision === 'approved';
+    const hostLang = await getUserLang(admin, car.host_id as string);
+    const lt = text(approved ? 'listing_live' : 'listing_rejected', hostLang, { car: `${car.make} ${car.model}`, reason: (reason || '').slice(0, 120) });
     await sendPushToUser(admin, car.host_id as string, {
-      title: approved ? `Your ${car.make} ${car.model} is live` : `Your ${car.make} ${car.model} needs changes`,
-      body: approved ? 'Renters can find it now.' : (reason || 'Open it to see what to fix.').slice(0, 120),
+      title: lt?.title ?? (approved ? `Your ${car.make} ${car.model} is live` : `Your ${car.make} ${car.model} needs changes`),
+      body: lt?.body || (approved ? 'Renters can find it now.' : (reason || 'Open it to see what to fix.').slice(0, 120)),
       data: { url: '/host#cars' },
     });
     return res.status(200).json({ sent: true });
@@ -137,13 +142,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
     const { data: team } = await admin.from('profiles').select('id').or('is_admin.eq.true,is_owner.eq.true');
     await Promise.all(
-      (team ?? []).map((t: { id: string }) =>
-        sendPushToUser(admin, t.id, {
-          title: 'New listing to review',
-          body: `${car.year} ${car.make} ${car.model} — goes live in 5 minutes unless you take a look.`,
+      (team ?? []).map(async (t: { id: string }) => {
+        const lang = await getUserLang(admin, t.id);
+        const tx = text('listing_submitted', lang, { car: `${car.year} ${car.make} ${car.model}` });
+        return sendPushToUser(admin, t.id, {
+          title: tx?.title ?? 'New listing to review',
+          body: tx?.body ?? `${car.year} ${car.make} ${car.model} — goes live in 5 minutes unless you take a look.`,
           data: { url: '/admin#review' },
-        }),
-      ),
+        });
+      }),
     );
     return res.status(200).json({ notified: (team ?? []).length });
   }
@@ -183,12 +190,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
   // Support writes under the company's name, never the Owner's own.
   const senderName = senderProfile?.is_owner ? 'CX' : senderProfile?.full_name || 'Someone';
-  const body = preview ? preview.slice(0, 120) : 'Sent you a message';
+  const previewText = preview ? preview.slice(0, 120) : null;
 
   await Promise.all(
     recipients.map(async (recipientId: string) => {
       const prefs = await getNotificationPrefs(adminClient, recipientId);
       if (!prefs.push || !prefs.messages) return;
+      const lang = await getUserLang(adminClient, recipientId);
+      const body = previewText ?? text('message_fallback', lang)?.body ?? 'Sent you a message';
       return sendPushToUser(adminClient, recipientId, {
         title: senderName,
         body,

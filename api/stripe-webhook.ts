@@ -337,12 +337,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : Promise.resolve(),
         notifyUser(supabase, meta.renterId, {
           kind: 'booking_confirmed',
+          key: 'booking_confirmed',
+          vars: { car: carLabel, date: tripBase.startDate },
           title: 'Booking confirmed',
           body: `Your ${carLabel} is booked for ${tripBase.startDate}.`,
           url: '/dashboard#trips',
         }),
         notifyUser(supabase, booking.host_id, {
           kind: 'booking_new',
+          key: 'booking_new',
+          vars: { name: renterProfile?.full_name || 'A renter', car: carLabel },
           title: 'New booking',
           body: `${renterProfile?.full_name || 'A renter'} booked your ${carLabel}.`,
           url: '/host#bookings',

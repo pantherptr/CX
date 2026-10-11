@@ -133,6 +133,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (renterAuth?.user?.email) await sendBookingRefundedEmail(renterAuth.user.email, tripBase);
       await notifyUser(supabase, booking.renter_id, {
         kind: 'booking_refunded',
+        key: 'booking_refunded',
+        vars: { car: carLabel, ref: booking.reference },
         title: 'Refund issued',
         body: `You've been refunded for your ${carLabel} booking (${booking.reference}).`,
         url: '/dashboard#trips',

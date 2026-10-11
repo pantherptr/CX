@@ -100,6 +100,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     await notifyUser(supabase, row.renter_id, {
       kind: 'pickup_tomorrow',
+      key: 'pickup_tomorrow',
+      vars: { car: carLabel },
       title: 'Pick-up is tomorrow',
       body: `Your ${carLabel} is ready for pick-up tomorrow.`,
       url: '/dashboard#trips',
@@ -108,6 +110,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (row.host_id) {
       await notifyUser(supabase, row.host_id, {
         kind: 'handover_tomorrow',
+        key: 'handover_tomorrow',
+        vars: { car: carLabel, ref: row.reference },
         title: 'Hand-over is tomorrow',
         body: `${carLabel} goes out tomorrow (${row.reference}).`,
         url: '/host#bookings',
@@ -132,6 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     await notifyUser(supabase, row.renter_id, {
       kind: 'return_tomorrow',
+      key: 'return_tomorrow',
+      vars: { car: carLabel },
       title: 'Return is tomorrow',
       body: `Your ${carLabel} is due back tomorrow.`,
       url: '/dashboard#trips',
@@ -139,6 +145,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (row.host_id) {
       await notifyUser(supabase, row.host_id, {
         kind: 'return_expected',
+        key: 'return_expected',
+        vars: { car: carLabel, ref: row.reference },
         title: 'Your car comes back tomorrow',
         body: `${carLabel} is due back tomorrow (${row.reference}).`,
         url: '/host#bookings',
@@ -173,6 +181,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (dep.renter_id) {
           await notifyUser(supabase, dep.renter_id, {
             kind: 'deposit_released',
+            key: 'deposit_released',
+            vars: { ref: dep.reference ?? '' },
             title: 'Your deposit was released',
             body: `The hold for booking ${dep.reference ?? ''} is back with you. How was the trip? Leave a review.`,
             url: '/dashboard#trips',
@@ -232,6 +242,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (row.payout_status !== 'blocked') {
           await notifyUser(supabase, row.host_id, {
             kind: 'payout_blocked',
+            key: 'payout_blocked',
+            vars: { amount: amount.toFixed(2) },
             title: 'Finish your payout setup',
             body: `A €${amount.toFixed(2)} payout is waiting — add your bank details to receive it.`,
             url: '/host#earnings',
@@ -271,6 +283,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         payoutsSent++;
         await notifyUser(supabase, row.host_id, {
           kind: 'payout_sent',
+          key: 'payout_sent',
+          vars: { amount: net.toFixed(2) },
           title: 'Payout on its way',
           body: `€${net.toFixed(2)} is being sent to your bank.`,
           url: '/host#earnings',

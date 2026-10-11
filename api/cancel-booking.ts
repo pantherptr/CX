@@ -207,6 +207,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notifyRenter
         ? notifyUser(supabase, updated.renter_id, {
             kind: 'booking_cancelled',
+            key: 'booking_cancelled_renter',
+            vars: { car: carLabel, ref: updated.reference },
             title: 'Booking cancelled',
             body: `Your ${carLabel} booking (${updated.reference}) was cancelled.`,
             url: '/dashboard#trips',
@@ -215,6 +217,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notifyHost
         ? notifyUser(supabase, updated.host_id, {
             kind: 'booking_cancelled',
+            key: 'booking_cancelled_host',
+            vars: { car: carLabel, ref: updated.reference },
             title: 'Booking cancelled',
             body: `The ${carLabel} booking (${updated.reference}) was cancelled.`,
             url: '/host#bookings',

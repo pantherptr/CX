@@ -1,4 +1,4 @@
-import { uiLocale } from './i18n/uiLocale';
+import { uiLocale } from './i18n/uiLocale.js';
 
 export const eur = (n: number) =>
   new Intl.NumberFormat(uiLocale().replace('GB', 'IE'), {
