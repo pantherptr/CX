@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { supabase } from '../supabase';
+import { fetchUnreadAppCount } from './appNotifications';
 
 /**
  * A real, general notification feed — see
@@ -163,7 +164,8 @@ export function useUnreadNotificationCount(userId: string | undefined) {
       setCount(0);
       return;
     }
-    fetchUnreadNotificationCount().then(setCount);
+    // SIGNAL activity + platform updates (bookings, payouts, verification…) share one badge.
+    void Promise.all([fetchUnreadNotificationCount(), fetchUnreadAppCount()]).then(([a, b]) => setCount(a + b));
   }, [userId]);
 
   useEffect(() => {
@@ -178,6 +180,8 @@ export function useUnreadNotificationCount(userId: string | undefined) {
       .channel(`notifications-count:${userId}:${instanceId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, scheduleRefetch)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, scheduleRefetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'app_notifications', filter: `user_id=eq.${userId}` }, scheduleRefetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_notifications', filter: `user_id=eq.${userId}` }, scheduleRefetch)
       .subscribe();
     return () => {
       if (debounceHandle) window.clearTimeout(debounceHandle);

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { applyCors } from './_lib/cors.js';
-import { sendPushToUser } from './_lib/push.js';
+import { sendPushToUser, getNotificationPrefs } from './_lib/push.js';
 import { sendVerificationDecisionEmail } from './_lib/email.js';
 
 /**
@@ -25,6 +25,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Database → push: a row written by a database function (notify_config, migration 0110) calls us
+  // with a shared secret instead of a user session.
+  if ((req.body ?? {}).type === 'fanout') {
+    const secret = process.env.NOTIFY_FANOUT_SECRET;
+    if (!secret || req.headers['x-cx-secret'] !== secret) return res.status(401).json({ error: 'Unauthorized' });
+    const url = process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const b = req.body as { userId?: string; title?: string; body?: string; url?: string };
+    if (!url || !key || !b.userId || !b.title) return res.status(400).json({ error: 'Bad request' });
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+    await sendPushToUser(admin, b.userId, { title: b.title, body: b.body ?? '', data: { url: b.url ?? '/' } });
+    return res.status(200).json({ sent: true });
   }
 
   const authHeader = req.headers.authorization;
@@ -79,6 +93,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (email) await sendVerificationDecisionEmail(email, { kind, decision, reason });
       })(),
     ]);
+    return res.status(200).json({ sent: true });
+  }
+
+  // The team decided on a listing: push the host (the inbox row and the CX chat message are written
+  // by the database function).
+  if (type === 'listing_decision') {
+    const carId = (req.body ?? {}).carId as string | undefined;
+    if (!carId || !decision) return res.status(400).json({ error: 'Missing fields.' });
+    const teamClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const {
+      data: { user: reviewer },
+    } = await teamClient.auth.getUser();
+    if (!reviewer) return res.status(401).json({ error: 'Your session has expired — please sign in again.' });
+    const { data: me } = await teamClient.from('profiles').select('is_admin, is_owner').eq('id', reviewer.id).single();
+    if (!me?.is_admin && !me?.is_owner) return res.status(403).json({ error: 'Not allowed.' });
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: car } = await admin.from('cars').select('host_id, make, model').eq('id', carId).maybeSingle();
+    if (!car) return res.status(404).json({ error: 'Not found.' });
+    const approved = decision === 'approved';
+    await sendPushToUser(admin, car.host_id as string, {
+      title: approved ? `Your ${car.make} ${car.model} is live` : `Your ${car.make} ${car.model} needs changes`,
+      body: approved ? 'Renters can find it now.' : (reason || 'Open it to see what to fix.').slice(0, 120),
+      data: { url: '/host#cars' },
+    });
     return res.status(200).json({ sent: true });
   }
 
@@ -145,13 +186,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = preview ? preview.slice(0, 120) : 'Sent you a message';
 
   await Promise.all(
-    recipients.map((recipientId: string) =>
-      sendPushToUser(adminClient, recipientId, {
+    recipients.map(async (recipientId: string) => {
+      const prefs = await getNotificationPrefs(adminClient, recipientId);
+      if (!prefs.push || !prefs.messages) return;
+      return sendPushToUser(adminClient, recipientId, {
         title: senderName,
         body,
         data: { url: `/messages?c=${conversationId}` },
-      }),
-    ),
+      });
+    }),
   );
 
   return res.status(200).json({ sent: recipients.length });

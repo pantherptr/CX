@@ -34,3 +34,7 @@ ios/App/App/public
 # Scratch/cleanup staging area, not project source.
 _to_delete/
 .blender-tmp/
+
+# local secrets
+NOTIFICHE-CHIAVI.local.txt
+*.local.txt

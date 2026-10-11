@@ -57,7 +57,23 @@ export async function claimListing(carId: string): Promise<void> {
 
 export async function decideListing(carId: string, decision: 'approved' | 'rejected', reason?: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('review_listing', { p_car_id: carId, p_decision: decision, p_reason: reason ?? null });
+  if (!error) void pushListingDecision(carId, decision, reason);
   return { error: error ? error.message : null };
+}
+
+/** Push to the host (inbox row + chat message are written by the database function). */
+async function pushListingDecision(carId: string, decision: 'approved' | 'rejected', reason?: string): Promise<void> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch(apiUrl('/api/notify-message'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ type: 'listing_decision', carId, decision, reason }),
+    });
+  } catch {
+    /* the inbox row and the chat message already exist */
+  }
 }
 
 export async function withdrawListing(carId: string): Promise<{ error: string | null }> {

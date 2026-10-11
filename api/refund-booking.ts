@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { applyCors } from './_lib/cors.js';
 import { sendBookingRefundedEmail } from './_lib/email.js';
-import { sendPushToUser } from './_lib/push.js';
+import { notifyUser } from './_lib/push.js';
 
 /**
  * Owner/Admin-only: issues a real Stripe refund for a booking's rental
@@ -131,10 +131,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         totalPrice: Number(booking.total_price),
       };
       if (renterAuth?.user?.email) await sendBookingRefundedEmail(renterAuth.user.email, tripBase);
-      await sendPushToUser(supabase, booking.renter_id, {
+      await notifyUser(supabase, booking.renter_id, {
+        kind: 'booking_refunded',
         title: 'Refund issued',
         body: `You've been refunded for your ${carLabel} booking (${booking.reference}).`,
-        data: { url: '/dashboard#trips' },
+        url: '/dashboard#trips',
       });
     } catch (err) {
       console.error('[refund-booking] notification failed for', bookingId, err);

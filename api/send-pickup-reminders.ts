@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { sendPickupReminderEmail, sendReturnReminderEmail } from './_lib/email.js';
-import { sendPushToUser } from './_lib/push.js';
+import { notifyUser } from './_lib/push.js';
 
 /**
  * The daily housekeeping sweep — everything here runs once a day rather
@@ -41,6 +41,7 @@ interface ReminderBookingRow {
   id: string;
   reference: string;
   renter_id: string;
+  host_id?: string | null;
   start_date: string;
   end_date: string;
   pickup_location: string | null;
@@ -67,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const tomorrowISO = tomorrow.toISOString().slice(0, 10);
 
-  const SELECT = 'id, reference, renter_id, start_date, end_date, pickup_location, total_price, car:cars!bookings_car_id_fkey (make, model, year)';
+  const SELECT = 'id, reference, renter_id, host_id, start_date, end_date, pickup_location, total_price, car:cars!bookings_car_id_fkey (make, model, year)';
 
   const [{ data: pickups, error: pickupsError }, { data: returns, error: returnsError }] = await Promise.all([
     supabase.from('bookings').select(SELECT).eq('status', 'confirmed').eq('start_date', tomorrowISO),
@@ -97,11 +98,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       pickupSent++;
     }
-    await sendPushToUser(supabase, row.renter_id, {
+    await notifyUser(supabase, row.renter_id, {
+      kind: 'pickup_tomorrow',
       title: 'Pick-up is tomorrow',
       body: `Your ${carLabel} is ready for pick-up tomorrow.`,
-      data: { url: '/dashboard#trips' },
+      url: '/dashboard#trips',
     });
+    // The host hands the car over tomorrow too.
+    if (row.host_id) {
+      await notifyUser(supabase, row.host_id, {
+        kind: 'handover_tomorrow',
+        title: 'Hand-over is tomorrow',
+        body: `${carLabel} goes out tomorrow (${row.reference}).`,
+        url: '/host#bookings',
+      });
+    }
   }
 
   for (const row of (returns ?? []) as unknown as ReminderBookingRow[]) {
@@ -119,11 +130,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       returnSent++;
     }
-    await sendPushToUser(supabase, row.renter_id, {
+    await notifyUser(supabase, row.renter_id, {
+      kind: 'return_tomorrow',
       title: 'Return is tomorrow',
       body: `Your ${carLabel} is due back tomorrow.`,
-      data: { url: '/dashboard#trips' },
+      url: '/dashboard#trips',
     });
+    if (row.host_id) {
+      await notifyUser(supabase, row.host_id, {
+        kind: 'return_expected',
+        title: 'Your car comes back tomorrow',
+        body: `${carLabel} is due back tomorrow (${row.reference}).`,
+        url: '/host#bookings',
+      });
+    }
   }
 
   // --- Release security deposits for trips that have ended -------------
@@ -136,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let depositsReleased = 0;
   const { data: endedBookings, error: endedError } = await supabase
     .from('bookings')
-    .select('id, stripe_deposit_intent_id')
+    .select('id, renter_id, reference, stripe_deposit_intent_id')
     .eq('deposit_status', 'held')
     .lt('end_date', todayISO);
 
@@ -149,6 +169,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await stripe.paymentIntents.cancel(row.stripe_deposit_intent_id);
         await supabase.from('bookings').update({ deposit_status: 'released' }).eq('id', row.id);
         depositsReleased++;
+        const dep = row as unknown as { renter_id?: string; reference?: string };
+        if (dep.renter_id) {
+          await notifyUser(supabase, dep.renter_id, {
+            kind: 'deposit_released',
+            title: 'Your deposit was released',
+            body: `The hold for booking ${dep.reference ?? ''} is back with you. How was the trip? Leave a review.`,
+            url: '/dashboard#trips',
+          });
+        }
       } catch (err) {
         // If it's already been captured or cancelled on Stripe's side
         // (e.g. an admin acted on it manually), cancel() errors — that's
@@ -176,7 +205,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const commissionPct = Math.min(50, Math.max(0, Number(commissionRow?.host_commission_pct ?? 0)));
   const { data: payoutDue, error: payoutError } = await supabase
     .from('bookings')
-    .select('id, host_id, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')
+    .select('id, host_id, payout_status, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')
     .eq('status', 'confirmed')
     .in('payout_status', ['pending', 'blocked'])
     .lt('end_date', todayISO);
@@ -187,6 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const row of (payoutDue ?? []) as unknown as {
       id: string;
       host_id: string;
+      payout_status: string | null;
       host_payout_amount: number | null;
       host: { stripe_connect_account_id: string | null; stripe_connect_payouts_enabled: boolean } | null;
     }[]) {
@@ -198,6 +228,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!row.host?.stripe_connect_account_id || !row.host.stripe_connect_payouts_enabled) {
         await supabase.from('bookings').update({ payout_status: 'blocked' }).eq('id', row.id);
         payoutsBlocked++;
+        // Once, not every night: only when it first becomes blocked.
+        if (row.payout_status !== 'blocked') {
+          await notifyUser(supabase, row.host_id, {
+            kind: 'payout_blocked',
+            title: 'Finish your payout setup',
+            body: `A €${amount.toFixed(2)} payout is waiting — add your bank details to receive it.`,
+            url: '/host#earnings',
+          });
+        }
         continue;
       }
       const commission = Math.round(amount * commissionPct) / 100; // euros, 2 decimals
@@ -230,6 +269,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .update({ payout_status: 'paid', stripe_transfer_id: transfer.id, payout_paid_at: new Date().toISOString() })
           .eq('id', row.id);
         payoutsSent++;
+        await notifyUser(supabase, row.host_id, {
+          kind: 'payout_sent',
+          title: 'Payout on its way',
+          body: `€${net.toFixed(2)} is being sent to your bank.`,
+          url: '/host#earnings',
+        });
       } catch (err) {
         console.error('[send-pickup-reminders] payout failed for booking', row.id, err);
         await supabase.from('bookings').update({ payout_status: 'failed' }).eq('id', row.id);

@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sendBookingConfirmedEmail, sendNewBookingHostEmail } from './_lib/email.js';
-import { sendPushToUser } from './_lib/push.js';
+import { notifyUser } from './_lib/push.js';
 
 /**
  * The refundable security deposit — see
@@ -335,15 +335,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hostEmail
           ? sendNewBookingHostEmail(hostEmail, { ...tripBase, otherPartyName: renterProfile?.full_name || 'A renter' })
           : Promise.resolve(),
-        sendPushToUser(supabase, meta.renterId, {
+        notifyUser(supabase, meta.renterId, {
+          kind: 'booking_confirmed',
           title: 'Booking confirmed',
           body: `Your ${carLabel} is booked for ${tripBase.startDate}.`,
-          data: { url: '/dashboard#trips' },
+          url: '/dashboard#trips',
         }),
-        sendPushToUser(supabase, booking.host_id, {
+        notifyUser(supabase, booking.host_id, {
+          kind: 'booking_new',
           title: 'New booking',
           body: `${renterProfile?.full_name || 'A renter'} booked your ${carLabel}.`,
-          data: { url: '/host#bookings' },
+          url: '/host#bookings',
         }),
       ]);
     } catch (err) {

@@ -15,6 +15,7 @@ import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
 import { CompareTray } from './components/CompareTray';
 import { MaintenanceGate } from './components/MaintenanceGate';
+import { NotificationToaster } from './components/NotificationToaster';
 
 // Eager — the three routes a first-time visitor actually lands on. Keeping
 // these in the main chunk avoids a loading flash on the critical path.
@@ -250,6 +251,7 @@ export default function App() {
     <>
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} onReady={splash.onReady} />}
       <ScrollToTop />
+      <NotificationToaster />
       <BatPullToRefresh enabled={pullEnabled && !splash.visible} onRefresh={() => { setRefreshNonce((n) => n + 1); return new Promise<void>((r) => window.setTimeout(r, 600)); }} />
       {/* Outer safety net — the inner ErrorBoundary below only covers the
           routed page itself; MaintenanceGate, BottomNav, CompareTray and

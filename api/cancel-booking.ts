@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { refundFor, isPolicy } from './_lib/cancellationPolicy.js';
 import { applyCors } from './_lib/cors.js';
 import { sendBookingCancelledEmail } from './_lib/email.js';
-import { sendPushToUser } from './_lib/push.js';
+import { notifyUser } from './_lib/push.js';
 
 /**
  * Server-side cancellation with an automatic, policy-based refund.
@@ -205,17 +205,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? sendBookingCancelledEmail(hostAuth.user.email, { ...tripBase, otherPartyName: renterProfile?.full_name || 'The renter' })
         : Promise.resolve(),
       notifyRenter
-        ? sendPushToUser(supabase, updated.renter_id, {
+        ? notifyUser(supabase, updated.renter_id, {
+            kind: 'booking_cancelled',
             title: 'Booking cancelled',
             body: `Your ${carLabel} booking (${updated.reference}) was cancelled.`,
-            data: { url: '/dashboard#trips' },
+            url: '/dashboard#trips',
           })
         : Promise.resolve(),
       notifyHost
-        ? sendPushToUser(supabase, updated.host_id, {
+        ? notifyUser(supabase, updated.host_id, {
+            kind: 'booking_cancelled',
             title: 'Booking cancelled',
             body: `The ${carLabel} booking (${updated.reference}) was cancelled.`,
-            data: { url: '/host#bookings' },
+            url: '/host#bookings',
           })
         : Promise.resolve(),
     ]);

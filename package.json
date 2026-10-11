@@ -38,6 +38,7 @@
     "resend": "^4.0.1",
     "stripe": "^17.4.0",
     "topojson-client": "^3.1.0",
+    "web-push": "^3.6.7",
     "world-atlas": "^2.0.2"
   },
   "devDependencies": {
@@ -48,6 +49,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/topojson-client": "^3.1.5",
+    "@types/web-push": "^3.6.4",
     "@vercel/node": "^3.2.24",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",

@@ -1,6 +1,7 @@
 import { createSign } from 'crypto';
 import http2 from 'http2';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
 /**
  * Push notifications over APNs, using Node's own `crypto` and `http2`
@@ -137,7 +138,88 @@ function sendOne(token: string, payload: PushPayload): Promise<SendResult> {
  * email address would get, just done inline since there's no bounce
  * webhook here.
  */
+// ---- Web Push (browsers, and the installed home-screen app on iPhone) --------------------------
+// VAPID keys: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT (mailto: or https:). Without them
+// web push is skipped quietly, like APNs above.
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@cxworld.eu';
+const webConfigured = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+if (webConfigured) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY as string, VAPID_PRIVATE_KEY as string);
+
+async function sendWebPush(supabase: SupabaseClient, userId: string, payload: PushPayload): Promise<void> {
+  if (!webConfigured) return;
+  const { data: subs } = await supabase.from('web_push_subscriptions').select('endpoint, p256dh, auth').eq('user_id', userId);
+  if (!subs || subs.length === 0) return;
+  const message = JSON.stringify({ title: payload.title, body: payload.body, url: payload.data?.url ?? '/' });
+  const dead: string[] = [];
+  await Promise.all(
+    (subs as { endpoint: string; p256dh: string; auth: string }[]).map(async (sub) => {
+      try {
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, message, { TTL: 60 * 60 * 24 });
+      } catch (err) {
+        const status = (err as { statusCode?: number }).statusCode;
+        if (status === 404 || status === 410) dead.push(sub.endpoint);
+        else console.error('[webpush] send failed', status, userId);
+      }
+    }),
+  );
+  if (dead.length > 0) await supabase.from('web_push_subscriptions').delete().in('endpoint', dead);
+}
+
+/**
+ * Sends a push to every device a user is registered on: the iOS app (APNs) and any browser that
+ * allowed notifications (Web Push). Fire-and-forget from the caller's point of view — a push failing
+ * must never fail the booking/message/reminder it is attached to.
+ *
+ * A token APNs reports as permanently dead (`Unregistered` / `410`, or `BadDeviceToken` / `400`) is
+ * removed from device_tokens so it is not retried forever; dead web subscriptions likewise.
+ */
 export async function sendPushToUser(supabase: SupabaseClient, userId: string, payload: PushPayload): Promise<void> {
+  await Promise.all([sendApns(supabase, userId, payload), sendWebPush(supabase, userId, payload)]);
+}
+
+/**
+ * One call for "something happened to this person": it lands in their in-app inbox
+ * (app_notifications, shown in the bell) and is pushed to their devices.
+ */
+/** The person's own choices (Settings → Notifications). Missing row = everything on except promos. */
+export async function getNotificationPrefs(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ trips: boolean; messages: boolean; promos: boolean; push: boolean }> {
+  try {
+    const { data } = await supabase.from('user_notification_prefs').select('trips, messages, promos, push').eq('user_id', userId).maybeSingle();
+    if (data) return data as { trips: boolean; messages: boolean; promos: boolean; push: boolean };
+  } catch {
+    /* table not there yet */
+  }
+  return { trips: true, messages: true, promos: false, push: true };
+}
+
+const isTripKind = (kind: string) => /^(booking_|pickup_|return_|handover_|deposit_|payout_)/.test(kind);
+
+export async function notifyUser(
+  supabase: SupabaseClient,
+  userId: string,
+  n: { kind: string; title: string; body: string; url?: string; push?: boolean },
+): Promise<void> {
+  try {
+    await supabase.from('app_notifications').insert({
+      user_id: userId, kind: n.kind, title: n.title, body: n.body, url: n.url ?? null, skip_push: true,
+    });
+  } catch (err) {
+    console.error('[notify] inbox insert failed', n.kind, err);
+  }
+  if (n.push !== false) {
+    const prefs = await getNotificationPrefs(supabase, userId);
+    if (prefs.push && (prefs.trips || !isTripKind(n.kind))) {
+      await sendPushToUser(supabase, userId, { title: n.title, body: n.body, data: { url: n.url ?? '/' } });
+    }
+  }
+}
+
+async function sendApns(supabase: SupabaseClient, userId: string, payload: PushPayload): Promise<void> {
   if (!configured) {
     console.warn('[push] APNs is not configured — skipping push:', payload.title, 'to user', userId);
     return;

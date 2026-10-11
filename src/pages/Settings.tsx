@@ -20,6 +20,8 @@ import { haptics } from '../lib/native';
 import { apiUrl } from '../lib/api';
 import { shrinkImage } from '../lib/shrinkImage';
 import { DevicesPanel } from '../components/DevicesPanel';
+import { PushPrompt } from '../components/PushPrompt';
+import { fetchPlatformPrefs, savePlatformPrefs, DEFAULT_PLATFORM_PREFS, type PlatformPrefs } from '../lib/data/appNotifications';
 
 type SectionId = 'personal' | 'driver' | 'notifications' | 'payments' | 'preferences' | 'security';
 const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
@@ -31,7 +33,6 @@ const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
   { id: 'security', title: 'Security', icon: 'lock' },
 ];
 const SECTION_IDS = new Set<string>(SECTIONS.map((s) => s.id));
-const NOTIF_KEY = 'cx.notification-prefs';
 // The five Signal Activity groups live on the server (a switched-off kind is never created).
 const SIGNAL_PREF_KEYS = ['followers', 'requests', 'circle', 'respects', 'visions'] as const;
 
@@ -66,14 +67,18 @@ export default function Settings() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [notif, setNotif] = useState<Record<string, boolean>>(() => {
-    try { return { trip: true, host: true, promo: false, sms: true, push: true, ...JSON.parse(localStorage.getItem(NOTIF_KEY) ?? '{}') }; } catch { return { trip: true, host: true, promo: false, sms: true, push: true }; }
-  });
-  const flip = (k: string) => setNotif((n) => {
-    const next = { ...n, [k]: !n[k] };
-    try { localStorage.setItem(NOTIF_KEY, JSON.stringify(next)); } catch { /* ignore */ }
-    return next;
-  });
+  // Trips / messages / promotions / push — saved to the account and honoured by the server.
+  const [platformPrefs, setPlatformPrefs] = useState<PlatformPrefs>(DEFAULT_PLATFORM_PREFS);
+  useEffect(() => {
+    let cancelled = false;
+    fetchPlatformPrefs().then((p) => { if (!cancelled) setPlatformPrefs(p); });
+    return () => { cancelled = true; };
+  }, []);
+  const flip = (k: keyof PlatformPrefs) => {
+    const next = { ...platformPrefs, [k]: !platformPrefs[k] };
+    setPlatformPrefs(next);
+    void savePlatformPrefs(next);
+  };
   // Signal Activity preferences: read from the server, saved to the server on each change.
   const [signalPrefs, setSignalPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
   useEffect(() => {
@@ -306,23 +311,23 @@ export default function Settings() {
               {section === 'notifications' && (
                 <>
                   <Group>
-                    {[
-                      { k: 'trip', t: 'Trip updates', d: 'Booking confirmations, reminders and changes.' },
-                      { k: 'host', t: 'Messages', d: 'Get notified when someone replies to you.' },
-                      { k: 'promo', t: 'Promotions & offers', d: 'Occasional deals and CX news.' },
-                      { k: 'sms', t: 'SMS notifications', d: 'Time-sensitive alerts by text message.' },
-                      { k: 'push', t: 'Push notifications', d: 'Real-time alerts on your devices.' },
-                    ].map((r) => (
+                    {([
+                      { k: 'trips', t: 'Trip updates', d: 'Bookings, reminders, payments and payouts.' },
+                      { k: 'messages', t: 'Messages', d: 'Get notified when someone writes to you.' },
+                      { k: 'promos', t: 'Promotions & offers', d: 'Occasional deals and CX news.' },
+                      { k: 'push', t: 'Push notifications', d: 'Alerts on your phone and browser, even when the site is closed.' },
+                    ] as const).map((r) => (
                       <label key={r.k} className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3.5">
                         <div className="min-w-0">
                           <p className="text-body font-medium text-ink">{t(r.t)}</p>
                           <p className="text-detail text-muted">{t(r.d)}</p>
                         </div>
-                        <Switch checked={!!notif[r.k]} onChange={() => flip(r.k)} label={r.t} />
+                        <Switch checked={!!platformPrefs[r.k]} onChange={() => flip(r.k)} label={r.t} />
                       </label>
                     ))}
                   </Group>
-                  <p className="mt-3 px-1 text-caption text-muted">{t('These choices are saved on this device.')}</p>
+                  <Group><PushPrompt userId={session?.user.id} variant="row" /></Group>
+                  <p className="mt-3 px-1 text-caption text-muted">{t('These choices are saved to your account.')}</p>
                   <p className="mt-6 px-1 text-caption font-semibold uppercase tracking-wide text-muted">{t('Signal Activity')}</p>
                   <Group>
                     {([

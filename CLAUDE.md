@@ -32,7 +32,7 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 0098 collab · 0099 team boost notifications · 0100 sponsored posts · 0101 unpin community posts ·
 0102 host commission + payout ledger · 0103 owner payout overview · 0104 chat photos/delete/report ·
 0105 user devices · 0106 identity + licence verification · 0107 car catalogue (names/specs) ·
-0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng).
+0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs.
 Code is written to fail soft before a migration is run.
 
 ## Features worth knowing
@@ -52,6 +52,14 @@ Code is written to fail soft before a migration is run.
   `api/send-pickup-reminders.ts` (deposit release, host transfers, commission ledger). Sandbox keys until go-live.
 - **Signal**: Official = team content only (no people suggestions there). Community has the people shelf.
 - Home was trimmed to 8 blocks; CX Garage and its configurator were removed (`/garage` redirects).
+
+## Notifications (migration 0110)
+- Inbox: `app_notifications` (bell + /notifications "Updates" tab). API writes through `notifyUser()` in
+  `api/_lib/push.ts` (inbox row + APNs + Web Push, honours `user_notification_prefs`); DB functions use
+  `create_app_notification()`. Chat messages push but are not in the inbox (they have their own badge).
+- Web Push: `public/sw.js`, `src/lib/webPush.ts`; env `VITE_VAPID_PUBLIC_KEY`, `VAPID_PUBLIC_KEY`,
+  `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. iPhone needs the site on the Home Screen.
+- Optional DB→push fan-out: fill `notify_config` (url + secret) and set `NOTIFY_FANOUT_SECRET` on Vercel.
 
 ## Open items / ideas
 - Go-live checklist (domain `cxworld.eu`, Resend sender domain, APNs keys for push, legal pages, Stripe live).
