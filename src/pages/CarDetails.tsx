@@ -11,6 +11,8 @@ import { Modal, Stars } from '../components/primitives';
 import { Img } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
+import { MiniMap } from '../components/browse/MiniMap';
+import { mapsLink } from '../lib/geocode';
 import { HostCard } from '../components/HostCard';
 import { HostLocked } from '../components/HostLocked';
 import { Group, Row } from '../components/IosList';
@@ -347,9 +349,22 @@ export default function CarDetails() {
                 <Row
                   icon="pin"
                   title={t('Pick-up')}
-                  sub={<>{hasAccess ? car.location : car.city}. {t('The exact address is shared once your booking is confirmed.')}</>}
+                  sub={<>{hasAccess ? car.addressLabel || car.location : car.city}{hasAccess ? '' : `. ${t('Sign in to see the exact pick-up spot.')}`}</>}
                 />
               </Group>
+              <div className="relative mt-3 overflow-hidden rounded-[22px] border border-line">
+                <MiniMap city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} interactive={hasAccess && car.lat != null} className="h-56 sm:h-64" />
+                {hasAccess && car.lat != null && car.lng != null && (
+                  <a
+                    href={mapsLink(car.lat, car.lng)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-2 text-caption font-semibold text-ink shadow-pop backdrop-blur"
+                  >
+                    <Icon name="arrowUpRight" size={13} /> {t('Open in Maps')}
+                  </a>
+                )}
+              </div>
 
               {/* Host */}
               <section className="mt-7">

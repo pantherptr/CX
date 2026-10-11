@@ -28,6 +28,10 @@ import { useAvailableReward } from '../lib/data/rewards';
 import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
 import { LicenceForm } from '../components/VerificationFlow';
+import { AddressInput } from '../components/AddressInput';
+import { MiniMap, type MapPoint } from '../components/browse/MiniMap';
+import { CITY_COORDS } from '../data/cityCoords';
+import { distanceKm, mapsLink } from '../lib/geocode';
 import { useVerification, licenceReady } from '../lib/data/verification';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
@@ -104,6 +108,7 @@ export default function Booking() {
   // behaves exactly as before: pickup only, no choice shown.
   const [fulfillmentType, setFulfillmentType] = useState<'pickup' | 'delivery'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryPoint, setDeliveryPoint] = useState<MapPoint | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
   // Cancellation terms now come from the host's policy; the old renter-chosen
@@ -328,9 +333,13 @@ export default function Booking() {
       return next;
     });
 
+  // A delivery address the host cannot reach (we know both points) is stopped here, not at the door.
+  const deliveryTooFar =
+    fulfillmentType === 'delivery' && deliveryPoint != null && car.lat != null && car.lng != null &&
+    car.deliveryRadiusKm != null && distanceKm({ lat: car.lat, lng: car.lng }, deliveryPoint) > car.deliveryRadiusKm;
   const canContinueStep0 =
     !dateError && pickupDate && returnDate && availability === 'available' &&
-    (fulfillmentType === 'pickup' || deliveryAddress.trim().length > 0);
+    (fulfillmentType === 'pickup' || deliveryAddress.trim().length > 0) && !deliveryTooFar;
 
   const driverErrors = (() => {
     const e: Record<string, string> = {};
@@ -660,17 +669,26 @@ export default function Booking() {
                     </p>
                   </div>
                 )}
-                <label className="flex items-center gap-3.5 px-4 py-3.5">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-panel text-ink"><Icon name="pin" size={18} /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-caption font-semibold uppercase tracking-wide text-muted">{fulfillmentType === 'pickup' ? 'Pick-up location' : 'Delivery address'}</span>
-                    {fulfillmentType === 'pickup' ? (
+                {fulfillmentType === 'pickup' ? (
+                  <label className="flex items-center gap-3.5 px-4 py-3.5">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-panel text-ink"><Icon name="pin" size={18} /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-caption font-semibold uppercase tracking-wide text-muted">Pick-up location</span>
                       <input value={pickupLoc} onChange={(e) => setPickupLoc(e.target.value)} className="mt-0.5 w-full bg-transparent text-[16px] font-medium text-ink outline-none sm:text-body" />
-                    ) : (
-                      <input value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="Street, city" className="mt-0.5 w-full bg-transparent text-[16px] font-medium text-ink outline-none placeholder:text-faint sm:text-body" />
-                    )}
-                  </span>
-                </label>
+                    </span>
+                  </label>
+                ) : (
+                  <div className="px-4 py-3.5">
+                    <span className="block text-caption font-semibold uppercase tracking-wide text-muted">Delivery address</span>
+                    <AddressInput
+                      className="mt-1.5"
+                      value={deliveryAddress}
+                      onChange={(v) => { setDeliveryAddress(v); setDeliveryPoint(null); }}
+                      onPick={(p) => setDeliveryPoint({ lat: p.lat, lng: p.lng, label: 'Delivery' })}
+                      near={car.lat != null && car.lng != null ? [car.lng, car.lat] : CITY_COORDS[car.city]}
+                    />
+                  </div>
+                )}
                 {fulfillmentType === 'delivery' && (car.deliveryRadiusKm || car.deliveryInstructions) && (
                   <p className="px-4 py-3 text-detail leading-relaxed text-muted">
                     {car.deliveryRadiusKm ? `Delivery available within ~${car.deliveryRadiusKm}km of the host. ` : ''}
@@ -678,6 +696,41 @@ export default function Booking() {
                   </p>
                 )}
               </Group>
+
+              {/* Where the car is — the exact spot the host marked; with delivery, your address as a second pin. */}
+              {car.lat != null && car.lng != null && (
+                <div className="mt-3 overflow-hidden rounded-[22px] border border-line">
+                  <div className="relative">
+                    <MiniMap
+                      city={car.city}
+                      point={{ lat: car.lat, lng: car.lng, label: fulfillmentType === 'delivery' ? 'The car' : 'Pick-up' }}
+                      extra={fulfillmentType === 'delivery' ? deliveryPoint : null}
+                      interactive
+                      className="h-52 sm:h-60"
+                    />
+                    <a
+                      href={mapsLink(car.lat, car.lng)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-2 text-caption font-semibold text-ink shadow-pop backdrop-blur"
+                    >
+                      <Icon name="arrowUpRight" size={13} /> Open in Maps
+                    </a>
+                  </div>
+                  {fulfillmentType === 'delivery' && deliveryPoint && (() => {
+                    const km = distanceKm({ lat: car.lat!, lng: car.lng! }, deliveryPoint);
+                    const outside = car.deliveryRadiusKm != null && km > car.deliveryRadiusKm;
+                    return (
+                      <p className={`flex items-start gap-2 border-t border-line px-4 py-3 text-detail ${outside ? 'text-danger' : 'text-muted'}`}>
+                        <Icon name={outside ? 'info' : 'checkCircle'} size={16} className={`mt-0.5 shrink-0 ${outside ? '' : 'text-accent'}`} />
+                        {outside
+                          ? `That is ${km.toFixed(1)} km from the car — this host delivers within ${car.deliveryRadiusKm} km. Pick up instead, or choose a closer address.`
+                          : `${km.toFixed(1)} km from the car${car.deliveryRadiusKm ? ` · within the ${car.deliveryRadiusKm} km delivery area` : ''}.`}
+                      </p>
+                    );
+                  })()}
+                </div>
+              )}
 
               <Group title="Dates">
                 <Row

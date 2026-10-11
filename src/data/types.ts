@@ -62,6 +62,10 @@ export interface Car {
   /** The catalogue model this listing was created from, and its chosen colour (migration 0107). */
   catalogId?: string;
   colorKey?: string;
+  /** The exact pick-up point the host marked on the map (migration 0109). */
+  lat?: number;
+  lng?: number;
+  addressLabel?: string;
   /** True when images[0] is CX's own studio image of the model (not a host photo). */
   catalogHero?: boolean;
   /** Listing review window (migration 0108): 'pending' = held for the team's look, goes live at publishAt. */

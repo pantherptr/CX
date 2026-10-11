@@ -79,6 +79,9 @@ interface CarRow {
   reviews: ReviewRow[];
   catalog_id?: string | null;
   color_key?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  address_label?: string | null;
   review_status?: 'pending' | 'approved' | 'rejected' | null;
   publish_at?: string | null;
   review_note?: string | null;
@@ -142,6 +145,9 @@ function mapCar(row: CarRow): Car {
     catalogId: row.catalog_id ?? undefined,
     colorKey: row.color_key ?? undefined,
     catalogHero: Boolean(hero),
+    lat: row.lat ?? undefined,
+    lng: row.lng ?? undefined,
+    addressLabel: row.address_label ?? undefined,
     reviewStatus: row.review_status ?? undefined,
     publishAt: row.publish_at ?? undefined,
     reviewNote: row.review_note ?? undefined,
@@ -336,6 +342,10 @@ export interface CreateCarInput {
   /** Catalogue model + colour the host picked (migration 0107). */
   catalogId?: string;
   colorKey?: string;
+  /** Exact pick-up point (migration 0109). */
+  lat?: number;
+  lng?: number;
+  addressLabel?: string;
   year: number;
   category: Car['category'];
   city: string;
@@ -418,6 +428,7 @@ export async function createCar(
         model: input.model,
         trim: input.trim || null,
         ...(input.catalogId ? { catalog_id: input.catalogId, color_key: input.colorKey ?? null } : {}),
+        ...(input.lat != null && input.lng != null ? { lat: input.lat, lng: input.lng, address_label: input.addressLabel ?? null } : {}),
         year: input.year,
         category: input.category,
         city: input.city,

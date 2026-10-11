@@ -3,16 +3,36 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { CITY_COORDS } from '../../data/cityCoords';
 import { collapseAttribution } from '../../lib/mapAttribution';
 
-/** A small flat map of a car's city with the pick-up area marked. Loads the
- *  map library only when it is first shown. The pin sits on the city centre,
- *  never on the car's exact address. */
-export function MiniMap({ city, className = '' }: { city: string; className?: string }) {
+export interface MapPoint {
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
+/** A small map of a car's city. With `point` it centres precisely on the spot the host marked; with
+ *  `extra` (e.g. a delivery address) both pins are shown and framed. Without a point it falls back to
+ *  the city centre — never an address the viewer has no access to. */
+export function MiniMap({
+  city,
+  point,
+  extra,
+  interactive = false,
+  className = '',
+}: {
+  city: string;
+  point?: MapPoint | null;
+  extra?: MapPoint | null;
+  interactive?: boolean;
+  className?: string;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
 
+  const key = `${city}|${point?.lat},${point?.lng}|${extra?.lat},${extra?.lng}|${interactive}`;
+
   useEffect(() => {
-    const center = CITY_COORDS[city];
+    const center: [number, number] | undefined = point ? [point.lng, point.lat] : CITY_COORDS[city];
     if (!box.current || !center) { setFailed(true); return; }
     let map: MapLibreMap | null = null;
     let cancelled = false;
@@ -25,22 +45,40 @@ export function MiniMap({ city, className = '' }: { city: string; className?: st
           container: box.current,
           style: 'https://tiles.openfreemap.org/styles/positron',
           center,
-          zoom: 12.4,
-          interactive: false,
+          zoom: point ? 15.2 : 12.4,
+          interactive,
           attributionControl: { compact: true },
           fadeDuration: 0,
         });
+        if (interactive) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
         collapseAttribution(map);
-        map.on('load', () => {
-          if (cancelled || !map) return;
+        const pin = (lngLat: [number, number], label: string | undefined, kind: 'car' | 'you') => {
           const el = document.createElement('div');
           el.className = 'fl-dest';
+          if (kind === 'you') el.style.setProperty('--pin', '#00a63e');
           const pulse = document.createElement('span');
           pulse.className = 'fl-dest__pulse';
           const dot = document.createElement('span');
           dot.className = 'fl-dest__dot';
+          if (kind === 'you') dot.style.background = '#008536';
           el.append(pulse, dot);
-          new maplibregl.Marker({ element: el }).setLngLat(center).addTo(map);
+          if (label) {
+            const tag = document.createElement('span');
+            tag.className = 'fl-dest__label';
+            tag.textContent = label;
+            el.append(tag);
+          }
+          new maplibregl.Marker({ element: el }).setLngLat(lngLat).addTo(map!);
+        };
+        map.on('load', () => {
+          if (cancelled || !map) return;
+          pin(center, point?.label, 'car');
+          if (extra) {
+            pin([extra.lng, extra.lat], extra.label, 'you');
+            const b = new maplibregl.LngLatBounds(center, center);
+            b.extend([extra.lng, extra.lat]);
+            map.fitBounds(b, { padding: 56, maxZoom: 15.5, duration: 0 });
+          }
           setReady(true);
         });
       } catch {
@@ -48,7 +86,8 @@ export function MiniMap({ city, className = '' }: { city: string; className?: st
       }
     })();
     return () => { cancelled = true; map?.remove(); };
-  }, [city]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   return (
     <div className={`relative overflow-hidden bg-[#f2f4f7] ${className}`}>

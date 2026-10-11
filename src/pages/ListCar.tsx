@@ -8,6 +8,7 @@ import { createCar } from '../lib/data/cars';
 import { notifyTeamOfListing } from '../lib/data/listingReview';
 import { useCatalog, groupByMake, type CatalogModel } from '../lib/data/catalog';
 import { PoseCamera, CarPoseGuide } from '../components/PoseCamera';
+import { LocationPicker, type PickedLocation } from '../components/LocationPicker';
 import { catalogue } from '../lib/catalogue';
 import { DEFAULT_POLICY, type CancellationPolicy } from '../lib/cancellationPolicy';
 import { CancellationPolicyPicker } from '../components/CancellationPolicy';
@@ -97,6 +98,7 @@ export default function ListCar() {
     drive: 'Rear-wheel drive',
     description: '',
   });
+  const [pin, setPin] = useState<PickedLocation | null>(null);
   const [features, setFeatures] = useState<string[]>([]);
   // The catalogue pick: the model entry (make + model + version) and the paint colour.
   const { models: catalogModels } = useCatalog();
@@ -219,7 +221,7 @@ export default function ListCar() {
   const useCat = (catalogModels?.filter((m) => m.active).length ?? 0) > 0;
   const stepValid = [
     Boolean(
-      (useCat ? entry && colorKey : form.make.trim() && form.model.trim()) && form.location.trim() && form.city &&
+      (useCat ? entry && colorKey : form.make.trim() && form.model.trim()) && pin && form.city &&
       Number.isInteger(year) && year >= 1950 && year <= thisYear + 2 &&
       Number(form.seats) >= 1 && Number(form.doors) >= 1 && Number(form.luggage) >= 0,
     ),
@@ -257,6 +259,9 @@ export default function ListCar() {
         category: form.category,
         city: form.city,
         location: form.location.trim(),
+        lat: pin?.lat,
+        lng: pin?.lng,
+        addressLabel: pin?.label,
         pricePerDay: price,
         transmission: form.transmission,
         fuel: form.fuel,
@@ -501,9 +506,16 @@ export default function ListCar() {
                       {catalogue.cityNames.map((c) => <option key={c}>{c}</option>)}
                     </select>
                   </Labeled>
-                  <Labeled label="Pick-up area" hint="Shown publicly — the exact address is only shared after booking.">
-                    <input value={form.location} onChange={(e) => set({ location: e.target.value })} placeholder="e.g. Brera, Milan" className="input" />
-                  </Labeled>
+                  <div className="sm:col-span-2">
+                    <span className="field-label">Where renters pick it up</span>
+                    <div className="mt-1.5">
+                      <LocationPicker
+                        value={pin}
+                        city={form.city}
+                        onChange={(v) => { setPin(v); set({ location: v?.label ?? '' }); }}
+                      />
+                    </div>
+                  </div>
                   <Labeled label="Description" full>
                     <textarea
                       value={form.description}
@@ -549,7 +561,7 @@ export default function ListCar() {
 
               {!canContinue && (
                 <p className="mt-5 flex items-center gap-2 text-detail text-muted">
-                  <Icon name="info" size={15} /> {useCat ? 'Choose your car, its colour, the city and the pick-up area to continue.' : 'Fill in make, model, year, city and pick-up area to continue.'}
+                  <Icon name="info" size={15} /> {useCat ? 'Choose your car, its colour, the city and the pick-up spot on the map to continue.' : 'Fill in make, model, year, city and the pick-up spot on the map to continue.'}
                 </p>
               )}
             </div>

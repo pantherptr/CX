@@ -10,6 +10,7 @@ import { Icon, type IconName } from '../Icon';
 import { Img } from '../motion';
 import { motion, AnimatePresence, SPRING_SMOOTH, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
 import { MiniMap } from './MiniMap';
+import { useHasAccess } from '../../lib/useAccess';
 
 type Tab = 'rent' | 'info' | 'specs' | 'reviews';
 const TABS: { id: Tab; label: string }[] = [
@@ -30,6 +31,7 @@ const DURATIONS = [
  *  checkout), and a black "Book now" bar. On phones it rises as a sheet. */
 export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => void }) {
   const { t } = useLocale();
+  const hasAccess = useHasAccess();
   const reduce = useReducedMotion();
   const { isFavorite, toggleFavorite } = useApp();
   const [tab, setTab] = useState<Tab>('rent');
@@ -128,7 +130,7 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                   {tab === 'rent' && (
                     <div>
                       <div className="relative overflow-hidden rounded-[20px] border border-line">
-                        <MiniMap city={car.city} className="h-52" />
+                        <MiniMap city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} className="h-52" />
                         <div className="absolute inset-x-3 bottom-8 flex items-center gap-3 rounded-2xl bg-white/95 p-2.5 shadow-pop backdrop-blur">
                           <Img src={unsplash(car.images[0], 240)} alt="" className="h-11 w-16 shrink-0 rounded-xl object-cover" fallback={<span className="h-11 w-16 shrink-0 rounded-xl bg-panel" />} />
                           <div className="min-w-0 flex-1">
@@ -137,7 +139,7 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                           </div>
                         </div>
                       </div>
-                      <p className="mt-2 text-caption text-faint">{t('The exact address is shared once your booking is confirmed.')}</p>
+                      <p className="mt-2 text-caption text-faint">{hasAccess && car.lat != null ? t('The pin is the exact pick-up spot.') : t('Sign in to see the exact pick-up spot.')}</p>
 
                       <div className="mt-4 grid grid-cols-3 gap-2.5">
                         {DURATIONS.map((d) => {
