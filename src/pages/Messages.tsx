@@ -278,13 +278,23 @@ function useVisualViewportBox(): { top: number; height: number | string } {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setBox({ top: Math.round(vv.offsetTop), height: Math.round(vv.height) });
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const top = Math.round(vv.offsetTop);
+      const height = Math.round(vv.height);
+      // One state change per frame at most, and none for sub-pixel noise — the keyboard fires a
+      // stream of these while it animates and following each one made the chat shake.
+      setBox((prev) => (typeof prev.height === 'number' && Math.abs(prev.height - height) < 2 && Math.abs(prev.top - top) < 2 ? prev : { top, height }));
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
     update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    vv.addEventListener('resize', schedule);
+    vv.addEventListener('scroll', schedule);
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      if (raf) cancelAnimationFrame(raf);
+      vv.removeEventListener('resize', schedule);
+      vv.removeEventListener('scroll', schedule);
     };
   }, []);
   return box;
@@ -309,10 +319,9 @@ export default function Messages() {
   const mockScrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
-  const { messages } = useConversation(activeId);
+  const { messages, append } = useConversation(activeId);
   const active = (conversations ?? []).find((c) => c.id === activeId) ?? null;
   const myRole: VerifiedRole = profile?.is_owner ? 'owner' : profile?.is_admin ? 'admin' : profile?.is_host ? 'host' : 'client';
-  const sending = pending.some((p) => p.conversationId === activeId && p.status === 'sending');
 
   // Client-side filter over the already-loaded list — a per-user
   // conversation list is small enough that this stays instant, and
@@ -339,16 +348,23 @@ export default function Messages() {
   const pendingForActive = pending.filter((p) => p.conversationId === activeId);
   const totalUnread = (conversations ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
 
-  // Opening a conversation lands on the latest message at once; only a new
-  // message arriving in the already-open thread glides down to it.
+  // Opening a conversation lands on the latest message at once. After that the thread only follows
+  // new messages when you are already at the bottom (or the message is yours), and it does so
+  // without an animation: a smooth scroll fighting the keyboard and the layout was the "scatto".
   const lastScroll = useRef<{ id: string | null; len: number; chat: boolean }>({ id: null, len: 0, chat: false });
   useEffect(() => {
     const len = (messages?.length ?? 0) + pendingForActive.length;
     const prev = lastScroll.current;
-    const behavior: ScrollBehavior = prev.id === activeId && prev.chat === mobileChat && prev.len > 0 ? 'smooth' : 'auto';
+    const sameThread = prev.id === activeId && prev.chat === mobileChat && prev.len > 0;
     lastScroll.current = { id: activeId, len, chat: mobileChat };
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
-    mockScrollRef.current?.scrollTo({ top: mockScrollRef.current.scrollHeight, behavior });
+    const scroll = (el: HTMLDivElement | null) => {
+      if (!el) return;
+      const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+      if (sameThread && !nearBottom && !pendingForActive.length) return;
+      el.scrollTop = el.scrollHeight;
+    };
+    scroll(scrollRef.current);
+    scroll(mockScrollRef.current);
   }, [messages?.length, pendingForActive.length, activeId, mobileChat]);
 
   // iOS-style edge swipe: drag from the left edge to the right to go back.
@@ -395,14 +411,15 @@ export default function Messages() {
 
   const attemptSend = async (localId: string, conversationId: string, body: string) => {
     setPending((prev) => prev.map((p) => (p.localId === localId ? { ...p, status: 'sending' } : p)));
-    const { error } = await sendMessage(conversationId, session!.user.id, body, profile?.is_owner ? sendAsRole : undefined);
+    const { error, message } = await sendMessage(conversationId, session!.user.id, body, profile?.is_owner ? sendAsRole : undefined);
     if (error) {
       setPending((prev) => prev.map((p) => (p.localId === localId ? { ...p, status: 'failed' } : p)));
       return;
     }
-    // The real row arrives via the open thread's own realtime subscription
-    // (useConversation) — this pending placeholder's only job was to make
-    // sending feel instant, so it's removed rather than reconciled.
+    // Swap the placeholder for the real message in the SAME render: the saved row (from the insert's
+    // own response) goes into the thread while the placeholder is removed — the bubble never blinks
+    // out and back in. The realtime copy of it arrives later and is ignored (same id).
+    if (message) append(message);
     setPending((prev) => prev.filter((p) => p.localId !== localId));
     refresh();
   };
@@ -417,8 +434,12 @@ export default function Messages() {
       return;
     }
     setText('');
-    // Collapse the auto-grown composer back to one line with the text.
-    if (composerRef.current) composerRef.current.style.height = 'auto';
+    // Collapse the auto-grown composer back to one line with the text, and keep the keyboard up:
+    // sending must not blur the field (that closes the keyboard and the whole layout jumps).
+    if (composerRef.current) {
+      composerRef.current.style.height = 'auto';
+      composerRef.current.focus({ preventScroll: true });
+    }
     haptics.tick();
     const localId = crypto.randomUUID();
     setPending((prev) => [...prev, { localId, conversationId: activeId, body, status: 'sending' }]);
@@ -489,14 +510,15 @@ export default function Messages() {
                     onKeyDown={(e) => {
                       if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
                       e.preventDefault();
-                      if (!sending) send();
+                      send();
                     }}
                     placeholder="Write a message…"
                     className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-2 text-[14px] leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button
+                    onPointerDown={(e) => e.preventDefault()}
                     onClick={send}
-                    disabled={!text.trim() || sending}
+                    disabled={!text.trim()}
                     aria-label="Send"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-bright disabled:opacity-40"
                   >
@@ -670,13 +692,20 @@ export default function Messages() {
                     el.style.height = 'auto';
                     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+                    e.preventDefault();
+                    send();
+                  }}
                   placeholder="Write a message…"
                   enterKeyHint="send"
                   className="max-h-[120px] min-w-0 flex-1 resize-none rounded-[22px] bg-panel px-4 py-[11px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
                 />
                 <button
+                  // Do not take focus from the field: the keyboard stays up and nothing resizes.
+                  onPointerDown={(e) => e.preventDefault()}
                   onClick={send}
-                  disabled={!text.trim() || sending}
+                  disabled={!text.trim()}
                   className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:bg-panel disabled:text-faint"
                   aria-label="Send"
                 >

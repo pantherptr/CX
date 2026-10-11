@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { unsplash } from '../img';
 import { apiUrl } from '../api';
@@ -168,13 +168,21 @@ export function useConversations(userId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // The list is only blanked when the SIGNED-IN USER changes. A refresh (after sending a message,
+  // after marking a thread read) keeps showing the current list and swaps in the new one when it
+  // arrives — blanking it made the open chat vanish for a moment on every send ("the jump").
+  const loadedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!userId) {
       setConversations([]);
+      loadedFor.current = null;
       return;
     }
     let cancelled = false;
-    setConversations(null);
+    if (loadedFor.current !== userId) {
+      setConversations(null);
+      loadedFor.current = userId;
+    }
     setError(null);
     fetchConversations(userId)
       .then((data) => {
@@ -245,7 +253,9 @@ export function useConversation(conversationId: string | null) {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
         (payload) => {
           const row = payload.new as ConversationRow['messages'][number];
-          setMessages((prev) => (prev ? [...prev, mapMessage(conversationId, row)] : prev));
+          // Dedupe by id: a message we just sent is already in the list (added from the insert's own
+          // response) by the time the realtime event for it arrives.
+          setMessages((prev) => (prev && !prev.some((m) => m.id === row.id) ? [...prev, mapMessage(conversationId, row)] : prev));
         },
       )
       .subscribe();
@@ -256,7 +266,12 @@ export function useConversation(conversationId: string | null) {
     };
   }, [conversationId]);
 
-  return { messages, loading: messages === null };
+  /** Adds a message we already have (the one we just sent) without waiting for realtime. */
+  const append = useCallback((message: Message) => {
+    setMessages((prev) => (prev && !prev.some((m) => m.id === message.id) ? [...prev, message] : prev));
+  }, []);
+
+  return { messages, loading: messages === null, append };
 }
 
 /** `senderRole` is the Owner Control Center's identity switcher — 'owner'
@@ -269,12 +284,17 @@ export async function sendMessage(
   senderId: string,
   body: string,
   senderRole?: 'owner' | 'owner_assistant',
-): Promise<{ error: string | null }> {
-  const { error } = await supabase
+): Promise<{ error: string | null; message: Message | null }> {
+  const { data, error } = await supabase
     .from('messages')
-    .insert({ conversation_id: conversationId, sender_id: senderId, body, sender_role: senderRole ?? null });
+    .insert({ conversation_id: conversationId, sender_id: senderId, body, sender_role: senderRole ?? null })
+    .select('id, body, sender_id, created_at, read_at, sender_role')
+    .maybeSingle();
   if (!error) void notifyRecipients(conversationId, body);
-  return { error: error?.message ?? null };
+  return {
+    error: error?.message ?? null,
+    message: data ? mapMessage(conversationId, data as ConversationRow['messages'][number]) : null,
+  };
 }
 
 // Fire-and-forget push to the other participant(s) — see
