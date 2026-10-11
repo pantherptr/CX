@@ -166,6 +166,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // original window.
   let payoutsSent = 0;
   let payoutsBlocked = 0;
+  // CX's commission on the host's share (supabase/migrations/0102): a percentage of the base
+  // rental price, kept by the platform. 0 if the setting is missing, never above 50.
+  const { data: commissionRow } = await supabase
+    .from('platform_settings')
+    .select('value')
+    .eq('key', 'host_commission_pct')
+    .maybeSingle();
+  const commissionPct = Math.min(50, Math.max(0, Number(commissionRow?.value ?? 0)));
   const { data: payoutDue, error: payoutError } = await supabase
     .from('bookings')
     .select('id, host_id, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')
@@ -192,17 +200,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         payoutsBlocked++;
         continue;
       }
+      const commission = Math.round(amount * commissionPct) / 100; // euros, 2 decimals
+      const net = Math.round((amount - commission) * 100) / 100;
       try {
         const transfer = await stripe.transfers.create(
           {
-            amount: Math.round(amount * 100),
+            amount: Math.round(net * 100),
             currency: 'eur',
             destination: row.host.stripe_connect_account_id,
             transfer_group: row.id,
-            metadata: { bookingId: row.id },
+            metadata: { bookingId: row.id, gross: String(amount), commissionPct: String(commissionPct), commission: String(commission) },
           },
           { idempotencyKey: `payout-${row.id}` },
         );
+        // The ledger the host sees (gross, what CX kept, what they got). Best-effort: the money
+        // has already moved, a failed insert is logged and the booking is still marked paid.
+        const { error: ledgerError } = await supabase.from('booking_payouts').upsert({
+          booking_id: row.id,
+          host_id: row.host_id,
+          gross: amount,
+          commission_pct: commissionPct,
+          commission,
+          net,
+          stripe_transfer_id: transfer.id,
+        });
+        if (ledgerError) console.error('[send-pickup-reminders] payout ledger insert failed', row.id, ledgerError);
         await supabase
           .from('bookings')
           .update({ payout_status: 'paid', stripe_transfer_id: transfer.id, payout_paid_at: new Date().toISOString() })

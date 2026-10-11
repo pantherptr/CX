@@ -81,3 +81,54 @@ export async function refreshConnectStatus(accessToken: string): Promise<{ payou
   if (!res.ok) return { error: body?.error ?? 'Could not check payout status.' };
   return { payoutsEnabled: Boolean(body.payoutsEnabled) };
 }
+
+/** What a host was paid for a trip, and what CX kept — see supabase/migrations/0102. */
+export interface HostPayout {
+  bookingId: string;
+  reference: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  gross: number;
+  commissionPct: number;
+  commission: number;
+  net: number;
+  paidAt: string;
+}
+
+/** The host's paid-out trips (newest first) and the current commission %. */
+export function useHostPayouts(userId: string | undefined) {
+  const [payouts, setPayouts] = useState<HostPayout[] | null>(null);
+  const [commissionPct, setCommissionPct] = useState<number | null>(null);
+  useEffect(() => {
+    if (!userId) { setPayouts(null); return; }
+    let cancelled = false;
+    (async () => {
+      const [list, pct] = await Promise.all([
+        supabase
+          .from('booking_payouts')
+          .select('booking_id, gross, commission_pct, commission, net, paid_at, booking:bookings(reference, start_date, end_date)')
+          .eq('host_id', userId)
+          .order('paid_at', { ascending: false })
+          .limit(20),
+        supabase.rpc('fetch_host_commission_pct'),
+      ]);
+      if (cancelled) return;
+      type Row = {
+        booking_id: string; gross: number; commission_pct: number; commission: number; net: number; paid_at: string;
+        booking: { reference: string | null; start_date: string | null; end_date: string | null } | { reference: string | null; start_date: string | null; end_date: string | null }[] | null;
+      };
+      setPayouts(
+        ((list.data ?? []) as unknown as Row[]).map((r) => {
+          const b = Array.isArray(r.booking) ? r.booking[0] : r.booking;
+          return {
+            bookingId: r.booking_id, reference: b?.reference ?? null, startDate: b?.start_date ?? null, endDate: b?.end_date ?? null,
+            gross: Number(r.gross), commissionPct: Number(r.commission_pct), commission: Number(r.commission), net: Number(r.net), paidAt: r.paid_at,
+          };
+        }),
+      );
+      if (typeof pct.data === 'number') setCommissionPct(pct.data);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+  return { payouts, commissionPct };
+}

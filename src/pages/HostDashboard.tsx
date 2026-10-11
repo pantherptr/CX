@@ -8,7 +8,7 @@ import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
 import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useCarBlackoutDates, createCarBlackoutDate, deleteCarBlackoutDate } from '../lib/data/blackoutDates';
-import { useConnectStatus, fetchConnectOnboardingLink, refreshConnectStatus, type ConnectStatus } from '../lib/data/payouts';
+import { useConnectStatus, fetchConnectOnboardingLink, refreshConnectStatus, useHostPayouts, type ConnectStatus, type HostPayout } from '../lib/data/payouts';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useVerification } from '../lib/data/verification';
 import { WEEKDAYS, MONTH_NAMES, toISO, startOfMonth, addMonths, buildMonthGrid } from '../lib/calendarGrid';
@@ -471,7 +471,7 @@ function HostPayoutsCard({
               </span>
               <div>
                 <p className="font-medium text-ink">Payouts are set up</p>
-                <p className="text-detail text-muted">You'll be paid automatically once each trip ends.</p>
+                <p className="text-detail text-muted">You'll be paid automatically, to your bank account, the day after each trip ends.</p>
               </div>
             </div>
           ) : (
@@ -482,7 +482,7 @@ function HostPayoutsCard({
                 </span>
                 <div>
                   <p className="font-medium text-ink">{status.accountId ? 'Finish setting up payouts' : 'Set up payouts to get paid'}</p>
-                  <p className="text-detail text-muted">Connect a payout account so you're paid automatically when a trip ends.</p>
+                  <p className="text-detail text-muted">Add your bank account (IBAN) and ID with Stripe, once. Then you're paid automatically the day after each trip ends.</p>
                 </div>
               </div>
               <button onClick={handleClick} disabled={loading} className="btn btn-primary btn-sm shrink-0 disabled:opacity-60">
@@ -492,6 +492,53 @@ function HostPayoutsCard({
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+/** The host's pay: how it works (what CX keeps), and what each finished trip paid out. */
+function HostEarningsCard({ payouts, commissionPct, payoutsEnabled }: { payouts: HostPayout[] | null; commissionPct: number | null; payoutsEnabled: boolean }) {
+  const total = (payouts ?? []).reduce((n, p) => n + p.net, 0);
+  return (
+    <section className="mt-4">
+      <div className="card p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-medium text-ink">Your payouts</p>
+            <p className="mt-0.5 max-w-xl text-detail text-muted">
+              The day after each trip ends you receive the rental price{commissionPct != null && commissionPct > 0 ? `, minus CX's ${commissionPct}% commission` : ''}, straight to the bank account you connected. Stripe usually shows it in your bank within 2–3 working days.
+            </p>
+          </div>
+          {payouts && payouts.length > 0 && (
+            <div className="text-right">
+              <p className="text-caption text-muted">Paid out so far</p>
+              <p className="font-display text-lead font-semibold text-ink">{eur(total)}</p>
+            </div>
+          )}
+        </div>
+
+        {payouts === null ? (
+          <div className="skeleton mt-4 h-16 rounded-xl" />
+        ) : payouts.length === 0 ? (
+          <p className="mt-4 rounded-xl bg-panel/60 px-4 py-3 text-detail text-muted">
+            {payoutsEnabled ? 'Nothing paid out yet — your first payout arrives the day after a trip ends.' : 'Set up payouts above, then your earnings appear here.'}
+          </p>
+        ) : (
+          <div className="mt-4 divide-y divide-line rounded-xl border border-line">
+            {payouts.map((p) => (
+              <div key={p.bookingId} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-detail font-medium text-ink">{p.reference ?? 'Trip'}{p.startDate && p.endDate ? ` · ${fmtDate(p.startDate)}–${fmtDate(p.endDate)}` : ''}</p>
+                  <p className="text-caption text-muted">
+                    {eur(p.gross)} − {eur(p.commission)} CX commission{p.commissionPct ? ` (${p.commissionPct}%)` : ''} · paid {fmtDate(p.paidAt)}
+                  </p>
+                </div>
+                <p className="shrink-0 font-display text-body font-semibold text-ink">{eur(p.net)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -536,6 +583,7 @@ export default function HostDashboard() {
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const { verification, loading: verificationLoading } = useVerification(session?.user.id);
   const { status: connectStatus, error: connectError, refresh: refreshConnect } = useConnectStatus(session?.user.id);
+  const { payouts: hostPayouts, commissionPct } = useHostPayouts(session?.user.id);
   const { toast } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -983,6 +1031,7 @@ export default function HostDashboard() {
 
         <Reveal>
           <HostPayoutsCard status={connectStatus} error={connectError} onSetup={handleSetupPayouts} />
+          <HostEarningsCard payouts={hostPayouts} commissionPct={commissionPct} payoutsEnabled={!!connectStatus?.payoutsEnabled} />
         </Reveal>
       </div>
     </DashboardShell>
