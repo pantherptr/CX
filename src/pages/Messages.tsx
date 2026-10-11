@@ -264,8 +264,8 @@ function Thread({
                 <div
                   className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${
                     mine
-                      ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-white ${last ? 'rounded-br-[6px]' : ''}`
-                      : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-ink ${last ? 'rounded-bl-[6px]' : ''}`
+                      ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-accent-bright ${last ? 'rounded-br-[6px]' : ''}`
+                      : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-accent ${last ? 'rounded-bl-[6px]' : ''}`
                   } ${freshIds.has(m.id) ? 'chat-in-left' : ''}`}
                 >
                   {m.body}
@@ -283,7 +283,7 @@ function Thread({
       )}
       {pending.map((p) => (
         <div key={p.localId} className={`flex flex-col items-end pt-1 chat-in-right`}>
-          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} rounded-br-[6px] transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-white'}`}>{p.body}</div>
+          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} rounded-br-[6px] transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-accent-bright'}`}>{p.body}</div>
           <p className={`mt-1 flex items-center gap-2 px-1 ${t.time}`}>
             {p.status === 'sending' ? (
               <span className="text-faint">Sending…</span>
@@ -603,7 +603,7 @@ export default function Messages() {
                       send();
                     }}
                     placeholder="Write a message…"
-                    className="max-h-20 min-w-0 flex-1 resize-none bg-transparent px-3 py-[7px] text-[14px] leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
+                    className="max-h-20 min-w-0 flex-1 resize-none bg-transparent px-3 py-[7px] text-[14px] leading-snug text-accent outline-none placeholder:text-neutral-400"
                   />
                   <button
                     onPointerDown={(e) => e.preventDefault()}
@@ -830,7 +830,7 @@ export default function Messages() {
                   }}
                   placeholder="Write a message…"
                   enterKeyHint="send"
-                  className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-3.5 py-[10px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
+                  className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-3.5 py-[10px] text-[16px] leading-[22px] text-accent outline-none placeholder:text-faint"
                 />
                 <button
                   // Do not take focus from the field: the keyboard stays up and nothing resizes.
