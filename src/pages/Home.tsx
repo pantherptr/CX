@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
 import { Icon, type IconName } from '../components/Icon';
@@ -19,64 +19,6 @@ import { useLocale } from '../lib/i18n';
 
 const globePlaces = catalogue.cityNames.filter((c) => CITY_COORDS[c]).map((c) => ({ name: c, coords: CITY_COORDS[c] }));
 const CityGlobe = lazy(() => import('../components/home/CityGlobe').then((m) => ({ default: m.CityGlobe })));
-
-/** Original CX editorial hero art: created specifically with generous
- * left-side copy space and a sunlit, optimistic automotive setting. */
-const HERO_IMAGE = '/cx-hero-mediterranean-v2.png';
-const HERO_IMAGE_MOBILE = '/cx-hero-mediterranean-mobile-v2.png';
-
-/** The hero photo, fading in once decoded (same `.imgfade`/`.loaded`
- *  technique `Img` uses) — kept as its own small `<picture>` here rather
- *  than extending the shared `Img` component for the one place on the
- *  site that needs a breakpoint-swapped source. */
-function HeroPhoto() {
-  const ref = useRef<HTMLImageElement>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const [failed, setFailed] = useState(false);
-  const retriedRef = useRef(false);
-
-  useEffect(() => {
-    if (ref.current?.complete) setLoaded(true);
-  }, []);
-
-  // Same one-retry-then-fallback contract as the shared `Img` primitive
-  // (see motion.tsx) — duplicated here rather than reworking `Img` to
-  // support `<picture>`'s two-child, breakpoint-swapped structure for
-  // this one hero image.
-  const handleError = () => {
-    if (!retriedRef.current) {
-      retriedRef.current = true;
-      window.setTimeout(() => setAttempt((a) => a + 1), 500);
-      return;
-    }
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.error(`[HeroPhoto] failed to load (after one retry): ${HERO_IMAGE}`);
-    }
-    setFailed(true);
-  };
-
-  if (failed) {
-    return <div className="absolute inset-0 bg-gradient-to-br from-noir via-noir to-accent-bright/10" />;
-  }
-
-  return (
-    <picture>
-      <source media="(max-width: 767px)" srcSet={HERO_IMAGE_MOBILE} />
-      <img
-        key={attempt}
-        ref={ref}
-        src={HERO_IMAGE}
-        alt="A premium CX car overlooking the Mediterranean coast"
-        onLoad={() => setLoaded(true)}
-        onError={handleError}
-        fetchPriority="high"
-        className={`imgfade ${loaded ? 'loaded' : ''} absolute inset-0 h-full w-full object-cover object-center`}
-      />
-    </picture>
-  );
-}
 
 /** The SIGNAL preview: a Story and two posts, fanned side by side, built
  *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
@@ -217,152 +159,143 @@ export default function Home() {
   // A real car photo for the delivery story (second-best rated so it
   // differs from the first fleet card).
   const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
-
-  // Top-rated cars, real data — the fleet rail right after the hero.
-  const fleetCars = useMemo(() => {
-    if (!allCars) return null;
-    return [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 8);
-  }, [allCars]);
+  const cheapest = allCars && allCars.length > 0 ? Math.min(...allCars.map((c) => c.pricePerDay)) : null;
 
   return (
     <div>
-      {/* ================= HERO — real photography, edge to edge =================
-          `-mt-[calc(4rem+safe-area-inset-top)]`: the header is always
-          `sticky` now (see Navbar's own comment), which means it always
-          reserves its own ~64px *plus* its `pt-safe` notch padding in
-          document flow, right above this section. Pulling the hero up by
-          that same total amount puts its background back at true y=0 —
-          visible right through the header's transparent background
-          exactly as before — without the header ever changing
-          *positioning* scheme, which is what used to cause the
-          scroll-jump. Matching only the 64px (not the safe-area inset too)
-          left a flat strip of the plain page background showing above the
-          hero on any phone with a notch/Dynamic Island — the hero's own
-          photo and gradient never reached that far up. The inner content
-          keeps its own pt-24/pt-28 unchanged, so it lands in the exact
-          same visual spot it always did. */}
-      <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-bg sm:min-h-[92svh] sm:bg-[#eaf2ef]">
-        {/* Media layer. On phones it's exactly one screen tall: the
-            mobile photo is a 9:16 portrait, and stretching it over the old
-            1200px hero blew it up ~1.8x and cropped the car out of frame —
-            at one screen it shows its whole composition, car included,
-            and fades into the page where the search card overlaps it.
-            Wider screens keep the full-bleed photo behind everything. */}
-        <div className="absolute inset-x-0 top-0 h-[100svh] sm:inset-0 sm:h-auto">
-          <div className="animate-ken-burns absolute inset-0 origin-[70%_60%]">
-            <HeroPhoto />
-          </div>
+      {/* ================= HERO — big type behind a cut-out car =================
+          The photo style: huge italic words sit behind the car and the car breaks out in front of
+          them (the cut-out is public/hero-car.webp). The section still pulls itself up under the
+          sticky header by the same amount as before (see Navbar), so nothing else shifts. */}
+      <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-bg">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.10), transparent 70%), linear-gradient(180deg, #f4f6f1 0%, #fbfbf9 62%)' }}
+        />
 
-          {/* A light editorial wash gives the copy a calm, premium reading
-              surface while keeping the blue sky, architecture and car vivid. */}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/35 via-transparent to-[#0b2618]/30" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f8faf4]/[0.97] via-[#f8faf4]/75 to-transparent sm:via-[#f8faf4]/45" />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-70"
-            style={{ background: 'radial-gradient(42% 42% at 16% 10%, rgba(0,212,71,0.10), transparent 70%)' }}
-          />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-bg sm:hidden" />
-        </div>
-
-        {/* Phones: tall enough that the search card starts just above the
-            photo's bottom edge (one screen, minus a ~70px overlap) rather
-            than a screen and a half further down. */}
-        <div className="relative z-10 flex min-h-[calc(100svh+19rem)] flex-col justify-between px-5 pb-8 pt-24 sm:min-h-[92svh] sm:px-8 sm:pt-28 lg:px-10 xl:px-16">
-          {/* -------- Featured car — a floating glass card over the photo
-              (desktop only; real top-rated listing) -------- */}
-          {fleetCars?.[0] && (
-            <Reveal delay={420} className="absolute right-10 top-32 hidden w-64 xl:right-16 lg:block">
-              <Link
-                to={`/cars/${fleetCars[0].slug}`}
-                className="group block overflow-hidden rounded-2xl border border-white/40 bg-white/55 p-2 shadow-[0_20px_50px_-20px_rgba(11,38,24,0.45)] backdrop-blur-xl transition-transform duration-300 hover:-translate-y-1"
+        <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
+          {/* -------- The stage: word / car / word -------- */}
+          <Reveal className="reveal-blur">
+            <div className="relative mx-auto aspect-[1/0.74] w-full select-none sm:aspect-[16/8.4]">
+              <p
+                aria-hidden
+                className="absolute inset-x-0 top-[2%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.8] tracking-[-0.045em] text-transparent"
+                style={{
+                  fontSize: 'clamp(4.2rem, 21vw, 17.5rem)',
+                  backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                }}
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-panel">
-                  <Img
-                    src={unsplash(fleetCars[0].images[0], 500)}
-                    alt={`${fleetCars[0].make} ${fleetCars[0].model}`}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2.5 py-1 text-label font-semibold uppercase tracking-[0.1em] text-ink-soft backdrop-blur">
-                    {t('Top rated')}
-                  </span>
-                </div>
-                <div className="flex items-end justify-between gap-2 px-2 pb-1.5 pt-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-copy font-semibold text-ink">
-                      {fleetCars[0].make} {fleetCars[0].model}
-                    </p>
-                    <p className="mt-0.5 text-detail text-ink-soft">
-                      ★ {fleetCars[0].rating.toFixed(1)} · {fleetCars[0].city}
-                    </p>
-                  </div>
-                  <p className="shrink-0 text-right text-detail text-ink-soft">
-                    <span className="font-display text-lead font-semibold text-ink">{eur(fleetCars[0].pricePerDay)}</span>{t('/day')}
-                  </p>
-                </div>
-              </Link>
-            </Reveal>
-          )}
-
-          {/* -------- Headline column -------- */}
-          <div className="max-w-xl">
-            <Reveal className="reveal-blur">
-              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
-                  <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
-                </span>
-                {t('Now live in {n} European cities', { n: catalogue.cities })}
-              </span>
-            </Reveal>
-
-            <Reveal delay={80} className="reveal-blur">
-              <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-balance sm:text-6xl xl:text-[4.75rem]">
-                <span className="text-ink">
-                  {t('I own the keys')}
-                </span>
-                <br />
-                <span className="text-accent">
-                  {t('to your heart.')}
-                </span>
-              </h1>
-            </Reveal>
-
-            <Reveal delay={140} className="reveal-blur">
-              <p className="mt-5 max-w-md text-lead leading-relaxed text-ink-soft text-pretty sm:text-feature">
-                {t('Premium cars. Verified hosts. Ready for the road.')}
+                LUXURY
               </p>
-            </Reveal>
+              <p
+                aria-hidden
+                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.8] tracking-[-0.045em] text-transparent"
+                style={{
+                  fontSize: 'clamp(3rem, 15.2vw, 12.6rem)',
+                  backgroundImage: 'linear-gradient(180deg, rgba(120,126,118,0.55) 0%, rgba(150,156,148,0.28) 55%, rgba(170,176,168,0) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                }}
+              >
+                CAR RENTAL
+              </p>
 
-            <Reveal delay={200} className="reveal-blur">
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              {/* The car, in front of both */}
+              <img
+                src="/hero-car.webp?v=2"
+                alt={t('A premium CX car')}
+                width={840}
+                height={368}
+                fetchPriority="high"
+                draggable={false}
+                className="absolute left-1/2 top-[47%] w-[88%] max-w-[900px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_34px_28px_rgba(14,28,20,0.38)] sm:top-[49%] sm:w-[62%]"
+              />
+
+              {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
+              <div className="absolute bottom-[26%] left-0 hidden max-w-[11rem] sm:block">
+                <span className="mb-2 block h-px w-14 bg-ink/60" />
+                <p className="text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
+                  {t('Premium cars. Verified hosts.')}
+                </p>
+              </div>
+              <div className="absolute bottom-[26%] right-0 hidden items-center gap-2.5 sm:flex">
+                <span className="grid h-10 w-10 place-items-center rounded-full border border-ink/25 text-ink"><Icon name="shield" size={18} /></span>
+                <p className="text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
+                  {t('Protected')}<br />{t('trips')}
+                </p>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* -------- Two quiet facts, in the place the reference puts its price strip -------- */}
+          <Reveal delay={120}>
+            <div className="mt-5 grid grid-cols-2 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-white/70 backdrop-blur sm:mt-8">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
+                <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('From')}</span>
+                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{cheapest != null ? eur(cheapest) : '—'}</span>
+                <span className="text-detail text-muted">{t('/day')}</span>
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
+                <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('Live in')}</span>
+                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{catalogue.cities}</span>
+                <span className="text-detail text-muted">{t('European cities')}</span>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* -------- Headline row (the same words as before) -------- */}
+          <div className="mt-8 grid items-end gap-6 sm:mt-12 lg:grid-cols-[1fr_auto]">
+            <div className="max-w-2xl">
+              <Reveal delay={160} className="reveal-blur">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
+                    <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
+                  </span>
+                  {t('Now live in {n} European cities', { n: catalogue.cities })}
+                </span>
+              </Reveal>
+              <Reveal delay={200} className="reveal-blur">
+                <h1 className="mt-4 font-display text-[2.1rem] font-bold leading-[1.02] tracking-[-0.02em] text-balance sm:text-5xl xl:text-[3.4rem]">
+                  <span className="text-ink">{t('I own the keys')}</span>{' '}
+                  <span className="text-accent">{t('to your heart.')}</span>
+                </h1>
+              </Reveal>
+              <Reveal delay={240} className="reveal-blur">
+                <p className="mt-3 max-w-md text-lead leading-relaxed text-ink-soft text-pretty">
+                  {t('Premium cars. Verified hosts. Ready for the road.')}
+                </p>
+              </Reveal>
+            </div>
+            <Reveal delay={280} className="reveal-blur">
+              <div className="flex flex-wrap items-center gap-3">
                 <Link to="/browse" className="btn btn-accent-bright btn-lg">
                   {t('Explore Cars')} <Icon name="arrowRight" size={17} />
                 </Link>
-                <Link
-                  to="/list-your-car"
-                  className="btn btn-lg border border-ink/15 bg-white/55 text-ink shadow-hair backdrop-blur-md hover:border-ink/30 hover:bg-white/75"
-                >
+                <Link to="/list-your-car" className="btn btn-lg border border-ink/15 bg-white/60 text-ink shadow-hair backdrop-blur-md hover:border-ink/30 hover:bg-white/80">
                   {t('List Your Car')}
                 </Link>
               </div>
             </Reveal>
-
-            <Reveal delay={260} className="reveal-blur">
-              <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 shadow-hair backdrop-blur-md">
-                {trustRow.map((tr) => (
-                  <span key={tr.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
-                    <Icon name={tr.icon} size={15} className="text-accent" />
-                    {t(tr.label)}
-                  </span>
-                ))}
-              </div>
-            </Reveal>
           </div>
 
-          {/* -------- Search — the hero's own dark-glass bar, not a
-              separate light-page section -------- */}
-          <Reveal delay={340}>
-            <div className="mx-auto w-full max-w-4xl">
+          <Reveal delay={320}>
+            <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 shadow-hair backdrop-blur-md">
+              {trustRow.map((tr) => (
+                <span key={tr.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
+                  <Icon name={tr.icon} size={15} className="text-accent" />
+                  {t(tr.label)}
+                </span>
+              ))}
+            </div>
+          </Reveal>
+
+          {/* -------- Search -------- */}
+          <Reveal delay={360}>
+            <div className="mx-auto mt-8 w-full max-w-4xl">
               <SearchBar />
             </div>
           </Reveal>
