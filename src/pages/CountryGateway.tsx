@@ -15,7 +15,6 @@ export default function CountryGateway() {
 
   return (
     <CircularThemeReveal
-      storageKey="cx-gateway-theme"
       label="Dark mode"
       className="relative flex min-h-dvh flex-col items-center bg-bg px-5 pb-8 pt-safe sm:px-8"
     >

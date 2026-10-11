@@ -884,11 +884,11 @@ export default function HostDashboard() {
                     e.currentTarget.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
                   }}
                   aria-pressed={tab === t.id}
-                  className={`chip relative shrink-0 ${tab === t.id ? '!border-transparent !bg-transparent !text-white' : ''}`}
+                  className={`chip relative shrink-0 ${tab === t.id ? '!border-transparent !bg-transparent !text-white dark:!text-[#0a0b0a]' : ''}`}
                 >
                   {tab === t.id && <ActivePill layoutId="host-bookings-tab" className="rounded-full bg-ink" />}
                   <span className="relative">{t.label}</span>
-                  {count > 0 && <span className={`relative ${tab === t.id ? 'text-white/60' : 'text-faint'}`}>· {count}</span>}
+                  {count > 0 && <span className={`relative ${tab === t.id ? 'text-white/60 dark:text-black/55' : 'text-faint'}`}>· {count}</span>}
                 </button>
               );
             })}

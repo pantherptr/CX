@@ -1,3 +1,4 @@
+import { getTheme, setChromeOverride } from '../lib/theme';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
@@ -625,15 +626,14 @@ export default function Messages() {
     const root = document.documentElement;
     const prevRootBg = root.style.backgroundColor;
     const prevBodyBg = b.backgroundColor;
-    root.style.backgroundColor = '#f4f5f2';
-    b.backgroundColor = '#f4f5f2';
-    const meta = document.querySelector('meta[name="theme-color"]');
-    const prevMeta = meta?.getAttribute('content') ?? null;
-    meta?.setAttribute('content', '#ffffff');
+    const chatBg = getTheme() === 'dark' ? '#1a1c1a' : '#f4f5f2';
+    root.style.backgroundColor = chatBg;
+    b.backgroundColor = chatBg;
+    setChromeOverride({ light: '#ffffff', dark: '#131513' });
     return () => {
+      setChromeOverride(null);
       root.style.backgroundColor = prevRootBg;
       b.backgroundColor = prevBodyBg;
-      if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta);
       b.position = prev.position;
       b.top = prev.top;
       b.width = prev.width;

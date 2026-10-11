@@ -1,3 +1,4 @@
+import ThemeSwitch from './ThemeSwitch';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -159,7 +160,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                       aria-selected={mode === id}
                       onClick={() => switchMode(id)}
                       className={`relative flex-1 rounded-lg py-2 text-center text-detail font-medium transition-colors duration-200 ${
-                        mode === id ? 'text-white' : 'text-ink-soft'
+                        mode === id ? 'text-white dark:text-[#0a0b0a]' : 'text-ink-soft'
                       }`}
                     >
                       {mode === id && <ActivePill layoutId="app-drawer-mode" className="rounded-lg bg-ink shadow-hair" />}
@@ -245,9 +246,10 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
                   <p className="truncate text-caption text-muted">{session?.user.email}</p>
                 </div>
               </div>
+              <ThemeSwitch className="mt-1" />
               <button
                 onClick={handleSignOut}
-                className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-body text-danger hover:bg-panel"
               >
                 <Icon name="logout" size={19} />
                 Sign out

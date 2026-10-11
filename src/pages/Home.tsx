@@ -166,7 +166,7 @@ export default function Home() {
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.10), transparent 70%), linear-gradient(180deg, #f4f6f1 0%, #fbfbf9 62%)' }}
+          style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.10), transparent 70%), linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 62%)' }}
         />
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
@@ -188,7 +188,7 @@ export default function Home() {
                 aria-hidden
                 className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
                 style={{
-                  backgroundImage: 'linear-gradient(180deg, rgba(120,126,118,0.55) 0%, rgba(150,156,148,0.28) 55%, rgba(170,176,168,0) 100%)',
+                  backgroundImage: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                 }}

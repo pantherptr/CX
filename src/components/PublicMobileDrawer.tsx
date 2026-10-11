@@ -1,3 +1,4 @@
+import ThemeSwitch from './ThemeSwitch';
 import { FlyingMark } from './FlyingMark';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
@@ -123,6 +124,7 @@ export default function PublicMobileDrawer({
 
               {/* -------- Account actions -------- */}
               <div className="flex shrink-0 flex-col gap-2.5 border-t border-line p-5 pb-safe">
+                <ThemeSwitch className="-mt-1" />
                 <Link to="/login" className="btn btn-glint btn-block border border-line-strong bg-surface text-ink hover:bg-panel" {...signInScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />
                   {signInScramble.display}

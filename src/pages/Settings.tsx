@@ -1,3 +1,4 @@
+import ThemeSwitch from '../components/ThemeSwitch';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_NOTIFICATION_PREFS, fetchNotificationPrefs, saveNotificationPrefs, type NotificationPrefs } from '../lib/data/notifications';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -378,6 +379,10 @@ export default function Settings() {
 
               {section === 'preferences' && (
                 <>
+                  <Group>
+                    <div className="px-1 py-1"><ThemeSwitch className="rounded-none !px-3 !py-3" /></div>
+                  </Group>
+                  <div className="h-4" />
                   <Group>
                     {COUNTRIES.filter((c) => c.lang).map((c) => {
                       const on = country?.code === c.code;

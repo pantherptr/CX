@@ -1,3 +1,4 @@
+import ThemeSwitch from './ThemeSwitch';
 import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
@@ -152,6 +153,7 @@ export function DashboardShell({
             <p className="truncate text-detail font-medium text-ink">{displayName}</p>
             <p className="truncate text-caption text-muted">{displayEmail}</p>
           </div>
+          <ThemeSwitch variant="icon" />
           <button onClick={handleSignOut} className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel" aria-label="Sign out">
             <Icon name="logout" size={17} />
           </button>

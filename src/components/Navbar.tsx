@@ -1,3 +1,4 @@
+import { setChromeOverride } from '../lib/theme';
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -67,10 +68,8 @@ function PublicNavbar() {
   // floating over it, back to the page's own off-white the instant it
   // goes solid — on any other page, or the moment you scroll.
   useEffect(() => {
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (!meta) return;
-    meta.setAttribute('content', transparent ? '#eaf2ef' : '#fbfbf9');
-    return () => meta.setAttribute('content', '#fbfbf9');
+    setChromeOverride(transparent ? { light: '#eaf2ef', dark: '#0a0b0a' } : null);
+    return () => setChromeOverride(null);
   }, [transparent]);
   // Home keeps the full key lockup on mobile too (not the compact `symbol`
   // every other page's mobile header uses) — its green-outlined key tail

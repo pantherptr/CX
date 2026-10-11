@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { flushSync } from 'react-dom';
+import { setTheme as setGlobalTheme, useTheme } from '../../lib/theme';
 
 type Theme = 'light' | 'dark';
 type TransitionDocument = Document & {
@@ -34,29 +35,19 @@ export interface CircularThemeRevealProps {
 export function CircularThemeReveal({
   initialTheme = 'light',
   duration = 780,
-  storageKey,
   onThemeChange,
   togglePosition = 'top-right',
   label = 'Dark mode',
   children,
   className = '',
 }: CircularThemeRevealProps) {
-  const [theme, setTheme] = React.useState<Theme>(initialTheme);
+  const theme = useTheme();
+  void initialTheme;
   const [busy, setBusy] = React.useState(false);
   const locked = React.useRef(false);
   const root = React.useRef<HTMLDivElement>(null);
   const id = React.useId().replace(/[^a-zA-Z0-9]/g, '');
   const transitionName = `circular-theme-${id}`;
-
-  React.useEffect(() => {
-    if (!storageKey) return;
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved === 'light' || saved === 'dark') setTheme(saved);
-    } catch {
-      /* storage is optional */
-    }
-  }, [storageKey]);
 
   async function toggle() {
     if (locked.current || !root.current) return;
@@ -67,12 +58,7 @@ export function CircularThemeReveal({
     const commit = () => {
       if (committed) return;
       committed = true;
-      flushSync(() => setTheme(next));
-      try {
-        if (storageKey) localStorage.setItem(storageKey, next);
-      } catch {
-        /* ignore */
-      }
+      flushSync(() => setGlobalTheme(next));
       onThemeChange?.(next);
     };
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,7 +113,7 @@ export function CircularThemeReveal({
   return (
     <div ref={root} data-theme={theme} className={`ctr-surface ${className}`} style={{ viewTransitionName: transitionName }}>
       <style>{`
-        .ctr-surface { position:relative; background:var(--color-bg); color:var(--color-ink); color-scheme:light; }
+        .ctr-surface { position:relative; background:var(--color-bg); color:var(--color-ink); }
         .ctr-surface[data-theme="dark"] {
           --color-bg:#0a0b0a; --color-surface:#131513; --color-panel:#1a1c1a; --color-panel-2:#222522;
           --color-ink:#f4f4ef; --color-ink-soft:#d6d6cf; --color-muted:#a2a29a; --color-faint:#74746c;

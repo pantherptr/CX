@@ -1869,3 +1869,164 @@
 .maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(255,255,255,0.7); border-radius: 999px; margin: 6px; font-size: 10px; }
 .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button { width: 20px; height: 20px; background-size: 12px; opacity: 0.6; }
 .maplibregl-ctrl-attrib.maplibregl-compact-show { padding: 2px 24px 2px 8px; }
+
+/* ============================================================
+   DARK MODE — one switch for the whole site (src/lib/theme.ts sets
+   `data-theme` on <html>). Tokens first; everything built on the
+   tokens follows. The rest of this block handles the hard-coded
+   light colours that don't go through a token.
+   ============================================================ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+html[data-theme='dark'] {
+  --color-bg: #0a0b0a;
+  --color-surface: #131513;
+  --color-panel: #1a1c1a;
+  --color-panel-2: #222522;
+  --color-ink: #f4f4ef;
+  --color-ink-soft: #d6d6cf;
+  --color-muted: #a2a29a;
+  --color-faint: #74746c;
+  --color-line: #2b2e2b;
+  --color-line-strong: #3a3e3a;
+  --color-accent: #2fe068;
+  --color-accent-600: #22c957;
+  --color-accent-700: #19ad49;
+  --color-accent-050: #0f2a18;
+  --color-accent-100: #14391f;
+  --color-danger: #ff7a6a;
+  --color-info: #7aa2ff;
+  --color-star: #f0b53a;
+  --hero-top: #101410;
+  --hero-ghost-a: rgba(200, 206, 198, 0.42);
+  --hero-ghost-b: rgba(170, 176, 168, 0.2);
+  --hero-ghost-c: rgba(150, 156, 148, 0);
+  --shadow-hair: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -14px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 12px 32px -20px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.45), 0 26px 50px -24px rgba(0, 0, 0, 0.75);
+  --shadow-pop: 0 4px 12px rgba(0, 0, 0, 0.5), 0 24px 48px -20px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+/* Inverted "ink" buttons/chips: light fill, dark text (text-white inside flips with it). */
+html[data-theme='dark'] .bg-ink,
+html[data-theme='dark'] .\!bg-ink,
+html[data-theme='dark'] .hover\:bg-ink:hover { --color-white: #0a0b0a; }
+
+html[data-theme='dark'] body { background: var(--color-bg); color: var(--color-ink); }
+
+/* Solid / near-solid white panels become the dark surface. Low-alpha whites
+   (glass on photos, noir sections) are left alone on purpose. */
+html[data-theme='dark'] .bg-white,
+html[data-theme='dark'] .hover\:bg-white:hover { background-color: var(--color-surface); }
+html[data-theme='dark'] .bg-white\/95,
+html[data-theme='dark'] .bg-white\/90,
+html[data-theme='dark'] .bg-white\/85,
+html[data-theme='dark'] .bg-white\/80,
+html[data-theme='dark'] .bg-white\/75,
+html[data-theme='dark'] .bg-white\/70,
+html[data-theme='dark'] .bg-white\/65,
+html[data-theme='dark'] .bg-white\/60,
+html[data-theme='dark'] .bg-white\/55 { background-color: color-mix(in oklab, var(--color-surface) 88%, transparent); }
+html[data-theme='dark'] .hover\:bg-white\/90:hover,
+html[data-theme='dark'] .hover\:bg-white\/80:hover,
+html[data-theme='dark'] .hover\:bg-white\/75:hover,
+html[data-theme='dark'] .group:hover .group-hover\:bg-white\/95 { background-color: var(--color-panel); }
+html[data-theme='dark'] .ring-white,
+html[data-theme='dark'] .border-white { --tw-ring-color: var(--color-bg); border-color: var(--color-bg); }
+html[data-theme='dark'] .from-white { --tw-gradient-from: var(--color-bg); }
+html[data-theme='dark'] .via-white\/60,
+html[data-theme='dark'] .via-white\/45 { --tw-gradient-via: color-mix(in oklab, var(--color-bg) 60%, transparent); }
+
+/* Hard-coded light hex fills used for chat, hero and cards. */
+html[data-theme='dark'] .bg-\[\#f4f5f2\],
+html[data-theme='dark'] .bg-\[\#f2f4f7\],
+html[data-theme='dark'] .bg-\[\#f6f7f5\],
+html[data-theme='dark'] .bg-\[\#fafbf8\],
+html[data-theme='dark'] .bg-\[\#f6f7f3\],
+html[data-theme='dark'] .bg-\[\#f1f2ee\],
+html[data-theme='dark'] .bg-\[\#f0f2f5\],
+html[data-theme='dark'] .bg-\[\#e9edef\] { background-color: var(--color-panel); }
+html[data-theme='dark'] .bg-\[\#eaf7ef\] { background-color: var(--color-accent-050); }
+html[data-theme='dark'] .from-\[\#f4f5f2\] { --tw-gradient-from: var(--color-bg); }
+html[data-theme='dark'] .via-\[\#f4f5f2\],
+html[data-theme='dark'] .via-\[\#eef0ec\] { --tw-gradient-via: var(--color-panel); }
+html[data-theme='dark'] .to-\[\#f4f5f2\],
+html[data-theme='dark'] .to-\[\#e6e9e3\],
+html[data-theme='dark'] .to-\[\#e2e5de\] { --tw-gradient-to: var(--color-panel-2); }
+html[data-theme='dark'] .from-\[\#f3faf5\],
+html[data-theme='dark'] .to-\[\#eaf7ef\] { --tw-gradient-from: var(--color-accent-050); --tw-gradient-to: var(--color-accent-050); }
+html[data-theme='dark'] .text-\[\#a86400\],
+html[data-theme='dark'] .text-\[\#8a6d1f\] { color: #f0b53a; }
+html[data-theme='dark'] .text-\[\#e2384d\] { color: #ff6b7d; }
+
+/* Photos stay as they are, only dimmed a touch so they don't glare. */
+html[data-theme='dark'] :where(img:not([src$='.svg'])) { filter: brightness(0.92); }
+
+/* Form controls follow the dark scheme. */
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] select { color-scheme: dark; }
+html[data-theme='dark'] ::placeholder { color: var(--color-faint); }
+
+/* View transition for the circular reveal: no cross-fade, the clip does the work. */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+html[data-theme='dark'] .to-\[\#f4f5f2\]\/0 { --tw-gradient-to: color-mix(in oklab, var(--color-panel) 0%, transparent); }
+html[data-theme='dark'] .via-\[\#f4f5f2\] { --tw-gradient-via: var(--color-panel); }
+html[data-theme='dark'] .from-\[\#f4f5f2\] { --tw-gradient-from: var(--color-panel); }
+
+/* Maps: the light vector basemap is inverted (hue kept) so roads/water/labels read on dark. */
+html[data-theme='dark'] .maplibregl-canvas { filter: invert(1) hue-rotate(180deg) brightness(0.88) contrast(0.92) saturate(0.85); }
+html[data-theme='dark'] .maplibregl-ctrl-group { background: var(--color-surface); }
+html[data-theme='dark'] .maplibregl-ctrl-group button + button { border-top-color: var(--color-line); }
+html[data-theme='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
+html[data-theme='dark'] .maplibregl-ctrl-attrib { background: color-mix(in oklab, var(--color-bg) 70%, transparent); color: var(--color-muted); }
+html[data-theme='dark'] .maplibregl-ctrl-attrib a { color: var(--color-muted); }
+html[data-theme='dark'] .maplibregl-popup-content { background: var(--color-surface); color: var(--color-ink); }
+
+:root {
+  --hero-top: #f4f6f1;
+  --hero-ghost-a: rgba(120, 126, 118, 0.55);
+  --hero-ghost-b: rgba(150, 156, 148, 0.28);
+  --hero-ghost-c: rgba(170, 176, 168, 0);
+}
+html[data-theme='dark'] {
+  --hero-top: #101410;
+  --hero-ghost-a: rgba(200, 206, 198, 0.42);
+  --hero-ghost-b: rgba(170, 176, 168, 0.2);
+  --hero-ghost-c: rgba(150, 156, 148, 0);
+}
+
+/* Black-on-transparent brand marks: invert + hue-rotate lightens the black and keeps the green. */
+html[data-theme='dark'] img[src*='/cx-logo-main'],
+html[data-theme='dark'] img[src*='/cx-logo-symbol'],
+html[data-theme='dark'] img[src*='/brand/cx-bat.webp'],
+html[data-theme='dark'] img[src*='/brand/cx-logo-letters'] { filter: invert(1) hue-rotate(180deg) brightness(1.05); }
+
+/* Buttons in dark: the "ink" button becomes the light pill, green fills take dark text. */
+html[data-theme='dark'] .btn-primary { color: #0a0b0a; }
+html[data-theme='dark'] .btn-accent { color: #04140a; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -12px rgba(47, 224, 104, 0.45); }
+@media (hover: hover) {
+  html[data-theme='dark'] .btn-primary:hover { background: #ffffff; }
+  html[data-theme='dark'] .btn-secondary:hover { border-color: var(--color-line-strong); background: var(--color-panel); }
+}
+@media (hover: none) {
+  html[data-theme='dark'] .btn-primary:active { background: #ffffff; }
+}
+html[data-theme='dark'] .chip[data-active='true'] { color: #0a0b0a; }
+@media (hover: hover) { html[data-theme='dark'] .chip:hover { border-color: var(--color-muted); background: var(--color-panel); } }
+html[data-theme='dark'] .range-ink::-webkit-slider-thumb { border-color: var(--color-ink); }
+html[data-theme='dark'] .range-ink::-moz-range-thumb { border-color: var(--color-ink); }
+html[data-theme='dark'] .range-dual::-webkit-slider-thumb { background: var(--color-surface); }
+html[data-theme='dark'] .range-dual::-moz-range-thumb { background: var(--color-surface); }
+
+/* Scrims / photo captions built from ink stay dark in dark mode (white text sits on them). */
+html[data-theme='dark'] .bg-ink\/90 { background-color: rgb(0 0 0 / 0.9); }
+html[data-theme='dark'] .bg-ink\/75 { background-color: rgb(0 0 0 / 0.75); }
+html[data-theme='dark'] .bg-ink\/70 { background-color: rgb(0 0 0 / 0.7); }
+html[data-theme='dark'] .bg-ink\/65 { background-color: rgb(0 0 0 / 0.65); }
+html[data-theme='dark'] .bg-ink\/60 { background-color: rgb(0 0 0 / 0.6); }
+html[data-theme='dark'] .bg-ink\/45 { background-color: rgb(0 0 0 / 0.6); }
