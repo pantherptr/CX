@@ -132,3 +132,46 @@ export function useHostPayouts(userId: string | undefined) {
   }, [userId]);
   return { payouts, commissionPct };
 }
+
+// ---- Owner / Admin overview (supabase/migrations/0103) ----
+
+export interface PayoutOverview {
+  commissionPct: number;
+  paidCount: number;
+  gross: number;
+  commission: number;
+  net: number;
+  commission30d: number;
+  pendingCount: number;
+  pendingAmount: number;
+  stuck: { id: string; reference: string | null; endDate: string; amount: number; status: 'blocked' | 'failed'; hostName: string; onboardingStarted: boolean; payoutsEnabled: boolean }[];
+  recent: { bookingId: string; reference: string | null; hostName: string; gross: number; commission: number; net: number; paidAt: string }[];
+}
+
+export async function fetchPayoutOverview(): Promise<{ data: PayoutOverview | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('fetch_payout_overview');
+  if (error || !data) return { data: null, error: error?.message ?? 'No data' };
+  const d = data as Record<string, unknown>;
+  const n = (x: unknown) => Number(x ?? 0);
+  type Stuck = { id: string; reference: string | null; end_date: string; amount: number | null; status: 'blocked' | 'failed'; host_name: string | null; onboarding_started: boolean; payouts_enabled: boolean };
+  type Recent = { booking_id: string; reference: string | null; host_name: string | null; gross: number; commission: number; net: number; paid_at: string };
+  return {
+    error: null,
+    data: {
+      commissionPct: n(d.commission_pct), paidCount: n(d.paid_count), gross: n(d.gross), commission: n(d.commission), net: n(d.net),
+      commission30d: n(d.commission_30d), pendingCount: n(d.pending_count), pendingAmount: n(d.pending_amount),
+      stuck: ((d.stuck as Stuck[]) ?? []).map((r) => ({
+        id: r.id, reference: r.reference, endDate: r.end_date, amount: n(r.amount), status: r.status,
+        hostName: r.host_name ?? 'Host', onboardingStarted: r.onboarding_started, payoutsEnabled: r.payouts_enabled,
+      })),
+      recent: ((d.recent as Recent[]) ?? []).map((r) => ({
+        bookingId: r.booking_id, reference: r.reference, hostName: r.host_name ?? 'Host', gross: n(r.gross), commission: n(r.commission), net: n(r.net), paidAt: r.paid_at,
+      })),
+    },
+  };
+}
+
+export async function setHostCommissionPct(pct: number): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_host_commission_pct', { p_pct: pct });
+  return { error: error ? error.message : null };
+}
