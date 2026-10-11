@@ -201,7 +201,7 @@ function Thread({
 }) {
   const t = large
     ? { gap: 'space-y-[3px]', bubble: 'max-w-[80%] rounded-[20px] px-3.5 py-[9px] text-[15.5px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
-    : { gap: 'space-y-1.5', bubble: 'max-w-[75%] rounded-xl px-3.5 py-2 text-[14px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-2.5 py-0.5', note: 'text-[11.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
+    : { gap: 'space-y-[3px]', bubble: 'max-w-[78%] rounded-[18px] px-3.5 py-[8px] text-[14px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-2.5 py-0.5', note: 'text-[11.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
   const roleOf = (m: Message): VerifiedRole => (m.senderId === myId ? (m.senderRole ?? myRole) : active.other.role);
   // Messages that arrive after the thread is on screen (a reply coming in) land with a small
   // animation; the history that was already there, and your own sent bubble (swapped in place from
@@ -245,9 +245,9 @@ function Thread({
                 <div
                   className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${
                     mine
-                      ? `${large ? 'bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)]' : 'bg-ink'} text-white ${last ? (large ? 'rounded-br-[6px]' : 'rounded-br-md') : ''}`
-                      : `${large ? 'shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04]' : 'shadow-hair ring-1 ring-line'} bg-white text-ink ${last ? (large ? 'rounded-bl-[6px]' : 'rounded-bl-md') : ''}`
-                  } ${large && freshIds.has(m.id) ? 'chat-in-left' : ''}`}
+                      ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-white ${last ? 'rounded-br-[6px]' : ''}`
+                      : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-ink ${last ? 'rounded-bl-[6px]' : ''}`
+                  } ${freshIds.has(m.id) ? 'chat-in-left' : ''}`}
                 >
                   {m.body}
                 </div>
@@ -263,8 +263,8 @@ function Thread({
         })
       )}
       {pending.map((p) => (
-        <div key={p.localId} className={`flex flex-col items-end pt-1 ${large ? 'chat-in-right' : ''}`}>
-          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${large ? 'rounded-br-[6px]' : ''} transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-white'}`}>{p.body}</div>
+        <div key={p.localId} className={`flex flex-col items-end pt-1 chat-in-right`}>
+          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} rounded-br-[6px] transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-white'}`}>{p.body}</div>
           <p className={`mt-1 flex items-center gap-2 px-1 ${t.time}`}>
             {p.status === 'sending' ? (
               <span className="text-faint">Sending…</span>
@@ -542,7 +542,7 @@ export default function Messages() {
                     <button onClick={() => setSendAsRole('owner_assistant')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner_assistant' ? 'bg-amber-100 text-amber-800' : 'text-neutral-500 hover:bg-black/5'}`}>Owner Assistant</button>
                   </div>
                 )}
-                <div className="flex items-end gap-2">
+                <div className="flex items-end gap-1.5 rounded-[22px] bg-white p-1 shadow-[0_6px_20px_-8px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05] transition-shadow focus-within:shadow-[0_8px_24px_-8px_rgba(0,133,54,0.35)] focus-within:ring-accent/40">
                   <textarea
                     rows={1}
                     value={text}
@@ -558,14 +558,14 @@ export default function Messages() {
                       send();
                     }}
                     placeholder="Write a message…"
-                    className="max-h-20 min-w-0 flex-1 resize-none rounded-lg bg-white px-3 py-2 text-[14px] leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
+                    className="max-h-20 min-w-0 flex-1 resize-none bg-transparent px-3 py-[7px] text-[14px] leading-snug text-neutral-900 outline-none placeholder:text-neutral-400"
                   />
                   <button
                     onPointerDown={(e) => e.preventDefault()}
                     onClick={send}
                     disabled={!text.trim()}
                     aria-label="Send"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-bright disabled:opacity-40"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-white shadow-[0_5px_12px_-4px_rgba(0,133,54,0.6)] transition-[transform,opacity] active:scale-90 disabled:bg-none disabled:bg-neutral-100 disabled:text-neutral-400 disabled:shadow-none"
                   >
                     <Icon name="send" size={15} />
                   </button>
