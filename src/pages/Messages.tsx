@@ -7,6 +7,7 @@ import { Img } from '../components/motion';
 import { EmptyState, Modal, VerifiedBadge, RoleLabel, type VerifiedRole } from '../components/primitives';
 import { useAuth } from '../lib/auth';
 import { haptics } from '../lib/native';
+import { useChatPresence } from '../lib/data/chatPresence';
 import {
   useConversations,
   useConversation,
@@ -279,6 +280,7 @@ function Thread({
   onDismiss,
   large = false,
   ownerIdentity = false,
+  typing = false,
 }: {
   messages: Message[] | null;
   pending: PendingMessage[];
@@ -290,6 +292,8 @@ function Thread({
   large?: boolean;
   /** Only the Owner picks an identity per message, so only their own bubbles carry a role label. */
   ownerIdentity?: boolean;
+  /** The other person is typing right now. */
+  typing?: boolean;
 }) {
   const t = large
     ? { gap: 'space-y-[3px]', bubble: 'max-w-[80%] rounded-[20px] px-3.5 py-[9px] text-[15.5px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
@@ -357,6 +361,15 @@ function Thread({
             </div>
           );
         })
+      )}
+      {typing && (
+        <div className="chat-in-left flex items-start pt-1" aria-live="polite" aria-label="Typing">
+          <div className="flex items-center gap-1 rounded-[18px] rounded-bl-[6px] bg-white px-3.5 py-3 shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04]">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/70" style={{ animationDelay: `${i * 140}ms`, animationDuration: '0.9s' }} />
+            ))}
+          </div>
+        </div>
       )}
       {pending.map((p) => (
         <div key={p.localId} className={`flex flex-col items-end pt-1 chat-in-right`}>
@@ -436,6 +449,7 @@ export default function Messages() {
 
   const { messages, append } = useConversation(activeId);
   const active = (conversations ?? []).find((c) => c.id === activeId) ?? null;
+  const presence = useChatPresence(activeId, session?.user.id, active?.other.id);
   const myRole: VerifiedRole = profile?.is_owner ? 'owner' : profile?.is_admin ? 'admin' : profile?.is_host ? 'host' : 'client';
 
   // Client-side filter over the already-loaded list — a per-user
@@ -603,6 +617,7 @@ export default function Messages() {
       return;
     }
     setText('');
+    presence.notifyTyping(false);
     // Collapse the auto-grown composer back to one line with the text, and keep the keyboard up:
     // sending must not blur the field (that closes the keyboard and the whole layout jumps).
     if (composerRef.current) {
@@ -630,7 +645,7 @@ export default function Messages() {
         <MacbookMockup
           className="my-auto"
           headerTitle={active?.other.name ?? (conversationsLoading ? 'Loading…' : 'Messages')}
-          headerSubtitle={active ? (active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? '') : ''}
+          headerSubtitle={active ? (presence.typing ? 'typing…' : presence.online ? 'Online' : active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? '') : ''}
           avatarUrl={active?.other.avatar}
           avatarFallback={active?.other.name?.[0]?.toUpperCase() ?? 'C'}
           userAvatarUrl={profile?.avatar_url}
@@ -672,6 +687,7 @@ export default function Messages() {
                     value={text}
                     onChange={(e) => {
                       setText(e.target.value);
+                    presence.notifyTyping(e.target.value.trim().length > 0);
                       const el = e.currentTarget;
                       el.style.height = 'auto';
                       el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
@@ -701,6 +717,7 @@ export default function Messages() {
           {active && (
             <Thread
                 ownerIdentity={!!profile?.is_owner}
+              typing={presence.typing}
               messages={messages}
               pending={pendingForActive}
               active={active}
@@ -823,8 +840,15 @@ export default function Messages() {
                       <VerifiedBadge role={active.other.role} size={14} />
                     </span>
                     <span className="mt-0.5 flex items-center gap-1 truncate text-caption font-semibold text-accent/80">
-                      {active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
-                      <span className="text-accent/60">· Tap for info</span>
+                      {presence.typing ? (
+                        <span className="text-accent">typing…</span>
+                      ) : (
+                        <>
+                          {presence.online && <span className="h-2 w-2 shrink-0 rounded-full bg-accent-bright shadow-[0_0_0_3px_rgba(0,212,71,0.2)]" />}
+                          {presence.online ? 'Online' : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
+                          <span className="text-accent/60">· Tap for info</span>
+                        </>
+                      )}
                     </span>
                   </span>
                 </button>
@@ -856,6 +880,7 @@ export default function Messages() {
               <Thread
                 ownerIdentity={!!profile?.is_owner}
                 large
+                typing={presence.typing}
                 messages={messages}
                 pending={pendingForActive}
                 active={active}
@@ -898,6 +923,7 @@ export default function Messages() {
                   value={text}
                   onChange={(e) => {
                     setText(e.target.value);
+                    presence.notifyTyping(e.target.value.trim().length > 0);
                     const el = e.currentTarget;
                     el.style.height = 'auto';
                     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
