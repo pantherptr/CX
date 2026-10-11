@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { applyCors } from './_lib/cors.js';
 import { sendPushToUser } from './_lib/push.js';
+import { sendVerificationDecisionEmail } from './_lib/email.js';
 
 /**
  * Pushes the other participant(s) in a conversation after a message is
@@ -38,7 +39,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ skipped: true });
   }
 
-  const { conversationId, preview } = (req.body ?? {}) as { conversationId?: string; preview?: string };
+  const { conversationId, preview, type, userId, kind, decision, reason } = (req.body ?? {}) as {
+    conversationId?: string;
+    preview?: string;
+    type?: string;
+    userId?: string;
+    kind?: 'identity' | 'licence';
+    decision?: 'approved' | 'rejected';
+    reason?: string;
+  };
+
+  // Second job of this endpoint (Vercel's plan caps the number of functions): tell someone the
+  // result of their identity / licence review, by push and email. Only a reviewer may trigger it.
+  if (type === 'verification') {
+    if (!userId || !kind || !decision) return res.status(400).json({ error: 'Missing fields.' });
+    const reviewerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const {
+      data: { user: reviewer },
+    } = await reviewerClient.auth.getUser();
+    if (!reviewer) return res.status(401).json({ error: 'Your session has expired — please sign in again.' });
+    const { data: reviewerProfile } = await reviewerClient.from('profiles').select('is_admin, is_owner').eq('id', reviewer.id).single();
+    if (!reviewerProfile?.is_admin && !reviewerProfile?.is_owner) return res.status(403).json({ error: 'Not allowed.' });
+
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const what = kind === 'identity' ? 'identity' : 'driving licence';
+    const approved = decision === 'approved';
+    await Promise.all([
+      sendPushToUser(admin, userId, {
+        title: approved ? `Your ${what} is verified ✓` : `Your ${what} needs a new photo`,
+        body: approved ? (kind === 'identity' ? 'Your profile now has the verified badge.' : 'You are ready to rent.') : (reason || 'Tap to see why and send it again.').slice(0, 120),
+        data: { url: approved ? '/settings#verification' : `/settings#${kind === 'identity' ? 'verification' : 'licence'}` },
+      }),
+      (async () => {
+        const { data } = await admin.auth.admin.getUserById(userId);
+        const email = data?.user?.email;
+        if (email) await sendVerificationDecisionEmail(email, { kind, decision, reason });
+      })(),
+    ]);
+    return res.status(200).json({ sent: true });
+  }
+
   if (!conversationId) {
     return res.status(400).json({ error: 'Missing conversationId.' });
   }

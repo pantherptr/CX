@@ -200,3 +200,40 @@ export async function sendReturnReminderEmail(to: string, trip: TripEmailData) {
   `;
   await send(to, `Reminder: return tomorrow — ${trip.carLabel}`, layout(`Your ${trip.carLabel} is due back tomorrow.`, body));
 }
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Result of a document review — sent to the person whose identity / driving licence was checked. */
+export async function sendVerificationDecisionEmail(
+  to: string,
+  d: { kind: 'identity' | 'licence'; decision: 'approved' | 'rejected'; reason?: string },
+) {
+  const what = d.kind === 'identity' ? 'identity' : 'driving licence';
+  const approved = d.decision === 'approved';
+  const body = approved
+    ? `
+    <h1 style="margin:0 0 6px 0;font-size:20px;font-weight:700;">Your ${what} is verified ✓</h1>
+    <p style="margin:0 0 4px 0;font-size:14px;line-height:1.6;color:#3d3a30;">
+      ${d.kind === 'identity'
+        ? 'Your profile now carries the verified badge — and you can post on SIGNAL under your own name.'
+        : 'You are ready to rent. Pick a car and go.'}
+    </p>
+    ${button(`${SITE_URL}${d.kind === 'identity' ? '/settings#verification' : '/browse'}`, d.kind === 'identity' ? 'View my profile' : 'Browse cars')}
+  `
+    : `
+    <h1 style="margin:0 0 6px 0;font-size:20px;font-weight:700;">We need a new photo of your ${what}</h1>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;color:#3d3a30;">
+      We could not accept it this time:
+    </p>
+    <p style="margin:0 0 4px 0;padding:12px 14px;border-radius:10px;background:#fdecee;font-size:14px;line-height:1.5;color:#b3261e;">
+      ${esc(d.reason || 'The document could not be read.')}
+    </p>
+    <p style="margin:14px 0 0 0;font-size:14px;line-height:1.6;color:#3d3a30;">It only takes a minute to send it again.</p>
+    ${button(`${SITE_URL}/settings#${d.kind === 'identity' ? 'verification' : 'licence'}`, 'Send it again')}
+  `;
+  await send(
+    to,
+    approved ? `Your ${what} is verified` : `Action needed: your ${what}`,
+    layout(approved ? `Your ${what} is verified.` : `We need a new photo of your ${what}.`, body),
+  );
+}

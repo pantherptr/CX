@@ -297,5 +297,23 @@ export async function decideVerification(
     p_decision: decision,
     p_reason: reason ?? null,
   });
+  if (!error) void notifyVerificationDecision(userId, kind, decision, reason);
   return { error: error ? error.message : null };
+}
+
+/** Push + email to the person (fire and forget — the message in their CX chat already exists). */
+async function notifyVerificationDecision(userId: string, kind: 'identity' | 'licence', decision: 'approved' | 'rejected', reason?: string): Promise<void> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch(apiUrl('/api/notify-message'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ type: 'verification', userId, kind, decision, reason }),
+    });
+  } catch (err) {
+    console.error('[admin] verification notify failed', err);
+  }
 }
