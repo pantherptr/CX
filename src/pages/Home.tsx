@@ -178,29 +178,30 @@ export default function Home() {
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
             <div className="relative mx-auto aspect-[1/0.74] w-full select-none sm:aspect-[16/8.4]">
-              <p
-                aria-hidden
-                className="absolute inset-x-0 top-[2%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.8] tracking-[-0.045em] text-transparent"
+              <h1
+                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.04em] text-transparent"
                 style={{
-                  fontSize: 'clamp(4.2rem, 21vw, 17.5rem)',
+                  fontSize: 'clamp(2.6rem, 11.2vw, 9.6rem)',
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                 }}
               >
-                LUXURY
-              </p>
+                <span className="block sm:hidden">{t('I own')}<br />{t('the keys')}</span>
+                <span className="hidden sm:block">{t('I own the keys')}</span>
+              </h1>
               <p
                 aria-hidden
-                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.8] tracking-[-0.045em] text-transparent"
+                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.04em] text-transparent"
                 style={{
-                  fontSize: 'clamp(3rem, 15.2vw, 12.6rem)',
+                  fontSize: 'clamp(2.6rem, 11.2vw, 9.6rem)',
                   backgroundImage: 'linear-gradient(180deg, rgba(120,126,118,0.55) 0%, rgba(150,156,148,0.28) 55%, rgba(170,176,168,0) 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                 }}
               >
-                CAR RENTAL
+                <span className="block sm:hidden">{t('to your')}<br />{t('heart.')}</span>
+                <span className="hidden sm:block">{t('to your heart.')}</span>
               </p>
 
               {/* The car, in front of both */}
@@ -257,12 +258,6 @@ export default function Home() {
                   </span>
                   {t('Now live in {n} European cities', { n: catalogue.cities })}
                 </span>
-              </Reveal>
-              <Reveal delay={200} className="reveal-blur">
-                <h1 className="mt-4 font-display text-[2.1rem] font-bold leading-[1.02] tracking-[-0.02em] text-balance sm:text-5xl xl:text-[3.4rem]">
-                  <span className="text-ink">{t('I own the keys')}</span>{' '}
-                  <span className="text-accent">{t('to your heart.')}</span>
-                </h1>
               </Reveal>
               <Reveal delay={240} className="reveal-blur">
                 <p className="mt-3 max-w-md text-lead leading-relaxed text-ink-soft text-pretty">
