@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { shrinkImage } from '../shrinkImage';
 import type { EmpireStory, EmpireStorySlide, StoryMediaType } from './empireStories';
 
 /**
@@ -197,7 +198,8 @@ export async function deleteEmpireHighlight(highlightId: string): Promise<{ erro
 // caller, silently (Highlights are Owner/Admin-only today, so this
 // symptom would only ever have shown up as "adding a Highlight slide
 // does nothing").
-export async function uploadEmpireHighlightMedia(file: File): Promise<{ url: string; path: string }> {
+export async function uploadEmpireHighlightMedia(original: File): Promise<{ url: string; path: string }> {
+  const file = await shrinkImage(original);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');

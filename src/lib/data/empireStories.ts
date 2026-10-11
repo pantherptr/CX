@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { withoutHidden } from './privacy';
+import { shrinkImage } from '../shrinkImage';
 import type { SignalPublisherType } from './signalIdentity';
 
 /**
@@ -315,13 +316,14 @@ export async function markEmpireStoryViewed(storyId: string): Promise<boolean> {
  *  then never appear anywhere (fetch_active_empire_stories only returns
  *  stories that have at least one slide) — this is the exact "I publish
  *  a story and nothing comes public" bug. */
-export async function uploadEmpireStoryMedia(file: File): Promise<{ url: string; path: string }> {
+export async function uploadEmpireStoryMedia(original: File): Promise<{ url: string; path: string }> {
+  const file = await shrinkImage(original);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${uid}/stories/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
 }

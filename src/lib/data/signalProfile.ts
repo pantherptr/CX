@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { shrinkImage } from '../shrinkImage';
 
 /**
  * The public profile a SIGNAL post's identity opens into (tap an
@@ -190,7 +191,8 @@ export async function fetchProfileFollowing(userId: string): Promise<FollowListU
  *  second avatar system, it's the same one, just reachable from inside
  *  Signal's own profile. Returns the new public URL to pass to
  *  `updateSignalProfile`. */
-export async function uploadSignalAvatar(userId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+export async function uploadSignalAvatar(userId: string, original: File): Promise<{ url: string | null; error: string | null }> {
+  const file = await shrinkImage(original, 800, 0.85);
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${userId}/avatar-${Date.now()}.${ext}`;
   const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
@@ -200,7 +202,8 @@ export async function uploadSignalAvatar(userId: string, file: File): Promise<{ 
 }
 
 /** The big photo on the SIGNAL profile card — same bucket and folder rule as the avatar. */
-export async function uploadSignalCover(userId: string, file: File): Promise<{ url: string | null; error: string | null }> {
+export async function uploadSignalCover(userId: string, original: File): Promise<{ url: string | null; error: string | null }> {
+  const file = await shrinkImage(original, 1600, 0.84);
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${userId}/cover-${Date.now()}.${ext}`;
   const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });

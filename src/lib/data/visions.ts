@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { Visibility } from './privacy';
 import { withCollabs, type CollabInfo } from './collab';
+import { shrinkImage } from '../shrinkImage';
 
 /**
  * CX Visions — a personal, professional portfolio on a profile, separate
@@ -77,10 +78,11 @@ export async function fetchVisions(authorId: string, limit = 60): Promise<Vision
 }
 
 /** Uploads one file into the signed-in user's own folder and records it. */
-export async function addVision(file: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink, visibility: Visibility = 'followers'): Promise<{ error: string | null; id?: string }> {
+export async function addVision(original: File, kind: 'image' | 'video', title: string, caption: string, link?: VisionLink, visibility: Visibility = 'followers'): Promise<{ error: string | null; id?: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) return { error: 'Not signed in' };
+  const file = kind === 'image' ? await shrinkImage(original, 2400, 0.86) : original;
   const ext = file.name.split('.').pop()?.toLowerCase() || (kind === 'video' ? 'mp4' : 'jpg');
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
   const up = await supabase.storage.from(VISIONS_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });

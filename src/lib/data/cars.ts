@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
+import { shrinkImage } from '../shrinkImage';
 import type { Car, Host, Review } from '../../data/types';
 
 /**
@@ -267,8 +268,9 @@ export function slugify(input: string): string {
  *  Same shape as the avatar upload in Settings.tsx. */
 export async function uploadCarPhoto(
   userId: string,
-  file: File,
+  original: File,
 ): Promise<{ url: string; path: string }> {
+  const file = await shrinkImage(original, 2200, 0.84);
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage

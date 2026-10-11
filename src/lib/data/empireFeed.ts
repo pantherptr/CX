@@ -5,6 +5,7 @@ import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
 import { withoutHidden } from './privacy';
 import { withCollabs, type CollabInfo } from './collab';
+import { shrinkImage } from '../shrinkImage';
 
 /**
  * SIGNAL — the official CX Rent social/news feed (renamed from "Empire";
@@ -961,13 +962,14 @@ export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: str
  *  what lets the delete policy scope "delete your own file, or admin"
  *  instead of "any signed-in user", since this bucket is public-read
  *  with otherwise-unguessable-but-visible paths. */
-export async function uploadEmpirePostMedia(file: File): Promise<{ url: string; path: string }> {
+export async function uploadEmpirePostMedia(original: File): Promise<{ url: string; path: string }> {
+  const file = await shrinkImage(original);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
 }

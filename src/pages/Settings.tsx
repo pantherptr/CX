@@ -17,6 +17,7 @@ import { useVerification, submitVerification } from '../lib/data/verification';
 import { eur } from '../lib/format';
 import { haptics } from '../lib/native';
 import { apiUrl } from '../lib/api';
+import { shrinkImage } from '../lib/shrinkImage';
 
 type SectionId = 'personal' | 'driver' | 'notifications' | 'payments' | 'preferences' | 'security';
 const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
@@ -159,10 +160,11 @@ export default function Settings() {
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const picked = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !session) return;
+    if (!picked || !session) return;
     setUploadingPhoto(true);
+    const file = await shrinkImage(picked, 800, 0.85);
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `${session.user.id}/avatar-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
