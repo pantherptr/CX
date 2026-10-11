@@ -4,6 +4,7 @@ import { EmptyState, VerifiedBadge, type VerifiedRole } from './primitives';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { SpotlightLogo } from './SpotlightLogo';
+import { RespectGlyph } from './RespectGlyph';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from './motionKit';
 import type { SignalNotification, NotificationType } from '../lib/data/notifications';
 import { respondToFollowRequest } from '../lib/data/signalProfile';
@@ -44,20 +45,20 @@ function bucketOf(iso: string): Bucket {
 // post action's accent green); comments and shares stay neutral so the two
 // coloured ones read as the events that matter.
 const COPY: Record<NotificationType, { icon: IconName; verb: string; badge: string }> = {
-  follow: { icon: 'user', verb: 'started following you', badge: 'bg-ink text-white' },
-  post_respect: { icon: 'like', verb: 'respected your post', badge: 'bg-accent-bright text-white' },
-  post_comment: { icon: 'message', verb: 'commented on your post', badge: 'bg-sky-500 text-white' },
-  post_share: { icon: 'share', verb: 'shared your post', badge: 'bg-amber-500 text-white' },
-  post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-violet-500 text-white' },
-  circle: { icon: 'sparkles', verb: '', badge: 'bg-ink text-white' },
-  follow_accepted: { icon: 'check', verb: 'accepted your request', badge: 'bg-ink text-white' },
-  follow_request: { icon: 'user', verb: 'asked to follow you', badge: 'bg-ink text-white' },
-  vision_selected: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
-  vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-accent-bright text-white' },
-  collab_invite: { icon: 'users', verb: 'invited you to collaborate on a publication.', badge: 'bg-ink text-white' },
-  collab_left: { icon: 'users', verb: 'left the collaboration', badge: 'bg-ink text-white' },
-  ad_approved: { icon: 'trending', verb: '', badge: 'bg-accent-bright text-white' },
-  ad_rejected: { icon: 'info', verb: '', badge: 'bg-ink text-white' },
+  follow: { icon: 'user', verb: 'started following you', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  post_respect: { icon: 'like', verb: 'respected your post', badge: 'bg-gradient-to-b from-accent-bright to-accent text-white' },
+  post_comment: { icon: 'message', verb: 'commented on your post', badge: 'bg-gradient-to-b from-sky-400 to-sky-600 text-white' },
+  post_share: { icon: 'share', verb: 'shared your post', badge: 'bg-gradient-to-b from-amber-400 to-amber-600 text-white' },
+  post_save: { icon: 'bookmark', verb: 'saved your post', badge: 'bg-gradient-to-b from-violet-400 to-violet-600 text-white' },
+  circle: { icon: 'sparkles', verb: '', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  follow_accepted: { icon: 'check', verb: 'accepted your request', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  follow_request: { icon: 'user', verb: 'asked to follow you', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  vision_selected: { icon: 'sparkles', verb: '', badge: 'bg-gradient-to-b from-accent-bright to-accent text-white' },
+  vision_featured: { icon: 'sparkles', verb: '', badge: 'bg-gradient-to-b from-accent-bright to-accent text-white' },
+  collab_invite: { icon: 'users', verb: 'invited you to collaborate on a publication.', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  collab_left: { icon: 'users', verb: 'left the collaboration', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
+  ad_approved: { icon: 'trending', verb: '', badge: 'bg-gradient-to-b from-accent-bright to-accent text-white' },
+  ad_rejected: { icon: 'info', verb: '', badge: 'bg-gradient-to-b from-[#34343b] to-ink text-white' },
 };
 
 /** What a notification says when the person behind it stays private, or
@@ -260,9 +261,15 @@ export function NotificationsList({
                       {isUnread && <span aria-hidden="true" className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-accent-bright" />}
                       <button onClick={() => onOpen(n)} className="pressable relative shrink-0" aria-label={n.actorId ? n.actorName : anonText(n)}>
                         {!n.actorId ? (
-                          <span className={`grid h-12 w-12 place-items-center rounded-full ${copy.badge}`}>
-                            {n.type === 'vision_selected' || n.type === 'vision_featured' ? <SpotlightLogo size={30} /> : <Icon name={copy.icon} size={22} />}
-                          </span>
+                          n.type === 'post_respect' ? (
+                            <span className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-b from-accent-050 to-accent-100 shadow-[0_8px_18px_-8px_rgba(0,133,54,0.55)] ring-1 ring-accent-bright/30">
+                              <RespectGlyph height={27} on />
+                            </span>
+                          ) : (
+                            <span className={`grid h-12 w-12 place-items-center rounded-full shadow-[0_8px_18px_-8px_rgba(22,22,26,0.45)] ${copy.badge}`}>
+                              {n.type === 'vision_selected' || n.type === 'vision_featured' ? <SpotlightLogo size={30} /> : <Icon name={copy.icon} size={22} />}
+                            </span>
+                          )
                         ) : n.actorAvatarUrl ? (
                           <Img
                             src={n.actorAvatarUrl}
@@ -280,8 +287,20 @@ export function NotificationsList({
                           </span>
                         )}
                         {n.actorId && (
-                          <span className={`absolute -bottom-0.5 -right-0.5 grid h-[22px] min-w-[22px] place-items-center rounded-full px-1 ring-2 ring-surface ${copy.badge}`}>
-                            {n.count > 1 ? <span className="text-[11px] font-bold leading-none">{n.count}</span> : n.type === 'vision_selected' || n.type === 'vision_featured' ? <SpotlightLogo size={16} /> : <Icon name={copy.icon} size={12} />}
+                          <span
+                            className={`absolute -bottom-1 -right-1 grid h-[26px] min-w-[26px] place-items-center rounded-full px-1 shadow-[0_4px_10px_-3px_rgba(22,22,26,0.5)] ring-2 ring-surface ${
+                              n.type === 'post_respect' ? 'bg-white ring-accent-bright/50' : copy.badge
+                            }`}
+                          >
+                            {n.count > 1 ? (
+                              <span className={`text-[11px] font-bold leading-none ${n.type === 'post_respect' ? 'text-accent' : ''}`}>{n.count}</span>
+                            ) : n.type === 'post_respect' ? (
+                              <RespectGlyph height={15} on />
+                            ) : n.type === 'vision_selected' || n.type === 'vision_featured' ? (
+                              <SpotlightLogo size={17} />
+                            ) : (
+                              <Icon name={copy.icon} size={14} strokeWidth={2.2} />
+                            )}
                           </span>
                         )}
                       </button>
