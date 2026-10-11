@@ -371,8 +371,6 @@ export default function Signal() {
             one motion vocabulary, not a second one invented for this. */}
         <div key={space} className="animate-fade-up">
         {space === 'official' && <SignalHighlightsBar canManage={canManage} />}
-        {/* A new member sees who to follow right at the top of Official too, above the announcements. */}
-        {space === 'official' && <SignalPeopleShelf profileBase={base} />}
 
         {space === 'official' && pinned.post && (
           <SignalPostCard
@@ -585,10 +583,10 @@ export default function Signal() {
                   onFeaturedToggled={resyncAfterFeature}
                 />
               )}
-              {idx === 7 && <SignalPeopleShelf profileBase={base} placement="inline" />}
+              {space === 'community' && idx === 7 && <SignalPeopleShelf profileBase={base} placement="inline" />}
               </Fragment>
             ))}
-            {posts.length < 8 && <SignalPeopleShelf profileBase={base} placement="inline" />}
+            {space === 'community' && posts.length < 8 && <SignalPeopleShelf profileBase={base} placement="inline" />}
             {hasMore && (
               <div ref={loadMoreRef} className="flex justify-center py-4">
                 {loadingMore && <SignalPostSkeleton />}
