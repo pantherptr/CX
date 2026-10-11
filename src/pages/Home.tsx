@@ -1,9 +1,6 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Car as CarIcon, Compass, ShieldCheck, KeyRound, MessageSquareText, Radio, Users } from 'lucide-react';
 import { SignalS } from '../components/SignalLogo';
-import { RespectGlyph } from '../components/RespectGlyph';
-import CommunityOrbit, { type OrbitItem, type OrbitStat, type OrbitTag } from '../components/ui/builders-community-hero';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
@@ -11,8 +8,7 @@ import { Reveal, Img } from '../components/motion';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
-import { unsplash, unsplashSrcSet, avatar } from '../lib/img';
-import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
+import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
 import type { Car } from '../data/types';
@@ -224,27 +220,6 @@ const HOME_FAQ_QUESTIONS = [
 ];
 const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).filter((f): f is (typeof faqs)[number] => !!f);
 
-/** Mounts its children the first time it scrolls into view, so the orbit's entrance animation plays when you get there. */
-function WhenVisible({ children, minHeight }: { children: ReactNode; minHeight: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [seen, setSeen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || seen) return;
-    if (typeof IntersectionObserver === 'undefined') { setSeen(true); return; }
-    const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { setSeen(true); io.disconnect(); } }, { rootMargin: '0px 0px -15% 0px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [seen]);
-  return <div ref={ref} style={seen ? undefined : { minHeight }}>{seen ? children : null}</div>;
-}
-
-// Headline figures of the community orbit — edit here.
-const COMMUNITY_TEAM = '97';
-const COMMUNITY_HOSTS = '37+';
-const COMMUNITY_DOWNLOADS = '34K+';
-
-
 export default function Home() {
   const { t } = useLocale();
   const navigate = useNavigate();
@@ -261,63 +236,6 @@ export default function Home() {
     if (!allCars) return null;
     return [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 8);
   }, [allCars]);
-
-  // The live board on the home page is an illustration built on real cars.
-  const liveBoard = useMemo(() => {
-    if (!allCars || allCars.length < 2) return null;
-    const people = [
-      { name: 'Marco Rossi', img: 11, a: 'Via Roma 21', b: 'Aeroporto' },
-      { name: 'Elena Popescu', img: 32, a: 'Calea Victoriei 8', b: 'Piața Unirii' },
-      { name: 'Lucía Gómez', img: 45, a: 'Gran Vía 14', b: 'Estación Sur' },
-    ];
-    const items: LiveItem[] = [...allCars].sort((a, b) => b.rating - a.rating).slice(0, 3).map((c, i) => ({
-      id: c.id,
-      title: `${c.make} ${c.model}`,
-      image: unsplash(c.images[0], 320),
-      plate: `${c.year} · ${c.city}`,
-      person: people[i].name,
-      avatar: avatar(people[i].img),
-      city: c.city,
-      status: 'On trip',
-    }));
-    return { items };
-  }, [allCars]);
-
-  // The community orbit: only real figures (cars on the platform, cities, languages).
-  const orbit = useMemo(() => {
-    const items: OrbitItem[] = [
-      { kind: 'status', ring: 'outer', angle: 132, label: t('Trip completed') },
-      { kind: 'card', ring: 'outer', angle: 112.6, icon: <RespectGlyph height={26} on /> },
-      { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
-      { kind: 'pill', ring: 'outer', angle: 67.6, icon: <ShieldCheck size={13} strokeWidth={2} />, label: t('Secure payments') },
-      { kind: 'avatar', ring: 'outer', angle: 50.9, src: avatar(32), alt: '', color: '#d9e6dd', photo: true },
-      { kind: 'pill', ring: 'outer', angle: 35.2, icon: <MessageSquareText size={13} strokeWidth={2} />, label: t('Respect') },
-      { kind: 'avatar', ring: 'inner', angle: 137.2, src: avatar(12), alt: '', color: '#e5e3dc', photo: true },
-      { kind: 'pill', ring: 'inner', angle: 116.6, icon: '🔥', label: t('Roadbook') },
-      { kind: 'pill', ring: 'inner', angle: 90, icon: '💬', label: t('Road trip this weekend?') },
-      { kind: 'card', ring: 'inner', angle: 63.3, emoji: '🗺️' },
-      { kind: 'check', ring: 'inner', angle: 41.8 },
-    ];
-    const compactItems: OrbitItem[] = [
-      { kind: 'avatar', ring: 'outer', angle: 148, src: avatar(32), alt: '', color: '#d9e6dd', size: 56, photo: true },
-      { kind: 'card', ring: 'outer', angle: 122, icon: <RespectGlyph height={26} on /> },
-      { kind: 'pill', ring: 'outer', angle: 90, icon: <Radio size={13} strokeWidth={2} />, label: t('New on Signal') },
-      { kind: 'avatar', ring: 'outer', angle: 32, src: avatar(12), alt: '', color: '#e5e3dc', size: 56, photo: true },
-      { kind: 'pill', ring: 'inner', angle: 90, icon: '💬', label: t('Road trip this weekend?') },
-    ];
-    const stats: OrbitStat[] = [
-      { value: COMMUNITY_TEAM, label: t('Team') },
-      { value: COMMUNITY_HOSTS, label: t('Hosts') },
-      { value: COMMUNITY_DOWNLOADS, label: t('Downloads') },
-    ];
-    const tags: OrbitTag[] = [
-      { icon: <Users strokeWidth={2} />, label: t('Signal community'), onClick: () => navigate('/signal/community') },
-      { icon: <CarIcon strokeWidth={2} />, label: t('Browse cars'), onClick: () => navigate('/browse') },
-      { icon: <KeyRound strokeWidth={2} />, label: t('Become a host'), onClick: () => navigate('/list-your-car') },
-      { icon: <Compass strokeWidth={2} />, label: t('Roadbook'), onClick: () => navigate('/signal/community') },
-    ];
-    return { items, compactItems, stats, tags };
-  }, [allCars, navigate, t]);
 
   return (
     <div>
@@ -463,16 +381,6 @@ export default function Home() {
           </Reveal>
         </div>
       </section>
-
-      {/* ================= LIVE BOARD — every trip at a glance ================= */}
-      {liveBoard && (
-        <section className="container-page section">
-          <SectionHead eyebrow={t('Live board')} title={t('Every trip, in view.')} />
-          <Reveal className="mt-8">
-            <FleetLiveBoard items={liveBoard.items} title={t('Live tracking')} />
-          </Reveal>
-        </section>
-      )}
 
       {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
       <section className="container-page section-tight">
@@ -637,71 +545,6 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= WHY CX — premium automotive storytelling ================= */}
-      <section className="container-page section">
-        <div className="relative overflow-hidden rounded-[2rem] bg-noir">
-          {/* Subtle CX-green glow, upper-right */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-80"
-            style={{ background: 'radial-gradient(45% 45% at 88% 12%, rgba(0,212,71,0.16), transparent 62%)' }}
-          />
-
-          <div className="relative grid lg:grid-cols-2 lg:items-stretch">
-            {/* -------- Automotive image (reuses the optimized hero photo) -------- */}
-            <div className="relative order-1 min-h-[200px] overflow-hidden sm:min-h-[340px] lg:order-none lg:min-h-full">
-              <Img
-                src={HERO_IMAGE}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover object-[40%_55%]"
-              />
-              {/* Blend the image into the dark panel on the seam side */}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/70 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-noir" />
-            </div>
-
-            {/* -------- Benefits + trust -------- */}
-            <div className="order-2 px-5 py-8 sm:px-10 sm:py-14 lg:order-none lg:px-12">
-              <Reveal>
-                <p className="eyebrow text-accent-bright">{t('Why CX')}</p>
-                <h2 className="mt-3 font-display text-3xl font-semibold text-on-noir text-balance sm:text-[2.75rem] sm:leading-[1.05]">
-                  {t('Drive with confidence.')}
-                </h2>
-                <p className="mt-3 max-w-md text-copy leading-relaxed text-on-noir-muted sm:text-lead">
-                  {t('Premium cars. Trusted hosts. A better way to rent.')}
-                </p>
-              </Reveal>
-
-              <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-7">
-                {whyCx.map((b, i) => (
-                  <Reveal key={b.title} delay={120 + i * 80}>
-                    <div className="group flex flex-col gap-3">
-                      <span className="grid h-11 w-11 place-items-center rounded-xl border border-accent-bright/25 bg-accent-bright/10 text-accent-bright transition-transform duration-300 ease-out group-hover:scale-110">
-                        <Icon name={b.icon} size={20} />
-                      </span>
-                      <div>
-                        <p className="text-label font-semibold uppercase tracking-[0.1em] text-on-noir">{t(b.title)}</p>
-                        <p className="mt-1.5 text-caption leading-relaxed text-on-noir-muted sm:text-detail">{t(b.description)}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
-
-              {/* Trust row */}
-              <Reveal delay={460}>
-                <div className="mt-9 flex flex-wrap gap-x-5 gap-y-2.5 border-t border-white/10 pt-6">
-                  {['Verified vehicles', 'Secure booking', 'Transparent pricing', 'Dedicated support'].map((line) => (
-                    <span key={line} className="inline-flex items-center gap-1.5 text-caption font-medium text-on-noir-muted">
-                      <Icon name="check" size={14} className="text-accent-bright" /> {t(line)}
-                    </span>
-                  ))}
-                </div>
-              </Reveal>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
@@ -795,19 +638,6 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= COMMUNITY — the orbit ================= */}
-      <section className="container-page section-tight">
-        <WhenVisible minHeight={560}>
-        <CommunityOrbit
-          items={orbit.items}
-          compactItems={orbit.compactItems}
-          stats={orbit.stats}
-          tags={orbit.tags}
-          headline={<>{t('Where drivers and hosts')}<br className="hidden sm:block" /> {t('share the road')}</>}
-        />
-        </WhenVisible>
-      </section>
-
       {/* ================= WHERE CX IS LIVE — the globe ================= */}
       <section className="container-page section">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
@@ -834,9 +664,6 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link to="/browse" className="btn btn-accent-bright btn-lg">
                 {t('Find a car')} <Icon name="arrowRight" size={17} />
-              </Link>
-              <Link to="/help" className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600">
-                {t('Help & support')} <Icon name="arrowRight" size={15} />
               </Link>
             </div>
           </Reveal>
