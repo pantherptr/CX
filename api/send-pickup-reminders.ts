@@ -170,10 +170,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // rental price, kept by the platform. 0 if the setting is missing, never above 50.
   const { data: commissionRow } = await supabase
     .from('platform_settings')
-    .select('value')
-    .eq('key', 'host_commission_pct')
+    .select('host_commission_pct')
+    .eq('id', 'main')
     .maybeSingle();
-  const commissionPct = Math.min(50, Math.max(0, Number(commissionRow?.value ?? 0)));
+  const commissionPct = Math.min(50, Math.max(0, Number(commissionRow?.host_commission_pct ?? 0)));
   const { data: payoutDue, error: payoutError } = await supabase
     .from('bookings')
     .select('id, host_id, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')

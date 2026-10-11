@@ -1,31 +1,29 @@
 -- Host payouts: CX's commission on the host's earnings, and a ledger of what was paid.
 --
+-- (Run it again if a first attempt stopped half-way: every statement is safe to repeat.)
+--
 -- Money flow (unchanged): the renter pays CX's own Stripe account; the day after the return the
 -- daily sweep (api/send-pickup-reminders.ts) transfers the host's share to their Stripe Express
 -- account, and Stripe pays that out to their bank. What is new:
---   * a host commission, kept by CX out of the base rental price (default 5%), read from
---     platform_settings so it can be changed with one UPDATE, no deploy;
+--   * a host commission, kept by CX out of the base rental price (default 5%), kept in
+--     platform_settings.host_commission_pct so it can be changed with one UPDATE, no deploy;
 --   * booking_payouts: one row per paid booking (gross, commission %, commission, net, transfer),
 --     read by the host dashboard so a host sees exactly what they earned and what CX kept.
 -- The 12% service fee, protection and delivery fees already charged to the renter stay CX revenue.
 
-create table if not exists public.platform_settings (
-  key text primary key,
-  value numeric not null,
-  updated_at timestamptz not null default now()
-);
-alter table public.platform_settings enable row level security;
--- No policies: read only through the function below, written by the owner in SQL.
+-- platform_settings already exists (0022): ONE row, id = 'main'. The commission is one more column
+-- on it, so it sits next to the other owner-controlled switches and the same owner-only update
+-- policy protects it.
+alter table public.platform_settings
+  add column if not exists host_commission_pct numeric not null default 5
+  check (host_commission_pct >= 0 and host_commission_pct <= 50);
 
-insert into public.platform_settings (key, value) values ('host_commission_pct', 5)
-on conflict (key) do nothing;
-
--- What hosts are told (the number only; nothing else in the table is exposed).
+-- What hosts are told (the number only).
 create or replace function public.fetch_host_commission_pct()
 returns numeric
 language sql stable security definer set search_path = public
 as $$
-  select coalesce((select value from public.platform_settings where key = 'host_commission_pct'), 0);
+  select coalesce((select host_commission_pct from public.platform_settings where id = 'main'), 0);
 $$;
 grant execute on function public.fetch_host_commission_pct() to authenticated;
 
