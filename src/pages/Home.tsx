@@ -177,11 +177,10 @@ export default function Home() {
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
-            <div className="relative mx-auto aspect-[1/0.74] w-full select-none sm:aspect-[16/8.4]">
+            <div className="relative mx-auto aspect-[1/0.9] w-full select-none sm:aspect-[16/8.4]">
               <h1
-                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.04em] text-transparent"
+                className="absolute inset-x-0 top-[2%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
                 style={{
-                  fontSize: 'clamp(2.6rem, 11.2vw, 9.6rem)',
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
@@ -192,9 +191,8 @@ export default function Home() {
               </h1>
               <p
                 aria-hidden
-                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.04em] text-transparent"
+                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
                 style={{
-                  fontSize: 'clamp(2.6rem, 11.2vw, 9.6rem)',
                   backgroundImage: 'linear-gradient(180deg, rgba(120,126,118,0.55) 0%, rgba(150,156,148,0.28) 55%, rgba(170,176,168,0) 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
@@ -206,13 +204,13 @@ export default function Home() {
 
               {/* The car, in front of both */}
               <img
-                src="/hero-car.webp?v=2"
+                src="/hero-car.webp?v=3"
                 alt={t('A premium CX car')}
-                width={840}
-                height={368}
+                width={859}
+                height={386}
                 fetchPriority="high"
                 draggable={false}
-                className="absolute left-1/2 top-[47%] w-[88%] max-w-[900px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_34px_28px_rgba(14,28,20,0.38)] sm:top-[49%] sm:w-[62%]"
+                className="absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_38px_30px_rgba(14,28,20,0.42)] sm:top-[50%] sm:w-[74%]"
               />
 
               {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
