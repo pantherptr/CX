@@ -15,6 +15,7 @@ import { WEEKDAYS, MONTH_NAMES, toISO, startOfMonth, addMonths, buildMonthGrid }
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
+import { TripMap } from '../components/TripMap';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
 import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
@@ -546,33 +547,55 @@ function HostEarningsCard({ payouts, commissionPct, payoutsEnabled }: { payouts:
 
 function HostBookingRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-panel/50">
-      {booking.renter.avatar ? (
-        <Img
-          src={booking.renter.avatar}
-          alt=""
-          className="h-10 w-10 shrink-0 rounded-full object-cover"
-          fallback={
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-              <Icon name="user" size={16} />
-            </span>
-          }
-        />
-      ) : (
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-          <Icon name="user" size={16} />
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-detail font-medium text-ink">{booking.renter.name}</p>
-        <p className="truncate text-caption text-muted">{booking.car.make} {booking.car.model} · {fmtDate(booking.startDate)}–{fmtDate(booking.endDate)}</p>
-        {booking.fulfillmentType === 'delivery' && (
-          <p className="truncate text-caption text-muted"><Icon name="car" size={11} className="mr-1 inline" />Deliver to {booking.deliveryAddress}</p>
+    <div className="rounded-xl transition-colors hover:bg-panel/50">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center gap-3 px-2 py-2.5 text-left">
+        {booking.renter.avatar ? (
+          <Img
+            src={booking.renter.avatar}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-full object-cover"
+            fallback={
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+                <Icon name="user" size={16} />
+              </span>
+            }
+          />
+        ) : (
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
+            <Icon name="user" size={16} />
+          </span>
         )}
-      </div>
-      <p className="shrink-0 text-detail font-medium text-ink">{eur(booking.totalPrice)}</p>
-      <span className={`badge shrink-0 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-detail font-medium text-ink">{booking.renter.name}</p>
+          <p className="truncate text-caption text-muted">{booking.car.make} {booking.car.model} · {fmtDate(booking.startDate)}–{fmtDate(booking.endDate)}</p>
+          {booking.fulfillmentType === 'delivery' && (
+            <p className="truncate text-caption text-muted"><Icon name="car" size={11} className="mr-1 inline" />Deliver to {booking.deliveryAddress}</p>
+          )}
+        </div>
+        <p className="shrink-0 text-detail font-medium text-ink">{eur(booking.totalPrice)}</p>
+        <span className={`badge shrink-0 ${phaseBadge[phase]}`}>{phaseLabel[phase]}</span>
+        <Icon name={open ? 'chevronUp' : 'chevronDown'} size={15} className="shrink-0 text-faint" />
+      </button>
+      {open && (
+        <div className="px-2 pb-3">
+          <TripMap
+            carId={booking.car.id}
+            city={booking.car.city}
+            carLabel={`${booking.car.year} ${booking.car.make} ${booking.car.model}`}
+            startDate={booking.startDate}
+            endDate={booking.endDate}
+            fulfillmentType={booking.fulfillmentType}
+            deliveryAddress={booking.deliveryAddress}
+            pickupLabel={booking.pickupLocation || booking.car.location}
+            phase={phase}
+            role="host"
+            otherName={booking.renter.name}
+            chatHref="/messages"
+          />
+        </div>
+      )}
     </div>
   );
 }

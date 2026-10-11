@@ -18,6 +18,7 @@ import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useLocale } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
+import { TripMap } from '../components/TripMap';
 import { useVerification } from '../lib/data/verification';
 import { VerifyNudge } from '../components/VerificationFlow';
 import { uiLocale } from '../lib/i18n/uiLocale';
@@ -417,6 +418,27 @@ export default function CustomerDashboard() {
               </div>
             </div>
           </section>
+          </Reveal>
+        )}
+
+        {/* The next trip on a map: where the car is and the road to you */}
+        {nextTrip && (
+          <Reveal>
+            <TripMap
+              className="mt-6"
+              carId={nextTrip.car.id}
+              city={nextTrip.car.city}
+              carLabel={`${nextTrip.car.year} ${nextTrip.car.make} ${nextTrip.car.model}`}
+              startDate={nextTrip.startDate}
+              endDate={nextTrip.endDate}
+              fulfillmentType={nextTrip.fulfillmentType}
+              deliveryAddress={nextTrip.deliveryAddress}
+              pickupLabel={nextTrip.pickupLocation || nextTrip.car.location}
+              phase={classifyBooking(nextTrip)}
+              role="renter"
+              otherName={nextTrip.host.name}
+              chatHref="/messages"
+            />
           </Reveal>
         )}
 

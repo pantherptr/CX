@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { refundFor, POLICY_INFO } from '../lib/cancellationPolicy';
 import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { TripMap } from '../components/TripMap';
 import { DashboardShell } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -208,9 +209,6 @@ export default function TripDetails() {
     anytime: booking.fareTier === 'flexible',
   });
   const canModify = phase === 'upcoming';
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    booking.fulfillmentType === 'delivery' ? booking.deliveryAddress || '' : booking.pickupLocation || booking.car.location,
-  )}`;
 
   const handleAcceptAgreement = async () => {
     setAcceptingAgreement(true);
@@ -417,20 +415,27 @@ export default function TripDetails() {
         </div>
         </Reveal>
 
-        {/* Pickup location */}
+        {/* Where the car is and where the trip goes */}
         <Reveal>
         <section className="mt-8 border-t border-line pt-6">
           <h2 className="font-display text-lg font-semibold text-ink">
             {booking.fulfillmentType === 'delivery' ? 'Delivery address' : 'Pick-up location'}
           </h2>
-          <div className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-line p-4">
-            <p className="text-body text-ink-soft">
-              {booking.fulfillmentType === 'delivery' ? booking.deliveryAddress : booking.pickupLocation || booking.car.location}
-            </p>
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm shrink-0">
-              Open Maps <Icon name="arrowUpRight" size={14} />
-            </a>
-          </div>
+          <TripMap
+            className="mt-3"
+            carId={booking.car.id}
+            city={booking.car.city}
+            carLabel={`${booking.car.year} ${booking.car.make} ${booking.car.model}`}
+            startDate={booking.startDate}
+            endDate={booking.endDate}
+            fulfillmentType={booking.fulfillmentType}
+            deliveryAddress={booking.deliveryAddress}
+            pickupLabel={booking.pickupLocation || booking.car.location}
+            phase={phase}
+            role="renter"
+            otherName={booking.host.name}
+            chatHref="/messages"
+          />
         </section>
         </Reveal>
 

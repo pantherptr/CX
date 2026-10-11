@@ -28,6 +28,7 @@ import { useAvailableReward } from '../lib/data/rewards';
 import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
 import { LicenceForm } from '../components/VerificationFlow';
+import { TripMap } from '../components/TripMap';
 import { AddressInput } from '../components/AddressInput';
 import { MiniMap, type MapPoint } from '../components/browse/MiniMap';
 import { CITY_COORDS } from '../data/cityCoords';
@@ -502,7 +503,25 @@ export default function Booking() {
           </motion.p>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.35 }} className="mt-9 overflow-hidden rounded-[28px] border border-line bg-surface">
+        {/* Where the car is, and the road to you when it is delivered */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.3 }} className="mt-9">
+          <TripMap
+            carId={car.id}
+            city={car.city}
+            carLabel={`${car.year} ${car.make} ${car.model}`}
+            startDate={confirmed.startDate}
+            endDate={confirmed.endDate}
+            fulfillmentType={confirmed.fulfillmentType}
+            deliveryAddress={confirmed.deliveryAddress}
+            pickupLabel={confirmed.pickupLocation || car.location}
+            phase="upcoming"
+            role="renter"
+            otherName={undefined}
+            chatHref="/messages"
+          />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING_SMOOTH, delay: 0.35 }} className="mt-6 overflow-hidden rounded-[28px] border border-line bg-surface">
           <div className="flex items-center gap-4 border-b border-line p-5">
             <Img
               src={unsplash(car.images[0], 240)}

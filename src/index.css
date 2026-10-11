@@ -1820,6 +1820,15 @@
 .fl-dest__dot::after { content: ''; position: absolute; inset: 7px; border-radius: 2px; background: #fff; }
 .fl-dest__pulse { position: absolute; inset: -8px; border-radius: 12px; background: rgba(22, 22, 26, 0.16); animation: fl-dest-pulse 2.4s ease-out infinite; }
 .fl-dest__label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; max-width: 190px; overflow: hidden; text-overflow: ellipsis; padding: 4px 9px; border-radius: 999px; background: #fff; color: #16161a; font-size: 11px; font-weight: 600; box-shadow: 0 6px 16px -6px rgba(22, 22, 26, 0.35); }
+/* Trip map pins: a pulsing dot with a small label, green for the car, ink for the delivery spot. */
+.trip-pin { position: relative; width: 22px; height: 22px; }
+.trip-pin__dot { position: absolute; inset: 3px; border-radius: 999px; background: #008536; box-shadow: 0 0 0 3px #fff, 0 8px 16px -4px rgba(0, 60, 25, 0.55); }
+.trip-pin--drop .trip-pin__dot { background: #16161a; box-shadow: 0 0 0 3px #fff, 0 8px 16px -4px rgba(22, 22, 26, 0.55); }
+.trip-pin__pulse { position: absolute; inset: -10px; border-radius: 999px; background: rgba(0, 166, 62, 0.25); animation: trip-pin-pulse 2.2s ease-out infinite; }
+.trip-pin--drop .trip-pin__pulse { background: rgba(22, 22, 26, 0.16); }
+.trip-pin__label { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; padding: 4px 10px; border-radius: 999px; background: #fff; color: #16161a; font-size: 11px; font-weight: 700; box-shadow: 0 6px 16px -6px rgba(22, 22, 26, 0.4); }
+@keyframes trip-pin-pulse { 0% { transform: scale(0.5); opacity: 0.9; } 100% { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .trip-pin__pulse { animation: none; opacity: 0.5; } }
 @keyframes fl-dest-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fl-dest__pulse { animation: none; opacity: 0.4; } }
 

@@ -816,6 +816,21 @@ const ROWS: Row[] = [
   ["Protected trips", "Viaggi protetti", "Călătorii protejate", "Viajes protegidos"],
   ["From", "Da", "De la", "Desde"],
   ["Live in", "Attivi in", "Activi în", "Activos en"],
+
+  // ---- Trip map ----
+  ["Delivery", "Consegna", "Livrare", "Entrega"],
+  ["Car location", "Posizione dell'auto", "Locația mașinii", "Ubicación del coche"],
+  ["On the road", "In viaggio", "La drum", "En la carretera"],
+  ["Upcoming", "In arrivo", "Urmează", "Próximo"],
+  ["Completed", "Completato", "Finalizat", "Completado"],
+  ["Cancelled", "Annullato", "Anulat", "Cancelado"],
+  ["Pending", "In attesa", "În așteptare", "Pendiente"],
+  ["Trip map", "Mappa del viaggio", "Harta călătoriei", "Mapa del viaje"],
+  ["Directions", "Indicazioni", "Indicații", "Cómo llegar"],
+  ["Message {name}", "Scrivi a {name}", "Scrie-i lui {name}", "Escribe a {name}"],
+  ["your renter", "il tuo cliente", "clientul tău", "tu cliente"],
+  ["your host", "il tuo host", "gazda ta", "tu anfitrión"],
+  ["day", "giorno", "zi", "día"],
 ];
 
 export const DICT: Record<Exclude<Lang, 'en'>, Record<string, string>> = { it: {}, ro: {}, es: {} };
