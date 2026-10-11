@@ -19,6 +19,7 @@ import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
 import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
 import { ActivePill } from '../components/motionKit';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const TABS: { id: TripPhase; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
@@ -47,7 +48,7 @@ const phaseLabel: Record<TripPhase, string> = {
   refunded: 'Refunded',
 };
 
-const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const fmtDate = (s: string) => new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 
 /** Real trailing 6-month earnings series from actual bookings — cancelled
  *  trips excluded, months with no bookings simply show zero rather than
@@ -165,7 +166,7 @@ function buildActionItems({
       id: `pickup-${b.id}`,
       icon: 'clock',
       label: `Pickup coming up — ${b.car.make} ${b.car.model}`,
-      sub: `${b.renter.name} · ${new Date(b.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`,
+      sub: `${b.renter.name} · ${new Date(b.startDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })}`,
       to: '/host#bookings',
     });
   }

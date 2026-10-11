@@ -7,6 +7,7 @@ import { useLocale } from '../lib/i18n';
 import { stampPlace } from '../lib/cityCountry';
 import { CITY_COORDS } from '../data/cityCoords';
 import { formatTripPeriod, type TripStampData } from '../lib/data/tripMemories';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 // Printed inks: warm black and three muted tones — never bright.
 const INKS = ['#1b1a18', '#1d4a45', '#2a3f5c', '#6e2c37'];
@@ -108,7 +109,7 @@ export function TripStamp({ stamp, tilted = true }: { stamp: TripStampData; tilt
 function TravelRecord({ stamp, onClose, onToggle }: { stamp: TripStampData; onClose: () => void; onToggle?: (s: TripStampData) => void }) {
   const { t, lang } = useLocale();
   const place = stampPlace(stamp.city, lang);
-  const loc = lang === 'en' ? 'en-GB' : lang;
+  const loc = lang === 'en' ? uiLocale() : lang;
   const long = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
   const Row = ({ k, v }: { k: string; v: string }) => (
     <div className="flex items-baseline justify-between gap-6 border-b border-line py-3">

@@ -4,10 +4,11 @@ import { Icon } from './Icon';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const short = (iso: string) => {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(y, m - 1, d).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 const nights = (a: string, b: string) => Math.max(1, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000));
 

@@ -10,6 +10,7 @@ import type { SignalNotification, NotificationType } from '../lib/data/notificat
 import { respondToFollowRequest } from '../lib/data/signalProfile';
 import { respondToCollabInvite } from '../lib/data/collab';
 import { useApp } from '../lib/store';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 /** Same precedence every other SIGNAL identity surface (posts, comments,
  *  search) already uses — Owner outranks Admin outranks Host outranks
@@ -29,7 +30,7 @@ function timeAgo(iso: string): string {
   if (hr < 24) return `${hr}h`;
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day}d`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 }
 
 type Bucket = 'Today' | 'Yesterday' | 'This week' | 'Earlier';

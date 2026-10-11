@@ -3,8 +3,9 @@ import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { eur } from '../../lib/format';
 import { fetchPayoutOverview, setHostCommissionPct, type PayoutOverview } from '../../lib/data/payouts';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
-const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmt = (iso: string) => new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** What CX earns from hosts and which payouts are stuck — Owner/Admin only (every RPC re-checks
  *  is_admin() on the server). Payouts leave the day after a trip ends; a host who has not finished

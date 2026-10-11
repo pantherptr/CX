@@ -223,7 +223,7 @@ export default function Home() {
               <div className="absolute bottom-[26%] right-0 hidden items-center gap-2.5 sm:flex">
                 <span className="grid h-10 w-10 place-items-center rounded-full border border-ink/25 text-ink"><Icon name="shield" size={18} /></span>
                 <p className="text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
-                  {t('Protected')}<br />{t('trips')}
+                  {t('Protected trips')}
                 </p>
               </div>
             </div>

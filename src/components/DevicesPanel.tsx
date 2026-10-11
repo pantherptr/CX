@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Icon, type IconName } from './Icon';
 import { useApp } from '../lib/store';
 import { fetchDevices, getDeviceId, signOutOtherDevices, touchDevice, type DeviceRow } from '../lib/data/devices';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const ago = (iso: string) => {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 90) return 'Active now';
   if (s < 3600) return `${Math.round(s / 60)} min ago`;
   if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 
 const iconFor = (d: DeviceRow): IconName => (/iPhone|Android|app/i.test(d.label) ? 'phone' : 'globe');

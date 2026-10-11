@@ -22,6 +22,7 @@ import { shrinkImage } from '../lib/shrinkImage';
 import { DevicesPanel } from '../components/DevicesPanel';
 import { PushPrompt } from '../components/PushPrompt';
 import { fetchPlatformPrefs, savePlatformPrefs, DEFAULT_PLATFORM_PREFS, type PlatformPrefs } from '../lib/data/appNotifications';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 type SectionId = 'personal' | 'driver' | 'notifications' | 'payments' | 'preferences' | 'security';
 const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
@@ -202,7 +203,7 @@ export default function Settings() {
   const roleChips = [profile?.is_owner && 'Owner', profile?.is_admin && !profile?.is_owner && 'Admin', profile?.is_host && 'Host'].filter(Boolean) as string[];
   const payments = useMemo(() => (bookings ?? []).filter((b) => classifyBooking(b) !== 'cancelled'), [bookings]);
   const sectionMeta = SECTIONS.find((s) => s.id === section);
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
   const avatar = (size: string) =>
     uploadingPhoto ? (

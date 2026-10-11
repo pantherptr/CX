@@ -23,6 +23,7 @@ import {
 import { fetchOpenReportsCount } from '../lib/data/reports';
 import type { AdminBooking, AdminUser } from '../lib/data/admin';
 import type { OwnerHost } from '../lib/data/owner';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 /**
  * `/dashboard` for the Owner account — see App.tsx's DashboardRouter. Not
@@ -263,7 +264,7 @@ export default function OwnerHome() {
                   <p className="min-w-0 flex-1 truncate text-body text-ink">
                     <span className="font-medium">{e.actorName}</span> {actionLabel[e.action] ?? e.action}
                   </p>
-                  <span className="shrink-0 text-caption text-muted">{new Date(e.createdAt).toLocaleDateString('en-GB')}</span>
+                  <span className="shrink-0 text-caption text-muted">{new Date(e.createdAt).toLocaleDateString(uiLocale())}</span>
                 </div>
               ))
             )}

@@ -58,6 +58,7 @@ import { fetchReports, resolveReport, createConversationReport, type OwnerReport
 import {
   fetchContactFlags, fetchOpenContactFlagCount, setContactFlagsHandled, FLAG_SOURCE_LABEL, type ContactFlag,
 } from '../lib/data/contactFlags';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 /**
  * The Owner's private control center — distinct from /admin (see
@@ -1118,7 +1119,7 @@ function ActivityPanel() {
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-panel text-muted"><Icon name="clock" size={16} /></span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-body text-ink"><span className="font-medium">{e.actorName}</span> {actionLabel[e.action] ?? e.action}</p>
-            <p className="text-caption text-muted">{new Date(e.createdAt).toLocaleString('en-GB')}</p>
+            <p className="text-caption text-muted">{new Date(e.createdAt).toLocaleString(uiLocale())}</p>
           </div>
         </div>
       ))}

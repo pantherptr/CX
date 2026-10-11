@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal } from './primitives';
 import { Icon } from './Icon';
 import { useLocale } from '../lib/i18n';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const parse = (s: string) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
@@ -13,7 +14,7 @@ function RangeCalendar({
   start, end, minDate, onChange,
 }: { start: string | null; end: string | null; minDate: string; onChange: (s: string | null, e: string | null) => void }) {
   const { lang } = useLocale();
-  const loc = lang === 'en' ? 'en-GB' : lang;
+  const loc = lang === 'en' ? uiLocale() : lang;
   const [view, setView] = useState(() => { const d = start ? parse(start) : parse(minDate); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [hover, setHover] = useState<string | null>(null);
   const today = iso(new Date());
@@ -126,7 +127,7 @@ export function DateRangeField({
   start, end, onApply, dark = false, minDate,
 }: { start: string; end: string; onApply: (s: string, e: string) => void; dark?: boolean; minDate: string }) {
   const { t, lang } = useLocale();
-  const loc = lang === 'en' ? 'en-GB' : lang;
+  const loc = lang === 'en' ? uiLocale() : lang;
   const [open, setOpen] = useState(false);
   const [range, setRange] = useState<{ s: string | null; e: string | null }>({ s: start, e: end });
   useEffect(() => { if (open) setRange({ s: start, e: end }); }, [open, start, end]);

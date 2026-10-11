@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { fetchBookedRangesBulk, rangesOverlap } from './bookings';
+import { uiLocale } from '../i18n/uiLocale';
 
 /** CX Keychain + Roadbook (migration 0083): a verified trip turned into a card. */
 export interface TripMemory {
@@ -141,7 +142,7 @@ export function useCarAvailableSoon(carId: string): boolean | null {
 export function formatTripPeriod(startDate: string, endDate: string, locale?: string): string {
   const s = new Date(`${startDate}T00:00:00`);
   const e = new Date(`${endDate}T00:00:00`);
-  const loc = locale === 'en' || !locale ? 'en-GB' : locale;
+  const loc = locale === 'en' || !locale ? uiLocale() : locale;
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
   const dm = (d: Date) => d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
   return sameMonth

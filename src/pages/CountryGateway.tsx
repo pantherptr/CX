@@ -26,6 +26,13 @@ export default function CountryGateway() {
       <div className="relative mt-6 text-center">
         <h1 className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl">Choose your country</h1>
         <p className="mt-2 text-copy text-muted sm:text-lead">Scegli il tuo paese · Alege țara ta · Elige tu país</p>
+        <button
+          type="button"
+          onClick={() => chooseCountry('GB')}
+          className="pressable mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-detail font-semibold text-ink shadow-hair active:scale-95"
+        >
+          <span className="text-lg leading-none">🇬🇧</span> Continue in English
+        </button>
       </div>
 
       <main className="relative mt-4 flex w-full flex-1 items-center justify-center">

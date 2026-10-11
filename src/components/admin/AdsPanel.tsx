@@ -4,6 +4,7 @@ import { Icon } from '../Icon';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { fetchAdsQueue, money, reviewAd, type QueuedAd } from '../../lib/data/ads';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 const STATUS_LABEL: Record<QueuedAd['status'], string> = {
   pending_review: 'Waiting for approval', active: 'Live', ended: 'Ended', rejected: 'Rejected', canceled: 'Cancelled',
@@ -67,7 +68,7 @@ export function AdsPanel() {
                 <p className="mt-1.5 text-caption text-muted">
                   {STATUS_LABEL[ad.status]} · {money(ad.dailyCents)} × {ad.days} = {money(ad.totalCents)}
                   {(ad.status === 'active' || ad.status === 'ended') && ` · ${ad.impressions} reached`}
-                  {ad.endsAt && ad.status === 'active' && ` · until ${new Date(ad.endsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}
+                  {ad.endsAt && ad.status === 'active' && ` · until ${new Date(ad.endsAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })}`}
                 </p>
                 {ad.status === 'rejected' && ad.rejectReason && <p className="mt-0.5 text-caption text-muted">“{ad.rejectReason}”</p>}
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">

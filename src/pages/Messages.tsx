@@ -27,6 +27,7 @@ import { CONTACT_WARNING, hasContactInfo } from '../lib/contactGuard';
 import { useApp } from '../lib/store';
 import { MacbookMockup, LockIcon, DoubleCheckIcon } from '../components/ui/great-ui-macbook-mockup';
 import type { Message } from '../lib/data/messages';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 type SendAsRole = 'owner' | 'owner_assistant';
 
@@ -36,7 +37,7 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { activ
   const isCx = other.role === 'cx';
   const sent = (messages ?? []).filter((m) => m.senderId === myId).length;
   const got = (messages ?? []).length - sent;
-  const since = messages && messages.length > 0 ? new Date(messages[0].createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  const since = messages && messages.length > 0 ? new Date(messages[0].createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : null;
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={`${other.name} info`}>
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-[fade-in_.2s_ease-out_both] bg-black/35 backdrop-blur-[3px]" />
@@ -191,15 +192,15 @@ const fmtTime = (iso: string) => {
   const d = new Date(iso);
   const sameDay = d.toDateString() === new Date().toDateString();
   return sameDay
-    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    ? d.toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 
 // Bubble timestamps always show a clock time, never a date — the thread's
 // own date-divider rows already carry the day, so repeating it per-bubble
 // (as fmtTime does for the conversation list, where there's no divider)
 // would just be visual noise on anything older than today.
-const fmtBubbleTime = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const fmtBubbleTime = (iso: string) => new Date(iso).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' });
 
 function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active: boolean; onClick: () => void; myId?: string }) {
   const unread = c.unreadCount > 0;
@@ -261,7 +262,7 @@ const fmtDateSeparator = (iso: string) => {
   const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
   if (sameDay(d, today)) return 'Today';
   if (sameDay(d, yesterday)) return 'Yesterday';
-  return d.toLocaleDateString('en-GB', {
+  return d.toLocaleDateString(uiLocale(), {
     day: 'numeric',
     month: 'long',
     year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,

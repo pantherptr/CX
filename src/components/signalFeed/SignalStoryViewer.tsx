@@ -14,6 +14,7 @@ import { useAuth } from '../../lib/auth';
 import { motion, SharedAvatar, useHideForNavigation, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
 import { Ugc } from '../../lib/i18n/ugc';
 import { fetchStoryTripLabels } from '../../lib/data/tripMemories';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 const SLIDE_DURATION_MS = 5000;
 const HOLD_DELAY_MS = 180;
@@ -550,7 +551,7 @@ export function SignalStoryViewer({
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-detail font-semibold text-white">{identity.name}</span>
                   <SignalIdentityBadge identity={identity} size={16} />
-                  <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                  <span className="text-caption text-white/60">{new Date(story.createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })}</span>
                 </div>
                 {tripLabels.get(story.id) && (
                   <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] font-semibold text-accent-bright">

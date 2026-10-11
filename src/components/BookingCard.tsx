@@ -9,6 +9,7 @@ import { useAuth } from '../lib/auth';
 import { findOrCreateCxConversation } from '../lib/data/messages';
 import { useHasAccess } from '../lib/useAccess';
 import { useLocale } from '../lib/i18n';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 // `new Date(iso)` parses a date-only string as UTC midnight; formatting
 // that with local-timezone methods can render a day early for negative
@@ -16,7 +17,7 @@ import { useLocale } from '../lib/i18n';
 // instead of round-tripping through UTC.
 function fmtShort(iso: string) {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(y, m - 1, d).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 }
 
 function todayISO(offset = 0) {

@@ -18,6 +18,7 @@ import {
 } from '../../lib/data/admin';
 import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 /**
  * Shared between AdminDashboard and OwnerDashboard — these panels (and
@@ -47,7 +48,7 @@ export function StatTile({ icon, value, label }: { icon: IconName; value: ReactN
 }
 
 export const fmtDate = (s: string | null) =>
-  s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  s ? new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export function Avatar({ url, size = 36 }: { url: string | null; size?: number }) {
   const fallback = (

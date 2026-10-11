@@ -39,6 +39,7 @@ import { useManualTranslate } from '../../lib/i18n/ugc';
 import { useLocale } from '../../lib/i18n';
 import { SponsorPostSheet } from './SponsorPostSheet';
 import { collabHandle, leaveCollab, removeCollab } from '../../lib/data/collab';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 /** Where tapping a post's identity block should go — the two official-
  *  but-not-a-real-profile-row voices get a synthetic route (SignalProfileDetail
@@ -60,7 +61,7 @@ function timeAgo(iso: string): string {
   if (hr < 24) return `${hr}h`;
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day}d`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 }
 
 // A single video/image in the feed (not the fixed-crop hero or multi-media
@@ -521,7 +522,7 @@ export function SignalPostCard({
     }
     navigate(`${profileBase}/post/${post.id}`);
   };
-  const postedAt = new Date(post.createdAt).toLocaleString(lang === 'en' ? 'en-GB' : lang, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', year: 'numeric' });
+  const postedAt = new Date(post.createdAt).toLocaleString(lang === 'en' ? uiLocale() : lang, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', year: 'numeric' });
 
   const isExclusive = post.category === 'exclusive';
   const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);

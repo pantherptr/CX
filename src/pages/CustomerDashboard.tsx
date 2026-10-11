@@ -20,6 +20,7 @@ import { useLocale } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
 import { useVerification } from '../lib/data/verification';
 import { VerifyNudge } from '../components/VerificationFlow';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const TABS: { id: TripPhase; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
@@ -48,7 +49,7 @@ const phaseLabel: Record<TripPhase, string> = {
   refunded: 'Refunded',
 };
 
-const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+const fmtDate = (s: string) => new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 
 const REWARD_TABS: { id: RewardStatus; label: string }[] = [
   { id: 'available', label: 'Available' },
@@ -151,7 +152,7 @@ const relativeTime = (iso: string) => {
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days} days ago`;
   if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 
 function TripRow({ booking }: { booking: Booking }) {

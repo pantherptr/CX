@@ -3,8 +3,9 @@ import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import { fetchVerificationCases, decideVerification, type VerificationCase } from '../../lib/data/admin';
 import { getSignedUrl, ID_DOC_LABEL, REJECTION_REASONS, type DocStatus } from '../../lib/data/verification';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
-const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(uiLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
 
 const chip = (s: DocStatus) =>
   s === 'approved' ? 'bg-accent/10 text-accent'

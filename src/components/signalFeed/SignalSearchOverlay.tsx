@@ -9,6 +9,7 @@ import { FollowButton } from './FollowButton';
 import { useLocale } from '../../lib/i18n';
 import { fetchPeopleSuggestions, type PersonSuggestion } from '../../lib/data/privacy';
 import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, TRANSITION_STANDARD } from '../motionKit';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 function personRole(p: SignalPeopleResult): VerifiedRole | null {
   return p.isOwner ? 'owner' : p.isAdmin ? 'admin' : p.isHost ? 'host' : p.isVerifiedClient ? 'client' : null;
@@ -23,7 +24,7 @@ function resultAge(iso: string): string {
   if (hr < 24) return `${hr}h`;
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day}d`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 }
 
 const RECENT_KEY = 'signal:recentPeopleSearches';

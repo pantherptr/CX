@@ -13,14 +13,14 @@ export interface Country {
   coords: [number, number];
 }
 
-/** Italy, Romania and Spain are live. The rest are visible but locked until their language and fleet are ready. */
+/** Italy, Romania, Spain and the United Kingdom (English) are live. The rest are visible but locked until their language and fleet are ready. */
 export const COUNTRIES: Country[] = [
   { code: 'IT', name: 'Italia', flag: '🇮🇹', lang: 'it', coords: [12.5, 42.0] },
   { code: 'RO', name: 'România', flag: '🇷🇴', lang: 'ro', coords: [25.0, 45.9] },
   { code: 'ES', name: 'España', flag: '🇪🇸', lang: 'es', coords: [-3.7, 40.2] },
   { code: 'FR', name: 'France', flag: '🇫🇷', coords: [2.3, 46.6] },
   { code: 'DE', name: 'Deutschland', flag: '🇩🇪', coords: [10.4, 51.1] },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', coords: [-2.0, 54.0] },
+  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', lang: 'en', coords: [-2.0, 54.0] },
   { code: 'NL', name: 'Nederland', flag: '🇳🇱', coords: [5.3, 52.2] },
   { code: 'PT', name: 'Portugal', flag: '🇵🇹', coords: [-8.2, 39.6] },
   { code: 'GR', name: 'Ελλάδα', flag: '🇬🇷', coords: [22.0, 39.0] },

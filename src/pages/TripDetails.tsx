@@ -27,6 +27,7 @@ import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
 import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
 import { parseISO } from '../lib/calendarGrid';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const phaseBadge: Record<TripPhase, string> = {
   pending: 'bg-panel-2 text-ink-soft',
@@ -279,8 +280,8 @@ export default function TripDetails() {
   };
 
   const specs: { icon: IconName; label: string; value: string }[] = [
-    { icon: 'calendar', label: 'Pick-up', value: new Date(booking.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
-    { icon: 'calendar', label: 'Return', value: new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
+    { icon: 'calendar', label: 'Pick-up', value: new Date(booking.startDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) },
+    { icon: 'calendar', label: 'Return', value: new Date(booking.endDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) },
     booking.fulfillmentType === 'delivery'
       ? { icon: 'car', label: 'Delivery to', value: booking.deliveryAddress || '' }
       : { icon: 'pin', label: 'Location', value: booking.pickupLocation || booking.car.location },
@@ -635,7 +636,7 @@ export default function TripDetails() {
         <div className="p-6">
           <h2 id="agreement-title" className="font-display text-xl font-semibold text-ink">Rental agreement</h2>
           <div className="mt-4 max-h-72 space-y-3 overflow-y-auto rounded-xl border border-line p-4 text-detail leading-relaxed text-ink-soft">
-            <p>By accepting, you confirm you'll use {booking.car.make} {booking.car.model} only as licensed and insured, return it by {new Date(booking.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} in the condition it was received, and report any damage to your host immediately.</p>
+            <p>By accepting, you confirm you'll use {booking.car.make} {booking.car.model} only as licensed and insured, return it by {new Date(booking.endDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' })} in the condition it was received, and report any damage to your host immediately.</p>
             <p>This trip includes damage protection and 24/7 roadside assistance, as shown in your payment breakdown.{' '}
               {booking.fareTier === 'flexible'
                 ? 'Your flexible fare allows a full refund any time before pick-up.'

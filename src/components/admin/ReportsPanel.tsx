@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../lib/store';
 import { fetchChatReports, setChatReportStatus, type ChatReport } from '../../lib/data/chatReports';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
-const fmt = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmt = (iso: string) => new Date(iso).toLocaleString(uiLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Chat reports from members — Owner / Admin. Mark one reviewed once handled, or dismiss it. */
 export function ReportsPanel() {

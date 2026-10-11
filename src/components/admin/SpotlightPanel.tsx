@@ -5,6 +5,7 @@ import {
   fetchSpotlightQueue, fetchSpotlightPublishers, publishSpotlight, setSpotlightStatus,
   type SpotlightCandidate, type SpotlightPublisher,
 } from '../../lib/data/spotlight';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 const STATUS_LABEL: Record<SpotlightCandidate['status'], string> = {
   candidate: 'Available', draft: 'Draft', published: 'Live in feed', archived: 'Archived',
@@ -93,7 +94,7 @@ export function SpotlightPanel() {
               <p className="truncate text-caption text-muted">
                 {[v.city, v.carLabel].filter(Boolean).join(' · ') || '—'}
               </p>
-              <p className="text-caption text-faint">{new Date(v.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="text-caption text-faint">{new Date(v.createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' })}</p>
               {v.status === 'published' && v.entryPublisher && <p className="text-caption text-accent-700">Published as {v.entryPublisher}{v.entryTitle ? ` · “${v.entryTitle}”` : ''}</p>}
               <div className="flex flex-wrap gap-2 pt-2">
                 <button type="button" onClick={() => setSelected(v)} className="btn btn-primary btn-sm rounded-full">

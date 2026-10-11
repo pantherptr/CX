@@ -35,6 +35,7 @@ import { distanceKm, mapsLink } from '../lib/geocode';
 import { useVerification, licenceReady } from '../lib/data/verification';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const STEPS = ['Trip details', 'Extras', 'Driver details', 'Payment', 'Confirmation'];
 const CONFIRMATION_STEP = STEPS.length - 1;
@@ -444,8 +445,8 @@ export default function Booking() {
     toast({ title: 'Booking confirmed', desc: 'Your trip is booked.', icon: 'checkCircle' });
   };
 
-  const shortDate = (s: string) => new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  const shortDate = (s: string) => new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
+  const fmtDate = (s: string) => (s ? new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
   /* ---------- Confirmation ---------- */
   if (step === CONFIRMATION_STEP && confirmed) {

@@ -10,6 +10,7 @@ import { useMyNotifications, notificationPath, type SignalNotification } from '.
 import { useAppNotifications, KIND_STYLE, type AppNotification } from '../lib/data/appNotifications';
 import { useApp } from '../lib/store';
 import { useLocale } from '../lib/i18n';
+import { uiLocale } from '../lib/i18n/uiLocale';
 
 const TONE: Record<'green' | 'ink' | 'amber' | 'red', string> = {
   green: 'bg-accent/10 text-accent',
@@ -25,7 +26,7 @@ const ago = (iso: string) => {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
   const d = Math.floor(h / 24);
-  return d < 7 ? `${d}d` : new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return d < 7 ? `${d}d` : new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
