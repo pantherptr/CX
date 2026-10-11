@@ -200,9 +200,20 @@ function Thread({
   ownerIdentity?: boolean;
 }) {
   const t = large
-    ? { gap: 'space-y-1', bubble: 'max-w-[82%] rounded-2xl px-3.5 py-2 text-[15px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
+    ? { gap: 'space-y-[3px]', bubble: 'max-w-[80%] rounded-[20px] px-3.5 py-[9px] text-[15.5px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
     : { gap: 'space-y-1.5', bubble: 'max-w-[75%] rounded-xl px-3.5 py-2 text-[14px] leading-snug', time: 'text-[11px]', day: 'text-[11px] px-2.5 py-0.5', note: 'text-[11.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
   const roleOf = (m: Message): VerifiedRole => (m.senderId === myId ? (m.senderRole ?? myRole) : active.other.role);
+  // Messages that arrive after the thread is on screen (a reply coming in) land with a small
+  // animation; the history that was already there, and your own sent bubble (swapped in place from
+  // the pending one), never animate, so nothing blinks.
+  const knownIds = useRef<Set<string> | null>(null);
+  const threadKey = useRef(active.id);
+  if (threadKey.current !== active.id) { threadKey.current = active.id; knownIds.current = null; }
+  const freshIds = new Set<string>();
+  if (messages) {
+    if (knownIds.current === null) knownIds.current = new Set(messages.map((m) => m.id));
+    else for (const m of messages) if (!knownIds.current.has(m.id)) { knownIds.current.add(m.id); if (m.senderId !== myId) freshIds.add(m.id); }
+  }
   return (
     <div className={`flex min-h-full flex-col justify-end ${t.gap}`}>
       <div className={`mx-auto mb-2 flex w-fit max-w-[92%] items-center justify-center gap-1.5 rounded-full bg-white text-center text-muted shadow-hair ring-1 ring-line ${t.note}`}>
@@ -234,9 +245,9 @@ function Thread({
                 <div
                   className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${
                     mine
-                      ? `bg-ink text-white ${last ? 'rounded-br-md' : ''}`
-                      : `bg-white text-ink shadow-hair ring-1 ring-line ${last ? 'rounded-bl-md' : ''}`
-                  }`}
+                      ? `${large ? 'bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)]' : 'bg-ink'} text-white ${last ? (large ? 'rounded-br-[6px]' : 'rounded-br-md') : ''}`
+                      : `${large ? 'shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04]' : 'shadow-hair ring-1 ring-line'} bg-white text-ink ${last ? (large ? 'rounded-bl-[6px]' : 'rounded-bl-md') : ''}`
+                  } ${large && freshIds.has(m.id) ? 'chat-in-left' : ''}`}
                 >
                   {m.body}
                 </div>
@@ -252,8 +263,8 @@ function Thread({
         })
       )}
       {pending.map((p) => (
-        <div key={p.localId} className="flex flex-col items-end pt-1">
-          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/70 text-white'}`}>{p.body}</div>
+        <div key={p.localId} className={`flex flex-col items-end pt-1 ${large ? 'chat-in-right' : ''}`}>
+          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${large ? 'rounded-br-[6px]' : ''} transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-white'}`}>{p.body}</div>
           <p className={`mt-1 flex items-center gap-2 px-1 ${t.time}`}>
             {p.status === 'sending' ? (
               <span className="text-faint">Sending…</span>
@@ -378,6 +389,7 @@ export default function Messages() {
   // When the keyboard opens or closes the chat box changes height; if you were at the bottom of the
   // thread you stay at the bottom (otherwise the last messages slide behind the composer).
   const atBottom = useRef(true);
+  const [showJump, setShowJump] = useState(false);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -661,15 +673,15 @@ export default function Messages() {
               }
             }}
           >
-            <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-surface/95 px-2 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] backdrop-blur">
-              <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink active:bg-panel">
+            <div className="relative z-10 flex shrink-0 items-center gap-2.5 bg-white/90 px-2.5 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-[0_6px_18px_-12px_rgba(22,22,26,0.35)] backdrop-blur-xl">
+              <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
                 <Icon name="chevronLeft" size={22} />
               </button>
               {active.other.avatar ? (
                 <Img
                   src={active.other.avatar}
                   alt=""
-                  className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white shadow-[0_2px_8px_-2px_rgba(22,22,26,0.35)]"
                   fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>}
                 />
               ) : (
@@ -685,19 +697,22 @@ export default function Messages() {
                 </p>
               </div>
               {active.car && (
-                <Link to={`/cars/${active.car.slug}`} className="pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-detail font-semibold text-white">
+                <Link to={`/cars/${active.car.slug}`} className="pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-detail font-semibold text-white shadow-[0_4px_12px_-4px_rgba(22,22,26,0.5)] transition-transform active:scale-95">
                   View car
                 </Link>
               )}
             </div>
 
+            <div className="relative min-h-0 flex-1">
             <div
               ref={scrollRef}
               onScroll={(e) => {
                 const el = e.currentTarget;
-                atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+                atBottom.current = dist < 80;
+                setShowJump(dist > 320);
               }}
-              className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-3"
+              className="h-full overflow-y-auto overscroll-contain px-3.5 py-3"
             >
               <Thread
                 ownerIdentity={!!profile?.is_owner}
@@ -711,8 +726,21 @@ export default function Messages() {
                 onDismiss={dismissFailed}
               />
             </div>
+            <button
+              type="button"
+              aria-label="Jump to latest message"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                const el = scrollRef.current;
+                if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+              }}
+              className={`absolute bottom-3 right-3.5 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.45)] ring-1 ring-black/[0.05] transition-[opacity,transform] duration-200 active:scale-90 ${showJump ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+            >
+              <Icon name="chevronDown" size={20} />
+            </button>
+            </div>
 
-            <div className="shrink-0 border-t border-line bg-surface px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2.5">
+            <div className="shrink-0 bg-gradient-to-t from-[#f4f5f2] via-[#f4f5f2] to-[#f4f5f2]/0 px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2">
               {profile?.is_owner && (
                 <div className="mb-2 flex items-center gap-1.5">
                   <span className="text-caption text-muted">Sending as</span>
@@ -724,7 +752,7 @@ export default function Messages() {
                   </button>
                 </div>
               )}
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-1.5 rounded-[28px] bg-white p-1.5 shadow-[0_8px_28px_-10px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05] transition-shadow focus-within:shadow-[0_10px_32px_-10px_rgba(0,133,54,0.35)] focus-within:ring-accent/40">
                 <textarea
                   ref={composerRef}
                   rows={1}
@@ -742,14 +770,14 @@ export default function Messages() {
                   }}
                   placeholder="Write a message…"
                   enterKeyHint="send"
-                  className="max-h-[120px] min-w-0 flex-1 resize-none rounded-[22px] bg-panel px-4 py-[11px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
+                  className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-3.5 py-[10px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
                 />
                 <button
                   // Do not take focus from the field: the keyboard stays up and nothing resizes.
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={send}
                   disabled={!text.trim()}
-                  className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform] duration-200 active:scale-90 disabled:bg-panel disabled:text-faint"
+                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-white shadow-[0_6px_14px_-4px_rgba(0,133,54,0.6)] transition-[opacity,transform,background,box-shadow] duration-200 active:scale-90 disabled:bg-none disabled:bg-panel disabled:text-faint disabled:shadow-none"
                   aria-label="Send"
                 >
                   <Icon name="send" size={18} />

@@ -611,6 +611,20 @@
     from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
   }
+  /* Phone chat: a message lands from its own side. */
+  @keyframes chat-in-left {
+    from { opacity: 0; transform: translate3d(-10px, 8px, 0) scale(0.94); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes chat-in-right {
+    from { opacity: 0; transform: translate3d(10px, 8px, 0) scale(0.94); }
+    to { opacity: 1; transform: none; }
+  }
+  .chat-in-left { animation: chat-in-left .32s cubic-bezier(.2,.9,.25,1.05) both; transform-origin: bottom left; }
+  .chat-in-right { animation: chat-in-right .28s cubic-bezier(.2,.9,.25,1.05) both; transform-origin: bottom right; }
+  @media (prefers-reduced-motion: reduce) {
+    .chat-in-left, .chat-in-right { animation: none; }
+  }
   @keyframes shimmer {
     100% { transform: translateX(100%); }
   }
