@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Logo } from '../components/primitives';
 import { useLocale } from '../lib/i18n';
+import { CircularThemeReveal } from '../components/ui/circular-theme-reveal';
 
 const CountryGlobe = lazy(() => import('../components/home/CountryGlobe').then((m) => ({ default: m.CountryGlobe })));
 
@@ -13,13 +14,17 @@ export default function CountryGateway() {
   // every live language at once rather than going through t().
 
   return (
-    <div className="relative flex min-h-dvh flex-col items-center bg-bg px-5 pb-8 pt-safe sm:px-8">
+    <CircularThemeReveal
+      storageKey="cx-gateway-theme"
+      label="Dark mode"
+      className="relative flex min-h-dvh flex-col items-center bg-bg px-5 pb-8 pt-safe sm:px-8"
+    >
       <div
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{ background: 'radial-gradient(55% 50% at 50% 55%, rgba(0,212,71,0.10), transparent 70%)' }}
       />
 
-      <header className="relative pt-6">
+      <header className="ctr-invert relative pt-6">
         <Logo variant="wordmark" />
       </header>
 
@@ -29,7 +34,7 @@ export default function CountryGateway() {
         <button
           type="button"
           onClick={() => chooseCountry('GB')}
-          className="pressable mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-detail font-semibold text-ink shadow-hair active:scale-95"
+          className="pressable mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-detail font-semibold text-ink shadow-hair active:scale-95"
         >
           <span className="text-lg leading-none">🇬🇧</span> Continue in English
         </button>
@@ -46,6 +51,6 @@ export default function CountryGateway() {
       <p className="relative text-center text-detail text-faint">
         Click a country on the map · Tocca un paese · Atinge o țară · Toca un país
       </p>
-    </div>
+    </CircularThemeReveal>
   );
 }

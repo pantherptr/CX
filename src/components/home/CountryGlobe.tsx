@@ -58,8 +58,23 @@ export function CountryGlobe({
     const projection = geoOrthographic().precision(0.5);
     const path = geoPath(projection, ctx);
     const graticule = geoGraticule10();
-    const ink = getComputedStyle(canvas).color;
     const accent = '#00b83c';
+    // Colours follow the surrounding theme (light / dark), re-read when it flips.
+    let themeKey = '';
+    let ink = getComputedStyle(canvas).color;
+    let halo = 'rgba(250,250,247,0.9)';
+    let label = '#0d1f14';
+    let lockedHover = 'rgba(20,30,25,0.12)';
+    const syncTheme = () => {
+      const t = wrap.closest('[data-theme]')?.getAttribute('data-theme') ?? 'light';
+      if (t === themeKey) return;
+      themeKey = t;
+      ink = getComputedStyle(canvas).color;
+      const dark = t === 'dark';
+      halo = dark ? 'rgba(10,11,10,0.9)' : 'rgba(250,250,247,0.9)';
+      label = dark ? '#f4f4ef' : '#0d1f14';
+      lockedHover = dark ? 'rgba(255,255,255,0.12)' : 'rgba(20,30,25,0.12)';
+    };
 
     let size = 0;
     const applyScale = () => projection.translate([size / 2, size / 2]).scale(size / 2 - 6);
@@ -111,6 +126,7 @@ export function CountryGlobe({
     };
 
     const draw = () => {
+      syncTheme();
       projection.rotate(rot);
       ctx.clearRect(0, 0, size, size);
 
@@ -147,7 +163,7 @@ export function CountryGlobe({
           ctx.stroke();
         } else {
           if (isHover) {
-            ctx.fillStyle = 'rgba(20,30,25,0.12)';
+            ctx.fillStyle = lockedHover;
             ctx.fill();
           }
         }
@@ -177,9 +193,9 @@ export function CountryGlobe({
         ctx.stroke();
         ctx.globalAlpha = 1;
         ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(250,250,247,0.9)';
+        ctx.strokeStyle = halo;
         ctx.strokeText(country.name, p[0], p[1] - 14);
-        ctx.fillStyle = '#0d1f14';
+        ctx.fillStyle = label;
         ctx.fillText(country.name, p[0], p[1] - 14);
       }
       ctx.globalAlpha = 1;
@@ -246,7 +262,7 @@ export function CountryGlobe({
       />
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-xl border border-line bg-white/95 px-3 py-1.5 text-detail font-semibold text-ink shadow-soft backdrop-blur"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-xl border border-line bg-surface/95 px-3 py-1.5 text-detail font-semibold text-ink shadow-soft backdrop-blur"
           style={{ left: hover.x, top: hover.y - 14 }}
         >
           <span className="mr-1.5">{hover.country.flag}</span>

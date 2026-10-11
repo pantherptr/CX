@@ -851,6 +851,9 @@ const ROWS: Row[] = [
   ["Tear off the stub", "Strappa il tagliando", "Rupe talonul", "Rasga el talón"],
   ["Reattach the stub", "Riattacca il tagliando", "Reatașează talonul", "Vuelve a pegar el talón"],
   ["Front", "Fronte", "Față", "Anverso"],
+
+  // ---- Theme switch ----
+  ["Dark mode", "Modalità scura", "Mod întunecat", "Modo oscuro"],
 ];
 
 export const DICT: Record<Exclude<Lang, 'en'>, Record<string, string>> = { it: {}, ro: {}, es: {} };
