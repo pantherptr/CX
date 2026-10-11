@@ -25,6 +25,83 @@ import type { Message } from '../lib/data/messages';
 
 type SendAsRole = 'owner' | 'owner_assistant';
 
+/** Tap the name in a phone chat: who you are talking to, at a glance, with the shortcuts that matter. */
+function ChatProfileSheet({ active, myId, messages, onClose }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void }) {
+  const other = active.other;
+  const isCx = other.role === 'cx';
+  const sent = (messages ?? []).filter((m) => m.senderId === myId).length;
+  const got = (messages ?? []).length - sent;
+  const since = messages && messages.length > 0 ? new Date(messages[0].createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={`${other.name} info`}>
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-[fade-in_.2s_ease-out_both] bg-black/35 backdrop-blur-[3px]" />
+      <div className="animate-sheet-in relative overflow-hidden rounded-t-[32px] bg-white pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-[0_-24px_60px_-20px_rgba(22,22,26,0.5)]">
+        <div className="relative h-24 bg-gradient-to-br from-[#0b1a10] via-[#0f3a1d] to-accent">
+          <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-accent-bright/25 blur-2xl" />
+          <span className="absolute left-1/2 top-2.5 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/40" />
+          <button onClick={onClose} aria-label="Close" className="pressable absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white backdrop-blur active:scale-90">
+            <Icon name="x" size={18} />
+          </button>
+        </div>
+        <div className="-mt-11 flex flex-col items-center px-5 text-center">
+          {other.avatar ? (
+            <Img
+              src={other.avatar}
+              alt=""
+              className="h-[88px] w-[88px] rounded-full object-cover shadow-[0_10px_28px_-8px_rgba(0,133,54,0.6)] ring-4 ring-white"
+              fallback={<span className="grid h-[88px] w-[88px] place-items-center rounded-full bg-panel text-ink-soft ring-4 ring-white"><Icon name="user" size={30} /></span>}
+            />
+          ) : (
+            <span className="grid h-[88px] w-[88px] place-items-center rounded-full bg-panel text-ink-soft ring-4 ring-white"><Icon name="user" size={30} /></span>
+          )}
+          <p className="mt-3 flex items-center gap-1.5 font-display text-[1.35rem] font-bold leading-tight tracking-tight text-accent">
+            {other.name}
+            <VerifiedBadge role={other.role} size={17} />
+          </p>
+          <p className="mt-0.5 text-detail font-semibold text-muted">{isCx ? 'CX support' : ROLE_SUBTITLE[other.role] ?? ''}</p>
+
+          <div className="mt-4 grid w-full grid-cols-3 gap-2">
+            {[
+              { k: 'Sent', v: String(sent) },
+              { k: 'Received', v: String(got) },
+              { k: 'Since', v: since ?? '—' },
+            ].map((x) => (
+              <div key={x.k} className="rounded-2xl bg-[#f4f5f2] px-2 py-2.5">
+                <p className="truncate text-[15px] font-bold text-ink">{x.v}</p>
+                <p className="text-label font-medium text-muted">{x.k}</p>
+              </div>
+            ))}
+          </div>
+
+          {active.car && (
+            <Link
+              to={`/cars/${active.car.slug}`}
+              className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-[#f4f5f2] p-2 pr-3.5 text-left transition-transform active:scale-[0.98]"
+            >
+              {active.car.image && <Img src={active.car.image} alt="" className="h-12 w-16 shrink-0 rounded-xl object-cover" />}
+              <span className="min-w-0 flex-1">
+                <span className="block text-label font-medium uppercase tracking-wider text-muted">The car</span>
+                <span className="block truncate text-[15px] font-semibold text-accent">{active.car.make} {active.car.model}</span>
+              </span>
+              <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+            </Link>
+          )}
+
+          {!isCx && (
+            <Link
+              to={`/signal/profile/${other.id}`}
+              className="pressable mt-3 grid h-12 w-full place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(0,133,54,0.65)] transition-transform active:scale-[0.98]"
+            >
+              View profile
+            </Link>
+          )}
+          <p className="mt-3 text-caption text-faint">Payments and contact details stay inside CX.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; onClose: () => void; onStarted: (conversationId: string) => void }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<MessagingSearchResult[]>([]);
@@ -410,6 +487,8 @@ export default function Messages() {
   // thread you stay at the bottom (otherwise the last messages slide behind the composer).
   const atBottom = useRef(true);
   const [showJump, setShowJump] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  useEffect(() => { setProfileOpen(false); }, [activeId, mobileChat]);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -723,10 +802,10 @@ export default function Messages() {
                 <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
                   <Icon name="chevronLeft" size={22} />
                 </button>
-                <Link
-                  to={active.other.role === 'cx' ? '#' : `/signal/profile/${active.other.id}`}
-                  onClick={(e) => { if (active.other.role === 'cx') e.preventDefault(); }}
-                  className="pressable flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-0.5 pr-1 transition-transform active:scale-[0.98]"
+                <button
+                  type="button"
+                  onClick={() => { haptics.tick(); setProfileOpen(true); }}
+                  className="pressable flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-0.5 pr-1 text-left transition-transform active:scale-[0.98]"
                 >
                   {active.other.avatar ? (
                     <Img
@@ -745,10 +824,10 @@ export default function Messages() {
                     </span>
                     <span className="mt-0.5 flex items-center gap-1 truncate text-caption font-semibold text-accent/80">
                       {active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
-                      {active.other.role !== 'cx' && <span className="text-accent/60">· View profile</span>}
+                      <span className="text-accent/60">· Tap for info</span>
                     </span>
                   </span>
-                </Link>
+                </button>
               </div>
               {active.car && (
                 <Link
@@ -844,6 +923,15 @@ export default function Messages() {
                 </button>
               </div>
             </div>
+
+            {profileOpen && (
+              <ChatProfileSheet
+                active={active}
+                myId={session?.user.id}
+                messages={messages}
+                onClose={() => setProfileOpen(false)}
+              />
+            )}
           </div>
           </>
         )}
