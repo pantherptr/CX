@@ -219,57 +219,121 @@ export function useConversations(userId: string | undefined) {
   return { conversations, error, loading: conversations === null && !error, refresh: () => setRefreshKey((k) => k + 1) };
 }
 
+/** Latest messages of a thread, oldest first. Capped so a very long thread does not pull its
+ *  whole history on every open (and every refresh) — the newest 300 are what anyone reads. */
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('id, body, sender_id, created_at, read_at, sender_role')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(300);
   if (error) throw error;
-  return (data ?? []).map((row) => mapMessage(conversationId, row));
+  return (data ?? []).reverse().map((row) => mapMessage(conversationId, row));
+}
+
+// The last thread we loaded for each conversation. Opening one shows these straight away and
+// refreshes behind them, so tapping a chat never starts from a "Loading…" screen.
+const threadCache = new Map<string, Message[]>();
+const inflight = new Map<string, Promise<Message[]>>();
+
+function loadThread(conversationId: string): Promise<Message[]> {
+  const running = inflight.get(conversationId);
+  if (running) return running;
+  const p = fetchMessages(conversationId)
+    .then((data) => { threadCache.set(conversationId, data); return data; })
+    .finally(() => { inflight.delete(conversationId); });
+  inflight.set(conversationId, p);
+  return p;
+}
+
+/** Warms a thread (call on touch-down of a conversation row, ~100ms before the click lands). */
+export function prefetchConversation(conversationId: string): void {
+  if (threadCache.has(conversationId) || inflight.has(conversationId)) return;
+  void loadThread(conversationId).catch(() => undefined);
 }
 
 /** Loads a conversation's messages and subscribes to live INSERTs for the
  *  duration this hook is mounted — the thread updates without a manual
  *  refresh while it's open (see migration 0007 for the Realtime publication). */
 export function useConversation(conversationId: string | null) {
-  const [messages, setMessages] = useState<Message[] | null>(null);
+  const [state, setState] = useState<{ id: string | null; messages: Message[] | null }>(() => ({
+    id: conversationId,
+    messages: conversationId ? threadCache.get(conversationId) ?? null : null,
+  }));
+  // Switching conversation: show that thread's cached messages (or null) in the SAME render, never
+  // a flash of the previous thread.
+  const messages = state.id === conversationId ? state.messages : conversationId ? threadCache.get(conversationId) ?? null : null;
+
+  const setFor = useCallback((id: string, fn: (prev: Message[] | null) => Message[] | null) => {
+    setState((cur) => {
+      const prev = cur.id === id ? cur.messages : threadCache.get(id) ?? null;
+      const next = fn(prev);
+      if (next) threadCache.set(id, next);
+      return { id, messages: next };
+    });
+  }, []);
 
   useEffect(() => {
     if (!conversationId) {
-      setMessages(null);
+      setState({ id: null, messages: null });
       return;
     }
     let cancelled = false;
-    setMessages(null);
-    fetchMessages(conversationId).then((data) => {
-      if (!cancelled) setMessages(data);
-    });
+    const id = conversationId;
+    // Merge the server's list into what is already on screen: keeps any message that arrived by
+    // realtime or from our own send while the request was in flight.
+    const sync = () => {
+      loadThread(id)
+        .then((data) => {
+          if (cancelled) return;
+          setFor(id, (prev) => {
+            if (!prev) return data;
+            const ids = new Set(data.map((m) => m.id));
+            const extra = prev.filter((m) => !ids.has(m.id) && m.createdAt > (data[data.length - 1]?.createdAt ?? ''));
+            return extra.length ? [...data, ...extra] : data;
+          });
+        })
+        .catch(() => {
+          // Keep whatever is on screen; show an empty thread rather than "Loading…" forever.
+          if (!cancelled) setFor(id, (prev) => prev ?? []);
+        });
+    };
+    setState((cur) => (cur.id === id ? cur : { id, messages: threadCache.get(id) ?? null }));
+    sync();
 
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`messages:${id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` },
         (payload) => {
           const row = payload.new as ConversationRow['messages'][number];
           // Dedupe by id: a message we just sent is already in the list (added from the insert's own
           // response) by the time the realtime event for it arrives.
-          setMessages((prev) => (prev && !prev.some((m) => m.id === row.id) ? [...prev, mapMessage(conversationId, row)] : prev));
+          setFor(id, (prev) => (prev && !prev.some((m) => m.id === row.id) ? [...prev, mapMessage(id, row)] : prev));
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Anything sent between the first load and the subscription going live is caught here.
+        if (status === 'SUBSCRIBED') { inflight.delete(id); sync(); }
+      });
+
+    // Coming back to the tab/app: realtime may have been asleep.
+    const onVisible = () => { if (document.visibilityState === 'visible') { inflight.delete(id); sync(); } };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, setFor]);
 
   /** Adds a message we already have (the one we just sent) without waiting for realtime. */
   const append = useCallback((message: Message) => {
-    setMessages((prev) => (prev && !prev.some((m) => m.id === message.id) ? [...prev, message] : prev));
-  }, []);
+    setFor(message.conversationId, (prev) => (prev && !prev.some((m) => m.id === message.id) ? [...prev, message] : prev));
+  }, [setFor]);
 
   return { messages, loading: messages === null, append };
 }

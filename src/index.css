@@ -625,6 +625,12 @@
   @media (prefers-reduced-motion: reduce) {
     .chat-in-left, .chat-in-right { animation: none; }
   }
+  @keyframes chat-slide-in {
+    from { opacity: 0.6; transform: translate3d(28px, 0, 0); }
+    to { opacity: 1; transform: none; }
+  }
+  .chat-slide-in { animation: chat-slide-in .24s cubic-bezier(.2,.85,.25,1) backwards; }
+  @media (prefers-reduced-motion: reduce) { .chat-slide-in { animation: none; } }
   @keyframes shimmer {
     100% { transform: translateX(100%); }
   }

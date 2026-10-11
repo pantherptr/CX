@@ -10,6 +10,7 @@ import { haptics } from '../lib/native';
 import {
   useConversations,
   useConversation,
+  prefetchConversation,
   sendMessage,
   markConversationRead,
   findOrCreateConversation,
@@ -30,10 +31,12 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
   const [starting, setStarting] = useState<string | null>(null);
 
   useEffect(() => {
+    // A slower earlier search must never overwrite the results of the one typed after it.
+    let stale = false;
     const handle = window.setTimeout(() => {
-      searchUsersForMessaging(query).then(setResults);
+      searchUsersForMessaging(query).then((r) => { if (!stale) setResults(r); }).catch(() => { if (!stale) setResults([]); });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => { stale = true; window.clearTimeout(handle); };
   }, [query]);
 
   const start = async (result: MessagingSearchResult) => {
@@ -42,7 +45,8 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
       const conversationId = await findOrCreateConversation(null, myUserId, result.id);
       onStarted(conversationId);
       onClose();
-    } finally {
+    } catch {
+      // Stay in the modal and let the row be tapped again instead of failing silently.
       setStarting(null);
     }
   };
@@ -110,6 +114,7 @@ function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active
   return (
     <button
       onClick={onClick}
+      onPointerDown={() => prefetchConversation(c.id)}
       className={`group flex w-full items-center gap-3.5 rounded-[22px] px-3.5 py-3 text-left transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.985] ${
         unread ? 'bg-white shadow-[0_8px_24px_-14px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.04]' : active ? 'bg-panel' : 'active:bg-panel'
       }`}
@@ -231,7 +236,11 @@ function Thread({
         <span>Payments and contact details stay inside CX — that's how you're protected.</span>
       </div>
       {messages === null ? (
-        <p className="py-8 text-center text-detail text-muted">Loading…</p>
+        <div className="flex flex-col gap-2 py-6" aria-label="Loading messages">
+          {[['w-40', 'items-start'], ['w-52', 'items-end'], ['w-32', 'items-start'], ['w-44', 'items-end']].map(([w, al], i) => (
+            <div key={i} className={`flex ${al}`}><div className={`h-9 ${w} animate-pulse rounded-[18px] bg-black/[0.06] ${al === 'items-end' ? 'ml-auto' : ''}`} /></div>
+          ))}
+        </div>
       ) : messages.length === 0 && pending.length === 0 ? (
         <p className="py-8 text-center text-detail text-muted">Say hello — this is the start of your conversation.</p>
       ) : (
@@ -369,7 +378,8 @@ export default function Messages() {
   // Default to the first conversation once the list loads, if none was
   // requested via ?c=.
   useEffect(() => {
-    if (!activeId && conversations && conversations.length > 0) {
+    // Phones start on the list — opening a thread nobody tapped would load it for nothing.
+    if (!activeId && conversations && conversations.length > 0 && window.matchMedia('(min-width: 640px)').matches) {
       setActiveId(conversations[0].id);
     }
   }, [activeId, conversations]);
@@ -459,6 +469,18 @@ export default function Messages() {
       window.scrollTo(0, y);
     };
   }, [mobileChat]);
+
+  // The URL is the source of truth for "a chat is open": the browser/iOS back gesture removes ?c=
+  // and has to close the chat too, and a link carrying ?c= opens it.
+  const paramId = params.get('c');
+  useEffect(() => {
+    if (paramId) {
+      setActiveId(paramId);
+      setMobileChat(true);
+    } else {
+      setMobileChat(false);
+    }
+  }, [paramId]);
 
   const closeConvo = () => {
     setMobileChat(false);
@@ -679,7 +701,7 @@ export default function Messages() {
           {/* Opaque floor under the chat so the page behind never shows through the keyboard's accessory-bar gap. */}
           <div aria-hidden className="fixed inset-0 z-[199] bg-[#f4f5f2]" />
           <div
-            data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
+            data-no-pull className="chat-slide-in fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
             style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)', transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)' }}
             onTouchStart={(e) => {
               const t = e.touches[0];
@@ -701,25 +723,32 @@ export default function Messages() {
                 <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
                   <Icon name="chevronLeft" size={22} />
                 </button>
-                {active.other.avatar ? (
-                  <Img
-                    src={active.other.avatar}
-                    alt=""
-                    className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_3px_10px_-3px_rgba(22,22,26,0.4)] ring-2 ring-white"
-                    fallback={<span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>}
-                  />
-                ) : (
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="flex min-w-0 items-center gap-1.5 truncate text-[16.5px] font-bold leading-tight tracking-tight text-ink">
-                    <span className="truncate">{active.other.name}</span>
-                    <VerifiedBadge role={active.other.role} size={14} />
-                  </p>
-                  <p className="truncate text-caption font-medium text-muted">
-                    {active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
-                  </p>
-                </div>
+                <Link
+                  to={active.other.role === 'cx' ? '#' : `/signal/profile/${active.other.id}`}
+                  onClick={(e) => { if (active.other.role === 'cx') e.preventDefault(); }}
+                  className="pressable flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-0.5 pr-1 transition-transform active:scale-[0.98]"
+                >
+                  {active.other.avatar ? (
+                    <Img
+                      src={active.other.avatar}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-full object-cover shadow-[0_4px_12px_-3px_rgba(0,133,54,0.5)] ring-2 ring-accent/30"
+                      fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
+                    />
+                  ) : (
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-1.5 text-[17px] font-bold leading-tight tracking-tight text-accent">
+                      <span className="truncate">{active.other.name}</span>
+                      <VerifiedBadge role={active.other.role} size={14} />
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1 truncate text-caption font-semibold text-accent/80">
+                      {active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
+                      {active.other.role !== 'cx' && <span className="text-accent/60">· View profile</span>}
+                    </span>
+                  </span>
+                </Link>
               </div>
               {active.car && (
                 <Link
@@ -727,7 +756,7 @@ export default function Messages() {
                   className="pressable mt-2.5 flex items-center gap-2.5 rounded-2xl bg-black/[0.035] p-1.5 pr-3 ring-1 ring-black/[0.04] transition-transform active:scale-[0.98]"
                 >
                   {active.car.image && <Img src={active.car.image} alt="" className="h-9 w-12 shrink-0 rounded-xl object-cover" />}
-                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-ink">{active.car.make} {active.car.model}</span>
+                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-accent">{active.car.make} {active.car.model}</span>
                   <span className="shrink-0 text-caption font-semibold text-accent">View car</span>
                   <Icon name="chevronRight" size={15} className="shrink-0 text-faint" />
                 </Link>
