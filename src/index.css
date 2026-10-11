@@ -631,6 +631,10 @@
   }
   .chat-slide-in { animation: chat-slide-in .24s cubic-bezier(.2,.85,.25,1) backwards; }
   @media (prefers-reduced-motion: reduce) { .chat-slide-in { animation: none; } }
+  @keyframes publish-sweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
   @keyframes shimmer {
     100% { transform: translateX(100%); }
   }

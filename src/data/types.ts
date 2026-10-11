@@ -64,6 +64,10 @@ export interface Car {
   colorKey?: string;
   /** True when images[0] is CX's own studio image of the model (not a host photo). */
   catalogHero?: boolean;
+  /** Listing review window (migration 0108): 'pending' = held for the team's look, goes live at publishAt. */
+  reviewStatus?: 'pending' | 'approved' | 'rejected';
+  publishAt?: string;
+  reviewNote?: string;
   reviews: Review[];
   /** Only populated for real Supabase-backed cars (host's own listings) — the mock seed data doesn't carry a lifecycle status.
    *  'suspended'/'removed' are Owner Control Center states (see supabase/migrations/0021_owner_control_center.sql); RLS already

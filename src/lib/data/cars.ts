@@ -79,9 +79,25 @@ interface CarRow {
   reviews: ReviewRow[];
   catalog_id?: string | null;
   color_key?: string | null;
+  review_status?: 'pending' | 'approved' | 'rejected' | null;
+  publish_at?: string | null;
+  review_note?: string | null;
 }
 
 const CAR_SELECT = '*, car_images(url, position), reviews(*)';
+
+// Listings waiting in the review window go live on their own once the time is up (migration 0108).
+// Every read that lists cars asks first; it is one cheap call, at most every 15 seconds per tab.
+let lastPromote = 0;
+async function promoteDueListings(): Promise<void> {
+  if (Date.now() - lastPromote < 15_000) return;
+  lastPromote = Date.now();
+  try {
+    await supabase.rpc('promote_due_listings');
+  } catch {
+    /* migration not run yet */
+  }
+}
 
 const reviewDate = (iso: string) =>
   new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(new Date(iso));
@@ -126,6 +142,9 @@ function mapCar(row: CarRow): Car {
     catalogId: row.catalog_id ?? undefined,
     colorKey: row.color_key ?? undefined,
     catalogHero: Boolean(hero),
+    reviewStatus: row.review_status ?? undefined,
+    publishAt: row.publish_at ?? undefined,
+    reviewNote: row.review_note ?? undefined,
     features: row.features ?? [],
     description: row.description ?? '',
     hostId: row.host_id,
@@ -160,6 +179,7 @@ function mapHost(row: HostRow): Host {
 }
 
 export async function fetchCars(): Promise<Car[]> {
+  await promoteDueListings();
   const { data, error } = await supabase
     .from('cars')
     .select(CAR_SELECT)
@@ -175,6 +195,7 @@ export async function fetchCars(): Promise<Car[]> {
  *  see 0001_init.sql), so no separate query path is needed beyond the
  *  filter itself. */
 export async function fetchHostCars(hostId: string): Promise<Car[]> {
+  await promoteDueListings();
   const { data, error } = await supabase
     .from('cars')
     .select(CAR_SELECT)
@@ -188,6 +209,7 @@ export async function fetchHostCars(hostId: string): Promise<Car[]> {
 export function useHostCars(hostId: string | undefined) {
   const [cars, setCars] = useState<Car[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!hostId) {
@@ -195,7 +217,8 @@ export function useHostCars(hostId: string | undefined) {
       return;
     }
     let cancelled = false;
-    setCars(null);
+    // A silent refresh (tick > 0) keeps the list on screen instead of blanking it.
+    if (tick === 0) setCars(null);
     setError(null);
     fetchHostCars(hostId)
       .then((data) => {
@@ -207,12 +230,21 @@ export function useHostCars(hostId: string | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [hostId]);
+  }, [hostId, tick]);
+
+  // While a listing waits in the review window, check back so it flips to "Published" by itself.
+  const waiting = (cars ?? []).some((c) => c.reviewStatus === 'pending');
+  useEffect(() => {
+    if (!waiting) return;
+    const t = window.setInterval(() => setTick((n) => n + 1), 20_000);
+    return () => window.clearInterval(t);
+  }, [waiting]);
 
   return { cars, error, loading: cars === null && !error };
 }
 
 export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
+  await promoteDueListings();
   const { data, error } = await supabase
     .from('cars')
     .select(CAR_SELECT)
@@ -225,6 +257,7 @@ export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
 }
 
 export async function fetchCarWithHost(slug: string): Promise<{ car: Car; host: Host } | null> {
+  await promoteDueListings();
   const { data, error } = await supabase
     .from('cars')
     // Explicit column list, not `(*)`: this is a public, unauthenticated
@@ -247,6 +280,7 @@ export async function fetchSimilarCars(
   excludeId: string,
   limit = 3,
 ): Promise<Car[]> {
+  await promoteDueListings();
   const { data, error } = await supabase
     .from('cars')
     .select(CAR_SELECT)

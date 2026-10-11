@@ -82,6 +82,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ sent: true });
   }
 
+  // Third job of this endpoint: a host just submitted a listing — tell the team, who have a few
+  // minutes to look before it goes live on its own. Only the car's own host can trigger it.
+  if (type === 'listing_submitted') {
+    const carId = (req.body ?? {}).carId as string | undefined;
+    if (!carId) return res.status(400).json({ error: 'Missing carId.' });
+    const hostClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const { data: car } = await hostClient.from('cars').select('make, model, year, review_status').eq('id', carId).maybeSingle();
+    if (!car || car.review_status !== 'pending') return res.status(200).json({ skipped: true });
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: team } = await admin.from('profiles').select('id').or('is_admin.eq.true,is_owner.eq.true');
+    await Promise.all(
+      (team ?? []).map((t: { id: string }) =>
+        sendPushToUser(admin, t.id, {
+          title: 'New listing to review',
+          body: `${car.year} ${car.make} ${car.model} — goes live in 5 minutes unless you take a look.`,
+          data: { url: '/admin#review' },
+        }),
+      ),
+    );
+    return res.status(200).json({ notified: (team ?? []).length });
+  }
+
   if (!conversationId) {
     return res.status(400).json({ error: 'Missing conversationId.' });
   }

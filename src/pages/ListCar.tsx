@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
-import { Img } from '../components/motion';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { createCar } from '../lib/data/cars';
-import { useCatalog, groupByMake, pickCatalogImage, type CatalogModel } from '../lib/data/catalog';
+import { notifyTeamOfListing } from '../lib/data/listingReview';
+import { useCatalog, groupByMake, type CatalogModel } from '../lib/data/catalog';
+import { PoseCamera, CarPoseGuide } from '../components/PoseCamera';
 import { catalogue } from '../lib/catalogue';
 import { DEFAULT_POLICY, type CancellationPolicy } from '../lib/cancellationPolicy';
 import { CancellationPolicyPicker } from '../components/CancellationPolicy';
@@ -58,7 +59,7 @@ const GENERIC_COLORS = [
   { key: 'orange', label: 'Orange', hex: '#e86f1c' },
 ];
 
-const MAX_PHOTOS = 8;
+const MAX_PHOTOS = 7; // extras, on top of the cover
 const MAX_BYTES = 5 * 1024 * 1024;
 
 interface PendingPhoto {
@@ -104,9 +105,14 @@ export default function ListCar() {
   const [entry, setEntry] = useState<CatalogModel | null>(null);
   const [colorKey, setColorKey] = useState('');
   const [instantBook, setInstantBook] = useState(true);
+  // The cover photo is its own, strict slot (side profile, same shot for every car); photos are the extras.
+  const [cover, setCover] = useState<PendingPhoto | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [photos, setPhotos] = useState<PendingPhoto[]>([]);
+  const coverInput = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const [publishDone, setPublishDone] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [price, setPrice] = useState(95);
   const [pickupEnabled, setPickupEnabled] = useState(true);
   const [cancellationPolicy, setCancellationPolicy] = useState<CancellationPolicy>(DEFAULT_POLICY);
@@ -120,12 +126,36 @@ export default function ListCar() {
 
   const [submitting, setSubmitting] = useState<'draft' | 'published' | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [created, setCreated] = useState<Car | null>(null);
 
   // Object URLs are only for local previews — release them all on unmount.
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   const set = (patch: Partial<typeof form>) => setForm((f) => ({ ...f, ...patch }));
+
+  /** The cover must be the same shot for every car: landscape, big enough, whole car in frame. */
+  const setCoverFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) { setPhotoError(`“${file.name}” isn’t an image file.`); return; }
+    const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {
+      const u = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => { resolve({ w: im.naturalWidth, h: im.naturalHeight }); URL.revokeObjectURL(u); };
+      im.onerror = () => { resolve(null); URL.revokeObjectURL(u); };
+      im.src = u;
+    });
+    if (!dims) { setPhotoError('We could not read that photo — try another one.'); return; }
+    if (dims.h > dims.w * 0.85) {
+      setPhotoError('The cover photo has to be landscape — turn your phone sideways and shoot the whole car from the side.');
+      return;
+    }
+    if (dims.w < 1200) {
+      setPhotoError('That photo is too small. The cover needs at least 1200px wide — use the camera or a larger photo.');
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    objectUrls.current.push(preview);
+    setCover((prev) => { if (prev) URL.revokeObjectURL(prev.preview); return { file, preview }; });
+    setPhotoError(null);
+  };
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -193,7 +223,7 @@ export default function ListCar() {
       Number.isInteger(year) && year >= 1950 && year <= thisYear + 2 &&
       Number(form.seats) >= 1 && Number(form.doors) >= 1 && Number(form.luggage) >= 0,
     ),
-    photos.length >= 1,
+    Boolean(cover),
     price > 0 && (pickupEnabled || deliveryEnabled) && (!deliveryEnabled || deliveryFeeType === 'free' || Number(deliveryFeeAmount) >= 0),
     true,
   ];
@@ -249,7 +279,7 @@ export default function ListCar() {
         deliveryHoursStart: deliveryEnabled ? deliveryHoursStart : undefined,
         deliveryHoursEnd: deliveryEnabled ? deliveryHoursEnd : undefined,
       },
-      photos.map((p) => p.file),
+      [cover!, ...photos].map((p) => p.file),
     );
 
     setSubmitting(null);
@@ -261,73 +291,21 @@ export default function ListCar() {
     // The account just became a host — refresh so the navbar and route
     // guards see it without a reload.
     await refreshProfile();
-    setCreated(car);
-    window.scrollTo({ top: 0 });
+    if (status === 'published' && car.reviewStatus === 'pending') void notifyTeamOfListing(car.id);
 
     if (warning) {
       toast({ title: 'Listing created', desc: warning, icon: 'info' });
     } else {
       toast({
-        title: status === 'published' ? 'Listing published' : 'Draft saved',
-        desc: status === 'published' ? 'Your car is now live on CX.' : 'You can publish it any time.',
+        title: status === 'published' ? 'Sent to the team' : 'Draft saved',
+        desc: status === 'published' ? 'Your car goes live in about 5 minutes.' : 'You can publish it any time.',
         icon: 'sparkles',
       });
     }
+    // Let the success state play out, then back to the host page.
+    setPublishDone(true);
+    window.setTimeout(() => navigate('/host'), 1400);
   };
-
-  /* ---------------- Success ---------------- */
-  if (created) {
-    const isPublished = created.status === 'published';
-    return (
-      <div className="container-page max-w-xl py-16 text-center">
-        <div className="animate-scale-in">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-accent-bright/15 text-accent-bright">
-            <Icon name="checkCircle" size={34} />
-          </span>
-          <h1 className="mt-6 font-display text-3xl font-semibold text-ink sm:text-4xl">
-            {isPublished ? 'Your listing is live.' : 'Draft saved.'}
-          </h1>
-          <p className="mt-3 text-copy text-muted">
-            {isPublished
-              ? `Your ${created.year} ${created.make} ${created.model} is now visible to renters across Europe. You’ll be notified the moment a booking comes in.`
-              : `Your ${created.year} ${created.make} ${created.model} is saved to your fleet. It won’t appear on the marketplace until you publish it.`}
-          </p>
-        </div>
-
-        <div className="card mt-8 overflow-hidden text-left">
-          <Img
-            src={created.images[0]}
-            alt=""
-            className="aspect-[16/9] w-full object-cover"
-            fallback={<span className="grid aspect-[16/9] w-full place-items-center bg-panel text-muted"><Icon name="car" size={32} /></span>}
-          />
-          <div className="p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="min-w-0 truncate font-medium text-ink">{created.make} {created.model}</h2>
-              <span className="shrink-0 text-ink">
-                <span className="font-semibold">{eur(created.pricePerDay)}</span>
-                <span className="text-detail text-muted"> / day</span>
-              </span>
-            </div>
-            <p className="mt-1 text-detail text-muted">
-              {created.year} · {created.category} · {created.location}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link to="/host" className="btn btn-accent-bright btn-lg flex-1">
-            Go to host dashboard <Icon name="arrowRight" size={17} />
-          </Link>
-          {isPublished && (
-            <Link to={`/cars/${created.slug}`} className="btn btn-secondary btn-lg flex-1">
-              View listing
-            </Link>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container-page py-8">
@@ -442,20 +420,6 @@ export default function ListCar() {
                           ))}
                         </div>
                         {colorKey && <p className="mt-1.5 text-caption text-muted">{(entry.images.find((i) => i.colorKey === colorKey)?.colorLabel) ?? GENERIC_COLORS.find((c) => c.key === colorKey)?.label}</p>}
-                      </div>
-                    )}
-                    {entry && (
-                      <div className="sm:col-span-2 overflow-hidden rounded-[22px] border border-line bg-gradient-to-b from-[#f4f5f2] to-white p-4">
-                        {pickCatalogImage(entry.images, colorKey) ? (
-                          <img src={pickCatalogImage(entry.images, colorKey)!.url} alt="" className="mx-auto h-40 w-full object-contain" />
-                        ) : (
-                          <div className="grid h-28 place-items-center text-center text-detail text-muted">
-                            <span>Our studio image of the {entry.make} {entry.model} is being added.<br />Until then, your photos lead the listing.</span>
-                          </div>
-                        )}
-                        <p className="mt-2 text-center text-caption text-muted">
-                          Your listing leads with this studio image; your own photos come right after it.
-                        </p>
                       </div>
                     )}
                   </>
@@ -594,74 +558,105 @@ export default function ListCar() {
           {/* ---------------- Step 1: photos ---------------- */}
           {step === 1 && (
             <div className="animate-fade-up">
-              <h2 className="font-display text-xl font-semibold text-ink">Add photos</h2>
-              <p className="mt-1 text-body text-muted">Listings with 6+ quality photos get booked twice as often. The first is your cover.</p>
+              <h2 className="font-display text-xl font-semibold text-ink">Your photos</h2>
+              <p className="mt-1 text-body text-muted">Every CX car opens with the same shot, so the marketplace stays clean. Then add your own photos.</p>
 
+              <input ref={coverInput} type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void setCoverFile(f); }} />
               <input
                 ref={fileInput}
                 type="file"
                 accept="image/*"
                 multiple
                 className="sr-only"
-                onChange={(e) => {
-                  addFiles(e.target.files);
-                  e.target.value = ''; // let the same file be re-picked
-                }}
+                onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }}
               />
 
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
-                onClick={() => fileInput.current?.click()}
-                className={`mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center transition-colors ${
-                  dragOver ? 'border-accent-bright bg-accent-050' : 'border-line-strong bg-panel/40 hover:border-faint'
-                }`}
-              >
-                <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent shadow-hair">
-                  <Icon name="upload" size={22} />
-                </span>
-                <p className="mt-3 text-body font-medium text-ink">Drag &amp; drop photos here</p>
-                <p className="text-detail text-muted">or click to browse — images up to 5MB, {MAX_PHOTOS} max</p>
+              {/* 1 — the cover */}
+              <div className="mt-6 flex items-center gap-2.5">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-caption font-bold text-white">1</span>
+                <h3 className="font-display text-lg font-semibold text-ink">Cover photo</h3>
+                {cover && <span className="badge badge-accent"><Icon name="check" size={12} /> Done</span>}
               </div>
 
-              {photoError && (
-                <p className="mt-3 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
-                  <Icon name="info" size={16} /> {photoError}
-                </p>
-              )}
-
-              {photos.length > 0 && (
-                <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {photos.map((p, i) => (
-                    <div key={p.preview} className="group relative aspect-square overflow-hidden rounded-xl border border-line">
-                      <img src={p.preview} alt="" className="h-full w-full object-cover" />
-                      {i === 0 && <span className="badge badge-ink absolute left-2 top-2">Cover</span>}
-                      <button
-                        onClick={() => removePhoto(i)}
-                        aria-label="Remove photo"
-                        className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink/70 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                      >
-                        <Icon name="x" size={13} />
-                      </button>
-                    </div>
-                  ))}
-                  {photos.length < MAX_PHOTOS && (
-                    <button
-                      onClick={() => fileInput.current?.click()}
-                      aria-label="Add more photos"
-                      className="grid aspect-square place-items-center rounded-xl border border-dashed border-line-strong text-muted hover:border-faint hover:text-ink"
-                    >
-                      <Icon name="plus" size={22} />
+              <div className="mt-3 overflow-hidden rounded-[24px] border border-line bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e2e5de]">
+                {cover ? (
+                  <div className="relative aspect-[16/10]">
+                    <img src={cover.preview} alt="" className="h-full w-full object-cover" />
+                    <span className="badge badge-ink absolute left-3 top-3">Cover</span>
+                  </div>
+                ) : (
+                  <div className="relative grid aspect-[16/10] place-items-center">
+                    <CarPoseGuide className="w-[78%] text-ink/35" />
+                    <p className="absolute bottom-3 left-0 right-0 text-center text-caption font-semibold text-ink-soft">Whole car · side profile · nose to the left</p>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 border-t border-line bg-white p-3">
+                  {typeof navigator !== 'undefined' && 'mediaDevices' in navigator && (
+                    <button onClick={() => setCameraOpen(true)} className="btn btn-primary btn-sm">
+                      <Icon name="camera" size={15} /> {cover ? 'Retake with the guide' : 'Open camera with guide'}
                     </button>
                   )}
+                  <button onClick={() => coverInput.current?.click()} className="btn btn-secondary btn-sm">
+                    <Icon name="upload" size={15} /> {cover ? 'Choose another' : 'Choose from gallery'}
+                  </button>
                 </div>
+              </div>
+
+              <ul className="mt-3 grid gap-1.5 text-detail text-muted sm:grid-cols-2">
+                {['Phone sideways (landscape)', 'The car’s left side — nose pointing left', 'Whole car in frame, wheels on the ground', 'Clean spot, daylight, no people'].map((t) => (
+                  <li key={t} className="flex items-start gap-2"><Icon name="checkCircle" size={15} className="mt-0.5 shrink-0 text-accent" /> {t}</li>
+                ))}
+              </ul>
+
+              {photoError && (
+                <p className="mt-3 flex items-start gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
+                  <Icon name="info" size={16} className="mt-0.5 shrink-0" /> {photoError}
+                </p>
               )}
 
-              {photos.length === 0 && (
+              {/* 2 — the rest */}
+              <div className="mt-8 flex items-center gap-2.5">
+                <span className={`grid h-7 w-7 place-items-center rounded-full text-caption font-bold ${cover ? 'bg-ink text-white' : 'bg-panel text-faint'}`}>2</span>
+                <h3 className={`font-display text-lg font-semibold ${cover ? 'text-ink' : 'text-faint'}`}>More photos <span className="text-detail font-normal text-muted">· optional, up to {MAX_PHOTOS}</span></h3>
+              </div>
+              <p className="mt-1 text-detail text-muted">Front, rear, interior, dashboard, wheels. They appear right after the cover.</p>
+
+              <div className={`mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 ${cover ? '' : 'pointer-events-none opacity-50'}`}>
+                {photos.map((p, i) => (
+                  <div key={p.preview} className="group relative aspect-square overflow-hidden rounded-xl border border-line">
+                    <img src={p.preview} alt="" className="h-full w-full object-cover" />
+                    <button
+                      onClick={() => removePhoto(i)}
+                      aria-label="Remove photo"
+                      className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-ink/70 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <Icon name="x" size={13} />
+                    </button>
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <button
+                    onClick={() => fileInput.current?.click()}
+                    aria-label="Add photos"
+                    className="grid aspect-square place-items-center rounded-xl border border-dashed border-line-strong text-muted hover:border-faint hover:text-ink"
+                  >
+                    <Icon name="plus" size={22} />
+                  </button>
+                )}
+              </div>
+
+              {!cover && (
                 <p className="mt-4 flex items-center gap-2 text-detail text-muted">
-                  <Icon name="info" size={15} /> At least one photo is required.
+                  <Icon name="info" size={15} /> The cover photo is required to continue.
                 </p>
+              )}
+
+              {cameraOpen && (
+                <PoseCamera
+                  onClose={() => setCameraOpen(false)}
+                  onUnavailable={() => { setCameraOpen(false); coverInput.current?.click(); }}
+                  onCapture={(f) => { setCameraOpen(false); void setCoverFile(f); }}
+                />
               )}
             </div>
           )}
@@ -819,7 +814,7 @@ export default function ListCar() {
 
               <div className="mt-6 overflow-hidden rounded-2xl border border-line">
                 <div className="relative aspect-[16/9] bg-panel-2">
-                  {photos[0] && <img src={photos[0].preview} alt="" className="h-full w-full object-cover" />}
+                  {cover && <img src={cover.preview} alt="" className="h-full w-full object-cover" />}
                   {instantBook && (
                     <span className="badge badge-glass absolute left-3 top-3">
                       <Icon name="instant" size={12} className="text-accent-bright" /> Instant book
@@ -897,11 +892,31 @@ export default function ListCar() {
               </button>
               <button
                 onClick={() => submit('published')}
-                disabled={!!submitting}
-                className="btn btn-accent-bright btn-lg disabled:opacity-60"
+                disabled={!!submitting || publishDone}
+                className={`btn btn-lg relative min-w-[11.5rem] overflow-hidden transition-all duration-500 ${
+                  publishDone ? 'bg-accent text-white' : 'btn-accent-bright'
+                } disabled:opacity-100`}
               >
-                {submitting === 'published' ? 'Publishing…' : 'Publish listing'}
-                {!submitting && <Icon name="check" size={17} strokeWidth={2.5} />}
+                {submitting === 'published' && (
+                  <span aria-hidden className="pointer-events-none absolute inset-0">
+                    <span className="absolute inset-y-0 left-0 w-1/2 animate-[publish-sweep_1.1s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/45 to-transparent" />
+                  </span>
+                )}
+                <span className="relative inline-flex items-center gap-2">
+                  {publishDone ? (
+                    <>
+                      <span className="grid h-5 w-5 animate-scale-in place-items-center rounded-full bg-white/25"><Icon name="check" size={13} strokeWidth={3} /></span>
+                      Sent — back to your fleet
+                    </>
+                  ) : submitting === 'published' ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      Publishing…
+                    </>
+                  ) : (
+                    <>Publish listing <Icon name="check" size={17} strokeWidth={2.5} /></>
+                  )}
+                </span>
               </button>
             </div>
           )}

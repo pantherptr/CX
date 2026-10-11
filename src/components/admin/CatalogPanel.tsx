@@ -11,6 +11,10 @@ import {
   type CatalogModel,
 } from '../../lib/data/catalog';
 
+/** Studio cut-outs per colour were set aside: every listing leads with the host's own cover shot
+ *  (same side-profile pose for every car). The catalogue is now the names + specs hosts pick from. */
+const STUDIO_IMAGES = false;
+
 const CATEGORIES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'] as const;
 const FUELS = ['Petrol', 'Diesel', 'Electric', 'Hybrid'] as const;
 const TRANSMISSIONS = ['Automatic', 'Manual'] as const;
@@ -147,6 +151,8 @@ function ModelDetail({ model, onChanged, onEdit }: { model: CatalogModel; onChan
         </div>
       </div>
 
+      {STUDIO_IMAGES && (
+        <>
       <p className="mt-4 text-caption font-semibold uppercase tracking-wide text-muted">Studio images ({model.images.length})</p>
       {model.images.length === 0 ? (
         <p className="mt-2 rounded-xl bg-panel px-3 py-4 text-center text-detail text-muted">No image yet — listings of this model show the host's photos until one is added.</p>
@@ -197,6 +203,8 @@ function ModelDetail({ model, onChanged, onEdit }: { model: CatalogModel; onChan
         </label>
         <button onClick={upload} disabled={!file || busy} className="btn btn-primary btn-sm mt-2.5 disabled:opacity-50">{busy ? 'Uploading…' : 'Upload'}</button>
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -213,7 +221,6 @@ export function CatalogPanel() {
     return (models ?? []).filter((m) => !s || `${m.make} ${m.model} ${m.version ?? ''}`.toLowerCase().includes(s));
   }, [models, q]);
   const current = (models ?? []).find((m) => m.id === selected) ?? null;
-  const missing = (models ?? []).filter((m) => m.active && m.images.length === 0).length;
 
   if (loading) return <p className="py-10 text-center text-detail text-muted">Loading…</p>;
   if ((models ?? []).length === 0 && mode === 'view') {
@@ -233,7 +240,7 @@ export function CatalogPanel() {
         <div>
           <h2 className="font-display text-lead font-semibold text-ink">Car catalogue</h2>
           <p className="mt-1 text-detail text-muted">
-            {(models ?? []).length} models{missing > 0 ? ` · ${missing} still without a studio image` : ' · all with a studio image'}
+            {(models ?? []).length} models · hosts pick make, model, version and colour from here
           </p>
         </div>
         <button onClick={() => { setMode('new'); setSelected(null); }} className="btn btn-primary btn-sm"><Icon name="plus" size={14} /> Add model</button>
@@ -266,7 +273,7 @@ export function CatalogPanel() {
           {mode === 'new' && <ModelForm onCancel={() => setMode('view')} onSaved={(id) => { setMode('view'); setSelected(id); reload(); }} />}
           {mode === 'edit' && current && <ModelForm initial={current} onCancel={() => setMode('view')} onSaved={() => { setMode('view'); reload(); }} />}
           {mode === 'view' && current && <ModelDetail model={current} onChanged={reload} onEdit={() => setMode('edit')} />}
-          {mode === 'view' && !current && <p className="rounded-xl bg-panel px-4 py-10 text-center text-detail text-muted">Pick a model to manage its images.</p>}
+          {mode === 'view' && !current && <p className="rounded-xl bg-panel px-4 py-10 text-center text-detail text-muted">Pick a model to edit it or hide it from hosts.</p>}
         </div>
       </div>
     </div>

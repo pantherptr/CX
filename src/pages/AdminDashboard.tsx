@@ -11,13 +11,15 @@ import { AdsPanel } from '../components/admin/AdsPanel';
 import { PayoutsPanel } from '../components/admin/PayoutsPanel';
 import { ReportsPanel } from '../components/admin/ReportsPanel';
 import { CatalogPanel } from '../components/admin/CatalogPanel';
+import { ReviewPanel } from '../components/admin/ReviewPanel';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'catalog' | 'signal-demo';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'catalog' | 'review' | 'signal-demo';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'users', label: 'Users', icon: 'users' },
   { id: 'bookings', label: 'Bookings', icon: 'trips' },
+  { id: 'review', label: 'Review', icon: 'checkCircle' },
   { id: 'cars', label: 'Cars', icon: 'cars' },
   { id: 'spotlight', label: 'Spotlight', icon: 'star' },
   { id: 'ads', label: 'Sponsored', icon: 'euro' },
@@ -29,7 +31,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 
 export default function AdminDashboard() {
   const { signOut, profile } = useAuth();
-  const [tab, setTab] = useState<Tab>('verifications');
+  const [tab, setTab] = useState<Tab>(() => (typeof window !== 'undefined' && window.location.hash === '#review' ? 'review' : 'verifications'));
 
   const handleSignOut = async () => {
     await signOut();
@@ -76,6 +78,7 @@ export default function AdminDashboard() {
         {tab === 'payouts' && <PayoutsPanel />}
         {tab === 'reports' && <ReportsPanel />}
         {tab === 'catalog' && <CatalogPanel />}
+        {tab === 'review' && <ReviewPanel />}
         {tab === 'signal-demo' && <SignalDemoPanel />}
       </div>
     </div>

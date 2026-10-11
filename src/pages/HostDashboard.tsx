@@ -707,7 +707,7 @@ export default function HostDashboard() {
   const actionItems = useMemo(() => {
     const soonCutoff = toISO(new Date(Date.now() + 2 * 86_400_000));
     return buildActionItems({
-      draftCars: (hostCars ?? []).filter((c) => c.status === 'draft'),
+      draftCars: (hostCars ?? []).filter((c) => c.status === 'draft' && c.reviewStatus !== 'pending'),
       soonPickups: classified
         .filter((c) => c.phase === 'upcoming' && c.booking.startDate <= soonCutoff)
         .map((c) => c.booking),
@@ -909,8 +909,8 @@ export default function HostDashboard() {
                         fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={28} /></span>}
                       />
                       <span className="absolute left-2.5 top-2.5 badge badge-glass">
-                        <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-accent' : 'bg-faint'}`} />
-                        {published ? 'Published' : 'Draft'}
+                        <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-accent' : c.reviewStatus === 'pending' ? 'animate-pulse bg-[#f5a524]' : c.reviewStatus === 'rejected' ? 'bg-danger' : 'bg-faint'}`} />
+                        {published ? 'Published' : c.reviewStatus === 'pending' ? 'In review · live soon' : c.reviewStatus === 'rejected' && c.reviewNote !== 'Withdrawn by the host' ? 'Needs changes' : 'Draft'}
                       </span>
                     </div>
                     <div className="p-4">
