@@ -274,29 +274,34 @@ function Thread({
 /** The visible area while the on-screen keyboard is up — the phone chat is
  *  pinned to it so the composer never jumps or hides behind the keyboard. */
 /**
- * Keeps --vv-top / --vv-h on <html> equal to the visual viewport, written straight to the DOM
- * (no React render, no rAF) so the chat box moves in the same frame iOS moves the keyboard.
- * While the chat is open the layout viewport is also pinned back to 0 — iOS scrolls it to bring
- * the focused composer into view, which is what used to push the header out of sight.
+ * Keeps --vv-top / --vv-h on <html> equal to the *settled* visual viewport. iOS fires a burst of
+ * resize/scroll events while the keyboard animates and its own pan fights any layout we apply to
+ * them — following every one of those is what made the chat vibrate. So we wait for the burst to
+ * go quiet (and never touch the page scroll ourselves); the box then glides to its final size with
+ * a CSS transition.
  */
 function useVisualViewportVars(enabled: boolean) {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!enabled || !vv) return;
     const root = document.documentElement;
+    let timer = 0;
     const apply = () => {
-      root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+      timer = 0;
+      root.style.setProperty('--vv-top', `${Math.max(0, Math.round(vv.offsetTop))}px`);
       root.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    const later = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(apply, 90);
     };
     apply();
-    vv.addEventListener('resize', apply);
-    vv.addEventListener('scroll', apply);
-    window.addEventListener('scroll', apply, { passive: true });
+    vv.addEventListener('resize', later);
+    vv.addEventListener('scroll', later);
     return () => {
-      vv.removeEventListener('resize', apply);
-      vv.removeEventListener('scroll', apply);
-      window.removeEventListener('scroll', apply);
+      if (timer) window.clearTimeout(timer);
+      vv.removeEventListener('resize', later);
+      vv.removeEventListener('scroll', later);
       root.style.removeProperty('--vv-top');
       root.style.removeProperty('--vv-h');
     };
@@ -640,7 +645,7 @@ export default function Messages() {
           <div aria-hidden className="fixed inset-0 z-[199] bg-[#f4f5f2]" />
           <div
             data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
-            style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)' }}
+            style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)', transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)' }}
             onTouchStart={(e) => {
               const t = e.touches[0];
               edgeSwipe.current = t.clientX < 28 ? { x: t.clientX, y: t.clientY } : null;
