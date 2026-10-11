@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { supabase } from '../supabase';
+import { shrinkImage } from '../shrinkImage';
 import { unsplash } from '../img';
 import { apiUrl } from '../api';
 
@@ -57,6 +58,10 @@ export interface Message {
    *  0024_owner_messaging.sql. `null` for every other account's messages,
    *  and for the Owner's own messages sent as themselves. */
   senderRole: 'owner' | 'owner_assistant' | null;
+  /** A photo attached to the message (private bucket path); the body is '' for photo-only messages. */
+  mediaPath: string | null;
+  /** The sender deleted it — only a "message deleted" tombstone is shown. */
+  deleted: boolean;
 }
 
 export interface Conversation {
@@ -82,17 +87,37 @@ interface ConversationRow {
     user_id: string;
     profile: { id: string; full_name: string | null; avatar_url: string | null; is_owner: boolean; is_admin: boolean; is_host: boolean };
   }[];
-  messages: { id: string; body: string; sender_id: string; created_at: string; read_at: string | null; sender_role: Message['senderRole'] }[];
+  messages: MessageRow[];
 }
 
-const CONVERSATION_SELECT = `
+interface MessageRow {
+  id: string;
+  body: string;
+  sender_id: string;
+  created_at: string;
+  read_at: string | null;
+  sender_role: Message['senderRole'];
+  media_path?: string | null;
+  deleted_at?: string | null;
+}
+
+// Migration 0104 adds media_path / deleted_at. Until it has run, selecting them errors — so we try
+// the extended column list once and fall back to the original one for good if the DB says no.
+let extendedColumns: boolean | null = null;
+const MSG_BASE = 'id, body, sender_id, created_at, read_at, sender_role';
+const msgCols = () => (extendedColumns === false ? MSG_BASE : `${MSG_BASE}, media_path, deleted_at`);
+const isMissingColumn = (err: { message?: string; code?: string } | null) =>
+  !!err && (err.code === '42703' || /media_path|deleted_at/.test(err.message ?? ''));
+
+
+const conversationSelect = () => `
   id, car_id, created_at,
   car:cars (id, slug, make, model, car_images(url, position)),
   participants:conversation_participants (user_id, profile:profiles(id, full_name, avatar_url, is_owner, is_admin, is_host)),
-  messages (id, body, sender_id, created_at, read_at, sender_role)
+  messages (${msgCols()})
 `;
 
-function mapMessage(conversationId: string, row: ConversationRow['messages'][number]): Message {
+function mapMessage(conversationId: string, row: MessageRow): Message {
   return {
     id: row.id,
     conversationId,
@@ -101,6 +126,8 @@ function mapMessage(conversationId: string, row: ConversationRow['messages'][num
     createdAt: row.created_at,
     readAt: row.read_at,
     senderRole: row.sender_role ?? null,
+    mediaPath: row.media_path ?? null,
+    deleted: Boolean(row.deleted_at),
   };
 }
 
@@ -140,11 +167,13 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   const ids = (myRows ?? []).map((r) => r.conversation_id);
   if (!ids.length) return [];
 
-  const { data, error } = await supabase
-    .from('conversations')
-    .select(CONVERSATION_SELECT)
-    .in('id', ids);
+  let { data, error } = await supabase.from('conversations').select(conversationSelect()).in('id', ids);
+  if (error && extendedColumns !== false && isMissingColumn(error)) {
+    extendedColumns = false;
+    ({ data, error } = await supabase.from('conversations').select(conversationSelect()).in('id', ids));
+  }
   if (error) throw error;
+  if (extendedColumns === null) extendedColumns = true;
 
   const mapped = (data as unknown as ConversationRow[]).map((row) => mapConversation(row, userId));
   return mapped.sort((a, b) => {
@@ -222,14 +251,20 @@ export function useConversations(userId: string | undefined) {
 /** Latest messages of a thread, oldest first. Capped so a very long thread does not pull its
  *  whole history on every open (and every refresh) — the newest 300 are what anyone reads. */
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
-  const { data, error } = await supabase
+  const run = () => supabase
     .from('messages')
-    .select('id, body, sender_id, created_at, read_at, sender_role')
+    .select(msgCols())
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(300);
+  let { data, error } = await run();
+  if (error && extendedColumns !== false && isMissingColumn(error)) {
+    extendedColumns = false;
+    ({ data, error } = await run());
+  }
   if (error) throw error;
-  return (data ?? []).reverse().map((row) => mapMessage(conversationId, row));
+  if (extendedColumns === null) extendedColumns = true;
+  return ((data ?? []) as unknown as MessageRow[]).reverse().map((row) => mapMessage(conversationId, row));
 }
 
 // The last thread we loaded for each conversation. Opening one shows these straight away and
@@ -314,6 +349,15 @@ export function useConversation(conversationId: string | null) {
           setFor(id, (prev) => (prev && !prev.some((m) => m.id === row.id) ? [...prev, mapMessage(id, row)] : prev));
         },
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${id}` },
+        (payload) => {
+          // Read receipts turning blue and "message deleted" show up live.
+          const row = payload.new as MessageRow;
+          setFor(id, (prev) => (prev ? prev.map((m) => (m.id === row.id ? mapMessage(id, row) : m)) : prev));
+        },
+      )
       .subscribe((status) => {
         // Anything sent between the first load and the subscription going live is caught here.
         if (status === 'SUBSCRIBED') { inflight.delete(id); sync(); }
@@ -349,16 +393,78 @@ export async function sendMessage(
   body: string,
   senderRole?: 'owner' | 'owner_assistant',
 ): Promise<{ error: string | null; message: Message | null }> {
-  const { data, error } = await supabase
+  return insertMessage(conversationId, { sender_id: senderId, body, sender_role: senderRole ?? null }, body);
+}
+
+async function insertMessage(
+  conversationId: string,
+  fields: Record<string, unknown>,
+  pushText: string,
+): Promise<{ error: string | null; message: Message | null }> {
+  const run = () => supabase
     .from('messages')
-    .insert({ conversation_id: conversationId, sender_id: senderId, body, sender_role: senderRole ?? null })
-    .select('id, body, sender_id, created_at, read_at, sender_role')
+    .insert({ conversation_id: conversationId, ...fields })
+    .select(msgCols())
     .maybeSingle();
-  if (!error) void notifyRecipients(conversationId, body);
+  let { data, error } = await run();
+  if (error && extendedColumns !== false && isMissingColumn(error)) {
+    extendedColumns = false;
+    ({ data, error } = await run());
+  }
+  if (!error) void notifyRecipients(conversationId, pushText);
   return {
     error: error?.message ?? null,
-    message: data ? mapMessage(conversationId, data as ConversationRow['messages'][number]) : null,
+    message: data ? mapMessage(conversationId, data as unknown as MessageRow) : null,
   };
+}
+
+// ------------------------------------------------------------------ photos
+
+const CHAT_BUCKET = 'chat-media';
+
+/** Sends a photo (optionally with a caption). Needs migration 0104. */
+export async function sendPhotoMessage(
+  conversationId: string,
+  senderId: string,
+  original: File,
+  caption: string,
+  senderRole?: 'owner' | 'owner_assistant',
+): Promise<{ error: string | null; message: Message | null }> {
+  if (extendedColumns === false) return { error: 'Photos are not available yet.', message: null };
+  const file = await shrinkImage(original, 1600, 0.82);
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  const path = `${conversationId}/${crypto.randomUUID()}.${ext}`;
+  const up = await supabase.storage.from(CHAT_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false, contentType: file.type || 'image/jpeg' });
+  if (up.error) return { error: up.error.message, message: null };
+  const res = await insertMessage(conversationId, { sender_id: senderId, body: caption, sender_role: senderRole ?? null, media_path: path }, caption || '📷 Photo');
+  if (res.error) await supabase.storage.from(CHAT_BUCKET).remove([path]);
+  return res;
+}
+
+const signedCache = new Map<string, { url: string; exp: number }>();
+
+/** A short-lived link to a chat photo (cached for most of its hour). */
+export async function chatMediaUrl(path: string): Promise<string | null> {
+  const hit = signedCache.get(path);
+  if (hit && hit.exp > Date.now()) return hit.url;
+  const { data, error } = await supabase.storage.from(CHAT_BUCKET).createSignedUrl(path, 3600);
+  if (error || !data) return null;
+  signedCache.set(path, { url: data.signedUrl, exp: Date.now() + 50 * 60 * 1000 });
+  return data.signedUrl;
+}
+
+/** Deletes one of your own messages (tombstone) and its photo. Needs migration 0104. */
+export async function deleteMyMessage(id: string): Promise<{ error: string | null }> {
+  const { data, error } = await supabase.rpc('delete_my_message', { p_id: id });
+  if (error) return { error: error.message };
+  if (typeof data === 'string' && data) await supabase.storage.from(CHAT_BUCKET).remove([data]);
+  return { error: null };
+}
+
+/** Reports the other person in a conversation (optionally pointing at a message). Needs migration 0104. */
+export async function reportChatUser(conversationId: string, messageId: string | null, reason: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('report_chat_user', { p_conversation_id: conversationId, p_message_id: messageId, p_reason: reason });
+  return { error: error ? error.message : null };
 }
 
 // Fire-and-forget push to the other participant(s) — see

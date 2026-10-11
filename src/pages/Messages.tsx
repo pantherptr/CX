@@ -13,6 +13,10 @@ import {
   useConversation,
   prefetchConversation,
   sendMessage,
+  sendPhotoMessage,
+  deleteMyMessage,
+  reportChatUser,
+  chatMediaUrl,
   markConversationRead,
   findOrCreateConversation,
   searchUsersForMessaging,
@@ -27,7 +31,7 @@ import type { Message } from '../lib/data/messages';
 type SendAsRole = 'owner' | 'owner_assistant';
 
 /** Tap the name in a phone chat: who you are talking to, at a glance, with the shortcuts that matter. */
-function ChatProfileSheet({ active, myId, messages, onClose }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void }) {
+function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void }) {
   const other = active.other;
   const isCx = other.role === 'cx';
   const sent = (messages ?? []).filter((m) => m.senderId === myId).length;
@@ -96,7 +100,12 @@ function ChatProfileSheet({ active, myId, messages, onClose }: { active: Convers
               View profile
             </Link>
           )}
-          <p className="mt-3 text-caption text-faint">Payments and contact details stay inside CX.</p>
+          {!isCx && (
+            <button onClick={() => { onClose(); onReport(); }} className="pressable mt-2 rounded-full px-4 py-2 text-caption font-semibold text-danger active:bg-danger/10">
+              Report {other.name}
+            </button>
+          )}
+          <p className="mt-1 text-caption text-faint">Payments and contact details stay inside CX.</p>
         </div>
       </div>
     </div>
@@ -170,6 +179,12 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
   );
 }
 
+/** One-tap answers above the composer (hosts and clients say the same handful of things). */
+const QUICK_REPLIES: Record<'host' | 'client', string[]> = {
+  host: ['On my way — 10 minutes', 'Where shall we meet?', 'All good, thank you!', 'Please send me a photo'],
+  client: ['Is it still available?', 'What time is pickup?', 'Thank you so much!', 'I am running a few minutes late'],
+};
+
 const ROLE_SUBTITLE: Record<string, string> = { host: 'Host', client: 'Client', owner: 'Owner', admin: 'Admin', owner_assistant: 'Assistant' };
 
 const fmtTime = (iso: string) => {
@@ -225,7 +240,7 @@ function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active
         {c.car && <p className="mt-0.5 truncate text-caption font-semibold text-accent">{c.car.make} {c.car.model}</p>}
         <div className="mt-0.5 flex items-center justify-between gap-2">
           <p className={`truncate text-[14px] leading-snug ${unread ? 'font-medium text-ink' : 'text-muted'}`}>
-            {c.lastMessage ? <>{mine && <span className="text-faint">You: </span>}{c.lastMessage.body}</> : 'No messages yet'}
+            {c.lastMessage ? <>{mine && <span className="text-faint">You: </span>}{c.lastMessage.deleted ? 'Message deleted' : c.lastMessage.mediaPath && !c.lastMessage.body ? '📷 Photo' : c.lastMessage.body}</> : 'No messages yet'}
           </p>
           {unread && (
             <span className="grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent px-1.5 text-label font-bold text-white shadow-[0_4px_10px_-3px_rgba(0,133,54,0.6)]">
@@ -265,6 +280,29 @@ interface PendingMessage {
   conversationId: string;
   body: string;
   status: 'sending' | 'failed';
+  /** A photo being sent (body is its caption). */
+  file?: File;
+  previewUrl?: string;
+}
+
+/** A chat photo: fetched through a short-lived signed link, tap to view full screen. */
+function ChatPhoto({ path, onOpen, className = '' }: { path: string; onOpen: (url: string) => void; className?: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let off = false;
+    setUrl(null);
+    setFailed(false);
+    chatMediaUrl(path).then((u) => { if (off) return; if (u) setUrl(u); else setFailed(true); });
+    return () => { off = true; };
+  }, [path]);
+  if (failed) return <div className={`grid h-28 w-44 place-items-center rounded-2xl bg-black/[0.05] text-caption text-muted ${className}`}>Photo unavailable</div>;
+  if (!url) return <div className={`h-40 w-52 animate-pulse rounded-2xl bg-black/[0.06] ${className}`} />;
+  return (
+    <button type="button" onClick={(e) => { e.stopPropagation(); onOpen(url); }} className={`block overflow-hidden rounded-2xl ${className}`}>
+      <img src={url} alt="" loading="lazy" className="block max-h-72 w-full min-w-[9rem] max-w-[15rem] object-cover" />
+    </button>
+  );
 }
 
 /** The message stream — one renderer for both layouts. `large` is the phone
@@ -281,6 +319,8 @@ function Thread({
   large = false,
   ownerIdentity = false,
   typing = false,
+  onDelete,
+  onReport,
 }: {
   messages: Message[] | null;
   pending: PendingMessage[];
@@ -294,7 +334,12 @@ function Thread({
   ownerIdentity?: boolean;
   /** The other person is typing right now. */
   typing?: boolean;
+  /** Delete one of your own messages / report someone else's. */
+  onDelete?: (id: string) => void;
+  onReport?: (id: string) => void;
 }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<string | null>(null);
   const t = large
     ? { gap: 'space-y-[3px]', bubble: 'max-w-[80%] rounded-[20px] px-3.5 py-[9px] text-[15.5px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-3 py-1', note: 'text-[12px] px-3.5 py-2', tick: 'h-3.5 w-3.5' }
     : { gap: 'space-y-[3px]', bubble: 'max-w-[78%] rounded-[18px] px-3.5 py-[8px] text-[14px] leading-[1.35]', time: 'text-[11px]', day: 'text-[11px] px-2.5 py-0.5', note: 'text-[11.5px] px-3 py-1', tick: 'h-3.5 w-3.5' };
@@ -342,15 +387,37 @@ function Thread({
               )}
               <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} ${first && !showDay ? 'mt-2.5' : ''}`}>
                 {first && (!mine || ownerIdentity) && <RoleLabel role={role} align={mine ? 'right' : 'left'} />}
-                <div
-                  className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} ${
-                    mine
-                      ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-accent-bright ${last ? 'rounded-br-[6px]' : ''}`
-                      : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-accent ${last ? 'rounded-bl-[6px]' : ''}`
-                  } ${freshIds.has(m.id) ? 'chat-in-left' : ''}`}
-                >
-                  {m.body}
-                </div>
+                {m.deleted ? (
+                  <div className={`${t.bubble} border border-dashed border-black/15 italic text-muted`}>Message deleted</div>
+                ) : (
+                  <div
+                    onClick={() => setSelectedId((cur) => (cur === m.id ? null : m.id))}
+                    className={`cursor-pointer whitespace-pre-wrap [overflow-wrap:anywhere] ${m.mediaPath ? 'max-w-[80%] rounded-[20px] p-1 text-[15px] leading-[1.35]' : t.bubble} ${
+                      mine
+                        ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-accent-bright ${last ? 'rounded-br-[6px]' : ''}`
+                        : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-accent ${last ? 'rounded-bl-[6px]' : ''}`
+                    } ${freshIds.has(m.id) ? 'chat-in-left' : ''}`}
+                  >
+                    {m.mediaPath && <ChatPhoto path={m.mediaPath} onOpen={setZoom} />}
+                    {m.body && <div className={m.mediaPath ? 'px-2.5 pb-1.5 pt-1.5' : ''}>{m.body}</div>}
+                  </div>
+                )}
+                {selectedId === m.id && !m.deleted && (
+                  <div className="chat-in-left mt-1 flex items-center gap-1 rounded-full bg-white p-1 shadow-[0_6px_20px_-8px_rgba(22,22,26,0.4)] ring-1 ring-black/[0.05]">
+                    {m.body && (
+                      <button
+                        className="rounded-full px-3 py-1.5 text-caption font-semibold text-ink active:bg-panel"
+                        onClick={() => { void navigator.clipboard?.writeText(m.body); setSelectedId(null); }}
+                      >Copy</button>
+                    )}
+                    {mine && onDelete && (
+                      <button className="rounded-full px-3 py-1.5 text-caption font-semibold text-danger active:bg-danger/10" onClick={() => { setSelectedId(null); onDelete(m.id); }}>Delete</button>
+                    )}
+                    {!mine && onReport && (
+                      <button className="rounded-full px-3 py-1.5 text-caption font-semibold text-danger active:bg-danger/10" onClick={() => { setSelectedId(null); onReport(m.id); }}>Report</button>
+                    )}
+                  </div>
+                )}
                 {last && (
                   <p className={`mt-1 flex items-center gap-1 px-1 text-faint ${t.time}`}>
                     {fmtBubbleTime(m.createdAt)}
@@ -373,7 +440,10 @@ function Thread({
       )}
       {pending.map((p) => (
         <div key={p.localId} className={`flex flex-col items-end pt-1 chat-in-right`}>
-          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${t.bubble} rounded-br-[6px] transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-accent-bright'}`}>{p.body}</div>
+          <div className={`whitespace-pre-wrap [overflow-wrap:anywhere] ${p.previewUrl ? 'max-w-[80%] rounded-[20px] p-1 text-[15px]' : t.bubble} rounded-br-[6px] transition-opacity ${p.status === 'failed' ? 'bg-danger/10 text-danger' : 'bg-ink/75 text-accent-bright'}`}>
+            {p.previewUrl && <img src={p.previewUrl} alt="" className="block max-h-72 w-full max-w-[15rem] rounded-2xl object-cover opacity-80" />}
+            {p.body && <div className={p.previewUrl ? 'px-2.5 pb-1.5 pt-1.5' : ''}>{p.body}</div>}
+          </div>
           <p className={`mt-1 flex items-center gap-2 px-1 ${t.time}`}>
             {p.status === 'sending' ? (
               <span className="text-faint">Sending…</span>
@@ -387,6 +457,14 @@ function Thread({
           </p>
         </div>
       ))}
+      {zoom && (
+        <div className="fixed inset-0 z-[300] grid place-items-center bg-black/90 p-3" onClick={() => setZoom(null)} role="dialog" aria-label="Photo">
+          <img src={zoom} alt="" className="max-h-full max-w-full rounded-xl object-contain" />
+          <button aria-label="Close" className="absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top,0px))] grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur" onClick={() => setZoom(null)}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -592,31 +670,48 @@ export default function Messages() {
     });
   };
 
-  const attemptSend = async (localId: string, conversationId: string, body: string) => {
+  const attemptSend = async (localId: string, conversationId: string, body: string, file?: File) => {
     setPending((prev) => prev.map((p) => (p.localId === localId ? { ...p, status: 'sending' } : p)));
-    const { error, message } = await sendMessage(conversationId, session!.user.id, body, profile?.is_owner ? sendAsRole : undefined);
+    const role = profile?.is_owner ? sendAsRole : undefined;
+    const { error, message } = file
+      ? await sendPhotoMessage(conversationId, session!.user.id, file, body, role)
+      : await sendMessage(conversationId, session!.user.id, body, role);
     if (error) {
       setPending((prev) => prev.map((p) => (p.localId === localId ? { ...p, status: 'failed' } : p)));
+      if (file) toast({ title: 'Photo not sent', desc: error, icon: 'image' });
       return;
     }
     // Swap the placeholder for the real message in the SAME render: the saved row (from the insert's
     // own response) goes into the thread while the placeholder is removed — the bubble never blinks
     // out and back in. The realtime copy of it arrives later and is ignored (same id).
     if (message) append(message);
-    setPending((prev) => prev.filter((p) => p.localId !== localId));
+    setPending((prev) => {
+      const gone = prev.find((p) => p.localId === localId);
+      if (gone?.previewUrl) URL.revokeObjectURL(gone.previewUrl);
+      return prev.filter((p) => p.localId !== localId);
+    });
     refresh();
   };
 
-  const send = () => {
-    const body = text.trim();
-    if (!body || !activeId || !session) return;
+  const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const pickPhoto = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast({ title: 'Photos only', desc: 'Choose an image.', icon: 'image' }); return; }
+    setPhoto((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { file, url: URL.createObjectURL(file) }; });
+  };
+  const clearPhoto = () => setPhoto((prev) => { if (prev) URL.revokeObjectURL(prev.url); return null; });
+
+  const send = (override?: string) => {
+    const body = (override ?? text).trim();
+    if ((!body && !photo) || !activeId || !session) return;
     // Talking to CX is open; between members, contact details and off-app
     // payments stay out (the database hides them too — migration 0070).
-    if (!profile?.is_owner && active?.other.role !== 'cx' && hasContactInfo(body)) {
+    if (body && !profile?.is_owner && active?.other.role !== 'cx' && hasContactInfo(body)) {
       toast({ title: 'Keep it inside CX', desc: CONTACT_WARNING, icon: 'shield' });
       return;
     }
-    setText('');
+    if (override === undefined) setText('');
     presence.notifyTyping(false);
     // Collapse the auto-grown composer back to one line with the text, and keep the keyboard up:
     // sending must not blur the field (that closes the keyboard and the whole layout jumps).
@@ -626,16 +721,39 @@ export default function Messages() {
     }
     haptics.tick();
     const localId = crypto.randomUUID();
-    setPending((prev) => [...prev, { localId, conversationId: activeId, body, status: 'sending' }]);
-    void attemptSend(localId, activeId, body);
+    const file = photo?.file;
+    const previewUrl = photo?.url;
+    // The preview URL now belongs to the pending bubble (revoked once it is delivered / dismissed).
+    if (photo) setPhoto(null);
+    setPending((prev) => [...prev, { localId, conversationId: activeId, body, status: 'sending', file, previewUrl }]);
+    void attemptSend(localId, activeId, body, file);
   };
 
   const retrySend = (p: PendingMessage) => {
-    void attemptSend(p.localId, p.conversationId, p.body);
+    void attemptSend(p.localId, p.conversationId, p.body, p.file);
   };
 
   const dismissFailed = (localId: string) => {
-    setPending((prev) => prev.filter((p) => p.localId !== localId));
+    setPending((prev) => {
+      const gone = prev.find((p) => p.localId === localId);
+      if (gone?.previewUrl) URL.revokeObjectURL(gone.previewUrl);
+      return prev.filter((p) => p.localId !== localId);
+    });
+  };
+
+  const deleteMessage = async (id: string) => {
+    if (!window.confirm('Delete this message for everyone?')) return;
+    const { error } = await deleteMyMessage(id);
+    if (error) toast({ title: 'Could not delete', desc: error, icon: 'trash' });
+    else refresh();
+  };
+
+  const reportMessage = async (id: string | null) => {
+    if (!activeId) return;
+    if (!window.confirm('Report this to CX? Our team will review the conversation.')) return;
+    const { error } = await reportChatUser(activeId, id, id ? 'Reported message' : 'Reported user');
+    if (error) toast({ title: 'Could not send report', desc: error, icon: 'shield' });
+    else toast({ title: 'Report sent', desc: 'Thank you — CX will take a look.', icon: 'shield' });
   };
 
   return (
@@ -654,7 +772,7 @@ export default function Messages() {
             name: c.other.name,
             initial: c.other.name?.[0]?.toUpperCase() ?? '?',
             avatarUrl: c.other.avatar,
-            lastMsg: c.lastMessage ? c.lastMessage.body : 'No messages yet',
+            lastMsg: c.lastMessage ? (c.lastMessage.deleted ? 'Message deleted' : c.lastMessage.mediaPath && !c.lastMessage.body ? '📷 Photo' : c.lastMessage.body) : 'No messages yet',
             time: c.lastMessage ? fmtTime(c.lastMessage.createdAt) : '',
             unreadCount: c.unreadCount,
             isActive: c.id === activeId,
@@ -681,7 +799,23 @@ export default function Messages() {
                     <button onClick={() => setSendAsRole('owner_assistant')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner_assistant' ? 'bg-amber-100 text-amber-800' : 'text-neutral-500 hover:bg-black/5'}`}>Owner Assistant</button>
                   </div>
                 )}
+                {photo && (
+                  <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-white p-1 pr-2 ring-1 ring-black/[0.05]">
+                    <img src={photo.url} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-neutral-700">Photo ready</span>
+                    <button onClick={clearPhoto} aria-label="Remove photo" className="grid h-6 w-6 place-items-center rounded-full bg-black/[0.05]"><Icon name="x" size={12} /></button>
+                  </div>
+                )}
+                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
                 <div className="flex items-end gap-1.5 rounded-[22px] bg-white p-1 shadow-[0_6px_20px_-8px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05] transition-shadow focus-within:shadow-[0_8px_24px_-8px_rgba(0,133,54,0.35)] focus-within:ring-accent/40">
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    aria-label="Attach a photo"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-accent transition-colors hover:bg-accent/10"
+                  >
+                    <Icon name="image" size={16} />
+                  </button>
                   <textarea
                     rows={1}
                     value={text}
@@ -702,8 +836,8 @@ export default function Messages() {
                   />
                   <button
                     onPointerDown={(e) => e.preventDefault()}
-                    onClick={send}
-                    disabled={!text.trim()}
+                    onClick={() => send()}
+                    disabled={!text.trim() && !photo}
                     aria-label="Send"
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-white shadow-[0_5px_12px_-4px_rgba(0,133,54,0.6)] transition-[transform,opacity] active:scale-90 disabled:bg-none disabled:bg-neutral-100 disabled:text-neutral-400 disabled:shadow-none"
                   >
@@ -718,6 +852,8 @@ export default function Messages() {
             <Thread
                 ownerIdentity={!!profile?.is_owner}
               typing={presence.typing}
+              onDelete={deleteMessage}
+              onReport={reportMessage}
               messages={messages}
               pending={pendingForActive}
               active={active}
@@ -881,6 +1017,8 @@ export default function Messages() {
                 ownerIdentity={!!profile?.is_owner}
                 large
                 typing={presence.typing}
+                onDelete={deleteMessage}
+                onReport={reportMessage}
                 messages={messages}
                 pending={pendingForActive}
                 active={active}
@@ -916,7 +1054,38 @@ export default function Messages() {
                   </button>
                 </div>
               )}
+              {photo && (
+                <div className="chat-in-left mb-2 flex items-center gap-2 rounded-2xl bg-white p-1.5 pr-2.5 shadow-[0_6px_20px_-10px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05]">
+                  <img src={photo.url} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-ink">Photo ready — add a caption or send</span>
+                  <button onClick={clearPhoto} aria-label="Remove photo" className="pressable grid h-8 w-8 place-items-center rounded-full bg-black/[0.05] text-ink active:scale-90"><Icon name="x" size={16} /></button>
+                </div>
+              )}
+              {!photo && !text.trim() && messages !== null && active?.other.role !== 'cx' && (
+                <div className="-mx-3 mb-2 flex gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {QUICK_REPLIES[profile?.is_host ? 'host' : 'client'].map((q) => (
+                    <button
+                      key={q}
+                      onPointerDown={(e) => e.preventDefault()}
+                      onClick={() => send(q)}
+                      className="pressable shrink-0 rounded-full bg-white px-3.5 py-2 text-caption font-semibold text-accent shadow-[0_4px_14px_-8px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.05] active:scale-95"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
               <div className="flex items-end gap-1.5 rounded-[28px] bg-white p-1.5 shadow-[0_8px_28px_-10px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05] transition-shadow focus-within:shadow-[0_10px_32px_-10px_rgba(0,133,54,0.35)] focus-within:ring-accent/40">
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => photoInputRef.current?.click()}
+                  aria-label="Attach a photo"
+                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-accent transition-transform active:scale-90 active:bg-accent/10"
+                >
+                  <Icon name="image" size={20} />
+                </button>
                 <textarea
                   ref={composerRef}
                   rows={1}
@@ -940,8 +1109,8 @@ export default function Messages() {
                 <button
                   // Do not take focus from the field: the keyboard stays up and nothing resizes.
                   onPointerDown={(e) => e.preventDefault()}
-                  onClick={send}
-                  disabled={!text.trim()}
+                  onClick={() => send()}
+                  disabled={!text.trim() && !photo}
                   className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-white shadow-[0_6px_14px_-4px_rgba(0,133,54,0.6)] transition-[opacity,transform,background,box-shadow] duration-200 active:scale-90 disabled:bg-none disabled:bg-panel disabled:text-faint disabled:shadow-none"
                   aria-label="Send"
                 >
@@ -955,6 +1124,7 @@ export default function Messages() {
                 active={active}
                 myId={session?.user.id}
                 messages={messages}
+                onReport={() => void reportMessage(null)}
                 onClose={() => setProfileOpen(false)}
               />
             )}

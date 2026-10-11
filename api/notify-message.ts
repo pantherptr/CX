@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendPushToUser(adminClient, recipientId, {
         title: senderName,
         body,
-        data: { url: '/messages' },
+        data: { url: `/messages?c=${conversationId}` },
       }),
     ),
   );
