@@ -2049,44 +2049,75 @@ html[data-theme='dark'] .dock-a { box-shadow: 0 0 22px -4px rgba(0, 212, 71, 0.6
 html[data-theme='dark'] .dock-rim path { stroke-opacity: 1; }
 html[data-theme='dark'] img[data-invert-dark] { filter: invert(1) hue-rotate(180deg) brightness(1.05); }
 
-/* ---- Hero car: drives in from the right, brakes, lights on, two exhaust pops ---- */
+/* ---- Hero car: drives in from the right, brakes hard, settles on its suspension, lights on,
+        idles, then two exhaust pops. Everything is transform / opacity / filter only. ---- */
 .hero-car { overflow: visible; }
-.hero-car-body { animation: hero-car-in 1.9s cubic-bezier(0.12, 0.8, 0.22, 1) 0.5s both; will-change: transform, filter; }
+.hero-car-body {
+  animation: hero-car-in 2.5s cubic-bezier(0.06, 0.62, 0.12, 1) 0.5s both, hero-car-idle 0.14s linear 3.1s 18;
+  will-change: transform, filter;
+}
 @keyframes hero-car-in {
-  0%   { transform: translateX(115vw) skewX(-7deg); filter: blur(7px); }
-  55%  { filter: blur(2px); }
-  78%  { transform: translateX(-1.2%) skewX(1.5deg); filter: blur(0); }
-  100% { transform: translateX(0) skewX(0); filter: blur(0); }
+  0%   { transform: translateX(118vw) skewX(-6deg); filter: blur(10px); }
+  30%  { filter: blur(5px); }
+  62%  { transform: translateX(7%) skewX(-1.5deg) scale(1); filter: blur(1.2px); }
+  80%  { transform: translateX(0.6%) skewX(0) scale(1.018); filter: blur(0); }
+  91%  { transform: translateX(0) scale(0.996); }
+  100% { transform: translateX(0) scale(1); filter: blur(0); }
 }
-.hero-beam {
-  position: absolute; left: -12%; width: 21%; height: 11%; transform: translateY(-50%);
-  background: radial-gradient(ellipse at right center, rgba(255, 255, 255, 0.9) 0%, rgba(230, 255, 238, 0.45) 30%, rgba(0, 212, 71, 0.1) 60%, transparent 78%);
-  filter: blur(3px); mix-blend-mode: screen; opacity: 0; pointer-events: none;
-  animation: hero-beam 3.4s ease-out 2.05s both;
+@keyframes hero-car-idle { 0%, 100% { translate: 0 0; } 50% { translate: 0.4px 0.6px; } }
+
+.hero-streak {
+  position: absolute; left: 92%; top: 22%; width: 70%; height: 56%; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, rgba(190, 255, 215, 0.38), rgba(190, 255, 215, 0.1) 40%, transparent);
+  filter: blur(14px); mix-blend-mode: screen;
+  animation: hero-streak 2.2s ease-out 0.5s both;
 }
-@keyframes hero-beam { 0% { opacity: 0; } 14% { opacity: 1; } 30% { opacity: 0.25; } 46% { opacity: 1; } 100% { opacity: 0.55; } }
+@keyframes hero-streak { 0% { opacity: 0.9; } 55% { opacity: 0.55; } 100% { opacity: 0; } }
+
+/* A lamp: a small bright slit sitting exactly on the real headlight / taillight of the photo. */
+.hero-lamp {
+  position: absolute; width: 7.4%; height: 3%; border-radius: 999px; pointer-events: none; opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg));
+}
+.hero-head {
+  background: linear-gradient(90deg, #ffffff, #eafff1);
+  box-shadow: 0 0 6px 2px #fff, 0 0 18px 7px rgba(215, 255, 230, 0.85), 0 0 38px 14px rgba(0, 212, 71, 0.35);
+  animation: hero-head 3.4s ease-out 2.45s both;
+}
+@keyframes hero-head { 0% { opacity: 0; } 8% { opacity: 1; } 22% { opacity: 0.35; } 36% { opacity: 1; } 100% { opacity: 0.9; } }
 .hero-tail {
-  position: absolute; width: 6%; height: 9%; transform: translate(-50%, -50%); border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 70, 60, 0.95), rgba(255, 30, 20, 0.35) 50%, transparent 72%);
-  filter: blur(3px); opacity: 0; pointer-events: none;
-  animation: hero-tail 2.6s ease-out 2s both;
+  background: linear-gradient(90deg, #ff9a8f, #ff3b2f);
+  box-shadow: 0 0 5px 2px rgba(255, 70, 55, 0.95), 0 0 16px 6px rgba(255, 30, 20, 0.6);
+  animation: hero-tail 2.6s ease-out 2.4s both;
 }
-@keyframes hero-tail { 0% { opacity: 0; } 12% { opacity: 1; } 60% { opacity: 0.95; } 100% { opacity: 0.35; } }
+@keyframes hero-tail { 0% { opacity: 0; } 10% { opacity: 1; } 55% { opacity: 1; } 100% { opacity: 0.45; } }
+
+/* The beam: starts at the lamp and opens up and to the side, like a real low beam seen from above. */
+.hero-beam {
+  position: absolute; left: -15%; width: 24%; height: 13%; transform: translateY(-50%) rotate(var(--r, 0deg)); transform-origin: right center;
+  background: radial-gradient(ellipse at right center, rgba(255, 255, 255, 0.9) 0%, rgba(235, 255, 242, 0.5) 28%, rgba(0, 212, 71, 0.12) 62%, transparent 80%);
+  clip-path: polygon(100% 38%, 0 0, 0 100%, 100% 62%);
+  filter: blur(3px); mix-blend-mode: screen; opacity: 0; pointer-events: none;
+  animation: hero-beam 3.4s ease-out 2.45s both;
+}
+@keyframes hero-beam { 0% { opacity: 0; } 8% { opacity: 1; } 22% { opacity: 0.3; } 36% { opacity: 1; } 100% { opacity: 0.6; } }
+
 .hero-flame {
-  position: absolute; left: 97.5%; width: 11%; height: 5.5%; transform-origin: left center; transform: translateY(-50%) scaleX(0);
+  position: absolute; left: 97.4%; width: 10%; height: 4.6%; transform-origin: left center; transform: translateY(-50%) scaleX(0);
   background: radial-gradient(ellipse at left center, #fffbe8 0%, #ffd36a 22%, #ff8a1f 48%, rgba(255, 70, 0, 0.55) 68%, transparent 82%);
   filter: blur(1.5px); mix-blend-mode: screen; opacity: 0; pointer-events: none;
-  animation: hero-flame 0.42s ease-out both;
+  animation: hero-flame 0.38s ease-out both;
 }
 @keyframes hero-flame {
   0% { opacity: 0; transform: translateY(-50%) scaleX(0.1); }
-  22% { opacity: 1; transform: translateY(-50%) scaleX(1); }
+  20% { opacity: 1; transform: translateY(-50%) scaleX(1); }
   60% { opacity: 0.8; transform: translateY(-50%) scaleX(0.7) scaleY(0.8); }
   100% { opacity: 0; transform: translateY(-50%) scaleX(0.3) scaleY(0.4); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-car-body, .hero-beam, .hero-tail, .hero-flame { animation: none; }
-  .hero-beam, .hero-tail { opacity: 0.5; }
+  .hero-car-body, .hero-beam, .hero-lamp, .hero-flame, .hero-streak { animation: none; }
+  .hero-lamp { opacity: 0.8; }
+  .hero-beam { opacity: 0.5; }
 }
 
 /* ---- The bat: black with a green spotlight behind it ---- */

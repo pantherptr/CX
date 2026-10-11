@@ -25,8 +25,8 @@ export default function About() {
     <div>
       <PageHero
         eyebrow="Our story"
-        title="The premium way to move across Europe."
-        lead={`CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves. Today we connect drivers with trusted local hosts across ${catalogue.cities} European cities — and we’re just getting started.`}
+        title="The premium way to move around the world."
+        lead="CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves. Today we connect drivers with trusted local hosts all over the world — and we’re just getting started."
       />
       <section className="container-page -mt-8 sm:-mt-12">
         <Reveal>
@@ -45,7 +45,7 @@ export default function About() {
       <section className="container-page mt-16">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { v: String(catalogue.cities), l: 'European cities' },
+            { v: '24/7', l: 'Support' },
             { v: String(catalogue.vehicles), l: 'Cars listed' },
             { v: String(catalogue.hosts), l: 'Verified hosts' },
             { v: catalogue.meanRating.toFixed(2), l: 'Average rating', star: true },

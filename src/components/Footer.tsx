@@ -88,7 +88,7 @@ export function Footer() {
           <div className="max-w-xs">
             <Logo variant="wordmark" />
             <p className="mt-5 text-body leading-relaxed text-muted text-pretty">
-              {t('The premium marketplace for car rental across Europe.')}
+              {t('The premium marketplace for car rental, worldwide.')}
             </p>
             <p className="mt-4 font-display text-copy font-semibold text-ink">
               {t('Rent. Drive. Experience.')}

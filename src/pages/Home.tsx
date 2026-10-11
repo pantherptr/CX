@@ -9,7 +9,6 @@ import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
-import { catalogue } from '../lib/catalogue';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
@@ -192,12 +191,15 @@ export default function Home() {
                 style={{ aspectRatio: '859 / 386' }}
               >
                 <div className="hero-car-body relative h-full w-full">
-                  <span aria-hidden className="hero-beam" style={{ top: '18%' }} />
-                  <span aria-hidden className="hero-beam" style={{ top: '81%' }} />
-                  <span aria-hidden className="hero-tail" style={{ top: '19%', left: '90.5%' }} />
-                  <span aria-hidden className="hero-tail" style={{ top: '78%', left: '93%' }} />
-                  <span aria-hidden className="hero-flame" style={{ top: '43%', animationDelay: '2.65s' }} />
-                  <span aria-hidden className="hero-flame" style={{ top: '57%', animationDelay: '2.8s' }} />
+                  <span aria-hidden className="hero-streak" />
+                  <span aria-hidden className="hero-beam" style={{ top: '20%', ['--r' as string]: '7deg' }} />
+                  <span aria-hidden className="hero-beam" style={{ top: '81%', ['--r' as string]: '-7deg' }} />
+                  <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.8%', top: '20%', ['--r' as string]: '-38deg' }} />
+                  <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.7%', top: '81%', ['--r' as string]: '38deg' }} />
+                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '93.6%', top: '17.8%', ['--r' as string]: '42deg' }} />
+                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '95.6%', top: '76.4%', ['--r' as string]: '-55deg' }} />
+                  <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '3.1s' }} />
+                  <span aria-hidden className="hero-flame" style={{ top: '55%', animationDelay: '3.28s' }} />
                   <img
                     src="/hero-car.webp?v=3"
                     alt={t('A premium CX car')}
@@ -235,9 +237,9 @@ export default function Home() {
                 <span className="text-detail text-muted">{t('/day')}</span>
               </div>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
-                <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('Live in')}</span>
-                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{catalogue.cities}</span>
-                <span className="text-detail text-muted">{t('European cities')}</span>
+                <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('Available')}</span>
+                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{t('Worldwide')}</span>
+                <span className="text-detail text-muted">{t('wherever hosts list')}</span>
               </div>
             </div>
           </Reveal>
@@ -251,7 +253,7 @@ export default function Home() {
                     <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
                     <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
                   </span>
-                  {t('Now live in {n} European cities', { n: catalogue.cities })}
+                  {t('Available worldwide, wherever hosts list their cars')}
                 </span>
               </Reveal>
               <Reveal delay={240} className="reveal-blur">
@@ -581,7 +583,7 @@ export default function Home() {
               {t('Ready for your next journey?')}
             </h2>
             <p className="max-w-md text-copy leading-relaxed text-muted">
-              {t('Premium cars from verified hosts, in {n} European cities.', { n: catalogue.cities })}
+              {t('Premium cars from verified hosts, around the world.')}
             </p>
             <Link to="/browse" className="btn btn-accent-bright btn-lg">
               {t('Explore Cars')} <Icon name="arrowRight" size={17} />

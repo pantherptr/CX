@@ -357,6 +357,14 @@ const ROWS: Row[] = [
   ['Family', 'Famiglia', 'Familie', 'Familiares'],
 
   // ---- Home: hero ----
+  ['Available', 'Disponibile', 'Disponibil', 'Disponible'],
+  ['Worldwide', 'In tutto il mondo', 'În toată lumea', 'En todo el mundo'],
+  ['wherever hosts list', 'dove ci sono host', 'oriunde sunt gazde', 'donde haya anfitriones'],
+  ['Available worldwide, wherever hosts list their cars', 'Disponibile in tutto il mondo, ovunque gli host pubblichino le loro auto', 'Disponibil în toată lumea, oriunde gazdele își listează mașinile', 'Disponible en todo el mundo, donde los anfitriones publiquen sus coches'],
+  ['Premium cars from verified hosts, around the world.', 'Auto premium da host verificati, in tutto il mondo.', 'Mașini premium de la gazde verificate, în toată lumea.', 'Coches premium de anfitriones verificados, en todo el mundo.'],
+  ['The premium marketplace for car rental, worldwide.', 'Il marketplace premium per il noleggio auto, in tutto il mondo.', 'Piața premium pentru închirierea de mașini, în toată lumea.', 'El marketplace premium de alquiler de coches, en todo el mundo.'],
+  ['The premium way to move around the world.', 'Il modo premium di muoversi per il mondo.', 'Modul premium de a te mișca prin lume.', 'La forma premium de moverte por el mundo.'],
+  ['CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves. Today we connect drivers with trusted local hosts all over the world — and we’re just getting started.', 'CX è nata a Milano da un’idea semplice: noleggiare un’auto deve essere premium quanto le auto stesse. Oggi colleghiamo i guidatori con host locali fidati in tutto il mondo — e siamo solo all’inizio.', 'CX a început la Milano cu o idee simplă: închirierea unei mașini trebuie să fie la fel de premium ca mașinile în sine. Astăzi conectăm șoferi cu gazde locale de încredere din toată lumea — și abia am început.', 'CX nació en Milán con una idea simple: alquilar un coche debe ser tan premium como los propios coches. Hoy conectamos conductores con anfitriones locales de confianza en todo el mundo, y esto es solo el comienzo.'],
   ['Now live in {n} European cities', 'Ora attivi in {n} città europee', 'Acum disponibili în {n} orașe europene', 'Ya disponibles en {n} ciudades europeas'],
   ['I own the keys', 'Ho le chiavi', 'Eu am cheile', 'Tengo las llaves'],
   ['to your heart.', 'del tuo cuore.', 'inimii tale.', 'de tu corazón.'],
