@@ -273,31 +273,34 @@ function Thread({
 
 /** The visible area while the on-screen keyboard is up — the phone chat is
  *  pinned to it so the composer never jumps or hides behind the keyboard. */
-function useVisualViewportBox(): { top: number; height: number | string } {
-  const [box, setBox] = useState<{ top: number; height: number | string }>({ top: 0, height: '100dvh' });
+/**
+ * Keeps --vv-top / --vv-h on <html> equal to the visual viewport, written straight to the DOM
+ * (no React render, no rAF) so the chat box moves in the same frame iOS moves the keyboard.
+ * While the chat is open the layout viewport is also pinned back to 0 — iOS scrolls it to bring
+ * the focused composer into view, which is what used to push the header out of sight.
+ */
+function useVisualViewportVars(enabled: boolean) {
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      const top = Math.round(vv.offsetTop);
-      const height = Math.round(vv.height);
-      // One state change per frame at most, and none for sub-pixel noise — the keyboard fires a
-      // stream of these while it animates and following each one made the chat shake.
-      setBox((prev) => (typeof prev.height === 'number' && Math.abs(prev.height - height) < 2 && Math.abs(prev.top - top) < 2 ? prev : { top, height }));
+    if (!enabled || !vv) return;
+    const root = document.documentElement;
+    const apply = () => {
+      root.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+      root.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
     };
-    const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
-    update();
-    vv.addEventListener('resize', schedule);
-    vv.addEventListener('scroll', schedule);
+    apply();
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
+    window.addEventListener('scroll', apply, { passive: true });
     return () => {
-      if (raf) cancelAnimationFrame(raf);
-      vv.removeEventListener('resize', schedule);
-      vv.removeEventListener('scroll', schedule);
+      vv.removeEventListener('resize', apply);
+      vv.removeEventListener('scroll', apply);
+      window.removeEventListener('scroll', apply);
+      root.style.removeProperty('--vv-top');
+      root.style.removeProperty('--vv-h');
     };
-  }, []);
-  return box;
+  }, [enabled]);
 }
 
 export default function Messages() {
@@ -314,7 +317,7 @@ export default function Messages() {
   // The Owner's identity switcher — which badge their next message sends
   // under. Not persisted; defaults back to their real identity each visit.
   const [sendAsRole, setSendAsRole] = useState<SendAsRole>('owner');
-  const vv = useVisualViewportBox();
+  useVisualViewportVars(mobileChat && !!activeId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const mockScrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -372,8 +375,11 @@ export default function Messages() {
   const atBottom = useRef(true);
   useEffect(() => {
     const el = scrollRef.current;
-    if (el && atBottom.current) el.scrollTop = el.scrollHeight;
-  }, [vv.height]);
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { if (atBottom.current) el.scrollTop = el.scrollHeight; });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mobileChat, activeId]);
 
   // iOS-style edge swipe: drag from the left edge to the right to go back.
   const edgeSwipe = useRef<{ x: number; y: number } | null>(null);
@@ -631,7 +637,7 @@ export default function Messages() {
         {mobileChat && active && (
           <div
             data-no-pull className="fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
-            style={{ top: 0, height: vv.height, transform: vv.top ? `translate3d(0, ${vv.top}px, 0)` : undefined }}
+            style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)' }}
             onTouchStart={(e) => {
               const t = e.touches[0];
               edgeSwipe.current = t.clientX < 28 ? { x: t.clientX, y: t.clientY } : null;
