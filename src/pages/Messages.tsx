@@ -104,38 +104,48 @@ const fmtTime = (iso: string) => {
 // would just be visual noise on anything older than today.
 const fmtBubbleTime = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-function ConversationRow({ c, active, onClick }: { c: Conversation; active: boolean; onClick: () => void }) {
+function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active: boolean; onClick: () => void; myId?: string }) {
   const unread = c.unreadCount > 0;
+  const mine = !!c.lastMessage && c.lastMessage.senderId === myId;
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-3.5 px-5 py-3 text-left transition-colors active:bg-panel ${active ? 'bg-panel' : ''}`}
+      className={`group flex w-full items-center gap-3.5 rounded-[22px] px-3.5 py-3 text-left transition-[transform,background-color,box-shadow] duration-150 active:scale-[0.985] ${
+        unread ? 'bg-white shadow-[0_8px_24px_-14px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.04]' : active ? 'bg-panel' : 'active:bg-panel'
+      }`}
     >
-      {c.other.avatar ? (
-        <Img
-          src={c.other.avatar}
-          alt=""
-          className="h-[52px] w-[52px] shrink-0 rounded-full object-cover"
-          fallback={<span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
-        />
-      ) : (
-        <span className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
-      )}
-      <div className="min-w-0 flex-1 border-b border-line pb-3 -mb-3">
+      <span className="relative shrink-0">
+        {c.other.avatar ? (
+          <Img
+            src={c.other.avatar}
+            alt=""
+            className="h-14 w-14 rounded-full object-cover shadow-[0_3px_10px_-3px_rgba(22,22,26,0.35)]"
+            fallback={<span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={20} /></span>}
+          />
+        ) : (
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={20} /></span>
+        )}
+        {c.car?.image && (
+          <Img src={c.car.image} alt="" className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-[#fbfbf9] object-cover shadow-sm" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-1.5">
-            <p className={`truncate text-[15px] ${unread ? 'font-semibold' : 'font-medium'} text-ink`}>{c.other.name}</p>
+            <p className={`truncate text-[16px] leading-tight ${unread ? 'font-bold' : 'font-semibold'} text-ink`}>{c.other.name}</p>
             <VerifiedBadge role={c.other.role} size={13} />
           </span>
           {c.lastMessage && (
             <span className={`shrink-0 text-label ${unread ? 'font-semibold text-accent' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
           )}
         </div>
-        {c.car && <p className="truncate text-caption font-medium text-accent">{c.car.make} {c.car.model}</p>}
-        <div className="flex items-center justify-between gap-2">
-          <p className={`truncate text-detail ${unread ? 'font-medium text-ink-soft' : 'text-muted'}`}>{c.lastMessage ? c.lastMessage.body : 'No messages yet'}</p>
+        {c.car && <p className="mt-0.5 truncate text-caption font-semibold text-accent">{c.car.make} {c.car.model}</p>}
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <p className={`truncate text-[14px] leading-snug ${unread ? 'font-medium text-ink' : 'text-muted'}`}>
+            {c.lastMessage ? <>{mine && <span className="text-faint">You: </span>}{c.lastMessage.body}</> : 'No messages yet'}
+          </p>
           {unread && (
-            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-accent px-1.5 text-label font-bold text-white">
+            <span className="grid h-[22px] min-w-[22px] shrink-0 place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent px-1.5 text-label font-bold text-white shadow-[0_4px_10px_-3px_rgba(0,133,54,0.6)]">
               {c.unreadCount > 9 ? '9+' : c.unreadCount}
             </span>
           )}
@@ -428,7 +438,20 @@ export default function Messages() {
     b.top = `-${y}px`;
     b.width = '100%';
     b.overflow = 'hidden';
+    // Safari tints its bottom bar / the strip behind the keyboard from the page background and the
+    // theme colour — keep both on the chat's own tone so no white band shows under the composer.
+    const root = document.documentElement;
+    const prevRootBg = root.style.backgroundColor;
+    const prevBodyBg = b.backgroundColor;
+    root.style.backgroundColor = '#f4f5f2';
+    b.backgroundColor = '#f4f5f2';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const prevMeta = meta?.getAttribute('content') ?? null;
+    meta?.setAttribute('content', '#ffffff');
     return () => {
+      root.style.backgroundColor = prevRootBg;
+      b.backgroundColor = prevBodyBg;
+      if (meta && prevMeta !== null) meta.setAttribute('content', prevMeta);
       b.position = prev.position;
       b.top = prev.top;
       b.width = prev.width;
@@ -592,7 +615,7 @@ export default function Messages() {
       {/* Phone layout — a clean list, then a full-screen chat that follows the
           visual viewport (keyboard-safe) with 16px inputs so iOS never zooms. */}
       <div className="h-full sm:hidden">
-        <div className="flex h-full flex-col bg-surface">
+        <div className="flex h-full flex-col bg-[#f4f5f2]">
           <div className="shrink-0 px-5 pb-3 pt-5">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -608,7 +631,7 @@ export default function Messages() {
               {profile?.is_owner && (
                 <button
                   onClick={() => setNewMessageOpen(true)}
-                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white"
+                  className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#2a2a30] to-ink text-white shadow-[0_6px_16px_-6px_rgba(22,22,26,0.6)] active:scale-90"
                   aria-label="New message"
                 >
                   <Icon name="plus" size={19} />
@@ -622,18 +645,18 @@ export default function Messages() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search conversations"
-                  className="h-11 w-full rounded-full border-0 bg-panel pl-11 pr-4 text-[16px] text-ink outline-none placeholder:text-faint focus:ring-2 focus:ring-accent/30"
+                  className="h-12 w-full rounded-full border-0 bg-white pl-11 pr-4 text-[16px] text-ink shadow-[0_6px_20px_-10px_rgba(22,22,26,0.3)] outline-none ring-1 ring-black/[0.05] placeholder:text-faint focus:ring-2 focus:ring-accent/40"
                 />
               </div>
             )}
           </div>
-          <div className="flex-1 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+          <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
             ) : conversations && conversations.length > 0 ? (
               visibleConversations.length > 0 ? (
                 visibleConversations.map((c) => (
-                  <ConversationRow key={c.id} c={c} active={false} onClick={() => openConvo(c.id)} />
+                  <ConversationRow key={c.id} c={c} active={false} myId={session?.user.id} onClick={() => openConvo(c.id)} />
                 ))
               ) : (
                 <p className="px-6 py-16 text-center text-detail text-muted">No conversations match “{search.trim()}”.</p>
@@ -673,32 +696,40 @@ export default function Messages() {
               }
             }}
           >
-            <div className="relative z-10 flex shrink-0 items-center gap-2.5 bg-white/90 px-2.5 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-[0_6px_18px_-12px_rgba(22,22,26,0.35)] backdrop-blur-xl">
-              <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
-                <Icon name="chevronLeft" size={22} />
-              </button>
-              {active.other.avatar ? (
-                <Img
-                  src={active.other.avatar}
-                  alt=""
-                  className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white shadow-[0_2px_8px_-2px_rgba(22,22,26,0.35)]"
-                  fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>}
-                />
-              ) : (
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={16} /></span>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="flex min-w-0 items-center gap-1.5 truncate text-[15px] font-semibold leading-tight text-ink">
-                  <span className="truncate">{active.other.name}</span>
-                  <VerifiedBadge role={active.other.role} size={13} />
-                </p>
-                <p className="truncate text-caption text-muted">
-                  {active.car ? `${active.car.make} ${active.car.model}` : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
-                </p>
+            <div className="relative z-10 shrink-0 bg-white/90 px-2.5 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-[0_8px_24px_-14px_rgba(22,22,26,0.4)] backdrop-blur-xl">
+              <div className="flex items-center gap-2.5">
+                <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
+                  <Icon name="chevronLeft" size={22} />
+                </button>
+                {active.other.avatar ? (
+                  <Img
+                    src={active.other.avatar}
+                    alt=""
+                    className="h-11 w-11 shrink-0 rounded-full object-cover shadow-[0_3px_10px_-3px_rgba(22,22,26,0.4)] ring-2 ring-white"
+                    fallback={<span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>}
+                  />
+                ) : (
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="flex min-w-0 items-center gap-1.5 truncate text-[16.5px] font-bold leading-tight tracking-tight text-ink">
+                    <span className="truncate">{active.other.name}</span>
+                    <VerifiedBadge role={active.other.role} size={14} />
+                  </p>
+                  <p className="truncate text-caption font-medium text-muted">
+                    {active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
+                  </p>
+                </div>
               </div>
               {active.car && (
-                <Link to={`/cars/${active.car.slug}`} className="pressable shrink-0 rounded-full bg-ink px-3.5 py-2 text-detail font-semibold text-white shadow-[0_4px_12px_-4px_rgba(22,22,26,0.5)] transition-transform active:scale-95">
-                  View car
+                <Link
+                  to={`/cars/${active.car.slug}`}
+                  className="pressable mt-2.5 flex items-center gap-2.5 rounded-2xl bg-black/[0.035] p-1.5 pr-3 ring-1 ring-black/[0.04] transition-transform active:scale-[0.98]"
+                >
+                  {active.car.image && <Img src={active.car.image} alt="" className="h-9 w-12 shrink-0 rounded-xl object-cover" />}
+                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-ink">{active.car.make} {active.car.model}</span>
+                  <span className="shrink-0 text-caption font-semibold text-accent">View car</span>
+                  <Icon name="chevronRight" size={15} className="shrink-0 text-faint" />
                 </Link>
               )}
             </div>
