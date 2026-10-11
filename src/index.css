@@ -1879,16 +1879,16 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 html[data-theme='dark'] {
-  --color-bg: #0a0b0a;
-  --color-surface: #131513;
-  --color-panel: #1a1c1a;
-  --color-panel-2: #222522;
+  --color-bg: #050605;
+  --color-surface: #0b0c0b;
+  --color-panel: #131513;
+  --color-panel-2: #1a1c1a;
   --color-ink: #f4f4ef;
   --color-ink-soft: #d6d6cf;
   --color-muted: #a2a29a;
   --color-faint: #74746c;
-  --color-line: #2b2e2b;
-  --color-line-strong: #3a3e3a;
+  --color-line: #232623;
+  --color-line-strong: #343834;
   --color-accent: #2fe068;
   --color-accent-600: #22c957;
   --color-accent-700: #19ad49;
@@ -2030,3 +2030,22 @@ html[data-theme='dark'] .bg-ink\/70 { background-color: rgb(0 0 0 / 0.7); }
 html[data-theme='dark'] .bg-ink\/65 { background-color: rgb(0 0 0 / 0.65); }
 html[data-theme='dark'] .bg-ink\/60 { background-color: rgb(0 0 0 / 0.6); }
 html[data-theme='dark'] .bg-ink\/45 { background-color: rgb(0 0 0 / 0.6); }
+
+/* Chat in dark: black room, the other person's bubble stays pure white with green letters. */
+html[data-theme='dark'] .chat-in-bubble { background-color: #ffffff; color: #008536; --color-accent: #008536; --color-ink: #16161a; --color-muted: #6c6c66; --color-line: #e8e7e1; }
+html[data-theme='dark'] .chat-out-bubble { background-image: linear-gradient(180deg, #1c1f1c, #101210); box-shadow: 0 0 0 1px rgba(0, 212, 71, 0.28), 0 2px 10px -3px rgba(0, 0, 0, 0.7); }
+html[data-theme='dark'] .bg-\[\#f4f5f2\] { background-color: var(--color-bg); }
+html[data-theme='dark'] .from-\[\#f4f5f2\],
+html[data-theme='dark'] .via-\[\#f4f5f2\] { --tw-gradient-from: var(--color-bg); --tw-gradient-via: var(--color-bg); }
+html[data-theme='dark'] .to-\[\#f4f5f2\]\/0 { --tw-gradient-to: color-mix(in oklab, var(--color-bg) 0%, transparent); }
+html[data-theme='dark'] .from-\[\#2a2a30\],
+html[data-theme='dark'] .from-\[\#34343b\] { --tw-gradient-from: var(--color-panel-2); }
+html[data-theme='dark'] .to-ink { --tw-gradient-to: var(--color-panel); }
+html[data-theme='dark'] .bg-\[\#e9edef\],
+html[data-theme='dark'] .bg-\[\#f0f2f5\] { background-color: var(--color-bg); }
+
+/* Mobile dock in dark: true black glass with a hairline green edge and a soft lift. */
+html[data-theme='dark'] .dock-surface { background: linear-gradient(180deg, rgba(16, 18, 16, 0.98), rgba(4, 5, 4, 0.99)); }
+html[data-theme='dark'] .dock-a { box-shadow: 0 0 22px -4px rgba(0, 212, 71, 0.6), inset 0 0 0 1px rgba(0, 212, 71, 0.2); }
+html[data-theme='dark'] .dock-rim path { stroke-opacity: 1; }
+html[data-theme='dark'] img[data-invert-dark] { filter: invert(1) hue-rotate(180deg) brightness(1.05); }

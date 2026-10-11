@@ -29,7 +29,7 @@ export function SignalNavCard({ onClick, subtitle = 'Community & news' }: { onCl
     <NavLink
       to="/signal"
       onClick={onClick}
-      className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl bg-noir px-3.5 py-3 text-on-noir shadow-[0_10px_30px_-16px_rgba(0,0,0,0.6)] transition-transform active:scale-[0.99]"
+      className="group relative mb-4 flex items-center gap-3 overflow-hidden rounded-2xl border border-accent-bright/55 bg-noir px-3.5 py-3 text-on-noir shadow-[0_0_0_1px_rgba(0,212,71,0.12),0_0_26px_-6px_rgba(0,212,71,0.55),inset_0_0_30px_-14px_rgba(0,212,71,0.5)] transition-transform active:scale-[0.99]"
     >
       <span
         aria-hidden="true"

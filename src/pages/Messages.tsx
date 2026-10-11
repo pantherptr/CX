@@ -396,8 +396,8 @@ function Thread({
                     onClick={() => setSelectedId((cur) => (cur === m.id ? null : m.id))}
                     className={`cursor-pointer whitespace-pre-wrap [overflow-wrap:anywhere] ${m.mediaPath ? 'max-w-[80%] rounded-[20px] p-1 text-[15px] leading-[1.35]' : t.bubble} ${
                       mine
-                        ? `bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-accent-bright ${last ? 'rounded-br-[6px]' : ''}`
-                        : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04] bg-white text-accent ${last ? 'rounded-bl-[6px]' : ''}`
+                        ? `chat-out-bubble bg-gradient-to-b from-[#2a2a30] to-ink shadow-[0_2px_8px_-2px_rgba(22,22,26,0.45)] text-accent-bright ${last ? 'rounded-br-[6px]' : ''}`
+                        : `shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] chat-in-bubble ring-1 ring-black/[0.04] bg-white text-accent ${last ? 'rounded-bl-[6px]' : ''}`
                     } ${freshIds.has(m.id) ? 'chat-in-left' : ''}`}
                   >
                     {m.mediaPath && <ChatPhoto path={m.mediaPath} onOpen={setZoom} />}
@@ -433,7 +433,7 @@ function Thread({
       )}
       {typing && (
         <div className="chat-in-left flex items-start pt-1" aria-live="polite" aria-label="Typing">
-          <div className="flex items-center gap-1 rounded-[18px] rounded-bl-[6px] bg-white px-3.5 py-3 shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04]">
+          <div className="flex items-center gap-1 chat-in-bubble rounded-[18px] rounded-bl-[6px] bg-white px-3.5 py-3 shadow-[0_2px_10px_-3px_rgba(22,22,26,0.18)] ring-1 ring-black/[0.04]">
             {[0, 1, 2].map((i) => (
               <span key={i} className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent/70" style={{ animationDelay: `${i * 140}ms`, animationDuration: '0.9s' }} />
             ))}

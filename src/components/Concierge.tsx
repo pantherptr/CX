@@ -132,7 +132,7 @@ export function ConciergeMark({ size = 30, live = false, className = '' }: { siz
       style={{ width: size, height: size }}
     >
       <span className="relative h-[78%] w-[78%]">
-        <img src="/brand/cx-bat-man.webp" alt="" width={120} height={57} draggable={false} className="h-full w-full select-none object-contain" />
+        <img data-invert-dark src="/brand/cx-bat-man.webp" alt="" width={120} height={57} draggable={false} className="h-full w-full select-none object-contain" />
         {live && (
           <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
             <span className="absolute inset-0 animate-ping rounded-full bg-[#009646]/55" />
