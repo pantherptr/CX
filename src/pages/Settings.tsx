@@ -13,7 +13,8 @@ import { useLocale } from '../lib/i18n';
 import { COUNTRIES } from '../lib/i18n/countries';
 import { supabase } from '../lib/supabase';
 import { useMyBookings, classifyBooking, renterTier } from '../lib/data/bookings';
-import { useVerification, submitVerification } from '../lib/data/verification';
+import { useVerification } from '../lib/data/verification';
+import { VerificationFlow } from '../components/VerificationFlow';
 import { eur } from '../lib/format';
 import { haptics } from '../lib/native';
 import { apiUrl } from '../lib/api';
@@ -23,7 +24,7 @@ import { DevicesPanel } from '../components/DevicesPanel';
 type SectionId = 'personal' | 'driver' | 'notifications' | 'payments' | 'preferences' | 'security';
 const SECTIONS: { id: SectionId; title: string; icon: IconName }[] = [
   { id: 'personal', title: 'Personal information', icon: 'user' },
-  { id: 'driver', title: 'Driver verification', icon: 'verified' },
+  { id: 'driver', title: 'Verification', icon: 'verified' },
   { id: 'payments', title: 'Payments', icon: 'card' },
   { id: 'notifications', title: 'Notifications', icon: 'bell' },
   { id: 'preferences', title: 'Language & region', icon: 'globe' },
@@ -63,7 +64,6 @@ export default function Settings() {
   const [location, setLocation] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState<'licence' | 'selfie' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [notif, setNotif] = useState<Record<string, boolean>>(() => {
@@ -91,7 +91,8 @@ export default function Settings() {
   const [pwdSaving, setPwdSaving] = useState(false);
 
   useEffect(() => {
-    const id = hash.slice(1);
+    const raw = hash.slice(1);
+    const id = raw === 'licence' || raw === 'verification' ? 'driver' : raw;
     if (SECTION_IDS.has(id)) setSection(id as SectionId);
   }, [hash]);
 
@@ -185,19 +186,12 @@ export default function Settings() {
     toast({ title: 'Profile photo updated', icon: 'check' });
   };
 
-  const uploadDoc = async (kind: 'licence' | 'selfie', file: File | undefined) => {
-    if (!file || !session) return;
-    setUploadingDoc(kind);
-    const { error } = await submitVerification(session.user.id, kind === 'licence' ? { licenceFile: file } : { selfieFile: file });
-    setUploadingDoc(null);
-    if (error) { toast({ title: 'Upload failed', desc: error, icon: 'info' }); return; }
-    refreshVerification();
-    toast({ title: kind === 'licence' ? 'Licence photo sent' : 'Selfie sent', icon: 'check' });
-  };
-
-  const verifyLabel = !verification || (!verification.licencePhotoPath && !verification.selfiePath)
+  const verifyLabel = !verification || (verification.identityStatus === 'none' && verification.licenceStatus === 'none')
     ? 'Not verified'
-    : verification.status === 'approved' ? 'Verified' : verification.status === 'rejected' ? 'Resubmit' : 'Under review';
+    : verification.identityStatus === 'approved' && verification.licenceStatus === 'approved' ? 'Fully verified'
+    : verification.identityStatus === 'approved' ? 'Verified'
+    : verification.identityStatus === 'rejected' || verification.licenceStatus === 'rejected' ? 'Action needed'
+    : 'Under review';
 
   const memberSince = profile?.created_at ? new Date(profile.created_at).getFullYear() : null;
   const roleChips = [profile?.is_owner && 'Owner', profile?.is_admin && !profile?.is_owner && 'Admin', profile?.is_host && 'Host'].filter(Boolean) as string[];
@@ -305,34 +299,8 @@ export default function Settings() {
                 </>
               )}
 
-              {section === 'driver' && (
-                <>
-                  <div className="mt-5 rounded-[22px] border border-line bg-surface p-5">
-                    <div className="flex items-center gap-3">
-                      <span className={`grid h-11 w-11 place-items-center rounded-full ${verification?.status === 'approved' ? 'bg-ink text-white' : 'bg-panel text-ink-soft'}`}><Icon name="verified" size={20} /></span>
-                      <div>
-                        <p className="font-display text-lead font-semibold text-ink">{t(verifyLabel)}</p>
-                        <p className="text-detail text-muted">
-                          {verification?.status === 'approved' ? t('Your identity is confirmed.') : verification?.status === 'rejected' ? t('We couldn’t accept your documents — please send them again.') : verifyLabel === 'Under review' ? t('Our team is reviewing your documents.') : t('Add your licence and a selfie to book faster.')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <Group>
-                    {([['licence', 'Driving licence photo', 'car', verification?.licencePhotoPath], ['selfie', 'Selfie', 'user', verification?.selfiePath]] as const).map(([kind, label, ic, done]) => (
-                      <label key={kind} className="flex cursor-pointer items-center gap-3.5 px-4 py-3.5 transition-colors active:bg-panel">
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-panel text-ink"><Icon name={ic} size={18} /></span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-body font-medium text-ink">{t(label)}</span>
-                          <span className="block text-detail text-muted">{uploadingDoc === kind ? t('Uploading…') : done ? t('Sent — tap to replace') : t('Tap to upload')}</span>
-                        </span>
-                        {done && uploadingDoc !== kind ? <Icon name="checkCircle" size={18} className="shrink-0 text-accent" /> : <Icon name="upload" size={17} className="shrink-0 text-faint" />}
-                        <input type="file" accept="image/*" className="sr-only" disabled={uploadingDoc !== null} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; void uploadDoc(kind, f); }} />
-                      </label>
-                    ))}
-                  </Group>
-                  <p className="mt-3 px-1 text-caption text-muted">{t('Documents are stored privately and only used to verify your identity.')}</p>
-                </>
+              {section === 'driver' && session && (
+                <VerificationFlow userId={session.user.id} verification={verification} onChanged={refreshVerification} focus={hash === '#licence' ? 'licence' : undefined} />
               )}
 
               {section === 'notifications' && (

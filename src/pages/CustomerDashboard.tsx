@@ -18,6 +18,8 @@ import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useLocale } from '../lib/i18n';
 import { useAuth } from '../lib/auth';
+import { useVerification } from '../lib/data/verification';
+import { VerifyNudge } from '../components/VerificationFlow';
 
 const TABS: { id: TripPhase; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
@@ -189,6 +191,7 @@ export default function CustomerDashboard() {
   const navigate = useNavigate();
   const { favorites, toast } = useApp();
   const { profile, session } = useAuth();
+  const { verification, loading: verificationLoading } = useVerification(session?.user.id);
   const { cars } = useCars();
   const { bookings, loading: bookingsLoading } = useMyBookings(session?.user.id);
   const { conversations, loading: conversationsLoading } = useConversations(session?.user.id);
@@ -262,6 +265,7 @@ export default function CustomerDashboard() {
             <Link to="/browse" className="btn btn-primary btn-sm"><Icon name="plus" size={16} /> Book a car</Link>
           </div>
         </div>
+        <VerifyNudge verification={verification} loading={verificationLoading} />
 
         {/* Stats — on a phone one slim strip, not four big cards of zeros */}
         <div className="card mt-5 grid grid-cols-4 divide-x divide-line overflow-hidden sm:hidden">

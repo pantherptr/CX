@@ -5,18 +5,14 @@ import { Img } from '../motion';
 import { EmptyState } from '../primitives';
 import { useApp } from '../../lib/store';
 import { eur } from '../../lib/format';
-import { getSignedUrl } from '../../lib/data/verification';
 import {
   fetchAllUsers,
-  fetchAllVerifications,
-  reviewVerification,
   fetchAllBookingsAdmin,
   adminCancelBooking,
   refundBookingAdmin,
   fetchAllCarsAdmin,
   adminSetCarStatus,
   type AdminUser,
-  type AdminVerification,
   type AdminBooking,
   type AdminCar,
 } from '../../lib/data/admin';
@@ -76,93 +72,7 @@ export function Avatar({ url, size = 36 }: { url: string | null; size?: number }
   return fallback;
 }
 
-export function VerificationsPanel() {
-  const { toast } = useApp();
-  const [items, setItems] = useState<AdminVerification[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const load = () => {
-    setItems(null);
-    fetchAllVerifications()
-      .then(setItems)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load verifications.'));
-  };
-
-  useEffect(load, []);
-
-  const openDoc = async (path: string | null) => {
-    if (!path) return;
-    const url = await getSignedUrl('verification-documents', path);
-    if (url) window.open(url, '_blank', 'noopener');
-    else toast({ title: "Couldn't open this document", icon: 'info' });
-  };
-
-  const decide = async (id: string, status: 'approved' | 'rejected') => {
-    setBusyId(id);
-    const { error: err } = await reviewVerification(id, status);
-    setBusyId(null);
-    if (err) {
-      toast({ title: 'Could not update this verification', desc: err, icon: 'info' });
-      return;
-    }
-    toast({ title: status === 'approved' ? 'Verification approved' : 'Verification rejected', icon: 'checkCircle' });
-    load();
-  };
-
-  if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
-  if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
-  if (items.length === 0) return <div className="card"><EmptyState size="md" icon="info" title="No identity verifications submitted yet." className="p-10" /></div>;
-
-  return (
-    <div className="flex flex-col gap-3">
-      {items.map((v) => (
-        <div key={v.id} className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar url={v.userAvatar} />
-            <div className="min-w-0">
-              <p className="truncate font-medium text-ink">{v.userName}</p>
-              <p className="text-caption text-muted">Submitted {fmtDate(v.submittedAt)}</p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button onClick={() => openDoc(v.licencePhotoPath)} disabled={!v.licencePhotoPath} className="btn btn-secondary btn-sm disabled:opacity-40">
-              <Icon name="camera" size={14} /> Licence
-            </button>
-            <button onClick={() => openDoc(v.selfiePath)} disabled={!v.selfiePath} className="btn btn-secondary btn-sm disabled:opacity-40">
-              <Icon name="camera" size={14} /> Selfie
-            </button>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {v.status === 'pending' ? (
-              <>
-                <button
-                  onClick={() => decide(v.id, 'rejected')}
-                  disabled={busyId === v.id}
-                  className="btn btn-secondary btn-sm !text-danger disabled:opacity-50"
-                >
-                  <Icon name="x" size={14} /> Reject
-                </button>
-                <button
-                  onClick={() => decide(v.id, 'approved')}
-                  disabled={busyId === v.id}
-                  className="btn btn-accent-bright btn-sm disabled:opacity-50"
-                >
-                  <Icon name="checkCircle" size={14} /> Approve
-                </button>
-              </>
-            ) : (
-              <span className={`badge ${v.status === 'approved' ? 'badge-accent' : 'bg-panel-2 text-ink-soft'}`}>
-                {v.status === 'approved' ? <Icon name="checkCircle" size={12} /> : <Icon name="x" size={12} />}
-                {v.status === 'approved' ? 'Approved' : 'Rejected'}
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+export { VerificationsPanel } from './VerificationsPanel';
 
 /** `canManageRoles` (the Owner's Users tab) adds a "⋯" menu per person: verify or
  *  un-verify them, make them admin or take it away. The plain admin dashboard

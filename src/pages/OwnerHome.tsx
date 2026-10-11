@@ -10,7 +10,7 @@ import {
   fetchAllCarsAdmin,
   fetchAllBookingsAdmin,
   fetchAllUsers,
-  fetchAllVerifications,
+  fetchVerificationCases,
 } from '../lib/data/admin';
 import {
   fetchAllHosts,
@@ -90,7 +90,7 @@ export default function OwnerHome() {
       fetchAllCarsAdmin().catch(() => []),
       fetchAllBookingsAdmin().catch(() => []),
       fetchAllUsers().catch(() => []),
-      fetchAllVerifications().catch(() => []),
+      fetchVerificationCases().catch(() => []),
       fetchTotalRevenue().catch(() => 0),
       fetchActiveRentalsCount().catch(() => 0),
       fetchOpenReportsCount().catch(() => 0),
@@ -103,7 +103,7 @@ export default function OwnerHome() {
           activeCars: cars.filter((c) => c.status === 'published').length,
           totalBookings: bookings.length,
           activeRentals,
-          pendingVerifications: verifications.filter((v) => v.status === 'pending').length,
+          pendingVerifications: verifications.filter((v) => v.identityStatus === 'pending' || v.licenceStatus === 'pending').length,
           openReports,
           revenue,
         });

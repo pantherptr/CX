@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { VerificationStatus } from './verification';
+import type { DocStatus, IdDocType } from './verification';
 import type { BookingStatus } from './bookings';
 import { apiUrl } from '../api';
 
@@ -51,75 +51,6 @@ export async function fetchAllUsers(): Promise<AdminUser[]> {
     isVerifiedClient: r.is_verified_client,
     createdAt: r.created_at,
   }));
-}
-
-export interface AdminVerification {
-  id: string;
-  userId: string;
-  userName: string;
-  userAvatar: string | null;
-  licencePhotoPath: string | null;
-  selfiePath: string | null;
-  status: VerificationStatus;
-  submittedAt: string | null;
-  reviewedAt: string | null;
-}
-
-interface AdminVerificationRow {
-  id: string;
-  user_id: string;
-  licence_photo_path: string | null;
-  selfie_path: string | null;
-  status: VerificationStatus;
-  submitted_at: string | null;
-  reviewed_at: string | null;
-  profile: { full_name: string | null; avatar_url: string | null } | null;
-}
-
-const VERIFICATION_SELECT =
-  'id, user_id, licence_photo_path, selfie_path, status, submitted_at, reviewed_at, profile:profiles!verifications_user_id_fkey (full_name, avatar_url)';
-
-function mapAdminVerification(row: AdminVerificationRow): AdminVerification {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    userName: row.profile?.full_name || 'Unnamed user',
-    userAvatar: row.profile?.avatar_url ?? null,
-    licencePhotoPath: row.licence_photo_path,
-    selfiePath: row.selfie_path,
-    status: row.status,
-    submittedAt: row.submitted_at,
-    reviewedAt: row.reviewed_at,
-  };
-}
-
-/** Submitted-but-undecided first (oldest first, so the queue drains in
- *  order), already-reviewed ones after — the admin page shows both, with
- *  pending at the top. */
-export async function fetchAllVerifications(): Promise<AdminVerification[]> {
-  const { data, error } = await supabase
-    .from('verifications')
-    .select(VERIFICATION_SELECT)
-    .order('submitted_at', { ascending: true, nullsFirst: false });
-  if (error) throw error;
-  const rows = (data as unknown as AdminVerificationRow[]).map(mapAdminVerification);
-  return rows.sort((a, b) => {
-    if (a.status === 'pending' && b.status !== 'pending') return -1;
-    if (a.status !== 'pending' && b.status === 'pending') return 1;
-    return 0;
-  });
-}
-
-/** Approves or rejects a submission. The status column is otherwise
- *  locked (see lock_verification_status_update in migration 0016) — this
- *  only succeeds because the RLS policy plus that trigger's is_admin()
- *  check both agree the caller is an admin. */
-export async function reviewVerification(
-  id: string,
-  status: Extract<VerificationStatus, 'approved' | 'rejected'>,
-): Promise<{ error: string | null }> {
-  const { error } = await supabase.from('verifications').update({ status }).eq('id', id);
-  return { error: error?.message ?? null };
 }
 
 export interface AdminBooking {
@@ -279,3 +210,92 @@ export async function adminSetCarStatus(id: string, status: 'draft' | 'published
   return { error: error?.message ?? null };
 }
 
+
+// ---------------------------------------------------------------------------
+// Verification queue v2 (migration 0106): identity and driving licence are reviewed separately.
+// ---------------------------------------------------------------------------
+
+export interface VerificationCase {
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  docType: IdDocType | null;
+  identityStatus: DocStatus;
+  identityReason: string | null;
+  identityFront: string | null;
+  identityBack: string | null;
+  selfie: string | null;
+  identitySubmittedAt: string | null;
+  licenceStatus: DocStatus;
+  licenceReason: string | null;
+  licenceFront: string | null;
+  licenceBack: string | null;
+  licenceSubmittedAt: string | null;
+}
+
+interface CaseRow {
+  user_id: string;
+  identity_doc_type: IdDocType | null;
+  identity_status: DocStatus;
+  identity_reason: string | null;
+  identity_front_path: string | null;
+  identity_back_path: string | null;
+  selfie_path: string | null;
+  identity_submitted_at: string | null;
+  licence_status: DocStatus;
+  licence_reason: string | null;
+  licence_photo_path: string | null;
+  licence_back_path: string | null;
+  licence_submitted_at: string | null;
+  profile: { full_name: string | null; avatar_url: string | null } | null;
+}
+
+export async function fetchVerificationCases(): Promise<VerificationCase[]> {
+  const { data, error } = await supabase
+    .from('verifications')
+    .select(
+      'user_id, identity_doc_type, identity_status, identity_reason, identity_front_path, identity_back_path, selfie_path, identity_submitted_at, licence_status, licence_reason, licence_photo_path, licence_back_path, licence_submitted_at, profile:profiles!verifications_user_id_fkey (full_name, avatar_url)',
+    )
+    .or('identity_status.neq.none,licence_status.neq.none')
+    .limit(300);
+  if (error) throw error;
+  const rows = (data as unknown as CaseRow[]).map<VerificationCase>((r) => ({
+    userId: r.user_id,
+    userName: r.profile?.full_name || 'Unnamed user',
+    userAvatar: r.profile?.avatar_url ?? null,
+    docType: r.identity_doc_type,
+    identityStatus: r.identity_status,
+    identityReason: r.identity_reason,
+    identityFront: r.identity_front_path,
+    identityBack: r.identity_back_path,
+    selfie: r.selfie_path,
+    identitySubmittedAt: r.identity_submitted_at,
+    licenceStatus: r.licence_status,
+    licenceReason: r.licence_reason,
+    licenceFront: r.licence_photo_path,
+    licenceBack: r.licence_back_path,
+    licenceSubmittedAt: r.licence_submitted_at,
+  }));
+  const waiting = (c: VerificationCase) => c.identityStatus === 'pending' || c.licenceStatus === 'pending';
+  const when = (c: VerificationCase) => Math.min(
+    ...[c.identitySubmittedAt, c.licenceSubmittedAt].filter(Boolean).map((d) => new Date(d as string).getTime()),
+    Number.MAX_SAFE_INTEGER,
+  );
+  return rows.sort((a, b) => (waiting(a) === waiting(b) ? when(a) - when(b) : waiting(a) ? -1 : 1));
+}
+
+/** Approve or reject one part of someone's verification; a rejection must say why (the person receives it as a message from CX). */
+export async function decideVerification(
+  userId: string,
+  kind: 'identity' | 'licence',
+  decision: 'approved' | 'rejected',
+  reason?: string,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('review_verification', {
+    p_user_id: userId,
+    p_kind: kind,
+    p_decision: decision,
+    p_reason: reason ?? null,
+  });
+  return { error: error ? error.message : null };
+}

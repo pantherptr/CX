@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { refundFor, POLICY_INFO } from '../lib/cancellationPolicy';
 import { CancellationPolicyCard } from '../components/CancellationPolicy';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -21,7 +21,7 @@ import {
   type Booking,
   type TripPhase,
 } from '../lib/data/bookings';
-import { useVerification, submitVerification } from '../lib/data/verification';
+import { useVerification, licenceReady } from '../lib/data/verification';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
@@ -106,10 +106,8 @@ export default function TripDetails() {
   const [modAvailability, setModAvailability] = useState<'checking' | 'available' | 'unavailable' | null>(null);
   const [modSubmitting, setModSubmitting] = useState(false);
   const [modError, setModError] = useState<string | null>(null);
-  const { verification, refresh: refreshVerification } = useVerification(session?.user.id);
+  const { verification } = useVerification(session?.user.id);
   const { photos: inspectionPhotos, refresh: refreshInspectionPhotos } = useInspectionPhotos(booking?.id);
-  const [uploadingSelfie, setUploadingSelfie] = useState(false);
-  const [uploadingLicence, setUploadingLicence] = useState(false);
   const [agreementOpen, setAgreementOpen] = useState(false);
   const [acceptingAgreement, setAcceptingAgreement] = useState(false);
 
@@ -213,36 +211,6 @@ export default function TripDetails() {
     booking.fulfillmentType === 'delivery' ? booking.deliveryAddress || '' : booking.pickupLocation || booking.car.location,
   )}`;
 
-  const handleSelfieChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !session) return;
-    setUploadingSelfie(true);
-    const { error } = await submitVerification(session.user.id, { selfieFile: file });
-    setUploadingSelfie(false);
-    if (error) {
-      toast({ title: 'Could not upload selfie', desc: error, icon: 'info' });
-      return;
-    }
-    refreshVerification();
-    toast({ title: 'Selfie submitted', desc: 'Under review.', icon: 'checkCircle' });
-  };
-
-  const handleLicenceChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !session) return;
-    setUploadingLicence(true);
-    const { error } = await submitVerification(session.user.id, { licenceFile: file });
-    setUploadingLicence(false);
-    if (error) {
-      toast({ title: 'Could not upload licence', desc: error, icon: 'info' });
-      return;
-    }
-    refreshVerification();
-    toast({ title: 'Licence submitted', desc: 'Under review.', icon: 'checkCircle' });
-  };
-
   const handleAcceptAgreement = async () => {
     setAcceptingAgreement(true);
     const { error } = await acceptRentalAgreement(booking.id);
@@ -323,12 +291,11 @@ export default function TripDetails() {
   // real: a submitted document, an accepted agreement timestamp. Identity
   // verification stays honestly "under review" rather than faking
   // approval, since there's no real reviewer behind it yet.
-  const selfieSubmitted = !!verification?.selfiePath;
-  const licenceSubmitted = !!verification?.licencePhotoPath;
+  const identitySubmitted = verification?.identityStatus === 'pending' || verification?.identityStatus === 'approved';
+  const licenceSubmitted = licenceReady(verification);
   const agreementAccepted = !!booking.agreementAcceptedAt;
-  const readyForPickup = selfieSubmitted && licenceSubmitted && agreementAccepted;
-  const verificationStatusLabel =
-    verification?.status === 'approved' ? 'Verified' : verification?.status === 'rejected' ? 'Rejected — resubmit' : 'Under review';
+  const readyForPickup = identitySubmitted && licenceSubmitted && agreementAccepted;
+  const stateLabel = (s?: string) => (s === 'approved' ? 'Verified' : s === 'rejected' ? 'Rejected — resubmit' : 'Under review');
 
   return (
     <DashboardShell variant="customer" active="My Trips">
@@ -371,16 +338,13 @@ export default function TripDetails() {
             <div className="mt-2 divide-y divide-line">
               <ChecklistRow done label="Booking confirmed" />
               <ChecklistRow
-                done={selfieSubmitted}
+                done={identitySubmitted}
                 label="Verify identity"
                 right={
-                  selfieSubmitted ? (
-                    <span className="shrink-0 text-caption text-muted">{verificationStatusLabel}</span>
+                  identitySubmitted ? (
+                    <span className="shrink-0 text-caption text-muted">{stateLabel(verification?.identityStatus)}</span>
                   ) : (
-                    <label className="btn btn-secondary btn-sm shrink-0 cursor-pointer">
-                      {uploadingSelfie ? 'Uploading…' : 'Upload'}
-                      <input type="file" accept="image/*" className="hidden" onChange={handleSelfieChange} disabled={uploadingSelfie} />
-                    </label>
+                    <Link to="/settings#verification" className="btn btn-secondary btn-sm shrink-0">{verification?.identityStatus === 'rejected' ? 'Resubmit' : 'Verify'}</Link>
                   )
                 }
               />
@@ -389,12 +353,9 @@ export default function TripDetails() {
                 label="Upload driving licence"
                 right={
                   licenceSubmitted ? (
-                    <span className="shrink-0 text-caption text-muted">{verificationStatusLabel}</span>
+                    <span className="shrink-0 text-caption text-muted">{stateLabel(verification?.licenceStatus)}</span>
                   ) : (
-                    <label className="btn btn-secondary btn-sm shrink-0 cursor-pointer">
-                      {uploadingLicence ? 'Uploading…' : 'Upload'}
-                      <input type="file" accept="image/*" className="hidden" onChange={handleLicenceChange} disabled={uploadingLicence} />
-                    </label>
+                    <Link to="/settings#licence" className="btn btn-secondary btn-sm shrink-0">{verification?.licenceStatus === 'rejected' ? 'Resubmit' : 'Upload'}</Link>
                   )
                 }
               />

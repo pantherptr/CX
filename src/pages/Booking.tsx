@@ -27,6 +27,8 @@ import { findOrCreateCxConversation } from '../lib/data/messages';
 import { useAvailableReward } from '../lib/data/rewards';
 import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
+import { LicenceForm } from '../components/VerificationFlow';
+import { useVerification, licenceReady } from '../lib/data/verification';
 import type { Car, Host } from '../data/types';
 import NotFound from './NotFound';
 
@@ -110,6 +112,8 @@ export default function Booking() {
   const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
   const { extras: extrasCatalog } = useExtrasCatalog();
   const availableReward = useAvailableReward(session?.user.id);
+  const { verification, refresh: refreshVerification } = useVerification(session?.user.id);
+  const licenceOk = licenceReady(verification);
   const [applyReward, setApplyReward] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
@@ -359,6 +363,11 @@ export default function Booking() {
     if (step === 0 && !canContinueStep0) return;
     if (step === 2 && Object.keys(driverErrors).length > 0) {
       setTouched({ name: true, email: true, phone: true, dob: true, licence: true, country: true, expiry: true });
+      haptics.tick();
+      return;
+    }
+    if (step === 2 && session && !licenceOk) {
+      toast({ title: 'Add your driving licence first', desc: 'Front and back — it takes a minute.', icon: 'shield' });
       haptics.tick();
       return;
     }
@@ -789,6 +798,26 @@ export default function Booking() {
                   </Labeled>
                 </div>
               </div>
+              {session && (
+                <div className={`mt-4 rounded-[24px] border p-5 sm:p-6 ${licenceOk ? 'border-accent/30 bg-accent/[0.05]' : 'border-line bg-surface'}`}>
+                  <div className="flex items-start gap-3">
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${licenceOk ? 'bg-accent text-white' : 'bg-panel text-ink-soft'}`}>
+                      <Icon name={licenceOk ? 'check' : 'car'} size={19} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-display text-[17px] font-semibold text-ink">{licenceOk ? 'Driving licence on file' : 'Add your driving licence'}</p>
+                      <p className="mt-0.5 text-detail text-muted">
+                        {licenceOk
+                          ? verification?.licenceStatus === 'approved' ? 'Verified — you are all set.' : 'Sent for review. You can continue — it is confirmed before hand-over.'
+                          : verification?.licenceStatus === 'rejected' && verification.licenceReason
+                            ? `We could not accept the last one: ${verification.licenceReason}.`
+                            : 'Required to rent. Front and back, once — we remember it for your next trips.'}
+                      </p>
+                    </div>
+                  </div>
+                  {!licenceOk && <div className="mt-4"><LicenceForm userId={session.user.id} compact onDone={refreshVerification} /></div>}
+                </div>
+              )}
               <p className="mt-3 flex items-center gap-2 text-caption text-muted"><Icon name="lock" size={13} /> Your details are used only to verify this booking.</p>
             </section>
           )}

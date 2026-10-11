@@ -186,7 +186,7 @@ function buildActionItems({
       icon: 'shield',
       label: 'Identity verification needed',
       sub: 'Verified hosts build more trust with renters.',
-      to: '/settings#security',
+      to: '/settings#verification',
     });
   }
 
@@ -712,7 +712,7 @@ export default function HostDashboard() {
         .filter((c) => c.phase === 'upcoming' && c.booking.startDate <= soonCutoff)
         .map((c) => c.booking),
       unreadCount,
-      verificationMissing: !verificationLoading && (!verification || verification.status === 'rejected'),
+      verificationMissing: !verificationLoading && (!verification || verification.identityStatus === 'none' || verification.identityStatus === 'rejected'),
       payoutsMissing: !connectError && connectStatus !== null && !connectStatus.payoutsEnabled,
     });
   }, [hostCars, classified, unreadCount, verification, verificationLoading, connectStatus, connectError]);
