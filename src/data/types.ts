@@ -59,6 +59,11 @@ export interface Car {
   features: string[];
   description: string;
   hostId: string;
+  /** The catalogue model this listing was created from, and its chosen colour (migration 0107). */
+  catalogId?: string;
+  colorKey?: string;
+  /** True when images[0] is CX's own studio image of the model (not a host photo). */
+  catalogHero?: boolean;
   reviews: Review[];
   /** Only populated for real Supabase-backed cars (host's own listings) — the mock seed data doesn't carry a lifecycle status.
    *  'suspended'/'removed' are Owner Control Center states (see supabase/migrations/0021_owner_control_center.sql); RLS already

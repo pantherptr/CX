@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
 import { shrinkImage } from '../shrinkImage';
+import { catalogHeroUrl, loadCatalog } from './catalog';
 import type { Car, Host, Review } from '../../data/types';
 
 /**
@@ -76,6 +77,8 @@ interface CarRow {
   delivery_hours_end: string | null;
   car_images: CarImageRow[];
   reviews: ReviewRow[];
+  catalog_id?: string | null;
+  color_key?: string | null;
 }
 
 const CAR_SELECT = '*, car_images(url, position), reviews(*)';
@@ -96,6 +99,8 @@ function mapReview(row: ReviewRow): Review {
 }
 
 function mapCar(row: CarRow): Car {
+  const hero = catalogHeroUrl(row.catalog_id, row.color_key);
+  const own = [...row.car_images].sort((a, b) => a.position - b.position).map((i) => i.url);
   return {
     id: row.id,
     slug: row.slug,
@@ -117,7 +122,10 @@ function mapCar(row: CarRow): Car {
     luggage: row.luggage,
     mileage: row.mileage ?? '',
     drive: row.drive ?? '',
-    images: [...row.car_images].sort((a, b) => a.position - b.position).map((i) => i.url),
+    images: hero ? [hero, ...own] : own,
+    catalogId: row.catalog_id ?? undefined,
+    colorKey: row.color_key ?? undefined,
+    catalogHero: Boolean(hero),
     features: row.features ?? [],
     description: row.description ?? '',
     hostId: row.host_id,
@@ -158,6 +166,7 @@ export async function fetchCars(): Promise<Car[]> {
     .eq('status', 'published')
     .order('created_at', { ascending: false });
   if (error) throw error;
+  await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
 }
 
@@ -172,6 +181,7 @@ export async function fetchHostCars(hostId: string): Promise<Car[]> {
     .eq('host_id', hostId)
     .order('created_at', { ascending: false });
   if (error) throw error;
+  await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
 }
 
@@ -210,6 +220,7 @@ export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
     .order('rating', { ascending: false })
     .limit(limit);
   if (error) throw error;
+  await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
 }
 
@@ -226,6 +237,7 @@ export async function fetchCarWithHost(slug: string): Promise<{ car: Car; host: 
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  await loadCatalog();
   const row = data as unknown as CarRow & { host: HostRow };
   return { car: mapCar(row), host: mapHost(row.host) };
 }
@@ -243,6 +255,7 @@ export async function fetchSimilarCars(
     .neq('id', excludeId)
     .limit(limit);
   if (error) throw error;
+  await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
 }
 
@@ -286,6 +299,9 @@ export interface CreateCarInput {
   make: string;
   model: string;
   trim?: string;
+  /** Catalogue model + colour the host picked (migration 0107). */
+  catalogId?: string;
+  colorKey?: string;
   year: number;
   category: Car['category'];
   city: string;
@@ -367,6 +383,7 @@ export async function createCar(
         make: input.make,
         model: input.model,
         trim: input.trim || null,
+        ...(input.catalogId ? { catalog_id: input.catalogId, color_key: input.colorKey ?? null } : {}),
         year: input.year,
         category: input.category,
         city: input.city,

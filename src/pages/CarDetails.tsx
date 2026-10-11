@@ -82,7 +82,7 @@ const featureIcon: Record<string, IconName> = {
 };
 
 /** Swipeable photo pager with a translucent page control — tap a photo for full screen. */
-function HeroPager({ images, alt, onOpen }: { images: string[]; alt: string; onOpen: (i: number) => void }) {
+function HeroPager({ images, alt, onOpen, studioFirst }: { images: string[]; alt: string; onOpen: (i: number) => void; studioFirst?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [i, setI] = useState(0);
   const go = (n: number) => ref.current?.scrollTo({ left: n * ref.current.clientWidth, behavior: 'smooth' });
@@ -94,7 +94,7 @@ function HeroPager({ images, alt, onOpen }: { images: string[]; alt: string; onO
         className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
       >
         {(images.length ? images : ['']).map((im, n) => (
-          <button key={n} type="button" onClick={() => onOpen(n)} className="relative aspect-[4/3] w-full shrink-0 snap-center bg-panel sm:aspect-[16/10]" aria-label={`${alt} ${n + 1}`}>
+          <button key={n} type="button" onClick={() => onOpen(n)} className={`relative aspect-[4/3] w-full shrink-0 snap-center sm:aspect-[16/10] ${studioFirst && n === 0 ? 'bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e2e5de]' : 'bg-panel'}`} aria-label={`${alt} ${n + 1}`}>
             <Img
               src={unsplash(im, 1400)}
               srcSet={unsplashSrcSet(im, [700, 1100, 1600])}
@@ -102,12 +102,17 @@ function HeroPager({ images, alt, onOpen }: { images: string[]; alt: string; onO
               alt={alt}
               loading={n === 0 ? 'eager' : 'lazy'}
               fetchPriority={n === 0 ? 'high' : undefined}
-              className="h-full w-full object-cover"
+              className={`h-full w-full ${studioFirst && n === 0 ? 'object-contain p-6 pb-12 drop-shadow-[0_22px_22px_rgba(22,22,26,0.2)]' : 'object-cover'}`}
               fallback={<span className="grid h-full w-full place-items-center text-faint"><Icon name="car" size={42} /></span>}
             />
           </button>
         ))}
       </div>
+      {studioFirst && i === 0 && (
+        <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft shadow-hair backdrop-blur sm:bottom-4 sm:left-4">
+          CX studio image · photos of this exact car follow
+        </span>
+      )}
       {images.length > 1 && (
         <>
           <div className="pointer-events-none absolute inset-x-0 bottom-9 flex justify-center sm:bottom-10">
@@ -240,7 +245,7 @@ export default function CarDetails() {
           <div className="min-w-0">
             {/* Hero — edge to edge on a phone, a rounded card on a desktop */}
             <div className="relative overflow-hidden lg:rounded-[28px]">
-              <HeroPager images={gallery} alt={alt} onOpen={setLightbox} />
+              <HeroPager images={gallery} alt={alt} onOpen={setLightbox} studioFirst={car.catalogHero} />
               <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-3.5 sm:p-4">
                 <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/browse'))} aria-label={t('Back')} className={`${roundBtn} pointer-events-auto`}>
                   <Icon name="chevronLeft" size={20} />

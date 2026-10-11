@@ -98,14 +98,14 @@ export function CarCard({
         to={`/cars/${car.slug}`}
         className="card card-hover pressable group flex overflow-hidden"
       >
-        <div className="relative w-36 shrink-0 overflow-hidden sm:w-44">
+        <div className={`relative w-36 shrink-0 overflow-hidden sm:w-44 ${car.catalogHero ? 'bg-gradient-to-b from-[#f4f5f2] to-[#e6e9e3]' : ''}`}>
           <Img
             src={unsplash(car.images[0], 500)}
             srcSet={unsplashSrcSet(car.images[0], [240, 360, 520])}
             sizes="176px"
             alt={`${car.make} ${car.model}`}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className={`h-full w-full transition-transform duration-700 group-hover:scale-105 ${car.catalogHero ? 'object-contain p-2' : 'object-cover'}`}
             fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={24} /></span>}
           />
         </div>
@@ -142,7 +142,7 @@ export function CarCard({
         style={{ ...tiltStyle, transformStyle: 'preserve-3d' }}
       >
         <article className="card card-hover overflow-hidden transition-colors duration-300 group-hover:border-accent-bright/25">
-          <div className="relative aspect-[4/3] overflow-hidden bg-panel-2">
+          <div className={`relative aspect-[4/3] overflow-hidden ${car.catalogHero ? 'bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e6e9e3]' : 'bg-panel-2'}`}>
             <Img
               src={unsplash(car.images[0], 700)}
               srcSet={unsplashSrcSet(car.images[0], [400, 700, 1000, 1400])}
@@ -150,7 +150,7 @@ export function CarCard({
               alt={`${car.year} ${car.make} ${car.model}`}
               loading={priority ? 'eager' : 'lazy'}
               fetchPriority={priority ? 'high' : undefined}
-              className="h-full w-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06]"
+              className={`h-full w-full transition-transform duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.06] ${car.catalogHero ? 'object-contain p-5 pb-9 drop-shadow-[0_18px_18px_rgba(22,22,26,0.18)]' : 'object-cover'}`}
               fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="car" size={28} /></span>}
             />
             {/* A once-per-hover diagonal light sweep — the showroom-photo

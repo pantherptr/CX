@@ -10,8 +10,9 @@ import { SpotlightPanel } from '../components/admin/SpotlightPanel';
 import { AdsPanel } from '../components/admin/AdsPanel';
 import { PayoutsPanel } from '../components/admin/PayoutsPanel';
 import { ReportsPanel } from '../components/admin/ReportsPanel';
+import { CatalogPanel } from '../components/admin/CatalogPanel';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'signal-demo';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'catalog' | 'signal-demo';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
@@ -22,6 +23,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'ads', label: 'Sponsored', icon: 'euro' },
   { id: 'payouts', label: 'Payouts', icon: 'wallet' },
   { id: 'reports', label: 'Reports', icon: 'shield' },
+  { id: 'catalog', label: 'Catalog', icon: 'cars' },
   { id: 'signal-demo', label: 'Signal Demo', icon: 'sparkles' },
 ];
 
@@ -73,6 +75,7 @@ export default function AdminDashboard() {
         {tab === 'ads' && <AdsPanel />}
         {tab === 'payouts' && <PayoutsPanel />}
         {tab === 'reports' && <ReportsPanel />}
+        {tab === 'catalog' && <CatalogPanel />}
         {tab === 'signal-demo' && <SignalDemoPanel />}
       </div>
     </div>

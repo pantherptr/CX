@@ -6,6 +6,7 @@ import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { createCar } from '../lib/data/cars';
+import { useCatalog, groupByMake, pickCatalogImage, type CatalogModel } from '../lib/data/catalog';
 import { catalogue } from '../lib/catalogue';
 import { DEFAULT_POLICY, type CancellationPolicy } from '../lib/cancellationPolicy';
 import { CancellationPolicyPicker } from '../components/CancellationPolicy';
@@ -42,6 +43,19 @@ const DRIVES = ['Front-wheel drive', 'Rear-wheel drive', 'All-wheel drive'];
 const FEATURES = [
   'Apple CarPlay', 'Bluetooth', 'Navigation', 'Heated seats',
   'Parking sensors', 'Adaptive cruise control', 'Panoramic roof', 'Premium sound',
+];
+
+/** Paint colours offered when a model has no colour-specific image yet. */
+const GENERIC_COLORS = [
+  { key: 'black', label: 'Black', hex: '#15161a' },
+  { key: 'white', label: 'White', hex: '#f3f3f1' },
+  { key: 'silver', label: 'Silver', hex: '#c4c7cc' },
+  { key: 'grey', label: 'Grey', hex: '#7b7f86' },
+  { key: 'red', label: 'Red', hex: '#c8202b' },
+  { key: 'blue', label: 'Blue', hex: '#1f4fd8' },
+  { key: 'green', label: 'Green', hex: '#1f7a3d' },
+  { key: 'yellow', label: 'Yellow', hex: '#f2c230' },
+  { key: 'orange', label: 'Orange', hex: '#e86f1c' },
 ];
 
 const MAX_PHOTOS = 8;
@@ -83,6 +97,12 @@ export default function ListCar() {
     description: '',
   });
   const [features, setFeatures] = useState<string[]>([]);
+  // The catalogue pick: the model entry (make + model + version) and the paint colour.
+  const { models: catalogModels } = useCatalog();
+  const [pickedMake, setPickedMake] = useState('');
+  const [pickedModel, setPickedModel] = useState('');
+  const [entry, setEntry] = useState<CatalogModel | null>(null);
+  const [colorKey, setColorKey] = useState('');
   const [instantBook, setInstantBook] = useState(true);
   const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -146,11 +166,30 @@ export default function ListCar() {
   const toggleFeature = (f: string) =>
     setFeatures((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
 
-  const year = Number(form.year);
   const thisYear = new Date().getFullYear();
+  /** A catalogue model fills in everything a host would otherwise type by hand. */
+  const applyEntry = (m: CatalogModel) => {
+    const top = Math.min(m.yearTo ?? thisYear + 1, thisYear + 1);
+    setForm((f) => ({
+      ...f,
+      make: m.make,
+      model: m.model,
+      trim: m.version ?? '',
+      category: m.category,
+      seats: String(m.seats),
+      doors: String(m.doors),
+      luggage: String(m.luggage),
+      transmission: m.transmissions[0] ?? f.transmission,
+      fuel: m.fuels[0] ?? f.fuel,
+      drive: m.drives[0] ?? f.drive,
+      year: String(Math.min(Math.max(Number(f.year) || top, m.yearFrom), top)),
+    }));
+  };
+  const year = Number(form.year);
+  const useCat = (catalogModels?.filter((m) => m.active).length ?? 0) > 0;
   const stepValid = [
     Boolean(
-      form.make.trim() && form.model.trim() && form.location.trim() && form.city &&
+      (useCat ? entry && colorKey : form.make.trim() && form.model.trim()) && form.location.trim() && form.city &&
       Number.isInteger(year) && year >= 1950 && year <= thisYear + 2 &&
       Number(form.seats) >= 1 && Number(form.doors) >= 1 && Number(form.luggage) >= 0,
     ),
@@ -182,6 +221,8 @@ export default function ListCar() {
         make: form.make.trim(),
         model: form.model.trim(),
         trim: form.trim.trim() || undefined,
+        catalogId: useCat ? entry?.id : undefined,
+        colorKey: useCat ? colorKey : undefined,
         year,
         category: form.category,
         city: form.city,
@@ -325,55 +366,162 @@ export default function ListCar() {
               <p className="mt-1 text-body text-muted">The basics renters look for first.</p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <Labeled label="Make">
-                  <input value={form.make} onChange={(e) => set({ make: e.target.value })} placeholder="e.g. BMW" className="input" />
-                </Labeled>
-                <Labeled label="Model">
-                  <input value={form.model} onChange={(e) => set({ model: e.target.value })} placeholder="e.g. M2" className="input" />
-                </Labeled>
-                <Labeled label="Trim (optional)">
-                  <input value={form.trim} onChange={(e) => set({ trim: e.target.value })} placeholder="e.g. Competition" className="input" />
-                </Labeled>
-                <Labeled label="Year">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={1950}
-                    max={thisYear + 2}
-                    value={form.year}
-                    onChange={(e) => set({ year: e.target.value })}
-                    className="input"
-                  />
-                </Labeled>
-                <Labeled label="Type">
-                  <select value={form.category} onChange={(e) => set({ category: e.target.value as Car['category'] })} className="input">
-                    {CATEGORIES.map((t) => <option key={t}>{t}</option>)}
-                  </select>
-                </Labeled>
-                <Labeled label="Transmission">
-                  <select value={form.transmission} onChange={(e) => set({ transmission: e.target.value as Car['transmission'] })} className="input">
-                    {TRANSMISSIONS.map((t) => <option key={t}>{t}</option>)}
-                  </select>
-                </Labeled>
-                <Labeled label="Fuel">
-                  <select value={form.fuel} onChange={(e) => set({ fuel: e.target.value as Car['fuel'] })} className="input">
-                    {FUELS.map((t) => <option key={t}>{t}</option>)}
-                  </select>
-                </Labeled>
-                <Labeled label="Drive">
-                  <select value={form.drive} onChange={(e) => set({ drive: e.target.value })} className="input">
-                    {DRIVES.map((t) => <option key={t}>{t}</option>)}
-                  </select>
-                </Labeled>
-                <Labeled label="Seats">
-                  <input type="number" inputMode="numeric" min={1} max={9} value={form.seats} onChange={(e) => set({ seats: e.target.value })} className="input" />
-                </Labeled>
-                <Labeled label="Doors">
-                  <input type="number" inputMode="numeric" min={1} max={6} value={form.doors} onChange={(e) => set({ doors: e.target.value })} className="input" />
-                </Labeled>
-                <Labeled label="Luggage">
-                  <input type="number" inputMode="numeric" min={0} max={10} value={form.luggage} onChange={(e) => set({ luggage: e.target.value })} className="input" />
-                </Labeled>
+                {useCat ? (
+                  <>
+                    <Labeled label="Make">
+                      <select
+                        value={pickedMake}
+                        onChange={(e) => { setPickedMake(e.target.value); setPickedModel(''); setEntry(null); setColorKey(''); }}
+                        className="input"
+                      >
+                        <option value="">Choose a make…</option>
+                        {groupByMake(catalogModels ?? []).map((g) => <option key={g.make}>{g.make}</option>)}
+                      </select>
+                    </Labeled>
+                    <Labeled label="Model">
+                      <select
+                        value={pickedModel}
+                        disabled={!pickedMake}
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          setPickedModel(name);
+                          setColorKey('');
+                          const options = (catalogModels ?? []).filter((m) => m.active && m.make === pickedMake && m.model === name);
+                          const only = options.length === 1 ? options[0] : null;
+                          setEntry(only);
+                          if (only) applyEntry(only);
+                        }}
+                        className="input disabled:opacity-50"
+                      >
+                        <option value="">Choose a model…</option>
+                        {(groupByMake(catalogModels ?? []).find((g) => g.make === pickedMake)?.models ?? []).map((m) => <option key={m}>{m}</option>)}
+                      </select>
+                    </Labeled>
+                    {pickedModel && (catalogModels ?? []).filter((m) => m.active && m.make === pickedMake && m.model === pickedModel).length > 1 && (
+                      <Labeled label="Version" full>
+                        <div className="flex flex-wrap gap-2">
+                          {(catalogModels ?? []).filter((m) => m.active && m.make === pickedMake && m.model === pickedModel).map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              data-active={entry?.id === m.id}
+                              onClick={() => { setEntry(m); setColorKey(''); applyEntry(m); }}
+                              className="chip"
+                            >
+                              {m.version || 'Standard'} <span className="text-faint">{m.yearFrom}–{m.yearTo ?? 'now'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </Labeled>
+                    )}
+                    {entry && (
+                      <Labeled label="Year">
+                        <select value={form.year} onChange={(e) => set({ year: e.target.value })} className="input">
+                          {Array.from({ length: (entry.yearTo ?? thisYear + 1) - entry.yearFrom + 1 }, (_, i) => (entry.yearTo ?? thisYear + 1) - i).map((y) => <option key={y}>{y}</option>)}
+                        </select>
+                      </Labeled>
+                    )}
+                    {entry && (
+                      <div className="sm:col-span-2">
+                        <span className="field-label">Colour</span>
+                        <div className="mt-2 flex flex-wrap gap-2.5">
+                          {(entry.images.length > 0
+                            ? entry.images.map((i) => ({ key: i.colorKey, label: i.colorLabel, hex: i.colorHex }))
+                            : GENERIC_COLORS
+                          ).map((c) => (
+                            <button
+                              key={c.key}
+                              type="button"
+                              onClick={() => setColorKey(c.key)}
+                              aria-label={c.label}
+                              title={c.label}
+                              className={`grid h-10 w-10 place-items-center rounded-full ring-2 transition-transform active:scale-90 ${colorKey === c.key ? 'ring-accent' : 'ring-line'}`}
+                            >
+                              <span className="h-7 w-7 rounded-full ring-1 ring-black/10" style={{ background: c.hex }} />
+                            </button>
+                          ))}
+                        </div>
+                        {colorKey && <p className="mt-1.5 text-caption text-muted">{(entry.images.find((i) => i.colorKey === colorKey)?.colorLabel) ?? GENERIC_COLORS.find((c) => c.key === colorKey)?.label}</p>}
+                      </div>
+                    )}
+                    {entry && (
+                      <div className="sm:col-span-2 overflow-hidden rounded-[22px] border border-line bg-gradient-to-b from-[#f4f5f2] to-white p-4">
+                        {pickCatalogImage(entry.images, colorKey) ? (
+                          <img src={pickCatalogImage(entry.images, colorKey)!.url} alt="" className="mx-auto h-40 w-full object-contain" />
+                        ) : (
+                          <div className="grid h-28 place-items-center text-center text-detail text-muted">
+                            <span>Our studio image of the {entry.make} {entry.model} is being added.<br />Until then, your photos lead the listing.</span>
+                          </div>
+                        )}
+                        <p className="mt-2 text-center text-caption text-muted">
+                          Your listing leads with this studio image; your own photos come right after it.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Labeled label="Make">
+                      <input value={form.make} onChange={(e) => set({ make: e.target.value })} placeholder="e.g. BMW" className="input" />
+                    </Labeled>
+                    <Labeled label="Model">
+                      <input value={form.model} onChange={(e) => set({ model: e.target.value })} placeholder="e.g. M2" className="input" />
+                    </Labeled>
+                    <Labeled label="Trim (optional)">
+                      <input value={form.trim} onChange={(e) => set({ trim: e.target.value })} placeholder="e.g. Competition" className="input" />
+                    </Labeled>
+                    <Labeled label="Year">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1950}
+                        max={thisYear + 2}
+                        value={form.year}
+                        onChange={(e) => set({ year: e.target.value })}
+                        className="input"
+                      />
+                    </Labeled>
+                  </>
+                )}
+                {(!useCat || entry) && (
+                  <>
+                    {!useCat && (
+                      <Labeled label="Type">
+                        <select value={form.category} onChange={(e) => set({ category: e.target.value as Car['category'] })} className="input">
+                          {CATEGORIES.map((t) => <option key={t}>{t}</option>)}
+                        </select>
+                      </Labeled>
+                    )}
+                    <Labeled label="Transmission">
+                      <select value={form.transmission} onChange={(e) => set({ transmission: e.target.value as Car['transmission'] })} className="input">
+                        {(entry ? entry.transmissions : TRANSMISSIONS).map((t) => <option key={t}>{t}</option>)}
+                      </select>
+                    </Labeled>
+                    <Labeled label="Fuel">
+                      <select value={form.fuel} onChange={(e) => set({ fuel: e.target.value as Car['fuel'] })} className="input">
+                        {(entry ? entry.fuels : FUELS).map((t) => <option key={t}>{t}</option>)}
+                      </select>
+                    </Labeled>
+                    <Labeled label="Drive">
+                      <select value={form.drive} onChange={(e) => set({ drive: e.target.value })} className="input">
+                        {(entry ? entry.drives : DRIVES).map((t) => <option key={t}>{t}</option>)}
+                      </select>
+                    </Labeled>
+                    {!useCat && (
+                      <>
+                        <Labeled label="Seats">
+                          <input type="number" inputMode="numeric" min={1} max={9} value={form.seats} onChange={(e) => set({ seats: e.target.value })} className="input" />
+                        </Labeled>
+                        <Labeled label="Doors">
+                          <input type="number" inputMode="numeric" min={1} max={6} value={form.doors} onChange={(e) => set({ doors: e.target.value })} className="input" />
+                        </Labeled>
+                        <Labeled label="Luggage">
+                          <input type="number" inputMode="numeric" min={0} max={10} value={form.luggage} onChange={(e) => set({ luggage: e.target.value })} className="input" />
+                        </Labeled>
+                      </>
+                    )}
+                  </>
+                )}
                 <Labeled label="Mileage">
                   <input value={form.mileage} onChange={(e) => set({ mileage: e.target.value })} placeholder="e.g. Unlimited" className="input" />
                 </Labeled>
@@ -437,7 +585,7 @@ export default function ListCar() {
 
               {!canContinue && (
                 <p className="mt-5 flex items-center gap-2 text-detail text-muted">
-                  <Icon name="info" size={15} /> Fill in make, model, year, city and pick-up area to continue.
+                  <Icon name="info" size={15} /> {useCat ? 'Choose your car, its colour, the city and the pick-up area to continue.' : 'Fill in make, model, year, city and pick-up area to continue.'}
                 </p>
               )}
             </div>
