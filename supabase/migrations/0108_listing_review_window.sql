@@ -113,7 +113,7 @@ grant execute on function public.promote_due_listings() to anon, authenticated;
 -- ---------------------------------------------------------------- the team's view
 create or replace function public.review_queue()
 returns table (
-  car_id uuid, slug text, make text, model text, trim text, year int, city text,
+  car_id uuid, slug text, make text, model text, car_trim text, year int, city text,
   host_id uuid, host_name text, host_avatar text,
   submitted_at timestamptz, publish_at timestamptz, claimed_at timestamptz,
   claimed_by uuid, claimed_by_name text,

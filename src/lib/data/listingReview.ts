@@ -30,7 +30,7 @@ export const SEND_BACK_REASONS = [
 ] as const;
 
 interface Row {
-  car_id: string; slug: string; make: string; model: string; trim: string | null; year: number; city: string;
+  car_id: string; slug: string; make: string; model: string; car_trim: string | null; year: number; city: string;
   host_id: string; host_name: string | null; host_avatar: string | null;
   submitted_at: string; publish_at: string; claimed_at: string | null;
   claimed_by: string | null; claimed_by_name: string | null; photos: string[] | null;
@@ -43,7 +43,7 @@ export async function fetchReviewQueue(): Promise<{ data: ReviewItem[]; error: s
   return {
     error: null,
     data: ((data ?? []) as Row[]).map((r) => ({
-      carId: r.car_id, slug: r.slug, make: r.make, model: r.model, trim: r.trim, year: r.year, city: r.city,
+      carId: r.car_id, slug: r.slug, make: r.make, model: r.model, trim: r.car_trim, year: r.year, city: r.city,
       hostId: r.host_id, hostName: r.host_name || 'Host', hostAvatar: r.host_avatar,
       submittedAt: r.submitted_at, publishAt: r.publish_at, claimedAt: r.claimed_at,
       claimedBy: r.claimed_by, claimedByName: r.claimed_by_name, photos: r.photos ?? [],
