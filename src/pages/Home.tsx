@@ -10,7 +10,6 @@ import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet } from '../lib/img';
 import { eur } from '../lib/format';
 import { catalogue } from '../lib/catalogue';
-import type { Car } from '../data/types';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
@@ -20,9 +19,8 @@ import { useLocale } from '../lib/i18n';
  *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
  *  Share row, CX team comment). Decorative sample content. Laid out at a
  *  fixed design size and scaled down to fit. */
-function SignalFan({ cars }: { cars: Car[] | null }) {
+function SignalFan() {
   const { t } = useLocale();
-  const amg = cars?.find((c) => /AMG/i.test(c.make) && /GT/i.test(c.model));
   const shell = 'absolute left-1/2 top-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_30px_55px_-26px_rgba(0,50,20,0.55)]';
   const place = (dx: number, rot: number, dy: number) => ({
     transform: `translate(calc(-50% + ${dx}rem), calc(-50% + ${dy}rem)) rotate(${rot}deg)`,
@@ -58,9 +56,9 @@ function SignalFan({ cars }: { cars: Car[] | null }) {
             ))}
           </div>
           <div className="absolute inset-x-3 top-6 flex items-center gap-2 text-white">
-            <span className="rounded-full bg-gradient-to-tr from-accent-bright to-accent p-[2px]"><Avatar src="/signal/av-marco.webp" size={34} /></span>
+            <span className="rounded-full bg-gradient-to-tr from-accent-bright to-accent p-[2px]"><Avatar src="/signal/av-adam.webp" size={34} /></span>
             <span className="min-w-0">
-              <span className="flex items-center gap-1 text-detail font-semibold">marco.b <VerifiedBadge role="host" size={13} /></span>
+              <span className="flex items-center gap-1 text-detail font-semibold">Adam <VerifiedBadge role="host" size={13} /></span>
               <span className="block text-caption text-white/75">{t('Amalfi Coast')}</span>
             </span>
           </div>
@@ -72,7 +70,7 @@ function SignalFan({ cars }: { cars: Car[] | null }) {
           <div className="flex items-center gap-2.5 p-3">
             <Avatar src="/signal/av-luca.webp" size={36} />
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1 text-detail font-semibold text-ink">luca.m <VerifiedBadge role="client" size={13} /></span>
+              <span className="flex items-center gap-1 text-detail font-semibold text-ink">Luca <VerifiedBadge role="client" size={13} /></span>
               <span className="block text-caption text-faint">Milano</span>
             </span>
             <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
@@ -94,22 +92,12 @@ function SignalFan({ cars }: { cars: Car[] | null }) {
           <div className="flex items-center gap-2.5 p-3">
             <Avatar src="/signal/av-giulia.webp" size={40} />
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1 text-detail font-semibold text-ink">giulia.r <VerifiedBadge role="client" size={14} /></span>
+              <span className="flex items-center gap-1 text-detail font-semibold text-ink">Giulia <VerifiedBadge role="client" size={14} /></span>
               <span className="block text-caption text-faint">Milano · 2h</span>
             </span>
             <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
           </div>
-          <p className="px-3 pb-2 text-detail leading-relaxed text-ink">{t('First time with this car — what an experience. Power, comfort and design, perfect for a weekend in Tuscany. Thanks @cx for making it so simple! 🔥')}</p>
-          {amg && (
-            <span className="mx-3 mb-2 flex items-center gap-3 rounded-xl border border-line bg-panel p-2">
-              <img src={unsplash(amg.images[0], 120)} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-caption font-semibold text-ink">{amg.year} {amg.make} {amg.model}</span>
-                <span className="block truncate text-label text-muted">{amg.city} · {eur(amg.pricePerDay)}{t('/day')}</span>
-              </span>
-              <span className="flex shrink-0 items-center text-label font-semibold text-accent-700">{t('View Vehicle')} <Icon name="chevronRight" size={12} /></span>
-            </span>
-          )}
+          <p className="px-3 pb-2 text-detail leading-relaxed text-ink">{t('Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤')}</p>
           <img src="/signal/giulia.webp" alt="" className="aspect-[16/10] w-full object-cover" loading="lazy" />
           <Actions respected />
         </div>
@@ -501,7 +489,7 @@ export default function Home() {
 
               {/* A glimpse of SIGNAL — sample Story and posts. Decorative; the
                   button is the way in. */}
-              <SignalFan cars={allCars} />
+              <SignalFan />
             </div>
           </div>
         </Reveal>
