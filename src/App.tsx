@@ -30,7 +30,6 @@ import NotFound from './pages/NotFound';
 // was previously downloading ~3,500 lines of code they could never reach.
 // Split per route so each page's cost is paid only when it's opened.
 const Compare = lazy(() => import('./pages/Compare'));
-const Garage = lazy(() => import('./pages/Garage'));
 const Signal = lazy(() => import('./pages/Signal'));
 const Booking = lazy(() => import('./pages/Booking'));
 const ListCar = lazy(() => import('./pages/ListCar'));
@@ -295,7 +294,7 @@ export default function App() {
           {/* Not wrapped in ProtectedRoute — the page itself shows a
               sign-in teaser for a signed-out visitor rather than a hard
               redirect, per its own spec. */}
-          <Route path="/garage" element={<Garage />} />
+          <Route path="/garage" element={<Navigate to="/dashboard" replace />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/about" element={<About />} />
           <Route path="/help" element={<Help />} />

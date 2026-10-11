@@ -12,7 +12,6 @@ export interface NavItem {
  *  app header's menu drawer (Navbar, on pages without a sidebar). */
 export const customerNav = (unreadCount: number): NavItem[] => [
   { label: 'Overview', to: '/dashboard', icon: 'grid' },
-  { label: 'CX Garage', to: '/garage', icon: 'key' },
   { label: 'Browse Cars', to: '/browse', icon: 'search' },
   { label: 'My Trips', to: '/dashboard#trips', icon: 'trips' },
   { label: 'Saved Cars', to: '/dashboard#saved', icon: 'heart' },

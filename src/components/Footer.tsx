@@ -18,7 +18,6 @@ const columns: { title: string; links: { label: string; to: string }[] }[] = [
     links: [
       { label: 'Browse cars', to: '/browse' },
       { label: 'Compare cars', to: '/compare' },
-      { label: 'CX Garage', to: '/garage' },
       { label: 'How it works', to: '/how-it-works' },
     ],
   },
