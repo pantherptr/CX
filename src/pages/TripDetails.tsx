@@ -26,7 +26,7 @@ import {
 import { useVerification, licenceReady } from '../lib/data/verification';
 import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
-import { InspectionGrid } from '../components/InspectionGrid';
+import { InspectionCard } from '../components/InspectionGrid';
 import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
 import { TripJourney } from '../components/TripJourney';
 import { isHandoverVerified } from '../lib/data/handovers';
@@ -431,29 +431,16 @@ export default function TripDetails() {
           <Reveal>
           <section id="inspection" className="mt-8 scroll-mt-24 border-t border-line pt-6">
             <h2 className="font-display text-lg font-semibold text-ink">Vehicle inspection</h2>
-            <p className="mt-1 text-detail text-muted">Photograph the car before pick-up and after return — a real before/after record for this trip.</p>
+            <p className="mt-1 text-detail text-muted">A quick photo record, before and after: it protects you and your host.</p>
 
-            <h3 className="mt-5 text-detail font-semibold uppercase tracking-wide text-muted">Before pick-up</h3>
-            <div className="mt-2.5">
-              <InspectionGrid
+            <div className="mt-4">
+              <InspectionCard
                 bookingId={booking.id}
                 uploaderId={session.user.id}
-                phase="pre"
                 photos={inspectionPhotos ?? []}
                 onUploaded={refreshInspectionPhotos}
-              />
-            </div>
-
-            <h3 className="mt-6 text-detail font-semibold uppercase tracking-wide text-muted">After return</h3>
-            <div className="mt-2.5">
-              <InspectionGrid
-                bookingId={booking.id}
-                uploaderId={session.user.id}
-                phase="post"
-                photos={inspectionPhotos ?? []}
-                onUploaded={refreshInspectionPhotos}
-                locked={phase === 'upcoming'}
-                lockedMessage="Unlocks once your trip has started."
+                afterLocked={phase === 'upcoming' && !handoverDone}
+                startOnReturn={handoverDone}
               />
             </div>
           </section>
