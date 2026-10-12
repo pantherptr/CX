@@ -1,3 +1,4 @@
+import { BlurText } from '../ui/blur-text';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../Icon';
 import { SignalSHero } from '../SignalLogo';
@@ -53,9 +54,11 @@ export function SignalGate() {
             <span className="h-1.5 w-1.5 rounded-full bg-accent-bright shadow-[0_0_10px_rgba(0,212,71,0.9)]" aria-hidden="true" />
             {t('CX Signal')}
           </p>
-          <h1 className="mt-5 font-display text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.02em] text-balance sm:text-5xl lg:text-[3.6rem]">
-            {t('The official voice of CX Rent.')}
-          </h1>
+          <BlurText
+            as="h1"
+            text={t('The official voice of CX Rent.')}
+            className="mt-5 block font-display text-[2.35rem] font-semibold leading-[1.04] tracking-[-0.02em] text-balance sm:text-5xl lg:text-[3.6rem]"
+          />
           <p className="mx-auto mt-5 max-w-md text-[1.0625rem] leading-relaxed text-on-noir-muted lg:mx-0">
             {t('News, announcements and new cars, straight from the team.')}
           </p>
