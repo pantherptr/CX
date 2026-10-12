@@ -102,40 +102,54 @@ export function swingAngle(top: Pt, bottom: Pt) {
 const DISPLAY = '"Clash Display", "Satoshi", "Arial Narrow", Impact, sans-serif'
 const SCRIPT = '"Segoe Script", "Brush Script MT", "Snell Roundhand", cursive'
 
-/** A mandala: rings, petals, a bead circle and a flower in the middle. */
+/** A car wheel seen from the side: tyre with tread ticks, rim lip, ten spokes, hub and lug nuts. */
 function drawMandala(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
   ctx.save()
   ctx.translate(cx, cy)
   ctx.lineWidth = Math.max(0.8, r * 0.018)
-  for (const k of [1, 0.9, 0.62, 0.26]) {
+  for (const k of [1, 0.9, 0.8]) {
     ctx.beginPath()
     ctx.arc(0, 0, r * k, 0, Math.PI * 2)
     ctx.stroke()
   }
-  for (let i = 0; i < 16; i++) {
+  // tread ticks
+  for (let i = 0; i < 28; i++) {
     ctx.save()
-    ctx.rotate((i / 16) * Math.PI * 2)
+    ctx.rotate((i / 28) * Math.PI * 2)
     ctx.beginPath()
-    ctx.ellipse(0, -r * 0.76, r * 0.07, r * 0.13, 0, 0, Math.PI * 2)
+    ctx.moveTo(0, -r * 0.915)
+    ctx.lineTo(0, -r * 0.985)
     ctx.stroke()
-    ctx.rotate(Math.PI / 16)
+    ctx.restore()
+  }
+  // spokes
+  for (let i = 0; i < 10; i++) {
+    ctx.save()
+    ctx.rotate((i / 10) * Math.PI * 2)
     ctx.beginPath()
-    ctx.arc(0, -r * 0.95, r * 0.018, 0, Math.PI * 2)
+    ctx.moveTo(-r * 0.05, -r * 0.27)
+    ctx.lineTo(-r * 0.095, -r * 0.78)
+    ctx.lineTo(r * 0.095, -r * 0.78)
+    ctx.lineTo(r * 0.05, -r * 0.27)
+    ctx.stroke()
+    ctx.restore()
+  }
+  // hub and lug nuts
+  for (const k of [0.25, 0.12]) {
+    ctx.beginPath()
+    ctx.arc(0, 0, r * k, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  for (let i = 0; i < 5; i++) {
+    ctx.save()
+    ctx.rotate((i / 5) * Math.PI * 2)
+    ctx.beginPath()
+    ctx.arc(0, -r * 0.185, r * 0.025, 0, Math.PI * 2)
     ctx.fill()
     ctx.restore()
   }
-  for (let i = 0; i < 8; i++) {
-    ctx.save()
-    ctx.rotate((i / 8) * Math.PI * 2)
-    ctx.beginPath()
-    ctx.moveTo(0, -r * 0.26)
-    ctx.bezierCurveTo(r * 0.12, -r * 0.4, r * 0.1, -r * 0.52, 0, -r * 0.6)
-    ctx.bezierCurveTo(-r * 0.1, -r * 0.52, -r * 0.12, -r * 0.4, 0, -r * 0.26)
-    ctx.stroke()
-    ctx.restore()
-  }
   ctx.beginPath()
-  ctx.arc(0, 0, r * 0.07, 0, Math.PI * 2)
+  ctx.arc(0, 0, r * 0.05, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
@@ -212,24 +226,29 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
+/** The card's decoration: a car wheel (tyre, tread, rim, ten spokes, hub). Same size, tilt and placement
+ *  as the ornament it replaced. */
 export function Ornament({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
-  const ring = Array.from({ length: 16 }, (_, i) => i * 22.5)
+  const tread = Array.from({ length: 28 }, (_, i) => (i * 360) / 28)
+  const spokes = Array.from({ length: 10 }, (_, i) => i * 36)
+  const lugs = Array.from({ length: 5 }, (_, i) => i * 72)
   return (
     <svg viewBox="-100 -100 200 200" fill="none" stroke="currentColor" strokeWidth={1.4} className={className} style={style} aria-hidden="true">
       <circle r={96} />
       <circle r={86} />
-      <circle r={60} />
+      <circle r={77} />
+      {tread.map((a) => (
+        <path key={a} d="M0 -88 L0 -95" transform={"rotate(" + a + ")"} />
+      ))}
+      {spokes.map((a) => (
+        <path key={"s" + a} d="M-5 -27 L-9.5 -75 L9.5 -75 L5 -27 Z" transform={"rotate(" + a + ")"} />
+      ))}
       <circle r={25} />
-      {ring.map((a) => (
-        <ellipse key={a} cx={0} cy={-73} rx={6.5} ry={12} transform={"rotate(" + a + ")"} />
+      <circle r={12} />
+      {lugs.map((a) => (
+        <circle key={"l" + a} cx={0} cy={-18.5} r={2.4} fill="currentColor" transform={"rotate(" + a + ")"} />
       ))}
-      {ring.map((a) => (
-        <circle key={"d" + a} cx={0} cy={-91} r={1.8} fill="currentColor" transform={"rotate(" + (a + 11.25) + ")"} />
-      ))}
-      {ring.slice(0, 8).map((_, i) => (
-        <path key={"p" + i} d="M0 -25 C 12 -38, 10 -50, 0 -58 C -10 -50, -12 -38, 0 -25" transform={"rotate(" + i * 45 + ")"} />
-      ))}
-      <circle r={6} fill="currentColor" />
+      <circle r={5} fill="currentColor" />
     </svg>
   )
 }
