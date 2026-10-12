@@ -551,7 +551,7 @@ const ROWS: Row[] = [
   ['Complete 10 trips', 'Completa 10 viaggi', 'Finalizează 10 călătorii', 'Completa 10 viajes'],
   ['Complete 25 trips', 'Completa 25 viaggi', 'Finalizează 25 de călătorii', 'Completa 25 viajes'],
   ['Share 10 posts', 'Condividi 10 post', 'Distribuie 10 postări', 'Comparte 10 publicaciones'],
-  ['Earn 50 Respect', 'Ottieni 50 Respect', 'Obține 50 Respect', 'Consigue 50 Respect'],
+  ['Earn 1,000 Respect', 'Ottieni 1.000 Respect', 'Obține 1.000 de Respect', 'Consigue 1.000 Respect'],
   ['Reach 100 followers', 'Raggiungi 100 follower', 'Atinge 100 de urmăritori', 'Llega a 100 seguidores'],
   ['Trending', 'Di tendenza', 'În tendințe', 'Tendencias'],
   ['Top this week', 'I migliori della settimana', 'Top săptămâna aceasta', 'Lo mejor de la semana'],

@@ -39,7 +39,7 @@ export function SignalAchievements({
         ]
       : []),
     { id: 'voice', icon: 'message' as IconName, title: 'Storyteller', hint: 'Share 10 posts', earned: posts >= 10, progress: [posts, 10] as const },
-    { id: 'respected', icon: 'like' as IconName, title: 'Respected', hint: 'Earn 50 Respect', earned: respects >= 50, progress: [respects, 50] as const },
+    { id: 'respected', icon: 'like' as IconName, title: 'Respected', hint: 'Earn 1,000 Respect', earned: respects >= 1000, progress: [respects, 1000] as const },
     { id: 'rising', icon: 'trending' as IconName, title: 'Rising', hint: 'Reach 100 followers', earned: followers >= 100, progress: [followers, 100] as const },
   ];
   // Others see what was earned; you also see the next two goals still ahead of you.
