@@ -23,6 +23,7 @@ import Home from './pages/Home';
 import CountryGateway from './pages/CountryGateway';
 import { IS_APP } from './lib/appMode';
 import { WelcomePass } from './components/WelcomePass';
+import ScanPass from './pages/ScanPass';
 import SignalReels from './pages/SignalReels';
 import { useLocale } from './lib/i18n';
 const Browse = lazy(() => import('./pages/Browse'));
@@ -352,6 +353,7 @@ export default function App() {
             shows a sign-in title screen for a signed-out visitor rather
             than a hard redirect. */}
         <Route path="/signal/reels" element={<SignalReels />} />
+        <Route path="/scan" element={<ScanPass />} />
         <Route path="/signal" element={<Signal />} />
         {/* Deep links — a shared post/Highlight open the same Signal shell
             with the item focused in an overlay, rather than a standalone

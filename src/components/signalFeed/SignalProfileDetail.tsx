@@ -1,4 +1,5 @@
 import { SignalAchievements } from './SignalAchievements';
+import { fetchVerifiedHandoversCount } from '../../lib/data/handovers';
 import { ShareProfileSheet, type PassData } from '../CxPass';
 import { SignalScheduledList } from './SignalScheduledList';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -262,6 +263,13 @@ export function SignalProfileDetail({
         url: `${window.location.origin}/signal/profile/${realProfile.id}`,
       }
     : null;
+  const [handovers, setHandovers] = useState(0);
+  useEffect(() => {
+    if (!realProfile) return;
+    let off = false;
+    void fetchVerifiedHandoversCount(realProfile.id).then((n) => { if (!off) setHandovers(n); });
+    return () => { off = true; };
+  }, [realProfile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [passOpen, setPassOpen] = useState(false);
   const [passHeading, setPassHeading] = useState<string | undefined>(undefined);
   // Reaching Golden Host: the badge drops in once, as the reward.
@@ -475,6 +483,7 @@ export function SignalProfileDetail({
           trips={realProfile.trips}
           followers={followersCount}
           respects={(posts ?? []).reduce((sum, p) => sum + p.likeCount, 0)}
+          handovers={handovers}
           isMe={isMe}
         />
       )}

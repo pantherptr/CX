@@ -23,12 +23,14 @@ export function SignalAchievements({
   trips,
   followers,
   respects,
+  handovers,
   isMe,
 }: {
   isHost: boolean;
   trips: number;
   followers: number;
   respects: number;
+  handovers: number;
   isMe: boolean;
 }) {
   const { t } = useLocale();
@@ -55,6 +57,7 @@ export function SignalAchievements({
           { id: 'golden', icon: 'trophy' as IconName, title: 'Golden Host', hint: 'Complete 25 trips', how: 'Complete 25 trips as a host to become a Golden Host.', earned: trips >= 25, gold: true, progress: [trips, 25] as const },
         ]
       : []),
+    { id: 'handover', icon: 'verified' as IconName, title: 'Verified handover', hint: 'Scan a CX Pass at a handover', how: 'At the handover, both of you scan each other’s CX Pass from the trip page. Each verified handover counts.', earned: handovers >= 1, progress: [handovers, 1] as const },
     { id: 'respected', icon: 'like' as IconName, title: 'Respected', hint: 'Earn 1,000 Respect', how: 'Share your trips, your car and your moments — every Respect on your posts counts toward 1,000.', earned: respects >= 1000, progress: [respects, 1000] as const },
     { id: 'rising', icon: 'trending' as IconName, title: 'Rising', hint: 'Reach 100 followers', how: 'Post often and follow people you like — 100 followers makes you Rising.', earned: followers >= 100, progress: [followers, 100] as const },
   ];

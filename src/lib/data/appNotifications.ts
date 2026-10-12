@@ -34,6 +34,9 @@ const toNotification = (r: Row): AppNotification => ({
 /** How each kind looks in the inbox: icon + tone. Unknown kinds fall back to a neutral bell. */
 export const KIND_STYLE: Record<string, { icon: IconName; tone: 'green' | 'ink' | 'amber' | 'red' }> = {
   booking_confirmed: { icon: 'checkCircle', tone: 'green' },
+  handover_verified: { icon: 'verified', tone: 'green' },
+  host_respect_trip: { icon: 'like', tone: 'green' },
+  share_trip: { icon: 'camera', tone: 'ink' },
   booking_new: { icon: 'trips', tone: 'green' },
   booking_cancelled: { icon: 'x', tone: 'red' },
   booking_refunded: { icon: 'euro', tone: 'green' },

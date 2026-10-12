@@ -28,6 +28,7 @@ import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
 import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
+import { HandoverCard } from '../components/HandoverCard';
 import { parseISO } from '../lib/calendarGrid';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
@@ -316,6 +317,7 @@ export default function TripDetails() {
         </div>
 
         {phase === 'completed' && session && <TripMemoryPrompt booking={booking} />}
+        {(phase === 'upcoming' || phase === 'active' || phase === 'completed') && booking.status !== 'cancelled' && session && <HandoverCard bookingId={booking.id} />}
 
         {phase === 'upcoming' && (
           <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-accent/15 bg-accent-050 px-5 py-4">

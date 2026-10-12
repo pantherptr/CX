@@ -29,13 +29,30 @@ const ago = (iso: string) => {
   return d < 7 ? `${d}d` : new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 };
 
+/** Same kind of update on the same day → one row (newest first), with "and N more like this". */
+function groupByKind(list: AppNotification[]): AppNotification[][] {
+  const out: AppNotification[][] = [];
+  const byKind = new Map<string, AppNotification[]>();
+  for (const n of list) {
+    const g = byKind.get(n.kind);
+    if (g) g.push(n);
+    else {
+      const fresh = [n];
+      byKind.set(n.kind, fresh);
+      out.push(fresh);
+    }
+  }
+  return out;
+}
+
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 const bucketOf = (iso: string) => {
   const days = Math.round((dayStart(new Date()) - dayStart(new Date(iso))) / 86400000);
   return days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? 'This week' : 'Earlier';
 };
 
-function UpdatesList({ items, onOpen, fresh }: { items: AppNotification[] | null; onOpen: (n: AppNotification) => void; fresh: Set<string> }) {
+function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[] | null; onOpen: (n: AppNotification) => void; onMark: (id: string) => void; fresh: Set<string> }) {
+  const { t } = useLocale();
   const grouped = useMemo(() => {
     const out: Record<string, AppNotification[]> = {};
     for (const n of items ?? []) (out[bucketOf(n.createdAt)] ??= []).push(n);
@@ -58,12 +75,14 @@ function UpdatesList({ items, onOpen, fresh }: { items: AppNotification[] | null
         <section key={b}>
           <h2 className="mb-2 px-1 text-caption font-semibold uppercase tracking-wide text-muted">{b}</h2>
           <ul className="space-y-2">
-            {grouped[b].map((n) => {
+            {groupByKind(grouped[b]).map((grp) => {
+              const n = grp[0];
+              const more = grp.length - 1;
               const st = KIND_STYLE[n.kind] ?? { icon: 'bell' as const, tone: 'ink' as const };
               return (
                 <li key={n.id}>
                   <button
-                    onClick={() => onOpen(n)}
+                    onClick={() => { grp.forEach((g) => onMark(g.id)); onOpen(n); }}
                     className={`flex w-full items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-transform active:scale-[0.99] ${
                       n.readAt && !fresh.has(n.id) ? 'border-line bg-surface' : 'border-accent/25 bg-surface'
                     }`}
@@ -75,6 +94,7 @@ function UpdatesList({ items, onOpen, fresh }: { items: AppNotification[] | null
                         <span className="shrink-0 pt-0.5 text-caption text-faint">{ago(n.createdAt)}</span>
                       </span>
                       {n.body && <span className="mt-0.5 line-clamp-2 block text-detail text-muted">{n.body}</span>}
+                      {more > 0 && <span className="mt-1 block text-caption font-semibold text-faint">{t('and {n} more like this', { n: more })}</span>}
                     </span>
                     {(!n.readAt || fresh.has(n.id)) && <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-bright" />}
                   </button>
@@ -174,7 +194,7 @@ export default function Notifications() {
         </div>
 
         {tab === 'updates' ? (
-          <UpdatesList items={app.items} onOpen={openApp} fresh={fresh.current} />
+          <UpdatesList items={app.items} onOpen={openApp} onMark={app.markRead} fresh={fresh.current} />
         ) : (
           <NotificationsList
             notifications={signal.notifications}
