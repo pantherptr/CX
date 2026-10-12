@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
 import { useTeamTapMode, setTeamTapMode } from '../lib/teamTapMode';
@@ -240,6 +240,14 @@ export default function Signal() {
           // so it's the first thing under the Official/Community divider
           // rather than sitting below the publish-only rows.
           { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
+          // Reels and the CX Pass scanner live in the menu, Community only — Official stays team posts,
+          // photos and Stories, nothing else.
+          ...(space === 'community'
+            ? [
+                { label: 'Reels', icon: 'play' as const, onSelect: () => navigate('/signal/reels') },
+                { label: t('Scan a CX Pass'), icon: 'camera' as const, onSelect: () => navigate('/scan') },
+              ]
+            : []),
           ...(canManage
             ? [{
                 label: tapMode === 'double' ? t('Taps: doubling ×2') : t('Taps: one by one'),
@@ -443,29 +451,6 @@ export default function Signal() {
             onDone={(post) => { setComposerOpen(false); prependPost(post); }}
           />
         )}
-
-        <Link
-          to="/signal/reels"
-          className="pressable mb-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-3 shadow-hair transition-colors hover:border-line-strong"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-noir text-accent-bright"><Icon name="play" size={18} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-detail font-semibold text-ink">Reels</span>
-            <span className="block truncate text-caption text-muted">{t('Short videos, one per screen')}</span>
-          </span>
-          <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
-        </Link>
-        <Link
-          to="/scan"
-          className="pressable mb-3 flex items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-3 shadow-hair transition-colors hover:border-line-strong"
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-panel text-ink"><Icon name="camera" size={18} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-detail font-semibold text-ink">{t('Scan a CX Pass')}</span>
-            <span className="block truncate text-caption text-muted">{t('Open a profile or confirm a handover')}</span>
-          </span>
-          <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
-        </Link>
 
         {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
         {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}

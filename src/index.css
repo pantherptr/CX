@@ -2196,3 +2196,13 @@ html[data-theme='dark'] .dock-a { box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0
 @media (prefers-reduced-motion: reduce) {
   .pass-backdrop, .pass-drop, .pass-rise { animation: none; }
 }
+
+/* Reels: the Respect burst on a double tap. */
+.reels-burst > * { animation: reels-burst 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+@keyframes reels-burst { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .reels-burst > * { animation: none; opacity: 0; } }
+
+/* Scan page: the line sweeping the frame. */
+.scan-line { animation: scan-sweep 2.2s ease-in-out infinite alternate; }
+@keyframes scan-sweep { from { transform: translateY(0); } to { transform: translateY(214px); } }
+@media (prefers-reduced-motion: reduce) { .scan-line { animation: none; top: 50%; } }
