@@ -329,7 +329,7 @@ export function SignalProfileDetail({
   const allPosts = [...(pinnedPost ? [pinnedPost] : []), ...(restPosts ?? [])];
   const isVideoUrl = (u: string) => /\.(mp4|mov|webm|m4v)(\?|$)/i.test(u);
   const gridView = (
-    <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-2xl">
+    <div className="-mx-5 grid grid-cols-3 gap-px overflow-hidden bg-line sm:mx-0 sm:rounded-2xl">
       {allPosts.map((post) => {
         const img = post.mediaUrls.find((u) => !isVideoUrl(u));
         const vid = post.mediaUrls.find(isVideoUrl);
@@ -457,7 +457,7 @@ export function SignalProfileDetail({
   );
 
   const reelsSection = (
-    <div className="grid grid-cols-3 gap-1.5">
+    <div className="-mx-5 grid grid-cols-3 gap-px overflow-hidden bg-line sm:mx-0 sm:rounded-2xl">
       {videoPosts.map((p) => {
         const i = p.mediaPaths.findIndex((m) => mediaKindFromPath(m) === 'video');
         return (

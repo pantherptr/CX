@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLocale } from '../../lib/i18n';
 import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
-import { Img, useCountUp } from '../motion';
+import { Img } from '../motion';
 import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
 import { Ugc } from '../../lib/i18n/ugc';
@@ -11,31 +11,18 @@ import { SignalAvatarExpand } from './SignalAvatarExpand';
 type Role = 'owner' | 'admin' | 'host' | 'client';
 const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client' };
 
-function CountUp({ value, children }: { value: number; children?: ReactNode }) {
-  const { ref, value: animated } = useCountUp<HTMLSpanElement>(value, { duration: 700 });
-  return (
-    <span ref={ref}>
-      {animated === value ? compact(value) : animated}
-      {children}
-    </span>
-  );
-}
-
-/** One figure in the stats card under a profile's name. */
-function StatCell({ value, label, onClick, suffix, decimals }: { value: number; label: string; onClick?: () => void; suffix?: string; decimals?: number }) {
+/** The same figures, Instagram-style: three numbers in one row beside the photo, no card. */
+function InlineStat({ value, label, onClick }: { value: number; label: string; onClick?: () => void }) {
   const body = (
     <>
-      <p className="font-display text-[1.85rem] font-semibold leading-none tracking-tight text-ink tabular-nums">
-        {decimals !== undefined ? <>{value.toFixed(decimals)}{suffix}</> : <CountUp value={value}>{suffix}</CountUp>}
-      </p>
-      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-faint">{label}</p>
+      <span className="block font-display text-[1.25rem] font-semibold leading-none tabular-nums text-ink">{compact(value)}</span>
+      <span className="mt-1 block text-[11px] font-medium text-faint">{label}</span>
     </>
   );
-  const cls = 'px-2 py-5 text-center';
   return onClick ? (
-    <button onClick={onClick} className={`pressable ${cls} transition-colors active:bg-panel`}>{body}</button>
+    <button type="button" onClick={onClick} className="pressable min-w-0 flex-1 px-0 text-center">{body}</button>
   ) : (
-    <div className={cls}>{body}</div>
+    <div className="min-w-0 flex-1 px-0 text-center">{body}</div>
   );
 }
 
@@ -102,6 +89,16 @@ export function SignalProfileHero({
   useLightStatusBar(!scrolled);
   const drift = Math.min(scrollTop, 520) * 0.28;
 
+  const hasStats = Boolean(followers || following || hostStats || postsCount !== undefined);
+  const statsRow = hasStats ? (
+    <div className="flex min-w-0 flex-1 items-end pb-0.5">
+      {postsCount !== undefined && <InlineStat value={postsCount} label="Posts" />}
+      {followers && <InlineStat value={followers.count} label="Followers" onClick={followers.onOpen} />}
+      {following && <InlineStat value={following.count} label="Following" onClick={following.onOpen} />}
+      {hostStats && <InlineStat value={hostStats.trips} label="Trips" />}
+    </div>
+  ) : null;
+
   const glass = scrolled ? 'bg-panel text-ink-soft hover:bg-panel-2' : 'bg-black/35 text-white backdrop-blur-md hover:bg-black/50';
 
   return (
@@ -166,7 +163,7 @@ export function SignalProfileHero({
       {/* The sheet that slides up over the cover */}
       <div className="relative -mt-8 rounded-t-[2rem] bg-bg px-5 pb-4 pt-6 sm:px-8">
         {separateAvatar && (
-          <div className="-mt-16 mb-4 flex justify-start sm:-mt-[4.5rem]">
+          <div className="-mt-16 mb-4 flex items-end gap-3 sm:-mt-[4.5rem]">
             {(() => {
               const face = (
                 <Img
@@ -194,6 +191,7 @@ export function SignalProfileHero({
               );
               return avatarNode;
             })()}
+            {statsRow}
           </div>
         )}
 
@@ -215,18 +213,9 @@ export function SignalProfileHero({
           </p>
         )}
 
-        {(followers || following || hostStats) && (
-          <div
-            className="mt-5 grid divide-x divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_16px_36px_-24px_rgba(0,0,0,0.35)]"
-            style={{ gridTemplateColumns: `repeat(${(postsCount !== undefined ? 1 : 0) + (followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 1 : 0)}, minmax(0, 1fr))` }}
-          >
-            {postsCount !== undefined && <StatCell value={postsCount} label="Posts" />}
-            {followers && <StatCell value={followers.count} label="Followers" onClick={followers.onOpen} />}
-            {following && <StatCell value={following.count} label="Following" onClick={following.onOpen} />}
-            {hostStats && <StatCell value={hostStats.trips} label="Trips" />}
-          </div>
+        {!separateAvatar && hasStats && (
+          <div className="mt-5 flex">{statsRow}</div>
         )}
-
         {action && <div className="mt-4">{action}</div>}
 
         {children && <div className="mt-6">{children}</div>}

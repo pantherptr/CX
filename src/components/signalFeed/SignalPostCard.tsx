@@ -1329,6 +1329,36 @@ export function SignalPostCard({
             )}
           </div>
 
+          <Tap
+            onClick={handleShare}
+            scale={0.94}
+            aria-label="Share"
+            className={`${BAR_ACTION} text-faint hover:text-accent-700`}
+          >
+            <span className={`${BAR_ICON} `}>
+              <ShareIcon size={15} playKey={sharePlay} />
+            </span>
+            {canManage && <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.shareCount)}</span>}
+          </Tap>
+        </div>
+
+        <div className="flex items-center gap-3 sm:gap-4">
+          {canManage && <span className="mr-1 hidden text-[11px] font-semibold uppercase tracking-wide text-faint min-[420px]:inline">Performance</span>}
+          {/* Owner-only — add_empire_post_comment enforces this server-side;
+              hiding it for everyone else is just honest UI. No demo
+              equivalent (see signalDemo.ts). */}
+          {isOwnerViewer && !post.isDemo && (
+            <Tap
+              onClick={() => setCommentsSheetOpen(true)}
+              scale={0.94}
+              aria-label="Comment"
+              className={`${BAR_ACTION} text-faint hover:text-sky-600`}
+            >
+              <span className={BAR_ICON}>
+                <Icon name="message" size={15} />
+              </span>
+            </Tap>
+          )}
           {isTeamViewer ? (
             <Tap
               onClick={saveClick}
@@ -1363,36 +1393,6 @@ export function SignalPostCard({
               <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.saveCount)}</span>
             </Tap>
           )}
-        </div>
-
-        <div className="flex items-center gap-3 sm:gap-4">
-          {canManage && <span className="mr-1 hidden text-[11px] font-semibold uppercase tracking-wide text-faint min-[420px]:inline">Performance</span>}
-          {/* Owner-only — add_empire_post_comment enforces this server-side;
-              hiding it for everyone else is just honest UI. No demo
-              equivalent (see signalDemo.ts). */}
-          {isOwnerViewer && !post.isDemo && (
-            <Tap
-              onClick={() => setCommentsSheetOpen(true)}
-              scale={0.94}
-              aria-label="Comment"
-              className={`${BAR_ACTION} text-faint hover:text-sky-600`}
-            >
-              <span className={BAR_ICON}>
-                <Icon name="message" size={15} />
-              </span>
-            </Tap>
-          )}
-          <Tap
-            onClick={handleShare}
-            scale={0.94}
-            aria-label="Share"
-            className={`${BAR_ACTION} text-faint hover:text-accent-700`}
-          >
-            <span className={`${BAR_ICON} `}>
-              <ShareIcon size={15} playKey={sharePlay} />
-            </span>
-            {canManage && <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.shareCount)}</span>}
-          </Tap>
         </div>
       </div>
 
