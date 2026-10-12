@@ -22,6 +22,7 @@ import { NotificationToaster } from './components/NotificationToaster';
 import Home from './pages/Home';
 import CountryGateway from './pages/CountryGateway';
 import { IS_APP } from './lib/appMode';
+import SignalReels from './pages/SignalReels';
 import { useLocale } from './lib/i18n';
 const Browse = lazy(() => import('./pages/Browse'));
 const CarDetails = lazy(() => import('./pages/CarDetails'));
@@ -344,6 +345,7 @@ export default function App() {
             of DashboardShell. No ProtectedRoute wrapper: the page itself
             shows a sign-in title screen for a signed-out visitor rather
             than a hard redirect. */}
+        <Route path="/signal/reels" element={<SignalReels />} />
         <Route path="/signal" element={<Signal />} />
         {/* Deep links — a shared post/Highlight open the same Signal shell
             with the item focused in an overlay, rather than a standalone
