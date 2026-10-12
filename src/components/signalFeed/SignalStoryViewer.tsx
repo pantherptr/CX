@@ -514,17 +514,17 @@ export function SignalStoryViewer({
               >
               <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/25 transition-[height] group-hover:h-[5px]">
                 {i < slideIndex ? (
-                  <div className="h-full w-full bg-white" />
+                  <div className="h-full w-full bg-[#fff]" />
                 ) : i === slideIndex ? (
                   isVideo && !isPending && !isBlocked ? (
                     // Driven by the video's own timeupdate below, not a
                     // fixed-duration CSS animation — an image slide has no
                     // natural "done" signal of its own, a video already does.
-                    <div className="h-full bg-white" style={{ width: `${videoProgress}%` }} />
+                    <div className="h-full bg-[#fff]" style={{ width: `${videoProgress}%` }} />
                   ) : (
                     <div
                       key={`${storyIndex}-${slideIndex}`}
-                      className="h-full bg-white"
+                      className="h-full bg-[#fff]"
                       style={{
                         width: '0%',
                         animationName: 'signal-story-progress',

@@ -336,7 +336,7 @@ export function SignalEditProfileSheet({
                 <SharedAvatar id="profile-avatar" active>
                   <ProfileAvatar src={avatarPreview} size={56} />
                 </SharedAvatar>
-                <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-white text-noir ring-2 ring-noir">
+                <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-[#fff] text-noir ring-2 ring-noir">
                   {uploadingPhoto ? <span className="skeleton h-2.5 w-2.5 rounded-full" /> : <Icon name="camera" size={10} />}
                 </span>
               </Tap>
@@ -464,7 +464,7 @@ export function SignalEditProfileSheet({
               disabled={visionsBusy}
               scale={0.97}
               className={`mt-3 inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-detail font-semibold transition-colors disabled:opacity-60 ${
-                visionsOn ? 'border border-white/15 text-on-noir hover:border-white/40 hover:bg-white/5' : 'bg-white text-noir hover:bg-white/90'
+                visionsOn ? 'border border-white/15 text-on-noir hover:border-white/40 hover:bg-white/5' : 'bg-[#fff] text-noir hover:bg-white/90'
               }`}
             >
               {visionsOn ? t('Turn off Visions') : t('Turn on Visions')}
@@ -480,7 +480,7 @@ export function SignalEditProfileSheet({
             scale={0.96}
             animate={{ scale: justSaved ? 1.06 : 1 }}
             transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
-            className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-lg bg-white px-5 py-2.5 text-body font-semibold text-noir transition-colors hover:bg-white/90 disabled:opacity-70"
+            className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-lg bg-[#fff] px-5 py-2.5 text-body font-semibold text-noir transition-colors hover:bg-white/90 disabled:opacity-70"
           >
             {justSaved ? <Icon name="check" size={16} strokeWidth={3} /> : saving ? 'Saving…' : 'Save changes'}
           </Tap>

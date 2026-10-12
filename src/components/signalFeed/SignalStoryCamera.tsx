@@ -433,7 +433,7 @@ export function SignalStoryCamera({
           <AnimatePresence>
             {flash && (
               <motion.div
-                className="absolute inset-0 bg-white"
+                className="absolute inset-0 bg-[#fff]"
                 initial={{ opacity: 0.9 }}
                 animate={{ opacity: 0 }}
                 exit={{ opacity: 0 }}
@@ -493,7 +493,7 @@ export function SignalStoryCamera({
                   />
                 )}
               </svg>
-              <span className={`transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg bg-red-500' : 'h-[66px] w-[66px] rounded-full bg-white shadow-[0_2px_14px_rgba(0,0,0,0.35)]'}`} />
+              <span className={`transition-all duration-200 ${recording ? 'h-7 w-7 rounded-lg bg-red-500' : 'h-[66px] w-[66px] rounded-full bg-[#fff] shadow-[0_2px_14px_rgba(0,0,0,0.35)]'}`} />
             </motion.button>
 
             <Tap

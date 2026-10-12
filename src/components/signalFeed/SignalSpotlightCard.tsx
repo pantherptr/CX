@@ -103,7 +103,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
           {data.title && <h3 translate="no" className={`max-w-[18ch] font-display font-semibold leading-[1.02] tracking-tight sm:text-[42px] ${compact ? 'text-[26px]' : 'text-[34px]'}`}>{data.title}</h3>}
           <p translate="no" className="mt-3 text-detail font-medium text-white/90">{t('Vision by')} {handle}</p>
           <p translate="no" className="mt-0.5 text-caption text-white/60">{sub}</p>
-          <span className={`inline-flex items-center gap-2 rounded-full bg-white font-semibold text-noir ${compact ? 'mt-3 min-h-9 px-4 text-caption' : 'mt-4 min-h-11 px-5 text-detail'} transition-all duration-300 group-hover:gap-3 group-hover:bg-white/95`}>
+          <span className={`inline-flex items-center gap-2 rounded-full bg-[#fff] font-semibold text-noir ${compact ? 'mt-3 min-h-9 px-4 text-caption' : 'mt-4 min-h-11 px-5 text-detail'} transition-all duration-300 group-hover:gap-3 group-hover:bg-white/95`}>
             {t('Watch Vision')}
             <span className="grid h-6 w-6 place-items-center rounded-full bg-noir text-white transition-transform duration-300 group-hover:rotate-45"><Icon name="arrowUpRight" size={13} /></span>
           </span>

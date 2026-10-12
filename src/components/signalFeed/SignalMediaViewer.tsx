@@ -274,7 +274,7 @@ export function SignalMediaViewer({
           {images.map((_, i) => (
             <span
               key={i}
-              className="h-1.5 rounded-full bg-white transition-all duration-200"
+              className="h-1.5 rounded-full bg-[#fff] transition-all duration-200"
               style={{ width: i === index ? 16 : 6, opacity: i === index ? 1 : 0.4 }}
             />
           ))}

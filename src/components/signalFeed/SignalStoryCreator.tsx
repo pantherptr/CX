@@ -485,7 +485,7 @@ function EditorStage({
                     onClick={() => onPatchActive({ textAlign: a })}
                     aria-label={`Align ${a}`}
                     aria-pressed={activeSlide.textAlign === a}
-                    className={`grid h-7 w-7 place-items-center rounded-full transition-colors ${activeSlide.textAlign === a ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                    className={`grid h-7 w-7 place-items-center rounded-full transition-colors ${activeSlide.textAlign === a ? 'bg-[#fff] text-noir' : 'text-white/70 hover:bg-white/10'}`}
                   >
                     <Icon name={a === 'left' ? 'chevronLeft' : a === 'right' ? 'chevronRight' : 'minus'} size={13} />
                   </button>
@@ -499,7 +499,7 @@ function EditorStage({
                     onClick={() => onPatchActive({ textSize: sz })}
                     aria-label={`Text size ${sz}`}
                     aria-pressed={activeSlide.textSize === sz}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${activeSlide.textSize === sz ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${activeSlide.textSize === sz ? 'bg-[#fff] text-noir' : 'text-white/70 hover:bg-white/10'}`}
                   >
                     {sz}
                   </button>
@@ -548,7 +548,7 @@ function EditorStage({
                 type="button"
                 onClick={() => onViewOnceChange(false)}
                 aria-pressed={!viewOnce}
-                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${!viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${!viewOnce ? 'bg-[#fff] text-noir' : 'text-white/70 hover:bg-white/10'}`}
               >
                 24h
               </button>
@@ -556,7 +556,7 @@ function EditorStage({
                 type="button"
                 onClick={() => onViewOnceChange(true)}
                 aria-pressed={viewOnce}
-                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${viewOnce ? 'bg-white text-noir' : 'text-white/70 hover:bg-white/10'}`}
+                className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase transition-colors ${viewOnce ? 'bg-[#fff] text-noir' : 'text-white/70 hover:bg-white/10'}`}
               >
                 Once
               </button>

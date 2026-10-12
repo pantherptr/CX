@@ -83,7 +83,7 @@ export function FollowButton({
           ? `flex w-full items-center justify-center gap-1.5 rounded-xl py-3.5 text-body ${
               on
                 ? 'border border-white/25 bg-white/10 text-on-noir hover:border-white/50'
-                : 'bg-white text-noir hover:bg-white/90'
+                : 'bg-[#fff] text-noir hover:bg-white/90'
             }`
           : `rounded-full ${size === 'sm' ? 'px-3 py-1.5 text-caption' : 'px-4 py-2 text-detail'} ${
               on

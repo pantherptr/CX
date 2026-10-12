@@ -332,7 +332,7 @@ function PostVideo({
         </span>
       )}
       <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-white/25">
-        <span className="block h-full bg-white transition-[width] duration-200 ease-linear" style={{ width: `${progress * 100}%` }} />
+        <span className="block h-full bg-[#fff] transition-[width] duration-200 ease-linear" style={{ width: `${progress * 100}%` }} />
       </span>
       <button
         onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
@@ -408,7 +408,7 @@ function MediaCarousel({
         {urls.map((_, i) => (
           <span
             key={i}
-            className="h-1.5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-all duration-200"
+            className="h-1.5 rounded-full bg-[#fff] shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-all duration-200"
             style={{ width: i === active ? 14 : 6, opacity: i === active ? 1 : 0.6 }}
           />
         ))}

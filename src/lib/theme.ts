@@ -7,7 +7,7 @@ const KEY = 'cx-theme';
 const LEGACY_KEY = 'cx-gateway-theme';
 
 /** Browser chrome colours (iOS status bar / Android address bar) per theme. */
-export const CHROME: Record<Theme, string> = { light: '#fbfbf9', dark: '#0a0b0a' };
+export const CHROME: Record<Theme, string> = { light: '#fbfbf9', dark: '#050605' };
 
 function read(): Theme {
   try {
