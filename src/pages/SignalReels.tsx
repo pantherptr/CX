@@ -20,8 +20,8 @@ function videoUrlOf(p: EmpirePost): string | null {
   return i >= 0 ? p.mediaUrls[i] ?? null : null;
 }
 
-function Reel({ post, active, muted, onToggleMute, onChange }: {
-  post: EmpirePost; active: boolean; muted: boolean; onToggleMute: () => void; onChange: (p: EmpirePost) => void;
+function Reel({ post, active, next, muted, onToggleMute, onChange }: {
+  post: EmpirePost; active: boolean; next: boolean; muted: boolean; onToggleMute: () => void; onChange: (p: EmpirePost) => void;
 }) {
   const { t } = useLocale();
   const video = useRef<HTMLVideoElement>(null);
@@ -82,11 +82,11 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
     <div data-reel data-no-edge-back className="relative w-full snap-start snap-always overflow-hidden bg-black" style={{ height: '100lvh' }}>
       <video
         ref={video}
-        src={active ? src : undefined}
+        src={active || next ? src : undefined}
         loop
         muted={muted}
         playsInline
-        preload="none"
+        preload={next ? 'auto' : 'none'}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
           if (v.duration > 0) setProgress(v.currentTime / v.duration);
@@ -320,6 +320,7 @@ export default function SignalReels() {
               key={p.id}
               post={p}
               active={Math.abs(i - index) === 0}
+              next={i === index + 1}
               muted={muted}
               onToggleMute={toggleMute}
               onChange={(np) => setPosts((cur) => (cur ? cur.map((x) => (x.id === np.id ? np : x)) : cur))}

@@ -424,6 +424,33 @@ interface FeedCacheEntry {
 const FEED_CACHE_TTL_MS = 10 * 60_000;
 const feedCache = new Map<string, FeedCacheEntry>();
 
+/** A small copy of each person's feed on the device, so opening the app cold paints the last posts at
+ *  once while the fresh ones load behind them (stale-while-revalidate). Only the first few posts, only
+ *  a short while, keyed per person; a failure to read or write it is never an error. */
+const SNAP_PREFIX = 'cx-feed-snap:';
+const SNAP_TTL_MS = 30 * 60_000;
+const SNAP_POSTS = 10;
+function readFeedSnapshot(key: string): EmpirePost[] | null {
+  try {
+    const raw = localStorage.getItem(SNAP_PREFIX + key);
+    if (!raw) return null;
+    const { at, posts } = JSON.parse(raw) as { at: number; posts: EmpirePost[] };
+    if (!Array.isArray(posts) || posts.length === 0 || Date.now() - at > SNAP_TTL_MS) return null;
+    return posts;
+  } catch {
+    return null;
+  }
+}
+function writeFeedSnapshot(key: string, posts: EmpirePost[]) {
+  try {
+    const real = posts.filter((p) => !p.isDemo).slice(0, SNAP_POSTS);
+    if (real.length === 0) return;
+    localStorage.setItem(SNAP_PREFIX + key, JSON.stringify({ at: Date.now(), posts: real }));
+  } catch {
+    // storage full or blocked — the snapshot is only a nicety
+  }
+}
+
 export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?: EmpireFeedScope) {
   const { session } = useAuth();
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
@@ -499,6 +526,11 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       }
     }
     streamRef.current = createMergedStream();
+    // Cold start: paint the last feed from the device while the fresh one loads behind it.
+    if (opts?.fromCache === true) {
+      const snap = readFeedSnapshot(cacheKey);
+      if (snap) setPosts(snap);
+    }
     try {
       const { rows, more } = ranked
         ? await pullRanked(true)
@@ -527,6 +559,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       posts, hasMore, stream: streamRef.current, ranked: rankedRef.current,
       scrollY: window.scrollY, at: Date.now(),
     });
+    writeFeedSnapshot(cacheKeyRef.current, posts);
   }, [posts, hasMore]);
   useEffect(() => {
     let raf = 0;
