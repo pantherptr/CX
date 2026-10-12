@@ -19,6 +19,22 @@ import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
 
 
+/** The hero words, one letter at a time: each letter rises into place in sequence when the page opens, then
+ *  a slow, small wave passes through them now and then. Each letter paints its own copy of the heading's
+ *  gradient (a parent's clipped gradient would vanish behind transformed children). Purely visual — the
+ *  full phrase is kept for screen readers by the caller. */
+function Letters({ text, from = 0 }: { text: string; from?: number }) {
+  return (
+    <>
+      {Array.from(text).map((ch, i) =>
+        ch === ' ' ? ' ' : (
+          <span key={i} aria-hidden="true" className="hero-letter" style={{ ['--i' as string]: from + i }}>{ch}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 /** A heading that sets its own font size so the single-line text fills its box exactly, whatever the
  *  language (English is longer than Italian). Below `sm` the phone layout (two lines, vw sizes) is kept. */
 function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
@@ -260,13 +276,15 @@ export default function Home() {
                 max={200}
                 className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
                 style={{
+                  ['--hero-grad' as string]: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                 }}
               >
-                <span className="block sm:hidden">{t('I own')}<br />{t('the keys')}</span>
-                <span data-fit className="hidden whitespace-nowrap sm:inline-block">{t('I own the keys')}</span>
+                <span className="sr-only">{t('I own the keys')}</span>
+                <span className="block sm:hidden"><Letters text={t('I own')} /><br /><Letters text={t('the keys')} from={t('I own').length} /></span>
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('I own the keys')} /></span>
               </FitHeading>
               <FitHeading
                 as="p"
@@ -274,13 +292,14 @@ export default function Home() {
                 max={170}
                 className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw]"
                 style={{
+                  ['--hero-grad' as string]: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                   backgroundImage: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                   WebkitBackgroundClip: 'text',
                   backgroundClip: 'text',
                 }}
               >
-                <span className="block sm:hidden">{t('to your')}<br />{t('heart.')}</span>
-                <span data-fit className="hidden whitespace-nowrap sm:inline-block">{t('to your heart.')}</span>
+                <span className="block sm:hidden"><Letters text={t('to your')} from={14} /><br /><Letters text={t('heart.')} from={14 + t('to your').length} /></span>
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('to your heart.')} from={14} /></span>
               </FitHeading>
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice

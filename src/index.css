@@ -1139,6 +1139,28 @@
      creates a containing block for `position: fixed` descendants, which
      silently breaks every full-screen modal on the page. */
   .animate-page { animation: page-in 0.4s var(--ease-out-expo) backwards; }
+
+  /* Hero words: letters rise in one after another, then a soft wave passes through them now and then. */
+  .hero-letter {
+    display: inline-block;
+    background-image: var(--hero-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation:
+      hero-letter-in 0.75s var(--ease-out-expo) backwards,
+      hero-letter-wave 9s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 38ms + 250ms), calc(2.2s + var(--i, 0) * 70ms);
+  }
+  @keyframes hero-letter-in {
+    from { opacity: 0; transform: translateY(0.28em); filter: blur(6px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  @keyframes hero-letter-wave {
+    0%, 14%, 100% { transform: translateY(0); }
+    7% { transform: translateY(-0.045em); }
+  }
   /* Direction-aware: going forward the new page slides in from the right, going back it settles in
      from the left — the way an app's navigation reads. Same `backwards` rule as above (no lingering
      transform), short enough never to feel like waiting. */
