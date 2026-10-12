@@ -3,6 +3,7 @@ import { Icon, type IconName } from '../Icon';
 import { SignalSHero } from '../SignalLogo';
 import { SpotlightLogo } from '../SpotlightLogo';
 import { useLocale } from '../../lib/i18n';
+import { useAlwaysDarkChrome } from '../../lib/theme';
 
 const FEATURES: { icon: IconName; title: string; body: string }[] = [
   { icon: 'shield', title: 'Official updates', body: 'News, announcements and new cars, straight from the CX team.' },
@@ -14,6 +15,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
  *  line, two actions, and three short reasons — instead of a bare sign-in wall. */
 export function SignalGate() {
   const { t } = useLocale();
+  useAlwaysDarkChrome('#0a0d0b');
   return (
     <div className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-noir text-on-noir">
       {/* atmosphere: a green bloom behind the mark and a barely-there grid fading out downward */}

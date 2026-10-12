@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 export type Theme = 'light' | 'dark';
@@ -126,3 +126,23 @@ export function useTheme(): Theme {
 
 // Apply as early as possible (before React mounts) so there is no light flash.
 if (typeof document !== 'undefined') paint();
+
+/** For a page that is dark whatever the theme (the SIGNAL gate): the page background and Safari's bars take
+ *  that colour while it is on screen, so no light strip shows above or below it. */
+export function useAlwaysDarkChrome(colour = '#0a0b0a') {
+  useEffect(() => {
+    const root = document.documentElement;
+    const app = document.getElementById('root');
+    const prev = { r: root.style.backgroundColor, b: document.body.style.backgroundColor, a: app?.style.backgroundColor ?? '' };
+    root.style.backgroundColor = colour;
+    document.body.style.backgroundColor = colour;
+    if (app) app.style.backgroundColor = colour;
+    setChromeOverride({ light: colour, dark: colour });
+    return () => {
+      root.style.backgroundColor = prev.r;
+      document.body.style.backgroundColor = prev.b;
+      if (app) app.style.backgroundColor = prev.a;
+      setChromeOverride(null);
+    };
+  }, [colour]);
+}
