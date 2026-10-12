@@ -257,6 +257,7 @@ export function BookingsPanel() {
                 <span className={`badge ${depositStatusBadge[b.depositStatus]}`}>{depositStatusLabel[b.depositStatus]}</span>
               )}
               {b.fulfillmentType === 'delivery' && <span className="badge bg-panel-2 text-ink-soft">Delivery</span>}
+              {b.handoverVerified && <span className="badge bg-accent-050 text-accent-700">Handover verified</span>}
             </p>
             <p className="text-caption text-muted">
               {b.reference} · {b.renterName} → {b.hostName} · {fmtDate(b.startDate)}–{fmtDate(b.endDate)}

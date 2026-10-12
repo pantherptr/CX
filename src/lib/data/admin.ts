@@ -54,6 +54,8 @@ export async function fetchAllUsers(): Promise<AdminUser[]> {
 }
 
 export interface AdminBooking {
+  /** Host and renter scanned each other's CX Pass at the handover — evidence in a dispute. */
+  handoverVerified: boolean;
   id: string;
   reference: string;
   status: BookingStatus;
@@ -106,7 +108,10 @@ export async function fetchAllBookingsAdmin(): Promise<AdminBooking[]> {
     .order('created_at', { ascending: false })
     .limit(200);
   if (error) throw error;
+  const { data: ho } = await supabase.rpc('admin_verified_handover_ids');
+  const handovers = new Set(((ho ?? []) as { booking_id: string }[]).map((h) => h.booking_id));
   return (data as unknown as AdminBookingRow[]).map((r) => ({
+    handoverVerified: handovers.has(r.id),
     id: r.id,
     reference: r.reference,
     status: r.status,

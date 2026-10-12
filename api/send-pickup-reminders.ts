@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { sendPickupReminderEmail, sendReturnReminderEmail } from './_lib/email.js';
 import { notifyUser } from './_lib/push.js';
+import { PAYOUT_SELECT, loadCommissionPct, payHostForBooking, type PayoutRow } from './_lib/payout.js';
 import { getUserLang } from './_lib/texts.js';
 
 /**
@@ -230,23 +231,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // --- Pay out hosts for trips that have ended -------------------------
-  // 'blocked' is retried every run too — a host who finishes Connect
-  // onboarding a day or two after their trip ended still gets paid on
-  // the next sweep, rather than being stuck forever for missing the
-  // original window.
+  // 'blocked' is retried every run too — a host who finishes Connect onboarding a day or two after
+  // their trip ended still gets paid on the next sweep. Trips whose handover was verified were paid
+  // the moment it happened (api/_lib/payout.ts); this catches everything else.
   let payoutsSent = 0;
   let payoutsBlocked = 0;
-  // CX's commission on the host's share (supabase/migrations/0102): a percentage of the base
-  // rental price, kept by the platform. 0 if the setting is missing, never above 50.
-  const { data: commissionRow } = await supabase
-    .from('platform_settings')
-    .select('host_commission_pct')
-    .eq('id', 'main')
-    .maybeSingle();
-  const commissionPct = Math.min(50, Math.max(0, Number(commissionRow?.host_commission_pct ?? 0)));
+  const commissionPct = await loadCommissionPct(supabase);
   const { data: payoutDue, error: payoutError } = await supabase
     .from('bookings')
-    .select('id, host_id, payout_status, host_payout_amount, host:profiles!bookings_host_id_fkey (stripe_connect_account_id, stripe_connect_payouts_enabled)')
+    .select(PAYOUT_SELECT)
     .eq('status', 'confirmed')
     .in('payout_status', ['pending', 'blocked'])
     .lt('end_date', todayISO);
@@ -254,76 +247,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (payoutError) {
     console.error('[send-pickup-reminders] payout query failed', payoutError);
   } else {
-    for (const row of (payoutDue ?? []) as unknown as {
-      id: string;
-      host_id: string;
-      payout_status: string | null;
-      host_payout_amount: number | null;
-      host: { stripe_connect_account_id: string | null; stripe_connect_payouts_enabled: boolean } | null;
-    }[]) {
-      const amount = Number(row.host_payout_amount ?? 0);
-      if (amount <= 0) {
-        await supabase.from('bookings').update({ payout_status: 'not_required' }).eq('id', row.id);
-        continue;
-      }
-      if (!row.host?.stripe_connect_account_id || !row.host.stripe_connect_payouts_enabled) {
-        await supabase.from('bookings').update({ payout_status: 'blocked' }).eq('id', row.id);
-        payoutsBlocked++;
-        // Once, not every night: only when it first becomes blocked.
-        if (row.payout_status !== 'blocked') {
-          await notifyUser(supabase, row.host_id, {
-            kind: 'payout_blocked',
-            key: 'payout_blocked',
-            vars: { amount: amount.toFixed(2) },
-            title: 'Finish your payout setup',
-            body: `A €${amount.toFixed(2)} payout is waiting — add your bank details to receive it.`,
-            url: '/host#earnings',
-          });
-        }
-        continue;
-      }
-      const commission = Math.round(amount * commissionPct) / 100; // euros, 2 decimals
-      const net = Math.round((amount - commission) * 100) / 100;
-      try {
-        const transfer = await stripe.transfers.create(
-          {
-            amount: Math.round(net * 100),
-            currency: 'eur',
-            destination: row.host.stripe_connect_account_id,
-            transfer_group: row.id,
-            metadata: { bookingId: row.id, gross: String(amount), commissionPct: String(commissionPct), commission: String(commission) },
-          },
-          { idempotencyKey: `payout-${row.id}` },
-        );
-        // The ledger the host sees (gross, what CX kept, what they got). Best-effort: the money
-        // has already moved, a failed insert is logged and the booking is still marked paid.
-        const { error: ledgerError } = await supabase.from('booking_payouts').upsert({
-          booking_id: row.id,
-          host_id: row.host_id,
-          gross: amount,
-          commission_pct: commissionPct,
-          commission,
-          net,
-          stripe_transfer_id: transfer.id,
-        });
-        if (ledgerError) console.error('[send-pickup-reminders] payout ledger insert failed', row.id, ledgerError);
-        await supabase
-          .from('bookings')
-          .update({ payout_status: 'paid', stripe_transfer_id: transfer.id, payout_paid_at: new Date().toISOString() })
-          .eq('id', row.id);
-        payoutsSent++;
-        await notifyUser(supabase, row.host_id, {
-          kind: 'payout_sent',
-          key: 'payout_sent',
-          vars: { amount: net.toFixed(2) },
-          title: 'Payout on its way',
-          body: `€${net.toFixed(2)} is being sent to your bank.`,
-          url: '/host#earnings',
-        });
-      } catch (err) {
-        console.error('[send-pickup-reminders] payout failed for booking', row.id, err);
-        await supabase.from('bookings').update({ payout_status: 'failed' }).eq('id', row.id);
-      }
+    for (const row of (payoutDue ?? []) as unknown as PayoutRow[]) {
+      const result = await payHostForBooking(supabase, stripe, row, commissionPct);
+      if (result === 'paid') payoutsSent++;
+      if (result === 'blocked') payoutsBlocked++;
     }
   }
 

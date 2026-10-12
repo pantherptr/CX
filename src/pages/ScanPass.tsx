@@ -4,7 +4,7 @@ import jsQR from 'jsqr';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
-import { profileIdFromPassUrl, verifyHandover } from '../lib/data/handovers';
+import { profileIdFromPassUrl, releasePayoutAfterHandover, verifyHandover } from '../lib/data/handovers';
 
 /** Scan someone's CX Pass. With `?booking=` it confirms the handover of that booking; without, it just
  *  opens their profile. Camera first, a photo of the pass as the fallback. */
@@ -40,6 +40,7 @@ export default function ScanPass() {
         setError(err);
         return;
       }
+      void releasePayoutAfterHandover(bookingId);
       setDone({ profileId: id });
     },
     [bookingId, navigate, t],

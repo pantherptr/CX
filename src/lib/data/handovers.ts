@@ -1,9 +1,25 @@
 import { supabase } from '../supabase';
+import { apiUrl } from '../api';
 
 /** The host and the renter scanned each other's CX Pass: the booking's handover is verified. */
 export async function verifyHandover(bookingId: string, counterpartId: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('verify_handover', { p_booking_id: bookingId, p_counterpart: counterpartId });
   return { error: error?.message ?? null };
+}
+
+/** The handover is verified: ask the server to release the host's payout now (it re-checks everything). */
+export async function releasePayoutAfterHandover(bookingId: string): Promise<void> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetch(apiUrl('/api/notify-message'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ type: 'handover-payout', bookingId }),
+    });
+  } catch (err) {
+    console.error('[handover] payout release failed', err);
+  }
 }
 
 export async function isHandoverVerified(bookingId: string): Promise<boolean> {

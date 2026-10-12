@@ -4,6 +4,8 @@ import { applyCors } from './_lib/cors.js';
 import { sendPushToUser, getNotificationPrefs } from './_lib/push.js';
 import { getUserLang, text } from './_lib/texts.js';
 import { sendVerificationDecisionEmail } from './_lib/email.js';
+import Stripe from 'stripe';
+import { PAYOUT_SELECT, loadCommissionPct, payHostForBooking, type PayoutRow } from './_lib/payout.js';
 
 /**
  * Pushes the other participant(s) in a conversation after a message is
@@ -65,6 +67,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     decision?: 'approved' | 'rejected';
     reason?: string;
   };
+
+  // Third job: a verified handover releases the host's payout right away — both people scanned each
+  // other's CX Pass, so the car has changed hands. Everything is re-checked here, never trusted.
+  if (type === 'handover-payout') {
+    const bookingId = (req.body as { bookingId?: string }).bookingId;
+    if (!bookingId) return res.status(400).json({ error: 'Missing booking.' });
+    const caller = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false } });
+    const { data: { user } } = await caller.auth.getUser();
+    if (!user) return res.status(401).json({ error: 'Sign in first.' });
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: b } = await admin
+      .from('bookings')
+      .select(`${PAYOUT_SELECT}, renter_id, status, start_date`)
+      .eq('id', bookingId)
+      .maybeSingle();
+    const row = b as unknown as (PayoutRow & { renter_id: string; status: string; start_date: string }) | null;
+    if (!row || (user.id !== row.renter_id && user.id !== row.host_id)) return res.status(404).json({ error: 'Not found.' });
+    if (row.status !== 'confirmed') return res.status(409).json({ error: 'This booking is not confirmed.' });
+    if (row.payout_status !== 'pending' && row.payout_status !== 'blocked') return res.status(200).json({ result: row.payout_status });
+    if (row.start_date > new Date().toISOString().slice(0, 10)) return res.status(409).json({ error: 'The trip has not started yet.' });
+    const { data: handover } = await admin.from('booking_handovers').select('booking_id').eq('booking_id', bookingId).maybeSingle();
+    if (!handover) return res.status(409).json({ error: 'The handover is not verified.' });
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
+    const result = await payHostForBooking(admin, stripe, row, await loadCommissionPct(admin));
+    return res.status(200).json({ result });
+  }
 
   // Second job of this endpoint (Vercel's plan caps the number of functions): tell someone the
   // result of their identity / licence review, by push and email. Only a reviewer may trigger it.
