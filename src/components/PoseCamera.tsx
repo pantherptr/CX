@@ -110,7 +110,7 @@ export function PoseCamera({ onCapture, onClose, onUnavailable }: { onCapture: (
             aria-label="Take photo"
             className="grid h-[72px] w-[72px] place-items-center rounded-full bg-white/25 ring-4 ring-white backdrop-blur transition-transform active:scale-90 disabled:opacity-40"
           >
-            <span className="h-14 w-14 rounded-full bg-white" />
+            <span className="h-14 w-14 rounded-full bg-[#fff]" />
           </button>
         </div>
       )}

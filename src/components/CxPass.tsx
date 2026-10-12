@@ -96,7 +96,7 @@ export function CxPass({ pass, height = '580px', tone = 'dark' }: { pass: PassDa
     <div className="relative h-full w-full" style={{ background: tier.card, color: tier.ink }}>
       <Ornament className="absolute" style={{ width: 260, left: -90, top: -70, maxWidth: 'none', opacity: 0.25 }} />
       <div className="absolute inset-x-0 top-[46px] flex flex-col items-center">
-        <span className="block rounded-2xl bg-white p-2.5 shadow-lg">
+        <span className="block rounded-2xl bg-[#fff] p-2.5 shadow-lg">
           {qr ? <img src={qr} alt="QR" draggable={false} style={{ width: 138, height: 138 }} /> : <span className="block animate-pulse bg-black/10" style={{ width: 138, height: 138 }} />}
         </span>
         <p className="mt-3 text-[8.5px] font-bold uppercase tracking-[0.22em]">{t('Scan to open profile')}</p>

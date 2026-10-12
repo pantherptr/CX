@@ -163,7 +163,7 @@ export default function ScanPass() {
       {done ? (
         <div className="grid h-full place-items-center px-8 text-center">
           <div className="animate-scale-in">
-            <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white text-[#0a0b0a]">
+            <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[#fff] text-[#0a0b0a]">
               <Icon name="check" size={36} strokeWidth={2.6} />
             </span>
             <h1 className="mt-6 font-display text-2xl font-semibold">{kind === 'return' ? t('Return confirmed') : t('Trip started')}</h1>
@@ -173,7 +173,7 @@ export default function ScanPass() {
                 : t('The handover is verified. Have a great trip!')}
             </p>
             <div className="mt-8 flex flex-col gap-2.5">
-              <Link to={`/signal/profile/${done.profileId}`} className="inline-flex h-14 items-center justify-center rounded-2xl bg-white text-[15px] font-bold text-[#0a0b0a]">
+              <Link to={`/signal/profile/${done.profileId}`} className="inline-flex h-14 items-center justify-center rounded-2xl bg-[#fff] text-[15px] font-bold text-[#0a0b0a]">
                 {t('Open profile')}
               </Link>
               {bookingId && (
@@ -213,7 +213,7 @@ export default function ScanPass() {
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               {torchOk && (
-                <button type="button" onClick={() => void toggleTorch()} className={`inline-flex h-12 items-center gap-2 rounded-full border px-5 text-detail font-semibold backdrop-blur-md ${torchOn ? 'border-white bg-white text-[#0a0b0a]' : 'border-white/15 bg-white/10'}`}>
+                <button type="button" onClick={() => void toggleTorch()} className={`inline-flex h-12 items-center gap-2 rounded-full border px-5 text-detail font-semibold backdrop-blur-md ${torchOn ? 'border-white bg-[#fff] text-[#0a0b0a]' : 'border-white/15 bg-white/10'}`}>
                   <Icon name="sparkles" size={16} /> {t('Torch')}
                 </button>
               )}

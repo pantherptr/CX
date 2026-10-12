@@ -124,7 +124,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
             <Link to={`/cars/${post.vehicle.slug}`} className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full bg-white/15 py-1.5 pl-1.5 pr-3.5 backdrop-blur-md">
               {post.vehicle.imageUrl && <img src={post.vehicle.imageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />}
               <span className="truncate text-caption font-semibold">{post.vehicle.make} {post.vehicle.model}</span>
-              <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-label font-bold text-noir">{t('Book')}</span>
+              <span className="shrink-0 rounded-full bg-[#fff] px-2.5 py-1 text-label font-bold text-noir">{t('Book')}</span>
             </Link>
           )}
         </div>
@@ -152,7 +152,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-[4] h-[3px] bg-white/20">
-        <div className="h-full bg-white" style={{ width: `${progress * 100}%` }} />
+        <div className="h-full bg-[#fff]" style={{ width: `${progress * 100}%` }} />
       </div>
     </div>
   );
