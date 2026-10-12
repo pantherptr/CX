@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ElementType } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ElementType } from 'react';
 import { motion, useReducedMotion, type Easing, type Transition } from 'motion/react';
 
 /* Adapted from React Bits "BlurText" (DavidHDev/react-bits): each word starts blurred and a little above its
@@ -63,17 +63,18 @@ export function BlurText({
       {words.map((w, i) => {
         const tr: Transition = { duration: stepDuration * 2, times, delay: (i * delay) / 1000, ease: easing };
         return (
-          <motion.span
-            key={i}
-            aria-hidden="true"
-            initial={from}
-            animate={inView ? keyframes : from}
-            transition={tr}
-            style={{ display: 'inline-block', willChange: 'transform, filter, opacity' }}
-          >
-            {w}
-            {i < words.length - 1 && ' '}
-          </motion.span>
+          <Fragment key={i}>
+            <motion.span
+              aria-hidden="true"
+              initial={from}
+              animate={inView ? keyframes : from}
+              transition={tr}
+              style={{ display: 'inline-block', willChange: 'transform, filter, opacity' }}
+            >
+              {w}
+            </motion.span>
+            {i < words.length - 1 && ' '}
+          </Fragment>
         );
       })}
     </Tag>
