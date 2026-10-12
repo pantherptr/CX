@@ -2197,9 +2197,9 @@ html[data-theme='dark'] .dock-a { box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0
   .pass-backdrop, .pass-drop, .pass-rise { animation: none; }
 }
 
-/* Reels: the Respect burst on a double tap. */
-.reels-burst > * { animation: reels-burst 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
-@keyframes reels-burst { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.35); } }
+/* Reels: the Respect hand fires on a double tap (the icon's own kick + muzzle flash), then fades. */
+.reels-burst > * { animation: reels-burst 1.1s ease-out both; filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5)); }
+@keyframes reels-burst { 0% { opacity: 0; transform: scale(0.7); } 12% { opacity: 1; transform: scale(1); } 72% { opacity: 1; } 100% { opacity: 0; transform: scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .reels-burst > * { animation: none; opacity: 0; } }
 
 /* Scan page: the line sweeping the frame. */

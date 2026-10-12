@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
-import { RespectGlyph } from '../components/RespectGlyph';
+import { RespectIcon } from '../components/RespectIcon';
+import { setChromeOverride } from '../lib/theme';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { shareLink } from '../lib/native';
@@ -26,6 +28,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [burst, setBurst] = useState(0);
+  const [fire, setFire] = useState(0);
   const [more, setMore] = useState(false);
   const lastTap = useRef(0);
   const src = videoUrlOf(post);
@@ -41,6 +44,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
 
   const respect = useCallback(async (force?: boolean) => {
     if (force && post.likedByMe) return;
+    setFire(Date.now());
     onChange({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     const r = await toggleEmpirePostLike(post.id);
     if (r.error) onChange(post);
@@ -60,7 +64,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
     const now = Date.now();
     if (now - lastTap.current < 320) {
       lastTap.current = 0;
-      setBurst((b) => b + 1);
+      setBurst(Date.now());
       void respect(true);
       return;
     }
@@ -95,7 +99,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
       )}
       {burst > 0 && (
         <span key={burst} className="reels-burst pointer-events-none absolute inset-0 z-[2] grid place-items-center" aria-hidden>
-          <RespectGlyph height={96} on />
+          <RespectIcon size={84} filled playKey={burst} />
         </span>
       )}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-2/5 bg-gradient-to-t from-black/85 to-transparent" />
@@ -128,7 +132,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
         <div className="pointer-events-auto flex shrink-0 flex-col items-center gap-5 pb-1">
           <button type="button" onClick={() => void respect()} aria-label="Respect" className="flex flex-col items-center gap-1">
             <span className={`grid h-12 w-12 place-items-center rounded-full backdrop-blur-md ${post.likedByMe ? 'bg-white/25' : 'bg-white/15'}`}>
-              <RespectGlyph height={24} on={post.likedByMe} className={post.likedByMe ? '' : 'text-white'} />
+              <RespectIcon size={20} filled={post.likedByMe} playKey={fire} className={post.likedByMe ? '' : 'text-white'} />
             </span>
             <span className="text-caption font-semibold">{post.likeCount}</span>
           </button>
@@ -216,10 +220,32 @@ export default function SignalReels() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts === null]);
 
+  // Full black screen: Safari's status bar and toolbar take the dark tone, the page behind steps aside.
   useEffect(() => {
-    const prev = document.body.style.overflow;
+    const root = document.documentElement;
+    const app = document.getElementById('root');
+    const prev = {
+      overflow: document.body.style.overflow,
+      rootBg: root.style.backgroundColor,
+      bodyBg: document.body.style.backgroundColor,
+      appBg: app?.style.backgroundColor ?? '',
+      appVis: app?.style.visibility ?? '',
+    };
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    root.style.backgroundColor = '#000';
+    document.body.style.backgroundColor = '#000';
+    if (app) { app.style.backgroundColor = '#000'; app.style.visibility = 'hidden'; }
+    setChromeOverride({ light: '#000000', dark: '#000000' });
+    const y = window.scrollY;
+    window.scrollTo(0, y + 1);
+    window.requestAnimationFrame(() => window.scrollTo(0, y));
+    return () => {
+      document.body.style.overflow = prev.overflow;
+      root.style.backgroundColor = prev.rootBg;
+      document.body.style.backgroundColor = prev.bodyBg;
+      if (app) { app.style.backgroundColor = prev.appBg; app.style.visibility = prev.appVis; }
+      setChromeOverride(null);
+    };
   }, []);
 
   const onScroll = () => {
@@ -240,8 +266,9 @@ export default function SignalReels() {
   if (loading) return null;
   if (!session) return <Navigate to="/signal" replace />;
 
-  return (
-    <div className="fixed inset-0 z-[300] bg-black text-white">
+  return createPortal(
+    <div className="fixed inset-x-0 top-0 z-[300] bg-black text-white" style={{ bottom: -160 }}>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-black" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
       <button
         type="button"
         onClick={() => navigate(authorId ? `/signal/profile/${authorId}` : '/signal/community')}
@@ -263,7 +290,7 @@ export default function SignalReels() {
           </div>
         </div>
       ) : (
-        <div ref={scroller} onScroll={onScroll} className="h-full snap-y snap-mandatory overflow-y-scroll overscroll-contain [scrollbar-width:none]">
+        <div ref={scroller} onScroll={onScroll} className="snap-y snap-mandatory overflow-y-scroll overscroll-contain [scrollbar-width:none]" style={{ height: '100dvh' }}>
           {posts.map((p, i) => (
             <Reel
               key={p.id}
@@ -276,6 +303,7 @@ export default function SignalReels() {
           ))}
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
