@@ -1,3 +1,4 @@
+import { BlurText } from '../components/ui/blur-text';
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
@@ -458,9 +459,7 @@ export default function Home() {
             </div>
             <div className="px-6 py-9 sm:px-10 sm:py-12">
               <p className="eyebrow">{t('CX Delivery')}</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                {t('Your journey starts at your door.')}
-              </h2>
+              <BlurText as="h2" className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Your journey starts at your door.')} />
               <p className="mt-3 text-copy leading-relaxed text-muted">
                 {t('Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.')}
               </p>
@@ -499,9 +498,7 @@ export default function Home() {
                 <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
                   <ConciergeMark size={44} live /> {t('CX Concierge')}
                 </p>
-                <h2 className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                  {t('Find your CX')}
-                </h2>
+                <BlurText as="h2" className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Find your CX')} />
                 <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
                   {t("Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.")}
                 </p>
@@ -574,9 +571,7 @@ export default function Home() {
                   </span>
                   <p className="text-label font-semibold uppercase tracking-[0.2em] text-accent-bright">{t('CX SIGNAL')}</p>
                 </div>
-                <h2 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-on-noir text-balance sm:text-5xl">
-                  {t('Great drives deserve to be shared.')}
-                </h2>
+                <BlurText as="h2" className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-on-noir text-balance sm:text-5xl" text={t('Great drives deserve to be shared.')} />
                 <p className="mt-4 max-w-lg text-copy leading-relaxed text-on-noir-muted sm:text-lead">
                   {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
                 </p>
@@ -618,9 +613,7 @@ export default function Home() {
           <div className="grid items-center gap-8 rounded-[1.75rem] border border-line bg-surface px-6 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <p className="eyebrow">{t('For car owners')}</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                {t('Your car is parked. It could be earning.')}
-              </h2>
+              <BlurText as="h2" className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Your car is parked. It could be earning.')} />
               <p className="mt-3 max-w-lg text-copy leading-relaxed text-muted">
                 {t('Share the car you love with drivers who will treat it right. Set your own price, decide how it is handed over, and stay in control of every trip.')}
               </p>
@@ -657,9 +650,7 @@ export default function Home() {
           <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
             <div>
               <p className="eyebrow">{t('Good to know')}</p>
-              <h2 className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl">
-                {t('Questions, answered.')}
-              </h2>
+              <BlurText as="h2" className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Questions, answered.')} />
               <p className="mt-4 max-w-sm text-copy leading-relaxed text-muted text-pretty">
                 {t('The essentials about booking, protection and cancellations — before you book.')}
               </p>
@@ -680,9 +671,7 @@ export default function Home() {
       <section className="container-page mt-20 mb-6 sm:mt-24">
         <Reveal>
           <div className="flex flex-col items-center gap-6 text-center">
-            <h2 className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl">
-              {t('Ready for your next journey?')}
-            </h2>
+            <BlurText as="h2" className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl" text={t('Ready for your next journey?')} />
             <p className="max-w-md text-copy leading-relaxed text-muted">
               {t('Premium cars from verified hosts, around the world.')}
             </p>
