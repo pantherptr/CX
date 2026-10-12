@@ -102,15 +102,42 @@ export function setTheme(next: Theme) {
   listeners.forEach((l) => l());
 }
 
-/** Called when the route moves into or out of SIGNAL: it wears its own theme, the site gets its own back. */
+// Where the last tap landed (the Signal button in the dock, usually): the colour change spreads from there.
+let lastPointer: { x: number; y: number } | null = null;
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerdown', (e) => { lastPointer = { x: e.clientX, y: e.clientY }; }, { capture: true, passive: true });
+}
+
+/** Called when the route moves into or out of SIGNAL: it wears its own theme, the site gets its own back.
+ *  The change spreads like the Dark mode switch does — a circle growing from where you tapped. */
 export function setInSignal(on: boolean) {
   if (on === inSignal) return;
   inSignal = on;
   const next = on ? readSignal() : read();
   if (next === current) return;
-  current = next;
-  paint();
-  listeners.forEach((l) => l());
+  const apply = () => {
+    current = next;
+    paint();
+    listeners.forEach((l) => l());
+  };
+  const doc = document as TransitionDocument;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!doc.startViewTransition || reduced) {
+    apply();
+    return;
+  }
+  const x = lastPointer?.x ?? window.innerWidth / 2;
+  const y = lastPointer?.y ?? window.innerHeight - 40;
+  const r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+  const t = doc.startViewTransition(apply);
+  t.ready
+    .then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+        { duration: 600, easing: 'cubic-bezier(0.4,0,0.2,1)', pseudoElement: '::view-transition-new(root)' },
+      );
+    })
+    .catch(() => {});
 }
 
 type TransitionDocument = Document & {
