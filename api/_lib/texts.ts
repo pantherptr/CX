@@ -41,6 +41,10 @@ export const TEXTS: Record<string, Entry> = {
     title: { en: 'Return is tomorrow', it: 'La riconsegna è domani', ro: 'Returnarea este mâine', es: 'La devolución es mañana' },
     body: { en: 'Your {car} is due back tomorrow.', it: 'La tua {car} va riconsegnata domani.', ro: '{car} trebuie returnată mâine.', es: 'Tu {car} debe devolverse mañana.' },
   },
+  share_trip: {
+    title: { en: 'Your trip is over — share it', it: 'Il viaggio è finito — condividilo', ro: 'Călătoria s-a terminat — împărtășește-o', es: 'Tu viaje terminó — compártelo' },
+    body: { en: 'Turn your {car} trip into a card on SIGNAL.', it: 'Trasforma il viaggio con la {car} in una card su SIGNAL.', ro: 'Transformă călătoria cu {car} într-un card pe SIGNAL.', es: 'Convierte tu viaje con el {car} en una tarjeta en SIGNAL.' },
+  },
   return_expected: {
     title: { en: 'Your car comes back tomorrow', it: 'La tua auto torna domani', ro: 'Mașina ta revine mâine', es: 'Tu coche vuelve mañana' },
     body: { en: '{car} is due back tomorrow ({ref}).', it: 'La {car} torna domani ({ref}).', ro: '{car} revine mâine ({ref}).', es: 'El {car} vuelve mañana ({ref}).' },

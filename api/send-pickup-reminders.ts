@@ -157,6 +157,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // --- "Share your trip": the day after a trip ended, once ---------------
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const yesterdayISO = yesterday.toISOString().slice(0, 10);
+  const { data: justEnded } = await supabase
+    .from('bookings')
+    .select(SELECT)
+    .eq('status', 'confirmed')
+    .eq('end_date', yesterdayISO);
+  for (const row of (justEnded ?? []) as unknown as ReminderBookingRow[]) {
+    const carLabel = row.car ? `${row.car.year} ${row.car.make} ${row.car.model}` : 'your car';
+    await notifyUser(supabase, row.renter_id, {
+      kind: 'share_trip',
+      key: 'share_trip',
+      vars: { car: carLabel },
+      title: 'Your trip is over — share it',
+      body: `Turn your ${carLabel} trip into a card on SIGNAL.`,
+      url: `/trips/${row.id}`,
+    });
+  }
+
   // --- Release security deposits for trips that have ended -------------
   // One day of buffer after end_date (rather than releasing the moment a
   // trip ends) gives a host a small window to flag damage before the
