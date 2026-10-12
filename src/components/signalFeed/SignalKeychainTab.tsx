@@ -7,6 +7,7 @@ import { stampPlace } from '../../lib/cityCountry';
 import { fetchUserStamps, setStampVisibility, syncMyTripStamps, type TripStampData } from '../../lib/data/tripMemories';
 import { TripStampGrid } from '../TripStamp';
 import { CxMark } from '../CxBadge';
+import { CxPass, type PassData } from '../CxPass';
 
 export function VerifiedTripBadge({ className = '' }: { className?: string }) {
   const { t } = useLocale();
@@ -19,7 +20,7 @@ export function VerifiedTripBadge({ className = '' }: { className?: string }) {
 
 /** The profile's Keychain tab: one stamp per finished, verified trip. Private
  *  unless its owner makes it public. */
-export function SignalKeychainTab({ userId, isMe }: { userId: string; isMe: boolean }) {
+export function SignalKeychainTab({ userId, isMe, pass }: { userId: string; isMe: boolean; pass?: PassData | null }) {
   const { t, lang } = useLocale();
   const { toast } = useApp();
   const [stamps, setStamps] = useState<TripStampData[] | null>(null);
@@ -63,11 +64,19 @@ export function SignalKeychainTab({ userId, isMe }: { userId: string; isMe: bool
     </header>
   );
 
-  if (stamps === null) return <div className="mx-auto aspect-[1.55] w-full max-w-[24rem] animate-pulse rounded-[5px] bg-panel" />;
+  const passBlock = pass ? (
+    <section className="mx-auto mb-10 w-full max-w-[26rem]">
+      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.34em] text-ink">{isMe ? t('My CX Pass') : t('CX Pass')}</p>
+      <CxPass pass={pass} height="580px" />
+    </section>
+  ) : null;
+
+  if (stamps === null) return <div>{passBlock}<div className="mx-auto aspect-[1.55] w-full max-w-[24rem] animate-pulse rounded-[5px] bg-panel" /></div>;
 
   if (stamps.length === 0) {
     return (
       <div className="px-2 pb-10 pt-6">
+        {passBlock}
         <Masthead />
         <div className="mx-auto flex max-w-[24rem] flex-col items-center rounded-[5px] px-6 py-12 text-center" style={{ border: '1px dashed #b7a06a' }}>
           <span className="grid h-14 w-14 place-items-center rounded-full text-ink" style={{ border: '1px solid #b7a06a' }}>
@@ -88,6 +97,7 @@ export function SignalKeychainTab({ userId, isMe }: { userId: string; isMe: bool
 
   return (
     <div className="px-2 pb-12 pt-6">
+      {passBlock}
       <Masthead />
       <p className="mb-9 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">{summary}</p>
       <TripStampGrid stamps={stamps} onToggle={isMe ? (s) => void toggle(s) : undefined} />

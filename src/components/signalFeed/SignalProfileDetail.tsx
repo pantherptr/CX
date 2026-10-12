@@ -1,4 +1,5 @@
 import { SignalAchievements } from './SignalAchievements';
+import { ShareProfileSheet, type PassData } from '../CxPass';
 import { SignalScheduledList } from './SignalScheduledList';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -243,7 +244,45 @@ export function SignalProfileDetail({
   // A private profile shows its content to followers only; a blocked one shows nothing.
   const lockedPrivate = Boolean(realProfile && !isMe && realProfile.isPrivate && realProfile.followStatus !== 'following' && !canManage);
 
+  // The CX Pass: this person's card (name, level, numbers, QR). "Share profile" opens it.
+  const passTier: PassData['tier'] | null = realProfile
+    ? realProfile.isOwner ? 'team'
+    : realProfile.isHost ? (realProfile.trips >= 25 ? 'golden' : 'host')
+    : realProfile.isVerifiedClient ? 'verified' : 'member'
+    : null;
+  const passData: PassData | null = realProfile && passTier
+    ? {
+        name: realProfile.fullName,
+        username: realProfile.username,
+        avatarUrl: realProfile.avatarUrl,
+        tier: passTier,
+        trips: realProfile.trips,
+        respects: (posts ?? []).reduce((sum, p) => sum + p.likeCount, 0),
+        since: realProfile.joined ? String(new Date(realProfile.joined).getFullYear() || '') || null : null,
+        url: `${window.location.origin}/signal/profile/${realProfile.id}`,
+      }
+    : null;
+  const [passOpen, setPassOpen] = useState(false);
+  const [passHeading, setPassHeading] = useState<string | undefined>(undefined);
+  // Reaching Golden Host: the badge drops in once, as the reward.
+  useEffect(() => {
+    if (!isMe || passTier !== 'golden' || !realProfile) return;
+    const key = `cx:golden-seen:${realProfile.id}`;
+    try {
+      if (window.localStorage.getItem(key)) return;
+      window.localStorage.setItem(key, '1');
+    } catch { return; }
+    setPassHeading(t('You are a Golden Host'));
+    setPassOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMe, passTier, realProfile?.id]);
+
   const share = async () => {
+    if (passData) {
+      setPassHeading(undefined);
+      setPassOpen(true);
+      return;
+    }
     const url = window.location.href;
     const title = realProfile?.fullName ?? demo?.fullName ?? 'CX Rent — Signal';
     if (navigator.share) {
@@ -457,12 +496,13 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} /> : null}
+      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} pass={passData} /> : null}
     </>
   );
 
   return (
     <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+      {passData && <ShareProfileSheet open={passOpen} onClose={() => setPassOpen(false)} pass={passData} heading={passHeading} />}
       {heroMode ? (
         <div className="mx-auto w-full max-w-2xl pb-10">
           <SignalProfileHero
