@@ -558,6 +558,8 @@ const ROWS: Row[] = [
   ['CX Pass', 'CX Pass', 'CX Pass', 'CX Pass'],
   ['You are a Golden Host', 'Sei un Golden Host', 'Ești un Golden Host', 'Eres un Golden Host'],
   ['Copied', 'Copiato', 'Copiat', 'Copiado'],
+  ['Welcome to CX', 'Benvenuto in CX', 'Bun venit la CX', 'Te damos la bienvenida a CX'],
+  ['Explore cars', 'Esplora le auto', 'Explorează mașinile', 'Explorar coches'],
   ['Achievements', 'Traguardi', 'Realizări', 'Logros'],
   ['First trip', 'Primo viaggio', 'Prima călătorie', 'Primer viaje'],
   ['10 trips', '10 viaggi', '10 călătorii', '10 viajes'],

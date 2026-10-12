@@ -68,6 +68,8 @@ export interface Profile {
    *  user) — see supabase/migrations/0059_signal_usernames_and_search.sql.
    *  Null until the user sets one. */
   username: string | null;
+  /** Null for a new member until the welcome CX Pass has been shown once (migration 0116). */
+  welcome_pass_seen_at?: string | null;
 }
 
 interface AuthState {

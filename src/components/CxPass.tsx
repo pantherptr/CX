@@ -128,7 +128,11 @@ export function CxPass({ pass, height = '580px' }: { pass: PassData; height?: st
 
 /** The layer behind "Share profile": a dark, blurred backdrop with the person's pass in the middle and the
  *  actions under it. Closes on a tap outside, the X or Escape. The pass itself is untouched. */
-export function ShareProfileSheet({ open, onClose, pass, heading }: { open: boolean; onClose: () => void; pass: PassData; heading?: string }) {
+export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
+  open: boolean; onClose: () => void; pass: PassData; heading?: string;
+  /** An extra, full-width action under Share / Copy — used by the welcome pass. */
+  start?: { label: string; onClick: () => void };
+}) {
   const { t } = useLocale();
   const { toast } = useApp();
   const [copied, setCopied] = useState(false);
@@ -225,6 +229,15 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
             <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
           </button>
         </div>
+        {start && (
+          <button
+            type="button"
+            onClick={start.onClick}
+            className="mt-2.5 inline-flex h-14 w-full max-w-[24rem] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-[15px] font-semibold text-white backdrop-blur-md transition-transform active:scale-[0.97]"
+          >
+            {start.label} <Icon name="arrowRight" size={17} />
+          </button>
+        )}
       </div>
     </div>,
     document.body,

@@ -22,6 +22,7 @@ import { NotificationToaster } from './components/NotificationToaster';
 import Home from './pages/Home';
 import CountryGateway from './pages/CountryGateway';
 import { IS_APP } from './lib/appMode';
+import { WelcomePass } from './components/WelcomePass';
 import SignalReels from './pages/SignalReels';
 import { useLocale } from './lib/i18n';
 const Browse = lazy(() => import('./pages/Browse'));
@@ -128,7 +129,12 @@ function ScrollToTop() {
  *  large file untouched and the Owner's home entirely separate. */
 function DashboardHome() {
   const { profile } = useAuth();
-  return profile?.is_owner ? <OwnerHome /> : <CustomerDashboard />;
+  return (
+    <>
+      {profile?.is_owner ? <OwnerHome /> : <CustomerDashboard />}
+      <WelcomePass />
+    </>
+  );
 }
 
 /** Signal was renamed from Empire — old /empire* links (already shared,

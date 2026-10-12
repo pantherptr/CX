@@ -32,7 +32,7 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 0098 collab · 0099 team boost notifications · 0100 sponsored posts · 0101 unpin community posts ·
 0102 host commission + payout ledger · 0103 owner payout overview · 0104 chat photos/delete/report ·
 0105 user devices · 0106 identity + licence verification · 0107 car catalogue (names/specs) ·
-0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts.
+0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts · 0116 welcome pass shown once to new members.
 Code is written to fail soft before a migration is run.
 
 ## Features worth knowing
