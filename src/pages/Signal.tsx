@@ -33,7 +33,7 @@ import { SignalPullToRefresh } from '../components/signalFeed/SignalPullToRefres
 import { useAuth } from '../lib/auth';
 import {
   useEmpireFeed, useEmpirePinnedPost, useEmpireFeaturedPosts, markEmpireFeedSeen,
-  fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpireCategory,
+  fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, publishDueScheduledPosts, type EmpireCategory,
 } from '../lib/data/empireFeed';
 import { useEmpireHighlights, highlightAsStory, deleteEmpireHighlight } from '../lib/data/empireHighlights';
 import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
@@ -103,6 +103,13 @@ export default function Signal() {
   const communityFeed = useEmpireFeed(null, { scope: 'community', ranked: feedMode });
   const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
     space === 'official' ? officialFeed : communityFeed;
+
+  // Posts scheduled for a time that has passed go live as soon as anyone opens SIGNAL.
+  useEffect(() => {
+    if (!session) return;
+    void publishDueScheduledPosts().then((n) => { if (n > 0) refresh(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
 
   // Warm the browser cache for the photos just below the fold, so scrolling
   // reveals finished images instead of skeletons. Capped, and only the

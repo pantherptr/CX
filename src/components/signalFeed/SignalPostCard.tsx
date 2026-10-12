@@ -24,6 +24,7 @@ import { BookmarkIcon, ShareIcon, EyeIcon } from '../ActionIcons';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 import { SignalMediaViewer } from './SignalMediaViewer';
 import { PostActionMenu, type PostMenuItem } from './PostActionMenu';
+import { SignalPostInsights } from './SignalPostInsights';
 import { SignalSpotlightCard } from './SignalSpotlightCard';
 import type { SpotlightCardData } from '../../lib/data/spotlight';
 import { SPOTLIGHT_POST_MARKER } from '../../lib/data/empireFeed';
@@ -493,6 +494,7 @@ export function SignalPostCard({
   const bodyRef = useRef<HTMLParagraphElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
@@ -989,6 +991,7 @@ export function SignalPostCard({
     // sheet/copy-link lives on the always-visible Share button; this is the
     // "send it to a real CX Rent conversation" path.
     [{ icon: 'send', label: 'Share to Messages', onClick: () => setShareSheetOpen(true) }],
+    ...(isOwnPost && !post.isDemo ? [[{ icon: 'chart', label: t('Post insights'), onClick: () => setInsightsOpen(true) } as PostMenuItem]] : []),
     ...(isOwnPost && post.publisherType === 'self' && !isSpotlightPost && !post.isDemo && !sponsored
       ? [[{ icon: 'trending', label: t('Sponsor this post'), onClick: () => setSponsorOpen(true) } as PostMenuItem]]
       : []),
@@ -1095,6 +1098,7 @@ export function SignalPostCard({
             >
               <Icon name="moreHorizontal" size={20} />
             </button>
+            {insightsOpen && <SignalPostInsights post={post} open onClose={() => setInsightsOpen(false)} />}
             {menuOpen && <PostActionMenu anchor={menuBtnRef.current} groups={menuGroups} onClose={() => setMenuOpen(false)} />}
           </div>
         )}

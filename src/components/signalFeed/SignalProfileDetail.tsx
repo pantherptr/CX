@@ -1,4 +1,5 @@
 import { SignalAchievements } from './SignalAchievements';
+import { SignalScheduledList } from './SignalScheduledList';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../Icon';
@@ -428,6 +429,7 @@ export function SignalProfileDetail({
     </div>
   ) : (
     <>
+      {realProfile && isMe && <SignalScheduledList />}
       {realProfile && (
         <SignalAchievements
           isHost={realProfile.isHost}

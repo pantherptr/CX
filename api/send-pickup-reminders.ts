@@ -157,6 +157,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  // --- SIGNAL: publish posts whose scheduled time has passed -------------
+  try {
+    await supabase.rpc('publish_due_scheduled_posts');
+  } catch (err) {
+    console.error('[send-pickup-reminders] scheduled posts failed', err);
+  }
+
   // --- "Share your trip": the day after a trip ended, once ---------------
   const yesterday = new Date();
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);

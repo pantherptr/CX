@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
 import {
-  createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
+  createEmpirePost, updateEmpirePost, scheduleEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpirePost, type EmpireVehicleRef,
 } from '../../lib/data/empireFeed';
 import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
@@ -25,6 +25,7 @@ import { CollabPicker, collabAllowed } from './CollabPicker';
 import { inviteCollaborator, type CollabInfo, type CollabPerson } from '../../lib/data/collab';
 import { DEFAULT_POST_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
 import { useLocale } from '../../lib/i18n';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 import { useTeamOnlyPublisher } from './SignalPublisherPicker';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
@@ -98,7 +99,22 @@ export function SignalCommunityComposer({
   // Tapping the "who can see this" / Collab pickers takes focus off the text box; without this the
   // composer would fold itself away (and the picker with it) before the menu could open.
   const [pickerHold, setPickerHold] = useState(false);
-  const [body, setBody] = useState(editing?.body ?? '');
+  const draftKey = `signal:draft:${profile?.id ?? 'anon'}`;
+  const [body, setBody] = useState(() => {
+    if (editing) return editing.body;
+    try { return window.localStorage.getItem(draftKey) ?? ''; } catch { return ''; }
+  });
+  // Publish later: '' = now, otherwise a local date-time ('YYYY-MM-DDTHH:mm').
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [showSchedule, setShowSchedule] = useState(false);
+  // The text of a post in progress is kept on this device, so closing the app doesn't lose it.
+  useEffect(() => {
+    if (editing) return;
+    try {
+      if (body.trim()) window.localStorage.setItem(draftKey, body);
+      else window.localStorage.removeItem(draftKey);
+    } catch { /* storage is optional */ }
+  }, [body, draftKey, editing]);
   const [existingPaths, setExistingPaths] = useState<string[]>(editing?.mediaPaths ?? []);
   const [existingUrls, setExistingUrls] = useState<string[]>(editing?.mediaUrls ?? []);
   const [pending, setPending] = useState<PendingMedia[]>([]);
@@ -312,6 +328,20 @@ export function SignalCommunityComposer({
         category: 'community' as const, body: body.trim(), mediaPaths, publisherType: (teamOnly ? 'cx' : 'self') as 'cx' | 'self',
         vehicleId: selectedVehicle?.id ?? null,
       };
+      if (scheduleAt && !editing) {
+        const when = new Date(scheduleAt);
+        const sched = await scheduleEmpirePost(input, when);
+        if (sched.error) {
+          setError(sched.error);
+          return;
+        }
+        toast({ title: t('Post scheduled'), desc: when.toLocaleString(uiLocale(), { dateStyle: 'medium', timeStyle: 'short' }), icon: 'check' });
+        resetDraft();
+        setScheduleAt('');
+        setShowSchedule(false);
+        onCollapse?.();
+        return;
+      }
       const result = editing ? await updateEmpirePost(editing.id, input) : await createEmpirePost(input);
       if (result.error || !result.post) {
         setError(result.error ?? 'Something went wrong — try again.');
@@ -522,6 +552,24 @@ export function SignalCommunityComposer({
             </div>
           )}
 
+          {isOpen && !editing && showSchedule && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-caption text-faint">{t('Publish later')}</span>
+              <input
+                type="datetime-local"
+                value={scheduleAt}
+                min={new Date(Date.now() + 5 * 60_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16)}
+                onChange={(e) => setScheduleAt(e.target.value)}
+                className="rounded-xl border border-line bg-bg px-3 py-2 text-detail text-ink"
+              />
+              {scheduleAt && (
+                <button type="button" onClick={() => setScheduleAt('')} className="text-caption font-semibold text-muted underline">
+                  {t('Post now instead')}
+                </button>
+              )}
+            </div>
+          )}
+
           {isOpen && !editing && (
             <div className="mt-2" onPointerDownCapture={holdForPicker}>
               <CollabPicker value={collaborator} onChange={setCollaborator} visibility={visibility} disabled={submitting} />
@@ -579,6 +627,18 @@ export function SignalCommunityComposer({
                     </Tap>
                   )}
 
+                  {!editing && (
+                    <Tap
+                      onMouseDown={holdFocus}
+                      onClick={() => setShowSchedule((v) => !v)}
+                      aria-pressed={showSchedule || Boolean(scheduleAt)}
+                      aria-label={t('Publish later')}
+                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors hover:bg-accent-050 ${scheduleAt ? 'bg-accent-050 text-accent-700' : 'text-accent-700'}`}
+                    >
+                      <Icon name="clock" size={20} />
+                    </Tap>
+                  )}
+
                   <span className="flex-1" />
 
                   <Tap
@@ -591,7 +651,7 @@ export function SignalCommunityComposer({
                       canPublish ? 'bg-ink text-white hover:bg-ink/90' : 'bg-panel text-faint'
                     }`}
                   >
-                    {submitting ? 'Posting…' : editing ? 'Save' : 'Post'}
+                    {submitting ? 'Posting…' : editing ? 'Save' : scheduleAt ? t('Schedule') : 'Post'}
                   </Tap>
 
                   <button

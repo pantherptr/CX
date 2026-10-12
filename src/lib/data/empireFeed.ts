@@ -655,6 +655,42 @@ export async function createEmpirePost(input: CreateEmpirePostInput): Promise<{ 
   return { post: mapCreatedPost(data), error: null };
 }
 
+/** A post written now, published later (migration 0115). */
+export async function scheduleEmpirePost(input: CreateEmpirePostInput, publishAt: Date): Promise<{ id: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('schedule_empire_post', {
+    p_category: input.category,
+    p_title: input.title ?? null,
+    p_body: toStoredBody(input.body),
+    p_media_paths: input.mediaPaths ?? [],
+    p_publisher_type: input.publisherType,
+    p_vehicle_id: input.vehicleId ?? null,
+    p_publish_at: publishAt.toISOString(),
+  });
+  if (error) return { id: null, error: error.message };
+  return { id: data as string, error: null };
+}
+
+export interface ScheduledPost { id: string; category: string; title: string | null; body: string; mediaPaths: string[]; publishAt: string }
+
+export async function fetchMyScheduledPosts(): Promise<ScheduledPost[]> {
+  const { data, error } = await supabase.rpc('my_scheduled_posts');
+  if (error) return [];
+  return (data as { id: string; category: string; title: string | null; body: string; media_paths: string[]; publish_at: string }[]).map((r) => ({
+    id: r.id, category: r.category, title: r.title, body: r.body, mediaPaths: r.media_paths, publishAt: r.publish_at,
+  }));
+}
+
+export async function cancelScheduledPost(id: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('cancel_scheduled_post', { p_id: id });
+  return { error: error?.message ?? null };
+}
+
+/** Publishes whatever is due. Cheap and idempotent — called when SIGNAL opens. */
+export async function publishDueScheduledPosts(): Promise<number> {
+  const { data, error } = await supabase.rpc('publish_due_scheduled_posts');
+  return error ? 0 : (data as number) ?? 0;
+}
+
 export async function updateEmpirePost(
   postId: string,
   input: CreateEmpirePostInput
