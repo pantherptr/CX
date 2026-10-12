@@ -435,7 +435,6 @@ export function SignalProfileDetail({
           isHost={realProfile.isHost}
           trips={realProfile.trips}
           followers={followersCount}
-          posts={posts ? posts.length : 0}
           respects={(posts ?? []).reduce((sum, p) => sum + p.likeCount, 0)}
           isMe={isMe}
         />
