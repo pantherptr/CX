@@ -530,7 +530,11 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
+      {/* A tab with little in it must not shrink the page under the reader: that made the whole profile jump
+          back up to the cover on every tab change. The tab bar always stays reachable where it was. */}
+      <div style={{ minHeight: 'calc(100dvh - 7rem)' }}>
       {activeTab === 'posts' ? postsSection : activeTab === 'reels' ? reelsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} pass={passData} /> : null}
+      </div>
     </>
   );
 
