@@ -240,14 +240,6 @@ export default function Signal() {
           // so it's the first thing under the Official/Community divider
           // rather than sitting below the publish-only rows.
           { label: 'My Profile', icon: 'user', onSelect: () => navigate(`/signal/profile/${session.user.id}`) },
-          // Reels and the CX Pass scanner live in the menu, Community only — Official stays team posts,
-          // photos and Stories, nothing else.
-          ...(space === 'community'
-            ? [
-                { label: 'Reels', icon: 'play' as const, onSelect: () => navigate('/signal/reels') },
-                { label: t('Scan a CX Pass'), icon: 'camera' as const, onSelect: () => navigate('/scan') },
-              ]
-            : []),
           ...(canManage
             ? [{
                 label: tapMode === 'double' ? t('Taps: doubling ×2') : t('Taps: one by one'),
