@@ -4,6 +4,7 @@ import { DashboardShell } from '../components/DashboardShell';
 import { SignalS } from '../components/SignalLogo';
 import { NotificationsList } from '../components/NotificationsList';
 import { PushPrompt } from '../components/PushPrompt';
+import { NotificationStory, hasStory } from '../components/NotificationStory';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
 import { useMyNotifications, notificationPath, type SignalNotification } from '../lib/data/notifications';
@@ -69,6 +70,8 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
       </div>
     );
   }
+  // Only the first few unread updates act out their story (money rolling in, the car on its route).
+  let storiesLeft = 3;
   return (
     <div className="space-y-5">
       {['Today', 'Yesterday', 'This week', 'Earlier'].filter((b) => grouped[b]?.length).map((b) => (
@@ -79,6 +82,8 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
               const n = grp[0];
               const more = grp.length - 1;
               const st = KIND_STYLE[n.kind] ?? { icon: 'bell' as const, tone: 'ink' as const };
+              const showStory = storiesLeft > 0 && (!n.readAt || fresh.has(n.id)) && hasStory(n.kind);
+              if (showStory) storiesLeft -= 1;
               return (
                 <li key={n.id}>
                   <button
@@ -94,6 +99,7 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
                         <span className="shrink-0 pt-0.5 text-caption text-faint">{ago(n.createdAt)}</span>
                       </span>
                       {n.body && <span className="mt-0.5 line-clamp-2 block text-detail text-muted">{n.body}</span>}
+                      {showStory && <NotificationStory kind={n.kind} title={n.title} body={n.body} />}
                       {more > 0 && <span className="mt-1 block text-caption font-semibold text-faint">{t('and {n} more like this', { n: more })}</span>}
                     </span>
                     {(!n.readAt || fresh.has(n.id)) && <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-bright" />}
