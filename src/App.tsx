@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { BatPullToRefresh } from './components/BatPullToRefresh';
 import { EdgeSwipeBack } from './components/EdgeSwipeBack';
+import { WorkspaceTracker } from './lib/workspace';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
@@ -335,6 +336,7 @@ export default function App() {
       <ScrollToTop />
       <NotificationToaster />
       <EdgeSwipeBack />
+      <WorkspaceTracker />
       <BatPullToRefresh enabled={pullEnabled && !splash.visible} onRefresh={() => { setRefreshNonce((n) => n + 1); return new Promise<void>((r) => window.setTimeout(r, 600)); }} />
       {/* Outer safety net — the inner ErrorBoundary below only covers the
           routed page itself; MaintenanceGate, BottomNav, CompareTray and

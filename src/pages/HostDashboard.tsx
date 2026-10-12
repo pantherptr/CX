@@ -21,7 +21,7 @@ import { InspectionCard } from '../components/InspectionGrid';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
-import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
+import { HostCarsNow, type HostCarNow, type HostTripNow } from '../components/HostCarsNow';
 import { ActivePill } from '../components/motionKit';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
@@ -728,33 +728,28 @@ export default function HostDashboard() {
     return map;
   }, [classified]);
 
-  // The live board: real active/upcoming trips first (real renter, car and
-  // pickup place); with none, the host's own cars with a sample renter.
-  const liveItems = useMemo<LiveItem[]>(() => {
-    const trips = classified.filter((c) => c.phase === 'active' || c.phase === 'upcoming').slice(0, 3);
-    if (trips.length > 0) {
-      return trips.map(({ booking: b, phase }) => ({
-        id: b.id,
-        title: `${b.car.make} ${b.car.model}`,
-        image: b.car.image,
-        plate: b.reference,
-        person: b.renter.name || 'Renter',
-        avatar: b.renter.avatar || undefined,
-        city: b.car.location.split(',').pop()?.trim() || '',
-        status: phase === 'active' ? 'On trip' : 'Upcoming',
-      }));
-    }
-    return (hostCars ?? []).filter((c) => c.status === 'published').slice(0, 3).map((c, i) => ({
+  // "Your cars right now": the host's published cars with their real status (on the road / booked / free).
+  const nowCars = useMemo<HostCarNow[]>(
+    () => (hostCars ?? []).filter((c) => c.status === 'published').map((c) => ({
       id: c.id,
       title: `${c.make} ${c.model}`,
       image: unsplash(c.images[0], 320),
-      plate: `${c.year} · ${c.city}`,
-      person: ['Marco Rossi', 'Elena Popescu', 'Lucía Gómez'][i % 3],
       city: c.city,
-      status: 'Ready',
-    }));
-  }, [classified, hostCars]);
-  const hasRealTrips = classified.some((c) => c.phase === 'active' || c.phase === 'upcoming');
+    })),
+    [hostCars],
+  );
+  const nowTrips = useMemo<HostTripNow[]>(
+    () => classified
+      .filter((c) => c.phase === 'active' || c.phase === 'upcoming')
+      .map(({ booking: b, phase }) => ({
+        carId: b.car.id,
+        phase: phase as 'active' | 'upcoming',
+        startDate: b.startDate,
+        endDate: b.endDate,
+        renter: b.renter.name || 'Renter',
+      })),
+    [classified],
+  );
 
   const actionItems = useMemo(() => {
     const soonCutoff = toISO(new Date(Date.now() + 2 * 86_400_000));
@@ -796,12 +791,12 @@ export default function HostDashboard() {
           )}
         </div>
 
-        {/* Live board — real trips when there are any, otherwise a preview on the host's own cars. */}
-        {!loading && liveItems.length > 0 && (
+        {/* Your cars right now — real status per published car, no simulation. */}
+        {!loading && nowCars.length > 0 && (
           <Reveal delay={160}>
-            <section className="mt-6">
-              <FleetLiveBoard items={liveItems} preview={!hasRealTrips} title="Live tracking" />
-            </section>
+            <div className="mt-6">
+              <HostCarsNow cars={nowCars} trips={nowTrips} />
+            </div>
           </Reveal>
         )}
 

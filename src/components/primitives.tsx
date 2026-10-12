@@ -6,6 +6,7 @@ import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { CxMark, type CxTier } from './CxBadge';
 import { useAuth } from '../lib/auth';
+import { useHomePath } from '../lib/workspace';
 import { haptics } from '../lib/native';
 
 /* --------------------------- Google sign-in ---------------------------
@@ -99,13 +100,14 @@ export function Logo({
   // straight back), so the logo should point at the dashboard directly
   // rather than round-trip through a redirect.
   const { session } = useAuth();
+  const homePath = useHomePath();
   const fallback = (
     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-panel text-xs font-semibold text-ink-soft">
       CX
     </span>
   );
   return (
-    <Link to={session ? '/dashboard' : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
+    <Link to={session ? homePath : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
       <Img
         src={LOGO_SRC.wordmark}
         alt="CX"

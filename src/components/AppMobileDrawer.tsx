@@ -1,3 +1,4 @@
+import { useWorkspace } from '../lib/workspace';
 import ThemeSwitch from './ThemeSwitch';
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
@@ -43,6 +44,7 @@ function activeNavLabel(items: NavItem[], pathname: string, hash: string): strin
  *  from. Centralizing it here means every authenticated page opens the
  *  exact same drawer. */
 export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const workspace = useWorkspace();
   const [mode, setMode] = useState<'customer' | 'host'>('customer');
   const { pathname, hash } = useLocation();
   const reduceMotion = !!useReducedMotion();
@@ -72,7 +74,7 @@ export function AppMobileDrawer({ open, onClose }: { open: boolean; onClose: () 
   // Open on the side of the app you're actually in — a host opening the
   // menu from their Host dashboard shouldn't land on the Driver list.
   useEffect(() => {
-    if (open) setMode(isHost && pathname.startsWith('/host') ? 'host' : 'customer');
+    if (open) setMode(isHost && (pathname.startsWith('/host') || workspace === 'host') ? 'host' : 'customer');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

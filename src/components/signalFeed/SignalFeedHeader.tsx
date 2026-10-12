@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useHomePath } from '../../lib/workspace';
 import { Icon } from '../Icon';
 import { SignalBarLogo } from '../SignalBarLogo';
 import { motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY, SPRING_SMOOTH } from '../motionKit';
@@ -51,6 +52,7 @@ export function SignalFeedHeader({
 }) {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const homePath = useHomePath();
   const { count: unreadNotifications } = useUnreadNotificationCount(session?.user.id);
   const [scrolled, setScrolled] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -170,7 +172,7 @@ export function SignalFeedHeader({
         )}
         <button
           type="button"
-          onClick={() => navigate(signedIn ? '/dashboard' : '/')}
+          onClick={() => navigate(signedIn ? homePath : '/')}
           aria-label="Close SIGNAL"
           className="pressable ml-3 hidden h-9 w-9 place-items-center rounded-full border border-line-strong text-ink transition-colors hover:bg-panel lg:grid"
         >

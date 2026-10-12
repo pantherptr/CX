@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { CxsLogo } from './CxsLogo';
 import { useAuth } from '../lib/auth';
+import { useWorkspace } from '../lib/workspace';
 import { useMediaQuery } from './motion';
 import { useUnreadMessageCount } from '../lib/data/messages';
 // The Signal feed's data layer keeps its original `empire*` names — see
@@ -285,9 +286,18 @@ export function BottomNav() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  // A host working on the Host side gets their Host dashboard behind Home (same dock, same icon).
+  const workspace = useWorkspace();
+  const hostSide = Boolean(profile?.is_host) && workspace === 'host';
+  const dock = useMemo<Item[]>(
+    () => hostSide
+      ? items.map((it, i) => i === 0 ? { ...it, to: '/host', match: (p: string) => p === '/host' || p.startsWith('/host/') } : it)
+      : items,
+    [hostSide],
+  );
   const activeIndex = useMemo(
-    () => items.findIndex((it) => it.match(pathname, hash)),
-    [pathname, hash],
+    () => dock.findIndex((it) => it.match(pathname, hash)),
+    [dock, pathname, hash],
   );
   const signalActive = activeIndex === SIGNAL_INDEX;
 
@@ -435,7 +445,7 @@ export function BottomNav() {
           home indicator by `<nav>`'s own `bottom` offset, so padding the
           content as well would only add dead space under the icons. */}
       <div className="relative grid grid-cols-5">
-        {items.map((it, i) => {
+        {dock.map((it, i) => {
           const active = i === activeIndex;
           const isSignal = i === SIGNAL_INDEX;
 
