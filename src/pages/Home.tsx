@@ -228,8 +228,8 @@ export default function Home() {
                   <span aria-hidden className="hero-beam" style={{ top: '81%', ['--r' as string]: '-7deg' }} />
                   <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.8%', top: '20%', ['--r' as string]: '-38deg' }} />
                   <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.7%', top: '81%', ['--r' as string]: '38deg' }} />
-                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '93.6%', top: '17.8%', ['--r' as string]: '42deg' }} />
-                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '95.6%', top: '76.4%', ['--r' as string]: '-55deg' }} />
+                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '92.4%', top: '20.5%', ['--r' as string]: '42deg' }} />
+                  <span aria-hidden className="hero-lamp hero-tail" style={{ left: '94.4%', top: '76%', ['--r' as string]: '-55deg' }} />
                   <img
                     src="/hero-car.webp?v=3"
                     alt={t('A premium CX car')}
