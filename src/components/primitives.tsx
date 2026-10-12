@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { useLocale } from '../lib/i18n';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 import { CxMark, type CxTier } from './CxBadge';
@@ -441,10 +443,88 @@ export function VerifiedBadge({
       </span>
     );
   }
+  return <TappableBadge role={role} size={size} />;
+}
+
+const BADGE_TIP_TEXT: Record<VerifiedRole, string> = {
+  client: 'Verified member — identity checked by CX',
+  host: 'Verified host — identity checked by CX',
+  admin: 'CX team — official account',
+  owner: 'CX Owner — official account',
+  owner_assistant: 'CX Owner assistant — official account',
+  assistant: 'CX Assistant — official account',
+  cx: 'CX — official account',
+};
+
+/** The small icon-only badge: a tap opens a slim bar next to it saying what it means. It goes away by
+ *  itself after about 2.5 seconds, or the moment the page is scrolled, touched elsewhere or resized. */
+function TappableBadge({ role, size }: { role: VerifiedRole; size: number }) {
+  const { t } = useLocale();
+  const ref = useRef<HTMLSpanElement>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; below: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!tip) return;
+    const close = () => setTip(null);
+    const timer = window.setTimeout(close, 2500);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('touchmove', close, { passive: true });
+    window.addEventListener('pointerdown', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('cx-badge-tip', close);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('touchmove', close);
+      window.removeEventListener('pointerdown', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('cx-badge-tip', close);
+    };
+  }, [tip]);
+
+  const open = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    window.dispatchEvent(new Event('cx-badge-tip'));
+    // Wait a tick so the close-on-pointerdown of this very tap doesn't close it straight away.
+    window.setTimeout(() => {
+      setTip({ x: r.left + r.width / 2, y: r.top < 70 ? r.bottom : r.top, below: r.top < 70 });
+    }, 0);
+  };
+
   return (
-    <span className="inline-flex shrink-0 align-[-0.16em]">
-      <BadgeMark role={role} size={size} />
-    </span>
+    <>
+      <span
+        ref={ref}
+        role="button"
+        tabIndex={0}
+        aria-label={t(BADGE_TIP_TEXT[role])}
+        onClick={open}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') open(e); }}
+        className="inline-flex shrink-0 cursor-pointer align-[-0.16em]"
+      >
+        <BadgeMark role={role} size={size} />
+      </span>
+      {tip && createPortal(
+        <div
+          role="status"
+          className="pointer-events-none fixed z-[600] animate-fade-in"
+          style={{
+            left: Math.min(Math.max(tip.x, 12 + 130), window.innerWidth - 12 - 130),
+            top: tip.below ? tip.y + 8 : tip.y - 8,
+            transform: tip.below ? 'translateX(-50%)' : 'translate(-50%, -100%)',
+          }}
+        >
+          <span className="flex max-w-[16rem] items-center gap-2 rounded-full bg-noir px-3 py-1.5 text-caption font-semibold text-on-noir shadow-pop ring-1 ring-accent-bright/30">
+            <BadgeMark role={role} size={14} />
+            {t(BADGE_TIP_TEXT[role])}
+          </span>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
