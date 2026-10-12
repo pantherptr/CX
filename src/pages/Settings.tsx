@@ -176,7 +176,7 @@ export default function Settings() {
     const file = await shrinkImage(picked, 800, 0.85);
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `${session.user.id}/avatar-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '31536000', upsert: false });
     if (uploadError) {
       setUploadingPhoto(false);
       toast({ title: 'Could not upload photo', desc: uploadError.message, icon: 'info' });

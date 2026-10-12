@@ -195,7 +195,7 @@ export async function uploadSignalAvatar(userId: string, original: File): Promis
   const file = await shrinkImage(original, 800, 0.85);
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${userId}/avatar-${Date.now()}.${ext}`;
-  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '31536000', upsert: false });
   if (uploadError) return { url: null, error: uploadError.message };
   const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
   return { url: pub.publicUrl, error: null };
@@ -206,7 +206,7 @@ export async function uploadSignalCover(userId: string, original: File): Promise
   const file = await shrinkImage(original, 1600, 0.84);
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `${userId}/cover-${Date.now()}.${ext}`;
-  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '3600', upsert: false });
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { cacheControl: '31536000', upsert: false });
   if (uploadError) return { url: null, error: uploadError.message };
   const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
   return { url: pub.publicUrl, error: null };

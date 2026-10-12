@@ -324,12 +324,12 @@ export async function uploadCarPhoto(
   userId: string,
   original: File,
 ): Promise<{ url: string; path: string }> {
-  const file = await shrinkImage(original, 2200, 0.84);
+  const file = await shrinkImage(original, 1600, 0.8);
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
     .from('car-photos')
-    .upload(path, file, { cacheControl: '3600', upsert: false });
+    .upload(path, file, { cacheControl: '31536000', upsert: false });
   if (error) throw error;
   const { data } = supabase.storage.from('car-photos').getPublicUrl(path);
   return { url: data.publicUrl, path };

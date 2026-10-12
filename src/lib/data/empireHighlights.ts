@@ -205,7 +205,7 @@ export async function uploadEmpireHighlightMedia(original: File): Promise<{ url:
   if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${uid}/highlights/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '3600', upsert: false });
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
   if (error) throw error;
   return { url: mediaUrlFor(path), path };
 }
