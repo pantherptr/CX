@@ -161,7 +161,7 @@ export default function Home() {
           <Reveal className="reveal-blur">
             <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">
               <h1
-                className="absolute inset-x-0 top-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw] sm:text-[clamp(2.6rem,14vw,12.4rem)]"
+                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw] sm:text-[clamp(2.6rem,14vw,12.4rem)]"
                 style={{
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
