@@ -8,10 +8,11 @@ import { AuthProvider } from './lib/auth'
 import { CompareProvider } from './lib/compareStore'
 import { LocaleProvider } from './lib/i18n'
 import { Capacitor } from '@capacitor/core'
+import { IS_APP } from './lib/appMode'
 
 // Lets the stylesheet apply app-only behaviour (no long-press menus on
 // images/controls) without affecting the website.
-if (Capacitor.isNativePlatform()) document.documentElement.classList.add('native-app')
+if (Capacitor.isNativePlatform() || IS_APP) document.documentElement.classList.add('native-app')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
