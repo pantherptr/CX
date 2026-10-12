@@ -1,3 +1,4 @@
+import { toggleTheme, useTheme } from '../lib/theme';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
@@ -67,6 +68,7 @@ import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
 export default function Signal() {
   const { t } = useLocale();
   const tapMode = useTeamTapMode();
+  const signalTheme = useTheme();
   const { session, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -302,6 +304,7 @@ export default function Signal() {
               ]
             : []),
           { label: 'Saved', icon: 'bookmark', onSelect: () => setSavedOpen(true) },
+          { label: signalTheme === 'dark' ? t('Light mode') : t('Dark mode'), icon: signalTheme === 'dark' ? 'sun' : 'gem', onSelect: () => toggleTheme() },
           ];
 
   const highlightIndex = highlightId && highlights ? highlights.findIndex((h) => h.id === highlightId) : -1;

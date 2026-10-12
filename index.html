@@ -14,6 +14,7 @@
     <script>
       try {
         var t = localStorage.getItem('cx-theme') || localStorage.getItem('cx-gateway-theme');
+        if (/^\/signal(\/|$)/.test(location.pathname)) t = localStorage.getItem('cx-signal-theme') || 'dark';
         if (t === 'dark') {
           document.documentElement.dataset.theme = 'dark';
           document.documentElement.style.colorScheme = 'dark';

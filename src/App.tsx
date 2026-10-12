@@ -5,6 +5,7 @@ import { Footer } from './components/Footer';
 import { BatPullToRefresh } from './components/BatPullToRefresh';
 import { EdgeSwipeBack } from './components/EdgeSwipeBack';
 import { WorkspaceTracker } from './lib/workspace';
+import { setInSignal } from './lib/theme';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
@@ -364,6 +365,7 @@ export default function App() {
   // state a remount would wipe (booking, listing a car, settings, sign-in).
   const [refreshNonce, setRefreshNonce] = useState(0);
   const pageNavType = useNavigationType();
+  useEffect(() => { setInSignal(SIGNAL_ROUTE.test(location.pathname)); }, [location.pathname]);
   useWarmRoutes();
   const pullEnabled =
     !SIGNAL_ROUTE.test(location.pathname) &&

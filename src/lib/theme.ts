@@ -5,6 +5,9 @@ export type Theme = 'light' | 'dark';
 
 const KEY = 'cx-theme';
 const LEGACY_KEY = 'cx-gateway-theme';
+/** SIGNAL keeps its own theme: dark the first time, then whatever the person picks inside it. The site's
+ *  theme (KEY) is left alone and comes back as soon as they leave SIGNAL. */
+const SIGNAL_KEY = 'cx-signal-theme';
 
 /** Browser chrome colours (iOS status bar / Android address bar) per theme. */
 export const CHROME: Record<Theme, string> = { light: '#fbfbf9', dark: '#050605' };
@@ -19,7 +22,19 @@ function read(): Theme {
   return 'light';
 }
 
-let current: Theme = typeof document === 'undefined' ? 'light' : read();
+function readSignal(): Theme {
+  try {
+    const v = localStorage.getItem(SIGNAL_KEY);
+    if (v === 'light' || v === 'dark') return v;
+  } catch {
+    /* storage is optional */
+  }
+  return 'dark';
+}
+
+const startsInSignal = typeof window !== 'undefined' && /^\/signal(\/|$)/.test(window.location.pathname);
+let inSignal = startsInSignal;
+let current: Theme = typeof document === 'undefined' ? 'light' : startsInSignal ? readSignal() : read();
 const listeners = new Set<() => void>();
 
 /** Colour a page wants the browser chrome to take while it is visible, or null for the theme default. */
@@ -78,10 +93,22 @@ export function setTheme(next: Theme) {
   if (next === current) return;
   current = next;
   try {
-    localStorage.setItem(KEY, next);
+    // Inside SIGNAL the choice belongs to SIGNAL; the site's own theme is not touched.
+    localStorage.setItem(inSignal ? SIGNAL_KEY : KEY, next);
   } catch {
     /* ignore */
   }
+  paint();
+  listeners.forEach((l) => l());
+}
+
+/** Called when the route moves into or out of SIGNAL: it wears its own theme, the site gets its own back. */
+export function setInSignal(on: boolean) {
+  if (on === inSignal) return;
+  inSignal = on;
+  const next = on ? readSignal() : read();
+  if (next === current) return;
+  current = next;
   paint();
   listeners.forEach((l) => l());
 }

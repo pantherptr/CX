@@ -6,6 +6,7 @@ const ROUTES = ['/', '/browse', '/login', '/signup', '/how-it-works', '/help', '
 async function open(page: Page, route: string, theme: 'light' | 'dark', country = 'GB') {
   await page.addInitScript(([t, c]) => {
     localStorage.setItem('cx-theme', t);
+    localStorage.setItem('cx-signal-theme', t);
     localStorage.setItem('cx-country', c);
     sessionStorage.setItem('cx-splashed', '1');
   }, [theme, country]);
@@ -94,4 +95,16 @@ test('going back returns to where you were scrolled', async ({ page }) => {
   await page.waitForTimeout(1200);
   const after = await page.evaluate(() => window.scrollY);
   expect(after, `scrolled back to ${after}, was at ${before}`).toBeGreaterThan(before * 0.5);
+});
+
+test('SIGNAL opens dark the first time even when the site is light, and the site theme is kept', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('cx-theme', 'light');
+    localStorage.removeItem('cx-signal-theme');
+    localStorage.setItem('cx-country', 'GB');
+    sessionStorage.setItem('cx-splashed', '1');
+  });
+  await page.goto('/signal');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await page.evaluate(() => localStorage.getItem('cx-theme'))).toBe('light');
 });

@@ -75,6 +75,9 @@ Code is written to fail soft before a migration is run.
   once and refreshes behind; `prefetch.ts` starts a profile load on touch; `useWarmRoutes` (App.tsx) warms page chunks on idle;
   `scrollMemory.ts` + `ScrollToTop` restore scroll; the feed paints a device snapshot on cold start.
 
+- Theme: the site theme is `cx-theme`; SIGNAL wears its own (`cx-signal-theme`, dark the first time) via
+  `setInSignal` in `src/lib/theme.ts` (called from App.tsx on route change). Toggling inside SIGNAL only changes SIGNAL's.
+
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.
