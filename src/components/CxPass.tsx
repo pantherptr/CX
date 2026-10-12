@@ -176,11 +176,6 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
         style={{ WebkitBackdropFilter: 'blur(28px) saturate(140%)', backdropFilter: 'blur(28px) saturate(140%)' }}
         onClick={onClose}
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.16), transparent 70%)' }}
-      />
 
       <button
         type="button"
@@ -203,7 +198,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
           <button
             type="button"
             onClick={() => void share()}
-            className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-accent-bright text-[15px] font-bold text-noir shadow-[0_14px_36px_-12px_rgba(0,212,71,0.75)] transition-transform active:scale-[0.97]"
+            className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-white text-[15px] font-bold text-noir transition-transform active:scale-[0.97]"
           >
             <Icon name="share" size={19} /> {t('Share')}
           </button>
@@ -212,7 +207,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
             onClick={() => void copy()}
             aria-live="polite"
             className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-all active:scale-[0.97] ${
-              copied ? 'border-accent-bright/60 bg-accent-bright/15 text-accent-bright' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+              copied ? 'border-white/30 bg-white/15 text-white' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
             }`}
           >
             <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
