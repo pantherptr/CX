@@ -1,3 +1,4 @@
+import { rememberPosts } from './seedCache';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../auth';
@@ -560,6 +561,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       scrollY: window.scrollY, at: Date.now(),
     });
     writeFeedSnapshot(cacheKeyRef.current, posts);
+    rememberPosts(posts);
   }, [posts, hasMore]);
   useEffect(() => {
     let raf = 0;

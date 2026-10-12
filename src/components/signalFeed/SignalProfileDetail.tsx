@@ -1,3 +1,4 @@
+import { recallProfile, rememberProfile, rememberPosts } from '../../lib/data/seedCache';
 import { useScrollMemory } from '../../lib/scrollMemory';
 import { SignalAchievements } from './SignalAchievements';
 import { fetchVerifiedHandoversCount } from '../../lib/data/handovers';
@@ -114,11 +115,21 @@ export function SignalProfileDetail({
   useEffect(() => {
     if (isOfficialVoice) return;
     let cancelled = false;
-    setLoaded(false);
-    setProfile(null);
-    setDemoProfile(null);
-    setCars(null);
-    setPosts(null);
+    // Seen a moment ago: show it at once and refresh behind it.
+    const seed = recallProfile(authorId);
+    if (seed?.profile) {
+      setProfile(seed.profile as SignalProfile);
+      setDemoProfile(null);
+      setLoaded(true);
+      setPosts((seed.posts as EmpirePost[] | null) ?? null);
+      setCars((seed.cars as typeof cars) ?? null);
+    } else {
+      setLoaded(false);
+      setProfile(null);
+      setDemoProfile(null);
+      setCars(null);
+      setPosts(null);
+    }
     // A demo profile has no real `profiles` row at all (see
     // signalDemo.ts's own header comment) — tried second, only once the
     // real lookup genuinely comes back empty, same fallback order as
@@ -129,8 +140,9 @@ export function SignalProfileDetail({
         if (p) {
           setProfile(p);
           setLoaded(true);
-          fetchEmpirePostsByAuthor(authorId, 6).then((rows) => !cancelled && setPosts(rows)).catch(() => !cancelled && setPosts([]));
-          if (p.isHost) fetchHostCars(authorId).then((rows) => !cancelled && setCars(rows)).catch(() => !cancelled && setCars([]));
+          rememberProfile(authorId, { profile: p });
+          fetchEmpirePostsByAuthor(authorId, 6).then((rows) => { if (cancelled) return; setPosts(rows); rememberProfile(authorId, { posts: rows }); rememberPosts(rows); }).catch(() => !cancelled && setPosts([]));
+          if (p.isHost) fetchHostCars(authorId).then((rows) => { if (cancelled) return; setCars(rows); rememberProfile(authorId, { cars: rows }); }).catch(() => !cancelled && setCars([]));
           return;
         }
         fetchSignalDemoProfile(authorId)

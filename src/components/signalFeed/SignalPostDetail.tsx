@@ -1,3 +1,4 @@
+import { recallPost, rememberPosts } from '../../lib/data/seedCache';
 import { useScrollMemory } from '../../lib/scrollMemory';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -47,8 +48,9 @@ export function SignalPostDetail({
 
   useEffect(() => {
     let cancelled = false;
-    setLoaded(false);
-    setPost(null);
+    // Opened from the feed: paint the post we already have at once; the fresh copy replaces it.
+    const seed = recallPost<EmpirePost>(postId);
+    if (seed) { setPost(seed); setLoaded(true); } else { setLoaded(false); setPost(null); }
     // A demo post lives in a fully separate table (see signalDemo.ts) —
     // tried second, only when the real lookup genuinely comes back empty,
     // so a real deleted/bad id still reads as "removed" rather than a
@@ -57,6 +59,7 @@ export function SignalPostDetail({
       .then((p) => (p ? p : fetchSignalDemoPostById(postId)))
       .then((p) => {
         if (cancelled) return;
+        if (p) rememberPosts([p]);
         setPost(p);
         setLoaded(true);
         if (p) {

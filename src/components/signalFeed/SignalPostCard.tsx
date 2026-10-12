@@ -1,3 +1,4 @@
+import { prefetchProfile } from '../../lib/data/prefetch';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
@@ -1060,12 +1061,12 @@ export function SignalPostCard({
       )}
 
       <div className="flex items-start gap-3 px-4 pb-2.5 pt-3.5 sm:px-5">
-        <Link to={signalProfileHref(post, profileBase)} viewTransition aria-label={post.authorName} className="shrink-0">
+        <Link to={signalProfileHref(post, profileBase)} onPointerDown={() => prefetchProfile(post.isDemo ? null : post.authorId)} viewTransition aria-label={post.authorName} className="shrink-0">
           <SignalIdentityAvatar identity={identity} size={40} />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <Link to={signalProfileHref(post, profileBase)} viewTransition className="flex min-w-0 max-w-full items-center gap-1.5 hover:underline">
+            <Link to={signalProfileHref(post, profileBase)} onPointerDown={() => prefetchProfile(post.isDemo ? null : post.authorId)} viewTransition className="flex min-w-0 max-w-full items-center gap-1.5 hover:underline">
               <span className="min-w-0 truncate font-display text-[15.5px] font-semibold leading-tight text-ink">{identity.name}</span>
               <SignalIdentityBadge identity={identity} />
             </Link>

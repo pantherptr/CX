@@ -71,6 +71,10 @@ Code is written to fail soft before a migration is run.
   anywhere when scrolled to the top (`data-no-sheet-drag` opts out); mark own-gesture layers `data-no-edge-back`.
 - Optimistic UI: Respect/save/follow/comments/poll votes/story respect/archive/profile pin update at once and roll back on error.
 
+- Instant opens (X-style): `src/lib/data/seedCache.ts` keeps seen posts/profiles 10 min so a post or profile paints at
+  once and refreshes behind; `prefetch.ts` starts a profile load on touch; `useWarmRoutes` (App.tsx) warms page chunks on idle;
+  `scrollMemory.ts` + `ScrollToTop` restore scroll; the feed paints a device snapshot on cold start.
+
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.
