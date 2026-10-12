@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import LanyardBadge, { Ornament } from './ui/lanyard-badge';
 import { Icon } from './Icon';
-import { Modal } from './primitives';
 import { useLocale } from '../lib/i18n';
 import { useApp } from '../lib/store';
 
@@ -125,11 +125,37 @@ export function CxPass({ pass, height = '580px' }: { pass: PassData; height?: st
   );
 }
 
-/** The sheet behind "Share profile": the person's pass, plus the link to send or copy. */
+/** The layer behind "Share profile": a dark, blurred backdrop with the person's pass in the middle and the
+ *  actions under it. Closes on a tap outside, the X or Escape. The pass itself is untouched. */
 export function ShareProfileSheet({ open, onClose, pass, heading }: { open: boolean; onClose: () => void; pass: PassData; heading?: string }) {
   const { t } = useLocale();
   const { toast } = useApp();
+  const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    setCopied(false);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(pass.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast({ title: t('Could not copy link'), icon: 'info' });
+    }
+  };
   const share = async () => {
     if (navigator.share) {
       try {
@@ -141,29 +167,59 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
     }
     await copy();
   };
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(pass.url);
-      toast({ title: t('Link copied to clipboard'), icon: 'check' });
-    } catch {
-      toast({ title: t('Could not copy link'), icon: 'info' });
-    }
-  };
 
-  return (
-    <Modal open={open} onClose={onClose} className="flex max-h-[94dvh] flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-4">
-        {heading && <h2 className="mb-3 text-center font-display text-xl font-semibold text-ink">{heading}</h2>}
-        <CxPass pass={pass} />
-        <div className="mt-3 grid grid-cols-2 gap-2.5 pb-2">
-          <button type="button" onClick={() => void share()} className="btn btn-primary btn-lg">
-            <Icon name="share" size={17} /> {t('Share')}
+  return createPortal(
+    <div className="fixed inset-0 z-[400]" role="dialog" aria-modal="true" aria-label={heading ?? t('CX Pass')}>
+      {/* the page behind, blurred and darkened */}
+      <div
+        className="absolute inset-0 animate-fade-in bg-black/82 backdrop-blur-2xl"
+        style={{ WebkitBackdropFilter: 'blur(28px) saturate(140%)', backdropFilter: 'blur(28px) saturate(140%)' }}
+        onClick={onClose}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.16), transparent 70%)' }}
+      />
+
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={t('Close')}
+        className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+      >
+        <Icon name="x" size={20} />
+      </button>
+
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))]"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        {heading && <h2 className="mb-3 animate-fade-up text-center font-display text-xl font-semibold text-white">{heading}</h2>}
+        <div className="w-full max-w-[24rem] animate-scale-in">
+          <CxPass pass={pass} />
+        </div>
+        <div className="mt-4 flex w-full max-w-[24rem] animate-fade-up gap-2.5">
+          <button
+            type="button"
+            onClick={() => void share()}
+            className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-accent-bright text-[15px] font-bold text-noir shadow-[0_14px_36px_-12px_rgba(0,212,71,0.75)] transition-transform active:scale-[0.97]"
+          >
+            <Icon name="share" size={19} /> {t('Share')}
           </button>
-          <button type="button" onClick={() => void copy()} className="btn btn-secondary btn-lg">
-            <Icon name="paperclip" size={17} /> {t('Copy link')}
+          <button
+            type="button"
+            onClick={() => void copy()}
+            aria-live="polite"
+            className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-all active:scale-[0.97] ${
+              copied ? 'border-accent-bright/60 bg-accent-bright/15 text-accent-bright' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+            }`}
+          >
+            <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
           </button>
         </div>
       </div>
-    </Modal>
+    </div>,
+    document.body,
   );
 }
