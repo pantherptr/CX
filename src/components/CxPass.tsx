@@ -215,6 +215,14 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#0a0b0a]" style={{ height: 200 }} />
 
+      {heading && (
+        <h2
+          className="pass-rise pointer-events-none absolute inset-x-16 z-10 truncate text-center font-display text-xl font-semibold text-white"
+          style={{ top: 'max(1.55rem, calc(env(safe-area-inset-top) + 0.55rem))' }}
+        >
+          {heading}
+        </h2>
+      )}
       <button
         type="button"
         onClick={onClose}
@@ -225,13 +233,12 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       </button>
 
       <div
-        className="absolute inset-x-0 top-0 flex flex-col items-center justify-center overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))]"
+        className="absolute inset-x-0 top-0 flex flex-col items-center justify-center overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(4.25rem,calc(env(safe-area-inset-top)+3rem))]"
         style={{ height: '100dvh' }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        {heading && <h2 className="pass-rise mb-3 text-center font-display text-xl font-semibold text-white">{heading}</h2>}
         <div className="pass-drop w-full max-w-[24rem]">
-          <CxPass pass={pass} />
+          <CxPass pass={pass} height="clamp(540px, calc(100dvh - 290px), 580px)" />
         </div>
         <div className="pass-rise pass-rise--late mt-4 flex w-full max-w-[24rem] gap-2.5">
           <button
@@ -242,26 +249,27 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
           >
             <Icon name="share" size={19} /> {t('Share')}
           </button>
-          <button
-            type="button"
-            onClick={() => void copy()}
-            aria-live="polite"
-            className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-all active:scale-[0.97] ${
-              copied ? 'border-white/30 bg-white/15 text-white' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
-            }`}
-          >
-            <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
-          </button>
+          {start ? (
+            <button
+              type="button"
+              onClick={start.onClick}
+              className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border border-white/15 bg-white/10 text-[15px] font-semibold text-white backdrop-blur-md transition-transform active:scale-[0.97]"
+            >
+              {start.label} <Icon name="arrowRight" size={17} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void copy()}
+              aria-live="polite"
+              className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-all active:scale-[0.97] ${
+                copied ? 'border-white/30 bg-white/15 text-white' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+              }`}
+            >
+              <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
+            </button>
+          )}
         </div>
-        {start && (
-          <button
-            type="button"
-            onClick={start.onClick}
-            className="mt-2.5 inline-flex h-14 w-full max-w-[24rem] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 text-[15px] font-semibold text-white backdrop-blur-md transition-transform active:scale-[0.97]"
-          >
-            {start.label} <Icon name="arrowRight" size={17} />
-          </button>
-        )}
       </div>
     </div>,
     document.body,
