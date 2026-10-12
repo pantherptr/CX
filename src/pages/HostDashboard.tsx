@@ -17,6 +17,8 @@ import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
 import { TripMap } from '../components/TripMap';
 import { TripJourney } from '../components/TripJourney';
+import { InspectionCard } from '../components/InspectionGrid';
+import { useInspectionPhotos } from '../lib/data/inspections';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
 import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
@@ -546,6 +548,23 @@ function HostEarningsCard({ payouts, commissionPct, payoutsEnabled }: { payouts:
   );
 }
 
+/** The host's side of the photo record: the same four photos, shared with the renter. */
+function HostInspection({ bookingId, afterLocked }: { bookingId: string; afterLocked: boolean }) {
+  const { session } = useAuth();
+  const { photos, refresh } = useInspectionPhotos(bookingId);
+  if (!session) return null;
+  return (
+    <InspectionCard
+      bookingId={bookingId}
+      uploaderId={session.user.id}
+      photos={photos ?? []}
+      onUploaded={refresh}
+      afterLocked={afterLocked}
+      startOnReturn={false}
+    />
+  );
+}
+
 function HostBookingRow({ booking }: { booking: Booking }) {
   const phase = classifyBooking(booking);
   const [open, setOpen] = useState(false);
@@ -581,7 +600,13 @@ function HostBookingRow({ booking }: { booking: Booking }) {
       </button>
       {open && (
         <div className="px-2 pb-3">
-          {phase !== 'cancelled' && phase !== 'refunded' && <TripJourney booking={booking} role="host" />}
+          {phase !== 'cancelled' && phase !== 'refunded' && <TripJourney booking={booking} role="host" inspectionHref={`#inspection-${booking.id}`} />}
+          {phase !== 'cancelled' && phase !== 'refunded' && phase !== 'pending' && phase !== 'payment_processing' && (
+            <div id={`inspection-${booking.id}`} className="mt-5 scroll-mt-24">
+              <p className="mb-2 font-display text-lead font-semibold text-ink">Vehicle inspection</p>
+              <HostInspection bookingId={booking.id} afterLocked={phase === 'upcoming'} />
+            </div>
+          )}
           <div className="mt-4" />
           <TripMap
             carId={booking.car.id}
