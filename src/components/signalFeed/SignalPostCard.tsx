@@ -1219,7 +1219,7 @@ export function SignalPostCard({
           Shares and the "Performance" label for Owner/Admin. It fills in as
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
-      <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-0.5 sm:px-5">
+      <div className="flex items-center justify-between gap-1.5 border-t border-line px-3 py-0.5 sm:px-5">
         <div className="flex items-center gap-4 text-ink-soft">
             {(isTeamViewer ? (
                 <button
@@ -1345,8 +1345,8 @@ export function SignalPostCard({
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          {canManage && <span className="mr-1 text-[11px] font-semibold uppercase tracking-wide text-faint">Performance</span>}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {canManage && <span className="mr-1 hidden text-[11px] font-semibold uppercase tracking-wide text-faint min-[420px]:inline">Performance</span>}
           {/* Owner-only — add_empire_post_comment enforces this server-side;
               hiding it for everyone else is just honest UI. No demo
               equivalent (see signalDemo.ts). */}
