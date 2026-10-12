@@ -128,7 +128,13 @@
        has its own designed press state, so the browser's generic one
        just reads as "web page", not app. */
     -webkit-tap-highlight-color: transparent;
+    /* Nothing may ever make the page wider than the screen: when one element briefly overflows
+       (an animation, a late-loading card), iOS Safari shrinks the whole page to fit and leaves it
+       zoomed out with a black strip beside it. `clip` (unlike `hidden`) keeps position: sticky. */
+    overflow-x: clip;
+    max-width: 100%;
   }
+  body, #root { overflow-x: clip; max-width: 100%; }
 
   /* Inside the iOS app: no image-preview / link-callout sheet on long-press,
      and no accidental text selection on controls — it reads as a web page. */
