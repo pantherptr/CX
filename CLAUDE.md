@@ -53,6 +53,17 @@ Code is written to fail soft before a migration is run.
 - **Signal**: Official = team content only (no people suggestions there). Community has the people shelf.
 - Home was trimmed to 8 blocks; CX Garage and its configurator were removed (`/garage` redirects).
 
+## SIGNAL additions (latest)
+- Ratings are not shown anywhere any more: stars were swapped for trip counts (cars, quick view, compare, filters,
+  host dashboard, profiles). Per-review data still exists in the DB, just not displayed.
+- Profiles: achievements (`SignalAchievements.tsx`; Golden Host = 25 trips), Book button on the host's car grid.
+- Search: Trending hashtags / cities + Top this week when empty; 0114 lets it match car city/make/model.
+- Creator tools: drafts (localStorage), scheduled posts (0115; published by whoever opens SIGNAL + the daily sweep),
+  per-post insights sheet (`SignalPostInsights.tsx`).
+- Reels: `/signal/reels` (`SignalReels.tsx`) = vertical feed of posts that contain a video.
+- Admins who are not the Owner publish only as CX/Assistant (UI + trigger 0113).
+- Installed app (PWA/native) opens on the normal home, country picked from the phone language (`src/lib/appMode.ts`).
+
 ## Notifications (migration 0110)
 - Inbox: `app_notifications` (bell + /notifications "Updates" tab). API writes through `notifyUser()` in
   `api/_lib/push.ts` (inbox row + APNs + Web Push, honours `user_notification_prefs`); DB functions use
