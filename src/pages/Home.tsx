@@ -492,39 +492,40 @@ export default function Home() {
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-[#f3faf5] via-panel to-[#eaf7ef] px-6 py-10 shadow-card sm:px-12 sm:py-14">
+          <div className="relative overflow-hidden rounded-[2rem] border border-accent-bright/20 bg-noir px-6 py-10 text-on-noir shadow-pop sm:px-12 sm:py-14">
             <div
-              className="pointer-events-none absolute inset-0 opacity-80"
-              style={{ background: 'radial-gradient(45% 70% at 92% 8%, rgba(0,212,71,0.16), transparent 62%), radial-gradient(40% 50% at 0% 100%, rgba(0,212,71,0.07), transparent 65%)' }}
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ background: 'radial-gradient(55% 70% at 85% 45%, rgba(0,212,71,0.20), transparent 68%), radial-gradient(40% 50% at 0% 0%, rgba(0,212,71,0.08), transparent 65%)' }}
             />
             <div className="relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-accent-700 shadow-hair ring-1 ring-accent/15">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.06] ring-1 ring-accent-bright/30 shadow-[0_0_24px_-6px_rgba(0,212,71,0.6)]">
                     <SignalS size={26} />
                   </span>
-                  <p className="eyebrow">{t('CX SIGNAL')}</p>
+                  <p className="text-label font-semibold uppercase tracking-[0.2em] text-accent-bright">{t('CX SIGNAL')}</p>
                 </div>
-                <h2 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-ink text-balance sm:text-5xl">
+                <h2 className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-on-noir text-balance sm:text-5xl">
                   {t('Great drives deserve to be shared.')}
                 </h2>
-                <p className="mt-4 max-w-lg text-copy leading-relaxed text-muted sm:text-lead">
+                <p className="mt-4 max-w-lg text-copy leading-relaxed text-on-noir-muted sm:text-lead">
                   {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
                 </p>
 
-                <ul className="mt-7 space-y-3">
+                <ul className="mt-7 divide-y divide-white/10 border-y border-white/10">
                   {[
                     { icon: 'sparkles' as IconName, title: 'Straight from CX', desc: 'News, announcements and new cars from the CX Rent team. One feed, no noise.' },
                     { icon: 'heart' as IconName, title: 'Real stories', desc: 'Verified hosts and drivers share their cars and their drives — Stories, Respect and more.' },
                     { icon: 'trending' as IconName, title: 'A stage for your car', desc: 'Hosts can show their car to the community and put it in front of renters who care.' },
                   ].map((f) => (
-                    <li key={f.title} className="flex items-start gap-4 rounded-2xl border border-white/70 bg-white/70 p-4 shadow-hair backdrop-blur-sm">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                    <li key={f.title} className="flex items-start gap-4 py-4">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-accent-bright ring-1 ring-white/10">
                         <Icon name={f.icon} size={19} />
                       </span>
                       <div className="min-w-0">
-                        <h3 className="font-display text-copy font-semibold text-ink">{t(f.title)}</h3>
-                        <p className="mt-0.5 text-detail leading-relaxed text-muted">{t(f.desc)}</p>
+                        <h3 className="font-display text-copy font-semibold text-on-noir">{t(f.title)}</h3>
+                        <p className="mt-0.5 text-detail leading-relaxed text-on-noir-muted">{t(f.desc)}</p>
                       </div>
                     </li>
                   ))}
