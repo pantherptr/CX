@@ -336,6 +336,7 @@ const ROWS: Row[] = [
   ['Terms of Service', 'Termini di servizio', 'Termeni și condiții', 'Términos del servicio'],
   ['Privacy Policy', 'Informativa sulla privacy', 'Politica de confidențialitate', 'Política de privacidad'],
   ['Cancellation Policy', 'Politica di cancellazione', 'Politica de anulare', 'Política de cancelación'],
+  ['© {year} CX. All rights reserved.', '© {year} CX. Tutti i diritti riservati.', '© {year} CX. Toate drepturile rezervate.', '© {year} CX. Todos los derechos reservados.'],
   ['© {year} CX Mobility S.r.l. — Milan, Italy. All rights reserved.', '© {year} CX Mobility S.r.l. — Milano, Italia. Tutti i diritti riservati.', '© {year} CX Mobility S.r.l. — Milano, Italia. Toate drepturile rezervate.', '© {year} CX Mobility S.r.l. — Milán, Italia. Todos los derechos reservados.'],
   ['Change country', 'Cambia paese', 'Schimbă țara', 'Cambiar de país'],
 

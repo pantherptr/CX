@@ -1988,7 +1988,7 @@ html[data-theme='dark'] .maplibregl-ctrl-attrib a { color: var(--color-muted); }
 html[data-theme='dark'] .maplibregl-popup-content { background: var(--color-surface); color: var(--color-ink); }
 
 :root {
-  --hero-top: #f4f6f1;
+  --hero-top: #f7f8f4;
   --hero-ghost-a: rgba(120, 126, 118, 0.55);
   --hero-ghost-b: rgba(150, 156, 148, 0.28);
   --hero-ghost-c: rgba(170, 176, 168, 0);

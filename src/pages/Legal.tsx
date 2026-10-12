@@ -13,7 +13,7 @@ import { POLICY_INFO } from '../lib/cancellationPolicy';
  */
 
 const UPDATED = '19 September 2026';
-const COMPANY = 'CX Mobility S.r.l.';
+const COMPANY = 'CX';
 
 interface Section {
   title: string;

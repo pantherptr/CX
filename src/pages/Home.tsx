@@ -176,11 +176,11 @@ export default function Home() {
           The photo style: huge italic words sit behind the car and the car breaks out in front of
           them (the cut-out is public/hero-car.webp). The section still pulls itself up under the
           sticky header by the same amount as before (see Navbar), so nothing else shifts. */}
-      <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-bg">
+      <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden">
         <div
           aria-hidden
           className="hero-bg pointer-events-none absolute inset-0"
-          style={{ background: 'linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 62%)' }}
+          style={{ background: 'linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 100%)' }}
         />
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
@@ -608,7 +608,7 @@ export default function Home() {
       </section>
 
       {/* ================= FINAL CTA — light, quiet, no glow ================= */}
-      <section className="container-page mt-20 mb-24 sm:mt-24">
+      <section className="container-page mt-20 mb-6 sm:mt-24">
         <Reveal>
           <div className="flex flex-col items-center gap-6 text-center">
             <h2 className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl">
