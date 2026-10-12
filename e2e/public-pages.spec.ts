@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /** Public pages: they load, nothing sticks out sideways, no errors in the console — light and dark. */
-const ROUTES = ['/', '/browse', '/login', '/signup', '/how-it-works', '/help', '/about', '/list-your-car', '/compare'];
+const ROUTES = ['/', '/browse', '/login', '/signup', '/how-it-works', '/help', '/about', '/list-your-car', '/compare', '/signal'];
 
 async function open(page: Page, route: string, theme: 'light' | 'dark', country = 'GB') {
   await page.addInitScript(([t, c]) => {
@@ -59,4 +59,21 @@ test('dark mode: page background is dark', async ({ page }) => {
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const [r, g, b] = bg.match(/\d+/g)!.map(Number);
   expect(r + g + b).toBeLessThan(120);
+});
+
+test('SIGNAL gate (signed out) is dark even in the light theme: no white strip above it', async ({ page }) => {
+  await open(page, '/signal', 'light');
+  await expect(page.getByText(/official voice/i).first()).toBeVisible();
+  const colours = await page.evaluate(() => ({
+    html: getComputedStyle(document.documentElement).backgroundColor,
+    body: getComputedStyle(document.body).backgroundColor,
+    chrome: document.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? '',
+  }));
+  for (const bg of [colours.html, colours.body]) {
+    const [r, g, b] = bg.match(/\d+/g)!.map(Number);
+    expect(r + g + b, `background ${bg} is not dark`).toBeLessThan(120);
+  }
+  const hex = colours.chrome.replace('#', '');
+  const sum = [0, 2, 4].reduce((a, i) => a + parseInt(hex.slice(i, i + 2), 16), 0);
+  expect(sum, `status bar colour ${colours.chrome} is not dark`).toBeLessThan(120);
 });
