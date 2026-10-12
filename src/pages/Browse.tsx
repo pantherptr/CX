@@ -24,7 +24,7 @@ const SORTS = [
   { id: 'price-asc', label: 'Price: low to high' },
   { id: 'price-desc', label: 'Price: high to low' },
   { id: 'newest', label: 'Newest' },
-  { id: 'rating', label: 'Top rated' },
+  { id: 'rating', label: 'Most booked' },
   { id: 'trips', label: 'Most booked' },
 ];
 const PRICE_MIN = 30;
@@ -237,9 +237,6 @@ function FilterPanel({
         ))}
       </Section>
 
-      <Section title={t('Rating')} open={false}>
-        <Segmented id="rating" value={f.rating} onChange={(v) => set((p) => ({ ...p, rating: v }))} options={[0, 4.5, 4.8, 4.9].map((r) => ({ value: r, label: r === 0 ? t('Any') : `${r}+` }))} />
-      </Section>
 
       <button onClick={reset} className="mt-4 w-full rounded-xl border border-line py-2.5 text-detail font-medium text-muted transition-colors hover:border-ink hover:text-ink">
         {t('Clear all filters')}
@@ -322,7 +319,6 @@ export default function Browse() {
       if (filters.fuels.length && !filters.fuels.includes(c.fuel)) return false;
       if (filters.seats && c.seats < filters.seats) return false;
       if (filters.bags && c.luggage < filters.bags) return false;
-      if (filters.rating && c.rating < filters.rating) return false;
       if (filters.instant && !c.instantBook) return false;
       if (filters.features.length && !filters.features.every((ft) => c.features.includes(ft))) return false;
       if (city && c.city.toLowerCase() !== city.toLowerCase()) return false;
@@ -333,7 +329,7 @@ export default function Browse() {
       case 'price-asc': out = [...out].sort((a, b) => a.pricePerDay - b.pricePerDay); break;
       case 'price-desc': out = [...out].sort((a, b) => b.pricePerDay - a.pricePerDay); break;
       case 'newest': out = [...out].sort((a, b) => b.year - a.year); break;
-      case 'rating': out = [...out].sort((a, b) => b.rating - a.rating); break;
+      case 'rating': out = [...out].sort((a, b) => b.trips - a.trips); break;
       case 'trips': out = [...out].sort((a, b) => b.trips - a.trips); break;
     }
     return out;

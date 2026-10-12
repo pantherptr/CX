@@ -7,7 +7,7 @@ import type { Car, Host } from '../data/types';
 import { eur } from '../lib/format';
 import { unsplash, unsplashSrcSet } from '../lib/img';
 import { Icon, type IconName } from '../components/Icon';
-import { Modal, Stars } from '../components/primitives';
+import { Modal } from '../components/primitives';
 import { Img } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
@@ -281,8 +281,8 @@ export default function CarDetails() {
                 )}
                 {rated ? (
                   <>
-                    <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="star" size={14} className="text-star" /> {car.rating.toFixed(1)}</span>
-                    <span className="text-muted">· {car.reviews.length} {t('Reviews').toLowerCase()} · {t('{n} trips', { n: car.trips })}</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="route" size={14} className="text-accent-700" /> {t('{n} trips', { n: car.trips })}</span>
+                    <span className="text-muted">· {car.reviews.length} {t('Reviews').toLowerCase()}</span>
                   </>
                 ) : (
                   <span className="text-muted">{t('New on CX')}</span>
@@ -394,7 +394,6 @@ export default function CarDetails() {
                             <p className="truncate text-detail font-semibold text-ink">{hasAccess ? r.author : r.author.split(' ')[0]}</p>
                             <p className="text-caption text-muted">{r.date}</p>
                           </div>
-                          <Stars value={r.rating} size={12} />
                         </div>
                         <p className={`mt-3 text-detail leading-relaxed text-ink-soft ${allReviews ? '' : 'line-clamp-4'}`}><Ugc text={r.body} /></p>
                       </div>
@@ -431,7 +430,7 @@ export default function CarDetails() {
         <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-ink"><span className="font-display text-xl font-semibold">{eur(car.pricePerDay)}</span> <span className="text-detail text-muted">{t('/ day')}</span></p>
-            <p className="truncate text-caption text-muted">{rated ? `★ ${car.rating.toFixed(1)} · ${t('{n} trips', { n: car.trips })}` : t('New on CX')}</p>
+            <p className="truncate text-caption text-muted">{rated ? t('{n} trips', { n: car.trips }) : t('New on CX')}</p>
           </div>
           <button onClick={() => setLightbox(-1)} className="btn btn-primary btn-lg min-w-[44%] justify-center">
             {car.instantBook ? t('Reserve') : t('Request')} <Icon name="arrowRight" size={17} />

@@ -48,12 +48,11 @@ export default function About() {
             { v: '24/7', l: 'Support' },
             { v: String(catalogue.vehicles), l: 'Cars listed' },
             { v: String(catalogue.hosts), l: 'Verified hosts' },
-            { v: catalogue.meanRating.toFixed(2), l: 'Average rating', star: true },
+            { v: String(catalogue.cities), l: 'Cities and growing' },
           ].map((s) => (
             <div key={s.l} className="rounded-2xl border border-line bg-surface p-5 text-center sm:p-6">
               <p className="flex items-center justify-center gap-1.5 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
                 {s.v}
-                {s.star && <Icon name="star" size={22} className="text-star" fill />}
               </p>
               <p className="mt-1 text-caption text-muted sm:text-detail">{s.l}</p>
             </div>

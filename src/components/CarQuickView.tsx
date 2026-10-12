@@ -7,6 +7,7 @@ import { Img } from './motion';
 import { Modal } from './primitives';
 import { Ugc } from '../lib/i18n/ugc';
 import { useHasAccess } from '../lib/useAccess';
+import { useLocale } from '../lib/i18n';
 
 /** A fast glance at a car without leaving the grid — full detail page is one tap away. */
 export function CarQuickView({
@@ -19,6 +20,7 @@ export function CarQuickView({
   onClose: () => void;
 }) {
   const hasAccess = useHasAccess();
+  const { t } = useLocale();
   if (!car) return null;
 
   const specs: { icon: IconName; v: string }[] = [
@@ -63,7 +65,7 @@ export function CarQuickView({
             </p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1 text-body font-medium text-ink">
-            <Icon name="star" size={14} className="text-star" /> {car.rating.toFixed(2)}
+            <Icon name="route" size={14} className="text-accent-700" /> {car.trips > 0 ? t('{n} trips', { n: car.trips }) : t('New')}
           </span>
         </div>
 

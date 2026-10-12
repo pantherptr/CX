@@ -677,7 +677,7 @@ export default function HostDashboard() {
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const activeCarsCount = (hostCars ?? []).filter((c) => c.status === 'published').length;
   const allReviews = (hostCars ?? []).flatMap((c) => c.reviews);
-  const avgRating = allReviews.length ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length : null;
+  const completedTrips = (hostCars ?? []).reduce((sum, c) => sum + (c.trips ?? 0), 0);
 
   const series = useMemo(() => monthlySeries(hostBookings ?? []), [hostBookings]);
   const hasEarningsData = series.some((d) => d.value > 0);
@@ -763,7 +763,7 @@ export default function HostDashboard() {
               <Reveal delay={0}><StatCard icon="euro" label="Total earnings" value={eur(totalEarnings)} accent /></Reveal>
               <Reveal delay={60}><StatCard icon="trending" label="This month" value={eur(thisMonthEarnings)} /></Reveal>
               <Reveal delay={120}><StatCard icon="cars" label="Active cars" value={String(activeCarsCount)} /></Reveal>
-              <Reveal delay={180}><StatCard icon="star" label="Average rating" value={avgRating ? avgRating.toFixed(2) : '—'} /></Reveal>
+              <Reveal delay={180}><StatCard icon="route" label="Completed trips" value={String(completedTrips)} /></Reveal>
             </>
           )}
         </div>
@@ -941,7 +941,7 @@ export default function HostDashboard() {
                       <p className="truncate text-body font-medium text-ink">{c.make} {c.model}</p>
                       <div className="mt-1 flex items-center justify-between text-detail">
                         <span className="inline-flex items-center gap-1 text-muted">
-                          <Icon name="star" size={12} className="text-star" /> {c.reviews.length ? c.rating.toFixed(2) : 'New'}
+                          <Icon name="route" size={12} className="text-accent-700" /> {c.trips > 0 ? `${c.trips} trips` : 'New'}
                         </span>
                         <span className="font-medium text-ink">{eur(c.pricePerDay)}/day</span>
                       </div>
@@ -980,11 +980,6 @@ export default function HostDashboard() {
           <h2 className="mb-4 font-display text-lg font-semibold text-ink">Reviews</h2>
           {allReviews.length > 0 ? (
             <div className="card flex items-center gap-4 p-4 sm:gap-6 sm:p-6">
-              <div className="text-center">
-                <p className="font-display text-3xl font-semibold text-ink">{avgRating!.toFixed(2)}</p>
-                <p className="mt-1 flex items-center justify-center gap-1 text-caption text-muted"><Icon name="star" size={13} className="text-star" /> Average rating</p>
-              </div>
-              <div className="h-12 w-px bg-line" />
               <div className="text-center">
                 <p className="font-display text-3xl font-semibold text-ink">{allReviews.length}</p>
                 <p className="mt-1 text-caption text-muted">Total reviews</p>

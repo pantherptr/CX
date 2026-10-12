@@ -72,9 +72,8 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 divide-x divide-line rounded-xl border border-line">
+      <div className="mt-5 grid grid-cols-2 divide-x divide-line rounded-xl border border-line">
         {[
-          { v: host.rating.toFixed(2), l: 'Rating', icon: 'star' as const },
           { v: host.trips, l: 'Trips', icon: 'route' as const },
           { v: `${host.responseRate}%`, l: 'Response', icon: 'message' as const },
         ].map((s) => (

@@ -204,9 +204,9 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                   {tab === 'reviews' && (
                     <div>
                       <p className="flex items-center gap-2 text-ink">
-                        <Icon name="star" size={18} className="text-star" />
-                        <span className="font-display text-xl font-semibold">{car.trips > 0 ? car.rating.toFixed(2) : '—'}</span>
-                        <span className="text-detail text-muted">{t('{n} trips', { n: car.trips })}</span>
+                        <Icon name="route" size={18} className="text-accent-700" />
+                        <span className="font-display text-xl font-semibold">{car.trips}</span>
+                        <span className="text-detail text-muted">{t('Trips').toLowerCase()}</span>
                       </p>
                       {car.reviews.length === 0 ? (
                         <p className="mt-4 text-detail text-muted">{t('No reviews yet.')}</p>
@@ -220,7 +220,6 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                                   <p className="truncate text-detail font-semibold text-ink">{r.author}</p>
                                   <p className="text-caption text-faint">{r.date}</p>
                                 </div>
-                                <span className="inline-flex items-center gap-1 text-detail font-medium text-ink"><Icon name="star" size={12} className="text-star" /> {r.rating}</span>
                               </div>
                               <p className="mt-2.5 text-detail leading-relaxed text-muted"><Ugc text={r.body} /></p>
                             </li>

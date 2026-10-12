@@ -212,12 +212,11 @@ export function SignalProfileHero({
         {(followers || following || hostStats) && (
           <div
             className="mt-5 grid divide-x divide-line overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_16px_36px_-24px_rgba(0,0,0,0.35)]"
-            style={{ gridTemplateColumns: `repeat(${(postsCount !== undefined ? 1 : 0) + (followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 2 : 0)}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${(postsCount !== undefined ? 1 : 0) + (followers ? 1 : 0) + (following ? 1 : 0) + (hostStats ? 1 : 0)}, minmax(0, 1fr))` }}
           >
             {postsCount !== undefined && <StatCell value={postsCount} label="Posts" />}
             {followers && <StatCell value={followers.count} label="Followers" onClick={followers.onOpen} />}
             {following && <StatCell value={following.count} label="Following" onClick={following.onOpen} />}
-            {hostStats && <StatCell value={hostStats.rating} label="Rating" suffix=" ★" decimals={1} />}
             {hostStats && <StatCell value={hostStats.trips} label="Trips" />}
           </div>
         )}

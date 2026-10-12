@@ -19,7 +19,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
   const { t } = useLocale();
   const { isFavorite, toggleFavorite } = useApp();
   const fav = isFavorite(car.id);
-  const rated = car.trips > 0 && car.rating > 0;
+  const rated = car.trips > 0;
 
   return (
     <motion.div
@@ -69,7 +69,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
               <div className="flex items-center gap-1.5 text-caption text-muted">
                 <Icon name="pin" size={12} className="shrink-0" /> <span className="truncate">{car.city}</span>
                 <span className="text-faint">·</span>
-                {rated ? (<span className="inline-flex shrink-0 items-center gap-1"><Icon name="star" size={11} className="text-star" /> {car.rating.toFixed(1)}</span>) : (<span className="shrink-0">{t('New')}</span>)}
+                {rated ? (<span className="inline-flex shrink-0 items-center gap-1"><Icon name="route" size={11} className="text-accent-700" /> {t('{n} trips', { n: car.trips })}</span>) : (<span className="shrink-0">{t('New')}</span>)}
               </div>
               <h3 className="mt-1 truncate font-display text-copy font-semibold text-ink">{car.make} {car.model}</h3>
               <p className="truncate text-detail text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year}</p>
@@ -139,7 +139,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
         <span className="inline-flex shrink-0 items-center gap-1 text-caption font-semibold text-ink-soft">
           {rated ? (
             <>
-              <Icon name="star" size={12} className="text-star" /> {car.rating.toFixed(1)} <span className="font-normal text-faint">({car.trips})</span>
+              <Icon name="route" size={12} className="text-accent-700" /> {t('{n} trips', { n: car.trips })}
             </>
           ) : (
             <span className="rounded-full bg-accent-050 px-2 py-0.5 text-accent-700">{t('New')}</span>

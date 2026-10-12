@@ -116,8 +116,8 @@ export function CarCard({
                 {car.make} {car.model}
               </h3>
               <span className="inline-flex shrink-0 items-center gap-1 text-detail font-medium text-ink">
-                <Icon name="star" size={13} className="text-star" />
-                {car.rating.toFixed(2)}
+                <Icon name="route" size={13} className="text-accent-700" />
+                {car.trips > 0 ? car.trips : t('New')}
               </span>
             </div>
             <p className="mt-0.5 flex items-center gap-1 text-detail text-muted">
@@ -164,9 +164,9 @@ export function CarCard({
                   <Icon name="instant" size={12} className="text-accent-bright" /> {t('Instant book')}
                 </span>
               )}
-              {car.rating >= 4.9 && (
+              {car.trips >= 10 && (
                 <span className="badge badge-glass">
-                  <Icon name="star" size={12} className="text-star" /> {t('Top rated')}
+                  <Icon name="trending" size={12} className="text-accent-bright" /> {t('Popular')}
                 </span>
               )}
               {available && (
@@ -207,8 +207,8 @@ export function CarCard({
                 </p>
               </div>
               <span className="inline-flex shrink-0 items-center gap-1 text-detail font-medium text-ink">
-                <Icon name="star" size={13} className="text-star" />
-                {car.rating.toFixed(2)}
+                <Icon name="route" size={13} className="text-accent-700" />
+                {car.trips > 0 ? car.trips : t('New')}
               </span>
             </div>
 

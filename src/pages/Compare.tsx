@@ -21,7 +21,7 @@ type SpecRow = { label: string; icon: IconName; value: (c: Car) => string; best?
 
 const SPEC_ROWS: SpecRow[] = [
   { label: 'Price per day', icon: 'euro', value: (c) => eur(c.pricePerDay), best: 'min' },
-  { label: 'Rating', icon: 'star', value: (c) => `${c.rating.toFixed(2)} (${c.reviews.length} reviews)`, best: 'max' },
+  { label: 'Trips', icon: 'route', value: (c) => String(c.trips), best: 'max' },
   { label: 'Category', icon: 'grid', value: (c) => c.category },
   { label: 'Transmission', icon: 'gear', value: (c) => c.transmission },
   { label: 'Fuel', icon: 'gas', value: (c) => c.fuel },
@@ -38,7 +38,7 @@ const SPEC_ROWS: SpecRow[] = [
  *  `value` formatter stays free to add units/labels for display. */
 const rawFor: Partial<Record<string, (c: Car) => number>> = {
   'Price per day': (c) => c.pricePerDay,
-  Rating: (c) => c.rating,
+  Trips: (c) => c.trips,
   Seats: (c) => c.seats,
   Luggage: (c) => c.luggage,
 };
