@@ -77,7 +77,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
   if (!src) return null;
   const text = post.title || post.body;
   return (
-    <div className="relative h-dvh w-full snap-start snap-always overflow-hidden bg-black">
+    <div data-reel className="relative w-full snap-start snap-always overflow-hidden bg-black" style={{ height: '100lvh' }}>
       <video
         ref={video}
         src={active ? src : undefined}
@@ -104,7 +104,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
       )}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-2/5 bg-gradient-to-t from-black/85 to-transparent" />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end gap-3 px-4 pb-[max(1.75rem,env(safe-area-inset-bottom))] text-white">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end gap-3 px-4 pb-[calc(max(1.75rem,env(safe-area-inset-bottom))+4.75rem)] text-white">
         <div className="pointer-events-auto min-w-0 flex-1">
           <Link to={`/signal/profile/${post.authorId}`} className="inline-flex items-center gap-2.5">
             <Img
@@ -174,7 +174,6 @@ export default function SignalReels() {
   });
   const [index, setIndex] = useState(0);
   const loadRef = useRef({ offset: 0, seed: Math.floor(Math.random() * 2147483000), since: new Date().toISOString(), done: false, busy: false });
-  const scroller = useRef<HTMLDivElement>(null);
 
   // Pages of the ranked Community feed until there are enough videos in them.
   const loadMore = useCallback(async () => {
@@ -211,52 +210,74 @@ export default function SignalReels() {
 
   // Opening on the tapped reel.
   useEffect(() => {
-    if (!posts || !startPost || !scroller.current) return;
+    if (!posts || !startPost) return;
     const i = posts.findIndex((p) => p.id === startPost);
-    if (i > 0) {
-      scroller.current.scrollTop = i * scroller.current.clientHeight;
-      setIndex(i);
-    }
+    if (i <= 0) return;
+    window.requestAnimationFrame(() => {
+      const el = document.querySelectorAll('[data-reel]')[i] as HTMLElement | undefined;
+      if (el) { window.scrollTo(0, el.offsetTop); setIndex(i); }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts === null]);
 
-  // Full black screen: Safari's status bar and toolbar take the dark tone, the page behind steps aside.
+  // Full screen, the way a native reels screen is: the page itself becomes the list of reels (the
+  // document scrolls, snapping one video at a time), so Safari folds its toolbar away as you swipe;
+  // everything behind is black and the rest of the app steps aside while this is open.
   useEffect(() => {
     const root = document.documentElement;
     const app = document.getElementById('root');
     const prev = {
-      overflow: document.body.style.overflow,
       rootBg: root.style.backgroundColor,
       bodyBg: document.body.style.backgroundColor,
-      appBg: app?.style.backgroundColor ?? '',
-      appVis: app?.style.visibility ?? '',
+      snap: root.style.scrollSnapType,
+      behavior: root.style.scrollBehavior,
+      appDisplay: app?.style.display ?? '',
+      y: window.scrollY,
     };
-    document.body.style.overflow = 'hidden';
     root.style.backgroundColor = '#000';
     document.body.style.backgroundColor = '#000';
-    if (app) { app.style.backgroundColor = '#000'; app.style.visibility = 'hidden'; }
+    root.style.scrollSnapType = 'y mandatory';
+    root.style.scrollBehavior = 'auto';
+    if (app) app.style.display = 'none';
+    window.scrollTo(0, 0);
     setChromeOverride({ light: '#000000', dark: '#000000' });
     setChromeSuspended(true);
-    const y = window.scrollY;
-    window.scrollTo(0, y + 1);
-    window.requestAnimationFrame(() => window.scrollTo(0, y));
     return () => {
-      document.body.style.overflow = prev.overflow;
       root.style.backgroundColor = prev.rootBg;
       document.body.style.backgroundColor = prev.bodyBg;
-      if (app) { app.style.backgroundColor = prev.appBg; app.style.visibility = prev.appVis; }
+      root.style.scrollSnapType = prev.snap;
+      root.style.scrollBehavior = prev.behavior;
+      if (app) app.style.display = prev.appDisplay;
       setChromeSuspended(false);
       setChromeOverride(null);
+      window.scrollTo(0, prev.y);
     };
   }, []);
 
-  const onScroll = () => {
-    const el = scroller.current;
-    if (!el) return;
-    const i = Math.round(el.scrollTop / el.clientHeight);
-    setIndex(i);
-    if (posts && i >= posts.length - 2) void loadMore();
-  };
+  // Which reel is the one on screen: the one whose top is closest to the top of the window.
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const els = Array.from(document.querySelectorAll('[data-reel]'));
+        let best = 0;
+        let bestD = Infinity;
+        els.forEach((el, i) => {
+          const d = Math.abs(el.getBoundingClientRect().top);
+          if (d < bestD) { bestD = d; best = i; }
+        });
+        setIndex(best);
+        if (posts && best >= posts.length - 2) void loadMore();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [posts, loadMore]);
 
   const toggleMute = () => {
     setMuted((m) => {
@@ -269,22 +290,21 @@ export default function SignalReels() {
   if (!session) return <Navigate to="/signal" replace />;
 
   return createPortal(
-    <div className="fixed inset-x-0 top-0 z-[300] bg-black text-white" style={{ bottom: -160 }}>
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-black" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+    <div className="relative bg-black text-white">
       <button
         type="button"
         onClick={() => navigate(authorId ? `/signal/profile/${authorId}` : '/signal/community')}
         aria-label={t('Close')}
-        className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur-md"
+        className="fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur-md"
       >
         <Icon name="chevronLeft" size={20} />
       </button>
-      <span className="pointer-events-none absolute left-1/2 top-[max(1.1rem,calc(env(safe-area-inset-top)+0.35rem))] z-20 -translate-x-1/2 text-detail font-bold uppercase tracking-[0.25em]">Reels</span>
+      <span className="pointer-events-none fixed left-1/2 top-[max(1.1rem,calc(env(safe-area-inset-top)+0.35rem))] z-20 -translate-x-1/2 text-detail font-bold uppercase tracking-[0.25em]">Reels</span>
 
       {posts === null ? (
-        <div className="grid h-full place-items-center"><span className="skeleton h-40 w-24 rounded-2xl" /></div>
+        <div className="grid place-items-center" style={{ height: '100lvh' }}><span className="skeleton h-40 w-24 rounded-2xl" /></div>
       ) : posts.length === 0 ? (
-        <div className="grid h-full place-items-center px-8 text-center">
+        <div className="grid place-items-center px-8 text-center" style={{ height: '100lvh' }}>
           <div>
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-white/10"><Icon name="play" size={26} /></span>
             <p className="mt-4 font-display text-lead font-semibold">{t('No videos yet')}</p>
@@ -292,7 +312,7 @@ export default function SignalReels() {
           </div>
         </div>
       ) : (
-        <div ref={scroller} onScroll={onScroll} className="snap-y snap-mandatory overflow-y-scroll overscroll-contain [scrollbar-width:none]" style={{ height: '100dvh' }}>
+        <div>
           {posts.map((p, i) => (
             <Reel
               key={p.id}
