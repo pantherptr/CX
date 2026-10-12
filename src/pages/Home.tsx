@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
 import { Icon, type IconName } from '../components/Icon';
@@ -13,6 +14,32 @@ import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
 
+
+/** A heading that sets its own font size so the single-line text fills its box exactly, whatever the
+ *  language (English is longer than Italian). Below `sm` the phone layout (two lines, vw sizes) is kept. */
+function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
+  as: 'h1' | 'p'; ariaHidden?: boolean; className: string; style?: CSSProperties; max: number; children: ReactNode;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      if (window.innerWidth < 640) { el.style.fontSize = ''; return; }
+      const avail = el.clientWidth;
+      el.style.fontSize = '100px';
+      const line = el.querySelector<HTMLElement>('[data-fit]');
+      const w = line?.scrollWidth ?? 0;
+      if (!avail || !w) { el.style.fontSize = ''; return; }
+      el.style.fontSize = `${Math.min(max, (avail / w) * 100 * 0.97)}px`;
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  return <Tag ref={ref as never} aria-hidden={ariaHidden || undefined} className={className} style={style}>{children}</Tag>;
+}
 
 /** The SIGNAL preview: a Story and two posts, fanned side by side, built
  *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
@@ -160,8 +187,10 @@ export default function Home() {
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
             <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">
-              <h1
-                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw] sm:text-[clamp(2.6rem,14vw,12.4rem)]"
+              <FitHeading
+                as="h1"
+                max={200}
+                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
                 style={{
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
@@ -169,11 +198,13 @@ export default function Home() {
                 }}
               >
                 <span className="block sm:hidden">{t('I own')}<br />{t('the keys')}</span>
-                <span className="hidden sm:block">{t('I own the keys')}</span>
-              </h1>
-              <p
-                aria-hidden
-                className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw] sm:text-[clamp(2.6rem,11.2vw,10.2rem)]"
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block">{t('I own the keys')}</span>
+              </FitHeading>
+              <FitHeading
+                as="p"
+                ariaHidden
+                max={170}
+                className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw]"
                 style={{
                   backgroundImage: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                   WebkitBackgroundClip: 'text',
@@ -181,8 +212,8 @@ export default function Home() {
                 }}
               >
                 <span className="block sm:hidden">{t('to your')}<br />{t('heart.')}</span>
-                <span className="hidden sm:block">{t('to your heart.')}</span>
-              </p>
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block">{t('to your heart.')}</span>
+              </FitHeading>
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
                   as the page opens (CSS only, see .hero-car in index.css). */}
