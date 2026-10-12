@@ -2136,7 +2136,7 @@ html:not([data-theme='dark']) .hero-beam { display: none; }
 .signal-doodle {
   background-image: url('/signal/doodle.svg');
   background-size: 720px 720px;
-  opacity: 0.13;
+  opacity: 0.09;
   animation: signal-doodle-drift 90s linear infinite;
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, rgba(0, 0, 0, 0.35) 100%);
   mask-image: linear-gradient(180deg, #000 0%, #000 70%, rgba(0, 0, 0, 0.35) 100%);

@@ -95,7 +95,7 @@ function SignalBackdrop() {
                 <span
                   key={i}
                   className="signal-bg__item absolute leading-none"
-                  style={{ left: `${m.x}%`, top: `${m.y}%`, opacity: 0.16, transform: `rotate(${m.rot}deg)`, animationDelay: `${m.d}s` }}
+                  style={{ left: `${m.x}%`, top: `${m.y}%`, opacity: 0.09, transform: `rotate(${m.rot}deg)`, animationDelay: `${m.d}s` }}
                 >
                   <SignalMark k={m.k} size={m.size} />
                 </span>
