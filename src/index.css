@@ -1179,16 +1179,26 @@
     22% { opacity: 0; }
     100% { opacity: 0; }
   }
-  /* The grey line under the car: each letter fades away and comes back, slowly, one after another, so a
-     soft ripple of missing letters travels along the phrase. */
-  .hero-breathe {
-    animation: hero-letter-breathe 9s ease-in-out infinite;
+  /* The grey line under the car: each letter turns green — the same green as the line above — and goes
+     back to grey, slowly, one after another, so a soft green ripple travels along the phrase. */
+  .hero-breathe::after {
+    content: attr(data-ch);
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    opacity: 0;
+    pointer-events: none;
+    animation: hero-letter-green 9s ease-in-out infinite;
     animation-delay: calc(var(--i, 0) * 420ms + 3.5s);
   }
-  @keyframes hero-letter-breathe {
-    0%, 100% { opacity: 1; }
-    30% { opacity: 0.06; }
-    60% { opacity: 1; }
+  @keyframes hero-letter-green {
+    0%, 100% { opacity: 0; }
+    30% { opacity: 1; }
+    60% { opacity: 0; }
   }
   @keyframes hero-letter-in {
     from { opacity: 0; transform: translateY(0.3em); }
