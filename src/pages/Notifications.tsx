@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { SignalS } from '../components/SignalLogo';
@@ -35,7 +35,7 @@ const bucketOf = (iso: string) => {
   return days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? 'This week' : 'Earlier';
 };
 
-function UpdatesList({ items, onOpen }: { items: AppNotification[] | null; onOpen: (n: AppNotification) => void }) {
+function UpdatesList({ items, onOpen, fresh }: { items: AppNotification[] | null; onOpen: (n: AppNotification) => void; fresh: Set<string> }) {
   const grouped = useMemo(() => {
     const out: Record<string, AppNotification[]> = {};
     for (const n of items ?? []) (out[bucketOf(n.createdAt)] ??= []).push(n);
@@ -65,18 +65,18 @@ function UpdatesList({ items, onOpen }: { items: AppNotification[] | null; onOpe
                   <button
                     onClick={() => onOpen(n)}
                     className={`flex w-full items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-transform active:scale-[0.99] ${
-                      n.readAt ? 'border-line bg-surface' : 'border-accent/25 bg-white shadow-[0_10px_28px_-18px_rgba(0,133,54,0.5)]'
+                      n.readAt && !fresh.has(n.id) ? 'border-line bg-surface' : 'border-accent/25 bg-surface'
                     }`}
                   >
                     <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${TONE[st.tone]}`}><Icon name={st.icon} size={20} /></span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-start justify-between gap-2">
-                        <span className={`text-body leading-snug text-ink ${n.readAt ? 'font-medium' : 'font-semibold'}`}>{n.title}</span>
+                        <span className={`text-body leading-snug text-ink ${n.readAt && !fresh.has(n.id) ? 'font-medium' : 'font-semibold'}`}>{n.title}</span>
                         <span className="shrink-0 pt-0.5 text-caption text-faint">{ago(n.createdAt)}</span>
                       </span>
                       {n.body && <span className="mt-0.5 line-clamp-2 block text-detail text-muted">{n.body}</span>}
                     </span>
-                    {!n.readAt && <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-bright" />}
+                    {(!n.readAt || fresh.has(n.id)) && <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-bright" />}
                   </button>
                 </li>
               );
@@ -122,6 +122,19 @@ export default function Notifications() {
   };
   const unreadHere = tab === 'updates' ? appUnread : signalUnread;
 
+  // What was new when you opened the page stays highlighted for this visit, but looking at the list is
+  // what marks it as read: after a short moment on a tab, everything in it is read, and the badge follows.
+  const fresh = useRef(new Set<string>());
+  for (const n of app.items ?? []) if (!n.readAt) fresh.current.add(n.id);
+  useEffect(() => {
+    if (unreadHere === 0) return;
+    const timer = window.setTimeout(() => {
+      if (tab === 'updates') app.markAllRead(); else signal.markAllRead();
+    }, 2500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, unreadHere]);
+
   return (
     <DashboardShell variant="customer" active="Notifications">
       <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
@@ -161,7 +174,7 @@ export default function Notifications() {
         </div>
 
         {tab === 'updates' ? (
-          <UpdatesList items={app.items} onOpen={openApp} />
+          <UpdatesList items={app.items} onOpen={openApp} fresh={fresh.current} />
         ) : (
           <NotificationsList
             notifications={signal.notifications}

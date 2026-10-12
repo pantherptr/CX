@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { CxsLogo } from '../CxsLogo';
@@ -33,6 +34,14 @@ export function SignalNotificationsSheet({ onClose, base }: { onClose: () => voi
   const { notifications, loadMore, loadingMore, hasMore, markRead, markAllRead } = useMyNotifications(session?.user.id);
 
   const unreadCount = notifications?.filter((n) => !n.readAt).length ?? 0;
+
+  // Having the list open and in view is what reads it: after a short moment everything in it is marked read.
+  useEffect(() => {
+    if (unreadCount === 0) return;
+    const timer = window.setTimeout(markAllRead, 2500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unreadCount > 0]);
 
   if (hidden) return null;
 
