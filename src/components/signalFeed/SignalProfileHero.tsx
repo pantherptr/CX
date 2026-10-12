@@ -6,6 +6,7 @@ import { Img, useCountUp } from '../motion';
 import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
 import { Ugc } from '../../lib/i18n/ugc';
+import { SignalAvatarExpand } from './SignalAvatarExpand';
 
 type Role = 'owner' | 'admin' | 'host' | 'client';
 const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client' };
@@ -184,7 +185,12 @@ export function SignalProfileHero({
                   <span className="block rounded-full bg-bg p-[3px]">{face}</span>
                 </button>
               ) : (
-                <span className="inline-block rounded-full bg-bg p-1 shadow-[0_12px_28px_-14px_rgba(0,0,0,0.5)]">{face}</span>
+                <SignalAvatarExpand
+                  src={avatarUrl!}
+                  name={name}
+                  username={username}
+                  fallback={<span className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-full bg-panel text-ink-soft sm:h-28 sm:w-28"><Icon name="user" size={32} /></span>}
+                />
               );
               return avatarNode;
             })()}
