@@ -81,19 +81,28 @@ function SignalMark({ k, size }: { k: SymKind; size: number }) {
 }
 
 function SignalBackdrop() {
+  // The marks live in 720px tiles laid out 3×3 in a field that drifts exactly like the doodle pattern
+  // underneath (same direction, same speed), so they move together with it.
+  const tiles = [0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => ({ r, c })));
   return (
     <>
       <div aria-hidden className="signal-doodle pointer-events-none absolute inset-0" />
       <div aria-hidden className="pointer-events-none absolute inset-0 select-none overflow-hidden">
-        {SIGNAL_MARKS.map((m, i) => (
-          <span
-            key={i}
-            className="signal-bg__item absolute leading-none"
-            style={{ left: `${m.x}%`, top: `${m.y}%`, opacity: 0.2, transform: `rotate(${m.rot}deg)`, animationDelay: `${m.d}s` }}
-          >
-            <SignalMark k={m.k} size={m.size} />
-          </span>
-        ))}
+        <div className="signal-marks absolute" style={{ left: -720, top: -720, width: 2160, height: 2160 }}>
+          {tiles.map(({ r, c }) => (
+            <div key={`${r}-${c}`} className="absolute" style={{ left: c * 720, top: r * 720, width: 720, height: 720 }}>
+              {SIGNAL_MARKS.map((m, i) => (
+                <span
+                  key={i}
+                  className="signal-bg__item absolute leading-none"
+                  style={{ left: `${m.x}%`, top: `${m.y}%`, opacity: 0.16, transform: `rotate(${m.rot}deg)`, animationDelay: `${m.d}s` }}
+                >
+                  <SignalMark k={m.k} size={m.size} />
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
