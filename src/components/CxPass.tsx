@@ -152,6 +152,10 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
     document.body.style.backgroundColor = '#0a0b0a';
     // #root paints the page colour; while the layer is open that colour is the layer's own dark.
     if (app) app.style.backgroundColor = '#0a0b0a';
+    // The page itself steps out of sight while the layer is open: Safari's bars sit over the page, and a
+    // light page showing under them (or behind the clock and battery) reads as unfinished.
+    const prevVis = app?.style.visibility ?? '';
+    if (app) app.style.visibility = 'hidden';
     setChromeOverride({ light: '#0a0b0a', dark: '#0a0b0a' });
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -159,7 +163,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       document.body.style.overflow = prev;
       root.style.backgroundColor = prevRootBg;
       document.body.style.backgroundColor = prevBodyBg;
-      if (app) app.style.backgroundColor = prevAppBg;
+      if (app) { app.style.backgroundColor = prevAppBg; app.style.visibility = prevVis; }
       setChromeOverride(null);
       window.removeEventListener('keydown', onKey);
     };
@@ -190,10 +194,10 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
 
   return createPortal(
     <div className="fixed inset-x-0 top-0 z-[400]" style={{ bottom: -160 }} role="dialog" aria-modal="true" aria-label={heading ?? t('CX Pass')}>
-      {/* the page behind, blurred and darkened */}
+      {/* solid dark ground — the page behind is hidden while the layer is open */}
       <div
-        className="pass-backdrop absolute inset-0 bg-black/82 backdrop-blur-2xl"
-        style={{ WebkitBackdropFilter: 'blur(28px) saturate(140%)', backdropFilter: 'blur(28px) saturate(140%)' }}
+        className="pass-backdrop absolute inset-0"
+        style={{ background: 'radial-gradient(75% 55% at 50% 38%, #1a1c1a 0%, #0a0b0a 72%)' }}
         onClick={onClose}
       />
 
