@@ -21,7 +21,6 @@ import { NotificationToaster } from './components/NotificationToaster';
 // these in the main chunk avoids a loading flash on the critical path.
 import Home from './pages/Home';
 import CountryGateway from './pages/CountryGateway';
-import AppLaunch from './pages/AppLaunch';
 import { IS_APP } from './lib/appMode';
 import { useLocale } from './lib/i18n';
 const Browse = lazy(() => import('./pages/Browse'));
@@ -152,7 +151,6 @@ function ListCarEntry() {
  *  that it is the Home page, in that country's language. */
 function HomeEntry() {
   const { country } = useLocale();
-  if (IS_APP) return <AppLaunch />;
   return country ? <Home /> : <CountryGateway />;
 }
 
@@ -166,7 +164,7 @@ function MarketingLayout() {
   const { country } = useLocale();
   const { pathname } = useLocation();
   // The gateway is a page of its own — no navbar, no footer around it.
-  if (pathname === '/' && (!country || IS_APP) && !session) return <Outlet />;
+  if (pathname === '/' && !country) return <Outlet />;
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />
