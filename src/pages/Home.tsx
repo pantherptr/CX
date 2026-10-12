@@ -23,13 +23,13 @@ import { useLocale } from '../lib/i18n';
  *  a slow, small wave passes through them now and then. Each letter paints its own copy of the heading's
  *  gradient (a parent's clipped gradient would vanish behind transformed children). Purely visual — the
  *  full phrase is kept for screen readers by the caller. */
-function Letters({ text, from = 0 }: { text: string; from?: number }) {
+function Letters({ text, from = 0, light = false }: { text: string; from?: number; light?: boolean }) {
   return (
     <>
       {Array.from(text).map((ch, i) =>
         ch === ' ' ? ' ' : (
           <span key={i} aria-hidden="true" className="hero-letter" style={{ ['--i' as string]: from + i }}>
-            <span className="hero-glyph">{ch}</span>
+            <span className={`hero-glyph${light ? ' hero-lit' : ''}`} data-ch={ch}>{ch}</span>
           </span>
         ),
       )}
@@ -279,14 +279,11 @@ export default function Home() {
                 className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
                 style={{
                   ['--hero-grad' as string]: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
-                  backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
                 }}
               >
                 <span className="sr-only">{t('I own the keys')}</span>
-                <span className="block sm:hidden"><Letters text={t('I own')} /><br /><Letters text={t('the keys')} from={t('I own').length} /></span>
-                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('I own the keys')} /></span>
+                <span className="block sm:hidden"><Letters text={t('I own')} light /><br /><Letters text={t('the keys')} from={t('I own').length} light /></span>
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('I own the keys')} light /></span>
               </FitHeading>
               <FitHeading
                 as="p"
@@ -295,9 +292,6 @@ export default function Home() {
                 className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw]"
                 style={{
                   ['--hero-grad' as string]: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
-                  backgroundImage: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
                 }}
               >
                 <span className="block sm:hidden"><Letters text={t('to your')} from={14} /><br /><Letters text={t('heart.')} from={14 + t('to your').length} /></span>

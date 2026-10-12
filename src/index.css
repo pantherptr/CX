@@ -1149,12 +1149,35 @@
     animation-delay: calc(var(--i, 0) * 38ms + 250ms);
   }
   .hero-glyph {
+    position: relative;
     display: inline-block;
     background-image: var(--hero-grad);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
+  }
+  /* The light: a bright copy of each letter on top, lit one letter after another from left to right, then
+     it rests for a few seconds. Only opacity moves, on a layer of its own — the letter below is untouched. */
+  .hero-lit::after {
+    content: attr(data-ch);
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(180deg, #ffffff 0%, #c8ffd9 55%, #5df08f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    opacity: 0;
+    pointer-events: none;
+    animation: hero-letter-light 6.5s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 120ms + 2.4s);
+  }
+  @keyframes hero-letter-light {
+    0% { opacity: 0; }
+    5% { opacity: 1; }
+    16% { opacity: 0; }
+    100% { opacity: 0; }
   }
   @keyframes hero-letter-in {
     from { opacity: 0; transform: translateY(0.3em); }
