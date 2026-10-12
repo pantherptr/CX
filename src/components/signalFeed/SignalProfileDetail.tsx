@@ -1,3 +1,4 @@
+import { SignalAchievements } from './SignalAchievements';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../Icon';
@@ -380,7 +381,10 @@ export function SignalProfileDetail({
             <span className="truncate text-detail font-semibold text-ink">{car.make} {car.model}</span>
             <span className="flex items-center justify-between text-caption text-muted">
               €{compact(car.pricePerDay)}/day
-              <Icon name="arrowUpRight" size={13} className="text-accent-700" />
+              {car.trips > 0 && <span>{car.trips} {t('Trips').toLowerCase()}</span>}
+            </span>
+            <span className="mt-1.5 inline-flex items-center justify-center gap-1 rounded-full bg-accent-bright px-3 py-1.5 text-caption font-semibold text-noir">
+              {t('Book')} <Icon name="arrowRight" size={12} />
             </span>
           </span>
         </Link>
@@ -424,6 +428,16 @@ export function SignalProfileDetail({
     </div>
   ) : (
     <>
+      {realProfile && (
+        <SignalAchievements
+          isHost={realProfile.isHost}
+          trips={realProfile.trips}
+          followers={followersCount}
+          posts={posts ? posts.length : 0}
+          respects={(posts ?? []).reduce((sum, p) => sum + p.likeCount, 0)}
+          isMe={isMe}
+        />
+      )}
       {tabs.length > 1 && (
         <div className="mb-4 flex border-b border-line" role="tablist">
           {tabs.map((id) => (
