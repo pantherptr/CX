@@ -1047,7 +1047,7 @@ export function SignalPostCard({
           ? 'card mb-5 rounded-3xl p-0 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)] ring-2 ring-accent-bright/50'
           : isExclusive
             ? 'card mb-5 rounded-3xl p-0 shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34)] ring-1 ring-[#c9971c]/40'
-            : `transition-colors ${detail ? 'border-b border-line' : 'border-b-[10px] border-panel active:bg-panel/40 sm:hover:bg-panel/25'}`
+            : `transition-colors ${detail ? 'border-b border-line' : 'border-b border-line active:bg-panel/40 sm:hover:bg-panel/25'}`
       }`}
     >
       {/* The one card on the whole feed that should read as "CX's own" —

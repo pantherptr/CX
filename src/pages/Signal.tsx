@@ -307,7 +307,7 @@ export default function Signal() {
   const highlightIndex = highlightId && highlights ? highlights.findIndex((h) => h.id === highlightId) : -1;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg">
+    <div className="flex min-h-dvh flex-col bg-surface">
       <SignalFeedHeader
         signedIn
         onSearchClick={() => { setSearchQuery(''); setSearchOpen(true); }}
