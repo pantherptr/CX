@@ -23,13 +23,13 @@ import { useLocale } from '../lib/i18n';
  *  a slow, small wave passes through them now and then. Each letter paints its own copy of the heading's
  *  gradient (a parent's clipped gradient would vanish behind transformed children). Purely visual — the
  *  full phrase is kept for screen readers by the caller. */
-function Letters({ text, from = 0, light = false }: { text: string; from?: number; light?: boolean }) {
+function Letters({ text, from = 0, light = false, breathe = false }: { text: string; from?: number; light?: boolean; breathe?: boolean }) {
   return (
     <>
       {Array.from(text).map((ch, i) =>
         ch === ' ' ? ' ' : (
           <span key={i} aria-hidden="true" className="hero-letter" style={{ ['--i' as string]: from + i }}>
-            <span className={`hero-glyph${light ? ' hero-lit' : ''}`} data-ch={ch}>{ch}</span>
+            <span className={`hero-glyph${light ? ' hero-lit' : ''}${breathe ? ' hero-breathe' : ''}`} data-ch={ch}>{ch}</span>
           </span>
         ),
       )}
@@ -294,8 +294,8 @@ export default function Home() {
                   ['--hero-grad' as string]: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                 }}
               >
-                <span className="block sm:hidden"><Letters text={t('to your')} from={14} /><br /><Letters text={t('heart.')} from={14 + t('to your').length} /></span>
-                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('to your heart.')} from={14} /></span>
+                <span className="block sm:hidden"><Letters text={t('to your')} from={14} breathe /><br /><Letters text={t('heart.')} from={14 + t('to your').length} breathe /></span>
+                <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('to your heart.')} from={14} breathe /></span>
               </FitHeading>
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
