@@ -24,6 +24,13 @@ const listeners = new Set<() => void>();
 
 /** Colour a page wants the browser chrome to take while it is visible, or null for the theme default. */
 let chromeOverride: Record<Theme, string> | null = null;
+let chromeSuspended = false;
+
+/** While a full-screen dark layer is open, drop the theme-color tag so Safari follows the page background. */
+export function setChromeSuspended(on: boolean) {
+  chromeSuspended = on;
+  if (typeof document !== 'undefined') paint();
+}
 
 export function chromeColor(light?: string, dark?: string): string {
   return current === 'dark' ? (dark ?? CHROME.dark) : (light ?? CHROME.light);
@@ -36,7 +43,11 @@ function paint() {
   // Safari only re-reads the status-bar tint when the tag itself is replaced, not when its value changes.
   const colour = chromeOverride ? chromeOverride[current] : CHROME[current];
   const old = document.querySelector('meta[name="theme-color"]');
-  if (old?.getAttribute('content') !== colour) {
+  if (chromeSuspended) {
+    // Full-screen dark layers: with no theme-color at all Safari tints its bars from the page background
+    // (which those layers set to their own dark), instead of holding on to the last colour it was given.
+    old?.remove();
+  } else if (old?.getAttribute('content') !== colour || !old) {
     const meta = document.createElement('meta');
     meta.setAttribute('name', 'theme-color');
     meta.setAttribute('content', colour);

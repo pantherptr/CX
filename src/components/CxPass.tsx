@@ -5,7 +5,7 @@ import LanyardBadge, { Ornament } from './ui/lanyard-badge';
 import { Icon } from './Icon';
 import { useLocale } from '../lib/i18n';
 import { useApp } from '../lib/store';
-import { setChromeOverride, useTheme } from '../lib/theme';
+import { setChromeOverride, setChromeSuspended, useTheme } from '../lib/theme';
 
 export type PassTier = 'member' | 'verified' | 'host' | 'golden' | 'team';
 
@@ -170,6 +170,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
     const prevVis = app?.style.visibility ?? '';
     if (app) app.style.visibility = 'hidden';
     setChromeOverride({ light: ground, dark: ground });
+    setChromeSuspended(true);
     // A one-pixel nudge makes Safari re-sample the colour behind the clock and battery.
     const y = window.scrollY;
     window.scrollTo(0, y + 1);
@@ -181,6 +182,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       root.style.backgroundColor = prevRootBg;
       document.body.style.backgroundColor = prevBodyBg;
       if (app) { app.style.backgroundColor = prevAppBg; app.style.visibility = prevVis; }
+      setChromeSuspended(false);
       setChromeOverride(null);
       window.removeEventListener('keydown', onKey);
     };

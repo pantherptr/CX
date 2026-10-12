@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
 import { RespectIcon } from '../components/RespectIcon';
-import { setChromeOverride } from '../lib/theme';
+import { setChromeOverride, setChromeSuspended } from '../lib/theme';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { shareLink } from '../lib/native';
@@ -236,6 +236,7 @@ export default function SignalReels() {
     document.body.style.backgroundColor = '#000';
     if (app) { app.style.backgroundColor = '#000'; app.style.visibility = 'hidden'; }
     setChromeOverride({ light: '#000000', dark: '#000000' });
+    setChromeSuspended(true);
     const y = window.scrollY;
     window.scrollTo(0, y + 1);
     window.requestAnimationFrame(() => window.scrollTo(0, y));
@@ -244,6 +245,7 @@ export default function SignalReels() {
       root.style.backgroundColor = prev.rootBg;
       document.body.style.backgroundColor = prev.bodyBg;
       if (app) { app.style.backgroundColor = prev.appBg; app.style.visibility = prev.appVis; }
+      setChromeSuspended(false);
       setChromeOverride(null);
     };
   }, []);
