@@ -82,6 +82,42 @@ function signalSpaceOf(pathname: string): 'official' | 'community' | null {
   return pathname.startsWith('/signal/community') ? 'community' : 'official';
 }
 
+// Warm every main page's code in the background once the app is idle, so moving between pages never
+// meets a loading screen: the click lands on a chunk that is already there. Skipped on Data Saver.
+const WARM_ORDER: Array<() => Promise<unknown>> = [
+  () => import('./pages/Signal'),
+  () => import('./pages/Browse'),
+  () => import('./pages/CarDetails'),
+  () => import('./pages/Messages'),
+  () => import('./pages/Notifications'),
+  () => import('./pages/CustomerDashboard'),
+  () => import('./pages/Settings'),
+  () => import('./pages/HostDashboard'),
+  () => import('./pages/TripDetails'),
+  () => import('./pages/Booking'),
+  () => import('./pages/ListCar'),
+  () => import('./pages/ManageCar'),
+];
+function useWarmRoutes() {
+  useEffect(() => {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+    let cancelled = false;
+    let i = 0;
+    const w = window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number };
+    const idle = (cb: () => void) => {
+      if (w.requestIdleCallback) w.requestIdleCallback(cb, { timeout: 4000 });
+      else window.setTimeout(cb, 1500);
+    };
+    const next = () => {
+      if (cancelled || i >= WARM_ORDER.length) return;
+      void WARM_ORDER[i++]().catch(() => {}).finally(() => idle(next));
+    };
+    const start = window.setTimeout(() => idle(next), 2500);
+    return () => { cancelled = true; window.clearTimeout(start); };
+  }, []);
+}
+
 // Where each history entry was scrolled to. Going back/forward puts the page where it was left; opening
 // something new starts at the top. Kept in sessionStorage so a reload of the app keeps the places too.
 const SCROLL_STORE = 'cx-scroll-pos';
@@ -328,6 +364,7 @@ export default function App() {
   // state a remount would wipe (booking, listing a car, settings, sign-in).
   const [refreshNonce, setRefreshNonce] = useState(0);
   const pageNavType = useNavigationType();
+  useWarmRoutes();
   const pullEnabled =
     !SIGNAL_ROUTE.test(location.pathname) &&
     !/^\/(book|list-your-car|settings|login|signup|empire|host\/cars)(\/|$)/.test(location.pathname);

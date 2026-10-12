@@ -294,7 +294,7 @@ function PostVideo({
       {!loaded && <div className="skeleton absolute inset-0" />}
       <video
         ref={videoRef}
-        src={src}
+        src={src.includes('#') ? src : `${src}#t=0.1`}
         muted={muted}
         playsInline
         loop

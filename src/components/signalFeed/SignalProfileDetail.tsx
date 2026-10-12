@@ -331,7 +331,7 @@ export function SignalProfileDetail({
             {img ? (
               <Img src={img} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>} />
             ) : vid ? (
-              <video src={vid} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+              <video src={vid.includes('#') ? vid : `${vid}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
             ) : (
               <span className="flex h-full w-full items-center p-2.5 text-left text-caption font-medium leading-snug text-ink-soft line-clamp-5">{post.title || post.body}</span>
             )}

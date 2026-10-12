@@ -193,7 +193,7 @@ export function VisionsGrid({
                   className="pressable group absolute inset-0 overflow-hidden bg-panel"
                 >
                   {isVideo ? (
-                    <video src={v.mediaUrl} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
+                    <video src={v.mediaUrl.includes('#') ? v.mediaUrl : `${v.mediaUrl}#t=0.1`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
                     <Img src={v.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={22} /></span>} />
                   )}
