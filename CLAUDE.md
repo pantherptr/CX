@@ -64,6 +64,12 @@ Code is written to fail soft before a migration is run.
 - Admins who are not the Owner publish only as CX/Assistant (UI + trigger 0113).
 - Installed app (PWA/native) opens on the normal home, country picked from the phone language (`src/lib/appMode.ts`).
 
+## Tests (Playwright)
+- `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
+  loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.
+  `E2E_BASE_URL=<preview url>` tests a deployed preview. `e2e/handover.spec.ts` needs two TEST accounts via env
+  (`E2E_HOST_*`, `E2E_RENTER_*`, `E2E_BOOKING_ID`) and is skipped otherwise. Never put real credentials in git.
+
 ## Notifications (migration 0110)
 - Inbox: `app_notifications` (bell + /notifications "Updates" tab). API writes through `notifyUser()` in
   `api/_lib/push.ts` (inbox row + APNs + Web Push, honours `user_notification_prefs`); DB functions use

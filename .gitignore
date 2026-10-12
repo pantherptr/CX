@@ -38,3 +38,7 @@ _to_delete/
 # local secrets
 NOTIFICHE-CHIAVI.local.txt
 *.local.txt
+
+# Playwright
+playwright-report/
+test-results/

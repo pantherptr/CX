@@ -1,0 +1,62 @@
+import { expect, test, type Page } from '@playwright/test';
+
+/** Public pages: they load, nothing sticks out sideways, no errors in the console — light and dark. */
+const ROUTES = ['/', '/browse', '/login', '/signup', '/how-it-works', '/help', '/about', '/list-your-car', '/compare'];
+
+async function open(page: Page, route: string, theme: 'light' | 'dark', country = 'GB') {
+  await page.addInitScript(([t, c]) => {
+    localStorage.setItem('cx-theme', t);
+    localStorage.setItem('cx-country', c);
+    sessionStorage.setItem('cx-splashed', '1');
+  }, [theme, country]);
+  await page.goto(route);
+  await page.waitForLoadState('networkidle');
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  for (const route of ROUTES) {
+    test(`${route} · ${theme}: loads, fits the screen, no console errors`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      page.on('console', (m) => {
+        if (m.type() === 'error' && !/Failed to load resource|supabase|placeholder|net::ERR|404/i.test(m.text())) errors.push(m.text());
+      });
+
+      await open(page, route, theme);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
+      const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(scrollWidth, 'the page is wider than the screen').toBeLessThanOrEqual(innerWidth + 1);
+      expect(errors, errors.join('\n')).toEqual([]);
+    });
+  }
+}
+
+test('home: the headline stays on one line on desktop, whatever the language', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the one-line headline is the desktop layout');
+  await open(page, '/', 'light', 'GB');
+  const h1 = page.locator('h1').first();
+  await expect(h1).toBeVisible();
+  const lines = await h1.evaluate((el) => {
+    const span = el.querySelector('[data-fit]') as HTMLElement | null;
+    const h = (span ?? el).getBoundingClientRect().height;
+    const fs = parseFloat(getComputedStyle(span ?? el).fontSize);
+    return Math.round(h / (fs * 0.84 || 1));
+  });
+  expect(lines).toBeLessThanOrEqual(1);
+});
+
+test('home in Italian shows Italian copy', async ({ page }) => {
+  await open(page, '/', 'light', 'IT');
+  await expect(page.getByRole('heading', { level: 1 }).first()).toContainText(/chiavi/i);
+});
+
+test('dark mode: page background is dark', async ({ page }) => {
+  await open(page, '/browse', 'dark');
+  const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const [r, g, b] = bg.match(/\d+/g)!.map(Number);
+  expect(r + g + b).toBeLessThan(120);
+});
