@@ -1,3 +1,4 @@
+import { ActionLabel } from '../components/ui/loading-button';
 import ThemeSwitch from '../components/ThemeSwitch';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_NOTIFICATION_PREFS, fetchNotificationPrefs, saveNotificationPrefs, type NotificationPrefs } from '../lib/data/notifications';
@@ -302,7 +303,7 @@ export default function Settings() {
                     <Field label={t('Phone')}><input value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldInput} type="tel" autoComplete="tel" /></Field>
                     <Field label={t('Location')}><input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City, country" className={fieldInput} /></Field>
                   </div>
-                  <button onClick={savePersonalInfo} disabled={saving} className="btn btn-primary btn-lg btn-block mt-5 disabled:opacity-60">{saving ? t('Saving…') : t('Save changes')}</button>
+                  <button onClick={savePersonalInfo} disabled={saving} className="btn btn-primary btn-lg btn-block mt-5 disabled:opacity-60"><ActionLabel busy={saving} busyLabel={t('Saving…')}>{t('Save changes')}</ActionLabel></button>
                 </>
               )}
 

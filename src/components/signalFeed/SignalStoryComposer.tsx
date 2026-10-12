@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
@@ -708,7 +709,7 @@ export function SignalStoryComposer({
           <div className="flex items-center justify-end gap-2 border-t border-line p-4">
             <button onClick={onClose} className="btn btn-secondary btn-sm">Cancel</button>
             <button onClick={handlePublish} disabled={publishing} className="btn btn-primary btn-sm disabled:opacity-50">
-              {publishing ? 'Publishing…' : 'Publish Story'}
+              <ActionLabel busy={publishing} busyLabel="Publishing…">Publish Story</ActionLabel>
             </button>
           </div>
         )}

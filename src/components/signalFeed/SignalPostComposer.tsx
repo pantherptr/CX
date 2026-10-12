@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
@@ -342,7 +343,7 @@ export function SignalPostComposer({
           </button>
         )}
         <button onClick={handleSubmit} disabled={submitting} className="btn btn-primary min-h-12 flex-1 justify-center rounded-full text-[15px] disabled:opacity-50">
-          {submitting ? 'Publishing…' : editing ? 'Save changes' : 'Publish'}
+          <ActionLabel busy={submitting} busyLabel="Publishing…">{editing ? 'Save changes' : 'Publish'}</ActionLabel>
         </button>
       </div>
     </div>

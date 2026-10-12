@@ -1,3 +1,4 @@
+import { ActionLabel } from './ui/loading-button';
 import { useState } from 'react';
 import { Icon } from './Icon';
 import { Modal } from './primitives';
@@ -64,7 +65,7 @@ export function ConfirmModal({
           disabled={typed !== confirmWord || busy}
           className={`btn btn-sm disabled:opacity-40 ${danger ? 'bg-danger text-white hover:bg-danger/90' : 'btn-primary'}`}
         >
-          {busy ? 'Working…' : confirmLabel}
+          <ActionLabel busy={busy} busyLabel="Working…">{confirmLabel}</ActionLabel>
         </button>
       </div>
     </Modal>

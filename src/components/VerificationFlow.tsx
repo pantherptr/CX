@@ -1,3 +1,4 @@
+import { ActionLabel } from './ui/loading-button';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
@@ -185,7 +186,7 @@ function IdentityForm({ userId, onDone, current }: { userId: string; onDone: () 
       </ul>
 
       <button onClick={submit} disabled={!ready || busy} className="btn btn-primary btn-lg btn-block mt-4 disabled:opacity-50">
-        {busy ? 'Uploading…' : 'Send for verification'}
+        <ActionLabel busy={busy} busyLabel="Uploading…">Send for verification</ActionLabel>
       </button>
       <p className="mt-3 flex items-center justify-center gap-1.5 text-caption text-muted"><Icon name="lock" size={12} /> Stored privately. Only our team can open them.</p>
     </div>
@@ -217,7 +218,7 @@ export function LicenceForm({ userId, onDone, compact }: { userId: string; onDon
         <PhotoSlot label="Licence — back" hint="Tap to take or choose a photo" icon="camera" file={back} onPick={setBack} disabled={busy} />
       </div>
       <button onClick={submit} disabled={!ready || busy} className={`btn btn-primary btn-block mt-3 disabled:opacity-50 ${compact ? '' : 'btn-lg'}`}>
-        {busy ? 'Uploading…' : 'Send licence'}
+        <ActionLabel busy={busy} busyLabel="Uploading…">Send licence</ActionLabel>
       </button>
     </div>
   );

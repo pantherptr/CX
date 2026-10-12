@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { MotionSheet, Tap, SharedAvatar, motion, AnimatePresence, useReducedMotion, SPRING_SNAPPY } from '../motionKit';
@@ -482,7 +483,7 @@ export function SignalEditProfileSheet({
             transition={{ scale: reduceMotion ? { duration: 0 } : SPRING_SNAPPY }}
             className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-lg bg-[#fff] px-5 py-2.5 text-body font-semibold text-noir transition-colors hover:bg-white/90 disabled:opacity-70"
           >
-            {justSaved ? <Icon name="check" size={16} strokeWidth={3} /> : saving ? 'Saving…' : 'Save changes'}
+            <ActionLabel busy={saving} busyLabel="Saving…" done={justSaved} doneLabel={<Icon name="check" size={16} strokeWidth={3} />}>Save changes</ActionLabel>
           </Tap>
         </div>
       </div>

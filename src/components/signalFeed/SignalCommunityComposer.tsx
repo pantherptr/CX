@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img, vibrateTap } from '../motion';
@@ -651,7 +652,7 @@ export function SignalCommunityComposer({
                       canPublish ? 'bg-ink text-white hover:bg-ink/90' : 'bg-panel text-faint'
                     }`}
                   >
-                    {submitting ? 'Posting…' : editing ? 'Save' : scheduleAt ? t('Schedule') : 'Post'}
+                    <ActionLabel busy={submitting} busyLabel="Posting…">{editing ? 'Save' : scheduleAt ? t('Schedule') : 'Post'}</ActionLabel>
                   </Tap>
 
                   <button

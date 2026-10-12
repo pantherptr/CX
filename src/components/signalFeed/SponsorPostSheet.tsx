@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -126,7 +127,7 @@ export function SponsorPostSheet({ postId, onClose }: { postId: string; onClose:
             </p>
             {error && <p className="mt-3 text-detail font-medium text-danger">{error}</p>}
             <button type="button" onClick={start} disabled={!valid || busy || !session} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
-              {busy ? t('Preparing…') : t('Continue to payment')}
+              <ActionLabel busy={busy} busyLabel={t('Preparing…')}>{t('Continue to payment')}</ActionLabel>
             </button>
           </>
         )}
@@ -164,7 +165,7 @@ function PayForm({ amount, onPaid, onBack }: { amount: number; onPaid: () => voi
       <div className="mt-4 flex items-center justify-between gap-3">
         <button type="button" onClick={onBack} disabled={busy} className="btn btn-ghost text-muted hover:text-ink disabled:opacity-60">{t('Back')}</button>
         <button type="button" onClick={pay} disabled={!stripe || !elements || busy} className="btn btn-primary min-h-12 rounded-full px-6 text-[15px] disabled:opacity-60">
-          {busy ? t('Confirming…') : `${t('Pay')} ${money(Math.round(amount * 100))}`}
+          <ActionLabel busy={busy} busyLabel={t('Confirming…')}>{`${t('Pay')} ${money(Math.round(amount * 100))}`}</ActionLabel>
         </button>
       </div>
     </div>

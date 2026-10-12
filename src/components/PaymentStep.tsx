@@ -1,3 +1,4 @@
+import { ActionLabel } from './ui/loading-button';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -108,7 +109,7 @@ function PaymentForm({ amount, deposit, submitting, setSubmitting, onBack, onPai
           disabled={!stripe || !elements || submitting}
           className="btn btn-primary btn-lg disabled:opacity-60"
         >
-          {submitting ? 'Confirming…' : `Pay ${amount != null ? eur(amount) : ''}`}
+          <ActionLabel busy={submitting} busyLabel="Confirming…">{`Pay ${amount != null ? eur(amount) : ''}`}</ActionLabel>
           {!submitting && <Icon name="arrowRight" size={17} />}
         </button>
       </div>

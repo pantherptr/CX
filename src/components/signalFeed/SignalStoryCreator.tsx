@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
@@ -594,7 +595,7 @@ function EditorStage({
             scale={0.97}
             className="btn min-h-[52px] w-full justify-center rounded-full bg-accent-bright text-[15px] font-semibold text-noir shadow-[0_8px_28px_-6px_rgba(0,212,71,0.6)] hover:bg-accent-bright/90 disabled:opacity-60"
           >
-            {publishing ? 'Posting…' : 'Post Story'}
+            <ActionLabel busy={publishing} busyLabel="Posting…">Post Story</ActionLabel>
             {!publishing && <Icon name="arrowRight" size={17} />}
           </Tap>
         </div>

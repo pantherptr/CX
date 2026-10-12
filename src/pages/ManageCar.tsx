@@ -1,3 +1,4 @@
+import { ActionLabel } from '../components/ui/loading-button';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -260,7 +261,7 @@ export default function ManageCar() {
 
         <div className="flex items-center gap-3">
           <button onClick={handleSave} disabled={!valid || saving} className="btn btn-primary btn-lg disabled:opacity-60">
-            {saving ? 'Saving…' : 'Save changes'}
+            <ActionLabel busy={saving} busyLabel="Saving…">Save changes</ActionLabel>
           </button>
           <Link to="/host#cars" className="btn btn-secondary btn-lg">Cancel</Link>
           {!valid && <span className="text-detail text-danger">{Number(price) > 0 ? '' : 'Enter a price above €0.'}</span>}

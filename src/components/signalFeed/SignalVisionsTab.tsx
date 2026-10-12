@@ -1,3 +1,4 @@
+import { ActionLabel } from '../ui/loading-button';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
@@ -523,7 +524,7 @@ function VisionEditSheet({ vision, onClose, onSaved }: { vision: Vision; onClose
           </div>
         )}
         <button type="button" onClick={save} disabled={saving} className="btn btn-primary mt-4 min-h-12 w-full justify-center rounded-full text-[15px] disabled:opacity-50">
-          {saving ? t('Saving…') : t('Save')}
+          <ActionLabel busy={saving} busyLabel={t('Saving…')}>{t('Save')}</ActionLabel>
         </button>
       </div>
     </div>
