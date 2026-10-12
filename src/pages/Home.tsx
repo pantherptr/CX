@@ -66,6 +66,11 @@ const SIGNAL_SYMBOLS: { k: SymKind; x: number; y: number; size: number; rot: num
   { k: 'sigS', x: 94, y: 86, size: 30, rot: -6, o: 0.16, d: 1.4 },
   { k: 'heart', x: 14, y: 92, size: 22, rot: 0, o: 0.15, d: 2.4 },
   { k: 'share', x: 52, y: 92, size: 24, rot: 7, o: 0.14, d: 0.9 },
+  { k: 'chat', x: 30, y: 30, size: 34, rot: -8, o: 0.16, d: 1.1 },
+  { k: 'chat', x: 84, y: 20, size: 30, rot: 10, o: 0.16, d: 2.2 },
+  { k: 'chat', x: 72, y: 90, size: 32, rot: -6, o: 0.16, d: 0.5 },
+  { k: 'chat', x: 36, y: 48, size: 26, rot: 12, o: 0.14, d: 1.9 },
+  { k: 'chat', x: 14, y: 52, size: 28, rot: -12, o: 0.15, d: 2.5 },
 ];
 
 function Symbol({ k, size }: { k: SymKind; size: number }) {
@@ -91,7 +96,7 @@ function SignalBackdrop() {
         <span
           key={i}
           className="signal-bg__item absolute leading-none"
-          style={{ left: `${x.x}%`, top: `${x.y}%`, opacity: x.o, transform: `rotate(${x.rot}deg)`, animationDelay: `${x.d}s` }}
+          style={{ left: `${x.x}%`, top: `${x.y}%`, opacity: x.o * 0.55, transform: `rotate(${x.rot}deg)`, animationDelay: `${x.d}s` }}
         >
           <Symbol k={x.k} size={x.size} />
         </span>
