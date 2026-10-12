@@ -1047,7 +1047,7 @@ export function SignalPostCard({
           ? 'card mb-5 rounded-3xl p-0 shadow-[0_8px_28px_-12px_rgba(0,212,71,0.35)] ring-2 ring-accent-bright/50'
           : isExclusive
             ? 'card mb-5 rounded-3xl p-0 shadow-[0_20px_48px_-24px_rgba(0,0,0,0.34)] ring-1 ring-[#c9971c]/40'
-            : `border-b border-line transition-colors ${detail ? '' : 'active:bg-panel/40 sm:hover:bg-panel/25'}`
+            : `transition-colors ${detail ? 'border-b border-line' : 'border-b-[10px] border-panel active:bg-panel/40 sm:hover:bg-panel/25'}`
       }`}
     >
       {/* The one card on the whole feed that should read as "CX's own" —
@@ -1239,8 +1239,8 @@ export function SignalPostCard({
           Shares and the "Performance" label for Owner/Admin. It fills in as
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
-      <div className="flex items-center justify-between gap-1.5 border-t border-line px-3 py-0.5 sm:px-5">
-        <div className="flex items-center gap-4 text-ink-soft">
+      <div className="mx-3 flex items-center justify-between gap-1.5 border-t border-line/70 py-1 sm:mx-5">
+        <div className="flex items-center gap-5 text-ink-soft">
             {(isTeamViewer ? (
                 <button
                   type="button"
