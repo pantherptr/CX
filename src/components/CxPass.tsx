@@ -5,6 +5,7 @@ import LanyardBadge, { Ornament } from './ui/lanyard-badge';
 import { Icon } from './Icon';
 import { useLocale } from '../lib/i18n';
 import { useApp } from '../lib/store';
+import { setChromeOverride } from '../lib/theme';
 
 export type PassTier = 'member' | 'verified' | 'host' | 'golden' | 'team';
 
@@ -137,10 +138,20 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
     setCopied(false);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Safari tints its own bars from the page colour: while the layer is open they take its tone too.
+    const root = document.documentElement;
+    const prevRootBg = root.style.backgroundColor;
+    const prevBodyBg = document.body.style.backgroundColor;
+    root.style.backgroundColor = '#0a0b0a';
+    document.body.style.backgroundColor = '#0a0b0a';
+    setChromeOverride({ light: '#0a0b0a', dark: '#0a0b0a' });
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
+      root.style.backgroundColor = prevRootBg;
+      document.body.style.backgroundColor = prevBodyBg;
+      setChromeOverride(null);
       window.removeEventListener('keydown', onKey);
     };
   }, [open, onClose]);
@@ -198,7 +209,8 @@ export function ShareProfileSheet({ open, onClose, pass, heading }: { open: bool
           <button
             type="button"
             onClick={() => void share()}
-            className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-white text-[15px] font-bold text-noir transition-transform active:scale-[0.97]"
+            style={{ backgroundColor: '#ffffff', color: '#0a0b0a' }}
+            className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl text-[15px] font-bold transition-transform active:scale-[0.97]"
           >
             <Icon name="share" size={19} /> {t('Share')}
           </button>
