@@ -159,9 +159,9 @@ export default function Home() {
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
-            <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8.4]">
+            <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">
               <h1
-                className="absolute inset-x-0 top-[2%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
+                className="absolute inset-x-0 top-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw] sm:text-[clamp(2.6rem,14vw,12.4rem)]"
                 style={{
                   backgroundImage: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                   WebkitBackgroundClip: 'text',
@@ -173,7 +173,7 @@ export default function Home() {
               </h1>
               <p
                 aria-hidden
-                className="absolute inset-x-0 bottom-[-1%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
+                className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw] sm:text-[clamp(2.6rem,11.2vw,10.2rem)]"
                 style={{
                   backgroundImage: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                   WebkitBackgroundClip: 'text',
@@ -187,7 +187,7 @@ export default function Home() {
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
                   as the page opens (CSS only, see .hero-car in index.css). */}
               <div
-                className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[74%]"
+                className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[68%]"
                 style={{ aspectRatio: '859 / 386' }}
               >
                 <div className="hero-car-body relative h-full w-full">
@@ -212,15 +212,15 @@ export default function Home() {
               </div>
 
               {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
-              <div className="absolute bottom-[26%] left-0 hidden max-w-[11rem] sm:block">
-                <span className="mb-2 block h-px w-14 bg-ink/60" />
-                <p className="text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
+              <div className="absolute left-0 top-[41%] hidden max-w-[7.5rem] sm:block lg:max-w-[10rem]">
+                <span className="mb-2 block h-px w-12 bg-ink/60" />
+                <p className="text-label lg:text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
                   {t('Premium cars. Verified hosts.')}
                 </p>
               </div>
-              <div className="absolute bottom-[26%] right-0 hidden items-center gap-2.5 sm:flex">
+              <div className="absolute right-0 top-[41%] hidden max-w-[8.5rem] items-center gap-2 sm:flex lg:max-w-none lg:gap-2.5">
                 <span className="grid h-10 w-10 place-items-center rounded-full border border-ink/25 text-ink"><Icon name="shield" size={18} /></span>
-                <p className="text-detail font-semibold uppercase leading-snug tracking-wide text-ink">
+                <p className="text-label font-semibold uppercase leading-snug tracking-wide text-ink lg:text-detail">
                   {t('Protected trips')}
                 </p>
               </div>
