@@ -2158,3 +2158,25 @@ html:not([data-theme='dark']) .hero-beam { display: none; }
 @keyframes signal-marks-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(720px, 720px, 0); } }
 @media (prefers-reduced-motion: reduce) { .signal-marks { animation: none; } }
 @media (max-width: 639px) { .hero-beam { left: -4%; width: 13%; height: 9%; } }
+
+/* ============================================================
+   FLAT CONTROLS — buttons and pills never glow. A real app has
+   solid, quiet controls: no coloured halo, no lit-up shadow, in
+   light or dark. (Decorative panels and photos keep their light.)
+   ============================================================ */
+.btn,
+.btn-primary, .btn-accent, .btn-accent-bright, .btn-secondary, .btn-ghost,
+.btn:hover, .btn:active {
+  box-shadow: none !important;
+}
+:is(button, a, [role='button'], [role='switch'], [role='tab'], label, summary):is(
+    [class*='rgba(0,212,71'], [class*='rgba(0,133,54'], [class*='shadow-pop'], [class*='glow-accent']
+  ) {
+  box-shadow: none !important;
+  filter: none !important;
+}
+:is(button, a, [role='button']) :is([class*='rgba(0,212,71']) {
+  filter: none !important;
+}
+html[data-theme='dark'] .dock-a { box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0.45); }
+.dock-a { box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0.45) !important; }
