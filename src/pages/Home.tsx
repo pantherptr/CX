@@ -184,22 +184,19 @@ export default function Home() {
                 <span className="hidden sm:block">{t('to your heart.')}</span>
               </p>
 
-              {/* The car, in front of both: it drives in from the right, brakes to a stop, headlights
-                  switch on and the exhaust backfires twice (CSS only, see .hero-car in index.css). */}
+              {/* The car, in front of both: it drives in slowly from the right and stops, then the lights
+                  switch on (CSS only, see .hero-car in index.css). */}
               <div
                 className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[74%]"
                 style={{ aspectRatio: '859 / 386' }}
               >
                 <div className="hero-car-body relative h-full w-full">
-                  <span aria-hidden className="hero-streak" />
                   <span aria-hidden className="hero-beam" style={{ top: '20%', ['--r' as string]: '7deg' }} />
                   <span aria-hidden className="hero-beam" style={{ top: '81%', ['--r' as string]: '-7deg' }} />
                   <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.8%', top: '20%', ['--r' as string]: '-38deg' }} />
                   <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.7%', top: '81%', ['--r' as string]: '38deg' }} />
                   <span aria-hidden className="hero-lamp hero-tail" style={{ left: '93.6%', top: '17.8%', ['--r' as string]: '42deg' }} />
                   <span aria-hidden className="hero-lamp hero-tail" style={{ left: '95.6%', top: '76.4%', ['--r' as string]: '-55deg' }} />
-                  <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '3.1s' }} />
-                  <span aria-hidden className="hero-flame" style={{ top: '55%', animationDelay: '3.28s' }} />
                   <img
                     src="/hero-car.webp?v=3"
                     alt={t('A premium CX car')}
