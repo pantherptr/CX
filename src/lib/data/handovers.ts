@@ -22,6 +22,26 @@ export async function releasePayoutAfterHandover(bookingId: string): Promise<voi
   }
 }
 
+/** The return: the second scan, closing the trip. */
+export async function verifyReturn(bookingId: string, counterpartId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('verify_return', { p_booking_id: bookingId, p_counterpart: counterpartId });
+  return { error: error?.message ?? null };
+}
+
+export interface HandoverState {
+  /** When the trip started (pickup scan), or null. */
+  pickupAt: string | null;
+  /** When the trip was closed (return scan), or null. */
+  returnAt: string | null;
+}
+
+export async function fetchHandoverState(bookingId: string): Promise<HandoverState> {
+  const { data, error } = await supabase.rpc('booking_handover_state', { p_booking_id: bookingId });
+  const row = (data as { pickup_at: string | null; return_at: string | null }[] | null)?.[0];
+  if (error || !row) return { pickupAt: null, returnAt: null };
+  return { pickupAt: row.pickup_at, returnAt: row.return_at };
+}
+
 export async function isHandoverVerified(bookingId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('booking_handover_verified', { p_booking_id: bookingId });
   return !error && data === true;

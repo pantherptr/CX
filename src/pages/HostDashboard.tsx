@@ -16,6 +16,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useAuth } from '../lib/auth';
 import { TripMap } from '../components/TripMap';
+import { TripJourney } from '../components/TripJourney';
 import { useApp } from '../lib/store';
 import { Reveal } from '../components/motion';
 import { FleetLiveBoard, type LiveItem } from '../components/FleetLiveBoard';
@@ -580,6 +581,8 @@ function HostBookingRow({ booking }: { booking: Booking }) {
       </button>
       {open && (
         <div className="px-2 pb-3">
+          {phase !== 'cancelled' && phase !== 'refunded' && <TripJourney booking={booking} role="host" />}
+          <div className="mt-4" />
           <TripMap
             carId={booking.car.id}
             city={booking.car.city}

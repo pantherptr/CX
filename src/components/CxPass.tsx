@@ -20,6 +20,8 @@ export interface PassData {
   since: string | null;
   /** Public address of the profile — what the QR code opens. */
   url: string;
+  /** Hide the trips / Respect / member-since row (when the numbers are not known here). */
+  hideStats?: boolean;
 }
 
 const TIER: Record<PassTier, { label: string; ink: string; card: string; ring: string }> = {
@@ -98,11 +100,17 @@ export function CxPass({ pass, height = '580px', tone = 'dark' }: { pass: PassDa
           {qr ? <img src={qr} alt="QR" draggable={false} style={{ width: 138, height: 138 }} /> : <span className="block animate-pulse bg-black/10" style={{ width: 138, height: 138 }} />}
         </span>
         <p className="mt-3 text-[8.5px] font-bold uppercase tracking-[0.22em]">{t('Scan to open profile')}</p>
-        <div className="mt-6 flex w-full px-5">
-          {stat(pass.trips, t('Trips'))}
-          {stat(pass.respects, 'Respect')}
-          {stat(pass.since ?? '—', t('Member since'))}
-        </div>
+        {pass.hideStats ? (
+          <p className="mt-8 px-5 text-center text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
+            {pass.since ? `${t('Member since')} ${pass.since}` : ''}
+          </p>
+        ) : (
+          <div className="mt-6 flex w-full px-5">
+            {stat(pass.trips, t('Trips'))}
+            {stat(pass.respects, 'Respect')}
+            {stat(pass.since ?? '—', t('Member since'))}
+          </div>
+        )}
       </div>
       <p className="absolute inset-x-0 bottom-5 truncate px-4 text-center text-[9px] font-semibold tracking-wide text-white/70">
         {pass.username ? `@${pass.username}` : pass.name}

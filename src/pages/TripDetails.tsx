@@ -28,7 +28,7 @@ import { findOrCreateConversation } from '../lib/data/messages';
 import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
 import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
-import { HandoverCard } from '../components/HandoverCard';
+import { TripJourney } from '../components/TripJourney';
 import { isHandoverVerified } from '../lib/data/handovers';
 import { parseISO } from '../lib/calendarGrid';
 import { uiLocale } from '../lib/i18n/uiLocale';
@@ -53,16 +53,6 @@ const phaseLabel: Record<TripPhase, string> = {
   refunded: 'Refunded',
 };
 
-// parseISO builds the date at local midnight (not UTC, which is what a
-// bare `new Date(dateStr)` would do) — this is what drives the
-// cancellation-window boundary, so getting it wrong could let a renter
-// in a negative-UTC-offset timezone cancel (or be blocked from
-// cancelling) up to a day off from the real deadline.
-function daysUntil(dateStr: string) {
-  const ms = parseISO(dateStr).getTime() - Date.now();
-  return Math.ceil(ms / 86400000);
-}
-
 function ChecklistRow({ done, label, right }: { done: boolean; label: string; right?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
@@ -77,21 +67,6 @@ function ChecklistRow({ done, label, right }: { done: boolean; label: string; ri
         <span className={`truncate text-body ${done ? 'text-ink' : 'text-ink-soft'}`}>{label}</span>
       </div>
       {right}
-    </div>
-  );
-}
-
-function TimelineStep({ label, done, current }: { label: string; done: boolean; current?: boolean }) {
-  return (
-    <div className="flex flex-1 flex-col items-center gap-2 text-center">
-      <span
-        className={`grid h-8 w-8 place-items-center rounded-full text-caption font-semibold ${
-          done ? 'bg-accent text-white' : current ? 'bg-ink text-white' : 'bg-panel-2 text-faint'
-        }`}
-      >
-        {done ? <Icon name="check" size={14} strokeWidth={3} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
-      </span>
-      <span className={`text-label font-medium uppercase tracking-wide ${done || current ? 'text-ink' : 'text-faint'}`}>{label}</span>
     </div>
   );
 }
@@ -326,16 +301,8 @@ export default function TripDetails() {
         </div>
 
         {phase === 'completed' && session && <TripMemoryPrompt booking={booking} />}
-        {(phase === 'upcoming' || phase === 'active' || phase === 'completed') && booking.status !== 'cancelled' && session && <HandoverCard bookingId={booking.id} />}
+        {session && <TripJourney booking={booking} role="renter" inspectionHref="#inspection" onReviewAgreement={() => setAgreementOpen(true)} />}
 
-        {phase === 'upcoming' && (
-          <div className="mt-5 flex items-center gap-2.5 rounded-2xl border border-accent/15 bg-accent-050 px-5 py-4">
-            <Icon name="clock" size={17} className="shrink-0 text-accent-700" />
-            <p className="text-body font-medium text-ink">
-              Your trip starts in {daysUntil(booking.startDate)} {daysUntil(booking.startDate) === 1 ? 'day' : 'days'}
-            </p>
-          </div>
-        )}
         </Reveal>
 
         {/* The ticket */}
@@ -410,20 +377,6 @@ export default function TripDetails() {
           </Reveal>
         )}
 
-        {/* Timeline */}
-        {phase !== 'cancelled' && (
-          <Reveal delay={60}>
-          <div className="mt-6 card p-6">
-            <div className="flex items-start">
-              <TimelineStep label="Booked" done />
-              <TimelineStep label="Pick-up" done={phase !== 'upcoming'} current={phase === 'upcoming'} />
-              <TimelineStep label="Trip" done={phase === 'completed'} current={phase === 'active'} />
-              <TimelineStep label="Returned" done={phase === 'completed'} />
-            </div>
-          </div>
-          </Reveal>
-        )}
-
         <Reveal delay={100}>
         <div className="mt-6 overflow-hidden rounded-2xl border border-line">
           <Img
@@ -476,7 +429,7 @@ export default function TripDetails() {
         {/* Vehicle inspection */}
         {session && phase !== 'cancelled' && (
           <Reveal>
-          <section className="mt-8 border-t border-line pt-6">
+          <section id="inspection" className="mt-8 scroll-mt-24 border-t border-line pt-6">
             <h2 className="font-display text-lg font-semibold text-ink">Vehicle inspection</h2>
             <p className="mt-1 text-detail text-muted">Photograph the car before pick-up and after return — a real before/after record for this trip.</p>
 

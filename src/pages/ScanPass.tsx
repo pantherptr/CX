@@ -4,7 +4,7 @@ import jsQR from 'jsqr';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
-import { profileIdFromPassUrl, releasePayoutAfterHandover, verifyHandover } from '../lib/data/handovers';
+import { profileIdFromPassUrl, releasePayoutAfterHandover, verifyHandover, verifyReturn } from '../lib/data/handovers';
 
 /** Scan someone's CX Pass. With `?booking=` it confirms the handover of that booking; without, it just
  *  opens their profile. Camera first, a photo of the pass as the fallback. */
@@ -14,6 +14,7 @@ export default function ScanPass() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const bookingId = params.get('booking');
+  const kind: 'pickup' | 'return' = params.get('kind') === 'return' ? 'return' : 'pickup';
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handledRef = useRef(false);
@@ -34,16 +35,16 @@ export default function ScanPass() {
         navigate(`/signal/profile/${id}`, { replace: true });
         return;
       }
-      const { error: err } = await verifyHandover(bookingId, id);
+      const { error: err } = kind === 'return' ? await verifyReturn(bookingId, id) : await verifyHandover(bookingId, id);
       if (err) {
         handledRef.current = false;
         setError(err);
         return;
       }
-      void releasePayoutAfterHandover(bookingId);
+      if (kind === 'pickup') void releasePayoutAfterHandover(bookingId);
       setDone({ profileId: id });
     },
-    [bookingId, navigate, t],
+    [bookingId, kind, navigate, t],
   );
 
   useEffect(() => {
@@ -130,8 +131,12 @@ export default function ScanPass() {
             <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-white text-[#0a0b0a]">
               <Icon name="check" size={36} strokeWidth={2.6} />
             </span>
-            <h1 className="mt-6 font-display text-2xl font-semibold">{t('Handover verified')}</h1>
-            <p className="mx-auto mt-2 max-w-[18rem] text-detail text-white/70">{t('You both scanned your CX Pass. This handover now carries the verified seal.')}</p>
+            <h1 className="mt-6 font-display text-2xl font-semibold">{kind === 'return' ? t('Return confirmed') : t('Trip started')}</h1>
+            <p className="mx-auto mt-2 max-w-[18rem] text-detail text-white/70">
+              {kind === 'return'
+                ? t('The car is back and the trip is closed. Thank you!')
+                : t('The handover is verified. Have a great trip!')}
+            </p>
             <div className="mt-8 flex flex-col gap-2.5">
               <Link to={`/signal/profile/${done.profileId}`} className="inline-flex h-14 items-center justify-center rounded-2xl bg-white text-[15px] font-bold text-[#0a0b0a]">
                 {t('Open profile')}
@@ -153,12 +158,18 @@ export default function ScanPass() {
             <div className="relative h-64 w-64 rounded-[28px] border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
           </div>
           <div className="absolute inset-x-0 top-[max(1.1rem,calc(env(safe-area-inset-top)+0.35rem))] text-center">
-            <p className="text-detail font-semibold uppercase tracking-[0.2em]">{t('Scan CX Pass')}</p>
+            <p className="text-detail font-semibold uppercase tracking-[0.2em]">
+              {bookingId ? (kind === 'return' ? t('Confirm the return') : t('Start the trip')) : t('Scan CX Pass')}
+            </p>
           </div>
           <div className="absolute inset-x-0 bottom-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center">
             {error && <p className="mb-3 rounded-2xl bg-white/10 px-4 py-2.5 text-detail font-semibold text-white backdrop-blur-md">{error}</p>}
             <p className="text-detail text-white/75">
-              {bookingId ? t('Point the camera at the other person’s CX Pass to confirm the handover.') : t('Point the camera at a CX Pass to open the profile.')}
+              {bookingId
+                ? kind === 'return'
+                  ? t('Point the camera at the other person’s CX Pass to confirm the return.')
+                  : t('Point the camera at the other person’s CX Pass to start the trip.')
+                : t('Point the camera at a CX Pass to open the profile.')}
             </p>
             <label className="mt-4 inline-flex h-12 cursor-pointer items-center gap-2 rounded-full border border-white/15 bg-white/10 px-5 text-detail font-semibold backdrop-blur-md">
               <Icon name="image" size={17} /> {cameraOff ? t('Take or choose a photo of the pass') : t('Use a photo instead')}
