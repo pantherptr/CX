@@ -37,6 +37,8 @@ export interface LanyardBadgeProps {
   cardColor?: string
   /** Show the "Show back / Show front" button in the top corner. */
   flipButton?: boolean
+  /** Look of the flip button: `light` for a light surface. */
+  flipTone?: "dark" | "light"
   /** Labels of the flip button. */
   flipLabels?: { front: string; back: string }
   /** Card width in px. Height follows at 3:2, strap width at a tenth. */
@@ -253,6 +255,7 @@ export default function LanyardBadge({
   inkColor = "#00d447",
   cardColor = "#0e100e",
   flipButton = true,
+  flipTone = "dark",
   flipLabels = { front: "Show front", back: "Show back" },
   cardWidth = 240,
   height = "100svh",
@@ -682,7 +685,7 @@ export default function LanyardBadge({
           type="button"
           onClick={() => flipRef.current()}
           aria-pressed={showBack}
-          className="absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-3.5 py-2 text-detail font-semibold text-white backdrop-blur transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright"
+          className={"absolute right-3 top-3 z-10 inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-detail font-semibold backdrop-blur transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-bright " + (flipTone === "light" ? "border-black/10 bg-white/80 text-[#16161a] hover:bg-white" : "border-white/15 bg-black/50 text-white hover:bg-black/70")}
         >
           <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: showBack ? "scaleX(-1)" : "none", transition: "transform .5s" }}>
             <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />

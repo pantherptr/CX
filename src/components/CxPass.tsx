@@ -5,7 +5,7 @@ import LanyardBadge, { Ornament } from './ui/lanyard-badge';
 import { Icon } from './Icon';
 import { useLocale } from '../lib/i18n';
 import { useApp } from '../lib/store';
-import { setChromeOverride } from '../lib/theme';
+import { setChromeOverride, useTheme } from '../lib/theme';
 
 export type PassTier = 'member' | 'verified' | 'host' | 'golden' | 'team';
 
@@ -34,7 +34,7 @@ const DISPLAY = '"Clash Display", "Satoshi", "Arial Narrow", sans-serif';
 
 /** A person's CX Pass: a card on a lanyard. Front — who they are; back — the numbers and a QR that opens
  *  their profile. Drag it, flick it, tap it to flip. */
-export function CxPass({ pass, height = '580px' }: { pass: PassData; height?: string }) {
+export function CxPass({ pass, height = '580px', tone = 'dark' }: { pass: PassData; height?: string; tone?: 'dark' | 'light' }) {
   const { t } = useLocale();
   const tier = TIER[pass.tier];
   const [qr, setQr] = useState<string | null>(null);
@@ -121,7 +121,10 @@ export function CxPass({ pass, height = '580px' }: { pass: PassData; height?: st
       cardColor={tier.card}
       height={height}
       flipLabels={{ front: t('Show front'), back: t('Show back') }}
-      className="rounded-3xl bg-gradient-to-b from-[#0c0e0c] to-[#050605]"
+      flipTone={tone}
+      className={tone === 'light'
+        ? 'rounded-3xl bg-gradient-to-b from-white via-[#f4faf6] to-[#e4f3e8] ring-1 ring-black/[0.06]'
+        : 'rounded-3xl bg-gradient-to-b from-[#0c0e0c] to-[#050605]'}
     />
   );
 }
@@ -136,6 +139,8 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
   const { t } = useLocale();
   const { toast } = useApp();
   const [copied, setCopied] = useState(false);
+  const light = useTheme() === 'light';
+  const ground = light ? '#fbfbf9' : '#0a0b0a';
 
   useEffect(() => {
     if (!open) return;
@@ -148,15 +153,15 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
     const prevRootBg = root.style.backgroundColor;
     const prevBodyBg = document.body.style.backgroundColor;
     const prevAppBg = app?.style.backgroundColor ?? '';
-    root.style.backgroundColor = '#0a0b0a';
-    document.body.style.backgroundColor = '#0a0b0a';
+    root.style.backgroundColor = ground;
+    document.body.style.backgroundColor = ground;
     // #root paints the page colour; while the layer is open that colour is the layer's own dark.
-    if (app) app.style.backgroundColor = '#0a0b0a';
+    if (app) app.style.backgroundColor = ground;
     // The page itself steps out of sight while the layer is open: Safari's bars sit over the page, and a
     // light page showing under them (or behind the clock and battery) reads as unfinished.
     const prevVis = app?.style.visibility ?? '';
     if (app) app.style.visibility = 'hidden';
-    setChromeOverride({ light: '#0a0b0a', dark: '#0a0b0a' });
+    setChromeOverride({ light: ground, dark: ground });
     // A one-pixel nudge makes Safari re-sample the colour behind the clock and battery.
     const y = window.scrollY;
     window.scrollTo(0, y + 1);
@@ -171,7 +176,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       setChromeOverride(null);
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, ground]);
 
   if (!open) return null;
 
@@ -201,23 +206,27 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       {/* solid dark ground — the page behind is hidden while the layer is open */}
       <div
         className="pass-backdrop absolute inset-0"
-        style={{ background: 'radial-gradient(75% 55% at 50% 38%, #1a1c1a 0%, #0a0b0a 72%)' }}
+        style={{
+          background: light
+            ? 'radial-gradient(70% 50% at 50% 36%, rgba(0,212,71,0.07) 0%, rgba(0,212,71,0) 70%), #fbfbf9'
+            : 'radial-gradient(75% 55% at 50% 38%, #1a1c1a 0%, #0a0b0a 72%)',
+        }}
         onClick={onClose}
       />
 
       {/* Solid dark strips pinned to the top and bottom edges: Safari tints its status bar and toolbar from
           what sits there, and a translucent layer would let the white page show through. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 bg-[#0a0b0a]" style={{ height: 'calc(env(safe-area-inset-top, 0px) + 28px)' }} />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0" style={{ background: ground, height: 'calc(env(safe-area-inset-top, 0px) + 28px)' }} />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0"
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 28px)', height: 36, background: 'linear-gradient(#0a0b0a, transparent)' }}
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 28px)', height: 36, background: `linear-gradient(${ground}, transparent)` }}
       />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#0a0b0a]" style={{ height: 200 }} />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0" style={{ background: ground, height: 200 }} />
 
       {heading && (
         <h2
-          className="pass-rise pointer-events-none absolute inset-x-16 z-10 truncate text-center font-display text-xl font-semibold text-white"
+          className={`pass-rise pointer-events-none absolute inset-x-16 z-10 truncate text-center font-display text-xl font-semibold ${light ? 'text-[#16161a]' : 'text-white'}`}
           style={{ top: 'max(1.55rem, calc(env(safe-area-inset-top) + 0.55rem))' }}
         >
           {heading}
@@ -227,7 +236,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
         type="button"
         onClick={onClose}
         aria-label={t('Close')}
-        className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+        className={`absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 grid h-11 w-11 place-items-center rounded-full border backdrop-blur-md transition-colors ${light ? 'border-black/10 bg-black/[0.05] text-[#16161a] hover:bg-black/10' : 'border-white/15 bg-white/10 text-white hover:bg-white/20'}`}
       >
         <Icon name="x" size={20} />
       </button>
@@ -238,13 +247,13 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <div className="pass-drop w-full max-w-[24rem]">
-          <CxPass pass={pass} height="clamp(540px, calc(100dvh - 290px), 580px)" />
+          <CxPass pass={pass} tone={light ? 'light' : 'dark'} height="clamp(540px, calc(100dvh - 290px), 580px)" />
         </div>
         <div className="pass-rise pass-rise--late mt-4 flex w-full max-w-[24rem] gap-2.5">
           <button
             type="button"
             onClick={() => void share()}
-            style={{ backgroundColor: '#ffffff', color: '#0a0b0a' }}
+            style={{ backgroundColor: light ? '#0a0b0a' : '#ffffff', color: light ? '#ffffff' : '#0a0b0a' }}
             className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl text-[15px] font-bold transition-transform active:scale-[0.97]"
           >
             <Icon name="share" size={19} /> {t('Share')}
@@ -253,7 +262,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
             <button
               type="button"
               onClick={start.onClick}
-              className="inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border border-white/15 bg-white/10 text-[15px] font-semibold text-white backdrop-blur-md transition-transform active:scale-[0.97]"
+              className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-transform active:scale-[0.97] ${light ? 'border-black/10 bg-black/[0.04] text-[#16161a]' : 'border-white/15 bg-white/10 text-white'}`}
             >
               {start.label} <Icon name="arrowRight" size={17} />
             </button>
@@ -263,7 +272,9 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
               onClick={() => void copy()}
               aria-live="polite"
               className={`inline-flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl border text-[15px] font-semibold backdrop-blur-md transition-all active:scale-[0.97] ${
-                copied ? 'border-white/30 bg-white/15 text-white' : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+                light
+                  ? (copied ? 'border-black/20 bg-black/[0.08] text-[#16161a]' : 'border-black/10 bg-black/[0.04] text-[#16161a] hover:bg-black/[0.07]')
+                  : (copied ? 'border-white/30 bg-white/15 text-white' : 'border-white/15 bg-white/10 text-white hover:bg-white/15')
               }`}
             >
               <Icon name={copied ? 'check' : 'paperclip'} size={19} /> {copied ? t('Copied') : t('Copy link')}
