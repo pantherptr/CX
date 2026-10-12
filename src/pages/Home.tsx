@@ -159,7 +159,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
-            <div className="relative mx-auto aspect-[1/0.9] w-full select-none sm:aspect-[16/8.4]">
+            <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8.4]">
               <h1
                 className="absolute inset-x-0 top-[2%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.86] tracking-[-0.04em] text-transparent text-[14.5vw] sm:text-[clamp(2.6rem,11.2vw,9.6rem)]"
                 style={{
@@ -230,14 +230,16 @@ export default function Home() {
           {/* -------- Two quiet facts, in the place the reference puts its price strip -------- */}
           <Reveal delay={120}>
             <div className="mt-5 grid grid-cols-2 divide-x divide-line overflow-hidden rounded-2xl border border-line bg-white/70 backdrop-blur sm:mt-8">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
+              <div className="flex flex-col items-start gap-1 px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3 sm:gap-y-1 sm:px-6">
                 <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('From')}</span>
-                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{cheapest != null ? eur(cheapest) : '—'}</span>
-                <span className="text-detail text-muted">{t('/day')}</span>
+                <span className="flex items-baseline gap-2">
+                  <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{cheapest != null ? eur(cheapest) : '—'}</span>
+                  <span className="text-detail text-muted">{t('/day')}</span>
+                </span>
               </div>
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3.5 sm:px-6">
+              <div className="flex flex-col items-start gap-1 px-4 py-3.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3 sm:gap-y-1 sm:px-6">
                 <span className="text-label font-semibold uppercase tracking-[0.12em] text-ink-soft">{t('Available')}</span>
-                <span className="font-display text-2xl font-bold text-accent sm:text-4xl">{t('Worldwide')}</span>
+                <span className="font-display text-xl font-bold leading-tight text-accent sm:text-4xl">{t('Worldwide')}</span>
               </div>
             </div>
           </Reveal>
