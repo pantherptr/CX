@@ -9,6 +9,9 @@ import { CompareProvider } from './lib/compareStore'
 import { LocaleProvider } from './lib/i18n'
 import { Capacitor } from '@capacitor/core'
 import { IS_APP } from './lib/appMode'
+import { initMonitoring } from './lib/monitoring'
+
+initMonitoring()
 
 // Lets the stylesheet apply app-only behaviour (no long-press menus on
 // images/controls) without affecting the website.
