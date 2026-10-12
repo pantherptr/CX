@@ -2058,7 +2058,6 @@ html[data-theme='dark'] img[data-invert-dark] { filter: invert(1) hue-rotate(180
 .hero-streak {
   position: absolute; left: 92%; top: 22%; width: 70%; height: 56%; pointer-events: none; opacity: 0;
   background: linear-gradient(90deg, rgba(190, 255, 215, 0.38), rgba(190, 255, 215, 0.1) 40%, transparent);
-  filter: blur(14px); mix-blend-mode: screen;
   animation: hero-streak 2.2s ease-out 0.5s both;
 }
 @keyframes hero-streak { 0% { opacity: 0.9; } 55% { opacity: 0.55; } 100% { opacity: 0; } }
@@ -2086,7 +2085,7 @@ html[data-theme='dark'] img[data-invert-dark] { filter: invert(1) hue-rotate(180
   position: absolute; left: -9%; width: 18%; height: 11%; transform: translateY(-50%) rotate(var(--r, 0deg)); transform-origin: right center;
   background: radial-gradient(ellipse at right center, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 30%, rgba(255, 255, 255, 0.1) 62%, transparent 80%);
   clip-path: polygon(100% 38%, 0 0, 0 100%, 100% 62%);
-  filter: blur(3px); mix-blend-mode: screen; opacity: 0; pointer-events: none;
+  opacity: 0; pointer-events: none;
   animation: hero-beam 1s ease-out 0.45s both;
 }
 @keyframes hero-beam { 0% { opacity: 0; } 100% { opacity: 0.65; } }
@@ -2094,7 +2093,7 @@ html[data-theme='dark'] img[data-invert-dark] { filter: invert(1) hue-rotate(180
 .hero-flame {
   position: absolute; left: 97.4%; width: 10%; height: 4.6%; transform-origin: left center; transform: translateY(-50%) scaleX(0);
   background: radial-gradient(ellipse at left center, #fffbe8 0%, #ffd36a 22%, #ff8a1f 48%, rgba(255, 70, 0, 0.55) 68%, transparent 82%);
-  filter: blur(1.5px); mix-blend-mode: screen; opacity: 0; pointer-events: none;
+  opacity: 0; pointer-events: none;
   animation: hero-flame 0.38s ease-out both;
 }
 @keyframes hero-flame {
@@ -2122,3 +2121,13 @@ html[data-theme='dark'] img[data-invert-dark] { filter: drop-shadow(0 0 5px rgba
 
 /* Hero background: deep black in dark mode, no green glow. */
 html[data-theme='dark'] .hero-bg { background: #000 !important; }
+
+/* The car's ground shadow is a plain gradient, not a filter: iOS Safari clips filter shadows to the
+   layer's box (a hard edge under the car) and renders blend/blur layers as black boxes at times. */
+.hero-shadow {
+  position: absolute; left: 6%; right: 6%; top: 62%; height: 52%; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 38%, rgba(14, 28, 20, 0.5) 0%, rgba(14, 28, 20, 0.22) 45%, transparent 72%);
+}
+html[data-theme='dark'] .hero-shadow { background: radial-gradient(ellipse at 50% 38%, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 45%, transparent 72%); }
+/* Headlight beams are only visible against a dark page. */
+html:not([data-theme='dark']) .hero-beam { display: none; }

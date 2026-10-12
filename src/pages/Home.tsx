@@ -222,6 +222,7 @@ export default function Home() {
                 style={{ aspectRatio: '859 / 386' }}
               >
                 <div className="hero-car-body relative h-full w-full">
+                  <span aria-hidden className="hero-shadow" />
                   <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '0.75s' }} />
                   <span aria-hidden className="hero-flame" style={{ top: '55%', animationDelay: '0.95s' }} />
                   <span aria-hidden className="hero-beam" style={{ top: '20%', ['--r' as string]: '7deg' }} />
@@ -237,7 +238,7 @@ export default function Home() {
                     height={386}
                     fetchPriority="high"
                     draggable={false}
-                    className="relative block h-full w-full drop-shadow-[0_38px_30px_rgba(14,28,20,0.42)]"
+                    className="relative block h-full w-full"
                   />
                 </div>
               </div>
