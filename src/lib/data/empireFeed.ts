@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
+import { useAuth } from '../auth';
 import { roleFromFlags, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
@@ -409,7 +410,22 @@ async function pullMergedPage(
   return { rows, more };
 }
 
+/** The last feed each person looked at, kept in memory for a few minutes: going to a car, a trip or a
+ *  settings page and coming back puts the feed (and the scroll position) back exactly as it was instead of
+ *  loading from the top again. Keyed by person + feed, so one account never sees another's cache. */
+interface FeedCacheEntry {
+  posts: EmpirePost[];
+  hasMore: boolean;
+  stream: ReturnType<typeof createMergedStream>;
+  ranked: { seed: number; since: string; offset: number; demo: FeedSourceStream };
+  scrollY: number;
+  at: number;
+}
+const FEED_CACHE_TTL_MS = 10 * 60_000;
+const feedCache = new Map<string, FeedCacheEntry>();
+
 export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?: EmpireFeedScope) {
+  const { session } = useAuth();
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -463,7 +479,25 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
     return { rows, more };
   }, [ranked, scope, authorKind, demoEligible]);
 
-  const loadInitial = useCallback(async () => {
+  const cacheKey = `${session?.user.id ?? 'anon'}|${scope ?? ''}|${category ?? ''}|${authorKind ?? ''}|${ranked ?? ''}`;
+  const cacheKeyRef = useRef(cacheKey);
+  cacheKeyRef.current = cacheKey;
+
+  const loadInitial = useCallback(async (opts?: { fromCache?: boolean }) => {
+    // Coming back to a feed seen a moment ago: show it as it was (a pull-to-refresh passes no flag).
+    if (opts?.fromCache === true) {
+      const hit = feedCache.get(cacheKey);
+      if (hit && Date.now() - hit.at < FEED_CACHE_TTL_MS && hit.posts.length > 0) {
+        streamRef.current = hit.stream;
+        rankedRef.current = hit.ranked;
+        setPosts(hit.posts);
+        setHasMore(hit.hasMore);
+        setNewPostsAvailable(false);
+        const y = hit.scrollY;
+        if (y > 0) window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.scrollTo(0, y)));
+        return;
+      }
+    }
     streamRef.current = createMergedStream();
     try {
       const { rows, more } = ranked
@@ -479,12 +513,37 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
       setHasMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, scope, authorKind, demoEligible, ranked, pullRanked]);
+  }, [category, scope, authorKind, demoEligible, ranked, pullRanked, cacheKey]);
 
   useEffect(() => {
     setPosts(null);
-    loadInitial();
+    void loadInitial({ fromCache: true });
   }, [loadInitial]);
+
+  // Remember where this feed is: its posts, how far it has been read, and the scroll position.
+  useEffect(() => {
+    if (!posts || posts.length === 0) return;
+    feedCache.set(cacheKeyRef.current, {
+      posts, hasMore, stream: streamRef.current, ranked: rankedRef.current,
+      scrollY: window.scrollY, at: Date.now(),
+    });
+  }, [posts, hasMore]);
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const e = feedCache.get(cacheKeyRef.current);
+        if (e) e.scrollY = window.scrollY;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
 
   const loadMore = useCallback(async () => {
     if (!posts || posts.length === 0 || loadingMore || !hasMore) return;
