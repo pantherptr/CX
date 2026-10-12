@@ -59,7 +59,7 @@ export function resolveSignalIdentity(
   authorIsHost?: boolean,
   authorIsVerifiedClient?: boolean,
   authorIsOwner?: boolean,
-  authorIsAdmin?: boolean,
+  _authorIsAdmin?: boolean,
   authorUsername?: string | null,
 ): SignalIdentity {
   switch (publisherType) {
@@ -70,13 +70,11 @@ export function resolveSignalIdentity(
     case 'self': {
       const selfRole: 'owner' | 'admin' | 'host' | 'verified_client' | 'client' =
         authorIsOwner ? 'owner'
-        : authorIsAdmin ? 'admin'
         : authorIsHost ? 'host'
         : authorIsVerifiedClient ? 'verified_client'
         : 'client';
       const subtitle =
         selfRole === 'owner' ? 'Owner'
-        : selfRole === 'admin' ? 'Admin'
         : selfRole === 'host' ? 'Host'
         : selfRole === 'verified_client' ? 'Verified Client'
         : 'Client';

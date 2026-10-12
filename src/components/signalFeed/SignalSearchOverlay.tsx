@@ -12,7 +12,7 @@ import { Tap, motion, AnimatePresence, useReducedMotion, useHideForNavigation, T
 import { uiLocale } from '../../lib/i18n/uiLocale';
 
 function personRole(p: SignalPeopleResult): VerifiedRole | null {
-  return p.isOwner ? 'owner' : p.isAdmin ? 'admin' : p.isHost ? 'host' : p.isVerifiedClient ? 'client' : null;
+  return p.isOwner ? 'owner' : p.isHost ? 'host' : p.isVerifiedClient ? 'client' : null;
 }
 
 /** "3h" / "2d" / "7 Oct" — the same short age every other SIGNAL surface uses. */

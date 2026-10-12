@@ -11,7 +11,7 @@ import {
 } from '../../lib/data/empireHighlights';
 import { validateVideoFile, captureVideoPosterBlob, VIDEO_MIME_TYPES } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
-import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
+import { SignalPublisherPicker, lastSignalPublisherType, useTeamOnlyPublisher } from './SignalPublisherPicker';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar } from './SignalIdentityBadge';
 import { StoryTextSlide, STORY_BG_STYLES } from './StoryTextSlide';
@@ -72,7 +72,8 @@ export function SignalStoryComposer({
   const { profile } = useAuth();
   const [view, setView] = useState<'create' | 'manage' | 'highlights'>(initialView);
   const objectUrls = useRef<string[]>([]);
-  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
+  const teamOnly = useTeamOnlyPublisher();
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? (teamOnly ? 'cx' : 'self') : lastSignalPublisherType());
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<PendingSlide[]>([]);
   const [error, setError] = useState<string | null>(null);

@@ -187,7 +187,7 @@ export function SignalProfileDetail({
   }, [activeTab, savedPosts]);
 
   const role: 'owner' | 'admin' | 'host' | 'client' | null = realProfile
-    ? realProfile.isOwner ? 'owner' : realProfile.isAdmin ? 'admin' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : null
+    ? realProfile.isOwner ? 'owner' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : null
     : demo ? (demo.role === 'host' ? 'host' : 'client') : null;
   const [followersCount, setFollowersCount] = useState(0);
   useEffect(() => {

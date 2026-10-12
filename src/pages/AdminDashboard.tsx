@@ -44,7 +44,7 @@ export default function AdminDashboard() {
         <Logo variant="symbol" />
         <div>
           <p className="font-display text-body font-semibold text-ink">Admin</p>
-          <p className="text-caption text-muted">{profile?.full_name || 'Signed in'}</p>
+          <p className="text-caption text-muted">{(profile?.full_name || '').split(' ')[0] || 'Signed in'}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Link to="/" className="btn btn-secondary btn-sm">Back to site</Link>

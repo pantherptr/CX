@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useAuth } from '../../lib/auth';
 import { SIGNAL_PUBLISHER_TYPES, resolveSignalIdentity, type SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalIdentityAvatar, SignalIdentityBadge } from './SignalIdentityBadge';
 
@@ -11,6 +12,13 @@ const LAST_PUBLISHER_KEY = 'signal:lastPublisherType';
 export function lastSignalPublisherType(): SignalPublisherType {
   const stored = typeof window !== 'undefined' ? window.sessionStorage.getItem(LAST_PUBLISHER_KEY) : null;
   return stored && (SIGNAL_PUBLISHER_TYPES as string[]).includes(stored) ? (stored as SignalPublisherType) : 'owner';
+}
+
+/** An Admin who is not the Owner never publishes under their own account in SIGNAL — only as the
+ *  team (CX / Assistant). The Owner keeps their personal voice. */
+export function useTeamOnlyPublisher(): boolean {
+  const { profile } = useAuth();
+  return Boolean(profile?.is_admin && !profile?.is_owner);
 }
 
 /** The "Publish as" row — three identity cards (Owner / CX Assistant /
@@ -30,6 +38,11 @@ export function SignalPublisherPicker({
   ownerName: string;
   ownerAvatarUrl: string | null;
 }) {
+  const teamOnly = useTeamOnlyPublisher();
+  const types = teamOnly ? SIGNAL_PUBLISHER_TYPES.filter((x) => x !== 'owner') : SIGNAL_PUBLISHER_TYPES;
+  useEffect(() => {
+    if (teamOnly && (value === 'owner' || value === 'self')) onChange('cx');
+  }, [teamOnly, value, onChange]);
   useEffect(() => {
     window.sessionStorage.setItem(LAST_PUBLISHER_KEY, value);
   }, [value]);
@@ -37,8 +50,8 @@ export function SignalPublisherPicker({
   return (
     <div>
       <p className="mb-1.5 text-caption font-semibold uppercase tracking-wide text-faint">Publish as</p>
-      <div className="grid grid-cols-3 gap-2">
-        {SIGNAL_PUBLISHER_TYPES.map((type) => {
+      <div className={`grid gap-2 ${types.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {types.map((type) => {
           const identity = resolveSignalIdentity(type, ownerName, ownerAvatarUrl);
           const active = value === type;
           return (

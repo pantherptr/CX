@@ -10,7 +10,7 @@ import {
 import { validateVideoFile } from '../../lib/media';
 import { cropImageFileToStoryCanvas, capturePosterFromVideoFile } from '../../lib/storyMedia';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
-import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
+import { SignalPublisherPicker, lastSignalPublisherType, useTeamOnlyPublisher } from './SignalPublisherPicker';
 import { SignalStoryComposer } from './SignalStoryComposer';
 import { SignalStoryCamera } from './SignalStoryCamera';
 import { StoryCanvas } from './StoryCanvas';
@@ -73,7 +73,8 @@ export function SignalStoryCreator({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [stage, setStage] = useState<'camera' | 'editor'>('camera');
-  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? 'self' : lastSignalPublisherType());
+  const teamOnly = useTeamOnlyPublisher();
+  const [publisherType, setPublisherType] = useState<SignalPublisherType>(mode === 'self' ? (teamOnly ? 'cx' : 'self') : lastSignalPublisherType());
   const [viewOnce, setViewOnce] = useState(false);
   // "On the Road": only offered while one of your own bookings is under way.
   const [activeTrip, setActiveTrip] = useState<{ bookingId: string; city: string } | null>(null);

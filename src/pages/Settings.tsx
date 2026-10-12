@@ -201,7 +201,7 @@ export default function Settings() {
     : 'Under review';
 
   const memberSince = profile?.created_at ? new Date(profile.created_at).getFullYear() : null;
-  const roleChips = [profile?.is_owner && 'Owner', profile?.is_admin && !profile?.is_owner && 'Admin', profile?.is_host && 'Host'].filter(Boolean) as string[];
+  const roleChips = [profile?.is_owner && 'Owner', profile?.is_host && 'Host'].filter(Boolean) as string[];
   const payments = useMemo(() => (bookings ?? []).filter((b) => classifyBooking(b) !== 'cancelled'), [bookings]);
   const sectionMeta = SECTIONS.find((s) => s.id === section);
   const fmt = (iso: string) => new Date(iso).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short', year: 'numeric' });

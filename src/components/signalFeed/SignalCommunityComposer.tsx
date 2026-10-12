@@ -25,6 +25,7 @@ import { CollabPicker, collabAllowed } from './CollabPicker';
 import { inviteCollaborator, type CollabInfo, type CollabPerson } from '../../lib/data/collab';
 import { DEFAULT_POST_VISIBILITY, fetchMyVisibility, setContentVisibility, type Visibility } from '../../lib/data/privacy';
 import { useLocale } from '../../lib/i18n';
+import { useTeamOnlyPublisher } from './SignalPublisherPicker';
 
 const MAX_COLLAPSED_HEIGHT = 22; // px — matches one line of text-body, before it ever grows
 const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this scrolls inside instead
@@ -85,6 +86,7 @@ export function SignalCommunityComposer({
   onDone: (post: EmpirePost) => void;
 }) {
   const { profile } = useAuth();
+  const teamOnly = useTeamOnlyPublisher();
   const { toast } = useApp();
   const { t } = useLocale();
   const reduceMotion = useReducedMotion();
@@ -307,7 +309,7 @@ export function SignalCommunityComposer({
       }
       const mediaPaths = [...existingPaths, ...uploaded];
       const input = {
-        category: 'community' as const, body: body.trim(), mediaPaths, publisherType: 'self' as const,
+        category: 'community' as const, body: body.trim(), mediaPaths, publisherType: (teamOnly ? 'cx' : 'self') as 'cx' | 'self',
         vehicleId: selectedVehicle?.id ?? null,
       };
       const result = editing ? await updateEmpirePost(editing.id, input) : await createEmpirePost(input);
