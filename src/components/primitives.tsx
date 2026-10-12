@@ -299,6 +299,7 @@ export function Modal({
   const onHandleTouchMove = (e: ReactTouchEvent) => {
     if (startYRef.current === null) return;
     const dy = e.touches[0].clientY - startYRef.current;
+    if (dy > SHEET_CLOSE_THRESHOLD && dragY <= SHEET_CLOSE_THRESHOLD) haptics.tick();
     setDragging(true);
     // Resistance past the top instead of a hard stop — the sheet gives a
     // little under an upward pull, the way a native sheet does.
@@ -309,6 +310,48 @@ export function Modal({
     if (!dragging) return;
     setDragging(false);
     if (dragY > SHEET_CLOSE_THRESHOLD) {
+      haptics.light();
+      requestClose();
+    } else {
+      setDragY(0);
+      setSettling(true);
+      window.setTimeout(() => setSettling(false), 240);
+    }
+  };
+
+  // Whole-sheet drag: a downward pull that starts on content scrolled to the top (and not on a field,
+  // map or anything marked data-no-sheet-drag) takes the sheet down, the way a native sheet does.
+  const bodyDrag = useRef<{ y: number; x: number; ok: boolean; live: boolean } | null>(null);
+  const onBodyTouchStart = (e: ReactTouchEvent) => {
+    const target = e.target instanceof Element ? e.target : null;
+    let ok = !target?.closest('input, textarea, select, canvas, video, .maplibregl-map, [data-no-sheet-drag], [contenteditable="true"]');
+    for (let el: Element | null = target; ok && el && el !== dialogRef.current; el = el.parentElement) {
+      const { overflowY } = getComputedStyle(el);
+      if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollTop > 0) ok = false;
+    }
+    bodyDrag.current = { y: e.touches[0].clientY, x: e.touches[0].clientX, ok, live: false };
+  };
+  const onBodyTouchMove = (e: ReactTouchEvent) => {
+    const st = bodyDrag.current;
+    if (!st || !st.ok || startYRef.current !== null) return;
+    const dy = e.touches[0].clientY - st.y;
+    const dx = e.touches[0].clientX - st.x;
+    if (!st.live) {
+      if (dy > 10 && dy > Math.abs(dx) * 1.6) st.live = true;
+      else if (dy < -6 || Math.abs(dx) > 14) st.ok = false;
+      if (!st.live) return;
+    }
+    if (dy > SHEET_CLOSE_THRESHOLD && dragY <= SHEET_CLOSE_THRESHOLD) haptics.tick();
+    setDragging(true);
+    setDragY(dy > 0 ? dy : 0);
+  };
+  const onBodyTouchEnd = () => {
+    const st = bodyDrag.current;
+    bodyDrag.current = null;
+    if (!st?.live) return;
+    setDragging(false);
+    if (dragY > SHEET_CLOSE_THRESHOLD) {
+      haptics.light();
       requestClose();
     } else {
       setDragY(0);
@@ -342,6 +385,10 @@ export function Modal({
         aria-labelledby={labelledBy}
         tabIndex={-1}
         style={panelStyle}
+        onTouchStart={onBodyTouchStart}
+        onTouchMove={onBodyTouchMove}
+        onTouchEnd={onBodyTouchEnd}
+        onTouchCancel={onBodyTouchEnd}
         className={`modal-panel relative z-10 w-full overscroll-contain bg-surface shadow-pop focus:outline-none max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none ${className}`}
       >
         <div

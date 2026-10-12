@@ -64,6 +64,13 @@ Code is written to fail soft before a migration is run.
 - Admins who are not the Owner publish only as CX/Assistant (UI + trigger 0113).
 - Installed app (PWA/native) opens on the normal home, country picked from the phone language (`src/lib/appMode.ts`).
 
+## App feel (gestures, haptics, optimistic)
+- Haptics: `haptics` in `src/lib/native.ts` (native in Capacitor; hidden `<input switch>` tick on iOS Safari 17.4+;
+  Vibration API on Android). `vibrateTap()` in `components/motion.tsx` routes to it.
+- Gestures: `EdgeSwipeBack` (installed PWA / `?app=1` only, not in the Capacitor shell); `Modal` sheets drag down from
+  anywhere when scrolled to the top (`data-no-sheet-drag` opts out); mark own-gesture layers `data-no-edge-back`.
+- Optimistic UI: Respect/save/follow/comments/poll votes/story respect/archive/profile pin update at once and roll back on error.
+
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.

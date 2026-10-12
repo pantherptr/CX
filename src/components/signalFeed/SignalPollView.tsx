@@ -6,6 +6,7 @@ import { useApp } from '../../lib/store';
 import { useAuth } from '../../lib/auth';
 import { compact } from '../../lib/format';
 import { useLocale } from '../../lib/i18n';
+import { haptics } from '../../lib/native';
 
 /** A post's poll. Options are buttons until you vote; after that (or for the
  *  author) they become bars with each option's share. Who voted for what is
@@ -80,6 +81,7 @@ export function SignalPollView({ postId, isOwnPost }: { postId: string; isOwnPos
       })),
     };
     setPoll(next);
+    haptics.light();
     setBusy(true);
     const { error } = await voteEmpirePoll(optionId);
     setBusy(false);

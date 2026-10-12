@@ -931,30 +931,28 @@ export function SignalPostCard({
 
   const handleProfilePinToggle = async () => {
     setMenuOpen(false);
-    setBusy(true);
-    const { error } = await setEmpirePostProfilePin(post.id, !post.pinnedToProfile);
-    setBusy(false);
-    if (error) {
-      toast({ title: 'Could not update pin', desc: error, icon: 'info' });
-      return;
-    }
+    // Optimistic: the pin shows at once and rolls back with a message if the server refuses.
     onChanged({ ...post, pinnedToProfile: !post.pinnedToProfile });
+    vibrateTap();
+    const { error } = await setEmpirePostProfilePin(post.id, !post.pinnedToProfile);
+    if (error) {
+      onChanged(post);
+      toast({ title: 'Could not update pin', desc: error, icon: 'info' });
+    }
   };
 
   const handleArchiveToggle = async () => {
     setMenuOpen(false);
-    setBusy(true);
     const nextArchived = !post.isArchived;
-    const { error } = await setEmpirePostArchived(post.id, nextArchived);
-    setBusy(false);
-    if (error) {
-      toast({ title: 'Could not update archive', desc: error, icon: 'info' });
-      return;
-    }
-    // Archiving also clears the profile pin server-side (a hidden post
-    // can't stay pinned) — reflect that locally rather than waiting on
-    // a refetch to notice.
+    // Archiving also clears the profile pin server-side (a hidden post can't stay pinned) — and it is
+    // shown at once here, rolled back if the server refuses.
     onChanged({ ...post, isArchived: nextArchived, pinnedToProfile: nextArchived ? false : post.pinnedToProfile });
+    vibrateTap();
+    const { error } = await setEmpirePostArchived(post.id, nextArchived);
+    if (error) {
+      onChanged(post);
+      toast({ title: 'Could not update archive', desc: error, icon: 'info' });
+    }
   };
 
   const handleFeatureToggle = async () => {

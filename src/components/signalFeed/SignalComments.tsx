@@ -10,6 +10,7 @@ import {
   type EmpireComment,
 } from '../../lib/data/empireFeed';
 import { Ugc } from '../../lib/i18n/ugc';
+import { haptics } from '../../lib/native';
 
 /** Same official-voice-vs-real-account routing as SignalPostCard's own
  *  signalProfileHref — a comment's identity block should open the exact
@@ -96,6 +97,7 @@ export function SignalComments({
     };
     setComments((prev) => [...(prev ?? []), optimistic]);
     onCountChanged?.(1);
+    haptics.light();
     const { comment, error } = await addEmpireComment(postId, text, publisherType);
     setSubmitting(false);
     if (error || !comment) {

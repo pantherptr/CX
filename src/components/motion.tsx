@@ -9,6 +9,7 @@ import {
   type RefObject,
   type TouchEvent as ReactTouchEvent,
 } from 'react';
+import { haptics } from '../lib/native';
 
 const prefersReduced = () =>
   typeof window !== 'undefined' &&
@@ -19,13 +20,10 @@ const prefersReduced = () =>
  *  never does). Always feature-detected and wrapped, never load-bearing:
  *  every one of these actions already has a visual confirmation, this is
  *  just an extra touch of polish where the hardware allows it. */
-export function vibrateTap(pattern: number | number[] = 8) {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(pattern);
-  } catch {
-    // Vibration API can throw in some embedded/iframe contexts — never
-    // worth surfacing to the user over a haptic nicety.
-  }
+export function vibrateTap(_pattern: number | number[] = 8) {
+  // Routed through the shared haptics helper: native tick in the app, the system tick on iOS Safari,
+  // the Vibration API on Android browsers.
+  haptics.tick();
 }
 
 /**
@@ -58,6 +56,7 @@ export function useSheetDrag(onClose: () => void, opts?: { closeThreshold?: numb
     if (startYRef.current === null) return;
     const dy = e.touches[0].clientY - startYRef.current;
     if (dy <= 0) return;
+    if (dragY <= threshold && dy > threshold) haptics.tick();
     setDragging(true);
     setDragY(dy);
   };

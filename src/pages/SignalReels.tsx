@@ -7,7 +7,7 @@ import { RespectIcon } from '../components/RespectIcon';
 import { setChromeOverride, setChromeSuspended } from '../lib/theme';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
-import { shareLink } from '../lib/native';
+import { haptics, shareLink } from '../lib/native';
 import {
   fetchForYouFeed, fetchEmpirePostsByAuthor, mediaKindFromPath, toggleEmpirePostLike, toggleEmpirePostSave, incrementEmpirePostShare,
   type EmpirePost,
@@ -45,18 +45,20 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
   const respect = useCallback(async (force?: boolean) => {
     if (force && post.likedByMe) return;
     setFire(Date.now());
+    haptics.medium();
     onChange({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
     const r = await toggleEmpirePostLike(post.id);
     if (r.error) onChange(post);
   }, [post, onChange]);
   const save = async () => {
+    haptics.light();
     onChange({ ...post, savedByMe: !post.savedByMe, saveCount: post.saveCount + (post.savedByMe ? -1 : 1) });
     const r = await toggleEmpirePostSave(post.id);
     if (r.error) onChange(post);
   };
   const share = async () => {
     const res = await shareLink({ title: post.authorName, text: post.body.slice(0, 80), url: `${window.location.origin}/signal/post/${post.id}` });
-    if (res !== 'failed') void incrementEmpirePostShare(post.id);
+    if (res !== 'failed') { haptics.light(); void incrementEmpirePostShare(post.id); }
   };
 
   // One tap = play / pause; a quick second tap = Respect (with a burst).
@@ -77,7 +79,7 @@ function Reel({ post, active, muted, onToggleMute, onChange }: {
   if (!src) return null;
   const text = post.title || post.body;
   return (
-    <div data-reel className="relative w-full snap-start snap-always overflow-hidden bg-black" style={{ height: '100lvh' }}>
+    <div data-reel data-no-edge-back className="relative w-full snap-start snap-always overflow-hidden bg-black" style={{ height: '100lvh' }}>
       <video
         ref={video}
         src={active ? src : undefined}

@@ -381,7 +381,7 @@ export function SignalStoryViewer({
     // phone screen taller than 9:16 that means real letterbox bars, not
     // a stretch to fill the device; on desktop the same box just centers
     // over a dim backdrop instead of blowing up full-bleed.
-    <div className="fixed inset-0 z-[300] bg-black animate-fade-in sm:bg-black/90 sm:p-6">
+    <div data-no-edge-back className="fixed inset-0 z-[300] bg-black animate-fade-in sm:bg-black/90 sm:p-6">
       <StoryCanvas
         fillOnPhone
         boxClassName="shadow-2xl sm:rounded-2xl"
