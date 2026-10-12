@@ -109,7 +109,7 @@ export function SignalProfileHero({
       {/* Floating bar — over the photo at first, a compact name bar once scrolled */}
       <div
         className={`sticky top-0 z-20 -mb-[calc(3.75rem+env(safe-area-inset-top,0px))] flex h-[calc(3.75rem+env(safe-area-inset-top,0px))] items-center gap-3 px-3 pt-safe transition-colors duration-200 ${
-          scrolled ? 'border-b border-line bg-surface/92 backdrop-blur-md' : ''
+          scrolled ? 'border-b border-line bg-surface' : ''
         }`}
       >
         <button onClick={onClose} aria-label="Back to Signal" className={`pressable grid h-10 w-10 shrink-0 place-items-center rounded-full transition-colors ${glass}`}>
