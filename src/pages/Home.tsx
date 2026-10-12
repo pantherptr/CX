@@ -41,6 +41,47 @@ function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
   return <Tag ref={ref as never} aria-hidden={ariaHidden || undefined} className={className} style={style}>{children}</Tag>;
 }
 
+/** Faint floating symbols behind the SIGNAL card: reactions, chat, a chequered flag, cars. Decorative only. */
+const SIGNAL_SYMBOLS: { s: string; x: number; y: number; size: number; rot: number; o: number; d: number }[] = [
+  { s: '💬', x: 4, y: 10, size: 30, rot: -10, o: 0.16, d: 0 },
+  { s: '🏁', x: 22, y: 6, size: 34, rot: 8, o: 0.18, d: 1.2 },
+  { s: '👍', x: 40, y: 14, size: 28, rot: -6, o: 0.15, d: 2.1 },
+  { s: '❤️', x: 58, y: 5, size: 26, rot: 12, o: 0.14, d: 0.6 },
+  { s: '🔥', x: 76, y: 12, size: 32, rot: -8, o: 0.17, d: 1.8 },
+  { s: '🚗', x: 92, y: 7, size: 34, rot: 6, o: 0.15, d: 2.6 },
+  { s: '⭐', x: 8, y: 38, size: 24, rot: 14, o: 0.14, d: 1.5 },
+  { s: '🔖', x: 48, y: 36, size: 24, rot: -12, o: 0.12, d: 0.3 },
+  { s: '📸', x: 66, y: 33, size: 28, rot: 9, o: 0.14, d: 2.3 },
+  { s: '🏆', x: 90, y: 40, size: 30, rot: -7, o: 0.16, d: 1 },
+  { s: '👏', x: 5, y: 66, size: 28, rot: -9, o: 0.15, d: 2 },
+  { s: '🏎️', x: 26, y: 78, size: 36, rot: 5, o: 0.17, d: 0.8 },
+  { s: '💚', x: 44, y: 62, size: 24, rot: 10, o: 0.13, d: 1.7 },
+  { s: '🔑', x: 62, y: 80, size: 28, rot: -14, o: 0.16, d: 2.8 },
+  { s: '💬', x: 80, y: 68, size: 26, rot: 8, o: 0.14, d: 0.4 },
+  { s: '🏁', x: 94, y: 88, size: 30, rot: -6, o: 0.15, d: 1.4 },
+  { s: '✨', x: 14, y: 92, size: 22, rot: 0, o: 0.16, d: 2.4 },
+  { s: '👍', x: 52, y: 92, size: 26, rot: 7, o: 0.13, d: 0.9 },
+];
+
+function SignalBackdrop() {
+  return (
+    <div aria-hidden className="signal-bg pointer-events-none absolute inset-0 select-none overflow-hidden">
+      {SIGNAL_SYMBOLS.map((x, i) => (
+        <span
+          key={i}
+          className="signal-bg__item absolute leading-none"
+          style={{
+            left: `${x.x}%`, top: `${x.y}%`, fontSize: Math.round(x.size * 1.3), opacity: Math.min(0.42, x.o * 2.4),
+            transform: `rotate(${x.rot}deg)`, animationDelay: `${x.d}s`,
+          }}
+        >
+          {x.s}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** The SIGNAL preview: a Story and two posts, fanned side by side, built
  *  from SIGNAL's own pieces (verified badges, vehicle link, Respect / Save /
  *  Share row, CX team comment). Decorative sample content. Laid out at a
@@ -498,6 +539,7 @@ export default function Home() {
               className="pointer-events-none absolute inset-0"
               style={{ background: 'radial-gradient(55% 70% at 85% 45%, rgba(0,212,71,0.20), transparent 68%), radial-gradient(40% 50% at 0% 0%, rgba(0,212,71,0.08), transparent 65%)' }}
             />
+            <SignalBackdrop />
             <div className="relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
               <div>
                 <div className="flex items-center gap-3">

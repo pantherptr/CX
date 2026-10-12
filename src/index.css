@@ -2131,3 +2131,8 @@ html[data-theme='dark'] .hero-bg { background: #000 !important; }
 html[data-theme='dark'] .hero-shadow { background: radial-gradient(ellipse at 50% 38%, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 45%, transparent 72%); }
 /* Headlight beams are only visible against a dark page. */
 html:not([data-theme='dark']) .hero-beam { display: none; }
+
+/* Faint floating symbols behind the home SIGNAL card. */
+.signal-bg__item { animation: signal-bg-float 7s ease-in-out infinite; will-change: transform; }
+@keyframes signal-bg-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+@media (prefers-reduced-motion: reduce) { .signal-bg__item { animation: none; } }
