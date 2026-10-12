@@ -28,7 +28,9 @@ function Letters({ text, from = 0 }: { text: string; from?: number }) {
     <>
       {Array.from(text).map((ch, i) =>
         ch === ' ' ? ' ' : (
-          <span key={i} aria-hidden="true" className="hero-letter" style={{ ['--i' as string]: from + i }}>{ch}</span>
+          <span key={i} aria-hidden="true" className="hero-letter" style={{ ['--i' as string]: from + i }}>
+            <span className="hero-glyph">{ch}</span>
+          </span>
         ),
       )}
     </>
