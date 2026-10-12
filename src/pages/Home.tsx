@@ -1,6 +1,9 @@
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
+import { RespectGlyph } from '../components/RespectGlyph';
+import { BookmarkIcon, ShareIcon, EyeIcon } from '../components/ActionIcons';
+import { CxMark } from '../components/CxBadge';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
@@ -42,9 +45,58 @@ function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
 }
 
 /** The SIGNAL card's background: a hand-drawn doodle pattern of social and car symbols (chat, Respect,
- *  camera, key, flag, bell…), very faint, drifting slowly. public/signal/doodle.svg is a seamless tile. */
+ *  camera, key, flag, bell…), very faint, drifting slowly (public/signal/doodle.svg is a seamless tile) —
+ *  with SIGNAL's own marks (the Respect hand, S, Spotlight, badges, Save / Share / Views) scattered among them. */
+type SymKind = 'respect' | 'save' | 'share' | 'views' | 'sigS' | 'host' | 'verified' | 'team' | 'spot';
+const SIGNAL_MARKS: { k: SymKind; x: number; y: number; size: number; rot: number; d: number }[] = [
+  { k: 'respect', x: 5, y: 9, size: 34, rot: -10, d: 0 },
+  { k: 'sigS', x: 30, y: 6, size: 30, rot: -4, d: 2.1 },
+  { k: 'verified', x: 55, y: 10, size: 34, rot: 6, d: 0.6 },
+  { k: 'respect', x: 78, y: 7, size: 38, rot: 9, d: 1.8 },
+  { k: 'team', x: 93, y: 24, size: 36, rot: -7, d: 1 },
+  { k: 'save', x: 12, y: 40, size: 26, rot: 10, d: 1.5 },
+  { k: 'spot', x: 40, y: 38, size: 40, rot: 0, d: 2.8 },
+  { k: 'share', x: 70, y: 42, size: 26, rot: 8, d: 0.4 },
+  { k: 'host', x: 92, y: 58, size: 38, rot: 5, d: 0.8 },
+  { k: 'views', x: 6, y: 68, size: 26, rot: -9, d: 2 },
+  { k: 'respect', x: 32, y: 74, size: 32, rot: -12, d: 1.7 },
+  { k: 'sigS', x: 58, y: 70, size: 30, rot: 6, d: 2.4 },
+  { k: 'verified', x: 80, y: 82, size: 34, rot: -6, d: 1.4 },
+  { k: 'team', x: 20, y: 92, size: 34, rot: 4, d: 0.9 },
+  { k: 'spot', x: 62, y: 93, size: 38, rot: 0, d: 2.6 },
+];
+
+function SignalMark({ k, size }: { k: SymKind; size: number }) {
+  switch (k) {
+    case 'respect': return <RespectGlyph height={size} on />;
+    case 'save': return <BookmarkIcon size={size} className="text-accent-bright" />;
+    case 'share': return <ShareIcon size={size} className="text-on-noir" />;
+    case 'views': return <EyeIcon size={size} className="text-on-noir" />;
+    case 'sigS': return <SignalS size={size} />;
+    case 'host': return <CxMark tier="host" size={size} />;
+    case 'verified': return <CxMark tier="verified" size={size} />;
+    case 'team': return <CxMark tier="team" size={size} />;
+    case 'spot': return <img src="/brand/spotlight-logo.webp" alt="" draggable={false} style={{ height: size, width: 'auto' }} />;
+  }
+}
+
 function SignalBackdrop() {
-  return <div aria-hidden className="signal-doodle pointer-events-none absolute inset-0" />;
+  return (
+    <>
+      <div aria-hidden className="signal-doodle pointer-events-none absolute inset-0" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 select-none overflow-hidden">
+        {SIGNAL_MARKS.map((m, i) => (
+          <span
+            key={i}
+            className="signal-bg__item absolute leading-none"
+            style={{ left: `${m.x}%`, top: `${m.y}%`, opacity: 0.2, transform: `rotate(${m.rot}deg)`, animationDelay: `${m.d}s` }}
+          >
+            <SignalMark k={m.k} size={m.size} />
+          </span>
+        ))}
+      </div>
+    </>
+  );
 }
 
 /** The SIGNAL preview: a Story and two posts, fanned side by side, built

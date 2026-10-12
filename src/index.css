@@ -2143,3 +2143,7 @@ html:not([data-theme='dark']) .hero-beam { display: none; }
 }
 @keyframes signal-doodle-drift { from { background-position: 0 0; } to { background-position: 720px 720px; } }
 @media (prefers-reduced-motion: reduce) { .signal-doodle { animation: none; } }
+
+.signal-bg__item { animation: signal-bg-float 8s ease-in-out infinite; }
+@keyframes signal-bg-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@media (prefers-reduced-motion: reduce) { .signal-bg__item { animation: none; } }
