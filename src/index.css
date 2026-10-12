@@ -2151,3 +2151,4 @@ html:not([data-theme='dark']) .hero-beam { display: none; }
 .signal-marks { animation: signal-marks-drift 90s linear infinite; will-change: transform; }
 @keyframes signal-marks-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(720px, 720px, 0); } }
 @media (prefers-reduced-motion: reduce) { .signal-marks { animation: none; } }
+@media (max-width: 639px) { .hero-beam { left: -4%; width: 13%; height: 9%; } }

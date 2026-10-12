@@ -22,7 +22,7 @@ export function Footer() {
       <div className="container-page py-8 sm:py-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <Logo variant="wordmark" />
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-1">
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-x-6 sm:flex sm:flex-wrap sm:gap-y-1">
             {links.map((l) => (
               <Link key={l.to} to={l.to} className="inline-flex min-h-11 items-center text-detail text-muted transition-colors hover:text-ink sm:min-h-0 sm:py-1.5">
                 {t(l.label)}
