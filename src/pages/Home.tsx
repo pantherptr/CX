@@ -1,6 +1,9 @@
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
+import { RespectGlyph } from '../components/RespectGlyph';
+import { BookmarkIcon, ShareIcon, EyeIcon } from '../components/ActionIcons';
+import { CxMark } from '../components/CxBadge';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
@@ -41,27 +44,45 @@ function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
   return <Tag ref={ref as never} aria-hidden={ariaHidden || undefined} className={className} style={style}>{children}</Tag>;
 }
 
-/** Faint floating symbols behind the SIGNAL card: reactions, chat, a chequered flag, cars. Decorative only. */
-const SIGNAL_SYMBOLS: { s: string; x: number; y: number; size: number; rot: number; o: number; d: number }[] = [
-  { s: '💬', x: 4, y: 10, size: 30, rot: -10, o: 0.16, d: 0 },
-  { s: '🏁', x: 22, y: 6, size: 34, rot: 8, o: 0.18, d: 1.2 },
-  { s: '👍', x: 40, y: 14, size: 28, rot: -6, o: 0.15, d: 2.1 },
-  { s: '❤️', x: 58, y: 5, size: 26, rot: 12, o: 0.14, d: 0.6 },
-  { s: '🔥', x: 76, y: 12, size: 32, rot: -8, o: 0.17, d: 1.8 },
-  { s: '🚗', x: 92, y: 7, size: 34, rot: 6, o: 0.15, d: 2.6 },
-  { s: '⭐', x: 8, y: 38, size: 24, rot: 14, o: 0.14, d: 1.5 },
-  { s: '🔖', x: 48, y: 36, size: 24, rot: -12, o: 0.12, d: 0.3 },
-  { s: '📸', x: 66, y: 33, size: 28, rot: 9, o: 0.14, d: 2.3 },
-  { s: '🏆', x: 90, y: 40, size: 30, rot: -7, o: 0.16, d: 1 },
-  { s: '👏', x: 5, y: 66, size: 28, rot: -9, o: 0.15, d: 2 },
-  { s: '🏎️', x: 26, y: 78, size: 36, rot: 5, o: 0.17, d: 0.8 },
-  { s: '💚', x: 44, y: 62, size: 24, rot: 10, o: 0.13, d: 1.7 },
-  { s: '🔑', x: 62, y: 80, size: 28, rot: -14, o: 0.16, d: 2.8 },
-  { s: '💬', x: 80, y: 68, size: 26, rot: 8, o: 0.14, d: 0.4 },
-  { s: '🏁', x: 94, y: 88, size: 30, rot: -6, o: 0.15, d: 1.4 },
-  { s: '✨', x: 14, y: 92, size: 22, rot: 0, o: 0.16, d: 2.4 },
-  { s: '👍', x: 52, y: 92, size: 26, rot: 7, o: 0.13, d: 0.9 },
+/** Faint floating SIGNAL symbols behind the SIGNAL card: its own Respect hand, Save / Share / Views
+ *  icons, badges, the S and the Spotlight mark. Decorative only. */
+type SymKind = 'respect' | 'save' | 'share' | 'views' | 'chat' | 'heart' | 'sigS' | 'host' | 'verified' | 'team' | 'spot';
+const SIGNAL_SYMBOLS: { k: SymKind; x: number; y: number; size: number; rot: number; o: number; d: number }[] = [
+  { k: 'respect', x: 4, y: 8, size: 30, rot: -10, o: 0.2, d: 0 },
+  { k: 'chat', x: 20, y: 5, size: 28, rot: 6, o: 0.16, d: 1.2 },
+  { k: 'sigS', x: 37, y: 12, size: 30, rot: -4, o: 0.16, d: 2.1 },
+  { k: 'save', x: 55, y: 4, size: 26, rot: 10, o: 0.16, d: 0.6 },
+  { k: 'respect', x: 72, y: 10, size: 34, rot: 8, o: 0.2, d: 1.8 },
+  { k: 'verified', x: 90, y: 6, size: 34, rot: -6, o: 0.2, d: 2.6 },
+  { k: 'heart', x: 8, y: 36, size: 26, rot: 12, o: 0.15, d: 1.5 },
+  { k: 'views', x: 48, y: 34, size: 26, rot: -8, o: 0.14, d: 0.3 },
+  { k: 'share', x: 66, y: 32, size: 26, rot: 9, o: 0.15, d: 2.3 },
+  { k: 'team', x: 91, y: 38, size: 34, rot: -7, o: 0.2, d: 1 },
+  { k: 'chat', x: 4, y: 64, size: 30, rot: -9, o: 0.16, d: 2 },
+  { k: 'host', x: 26, y: 78, size: 36, rot: 5, o: 0.2, d: 0.8 },
+  { k: 'respect', x: 44, y: 62, size: 28, rot: -12, o: 0.18, d: 1.7 },
+  { k: 'spot', x: 62, y: 78, size: 36, rot: 0, o: 0.18, d: 2.8 },
+  { k: 'save', x: 80, y: 66, size: 24, rot: 8, o: 0.15, d: 0.4 },
+  { k: 'sigS', x: 94, y: 86, size: 30, rot: -6, o: 0.16, d: 1.4 },
+  { k: 'heart', x: 14, y: 92, size: 22, rot: 0, o: 0.15, d: 2.4 },
+  { k: 'share', x: 52, y: 92, size: 24, rot: 7, o: 0.14, d: 0.9 },
 ];
+
+function Symbol({ k, size }: { k: SymKind; size: number }) {
+  switch (k) {
+    case 'respect': return <RespectGlyph height={size} on />;
+    case 'save': return <BookmarkIcon size={size} className="text-accent-bright" />;
+    case 'share': return <ShareIcon size={size} className="text-on-noir" />;
+    case 'views': return <EyeIcon size={size} className="text-on-noir" />;
+    case 'chat': return <Icon name="message" size={size} className="text-on-noir" />;
+    case 'heart': return <Icon name="heart" size={size} className="text-accent-bright" />;
+    case 'sigS': return <SignalS size={size} />;
+    case 'host': return <CxMark tier="host" size={size} />;
+    case 'verified': return <CxMark tier="verified" size={size} />;
+    case 'team': return <CxMark tier="team" size={size} />;
+    case 'spot': return <img src="/brand/spotlight-logo.webp" alt="" draggable={false} style={{ height: size, width: 'auto' }} />;
+  }
+}
 
 function SignalBackdrop() {
   return (
@@ -70,12 +91,9 @@ function SignalBackdrop() {
         <span
           key={i}
           className="signal-bg__item absolute leading-none"
-          style={{
-            left: `${x.x}%`, top: `${x.y}%`, fontSize: Math.round(x.size * 1.3), opacity: Math.min(0.42, x.o * 2.4),
-            transform: `rotate(${x.rot}deg)`, animationDelay: `${x.d}s`,
-          }}
+          style={{ left: `${x.x}%`, top: `${x.y}%`, opacity: x.o, transform: `rotate(${x.rot}deg)`, animationDelay: `${x.d}s` }}
         >
-          {x.s}
+          <Symbol k={x.k} size={x.size} />
         </span>
       ))}
     </div>
