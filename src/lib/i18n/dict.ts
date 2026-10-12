@@ -520,6 +520,8 @@ const ROWS: Row[] = [
   ['Price: low to high', 'Prezzo: dal più basso', 'Preț: crescător', 'Precio: de menor a mayor'],
   ['Price: high to low', 'Prezzo: dal più alto', 'Preț: descrescător', 'Precio: de mayor a menor'],
   ['Newest', 'Più recenti', 'Cele mai noi', 'Más recientes'],
+  ['Trending', 'Di tendenza', 'În tendințe', 'Tendencias'],
+  ['Top this week', 'I migliori della settimana', 'Top săptămâna aceasta', 'Lo mejor de la semana'],
   ['Popular', 'Popolare', 'Popular', 'Popular'],
   ['Cities and growing', 'Città e in crescita', 'Orașe și în creștere', 'Ciudades y creciendo'],
   ['Completed trips', 'Viaggi completati', 'Călătorii finalizate', 'Viajes completados'],

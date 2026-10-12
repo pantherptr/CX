@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
-import { searchEmpirePosts, type EmpirePost } from '../../lib/data/empireFeed';
+import { searchEmpirePosts, fetchEmpireFeed, fetchEmpireTrendingPosts, type EmpirePost } from '../../lib/data/empireFeed';
+import { SIGNAL_SEARCH_EVENT } from './PostText';
 import { searchSignalPeople, type SignalPeopleResult } from '../../lib/data/signalProfile';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
 import { FollowButton } from './FollowButton';
@@ -156,6 +157,30 @@ export function SignalSearchOverlay({ query }: { query: string }) {
     fetchPeopleSuggestions(8).then((rows) => { if (!cancelled) setSuggestions(rows); });
     return () => { cancelled = true; };
   }, []);
+  // Explore: what is being talked about (hashtags, cities) and the posts doing best right now.
+  const [explore, setExplore] = useState<{ tags: string[]; cities: string[]; top: EmpirePost[] } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([fetchEmpireFeed(60).catch(() => [] as EmpirePost[]), fetchEmpireTrendingPosts(5).catch(() => [] as EmpirePost[])]).then(([feed, top]) => {
+      if (cancelled) return;
+      const since = Date.now() - 14 * 86_400_000;
+      const tagCount = new Map<string, number>();
+      const cityCount = new Map<string, number>();
+      for (const p of feed) {
+        if (new Date(p.createdAt).getTime() < since) continue;
+        for (const m of `${p.title ?? ''} ${p.body}`.matchAll(/#[\p{L}\p{N}_]{2,40}/gu)) {
+          const tag = m[0].toLowerCase();
+          tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+        }
+        const city = p.vehicle?.city;
+        if (city) cityCount.set(city, (cityCount.get(city) ?? 0) + 1);
+      }
+      const rank = (m: Map<string, number>, n: number) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
+      setExplore({ tags: rank(tagCount, 8), cities: rank(cityCount, 5), top });
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const searchFor = (q: string) => window.dispatchEvent(new CustomEvent(SIGNAL_SEARCH_EVENT, { detail: q }));
   const peopleState = peopleSearching ? 'loading' : !people ? 'idle' : people.length === 0 ? 'empty' : 'results';
   const postsState = postsSearching ? 'loading' : !posts ? 'idle' : posts.length === 0 ? 'empty' : 'results';
 
@@ -173,6 +198,50 @@ export function SignalSearchOverlay({ query }: { query: string }) {
       <div className="mx-auto w-full max-w-xl flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-4">
         {!trimmed ? (
           <div className="flex flex-col gap-6">
+          {explore && (explore.tags.length > 0 || explore.cities.length > 0) && (
+            <div>
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">{t('Trending')}</p>
+              <div className="flex flex-wrap gap-2">
+                {explore.tags.map((tag) => (
+                  <button key={tag} type="button" onClick={() => searchFor(tag)} className="pressable rounded-full border border-line bg-surface px-3.5 py-2 text-detail font-semibold text-accent-700 shadow-hair">
+                    {tag}
+                  </button>
+                ))}
+                {explore.cities.map((city) => (
+                  <button key={city} type="button" onClick={() => searchFor(city)} className="pressable inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-2 text-detail font-semibold text-ink-soft shadow-hair">
+                    <Icon name="pin" size={13} /> {city}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {explore && explore.top.length > 0 && (
+            <div>
+              <p className="mb-2 px-1 text-detail font-semibold text-muted">{t('Top this week')}</p>
+              <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-hair">
+                {explore.top.map((r) => (
+                  <Link
+                    key={r.id}
+                    to={`/signal/post/${r.id}`}
+                    viewTransition
+                    onClick={hideForNavigation}
+                    className="pressable flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel"
+                  >
+                    {r.mediaUrls[0] ? (
+                      <Img src={r.mediaUrls[0]} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>} />
+                    ) : (
+                      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-[15px] font-semibold leading-snug text-ink">{r.title || r.body || 'Photo / Video'}</p>
+                      <p className="mt-0.5 truncate text-caption text-muted">{r.authorName} · {r.likeCount} Respect</p>
+                    </div>
+                    <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           {recent.length > 0 ? (
             <div>
               <p className="mb-2 px-1 text-detail font-semibold text-muted">Recent</p>
