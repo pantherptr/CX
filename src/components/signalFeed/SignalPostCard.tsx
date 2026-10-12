@@ -402,6 +402,12 @@ function MediaCarousel({
           </div>
         ))}
       </div>
+      {/* "2/4" counter, top right — which photo of how many, at a glance */}
+      {urls.length > 1 && (
+        <span aria-hidden="true" className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-0.5 text-[12px] font-semibold tabular-nums text-white">
+          {active + 1}/{urls.length}
+        </span>
+      )}
       {/* A dark drop-shadow (not a backing pill) keeps the dots legible
           against light AND dark media alike without adding a visible
           chrome element over the image itself. */}
