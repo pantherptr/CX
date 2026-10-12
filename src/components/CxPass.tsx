@@ -197,6 +197,16 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
         onClick={onClose}
       />
 
+      {/* Solid dark strips pinned to the top and bottom edges: Safari tints its status bar and toolbar from
+          what sits there, and a translucent layer would let the white page show through. */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 bg-[#0a0b0a]" style={{ height: 'calc(env(safe-area-inset-top, 0px) + 28px)' }} />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 28px)', height: 36, background: 'linear-gradient(#0a0b0a, transparent)' }}
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 bg-[#0a0b0a]" style={{ height: 200 }} />
+
       <button
         type="button"
         onClick={onClose}
