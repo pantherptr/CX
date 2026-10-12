@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
 import { RespectGlyph } from '../components/RespectGlyph';
@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { shareLink } from '../lib/native';
 import {
-  fetchForYouFeed, mediaKindFromPath, toggleEmpirePostLike, toggleEmpirePostSave, incrementEmpirePostShare,
+  fetchForYouFeed, fetchEmpirePostsByAuthor, mediaKindFromPath, toggleEmpirePostLike, toggleEmpirePostSave, incrementEmpirePostShare,
   type EmpirePost,
 } from '../lib/data/empireFeed';
 
@@ -160,6 +160,10 @@ export default function SignalReels() {
   const { session, loading } = useAuth();
   const { t } = useLocale();
   const navigate = useNavigate();
+  // From a profile: only that person's videos, opening on the one that was tapped.
+  const [params] = useSearchParams();
+  const authorId = params.get('author');
+  const startPost = params.get('post');
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem(MUTE_KEY) !== '0'; } catch { return true; }
@@ -193,7 +197,24 @@ export default function SignalReels() {
     }
   }, []);
 
-  useEffect(() => { void loadMore(); }, [loadMore]);
+  useEffect(() => {
+    if (!authorId) { void loadMore(); return; }
+    loadRef.current.done = true;
+    fetchEmpirePostsByAuthor(authorId, 50)
+      .then((rows) => setPosts(rows.filter((p) => !p.isArchived && videoUrlOf(p))))
+      .catch(() => setPosts([]));
+  }, [loadMore, authorId]);
+
+  // Opening on the tapped reel.
+  useEffect(() => {
+    if (!posts || !startPost || !scroller.current) return;
+    const i = posts.findIndex((p) => p.id === startPost);
+    if (i > 0) {
+      scroller.current.scrollTop = i * scroller.current.clientHeight;
+      setIndex(i);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts === null]);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -223,7 +244,7 @@ export default function SignalReels() {
     <div className="fixed inset-0 z-[300] bg-black text-white">
       <button
         type="button"
-        onClick={() => navigate('/signal/community')}
+        onClick={() => navigate(authorId ? `/signal/profile/${authorId}` : '/signal/community')}
         aria-label={t('Close')}
         className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur-md"
       >

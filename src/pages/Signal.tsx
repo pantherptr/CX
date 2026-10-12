@@ -291,6 +291,7 @@ export default function Signal() {
         canManage={canManage}
         onAnalyticsClick={() => setAnalyticsOpen(true)}
         onNotificationsClick={() => setNotificationsOpen(true)}
+        onReelsClick={space === 'community' ? () => navigate('/signal/reels') : undefined}
       />
 
       <div className="mx-auto flex w-full max-w-[1180px] flex-1 items-start gap-8 lg:px-8 lg:py-6">

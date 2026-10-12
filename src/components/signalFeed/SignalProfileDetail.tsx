@@ -12,7 +12,7 @@ import { compact } from '../../lib/format';
 import { fetchSignalProfile, type SignalProfile } from '../../lib/data/signalProfile';
 import { fetchHostCars } from '../../lib/data/cars';
 import { findOrCreateConversation } from '../../lib/data/messages';
-import { fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, type EmpirePost } from '../../lib/data/empireFeed';
+import { fetchEmpirePostsByAuthor, fetchEmpireSavedPosts, mediaKindFromPath, type EmpirePost } from '../../lib/data/empireFeed';
 import { fetchSignalDemoProfile, fetchSignalDemoPostsByAuthor, type SignalDemoProfile } from '../../lib/data/signalDemo';
 import { useActiveEmpireStories, deleteEmpireStory } from '../../lib/data/empireStories';
 import type { Car } from '../../data/types';
@@ -166,7 +166,7 @@ export function SignalProfileDetail({
   const demo = !isOfficialVoice && loaded && profile === null ? demoProfile : null;
   const heroMode = Boolean(realProfile || demo);
   const hasVehicles = Boolean(realProfile && cars && cars.length > 0);
-  type ProfileTab = 'posts' | 'vehicles' | 'saved' | 'keychain' | 'visions';
+  type ProfileTab = 'posts' | 'vehicles' | 'saved' | 'keychain' | 'visions' | 'reels';
   const { t } = useLocale();
   // CX Visions — an opt-in portfolio tab; absent until its owner switches it on.
   const [visionsEnabled, setVisionsEnabled] = useState(false);
@@ -180,7 +180,9 @@ export function SignalProfileDetail({
   const [searchParams] = useSearchParams();
   const deepLinkVision = searchParams.get('vision');
   const [tab, setTab] = useState<ProfileTab>(deepLinkVision ? 'visions' : 'posts');
-  const tabs = (['posts', ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
+  // Reels appears only once this person has published a video.
+  const videoPosts = (posts ?? []).filter((p) => !p.isArchived && p.mediaPaths.some((m) => mediaKindFromPath(m) === 'video'));
+  const tabs = (['posts', ...(realProfile && videoPosts.length > 0 ? ['reels'] : []), ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
   useEffect(() => {
@@ -440,6 +442,27 @@ export function SignalProfileDetail({
     </div>
   );
 
+  const reelsSection = (
+    <div className="grid grid-cols-3 gap-1.5">
+      {videoPosts.map((p) => {
+        const i = p.mediaPaths.findIndex((m) => mediaKindFromPath(m) === 'video');
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => navigate(`/signal/reels?author=${p.authorId}&post=${p.id}`)}
+            className="relative aspect-[9/16] overflow-hidden rounded-xl bg-panel"
+            aria-label="Reel"
+          >
+            <video src={`${p.mediaUrls[i]}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover" />
+            <span className="absolute left-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-black/50 text-white"><Icon name="play" size={12} /></span>
+            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-5 text-left text-label font-semibold text-white">{p.likeCount} Respect</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const savedSection = (
     <div>
       {savedPosts === null && (
@@ -497,7 +520,7 @@ export function SignalProfileDetail({
               onClick={() => setTab(id)}
               className={`relative flex-1 py-3 text-detail font-semibold transition-colors ${activeTab === id ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
-              {id === 'posts' ? 'Posts' : id === 'visions' ? t('Visions') : id === 'vehicles' ? 'Vehicles' : id === 'saved' ? 'Saved' : 'Keychain'}
+              {id === 'posts' ? 'Posts' : id === 'reels' ? 'Reels' : id === 'visions' ? t('Visions') : id === 'vehicles' ? 'Vehicles' : id === 'saved' ? 'Saved' : 'Keychain'}
               {activeTab === id && (
                 <motion.span layoutId="profile-tab-underline" className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-accent-bright" transition={{ type: 'spring', stiffness: 520, damping: 38 }} />
               )}
@@ -505,7 +528,7 @@ export function SignalProfileDetail({
           ))}
         </div>
       )}
-      {activeTab === 'posts' ? postsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} pass={passData} /> : null}
+      {activeTab === 'posts' ? postsSection : activeTab === 'reels' ? reelsSection : activeTab === 'visions' ? (realProfile ? <SignalVisionsTab userId={realProfile.id} isMe={isMe} openVisionId={deepLinkVision} /> : null) : activeTab === 'vehicles' ? vehiclesSection : activeTab === 'saved' ? savedSection : realProfile ? <SignalKeychainTab userId={realProfile.id} isMe={isMe} pass={passData} /> : null}
     </>
   );
 

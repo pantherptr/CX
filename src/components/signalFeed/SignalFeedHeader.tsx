@@ -30,6 +30,7 @@ export function SignalFeedHeader({
   canManage = false,
   onAnalyticsClick,
   onNotificationsClick,
+  onReelsClick,
   searchOpen = false,
   query = '',
   onQueryChange,
@@ -40,6 +41,8 @@ export function SignalFeedHeader({
   canManage?: boolean;
   onAnalyticsClick?: () => void;
   onNotificationsClick?: () => void;
+  /** Community only: opens Reels. Not passed in Official. */
+  onReelsClick?: () => void;
   /** The search dock: the lens opens into a field that takes over the header. */
   searchOpen?: boolean;
   query?: string;
@@ -74,9 +77,9 @@ export function SignalFeedHeader({
   // little room, and `minmax(0, …)` lets that middle column (and the
   // shrinkable SignalBarLogo inside it) give way rather than force the
   // header wider than the viewport.
-  const iconSlots = (signedIn ? 1 : 0) + (canManage ? 1 : 0) + (signedIn ? 1 : 0);
+  const iconSlots = (signedIn ? 1 : 0) + (canManage ? 1 : 0) + (signedIn ? 1 : 0) + (onReelsClick ? 1 : 0);
   // The lens sits left of the other icons; the dock starts there and grows out.
-  const dockOffset = ((canManage ? 1 : 0) + 1) * 34;
+  const dockOffset = ((canManage ? 1 : 0) + (onReelsClick ? 1 : 0) + 1) * 34;
   const iconButton = 'pressable grid h-8 w-8 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink';
 
   return (
@@ -137,6 +140,11 @@ export function SignalFeedHeader({
         {signedIn && (
           <button onClick={onSearchClick} aria-label="Search Signal" className={iconButton}>
             <Icon name="search" size={17} />
+          </button>
+        )}
+        {onReelsClick && (
+          <button onClick={onReelsClick} aria-label="Reels" className={iconButton}>
+            <Icon name="play" size={17} />
           </button>
         )}
         {canManage && (
