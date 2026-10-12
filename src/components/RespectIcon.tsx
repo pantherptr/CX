@@ -22,6 +22,7 @@ export function RespectIcon({
   const controls = useAnimation();
   const ring = useAnimation();
   const reduced = useReducedMotion();
+  const sparks = useRef<HTMLSpanElement>(null);
 
   // `playKey` is the timestamp (ms) of the tap that fired it, 0 = never. The
   // card can remount this icon right as it is tapped, so a mount must still
@@ -44,6 +45,19 @@ export function RespectIcon({
         scale: [0.3, 1.15, 1, 1.35],
         transition: { duration: 0.42, times: [0, 0.22, 0.5, 1], ease: 'easeOut', delay: 0.04 },
       });
+      // a small burst of sparks flying outward from the hand
+      sparks.current?.querySelectorAll<HTMLElement>('[data-spark]').forEach((el, i, all) => {
+        const a = (i / all.length) * Math.PI * 2 + (i % 2 ? 0.2 : 0);
+        const d = 15 + (i % 3) * 5;
+        el.animate(
+          [
+            { transform: 'translate(0,0) scale(0.4)', opacity: 0 },
+            { transform: `translate(${Math.cos(a) * d * 0.55}px, ${Math.sin(a) * d * 0.55}px) scale(1)`, opacity: 1, offset: 0.35 },
+            { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d}px) scale(0.2)`, opacity: 0 },
+          ],
+          { duration: 520, delay: 40 + (i % 3) * 20, easing: 'cubic-bezier(0.2,0.8,0.2,1)', fill: 'backwards' },
+        );
+      });
     }
     // StrictMode (dev) runs effect → cleanup → effect on one instance; forgetting
     // the key here lets that second run replay instead of being swallowed.
@@ -53,6 +67,12 @@ export function RespectIcon({
   const h = Math.round(size * 1.2);
   return (
     <span className={`relative inline-flex items-center justify-center ${className}`} aria-hidden="true">
+      {/* spark burst — hidden until a Respect is given */}
+      <span ref={sparks} aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
+        {Array.from({ length: 8 }, (_, i) => (
+          <span key={i} data-spark className="absolute h-1 w-1 rounded-full opacity-0" style={{ background: i % 2 ? 'var(--color-accent-bright)' : 'var(--color-accent)' }} />
+        ))}
+      </span>
       {/* muzzle flash at the fingertips */}
       <motion.svg
         initial={{ opacity: 0 }}
