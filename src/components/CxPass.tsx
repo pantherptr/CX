@@ -157,6 +157,10 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
     const prevVis = app?.style.visibility ?? '';
     if (app) app.style.visibility = 'hidden';
     setChromeOverride({ light: '#0a0b0a', dark: '#0a0b0a' });
+    // A one-pixel nudge makes Safari re-sample the colour behind the clock and battery.
+    const y = window.scrollY;
+    window.scrollTo(0, y + 1);
+    window.requestAnimationFrame(() => window.scrollTo(0, y));
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => {

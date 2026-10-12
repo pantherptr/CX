@@ -33,8 +33,16 @@ function paint() {
   const root = document.documentElement;
   root.dataset.theme = current;
   root.style.colorScheme = current;
-  const meta = document.querySelector('meta[name="theme-color"]');
-  meta?.setAttribute('content', chromeOverride ? chromeOverride[current] : CHROME[current]);
+  // Safari only re-reads the status-bar tint when the tag itself is replaced, not when its value changes.
+  const colour = chromeOverride ? chromeOverride[current] : CHROME[current];
+  const old = document.querySelector('meta[name="theme-color"]');
+  if (old?.getAttribute('content') !== colour) {
+    const meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    meta.setAttribute('content', colour);
+    if (old) old.replaceWith(meta);
+    else document.head.appendChild(meta);
+  }
   document
     .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
     ?.setAttribute('content', current === 'dark' ? 'black' : 'default');
