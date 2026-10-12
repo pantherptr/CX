@@ -93,6 +93,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'This trip has already started and can no longer be cancelled here. Please contact support.' });
   }
 
+  // Once both people scanned each other's CX Pass the car has changed hands and the host has been paid:
+  // no cancelling from the app any more (CX support can still step in).
+  if (!isAdmin) {
+    const handoverClient = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: handover } = await handoverClient.from('booking_handovers').select('booking_id').eq('booking_id', bookingId).maybeSingle();
+    if (handover) {
+      return res.status(409).json({ error: 'The handover was verified, so this booking can no longer be cancelled here. Please contact support.' });
+    }
+  }
+
   // Only a confirmed trip with a real charge has anything to refund.
   const paid = booking.status === 'confirmed' && Boolean(booking.stripe_payment_intent_id);
   const refund = paid

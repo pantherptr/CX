@@ -29,6 +29,7 @@ import { useInspectionPhotos } from '../lib/data/inspections';
 import { InspectionGrid } from '../components/InspectionGrid';
 import { TripMemoryPrompt } from '../components/TripMemoryPrompt';
 import { HandoverCard } from '../components/HandoverCard';
+import { isHandoverVerified } from '../lib/data/handovers';
 import { parseISO } from '../lib/calendarGrid';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
@@ -103,6 +104,7 @@ export default function TripDetails() {
   const [booking, setBooking] = useState<Booking | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [handoverDone, setHandoverDone] = useState(false);
   const [messaging, setMessaging] = useState(false);
   const [modifying, setModifying] = useState(false);
   const [modStart, setModStart] = useState('');
@@ -114,6 +116,13 @@ export default function TripDetails() {
   const { photos: inspectionPhotos, refresh: refreshInspectionPhotos } = useInspectionPhotos(booking?.id);
   const [agreementOpen, setAgreementOpen] = useState(false);
   const [acceptingAgreement, setAcceptingAgreement] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    let off = false;
+    void isHandoverVerified(id).then((v) => { if (!off) setHandoverDone(v); });
+    return () => { off = true; };
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +215,7 @@ export default function TripDetails() {
   // Renters can cancel any time before the trip starts; how much comes back
   // is decided by the host's policy on this booking (see cancel-booking API).
   const hoursUntilStart = (parseISO(booking.startDate).getTime() - Date.now()) / 3_600_000;
-  const canCancel = phase === 'upcoming' && hoursUntilStart >= 0;
+  const canCancel = phase === 'upcoming' && hoursUntilStart >= 0 && !handoverDone;
   const refundPreview = refundFor(booking.cancellationPolicy, booking.startDate, booking.totalPrice, {
     anytime: booking.fareTier === 'flexible',
   });
@@ -655,7 +664,7 @@ export default function TripDetails() {
             </button>
           ) : phase === 'upcoming' || phase === 'active' ? (
             <p className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-center text-detail text-muted">
-              This trip has already started — contact your host or support.
+              {handoverDone ? 'Handover verified — to change this trip, contact support.' : 'This trip has already started — contact your host or support.'}
             </p>
           ) : null}
         </section>
