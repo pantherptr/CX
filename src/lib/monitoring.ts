@@ -2,11 +2,12 @@
  *  weighs on the first paint. Personal data (emails, chat text, URLs with tokens) is stripped before sending. */
 export function initMonitoring() {
   const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
-  if (!dsn) return;
+  // The local dev server (hot reloads mid-edit throw errors that are not real bugs) stays out of Sentry.
+  if (!dsn || import.meta.env.DEV) return;
   void import('@sentry/react').then((Sentry) => {
     Sentry.init({
       dsn,
-      environment: location.hostname === 'localhost' ? 'development' : 'production',
+      environment: 'production',
       tracesSampleRate: 0,
       ignoreErrors: [/ResizeObserver loop/, /Failed to fetch/, /Load failed/, /NetworkError/, /AbortError/],
       beforeSend(event) {
