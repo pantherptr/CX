@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useScrollMemory } from '../../lib/scrollMemory';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
@@ -76,8 +77,11 @@ export function SignalPostDetail({
     };
   }, [postId, scope]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useScrollMemory(`post:${postId}`, scrollRef);
+
   return (
-    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+    <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
       <div
         className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-3 pb-2 backdrop-blur-md"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0.5rem)' }}

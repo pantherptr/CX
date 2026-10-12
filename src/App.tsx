@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { Routes, Route, Outlet, useLocation, Navigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
+import { Routes, Route, Outlet, useLocation, useNavigationType, Navigate, useParams } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { BatPullToRefresh } from './components/BatPullToRefresh';
@@ -81,13 +81,85 @@ function signalSpaceOf(pathname: string): 'official' | 'community' | null {
   return pathname.startsWith('/signal/community') ? 'community' : 'official';
 }
 
+// Where each history entry was scrolled to. Going back/forward puts the page where it was left; opening
+// something new starts at the top. Kept in sessionStorage so a reload of the app keeps the places too.
+const SCROLL_STORE = 'cx-scroll-pos';
+const scrollPositions: Record<string, number> = (() => {
+  try { return JSON.parse(sessionStorage.getItem(SCROLL_STORE) || '{}'); } catch { return {}; }
+})();
+function persistScrollPositions() {
+  try {
+    const keys = Object.keys(scrollPositions);
+    if (keys.length > 60) for (const k of keys.slice(0, keys.length - 60)) delete scrollPositions[k];
+    sessionStorage.setItem(SCROLL_STORE, JSON.stringify(scrollPositions));
+  } catch { /* storage unavailable */ }
+}
+
 function ScrollToTop() {
-  const { pathname, hash } = useLocation();
+  const { pathname, hash, key } = useLocation();
+  const navType = useNavigationType();
+  useEffect(() => {
+    // We restore positions ourselves; the browser's own restoration would fight it.
+    try { window.history.scrollRestoration = 'manual'; } catch { /* ignore */ }
+  }, []);
   const prevPathname = useRef(pathname);
+  const keyRef = useRef(key);
+
+  // Remember the scroll of the entry on screen. The key switches in a layout effect (right after the new
+  // page is committed, before the browser reports any scroll caused by the page changing height), so the
+  // old entry keeps the last position the reader really had.
+  useLayoutEffect(() => { keyRef.current = key; }, [key]);
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => { raf = 0; scrollPositions[keyRef.current] = window.scrollY; });
+    };
+    const onHide = () => { scrollPositions[keyRef.current] = window.scrollY; persistScrollPositions(); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onHide);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, []);
+
   useEffect(() => {
     const prevSpace = signalSpaceOf(prevPathname.current);
     prevPathname.current = pathname;
     if (prevSpace && prevSpace === signalSpaceOf(pathname)) return;
+    if (navType === 'POP' && !hash) {
+      const target = scrollPositions[key] ?? 0;
+      if (target <= 0) {
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+        return;
+      }
+      // The page (a lazy chunk, then its data) may still be growing: wait until it is tall enough.
+      let cancelled = false;
+      let tries = 0;
+      const stop = () => { cancelled = true; };
+      window.addEventListener('touchstart', stop, { once: true, passive: true });
+      window.addEventListener('wheel', stop, { once: true, passive: true });
+      const tick = () => {
+        if (cancelled) return;
+        const room = document.documentElement.scrollHeight - window.innerHeight;
+        if (room >= target - 2 || tries > 90) {
+          window.scrollTo({ top: target, behavior: 'instant' as ScrollBehavior });
+          return;
+        }
+        tries += 1;
+        window.requestAnimationFrame(tick);
+      };
+      tick();
+      return () => {
+        cancelled = true;
+        window.removeEventListener('touchstart', stop);
+        window.removeEventListener('wheel', stop);
+      };
+    }
     if (!hash) {
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       return;
@@ -120,7 +192,7 @@ function ScrollToTop() {
     return () => {
       cancelled = true;
     };
-  }, [pathname, hash]);
+  }, [pathname, hash, key, navType]);
   return null;
 }
 

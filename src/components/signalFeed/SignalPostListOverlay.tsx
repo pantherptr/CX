@@ -1,5 +1,6 @@
+import { useScrollMemory } from '../../lib/scrollMemory';
 import { SignalPostSkeleton } from './SignalPostSkeleton';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
 import { SignalLogo } from '../SignalLogo';
 import { SignalPostCard } from './SignalPostCard';
@@ -81,8 +82,11 @@ export function SignalPostListOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useScrollMemory(`list:${window.location.pathname}`, scrollRef);
+
   return (
-    <div className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
+    <div ref={scrollRef} className="fixed inset-0 z-[250] overflow-y-auto bg-bg animate-scale-in">
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-surface/92 px-4 py-3 backdrop-blur-md pt-safe">
         <button onClick={onClose} aria-label="Back to Signal" className="pressable grid h-9 w-9 place-items-center rounded-full text-ink-soft hover:bg-panel">
           <Icon name="chevronLeft" size={20} />

@@ -228,7 +228,22 @@ export default function Signal() {
   // `animate-scale-in`'s entrance, and layering a second whole-page
   // crossfade under it would be exactly the "double animation" the motion
   // brief calls out to avoid.
-  const closeOverlay = () => navigate(base, { viewTransition: true });
+  // Closing goes back to where the reader was: a post opened from a profile returns to that profile (at
+  // its scroll), not to the feed. With nothing to go back to inside SIGNAL it returns to the feed.
+  const prevPathRef = useRef<string | null>(null);
+  const curPathRef = useRef(pathname);
+  useEffect(() => {
+    if (curPathRef.current !== pathname) {
+      prevPathRef.current = curPathRef.current;
+      curPathRef.current = pathname;
+    }
+  }, [pathname]);
+  const closeOverlay = () => {
+    const prev = prevPathRef.current;
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0 && prev && /^\/signal(\/|$)/.test(prev) && prev !== pathname) navigate(-1);
+    else navigate(base, { viewTransition: true });
+  };
 
   if (!session) return <SignalGate />;
 

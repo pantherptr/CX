@@ -1,3 +1,4 @@
+import { useScrollMemory } from '../../lib/scrollMemory';
 import { SignalAchievements } from './SignalAchievements';
 import { fetchVerifiedHandoversCount } from '../../lib/data/handovers';
 import { ShareProfileSheet, type PassData } from '../CxPass';
@@ -95,6 +96,7 @@ export function SignalProfileDetail({
   // scoped to this overlay's own scroll container (not window), so it
   // never touches the shared feed's own scroll-hide behavior underneath.
   const scrollRef = useRef<HTMLDivElement>(null);
+  useScrollMemory(`profile:${authorId}`, scrollRef);
   const [scrollTop, setScrollTop] = useState(0);
   useEffect(() => {
     const el = scrollRef.current;

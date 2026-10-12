@@ -77,3 +77,21 @@ test('SIGNAL gate (signed out) is dark even in the light theme: no white strip a
   const sum = [0, 2, 4].reduce((a, i) => a + parseInt(hex.slice(i, i + 2), 16), 0);
   expect(sum, `status bar colour ${colours.chrome} is not dark`).toBeLessThan(120);
 });
+
+test('going back returns to where you were scrolled', async ({ page }) => {
+  await open(page, '/about', 'light');
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => window.scrollY);
+  expect(before).toBeGreaterThan(300);
+  const link = page.locator('a[href="/help"]').last();
+  await link.scrollIntoViewIfNeeded();
+  await link.click();
+  await expect(page).toHaveURL(/\/help/);
+  await page.waitForTimeout(500);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/about/);
+  await page.waitForTimeout(1200);
+  const after = await page.evaluate(() => window.scrollY);
+  expect(after, `scrolled back to ${after}, was at ${before}`).toBeGreaterThan(before * 0.5);
+});
