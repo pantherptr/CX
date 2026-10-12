@@ -1185,19 +1185,19 @@
     content: attr(data-ch);
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%);
+    background-image: linear-gradient(180deg, #5fe58a 0%, #3cc46c 55%, #2a9a52 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
     opacity: 0;
     pointer-events: none;
-    animation: hero-letter-green 9s ease-in-out infinite;
-    animation-delay: calc(var(--i, 0) * 420ms + 3.5s);
+    animation: hero-letter-green 6.5s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 300ms + 3s);
   }
   @keyframes hero-letter-green {
     0%, 100% { opacity: 0; }
-    30% { opacity: 1; }
+    30% { opacity: 0.55; }
     60% { opacity: 0; }
   }
   @keyframes hero-letter-in {
