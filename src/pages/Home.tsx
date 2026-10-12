@@ -152,8 +152,8 @@ export default function Home() {
       <section className="relative isolate -mt-[calc(4rem+env(safe-area-inset-top,0px))] overflow-hidden bg-bg">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'radial-gradient(60% 45% at 50% 38%, rgba(0,212,71,0.10), transparent 70%), linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 62%)' }}
+          className="hero-bg pointer-events-none absolute inset-0"
+          style={{ background: 'linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 62%)' }}
         />
 
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
@@ -184,13 +184,15 @@ export default function Home() {
                 <span className="hidden sm:block">{t('to your heart.')}</span>
               </p>
 
-              {/* The car, in front of both: it drives in slowly from the right and stops, then the lights
-                  switch on (CSS only, see .hero-car in index.css). */}
+              {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
+                  as the page opens (CSS only, see .hero-car in index.css). */}
               <div
                 className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[74%]"
                 style={{ aspectRatio: '859 / 386' }}
               >
                 <div className="hero-car-body relative h-full w-full">
+                  <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '0.75s' }} />
+                  <span aria-hidden className="hero-flame" style={{ top: '55%', animationDelay: '0.95s' }} />
                   <span aria-hidden className="hero-beam" style={{ top: '20%', ['--r' as string]: '7deg' }} />
                   <span aria-hidden className="hero-beam" style={{ top: '81%', ['--r' as string]: '-7deg' }} />
                   <span aria-hidden className="hero-lamp hero-head" style={{ left: '8.8%', top: '20%', ['--r' as string]: '-38deg' }} />
