@@ -1,7 +1,7 @@
 import { ActionLabel } from '../ui/loading-button';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../Icon';
-import { Img, vibrateTap } from '../motion';
+import { Img, useMediaQuery, vibrateTap } from '../motion';
 import {
   createEmpirePost, updateEmpirePost, scheduleEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpirePost, type EmpireVehicleRef,
@@ -61,6 +61,31 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this s
  *  `editing` reuses this same component in place of a post's own card
  *  (SignalPostCard's "Edit post") — always rendered open, pre-filled,
  *  no collapse behavior (there's nothing to collapse back into there). */
+/** The visible area (top + height) while the keyboard is up, so a fixed sheet ends right above it. */
+function useVisualViewportBox(active: boolean) {
+  const read = () => {
+    const v = typeof window !== 'undefined' ? window.visualViewport : null;
+    return { top: Math.round(v?.offsetTop ?? 0), height: Math.round(v?.height ?? window.innerHeight) };
+  };
+  const [box, setBox] = useState(read);
+  useEffect(() => {
+    if (!active) return;
+    const v = window.visualViewport;
+    const upd = () => setBox(read());
+    upd();
+    v?.addEventListener('resize', upd);
+    v?.addEventListener('scroll', upd);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      v?.removeEventListener('resize', upd);
+      v?.removeEventListener('scroll', upd);
+      document.body.style.overflow = prev;
+    };
+  }, [active]);
+  return box;
+}
+
 export function SignalCommunityComposer({
   editing,
   expanded = false,
@@ -159,6 +184,11 @@ export function SignalCommunityComposer({
     return () => { cancelled = true; };
   }, [editing]);
   const isOpen = Boolean(editing) || expanded || focused || pickerHold || body.trim().length > 0 || totalMedia > 0 || Boolean(pollOptions);
+  // On a phone, tapping the composer opens it as a focused full-height sheet that follows the keyboard:
+  // text on top, tools and Post pinned right above the keyboard — the way every social app does it.
+  const isPhone = useMediaQuery('(max-width: 639px)');
+  const full = isPhone && isOpen && !editing;
+  const vv = useVisualViewportBox(full);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
@@ -414,7 +444,16 @@ export function SignalCommunityComposer({
   );
 
   return (
-    <motion.div layout={!reduceMotion} transition={SPRING_SMOOTH} className={`relative mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`}>
+    <motion.div
+      layout={!reduceMotion && !full}
+      transition={SPRING_SMOOTH}
+      style={full ? { top: vv.top, height: vv.height } : undefined}
+      className={
+        full
+          ? 'fixed inset-x-0 z-[260] flex animate-sheet-in flex-col overflow-y-auto overscroll-contain bg-surface px-4 pb-0 pt-[max(0.75rem,env(safe-area-inset-top))]'
+          : `relative mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`
+      }
+    >
       {!isOpen && (
         <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center">
           <label aria-label="Add photo or video" className="pressable grid h-10 w-10 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050">
@@ -434,12 +473,14 @@ export function SignalCommunityComposer({
           )}
         </div>
       )}
-      <div className="flex items-start gap-3">
-        {profile?.avatar_url ? (
-          <ProfileAvatar src={profile.avatar_url} size={40} />
-        ) : avatarFallback}
+      <div className={`flex gap-3 ${full ? 'flex-1 items-stretch' : 'items-start'}`}>
+        <span className="shrink-0 self-start">
+          {profile?.avatar_url ? (
+            <ProfileAvatar src={profile.avatar_url} size={40} />
+          ) : avatarFallback}
+        </span>
 
-        <div className="min-w-0 flex-1">
+        <div className={`min-w-0 flex-1 ${full ? 'flex flex-col' : ''}`}>
           <textarea
             ref={textareaRef}
             value={body}
@@ -449,7 +490,7 @@ export function SignalCommunityComposer({
             placeholder="Share something…"
             rows={1}
             className={`mt-[9px] w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[16px] leading-[22px] text-ink placeholder:text-muted focus:outline-none focus:ring-0 ${isOpen ? '' : 'pr-24'}`}
-            style={{ height: MAX_COLLAPSED_HEIGHT, maxHeight: MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
+            style={{ height: full ? undefined : MAX_COLLAPSED_HEIGHT, minHeight: full ? 120 : undefined, maxHeight: full ? undefined : MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
           />
 
           {tagSuggestions.length > 0 && (
@@ -587,7 +628,7 @@ export function SignalCommunityComposer({
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={reduceMotion ? undefined : { opacity: 0, height: 0 }}
                 transition={SPRING_SMOOTH}
-                className="overflow-hidden"
+                className={full ? 'sticky bottom-0 mt-auto overflow-hidden bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'overflow-hidden'}
               >
                 <div className="mt-3 flex items-center gap-1 border-t border-line pt-3">
                   <label
