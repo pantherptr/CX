@@ -496,6 +496,17 @@ export function SignalPostCard({
   const [editing, setEditing] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  // On a phone a video opens in the full-screen vertical player (Reels), on that post; photos and desktop
+  // keep the normal viewer.
+  const openMedia = (i: number) => {
+    const url = post.mediaUrls[i];
+    const phone = typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches;
+    if (phone && !post.isDemo && url && mediaKindFromPath(url) === 'video') {
+      navigate(`/signal/reels?author=${post.authorId}&post=${post.id}`);
+      return;
+    }
+    setViewerIndex(i);
+  };
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const [commentsSheetOpen, setCommentsSheetOpen] = useState(false);
@@ -1165,7 +1176,7 @@ export function SignalPostCard({
           <div className="flex flex-col gap-1">
             {post.mediaUrls.map((url, i) =>
               mediaKindFromPath(url) === 'video' ? (
-                <PostVideo key={url} src={url} full onClick={() => setViewerIndex(i)} className="aspect-video" />
+                <PostVideo key={url} src={url} full onClick={() => openMedia(i)} className="aspect-video" />
               ) : (
                 <PostImage
                   key={url}
@@ -1173,7 +1184,7 @@ export function SignalPostCard({
                   full
                   dynamicAspect
                   className="aspect-[4/5]"
-                  onClick={() => setViewerIndex(i)}
+                  onClick={() => openMedia(i)}
                   onDoubleTap={handleDoubleTapRespect}
                   sharedId={i === 0 ? `post-media-${post.id}-${url}` : undefined}
                   sharedActive={viewerIndex === null}
@@ -1183,12 +1194,12 @@ export function SignalPostCard({
           </div>
         ) : featured ? (
           mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
-            <PostVideo src={post.mediaUrls[0]} className="aspect-[16/10] w-full" fixedAspect onClick={() => setViewerIndex(0)} />
+            <PostVideo src={post.mediaUrls[0]} className="aspect-[16/10] w-full" fixedAspect onClick={() => openMedia(0)} />
           ) : (
             <PostImage
               src={post.mediaUrls[0]}
               className="aspect-[16/10] w-full"
-              onClick={() => setViewerIndex(0)}
+              onClick={() => openMedia(0)}
               onDoubleTap={handleDoubleTapRespect}
               sharedId={`post-media-${post.id}-${post.mediaUrls[0]}`}
               sharedActive={viewerIndex === null}
@@ -1196,11 +1207,11 @@ export function SignalPostCard({
           )
         ) : post.mediaUrls.length === 1 ? (
           mediaKindFromPath(post.mediaUrls[0]) === 'video' ? (
-            <PostVideo src={post.mediaUrls[0]} onClick={() => setViewerIndex(0)} className="aspect-video" />
+            <PostVideo src={post.mediaUrls[0]} onClick={() => openMedia(0)} className="aspect-video" />
           ) : (
             <PostImage
               src={post.mediaUrls[0]}
-              onClick={() => setViewerIndex(0)}
+              onClick={() => openMedia(0)}
               onDoubleTap={handleDoubleTapRespect}
               className="aspect-[4/5]"
               dynamicAspect
@@ -1209,7 +1220,7 @@ export function SignalPostCard({
             />
           )
         ) : (
-          <MediaCarousel urls={post.mediaUrls} onOpenViewer={setViewerIndex} onDoubleTap={handleDoubleTapRespect} />
+          <MediaCarousel urls={post.mediaUrls} onOpenViewer={openMedia} onDoubleTap={handleDoubleTapRespect} />
         )}
         </div>
       )}

@@ -1139,6 +1139,19 @@
      creates a containing block for `position: fixed` descendants, which
      silently breaks every full-screen modal on the page. */
   .animate-page { animation: page-in 0.4s var(--ease-out-expo) backwards; }
+  /* Direction-aware: going forward the new page slides in from the right, going back it settles in
+     from the left — the way an app's navigation reads. Same `backwards` rule as above (no lingering
+     transform), short enough never to feel like waiting. */
+  @keyframes page-in-fwd {
+    from { opacity: 0; transform: translateX(26px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes page-in-back {
+    from { opacity: 0; transform: translateX(-18px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-page[data-nav='forward'] { animation: page-in-fwd 0.32s var(--ease-out-expo) backwards; }
+  .animate-page[data-nav='back'] { animation: page-in-back 0.28s var(--ease-out-expo) backwards; }
 
   /* Scroll-reveal: hidden until observed, then eases up into place */
   .reveal {

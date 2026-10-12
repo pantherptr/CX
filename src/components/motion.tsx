@@ -513,6 +513,7 @@ export function Img({
       // dragging a car photo on desktop otherwise lifts a ghost copy of it
       // instead of doing nothing (or swiping a carousel).
       decoding="async"
+      loading="lazy"
       draggable={false}
       onLoad={handleLoad}
       onError={handleError}

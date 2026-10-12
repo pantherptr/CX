@@ -327,6 +327,7 @@ export default function App() {
   // hooks. Not on SIGNAL (its feed has its own) nor on pages that hold form
   // state a remount would wipe (booking, listing a car, settings, sign-in).
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const pageNavType = useNavigationType();
   const pullEnabled =
     !SIGNAL_ROUTE.test(location.pathname) &&
     !/^\/(book|list-your-car|settings|login|signup|empire|host\/cars)(\/|$)/.test(location.pathname);
@@ -345,7 +346,7 @@ export default function App() {
           white screen unrecovered. This one catches that case too. */}
       <ErrorBoundary>
       <MaintenanceGate>
-      <div key={`${pageKey}:${refreshNonce}`} className={`animate-page ${bottomNavVisible && !/^\/messages/.test(location.pathname) ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : ''}`}>
+      <div key={`${pageKey}:${refreshNonce}`} data-nav={pageNavType === 'POP' ? 'back' : 'forward'} className={`animate-page ${bottomNavVisible && !/^\/messages/.test(location.pathname) ? 'pb-[calc(5rem+env(safe-area-inset-bottom,0px))]' : ''}`}>
       {/* One boundary for every lazy route below. The fallback is
           deliberately quiet — a centred marque rather than a full-screen
           splash — because these chunks resolve in a few hundred ms on a

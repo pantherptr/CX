@@ -67,7 +67,7 @@ import { maybeSignalDemoGenerate } from '../lib/data/signalDemo';
 export default function Signal() {
   const { t } = useLocale();
   const tapMode = useTeamTapMode();
-  const { session, profile } = useAuth();
+  const { session, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   // On a phone Spotlight is a smaller card that scrolls with the posts, in both spaces.
@@ -171,7 +171,7 @@ export default function Signal() {
       (entries) => {
         if (entries[0].isIntersecting && !loadingMore) loadMoreFnRef.current();
       },
-      { rootMargin: '600px 0px' },
+      { rootMargin: '1400px 0px' },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -245,6 +245,18 @@ export default function Signal() {
     else navigate(base, { viewTransition: true });
   };
 
+  // While the session is still being restored, show a quiet skeleton — not the signed-out landing page,
+  // which used to flash for a moment on every cold open of SIGNAL.
+  if (authLoading && !session) {
+    return (
+      <div className="min-h-dvh bg-bg px-4 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)]" aria-busy="true">
+        <div className="mx-auto max-w-xl space-y-4">
+          <SignalPostSkeleton />
+          <SignalPostSkeleton />
+        </div>
+      </div>
+    );
+  }
   if (!session) return <SignalGate />;
 
   const navItems: { label: string; icon: IconName; active?: boolean; groupEnd?: boolean; onSelect: () => void }[] = [

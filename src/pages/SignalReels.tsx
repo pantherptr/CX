@@ -30,6 +30,9 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
   const [burst, setBurst] = useState(0);
   const [fire, setFire] = useState(0);
   const [more, setMore] = useState(false);
+  const [portrait, setPortrait] = useState(false); // a vertical clip fills the whole screen; a wide one stays whole
+  const [buffering, setBuffering] = useState(false);
+  const [scrubbing, setScrubbing] = useState(false);
   const lastTap = useRef(0);
   const src = videoUrlOf(post);
 
@@ -87,12 +90,27 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
         muted={muted}
         playsInline
         preload={next ? 'auto' : 'none'}
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (v.videoWidth && v.videoHeight) setPortrait(v.videoWidth / v.videoHeight < 0.9);
+        }}
+        onWaiting={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
         onTimeUpdate={(e) => {
           const v = e.currentTarget;
-          if (v.duration > 0) setProgress(v.currentTime / v.duration);
+          if (v.duration > 0 && !scrubbing) setProgress(v.currentTime / v.duration);
         }}
-        className="absolute inset-0 h-full w-full object-contain"
+        className={`absolute inset-0 h-full w-full ${portrait ? 'object-cover' : 'object-contain'}`}
       />
+      {buffering && active && (
+        <span className="pointer-events-none absolute inset-0 z-[2] grid place-items-center" aria-hidden>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" className="animate-spin text-white/90">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.4" strokeOpacity="0.25" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+        </span>
+      )}
       <button type="button" aria-label={paused ? t('Play') : t('Pause')} onClick={onScreenTap} className="absolute inset-0 z-[1]" />
       {paused && (
         <span className="pointer-events-none absolute inset-0 z-[2] grid place-items-center">
@@ -153,8 +171,35 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-[4] h-[3px] bg-white/20">
-        <div className="h-full bg-[#fff]" style={{ width: `${progress * 100}%` }} />
+      {/* progress — drag it to scrub (a tall invisible touch area around the thin line) */}
+      <div
+        data-no-edge-back
+        className="absolute inset-x-0 bottom-0 z-[4] flex h-7 touch-none items-end"
+        onPointerDown={(e) => {
+          const v = video.current;
+          if (!v || !v.duration) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setScrubbing(true);
+          const r = e.currentTarget.getBoundingClientRect();
+          const k = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          v.currentTime = k * v.duration;
+          setProgress(k);
+        }}
+        onPointerMove={(e) => {
+          if (!scrubbing) return;
+          const v = video.current;
+          if (!v || !v.duration) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          const k = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+          v.currentTime = k * v.duration;
+          setProgress(k);
+        }}
+        onPointerUp={() => setScrubbing(false)}
+        onPointerCancel={() => setScrubbing(false)}
+      >
+        <div className={`w-full bg-white/20 transition-[height] ${scrubbing ? 'h-[6px]' : 'h-[3px]'}`}>
+          <div className="h-full bg-[#fff]" style={{ width: `${progress * 100}%` }} />
+        </div>
       </div>
     </div>
   );
