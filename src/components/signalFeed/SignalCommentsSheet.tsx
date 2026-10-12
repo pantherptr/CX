@@ -34,7 +34,8 @@ export function SignalCommentsSheet({
       open={!closing}
       onClose={requestClose}
       onExitComplete={onClose}
-      panelClassName="max-h-[80vh] rounded-t-2xl bg-surface sm:max-h-[70vh] sm:max-w-md sm:rounded-2xl"
+      snap
+      panelClassName="w-full rounded-t-2xl bg-surface sm:max-h-[70vh] sm:max-w-md sm:rounded-2xl"
     >
       <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
         <SignalIdentityAvatar identity={identity} size={30} />

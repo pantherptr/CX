@@ -268,7 +268,11 @@ export function MotionSheet({
   onExitComplete = onClose,
   children,
   panelClassName = 'w-full rounded-t-2xl bg-surface sm:max-w-md sm:rounded-2xl',
+  snap = false,
 }: {
+  /** Two heights on a phone: opens at about half the screen, dragging up opens it fully, dragging down
+   *  returns to half and then closes — the way a native sheet behaves. */
+  snap?: boolean;
   open: boolean;
   onClose: () => void;
   /** Fires once the exit animation has genuinely finished playing —
@@ -280,6 +284,9 @@ export function MotionSheet({
 }) {
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
+  const [expanded, setExpanded] = useState(false);
+  const downOnBackdrop = useRef(false);
+  useEffect(() => { if (open) setExpanded(false); }, [open]);
 
   // Locks the page behind the sheet — same convention App.tsx's own
   // `useSplash` already established for a full-screen overlay. Without
@@ -309,14 +316,16 @@ export function MotionSheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: reduceMotion ? 0 : DUR.page }}
+          onPointerDown={(e) => { downOnBackdrop.current = e.target === e.currentTarget; }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
+            // only a tap that started AND ended on the backdrop closes — a drag that ends over it does not
+            if (e.target === e.currentTarget && downOnBackdrop.current) onClose();
           }}
         >
           <motion.div
             className={`flex max-h-[88vh] flex-col overflow-hidden ${panelClassName}`}
             initial={{ y: reduceMotion ? 0 : '100%' }}
-            animate={{ y: 0 }}
+            animate={snap ? { y: 0, height: expanded ? '88dvh' : '56dvh' } : { y: 0 }}
             exit={{ y: '100%' }}
             transition={reduceMotion ? { duration: 0 } : SPRING_SMOOTH}
             drag={reduceMotion ? false : 'y'}
@@ -324,8 +333,18 @@ export function MotionSheet({
             dragControls={dragControls}
             dragDirectionLock
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
+            dragElastic={{ top: snap && !expanded ? 0.25 : 0, bottom: 0.6 }}
             onDragEnd={(_e, info) => {
+              if (snap) {
+                const down = info.velocity.y > 500 || info.offset.y > 120;
+                const up = info.velocity.y < -400 || info.offset.y < -60;
+                if (!expanded) {
+                  if (up) setExpanded(true);
+                  else if (down) onClose();
+                } else if (info.offset.y > 300 || info.velocity.y > 1500) onClose();
+                else if (info.offset.y > 60 || info.velocity.y > 400) setExpanded(false);
+                return;
+              }
               if (info.velocity.y > 500 || info.offset.y > 120) onClose();
             }}
           >
