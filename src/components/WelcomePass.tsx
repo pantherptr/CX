@@ -19,7 +19,7 @@ export function WelcomePass() {
 
   useEffect(() => {
     if (!due) return;
-    const timer = window.setTimeout(() => setOpen(true), 1800);
+    const timer = window.setTimeout(() => setOpen(true), 1200);
     return () => window.clearTimeout(timer);
   }, [due]);
 

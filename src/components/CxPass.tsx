@@ -144,10 +144,14 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
     document.body.style.overflow = 'hidden';
     // Safari tints its own bars from the page colour: while the layer is open they take its tone too.
     const root = document.documentElement;
+    const app = document.getElementById('root');
     const prevRootBg = root.style.backgroundColor;
     const prevBodyBg = document.body.style.backgroundColor;
+    const prevAppBg = app?.style.backgroundColor ?? '';
     root.style.backgroundColor = '#0a0b0a';
     document.body.style.backgroundColor = '#0a0b0a';
+    // #root paints the page colour; while the layer is open that colour is the layer's own dark.
+    if (app) app.style.backgroundColor = '#0a0b0a';
     setChromeOverride({ light: '#0a0b0a', dark: '#0a0b0a' });
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -155,6 +159,7 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       document.body.style.overflow = prev;
       root.style.backgroundColor = prevRootBg;
       document.body.style.backgroundColor = prevBodyBg;
+      if (app) app.style.backgroundColor = prevAppBg;
       setChromeOverride(null);
       window.removeEventListener('keydown', onKey);
     };
@@ -184,10 +189,10 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[400]" role="dialog" aria-modal="true" aria-label={heading ?? t('CX Pass')}>
+    <div className="fixed inset-x-0 top-0 z-[400]" style={{ bottom: -160 }} role="dialog" aria-modal="true" aria-label={heading ?? t('CX Pass')}>
       {/* the page behind, blurred and darkened */}
       <div
-        className="absolute inset-0 animate-fade-in bg-black/82 backdrop-blur-2xl"
+        className="pass-backdrop absolute inset-0 bg-black/82 backdrop-blur-2xl"
         style={{ WebkitBackdropFilter: 'blur(28px) saturate(140%)', backdropFilter: 'blur(28px) saturate(140%)' }}
         onClick={onClose}
       />
@@ -202,14 +207,15 @@ export function ShareProfileSheet({ open, onClose, pass, heading, start }: {
       </button>
 
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))]"
+        className="absolute inset-x-0 top-0 flex flex-col items-center justify-center overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))]"
+        style={{ height: '100dvh' }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        {heading && <h2 className="mb-3 animate-fade-up text-center font-display text-xl font-semibold text-white">{heading}</h2>}
-        <div className="w-full max-w-[24rem] animate-scale-in">
+        {heading && <h2 className="pass-rise mb-3 text-center font-display text-xl font-semibold text-white">{heading}</h2>}
+        <div className="pass-drop w-full max-w-[24rem]">
           <CxPass pass={pass} />
         </div>
-        <div className="mt-4 flex w-full max-w-[24rem] animate-fade-up gap-2.5">
+        <div className="pass-rise pass-rise--late mt-4 flex w-full max-w-[24rem] gap-2.5">
           <button
             type="button"
             onClick={() => void share()}
