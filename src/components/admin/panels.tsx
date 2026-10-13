@@ -7,6 +7,8 @@ import { useApp } from '../../lib/store';
 import { eur } from '../../lib/format';
 import {
   fetchAllUsers,
+  fetchUserAccess,
+  type UserAccess,
   fetchAllBookingsAdmin,
   adminCancelBooking,
   refundBookingAdmin,
@@ -78,14 +80,26 @@ export { VerificationsPanel } from './VerificationsPanel';
 /** `canManageRoles` (the Owner's Users tab) adds a "⋯" menu per person: verify or
  *  un-verify them, make them admin or take it away. The plain admin dashboard
  *  keeps its single Verify button. */
+function seenAgo(iso: string): string {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 2) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? 'yesterday' : `${d} days ago`;
+}
+
 export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolean } = {}) {
   const { toast } = useApp();
   const [menu, setMenu] = useState<{ user: AdminUser; anchor: HTMLElement } | null>(null);
   const [items, setItems] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [access, setAccess] = useState<Map<string, UserAccess>>(new Map());
 
   useEffect(() => {
+    void fetchUserAccess().then(setAccess);
     fetchAllUsers()
       .then(setItems)
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load users.'));
@@ -135,6 +149,16 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium text-ink">{u.fullName}</p>
             <p className="text-caption text-muted">Joined {fmtDate(u.createdAt)}</p>
+            {(() => {
+              const a = access.get(u.id);
+              if (!a) return <p className="text-caption text-faint">Not seen yet</p>;
+              return (
+                <p className="text-caption text-muted" title={new Date(a.lastSeen).toLocaleString()}>
+                  Last seen {seenAgo(a.lastSeen)} · {new Date(a.lastSeen).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  {a.label ? ` · ${a.label}` : ''}{a.devices > 1 ? ` · ${a.devices} devices` : ''}
+                </p>
+              );
+            })()}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {u.isAdmin && <span className="badge badge-accent"><Icon name="shield" size={12} /> Admin</span>}

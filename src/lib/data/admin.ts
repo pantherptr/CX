@@ -322,3 +322,22 @@ async function notifyVerificationDecision(userId: string, kind: 'identity' | 'li
     console.error('[admin] verification notify failed', err);
   }
 }
+
+export interface UserAccess {
+  lastSeen: string;
+  firstSeen: string;
+  devices: number;
+  platform: string;
+  label: string;
+}
+
+/** Last access per person (Owner / admins only; migration 0124). Empty before the migration is run. */
+export async function fetchUserAccess(): Promise<Map<string, UserAccess>> {
+  const out = new Map<string, UserAccess>();
+  const { data, error } = await supabase.rpc('admin_user_access');
+  if (error || !Array.isArray(data)) return out;
+  for (const r of data as { user_id: string; last_seen: string; first_seen: string; device_count: number; last_platform: string; last_label: string }[]) {
+    out.set(r.user_id, { lastSeen: r.last_seen, firstSeen: r.first_seen, devices: r.device_count, platform: r.last_platform, label: r.last_label });
+  }
+  return out;
+}
