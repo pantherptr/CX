@@ -53,7 +53,7 @@ export function StatTile({
           <p className="text-caption text-muted">{label}</p>
         </div>
       </div>
-      {bars && bars.some((b) => b > 0) && <MiniBars values={bars} labels={barLabels} accent />}
+      {bars && <MiniBars values={bars} labels={barLabels} accent />}
     </div>
   );
 }

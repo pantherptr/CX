@@ -306,7 +306,7 @@ export function StatCard({
       </div>
       <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl text-ink`}>{display}</p>
       <p className={`mt-0.5 text-detail text-muted`}>{label}</p>
-      {bars && bars.some((b) => b > 0) && <MiniBars values={bars} labels={barLabels} accent={accent} />}
+      {bars && <MiniBars values={bars} labels={barLabels} accent={accent} />}
     </div>
   );
 }
