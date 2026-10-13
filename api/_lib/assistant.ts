@@ -86,7 +86,8 @@ export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
     .map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content).slice(0, MAX_CHARS) }));
   if (messages.length === 0 || messages[messages.length - 1].role !== 'user') return res.status(400).json({ error: 'Say something first.' });
 
-  const key = process.env.ANTHROPIC_API_KEY;
+  const orKey = process.env.OPENROUTER_API_KEY;
+  const key = orKey || process.env.ANTHROPIC_API_KEY;
   if (!key || process.env.ASSISTANT_ENABLED === '0' || overDaily()) {
     return res.status(200).json({
       reply: 'I cannot answer right now, but a person from the CX team can help you. Tap “Talk to a person”.',
@@ -115,14 +116,31 @@ export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
   ].join('\n');
 
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 500, system, messages }),
-    });
-    if (!r.ok) throw new Error(`model ${r.status}`);
-    const j = (await r.json()) as { content?: { type: string; text?: string }[] };
-    let out = (j.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('').trim();
+    // OpenRouter (free models, e.g. OPENROUTER_MODEL=openrouter/free) wins when its key is set; otherwise Anthropic.
+    let out = '';
+    if (orKey) {
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${orKey}` },
+        body: JSON.stringify({
+          model: process.env.OPENROUTER_MODEL || 'openrouter/free',
+          max_tokens: 500,
+          messages: [{ role: 'system', content: system }, ...messages],
+        }),
+      });
+      if (!r.ok) throw new Error(`model ${r.status}`);
+      const j = (await r.json()) as { choices?: { message?: { content?: string } }[] };
+      out = (j.choices?.[0]?.message?.content ?? '').trim();
+    } else {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: MODEL, max_tokens: 500, system, messages }),
+      });
+      if (!r.ok) throw new Error(`model ${r.status}`);
+      const j = (await r.json()) as { content?: { type: string; text?: string }[] };
+      out = (j.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('').trim();
+    }
     const picked: string[] = [];
     out = out.replace(/<<cars:([^>]*)>>/gi, (_m, list: string) => {
       for (const s of String(list).split(',').map((x) => x.trim())) if (slugs.has(s) && !picked.includes(s)) picked.push(s);
