@@ -54,7 +54,7 @@ export function CxsLogo({ size = 24, className = '' }: { size?: number; classNam
   return (
     <span className={`relative inline-block shrink-0 overflow-hidden ${className}`} style={{ height: size, width }}>
       <Img
-        src="/cxs.png"
+        src="/cxs.webp"
         alt=""
         className="absolute"
         style={{ left: imgLeft, top: imgTop, width: imgW, height: imgH, maxWidth: 'none' }}
@@ -64,8 +64,8 @@ export function CxsLogo({ size = 24, className = '' }: { size?: number; classNam
         aria-hidden="true"
         className="cxs-glint-mask pointer-events-none absolute inset-0"
         style={{
-          WebkitMaskImage: 'url(/cxs.png)',
-          maskImage: 'url(/cxs.png)',
+          WebkitMaskImage: 'url(/cxs.webp)',
+          maskImage: 'url(/cxs.webp)',
           WebkitMaskSize: maskSize,
           maskSize,
           WebkitMaskPosition: maskPosition,

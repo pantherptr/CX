@@ -83,9 +83,9 @@ export function AuthDivider() {
  * key, for light surfaces). `symbol` is the old square badge, kept only as a
  * square avatar image for the official CX identity in SIGNAL. */
 export const LOGO_SRC = {
-  full: '/cx-logo-main.png',
+  full: '/cx-logo-main.webp',
   symbol: '/cx-logo-symbol.png',
-  wordmark: '/cx-logo-main.png',
+  wordmark: '/cx-logo-main.webp',
 } as const;
 
 export function Logo({

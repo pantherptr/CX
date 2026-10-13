@@ -1112,10 +1112,20 @@ export async function markEmpireFeedSeen(): Promise<void> {
   await supabase.rpc('mark_empire_feed_seen');
 }
 
-export async function fetchEmpireUnreadCount(): Promise<number> {
-  const { data, error } = await supabase.rpc('fetch_empire_unread_count');
-  if (error) throw error;
-  return (data as number) ?? 0;
+let empireUnreadInflight: Promise<number> | null = null;
+
+/** Overlapping callers (the nav is mounted in more than one place) share one request. */
+export function fetchEmpireUnreadCount(): Promise<number> {
+  if (empireUnreadInflight) return empireUnreadInflight;
+  const run = (async () => {
+    const { data, error } = await supabase.rpc('fetch_empire_unread_count');
+    if (error) throw error;
+    return (data as number) ?? 0;
+  })().finally(() => {
+    if (empireUnreadInflight === run) empireUnreadInflight = null;
+  });
+  empireUnreadInflight = run;
+  return run;
 }
 
 export function useEmpireUnreadCount(userId: string | undefined) {

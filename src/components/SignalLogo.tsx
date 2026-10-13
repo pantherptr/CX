@@ -47,7 +47,7 @@ export function SignalLogo({ size = 24, className = '' }: { size?: number; class
   return (
     <span className={`relative inline-block shrink-0 ${className}`} style={{ height: size, width }}>
       <Img
-        src="/signal-icon.png"
+        src="/signal-icon.webp"
         alt=""
         className="absolute inset-0 h-full w-full object-contain"
         style={{ maxWidth: 'none' }}
@@ -56,7 +56,7 @@ export function SignalLogo({ size = 24, className = '' }: { size?: number; class
       <span
         aria-hidden="true"
         className="signal-sweep-mask pointer-events-none absolute inset-0"
-        style={{ WebkitMaskImage: 'url(/signal-icon.png)', maskImage: 'url(/signal-icon.png)' }}
+        style={{ WebkitMaskImage: 'url(/signal-icon.webp)', maskImage: 'url(/signal-icon.webp)' }}
       >
         <span className="signal-sweep-bar absolute" />
       </span>

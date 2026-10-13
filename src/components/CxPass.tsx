@@ -55,7 +55,7 @@ export function CxPass({ pass, height = '580px', tone = 'dark' }: { pass: PassDa
       <Ornament className="absolute" style={{ width: 200, left: -60, bottom: -80, maxWidth: 'none', opacity: 0.3 }} />
       <div className="absolute inset-x-0 top-[44px] flex flex-col items-center text-center">
         <img
-          src="/cx-logo-main.png"
+          src="/cx-logo-main.webp"
           alt="CX"
           draggable={false}
           style={{ height: 22, filter: 'invert(1) hue-rotate(180deg) brightness(1.05)' }}

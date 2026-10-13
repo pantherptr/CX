@@ -103,15 +103,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    // A failed request (network just woke up) must not wipe a profile we already have.
-    if (error && !data) return;
-    const next = (data as Profile | null) ?? null;
-    setProfile(next);
-    try {
-      if (next) window.localStorage.setItem(PROFILE_CACHE, JSON.stringify(next));
-    } catch { /* storage unavailable */ }
+  // Startup fires this from the session check AND the auth listener; calls for the same person that
+  // overlap share one request instead of hitting the database twice.
+  const profileInflight = useRef<{ userId: string; run: Promise<void> } | null>(null);
+
+  const loadProfile = useCallback((userId: string): Promise<void> => {
+    if (profileInflight.current?.userId === userId) return profileInflight.current.run;
+    const run = (async () => {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // A failed request (network just woke up) must not wipe a profile we already have.
+      if (error && !data) return;
+      const next = (data as Profile | null) ?? null;
+      setProfile(next);
+      try {
+        if (next) window.localStorage.setItem(PROFILE_CACHE, JSON.stringify(next));
+      } catch { /* storage unavailable */ }
+    })().finally(() => {
+      if (profileInflight.current?.run === run) profileInflight.current = null;
+    });
+    profileInflight.current = { userId, run };
+    return run;
   }, []);
 
   // ---- Session manager -------------------------------------------------------------------

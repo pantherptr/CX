@@ -557,15 +557,60 @@ export async function fetchUnreadCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+// One shared count per signed-in person. The badge is read by several shells at once (BottomNav,
+// DashboardShell, AppMobileDrawer, HostDashboard); before, each of them ran its own two queries and
+// its own realtime channel on every page. Now they share one fetch and one subscription, ref-counted.
+interface UnreadEntry {
+  count: number;
+  loaded: boolean;
+  subs: Set<(n: number) => void>;
+  timer: number | null;
+  stop: () => void;
+}
+const unreadEntries = new Map<string, UnreadEntry>();
+const unreadInflight = new Map<string, Promise<number>>();
+
+function refreshUnread(userId: string): void {
+  let run = unreadInflight.get(userId);
+  if (!run) {
+    run = fetchUnreadCount(userId).finally(() => unreadInflight.delete(userId));
+    unreadInflight.set(userId, run);
+  }
+  void run.then((n) => {
+    const entry = unreadEntries.get(userId);
+    if (!entry) return;
+    entry.count = n;
+    entry.loaded = true;
+    entry.subs.forEach((fn) => fn(n));
+  }).catch(() => {});
+}
+
+function openUnreadEntry(userId: string): UnreadEntry {
+  const entry: UnreadEntry = { count: 0, loaded: false, subs: new Set(), timer: null, stop: () => {} };
+  const schedule = () => {
+    if (entry.timer) window.clearTimeout(entry.timer);
+    entry.timer = window.setTimeout(() => refreshUnread(userId), 250);
+  };
+  const channel = supabase
+    .channel(`unread-count:${userId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, schedule)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, schedule)
+    .subscribe();
+  entry.stop = () => {
+    if (entry.timer) window.clearTimeout(entry.timer);
+    supabase.removeChannel(channel);
+  };
+  unreadEntries.set(userId, entry);
+  refreshUnread(userId);
+  return entry;
+}
+
 /** The unread-messages badge shown in the nav shells (Navbar, BottomNav,
  *  DashboardShell, HostDashboard) — every one of them shares this same
- *  hook, so the realtime subscription lives here once rather than each
- *  caller having to remember to wire its own. Before this, the count was
- *  fetched exactly once on mount and never changed again for the rest of
- *  the session, regardless of new messages arriving or being read
- *  elsewhere in the app (e.g. on the Messages page itself). */
+ *  hook, and now the same single fetch + realtime subscription behind it,
+ *  so a new or read message updates the badge everywhere without each
+ *  caller having to wire its own. */
 export function useUnreadMessageCount(userId: string | undefined) {
-  const instanceId = useId();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -573,27 +618,18 @@ export function useUnreadMessageCount(userId: string | undefined) {
       setCount(0);
       return;
     }
-    let cancelled = false;
-    const refetch = () => fetchUnreadCount(userId).then((n) => !cancelled && setCount(n));
-    refetch();
-
-    let debounceHandle: number | null = null;
-    const scheduleRefetch = () => {
-      if (debounceHandle) window.clearTimeout(debounceHandle);
-      debounceHandle = window.setTimeout(refetch, 250);
-    };
-    const channel = supabase
-      .channel(`unread-count:${userId}:${instanceId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, scheduleRefetch)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, scheduleRefetch)
-      .subscribe();
+    const entry = unreadEntries.get(userId) ?? openUnreadEntry(userId);
+    entry.subs.add(setCount);
+    if (entry.loaded) setCount(entry.count);
 
     return () => {
-      cancelled = true;
-      if (debounceHandle) window.clearTimeout(debounceHandle);
-      supabase.removeChannel(channel);
+      entry.subs.delete(setCount);
+      if (entry.subs.size === 0 && unreadEntries.get(userId) === entry) {
+        entry.stop();
+        unreadEntries.delete(userId);
+      }
     };
-  }, [userId, instanceId]);
+  }, [userId]);
 
   return count;
 }

@@ -75,7 +75,7 @@ export function PremiumInitialLoader({ hiding, onReady }: { hiding: boolean; onR
         <span
           aria-hidden="true"
           className="signal-sweep-mask pointer-events-none absolute inset-0"
-          style={{ WebkitMaskImage: 'url(/cx-logo-main.png)', maskImage: 'url(/cx-logo-main.png)' }}
+          style={{ WebkitMaskImage: 'url(/cx-logo-main.webp)', maskImage: 'url(/cx-logo-main.webp)' }}
         >
           <span className="signal-sweep-bar absolute" style={{ animationDelay: '1.1s' }} />
         </span>
