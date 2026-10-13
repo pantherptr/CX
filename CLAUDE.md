@@ -32,7 +32,7 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 0098 collab · 0099 team boost notifications · 0100 sponsored posts · 0101 unpin community posts ·
 0102 host commission + payout ledger · 0103 owner payout overview · 0104 chat photos/delete/report ·
 0105 user devices · 0106 identity + licence verification · 0107 car catalogue (names/specs) ·
-0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts · 0116 welcome pass shown once to new members · 0117 verified handover + host-Respect-on-trip notification · 0118 admin view of verified handovers · 0119 return scan (second scan closes the trip) · 0120 locks the old game_stats_summary view · 0121 For-you ranking learns your cities/makes/hosts · 0122 undo a scan (5 min; the API holds the handover payout for that window). The feed hook keeps the last feed (per person) in memory for 10 min so going away and back restores posts + scroll. A verified handover pays the host straight away (api/_lib/payout.ts via notify-message type `handover-payout`); the daily sweep still pays everything else after end_date.
+0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts · 0116 welcome pass shown once to new members · 0117 verified handover + host-Respect-on-trip notification · 0118 admin view of verified handovers · 0119 return scan (second scan closes the trip) · 0120 locks the old game_stats_summary view · 0121 For-you ranking learns your cities/makes/hosts · 0122 undo a scan (5 min; the API holds the handover payout for that window) · 0123 team is told of every chat report. The feed hook keeps the last feed (per person) in memory for 10 min so going away and back restores posts + scroll. A verified handover pays the host straight away (api/_lib/payout.ts via notify-message type `handover-payout`); the daily sweep still pays everything else after end_date.
 Code is written to fail soft before a migration is run.
 
 ## Features worth knowing
@@ -80,6 +80,9 @@ Code is written to fail soft before a migration is run.
 
 - Sentry (`src/lib/monitoring.ts`): off without `VITE_SENTRY_DSN`, off on the dev server and under automation; 10% of page
   loads are traced (no trace headers to other origins); personal data is stripped before sending.
+
+- Images already in Storage: `scripts/recompress-images.mjs` (dry run by default; `--apply` backs originals up locally first).
+- Optional `VITE_GEOAPIFY_KEY` switches address search from Photon to Geoapify (`src/lib/geocode.ts`).
 
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —

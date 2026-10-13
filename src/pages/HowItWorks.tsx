@@ -52,7 +52,7 @@ export default function HowItWorks() {
                     <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
                       <Icon name={s.icon} size={22} />
                     </span>
-                    <span className="font-display text-5xl font-semibold leading-none text-line-strong">{s.n}</span>
+                    <span aria-hidden="true" className="font-display text-5xl font-semibold leading-none text-[#8a8a82]">{s.n}</span>
                   </div>
                   <h2 className="mt-5 font-display text-2xl font-semibold text-ink sm:text-3xl">{s.title}</h2>
                   <p className="mt-2 text-copy leading-relaxed text-muted">{s.desc}</p>

@@ -111,3 +111,25 @@ test('SIGNAL opens dark the first time even when the site is light, and the site
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => localStorage.getItem('cx-theme'))).toBe('light');
 });
+
+test('installed-app mode (?app=1): dragging from the left edge goes back one page', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'a touch gesture');
+  await open(page, '/about?app=1', 'light');
+  await page.waitForTimeout(800);
+  // any visible in-app link to another page (the layout of an installed app differs from the browser's)
+  const next = page.locator('a[href="/login"]:visible, a[href="/signup"]:visible, a[href="/browse"]:visible, a[href="/how-it-works"]:visible').first();
+  await next.click();
+  await expect(page).not.toHaveURL(/\/about/);
+  await page.waitForTimeout(600);
+  await page.evaluate(() => {
+    const fire = (type: string, x: number) => {
+      const t = new Touch({ identifier: 1, target: document.body, clientX: x, clientY: 400 });
+      document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [t], changedTouches: [t], bubbles: true, cancelable: true }));
+    };
+    fire('touchstart', 8);
+    fire('touchmove', 60);
+    fire('touchmove', 140);
+    fire('touchend', 140);
+  });
+  await expect(page).toHaveURL(/\/about/, { timeout: 5000 });
+});

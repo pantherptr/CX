@@ -31,7 +31,12 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 
 export default function AdminDashboard() {
   const { signOut, profile } = useAuth();
-  const [tab, setTab] = useState<Tab>(() => (typeof window !== 'undefined' && window.location.hash === '#review' ? 'review' : 'verifications'));
+  const [tab, setTab] = useState<Tab>(() => {
+    // the page can be opened on a given tab with a #hash (a notification links to #reports)
+    const h = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+    const known: Tab[] = ['verifications', 'users', 'bookings', 'cars', 'spotlight', 'ads', 'payouts', 'reports', 'catalog', 'review', 'signal-demo'];
+    return (known as string[]).includes(h) ? (h as Tab) : 'verifications';
+  });
 
   const handleSignOut = async () => {
     await signOut();

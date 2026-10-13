@@ -154,7 +154,7 @@ function SignalFan() {
     </div>
   );
   return (
-    <div aria-hidden="true" className="relative mx-auto h-[16.5rem] w-full sm:h-[30rem] lg:h-[25.5rem]">
+    <div aria-hidden="true" inert className="relative mx-auto h-[16.5rem] w-full sm:h-[30rem] lg:h-[25.5rem]">
       <div className="absolute left-1/2 top-0 -ml-[18rem] h-[30rem] w-[36rem] origin-top scale-[0.55] sm:scale-100 lg:scale-[0.85]">
         {/* Story */}
         <div className={`${shell} z-10 h-[24rem] w-[12rem] border-white/70 bg-noir`} style={place(-13.6, -7, 1.2)}>
@@ -423,10 +423,10 @@ export default function Home() {
             </Link>
           }
         />
-        <ol className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
+        <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
           {howSteps.map((st, i) => (
             <Reveal key={st.title} delay={i * 80}>
-              <li className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
+              <div role="listitem" className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
                 {/* A thread from this step's icon to the next card — the
                     three really are one sequence, so they shouldn't read
                     as three unrelated boxes. Down the gap on phones,
@@ -445,10 +445,10 @@ export default function Home() {
                   <h3 className="mt-1 font-display text-lg font-semibold text-ink">{t(st.title)}</h3>
                   <p className="mt-1.5 text-detail leading-relaxed text-muted">{t(st.desc)}</p>
                 </div>
-              </li>
+              </div>
             </Reveal>
           ))}
-        </ol>
+        </div>
       </section>
 
       {/* ================= DELIVERY — the emotional promise ================= */}

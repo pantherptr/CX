@@ -30,7 +30,7 @@ export function Footer() {
             ))}
           </nav>
         </div>
-        <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5 text-detail text-faint sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5 text-detail text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>{t('© {year} CX. All rights reserved.', { year: new Date().getFullYear() })}</p>
           <p className="flex items-center gap-4">
             <span>{langLabel}</span>

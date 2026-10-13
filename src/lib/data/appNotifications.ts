@@ -53,6 +53,8 @@ export const KIND_STYLE: Record<string, { icon: IconName; tone: 'green' | 'ink' 
   listing_rejected: { icon: 'info', tone: 'red' },
   listing_review: { icon: 'shield', tone: 'amber' },
   review_new: { icon: 'star', tone: 'green' },
+  chat_report: { icon: 'shield', tone: 'amber' },
+  handover_undone: { icon: 'key', tone: 'amber' },
 };
 
 export async function fetchAppNotifications(limit = 60): Promise<AppNotification[]> {

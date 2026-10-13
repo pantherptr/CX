@@ -1,12 +1,14 @@
 /**
  * Address search and reverse lookup for placing a car on the map.
  *
- * Uses Photon (OpenStreetMap data, built for search-as-you-type, open CORS). It is a free public
- * service with a fair-use limit; if listing volume grows, point BASE at a key-based geocoder
- * (MapTiler, Geoapify…) — the rest of the app only talks to the two functions below.
+ * Uses Photon (OpenStreetMap data, built for search-as-you-type, open CORS) — a free public service
+ * with a fair-use limit. Set VITE_GEOAPIFY_KEY (a key restricted to your domain in the Geoapify
+ * dashboard) and the same two functions below use Geoapify instead; no other code changes.
  */
 
 const BASE = 'https://photon.komoot.io';
+const GEOAPIFY_KEY = (import.meta.env.VITE_GEOAPIFY_KEY as string | undefined) || '';
+const GEOAPIFY = 'https://api.geoapify.com/v1/geocode';
 
 export interface Place {
   label: string;
@@ -43,11 +45,20 @@ function toPlace(f: Feature): Place {
 export async function searchPlaces(query: string, near?: [number, number], signal?: AbortSignal): Promise<Place[]> {
   const q = query.trim();
   if (q.length < 3) return [];
-  const url = new URL(`${BASE}/api/`);
-  url.searchParams.set('q', q);
-  url.searchParams.set('limit', '6');
-  url.searchParams.set('lang', 'en');
-  if (near) { url.searchParams.set('lon', String(near[0])); url.searchParams.set('lat', String(near[1])); }
+  const url = new URL(GEOAPIFY_KEY ? `${GEOAPIFY}/autocomplete` : `${BASE}/api/`);
+  if (GEOAPIFY_KEY) {
+    url.searchParams.set('text', q);
+    url.searchParams.set('limit', '6');
+    url.searchParams.set('lang', 'en');
+    url.searchParams.set('format', 'geojson');
+    if (near) url.searchParams.set('bias', `proximity:${near[0]},${near[1]}`);
+    url.searchParams.set('apiKey', GEOAPIFY_KEY);
+  } else {
+    url.searchParams.set('q', q);
+    url.searchParams.set('limit', '6');
+    url.searchParams.set('lang', 'en');
+    if (near) { url.searchParams.set('lon', String(near[0])); url.searchParams.set('lat', String(near[1])); }
+  }
   try {
     const res = await fetch(url, { signal });
     if (!res.ok) return [];
@@ -60,7 +71,11 @@ export async function searchPlaces(query: string, near?: [number, number], signa
 
 export async function reversePlace(lat: number, lng: number): Promise<Place | null> {
   try {
-    const res = await fetch(`${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`);
+    const res = await fetch(
+      GEOAPIFY_KEY
+        ? `${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`
+        : `${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`,
+    );
     if (!res.ok) return null;
     const json = (await res.json()) as { features?: Feature[] };
     const f = json.features?.[0];
