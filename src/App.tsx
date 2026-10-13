@@ -102,7 +102,8 @@ const WARM_ORDER: Array<() => Promise<unknown>> = [
 function useWarmRoutes() {
   useEffect(() => {
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (conn?.saveData) return;
+    // Not under automation (tests wait for the network to go quiet) and not on Data Saver.
+    if (conn?.saveData || navigator.webdriver) return;
     let cancelled = false;
     let i = 0;
     const w = window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number };
