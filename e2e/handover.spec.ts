@@ -24,8 +24,8 @@ test.describe('handover journey', () => {
     const renterCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const renter = await renterCtx.newPage();
     await renter.goto('/login');
-    await renter.getByLabel(/email/i).fill(process.env.E2E_RENTER_EMAIL!);
-    await renter.getByLabel(/password/i).fill(process.env.E2E_RENTER_PASSWORD!);
+    await renter.getByRole('textbox', { name: /email/i }).fill(process.env.E2E_RENTER_EMAIL!);
+    await renter.locator('input[type="password"]').fill(process.env.E2E_RENTER_PASSWORD!);
     await renter.getByRole('button', { name: /sign in|accedi/i }).click();
     await renter.goto(`/trips/${booking}`);
     await renter.getByText(/pick up the car|ritira l’auto/i).waitFor();
@@ -33,8 +33,8 @@ test.describe('handover journey', () => {
     const hostCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const host = await hostCtx.newPage();
     await host.goto('/login');
-    await host.getByLabel(/email/i).fill(process.env.E2E_HOST_EMAIL!);
-    await host.getByLabel(/password/i).fill(process.env.E2E_HOST_PASSWORD!);
+    await host.getByRole('textbox', { name: /email/i }).fill(process.env.E2E_HOST_EMAIL!);
+    await host.locator('input[type="password"]').fill(process.env.E2E_HOST_PASSWORD!);
     await host.getByRole('button', { name: /sign in|accedi/i }).click();
     await host.goto('/host');
     await host.getByText(/hand over the car|consegna l’auto/i).first().waitFor();
