@@ -3,7 +3,8 @@
 export function initMonitoring() {
   const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
   // The local dev server (hot reloads mid-edit throw errors that are not real bugs) stays out of Sentry.
-  if (!dsn || import.meta.env.DEV) return;
+  // Not from the local dev server, and not from automated test browsers.
+  if (!dsn || import.meta.env.DEV || navigator.webdriver) return;
   void import('@sentry/react').then((Sentry) => {
     Sentry.init({
       dsn,

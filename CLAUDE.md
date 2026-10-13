@@ -81,7 +81,7 @@ Code is written to fail soft before a migration is run.
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.
-  `E2E_BASE_URL=<preview url>` tests a deployed preview. `e2e/handover.spec.ts` needs two TEST accounts via env
+  The suite builds the site and tests `vite preview` (no dev-server noise); `E2E_BASE_URL=<preview url>` tests a deployed preview. `e2e/handover.spec.ts` needs two TEST accounts via env
   (`E2E_HOST_*`, `E2E_RENTER_*`, `E2E_BOOKING_ID`) and is skipped otherwise. Never put real credentials in git.
 
 ## Notifications (migration 0110)
@@ -106,5 +106,5 @@ Code is written to fail soft before a migration is run.
 - Go-live checklist (domain `cxworld.eu`, Resend sender domain, APNs keys for push, legal pages, Stripe live).
 - Studio-image catalogue was set aside in favour of the host's own cover pose (admin image upload is hidden
   behind `STUDIO_IMAGES = false` in `CatalogPanel.tsx`).
-- Existing cars do not have a precise pin yet (host can set it when creating; editing it in ManageCar is not built).
+- Existing cars can get / move their precise pin in Manage car (Pick-up point section); `updateCar` writes lat/lng/address_label.
 - Optional: push/email on new chat reports; geocoder provider with a key instead of public Photon.

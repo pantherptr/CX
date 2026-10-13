@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Could not load the feed", "Impossibile caricare il feed", "Nu s-a putut încărca feed-ul", "No se pudo cargar el feed"],
+  ["Check your connection and try again.", "Controlla la connessione e riprova.", "Verifică conexiunea și încearcă din nou.", "Revisa tu conexión e inténtalo de nuevo."],
+  ["Try again", "Riprova", "Încearcă din nou", "Inténtalo de nuevo"],
   ["Light mode", "Tema chiaro", "Mod luminos", "Modo claro"],
   ["Dark mode", "Tema scuro", "Mod întunecat", "Modo oscuro"],
   ["Booked", "Prenotata", "Rezervată", "Reservado"],

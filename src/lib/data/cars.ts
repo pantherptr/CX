@@ -514,6 +514,8 @@ export interface UpdateCarInput {
   deliveryEnabled: boolean;
   deliveryFeeType: 'free' | 'fixed';
   deliveryFeeAmount: number;
+  /** The exact pick-up spot (migration 0109). Pass all three together to set or move it; omit to leave it. */
+  pickup?: { lat: number; lng: number; label: string };
 }
 
 /** Host-facing edit of an already-listed car — price, cancellation
@@ -534,6 +536,9 @@ export async function updateCar(carId: string, input: UpdateCarInput): Promise<{
       delivery_enabled: input.deliveryEnabled,
       delivery_fee_type: input.deliveryFeeType,
       delivery_fee_amount: input.deliveryFeeAmount,
+      ...(input.pickup
+        ? { lat: input.pickup.lat, lng: input.pickup.lng, address_label: input.pickup.label, location: input.pickup.label }
+        : {}),
     })
     .eq('id', carId);
   return { error: error?.message ?? null };

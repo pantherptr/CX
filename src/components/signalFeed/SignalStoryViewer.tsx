@@ -205,6 +205,20 @@ export function SignalStoryViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyIndex, slideIndex]);
 
+  // Warm the next photo of THIS story while the current one is on screen, so the tap lands on it at once.
+  // Only inside an already authorised story, and only photos (a View Once story is never touched ahead).
+  const warmStoryId = story?.id;
+  const warmAuthorised = warmStoryId ? storyAuth[warmStoryId] === true : false;
+  useEffect(() => {
+    if (!warmAuthorised) return;
+    const next = story?.slides[slideIndex + 1];
+    if (!next || !next.mediaUrl || next.mediaType === 'video') return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = next.mediaUrl;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warmAuthorised, warmStoryId, slideIndex]);
+
   if (!story || !slide || hidingForProfile) return null;
 
   const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin, story.authorUsername);

@@ -11,7 +11,10 @@ async function open(page: Page, route: string, theme: 'light' | 'dark', country 
     sessionStorage.setItem('cx-splashed', '1');
   }, [theme, country]);
   await page.goto(route);
-  await page.waitForLoadState('networkidle');
+  // Not 'networkidle': pages with a map keep fetching tiles for a long time. Wait for the page itself.
+  await page.waitForLoadState('load');
+  await page.locator('#root h1, #root h2, #root main, #root form').first().waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
+  await page.waitForTimeout(500);
 }
 
 for (const theme of ['light', 'dark'] as const) {

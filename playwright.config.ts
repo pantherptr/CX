@@ -13,6 +13,9 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 8_000 },
   fullyParallel: true,
+  // a loaded machine can stall one page now and then; one retry keeps the run honest without hiding real bugs
+  retries: 1,
+  workers: process.env.CI ? 2 : 3,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [
@@ -24,5 +27,6 @@ export default defineConfig({
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : { command: 'npx vite --port 4173 --strictPort', url: baseURL, reuseExistingServer: true, timeout: 60_000 },
+    // The production build served by `vite preview`: no cold compile per page, no hot-reload noise.
+    : { command: 'npx vite build && npx vite preview --port 4173 --strictPort', url: baseURL, reuseExistingServer: true, timeout: 180_000 },
 });

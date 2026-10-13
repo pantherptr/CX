@@ -103,7 +103,7 @@ export default function Signal() {
   // Community is a ranked feed (a fresh mix of new and older posts on every refresh) or just the people you follow.
   const [feedMode, setFeedMode] = useState<'foryou' | 'following'>('foryou');
   const communityFeed = useEmpireFeed(null, { scope: 'community', ranked: feedMode });
-  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts } =
+  const { posts, loadMore, loadingMore, hasMore, refresh, patchPost, removePost, prependPost, newPostsAvailable, newPostsInfo, loadNewPosts, loadFailed } =
     space === 'official' ? officialFeed : communityFeed;
 
   // Posts scheduled for a time that has passed go live as soon as anyone opens SIGNAL.
@@ -568,6 +568,15 @@ export default function Signal() {
             <SignalPostSkeleton />
             <SignalPostSkeleton />
           </>
+        ) : posts.length === 0 && loadFailed ? (
+          <div className="flex flex-col items-center px-6 py-20 text-center">
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="info" size={26} /></span>
+            <p className="mt-5 font-display text-lead font-semibold text-ink">{t('Could not load the feed')}</p>
+            <p className="mt-1.5 max-w-[17rem] text-detail text-muted">{t('Check your connection and try again.')}</p>
+            <Tap onClick={() => refresh()} className="mt-5 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-detail font-semibold text-white">
+              {t('Try again')}
+            </Tap>
+          </div>
         ) : posts.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-20 text-center">
             <span className="grid h-24 w-24 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">

@@ -456,6 +456,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
   const { session } = useAuth();
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [newPostsInfo, setNewPostsInfo] = useState<{ count: number; avatars: (string | null)[] } | null>(null);
   const newPostsAvailable = newPostsInfo !== null;
@@ -540,9 +541,12 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
           );
       setPosts(rows);
       setHasMore(more);
+      setLoadFailed(false);
       setNewPostsAvailable(false);
     } catch {
-      setPosts([]);
+      // a load that failed is not an empty feed — the page offers a retry instead of "no posts yet"
+      setLoadFailed(true);
+      setPosts((cur) => cur ?? []);
       setHasMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -686,7 +690,7 @@ export function useEmpireFeed(category: EmpireCategory | null = null, scopeOpts?
 
   return {
     posts, loadMore, loadingMore, hasMore, refresh: loadInitial, patchPost, removePost, prependPost,
-    newPostsAvailable, newPostsInfo, loadNewPosts,
+    newPostsAvailable, newPostsInfo, loadNewPosts, loadFailed,
   };
 }
 

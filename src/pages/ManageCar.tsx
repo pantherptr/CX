@@ -1,3 +1,4 @@
+import { LocationPicker, type PickedLocation } from '../components/LocationPicker';
 import { ActionLabel } from '../components/ui/loading-button';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -45,6 +46,8 @@ export default function ManageCar() {
   const [deliveryEnabled, setDeliveryEnabled] = useState(false);
   const [deliveryFeeType, setDeliveryFeeType] = useState<'free' | 'fixed'>('free');
   const [deliveryFeeAmount, setDeliveryFeeAmount] = useState('0');
+  const [pin, setPin] = useState<PickedLocation | null>(null);
+  const [pinChanged, setPinChanged] = useState(false);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
   // Owner Control Center states (0021_owner_control_center.sql) — a host
@@ -63,6 +66,7 @@ export default function ManageCar() {
       setDeliveryEnabled(car.deliveryEnabled ?? false);
       setDeliveryFeeType(car.deliveryFeeType ?? 'free');
       setDeliveryFeeAmount(String(car.deliveryFeeAmount ?? 0));
+      if (car.lat != null && car.lng != null) setPin({ lat: car.lat, lng: car.lng, label: car.addressLabel ?? car.location ?? '' });
       setInitialized(true);
     }
   }, [car, initialized]);
@@ -80,6 +84,7 @@ export default function ManageCar() {
       deliveryEnabled,
       deliveryFeeType,
       deliveryFeeAmount: deliveryFeeType === 'fixed' ? Number(deliveryFeeAmount) || 0 : 0,
+      ...(pinChanged && pin ? { pickup: pin } : {}),
     });
     setSaving(false);
     if (error) {
@@ -257,6 +262,16 @@ export default function ManageCar() {
               )}
             </div>
           )}
+        </section>
+
+        <section className="card mb-6 p-5 sm:p-6">
+          <h2 className="font-display text-lg font-semibold text-ink">Pick-up point</h2>
+          <p className="mt-1 text-body text-muted">
+            {pin ? 'Drag the pin to the exact spot where renters find the car.' : 'This car has no exact spot yet. Search the address, then place the pin.'}
+          </p>
+          <div className="mt-4">
+            <LocationPicker value={pin} city={car.city} onChange={(v) => { setPin(v); setPinChanged(true); }} />
+          </div>
         </section>
 
         <div className="flex items-center gap-3">
