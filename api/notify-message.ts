@@ -6,6 +6,7 @@ import { getUserLang, text } from './_lib/texts.js';
 import { sendVerificationDecisionEmail } from './_lib/email.js';
 import Stripe from 'stripe';
 import { PAYOUT_SELECT, loadCommissionPct, payHostForBooking, type PayoutRow } from './_lib/payout.js';
+import { handleAssistant } from './_lib/assistant.js';
 
 /**
  * Pushes the other participant(s) in a conversation after a message is
@@ -29,6 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // The CX assistant answers anyone, signed in or not (it sees only public facts) — see _lib/assistant.ts.
+  if ((req.body ?? {}).type === 'assistant') return handleAssistant(req, res);
 
   // Database → push: a row written by a database function (notify_config, migration 0110) calls us
   // with a shared secret instead of a user session.

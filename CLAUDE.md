@@ -84,6 +84,13 @@ Code is written to fail soft before a migration is run.
 - Images already in Storage: `scripts/recompress-images.mjs` (dry run by default; `--apply` backs originals up locally first).
 - Optional `VITE_GEOAPIFY_KEY` switches address search from Photon to Geoapify (`src/lib/geocode.ts`).
 
+- **Kai, the CX assistant** (`src/components/Concierge.tsx`, replaces the old guided matcher; same exports
+  `ConciergeLauncher` / `ConciergeMark`): a chat. Answers come from `api/_lib/assistant.ts` via
+  `POST /api/notify-message {type:'assistant'}` (no new function; needs `ANTHROPIC_API_KEY` on Vercel — without it Kai
+  says so and offers a person). The model sees only the FAQ + published cars. "Talk to a person" opens/reuses the
+  CX support conversation (`findOrCreateCxConversation`), posts the last turns as the first message, and the panel
+  then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
+
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.

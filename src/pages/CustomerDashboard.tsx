@@ -191,7 +191,7 @@ function TripRow({ booking }: { booking: Booking }) {
 }
 
 export default function CustomerDashboard() {
-  const askConciergeScramble = useScramble('Ask the Concierge');
+  const askConciergeScramble = useScramble('Ask Kai');
   const navigate = useNavigate();
   const { favorites, toast } = useApp();
   const { profile, session } = useAuth();
@@ -400,7 +400,7 @@ export default function CustomerDashboard() {
             <QuickAction icon="heart" label="Favorites" to="/dashboard#saved" />
             <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 active:scale-[0.97] sm:gap-2.5 sm:py-5">
               <ConciergeMark size={44} className="transition-transform duration-300 group-hover:scale-105" />
-              <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">Concierge</span>
+              <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">Kai</span>
             </ConciergeLauncher>
           </div>
         </Reveal>
@@ -647,7 +647,7 @@ export default function CustomerDashboard() {
             />
             <div className="relative">
               <p className="inline-flex items-center gap-2.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">
-                <ConciergeMark size={30} live /> CX Concierge
+                <ConciergeMark size={30} live /> Kai · CX assistant
               </p>
               <h2 className="mt-2 font-display text-xl font-semibold text-ink">Need something specific?</h2>
               <p className="mt-2 text-detail leading-relaxed text-muted">

@@ -511,7 +511,7 @@ export default function Home() {
             <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
               <div className="max-w-xl">
                 <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
-                  <ConciergeMark size={44} live /> {t('CX Concierge')}
+                  <ConciergeMark size={44} live /> {t('Kai · CX assistant')}
                 </p>
                 <BlurText as="h2" className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Find your CX')} />
                 <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
