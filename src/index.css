@@ -1139,6 +1139,16 @@
      creates a containing block for `position: fixed` descendants, which
      silently breaks every full-screen modal on the page. */
   .animate-page { animation: page-in 0.4s var(--ease-out-expo) backwards; }
+
+  /* Dashboards read as an app, not a web page: a soft canvas with large, borderless, softly lifted cards
+     (scoped to the dashboard shell so the rest of the site keeps its own cards). */
+  .app-dash { background: var(--color-panel); }
+  .app-dash .card {
+    border-color: transparent;
+    border-radius: 1.75rem;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 14px 34px -26px rgba(0, 0, 0, 0.28);
+  }
+  .app-dash h1 { letter-spacing: -0.02em; }
   .toast-progress { animation-name: toast-progress; animation-timing-function: linear; animation-fill-mode: forwards; }
   @keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 

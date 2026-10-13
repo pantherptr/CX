@@ -230,7 +230,7 @@ export function DashboardShell({
               </Link>
             ) : null}
             <Link to="/browse" className="btn btn-secondary btn-sm hidden sm:inline-flex">Find a car</Link>
-            <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel" aria-label="Notifications">
+            <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-ink hover:bg-panel" aria-label="Notifications">
               <Icon name="bell" size={20} />
               {unreadNotifications > 0 && (
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full border-2 border-surface bg-accent-bright" />
@@ -254,13 +254,13 @@ export function DashboardShell({
                 </span>
               )}
             </Link>
-            <button onClick={() => setOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel lg:hidden" aria-label="Open menu">
+            <button onClick={() => setOpen(true)} className="grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-ink hover:bg-panel lg:hidden" aria-label="Open menu">
               <Icon name="menu" size={20} />
             </button>
           </div>
         </header>
 
-        <main className={`min-w-0 flex-1 ${fullHeight ? 'overflow-hidden' : ''}`}>{children}</main>
+        <main className={`app-dash min-w-0 flex-1 ${fullHeight ? 'overflow-hidden' : ''}`}>{children}</main>
       </div>
     </div>
   );
@@ -292,20 +292,26 @@ export function StatCard({
 }) {
   const { ref: countRef, value: animated } = useCountUp<HTMLParagraphElement>(countTo ?? 0, { duration: 900 });
   const display = countTo !== undefined ? (format ? format(animated) : String(animated)) : value;
+  const down = Boolean(trend?.startsWith('-'));
   return (
-    <div className={`card p-4 sm:p-5 ${accent ? '!bg-accent-050 !border-accent/25' : ''}`}>
-      <div className="flex items-center justify-between">
-        <span className={`grid h-10 w-10 place-items-center rounded-xl ${accent ? 'bg-accent/10 text-accent-700' : 'bg-panel text-ink-soft'}`}>
-          <Icon name={icon} size={20} />
+    <div className={`card flex flex-col p-5 ${accent ? '!bg-accent-050' : ''}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-detail font-medium text-ink-soft">{label}</p>
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border ${accent ? 'border-accent/20 bg-surface text-accent-700' : 'border-line bg-panel/60 text-ink-soft'}`}>
+          <Icon name={icon} size={17} />
         </span>
+      </div>
+      <div className="mt-4 flex flex-wrap items-end gap-x-2.5 gap-y-1.5">
+        <p ref={countTo !== undefined ? countRef : undefined} className="font-display text-[2rem] font-semibold leading-none tracking-tight text-ink tabular-nums sm:text-[2.25rem]">{display}</p>
         {trend && (
-          <span className={`inline-flex items-center gap-1 text-caption font-medium ${trend.startsWith('-') ? 'text-danger' : 'text-accent'}`}>
-            <Icon name="trending" size={14} /> {trend}
+          <span
+            className={`mb-0.5 inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-caption font-semibold shadow-[0_6px_14px_-8px_rgba(0,0,0,0.35)] ${down ? 'text-danger' : 'text-accent-700'}`}
+          >
+            <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" className={down ? 'rotate-180' : ''}><path d="M5 1.5 9 8.5H1z" fill="currentColor" /></svg>
+            {trend.replace(/^[+-]/, '')}
           </span>
         )}
       </div>
-      <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl text-ink`}>{display}</p>
-      <p className={`mt-0.5 text-detail text-muted`}>{label}</p>
       {bars && <MiniBars values={bars} labels={barLabels} accent={accent} />}
     </div>
   );
@@ -313,11 +319,16 @@ export function StatCard({
 
 /** The small bar chart of a StatCard: heights relative to the largest bar, growing one after another the
  *  first time it is on screen (nothing moves under reduced motion). */
+// The bars are drawn as diagonal hatching, the current period in the full accent and the rest softer.
+const STRIPES_ON = 'repeating-linear-gradient(135deg, var(--color-accent) 0 2px, color-mix(in srgb, var(--color-accent) 35%, transparent) 2px 5px)';
+const STRIPES_OFF_ACCENT = 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 30%, transparent) 0 2px, color-mix(in srgb, var(--color-accent) 10%, transparent) 2px 5px)';
+const STRIPES_OFF = 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-ink) 22%, transparent) 0 2px, color-mix(in srgb, var(--color-ink) 7%, transparent) 2px 5px)';
+
 export function MiniBars({ values, labels, accent }: { values: number[]; labels?: string[]; accent?: boolean }) {
   const reduced = useReducedMotion();
   const max = Math.max(...values, 1);
   return (
-    <div className="mt-3 flex h-14 items-end gap-1.5" aria-hidden="true">
+    <div className="mt-5 flex h-16 items-end gap-1.5" aria-hidden="true">
       {values.map((v, i) => {
         const last = i === values.length - 1;
         const h = Math.max(6, (v / max) * 100);
@@ -328,7 +339,8 @@ export function MiniBars({ values, labels, accent }: { values: number[]; labels?
               whileInView={{ height: `${h}%`, opacity: 1 }}
               viewport={{ once: true }}
               transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 25, delay: 0.1 + i * 0.07 }}
-              className={`w-full rounded-[3px] ${last ? (accent ? 'bg-accent' : 'bg-ink') : accent ? 'bg-accent/30' : 'bg-line-strong'}`}
+              className="w-full rounded-[4px]"
+              style={{ backgroundImage: last ? STRIPES_ON : accent ? STRIPES_OFF_ACCENT : STRIPES_OFF }}
             />
             {labels?.[i] && <span className="text-[9px] leading-none text-faint">{labels[i]}</span>}
           </div>
