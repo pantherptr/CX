@@ -11,10 +11,26 @@ import { matchCars, type DriveType, type Preferences, type Priority } from './ca
  * It never invents a price, policy or car; what it cannot answer it hands to a person.
  */
 
+/** What Kai actually did to get the answer — shown as the "think" trail in the chat. */
+export interface ReplyTrace {
+  kind: 'cars' | 'faq' | 'greeting' | 'person' | 'unknown';
+  carsConsidered?: number;
+  citiesConsidered?: number;
+  city?: string | null;
+  maxPrice?: number | null;
+  people?: string | null;
+  driveType?: DriveType | null;
+  matches?: number;
+  budgetRelaxed?: boolean;
+  faqTopics?: number;
+  topic?: string;
+}
+
 export interface LocalReply {
   text: string;
   cars?: string[]; // slugs
   offerHuman?: boolean;
+  trace?: ReplyTrace;
 }
 
 // Foreign key words → the English word the FAQ uses (it / ro / es), so "annullare" finds "cancel".
@@ -110,10 +126,10 @@ export function localReply(
   const low = clean.toLowerCase();
 
   if (HUMAN.test(low) && clean.length < 80) {
-    return { text: t('Of course — I will connect you with a person from the CX team.'), offerHuman: true };
+    return { text: t('Of course — I will connect you with a person from the CX team.'), offerHuman: true, trace: { kind: 'person' } };
   }
   if (/^(hi|hello|hey|ciao|salve|buongiorno|buonasera|salut|buna|bună|hola|buenas)\b/.test(low) && clean.length < 25) {
-    return { text: t('Hello! Tell me what you need: a car for a trip, or help with something.') };
+    return { text: t('Hello! Tell me what you need: a car for a trip, or help with something.'), trace: { kind: 'greeting' } };
   }
 
   const cities = Array.from(new Set(cars.map((c) => c.city)));
@@ -122,7 +138,7 @@ export function localReply(
 
   // A question that clearly matches the FAQ wins over a car search (unless they named a city / said "find").
   if (faq && faq.score >= 0.5 && !/\b(find|trova|cerco|caut|busco|recommend|consigli)\b/.test(low)) {
-    return { text: t(faq.a) };
+    return { text: t(faq.a), trace: { kind: 'faq', faqTopics: faqs.length, topic: faq.q } };
   }
 
   if (wantsCar && cars.length > 0) {
@@ -134,14 +150,29 @@ export function localReply(
       const intro = budgetExcludedAll
         ? t('Nothing fits that budget exactly, but these are the closest options{where}:', { where })
         : t('Here are some options{where}:', { where });
-      return { text: intro, cars: top.map((r) => r.car.slug) };
+      return {
+        text: intro,
+        cars: top.map((r) => r.car.slug),
+        trace: {
+          kind: 'cars',
+          carsConsidered: cars.length,
+          citiesConsidered: cities.length,
+          city: prefs.city,
+          maxPrice: prefs.maxPricePerDay,
+          people: prefs.passengers,
+          driveType: prefs.driveType,
+          matches: results.length,
+          budgetRelaxed: budgetExcludedAll,
+        },
+      };
     }
   }
 
-  if (faq) return { text: t(faq.a) };
+  if (faq) return { text: t(faq.a), trace: { kind: 'faq', faqTopics: faqs.length, topic: faq.q } };
 
   return {
     text: t("I'm not sure I can answer that well. A person from the CX team can — or tell me more and I will try again."),
     offerHuman: true,
+    trace: { kind: 'unknown', faqTopics: faqs.length },
   };
 }

@@ -7,11 +7,12 @@ import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
 import { findOrCreateCxConversation, sendMessage, useConversation } from '../lib/data/messages';
 import { supabase } from '../lib/supabase';
-import { localReply } from '../lib/assistantLocal';
+import { localReply, type LocalReply } from '../lib/assistantLocal';
 import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
+import type { Car } from '../data/types';
 
 /**
  * Kai — the CX assistant. A plain chat: you write what you need (a car for a trip, a problem with a
@@ -36,16 +37,50 @@ interface ChatMsg {
   seconds?: number;
 }
 
-/** The trail shown for a local answer: it describes what really happened (FAQ lookup / car match). */
-function thoughtSteps(r: { cars?: string[]; offerHuman?: boolean }, t: (s: string, v?: Record<string, string | number>) => string): string[] {
-  const steps = [t('Reading your question…')];
-  if (r.cars && r.cars.length > 0) {
-    steps.push(t('Checking the cars on CX…'), t('{n} matches found', { n: r.cars.length }));
-  } else if (r.offerHuman) {
-    steps.push(t('Looking through the help articles…'), t('No exact answer — offering a person'));
-  } else {
-    steps.push(t('Looking through the help articles…'), t('Found an answer'));
+/** The trail shown for a local answer. Every line is something Kai really did or found for this question. */
+function thoughtSteps(
+  r: LocalReply,
+  cars: Car[],
+  t: (s: string, v?: Record<string, string | number>) => string,
+): string[] {
+  const tr = r.trace;
+  const clip = (x: string, n = 46) => (x.length > n ? `${x.slice(0, n - 1).trimEnd()}…` : x);
+  if (!tr || tr.kind === 'greeting') return [t('Reading your message…'), t('Saying hello')];
+  if (tr.kind === 'person') return [t('Reading your message…'), t('Preparing the hand-over to the team')];
+  if (tr.kind === 'faq') {
+    return [
+      t('Reading your question…'),
+      t('Searching {n} help topics…', { n: tr.faqTopics ?? 0 }),
+      t('Closest topic: {topic}', { topic: clip(t(tr.topic ?? '')) }),
+      t('Answer ready'),
+    ];
   }
+  if (tr.kind === 'unknown') {
+    return [
+      t('Reading your question…'),
+      t('Searching {n} help topics…', { n: tr.faqTopics ?? 0 }),
+      t('No close answer found'),
+      t('Offering a person from the team'),
+    ];
+  }
+  const styles: Record<string, string> = {
+    weekend: 'Weekend', luxury: 'Luxury', performance: 'Performance', business: 'Business',
+    'road-trip': 'Road trip', city: 'City', occasion: 'Special occasion',
+  };
+  const steps = [
+    t('Reading your request…'),
+    t('Comparing {n} cars in {c} cities…', { n: tr.carsConsidered ?? 0, c: tr.citiesConsidered ?? 0 }),
+  ];
+  const wants: string[] = [];
+  if (tr.city) wants.push(t('City: {city}', { city: tr.city }));
+  if (tr.maxPrice) wants.push(t('Budget: up to {price}/day', { price: eur(tr.maxPrice) }));
+  if (tr.people) wants.push(t('For {n} people', { n: tr.people }));
+  if (tr.driveType) wants.push(t('Trip style: {style}', { style: t(styles[tr.driveType] ?? tr.driveType) }));
+  if (wants.length === 0) steps.push(t('No filters given — ranking by overall fit'));
+  else steps.push(...wants.slice(0, 2));
+  steps.push(tr.budgetRelaxed ? t('Nothing fits that budget — widening the search') : t('{n} matches found', { n: tr.matches ?? r.cars?.length ?? 0 }));
+  const best = r.cars?.[0] ? cars.find((c) => c.slug === r.cars?.[0]) : null;
+  if (best) steps.push(t('Best match: {car} · {price}/day', { car: `${best.make} ${best.model}`, price: eur(best.pricePerDay) }));
   return steps;
 }
 
@@ -176,7 +211,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       // browser. Set VITE_ASSISTANT_AI=1 (and an Anthropic key on the server) to use the AI instead.
       if (!AI_ENABLED) {
         const r = localReply(clean, cars ?? [], t);
-        const steps = thoughtSteps(r, t);
+        const steps = thoughtSteps(r, cars ?? [], t);
         const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const started = Date.now();
         const timers: number[] = [];
@@ -221,9 +256,9 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         };
         if (think && !reduced) {
           setPending({ steps, shown: 0, seconds: 0 });
-          steps.forEach((_, i) => later(450 * (i + 1), () => setPending((p) => (p ? { ...p, shown: i + 1 } : p))));
+          steps.forEach((_, i) => later(400 * (i + 1), () => setPending((p) => (p ? { ...p, shown: i + 1 } : p))));
           interval = window.setInterval(() => setPending((p) => (p ? { ...p, seconds: p.seconds + 1 } : p)), 1000);
-          later(450 * steps.length + 350, () => { window.clearInterval(interval); reveal(); });
+          later(400 * steps.length + 300, () => { window.clearInterval(interval); reveal(); });
         } else {
           later(think ? 0 : 250, reveal);
         }
