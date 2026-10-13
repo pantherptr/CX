@@ -79,6 +79,12 @@
       "skillPath": "skills/systematic-debugging/SKILL.md",
       "computedHash": "276fb0aadb002ab930cc2a56de89e16995a2e3e70b33587652bf0a5fb123148d"
     },
+    "to-tickets": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/to-tickets/SKILL.md",
+      "computedHash": "5f871bdc46a9212222214ba399be4965374208af1bd7f48f1271bef72841dd31"
+    },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
