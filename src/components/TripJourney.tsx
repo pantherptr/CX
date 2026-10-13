@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { ShareProfileSheet, type PassData } from './CxPass';
@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { uiLocale } from '../lib/i18n/uiLocale';
 import type { Booking } from '../lib/data/bookings';
-import { fetchHandoverState, type HandoverState } from '../lib/data/handovers';
+import { fetchHandoverState, releasePayoutAfterHandover, undoScan, UNDO_WINDOW_MS, type HandoverState } from '../lib/data/handovers';
 import { useVerification, licenceReady } from '../lib/data/verification';
 
 type Role = 'renter' | 'host';
@@ -94,7 +94,9 @@ export function TripJourney({
   const { t } = useLocale();
   const { profile, session } = useAuth();
   const [state, setState] = useState<HandoverState | null>(null);
-  const [, tick] = useState(0);
+  const [tickN, tick] = useState(0);
+  const [undoing, setUndoing] = useState(false);
+  const releasedRef = useRef(false);
   const [passOpen, setPassOpen] = useState(false);
   const { verification } = useVerification(role === 'renter' ? session?.user.id : undefined);
 
@@ -119,6 +121,16 @@ export function TripJourney({
     return () => window.clearInterval(timer);
   }, []);
 
+  // Once the 5-minute undo window has passed, ask for the host's payout (the server holds it until then and
+  // re-checks everything; asking twice can never pay twice).
+  useEffect(() => {
+    if (!state?.pickupAt || releasedRef.current) return;
+    if (Date.now() - new Date(state.pickupAt).getTime() <= UNDO_WINDOW_MS) return;
+    releasedRef.current = true;
+    void releasePayoutAfterHandover(booking.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.pickupAt, tickN]);
+
   const deadline = useMemo(() => {
     const [y, m, d] = booking.endDate.split('-').map(Number);
     return new Date(y, (m ?? 1) - 1, d ?? 1, 23, 59, 59);
@@ -135,6 +147,23 @@ export function TripJourney({
 
   // A trip that ended without anyone scanning (older bookings) has nothing to guide.
   if (stage === 'pickup' && booking.endDate < today && role === 'renter') return null;
+
+  // "Scanned by mistake?": only the person who scanned, only inside the window.
+  const me = session?.user.id;
+  const withinWindow = (at: string | null | undefined) => Boolean(at) && Date.now() - new Date(at as string).getTime() < UNDO_WINDOW_MS;
+  const undoKind: 'pickup' | 'return' | null = state.returnAt
+    ? state.returnBy && state.returnBy === me && withinWindow(state.returnAt) ? 'return' : null
+    : state.pickupBy && state.pickupBy === me && withinWindow(state.pickupAt) ? 'pickup' : null;
+  const doUndo = async () => {
+    if (!undoKind || undoing) return;
+    setUndoing(true);
+    const { error } = await undoScan(booking.id, undoKind);
+    setUndoing(false);
+    if (error) { window.alert(error); return; }
+    const s = await fetchHandoverState(booking.id);
+    setState(s);
+    onChanged?.();
+  };
 
   const other = role === 'renter' ? booking.host : booking.renter;
   const otherName = other.name || (role === 'renter' ? t('your host') : t('the renter'));
@@ -208,6 +237,20 @@ export function TripJourney({
   };
   const hd = heading[stage];
 
+  const undoBar = undoKind && (
+    <div className="flex items-center justify-between gap-3 border-b border-line bg-panel px-5 py-3">
+      <p className="text-detail text-ink-soft">{undoKind === 'return' ? t('Return scanned by mistake?') : t('Handover scanned by mistake?')}</p>
+      <button
+        type="button"
+        onClick={() => void doUndo()}
+        disabled={undoing}
+        className="shrink-0 rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-detail font-semibold text-ink disabled:opacity-60"
+      >
+        {undoing ? t('Undoing…') : t('Undo')}
+      </button>
+    </div>
+  );
+
   return (
     <section className="mt-6 overflow-hidden rounded-3xl border border-line bg-surface shadow-hair">
       <div className="flex items-center gap-3.5 border-b border-line bg-panel/60 px-5 py-4">
@@ -216,6 +259,7 @@ export function TripJourney({
           <p className="truncate font-display text-lead font-semibold text-ink">{hd.title}</p>
           <p className="text-caption font-semibold uppercase tracking-wide text-muted">{hd.sub}</p>
         </div>
+      {undoBar}
       </div>
 
       {(stage === 'road' || stage === 'return') && (

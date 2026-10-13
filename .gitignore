@@ -42,3 +42,5 @@ NOTIFICHE-CHIAVI.local.txt
 # Playwright
 playwright-report/
 test-results/
+.env.e2e.local
+!.env.e2e.example

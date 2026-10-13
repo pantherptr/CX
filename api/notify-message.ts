@@ -87,8 +87,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (row.status !== 'confirmed') return res.status(409).json({ error: 'This booking is not confirmed.' });
     if (row.payout_status !== 'pending' && row.payout_status !== 'blocked') return res.status(200).json({ result: row.payout_status });
     if (row.start_date > new Date().toISOString().slice(0, 10)) return res.status(409).json({ error: 'The trip has not started yet.' });
-    const { data: handover } = await admin.from('booking_handovers').select('booking_id').eq('booking_id', bookingId).maybeSingle();
+    const { data: handover } = await admin.from('booking_handovers').select('booking_id, verified_at').eq('booking_id', bookingId).maybeSingle();
     if (!handover) return res.status(409).json({ error: 'The handover is not verified.' });
+    // The scan can be undone for 5 minutes (migration 0122): the money moves only after that window.
+    const heldMs = 5 * 60_000 - (Date.now() - new Date((handover as { verified_at: string }).verified_at).getTime());
+    if (heldMs > 0) return res.status(200).json({ result: 'waiting', retryInSeconds: Math.ceil(heldMs / 1000) + 2 });
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
     const result = await payHostForBooking(admin, stripe, row, await loadCommissionPct(admin));
     return res.status(200).json({ result });

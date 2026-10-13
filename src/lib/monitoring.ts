@@ -9,8 +9,17 @@ export function initMonitoring() {
     Sentry.init({
       dsn,
       environment: 'production',
-      tracesSampleRate: 0,
+      // A small sample of page loads and navigations, to see which pages are slow on real phones.
+      integrations: [Sentry.browserTracingIntegration()],
+      tracesSampleRate: 0.1,
+      // never add trace headers to calls to other origins (Supabase, Stripe, maps): no CORS surprises
+      tracePropagationTargets: [],
       ignoreErrors: [/ResizeObserver loop/, /Failed to fetch/, /Load failed/, /NetworkError/, /AbortError/],
+      beforeSendTransaction(event) {
+        if (event.request?.url) event.request.url = event.request.url.split('?')[0];
+        if (event.transaction) event.transaction = event.transaction.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ':id');
+        return event;
+      },
       beforeSend(event) {
         if (event.user) event.user = { id: event.user.id };
         if (event.request?.url) event.request.url = event.request.url.split('?')[0];

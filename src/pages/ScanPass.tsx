@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { ShareProfileSheet, type PassData } from '../components/CxPass';
-import { profileIdFromPassUrl, releasePayoutAfterHandover, verifyHandover, verifyReturn } from '../lib/data/handovers';
+import { profileIdFromPassUrl, releasePayoutAfterHandover, undoScan, verifyHandover, verifyReturn } from '../lib/data/handovers';
 
 /** Scan someone's CX Pass. With `?booking=` it confirms the handover of that booking; without, it just
  *  opens their profile. Camera first, a photo of the pass as the fallback. */
@@ -22,6 +22,7 @@ export default function ScanPass() {
   const [error, setError] = useState<string | null>(null);
   const [cameraOff, setCameraOff] = useState(false);
   const [done, setDone] = useState<{ profileId: string } | null>(null);
+  const [undoing, setUndoing] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchOk, setTorchOk] = useState(false);
   const [myPassOpen, setMyPassOpen] = useState(false);
@@ -180,6 +181,24 @@ export default function ScanPass() {
                 <Link to={`/trips/${bookingId}`} className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[15px] font-semibold">
                   {t('Back to the trip')}
                 </Link>
+              )}
+              {bookingId && (
+                <button
+                  type="button"
+                  disabled={undoing}
+                  onClick={async () => {
+                    setUndoing(true);
+                    const { error: e } = await undoScan(bookingId, kind === 'return' ? 'return' : 'pickup');
+                    setUndoing(false);
+                    if (e) { setError(e); return; }
+                    handledRef.current = false;
+                    setError(null);
+                    setDone(null);
+                  }}
+                  className="mt-1 text-detail font-semibold text-white/70 underline disabled:opacity-60"
+                >
+                  {undoing ? t('Undoing…') : t('Scanned by mistake? Undo')}
+                </button>
               )}
             </div>
           </div>

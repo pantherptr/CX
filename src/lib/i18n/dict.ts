@@ -31,6 +31,11 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Return scanned by mistake?", "Riconsegna inquadrata per errore?", "Returnare scanată din greșeală?", "¿Devolución escaneada por error?"],
+  ["Handover scanned by mistake?", "Consegna inquadrata per errore?", "Predare scanată din greșeală?", "¿Entrega escaneada por error?"],
+  ["Undo", "Annulla", "Anulează", "Deshacer"],
+  ["Undoing…", "Annullo…", "Se anulează…", "Deshaciendo…"],
+  ["Scanned by mistake? Undo", "Inquadrato per errore? Annulla", "Scanat din greșeală? Anulează", "¿Escaneado por error? Deshacer"],
   ["Could not load the feed", "Impossibile caricare il feed", "Nu s-a putut încărca feed-ul", "No se pudo cargar el feed"],
   ["Check your connection and try again.", "Controlla la connessione e riprova.", "Verifică conexiunea și încearcă din nou.", "Revisa tu conexión e inténtalo de nuevo."],
   ["Try again", "Riprova", "Încearcă din nou", "Inténtalo de nuevo"],

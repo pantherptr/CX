@@ -32,7 +32,7 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 0098 collab · 0099 team boost notifications · 0100 sponsored posts · 0101 unpin community posts ·
 0102 host commission + payout ledger · 0103 owner payout overview · 0104 chat photos/delete/report ·
 0105 user devices · 0106 identity + licence verification · 0107 car catalogue (names/specs) ·
-0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts · 0116 welcome pass shown once to new members · 0117 verified handover + host-Respect-on-trip notification · 0118 admin view of verified handovers · 0119 return scan (second scan closes the trip) · 0120 locks the old game_stats_summary view · 0121 For-you ranking learns your cities/makes/hosts. The feed hook keeps the last feed (per person) in memory for 10 min so going away and back restores posts + scroll. A verified handover pays the host straight away (api/_lib/payout.ts via notify-message type `handover-payout`); the daily sweep still pays everything else after end_date.
+0108 listing review window (5 min) · 0109 precise pick-up point (lat/lng) · 0110 notifications inbox + web push + prefs · 0111 user language (+ localised DB-written texts) · 0112 signal push for every event · 0113 admins publish in SIGNAL only as the team (trigger) · 0114 SIGNAL search by car city/make/model · 0115 scheduled posts · 0116 welcome pass shown once to new members · 0117 verified handover + host-Respect-on-trip notification · 0118 admin view of verified handovers · 0119 return scan (second scan closes the trip) · 0120 locks the old game_stats_summary view · 0121 For-you ranking learns your cities/makes/hosts · 0122 undo a scan (5 min; the API holds the handover payout for that window). The feed hook keeps the last feed (per person) in memory for 10 min so going away and back restores posts + scroll. A verified handover pays the host straight away (api/_lib/payout.ts via notify-message type `handover-payout`); the daily sweep still pays everything else after end_date.
 Code is written to fail soft before a migration is run.
 
 ## Features worth knowing
@@ -78,10 +78,13 @@ Code is written to fail soft before a migration is run.
 - Theme: the site theme is `cx-theme`; SIGNAL wears its own (`cx-signal-theme`, dark the first time) via
   `setInSignal` in `src/lib/theme.ts` (called from App.tsx on route change). Toggling inside SIGNAL only changes SIGNAL's.
 
+- Sentry (`src/lib/monitoring.ts`): off without `VITE_SENTRY_DSN`, off on the dev server and under automation; 10% of page
+  loads are traced (no trace headers to other origins); personal data is stripped before sending.
+
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
   loads, nothing wider than the screen, no console errors, one-line hero, Italian copy, dark background.
-  The suite builds the site and tests `vite preview` (no dev-server noise); `E2E_BASE_URL=<preview url>` tests a deployed preview. `e2e/handover.spec.ts` needs two TEST accounts via env
+  The suite builds the site and tests `vite preview` (no dev-server noise); `E2E_BASE_URL=<preview url>` tests a deployed preview. `e2e/signed-in.spec.ts` needs ONE throw-away account (`E2E_TEST_EMAIL/PASSWORD`, see `.env.e2e.example`); `e2e/handover.spec.ts` needs two TEST accounts via env
   (`E2E_HOST_*`, `E2E_RENTER_*`, `E2E_BOOKING_ID`) and is skipped otherwise. Never put real credentials in git.
 
 ## Notifications (migration 0110)
