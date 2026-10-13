@@ -322,9 +322,12 @@ export function VerifyNudge({ verification, loading }: { verification: Verificat
   if (loading) return null;
   const id = verification?.identityStatus ?? 'none';
   const lic = verification?.licenceStatus ?? 'none';
-  if (id === 'approved' && lic === 'approved') return null;
-  if (id === 'pending' && (lic === 'pending' || lic === 'approved')) return null;
   const rejected = id === 'rejected' || lic === 'rejected';
+  // Once the photos have been sent (waiting for review or already approved) there is nothing left for the
+  // person to do, so the bar goes away. It stays only for: a document to redo, identity not sent at all, or
+  // identity approved with no licence sent yet (needed to rent).
+  const idSent = id === 'pending' || id === 'approved';
+  if (!rejected && idSent && !(id === 'approved' && lic === 'none')) return null;
   const text = rejected
     ? 'A document needs a new photo — tap to see why.'
     : id === 'none'
