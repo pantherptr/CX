@@ -355,7 +355,7 @@ export default function CustomerDashboard() {
                 </section>
               </Reveal>
             )}
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {carSpend.length > 0 && (
                 <Reveal delay={60}>
                   <section className="card p-5 sm:p-6">
@@ -513,9 +513,9 @@ export default function CustomerDashboard() {
           </Reveal>
         )}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.5fr_1fr]">
           {/* My Trips */}
-          <section id="trips" className="scroll-mt-20">
+          <section id="trips" className="min-w-0 scroll-mt-20">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">My Trips</h2>
             </div>
@@ -569,7 +569,7 @@ export default function CustomerDashboard() {
           </section>
 
           {/* Messages preview */}
-          <section>
+          <section className="min-w-0">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">Messages</h2>
               <Link to="/messages" className="text-detail font-medium text-muted hover:text-ink">Open</Link>
@@ -621,7 +621,7 @@ export default function CustomerDashboard() {
             <Link to="/browse" className="text-detail font-medium text-muted hover:text-ink">Browse more</Link>
           </div>
           {saved.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {saved.map((c) => <CarCard key={c.id} car={c} />)}
             </div>
           ) : (
@@ -638,7 +638,7 @@ export default function CustomerDashboard() {
           )}
         </section>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.3fr]">
           {/* Concierge */}
           <section className="relative overflow-hidden rounded-2xl border border-line bg-panel p-5 sm:p-6">
             <div

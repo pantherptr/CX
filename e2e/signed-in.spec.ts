@@ -88,6 +88,24 @@ test.describe('signed in', () => {
     expect(Math.abs(after - before), `scroll before ${before}, after ${after}`).toBeLessThan(40);
   });
 
+  test('the dashboards fit the phone screen (nothing sticks out to the right)', async ({ page }) => {
+    await signIn(page);
+    for (const route of ['/dashboard', '/host', '/messages', '/notifications']) {
+      await page.goto(route);
+      await page.waitForTimeout(3000);
+      const m = await page.evaluate(() => {
+        const w = window.innerWidth;
+        const wide = Array.from(document.querySelectorAll<HTMLElement>('main *'))
+          .filter((e) => e.getBoundingClientRect().right > w + 2 && getComputedStyle(e).position !== 'fixed')
+          .slice(0, 3)
+          .map((e) => `${e.tagName}.${String(e.className).slice(0, 50)}`);
+        return { scrollWidth: document.documentElement.scrollWidth, w, wide };
+      });
+      expect(m.scrollWidth, `${route}: page wider than the screen (${m.wide.join(' | ')})`).toBeLessThanOrEqual(m.w + 1);
+      expect(m.wide, `${route}: elements past the right edge`).toEqual([]);
+    }
+  });
+
   test('Reels page loads without errors', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));

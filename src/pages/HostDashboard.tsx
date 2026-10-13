@@ -810,7 +810,7 @@ export default function HostDashboard() {
           </Reveal>
         )}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Earnings chart */}
           <Reveal><section className="card scroll-mt-20 p-4 sm:p-6" id="earnings">
             <div className="flex items-center justify-between">
@@ -853,7 +853,7 @@ export default function HostDashboard() {
           </section></Reveal>
 
         {!loading && (carRows.length > 0 || insight) && (
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {carRows.length > 0 && (
               <Reveal delay={60}>
                 <section className="card p-5 sm:p-6">
@@ -942,11 +942,11 @@ export default function HostDashboard() {
             <Link to="/list-your-car" className="text-detail font-medium text-muted hover:text-ink">Add vehicle</Link>
           </div>
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[0, 1, 2, 3].map((i) => <div key={i} className="skeleton aspect-[16/10] rounded-2xl" />)}
             </div>
           ) : hostCars && hostCars.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {hostCars.map((c) => {
                 const published = c.status === 'published';
                 const stats = carStats.get(c.id);
@@ -1033,7 +1033,7 @@ export default function HostDashboard() {
           {loading ? (
             <div className="skeleton h-80 rounded-2xl" />
           ) : hostCars && hostCars.length > 0 ? (
-            <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1fr]">
               <div className="card p-4 sm:p-6">
                 <HostFleetCalendar
                   cars={hostCars.map((c) => ({ id: c.id, make: c.make, model: c.model }))}
