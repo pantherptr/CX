@@ -6,6 +6,7 @@ import { Img } from './motion';
 import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
 import { findOrCreateCxConversation, sendMessage, useConversation } from '../lib/data/messages';
+import { supabase } from '../lib/supabase';
 import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
@@ -138,9 +139,10 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       setBusy(true);
       try {
         const history = next.filter((m) => m.role !== 'note').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
         const res = await fetch(apiUrl('/api/notify-message'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ type: 'assistant', messages: history, signedIn: Boolean(session) }),
         });
         const j = (await res.json().catch(() => null)) as { reply?: string; cars?: string[]; human?: boolean; error?: string } | null;

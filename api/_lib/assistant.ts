@@ -15,13 +15,39 @@ const MODEL = process.env.ANTHROPIC_ASSISTANT_MODEL || process.env.ANTHROPIC_TRA
 const MAX_MESSAGES = 12;
 const MAX_CHARS = 900;
 
+// Cost guards (best effort, per server instance — a speed bump, not a guarantee; the hard ceiling is the
+// spend limit set in the Anthropic console):
+//  - visitors who are not signed in get a few answers per 10 minutes, members get more;
+//  - ASSISTANT_DAILY_MAX caps the answers a day (default 3000);
+//  - ASSISTANT_ENABLED=0 switches the AI off (Kai then only hands over to a person).
 const hits = new Map<string, number[]>();
-function limited(ip: string): boolean {
+function limited(key: string, max: number): boolean {
   const now = Date.now();
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < 10 * 60_000);
+  const recent = (hits.get(key) ?? []).filter((t) => now - t < 10 * 60_000);
   recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > 40;
+  hits.set(key, recent);
+  return recent.length > max;
+}
+const day = { d: '', n: 0 };
+function overDaily(): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  if (day.d !== today) { day.d = today; day.n = 0; }
+  day.n += 1;
+  return day.n > Number(process.env.ASSISTANT_DAILY_MAX || 3000);
+}
+
+async function signedInUser(req: VercelRequest): Promise<string | null> {
+  const h = req.headers.authorization;
+  const url = process.env.VITE_SUPABASE_URL;
+  const anon = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!h || !h.startsWith('Bearer ') || !url || !anon) return null;
+  try {
+    const sb = createClient(url, anon, { global: { headers: { Authorization: h } }, auth: { persistSession: false } });
+    const { data } = await sb.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 let carsCache: { at: number; text: string; slugs: Set<string> } | null = null;
@@ -48,7 +74,10 @@ const faqText = () => faqs.map((f) => `Q: ${f.q}\nA: ${f.a}`).join('\n\n');
 
 export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
   const ip = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || 'unknown';
-  if (limited(ip)) return res.status(429).json({ error: 'Too many messages. Please wait a moment.' });
+  const uid = await signedInUser(req);
+  if (limited(uid ? `u:${uid}` : `ip:${ip}`, uid ? 40 : 8)) {
+    return res.status(429).json({ error: uid ? 'Too many messages. Please wait a moment.' : 'Sign in to keep chatting with Kai, or talk to a person from the team.' });
+  }
 
   const body = (req.body ?? {}) as { messages?: { role?: string; content?: string }[]; signedIn?: boolean };
   const raw = Array.isArray(body.messages) ? body.messages.slice(-MAX_MESSAGES) : [];
@@ -58,7 +87,7 @@ export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
   if (messages.length === 0 || messages[messages.length - 1].role !== 'user') return res.status(400).json({ error: 'Say something first.' });
 
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) {
+  if (!key || process.env.ASSISTANT_ENABLED === '0' || overDaily()) {
     return res.status(200).json({
       reply: 'I cannot answer right now, but a person from the CX team can help you. Tap “Talk to a person”.',
       cars: [],

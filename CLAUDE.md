@@ -90,6 +90,8 @@ Code is written to fail soft before a migration is run.
   says so and offers a person). The model sees only the FAQ + published cars. "Talk to a person" opens/reuses the
   CX support conversation (`findOrCreateCxConversation`), posts the last turns as the first message, and the panel
   then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
+  Cost guards in `assistant.ts`: 8 answers/10 min signed out, 40 signed in, `ASSISTANT_DAILY_MAX` (3000), and
+  `ASSISTANT_ENABLED=0` as a kill switch. Set a spend limit in the Anthropic console too.
 
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
