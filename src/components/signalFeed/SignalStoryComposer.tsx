@@ -481,7 +481,7 @@ export function SignalStoryComposer({
                           <div className="flex items-center gap-3">
                             <div className="flex gap-1 rounded-full bg-panel p-0.5">
                               {(['left', 'center', 'right'] as const).map((a) => (
-                                <button
+                                <button data-tight
                                   key={a}
                                   type="button"
                                   onClick={() => patchSlide(i, { textAlign: a })}
@@ -510,7 +510,7 @@ export function SignalStoryComposer({
                           </div>
                           <div className="flex gap-1.5">
                             {STORY_BG_STYLES.map((bg) => (
-                              <button
+                              <button data-tight
                                 key={bg.value}
                                 type="button"
                                 onClick={() => patchSlide(i, { bgStyle: bg.value })}

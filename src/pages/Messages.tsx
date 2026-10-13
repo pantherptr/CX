@@ -73,7 +73,7 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { activ
               { k: 'Received', v: String(got) },
               { k: 'Since', v: since ?? '—' },
             ].map((x) => (
-              <div key={x.k} className="rounded-2xl bg-[#f4f5f2] px-2 py-2.5">
+              <div key={x.k} className="rounded-2xl bg-chat px-2 py-2.5">
                 <p className="truncate text-[15px] font-bold text-ink">{x.v}</p>
                 <p className="text-label font-medium text-muted">{x.k}</p>
               </div>
@@ -83,7 +83,7 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { activ
           {active.car && (
             <Link
               to={`/cars/${active.car.slug}`}
-              className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-[#f4f5f2] p-2 pr-3.5 text-left transition-transform active:scale-[0.98]"
+              className="pressable mt-3 flex w-full items-center gap-3 rounded-2xl bg-chat p-2 pr-3.5 text-left transition-transform active:scale-[0.98]"
             >
               {active.car.image && <Img src={active.car.image} alt="" className="h-12 w-16 shrink-0 rounded-xl object-cover" />}
               <span className="min-w-0 flex-1">
@@ -226,7 +226,7 @@ function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active
           <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={20} /></span>
         )}
         {c.car?.image && (
-          <Img src={c.car.image} alt="" className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-[#fbfbf9] object-cover shadow-sm" />
+          <Img src={c.car.image} alt="" className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-bg object-cover shadow-sm" />
         )}
       </span>
       <div className="min-w-0 flex-1">
@@ -760,7 +760,7 @@ export default function Messages() {
   return (
     <DashboardShell variant="customer" active="Messages" fullHeight>
       {/* Laptop-frame layout (tablet and up) — the Great UI MacBook mock-up fed with real data. */}
-      <div className="hidden h-full items-center overflow-y-auto bg-[#e9edef] px-6 py-6 sm:flex">
+      <div className="hidden h-full items-center overflow-y-auto bg-chat-3 px-6 py-6 sm:flex">
         <MacbookMockup
           className="my-auto"
           headerTitle={active?.other.name ?? (conversationsLoading ? 'Loading…' : 'Messages')}
@@ -792,7 +792,7 @@ export default function Messages() {
           }
           composer={
             active ? (
-              <div className="z-10 shrink-0 bg-[#f0f2f5] p-2.5">
+              <div className="z-10 shrink-0 bg-chat-2 p-2.5">
                 {profile?.is_owner && (
                   <div className="mb-1.5 flex items-center gap-1.5 text-[10px]">
                     <span className="text-neutral-500">Sending as:</span>
@@ -870,7 +870,7 @@ export default function Messages() {
       {/* Phone layout — a clean list, then a full-screen chat that follows the
           visual viewport (keyboard-safe) with 16px inputs so iOS never zooms. */}
       <div className="h-full sm:hidden">
-        <div className="flex h-full flex-col bg-[#f4f5f2]">
+        <div className="flex h-full flex-col bg-chat">
           <div className="shrink-0 px-5 pb-3 pt-5">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -932,9 +932,9 @@ export default function Messages() {
         {mobileChat && active && (
           <>
           {/* Opaque floor under the chat so the page behind never shows through the keyboard's accessory-bar gap. */}
-          <div aria-hidden className="fixed inset-0 z-[199] bg-[#f4f5f2]" />
+          <div aria-hidden className="fixed inset-0 z-[199] bg-chat" />
           <div
-            data-no-pull className="chat-slide-in fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-[#f4f5f2]"
+            data-no-pull className="chat-slide-in fixed inset-x-0 z-[200] flex flex-col overflow-hidden bg-chat"
             style={{ top: 'var(--vv-top, 0px)', height: 'var(--vv-h, 100dvh)', transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)' }}
             onTouchStart={(e) => {
               const t = e.touches[0];
@@ -1043,14 +1043,14 @@ export default function Messages() {
             </button>
             </div>
 
-            <div className="shrink-0 bg-gradient-to-t from-[#f4f5f2] via-[#f4f5f2] to-[#f4f5f2]/0 px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2">
+            <div className="shrink-0 bg-gradient-to-t from-chat via-chat to-chat/0 px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2">
               {profile?.is_owner && (
                 <div className="mb-2 flex items-center gap-1.5">
                   <span className="text-caption text-muted">Sending as</span>
                   <button onClick={() => setSendAsRole('owner')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner' ? 'bg-danger/10 text-danger' : 'text-faint'}`}>
                     <VerifiedBadge role="owner" size={13} /> Owner
                   </button>
-                  <button onClick={() => setSendAsRole('owner_assistant')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner_assistant' ? 'bg-[#f5a524]/15 text-[#a86400]' : 'text-faint'}`}>
+                  <button onClick={() => setSendAsRole('owner_assistant')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner_assistant' ? 'bg-warn/15 text-warn-ink' : 'text-faint'}`}>
                     <VerifiedBadge role="owner_assistant" size={13} /> Assistant
                   </button>
                 </div>

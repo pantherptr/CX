@@ -159,7 +159,7 @@ function ModelDetail({ model, onChanged, onEdit }: { model: CatalogModel; onChan
       ) : (
         <div className="mt-2 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {model.images.map((im) => (
-            <div key={im.id} className="overflow-hidden rounded-xl border border-line bg-gradient-to-b from-[#f4f5f2] to-[#e6e9e3]">
+            <div key={im.id} className="overflow-hidden rounded-xl border border-line bg-gradient-to-b from-chat to-[#e6e9e3]">
               <img src={im.url} alt="" className="h-28 w-full object-contain p-2" />
               <div className="flex items-center gap-1.5 border-t border-line bg-white px-2 py-1.5">
                 <span className="h-3.5 w-3.5 rounded-full ring-1 ring-black/10" style={{ background: im.colorHex }} />
@@ -262,7 +262,7 @@ export function CatalogPanel() {
                   </span>
                   {m.images.length > 0
                     ? <span className="rounded-full bg-accent/10 px-2 py-0.5 text-caption font-semibold text-accent">{m.images.length}</span>
-                    : <span className="rounded-full bg-[#f5a524]/15 px-2 py-0.5 text-caption font-semibold text-[#a86400]">0</span>}
+                    : <span className="rounded-full bg-warn/15 px-2 py-0.5 text-caption font-semibold text-warn-ink">0</span>}
                 </button>
               </li>
             ))}

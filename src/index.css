@@ -28,6 +28,12 @@
   --color-surface: #ffffff;
   --color-panel: #f4f3ef;
   --color-panel-2: #edece6;
+  /* chat surfaces + amber (warning) — tokens so dark mode needs no per-hex overrides */
+  --color-chat: #f4f5f2;
+  --color-chat-2: #f0f2f5;
+  --color-chat-3: #e9edef;
+  --color-warn: #f5a524;
+  --color-warn-ink: #a86400;
   --color-ink: #16161a;
   --color-ink-soft: #33332f;
   --color-muted: #6c6c66;
@@ -1984,6 +1990,10 @@ html[data-theme='dark'] {
   --color-surface: #0b0c0b;
   --color-panel: #131513;
   --color-panel-2: #1a1c1a;
+  --color-chat: var(--color-bg);
+  --color-chat-2: var(--color-bg);
+  --color-chat-3: var(--color-bg);
+  --color-warn-ink: #f0b53a;
   --color-ink: #f4f4ef;
   --color-ink-soft: #d6d6cf;
   --color-muted: #a2a29a;
@@ -2306,3 +2316,20 @@ html[data-theme='dark'] .dock-a { box-shadow: inset 0 0 0 1px rgba(0, 212, 71, 0
 html [data-rmiz-modal-overlay="visible"] { background-color: var(--color-bg); }
 html [data-rmiz-modal-overlay="hidden"] { background-color: transparent; }
 html [data-rmiz-btn-unzoom] { display: none; }
+
+/* Small round icon buttons (20–40px) keep their look but get a 44px touch area on phones, through an invisible
+   ::after. Groups of neighbours opt out with data-tight (their hit areas would overlap). */
+@media (pointer: coarse) {
+  button:is(.h-5, .h-6, .h-7, .h-8):is(.w-5, .w-6, .w-7, .w-8, .w-10):not([data-tight], .overflow-hidden, .absolute, .fixed, .sticky, .relative) {
+    position: relative;
+  }
+  button:is(.h-5, .h-6, .h-7, .h-8):is(.w-5, .w-6, .w-7, .w-8, .w-10):not([data-tight], .overflow-hidden)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}

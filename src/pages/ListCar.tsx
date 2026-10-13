@@ -590,7 +590,7 @@ export default function ListCar() {
                 {cover && <span className="badge badge-accent"><Icon name="check" size={12} /> Done</span>}
               </div>
 
-              <div className="mt-3 overflow-hidden rounded-[24px] border border-line bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e2e5de]">
+              <div className="mt-3 overflow-hidden rounded-[24px] border border-line bg-gradient-to-b from-chat via-[#eef0ec] to-[#e2e5de]">
                 {cover ? (
                   <div className="relative aspect-[16/10]">
                     <img src={cover.preview} alt="" className="h-full w-full object-cover" />

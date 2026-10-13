@@ -365,7 +365,7 @@ export function SignalProfileDetail({
         <div className="mb-3 flex justify-end">
           <div className="inline-flex gap-0.5 rounded-full bg-panel p-1" role="group" aria-label="View">
             {(['list', 'grid'] as const).map((v) => (
-              <button
+              <button data-tight
                 key={v}
                 type="button"
                 onClick={() => setView(v)}

@@ -270,7 +270,7 @@ export function TripJourney({
       )}
 
       {missing.length > 0 && (
-        <div className="mx-5 mt-4 rounded-2xl border border-[#f5a524]/40 bg-[#f5a524]/10 p-4">
+        <div className="mx-5 mt-4 rounded-2xl border border-[#f5a524]/40 bg-warn/10 p-4">
           <p className="text-detail font-semibold text-ink">{t('Before you can drive, finish:')}</p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             {missing.map((m) =>

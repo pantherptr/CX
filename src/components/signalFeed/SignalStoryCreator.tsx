@@ -480,7 +480,7 @@ function EditorStage({
             <div className="flex items-center gap-3">
               <div className="flex gap-1 rounded-full bg-white/10 p-0.5">
                 {(['left', 'center', 'right'] as const).map((a) => (
-                  <button
+                  <button data-tight
                     key={a}
                     type="button"
                     onClick={() => onPatchActive({ textAlign: a })}
@@ -508,7 +508,7 @@ function EditorStage({
               </div>
               <div className="flex gap-1.5">
                 {STORY_BG_STYLES.map((bg) => (
-                  <button
+                  <button data-tight
                     key={bg.value}
                     type="button"
                     onClick={() => onPatchActive({ bgStyle: bg.value })}

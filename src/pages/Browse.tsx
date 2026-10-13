@@ -407,7 +407,7 @@ export default function Browse() {
                 </button>
                 {sortOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
+                    <div aria-hidden className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
                     <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-56 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop" role="listbox">
                       {SORTS.map((s) => (
                         <button

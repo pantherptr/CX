@@ -9,7 +9,7 @@ const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(uiLocale
 
 const chip = (s: DocStatus) =>
   s === 'approved' ? 'bg-accent/10 text-accent'
-  : s === 'pending' ? 'bg-[#f5a524]/15 text-[#a86400]'
+  : s === 'pending' ? 'bg-warn/15 text-warn-ink'
   : s === 'rejected' ? 'bg-danger/10 text-danger'
   : 'bg-panel text-muted';
 

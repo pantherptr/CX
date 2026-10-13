@@ -72,7 +72,7 @@ function PhotoSlot({
 
 const statusChip = (s: DocStatus) => {
   if (s === 'approved') return { text: 'Verified', cls: 'bg-accent/10 text-accent' };
-  if (s === 'pending') return { text: 'In review', cls: 'bg-[#f5a524]/15 text-[#a86400]' };
+  if (s === 'pending') return { text: 'In review', cls: 'bg-warn/15 text-warn-ink' };
   if (s === 'rejected') return { text: 'Needs a new photo', cls: 'bg-danger/10 text-danger' };
   return { text: 'Not started', cls: 'bg-panel text-muted' };
 };

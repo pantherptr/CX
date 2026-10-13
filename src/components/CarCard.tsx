@@ -98,7 +98,7 @@ export function CarCard({
         to={`/cars/${car.slug}`}
         className="card card-hover pressable group flex overflow-hidden"
       >
-        <div className={`relative w-36 shrink-0 overflow-hidden sm:w-44 ${car.catalogHero ? 'bg-gradient-to-b from-[#f4f5f2] to-[#e6e9e3]' : ''}`}>
+        <div className={`relative w-36 shrink-0 overflow-hidden sm:w-44 ${car.catalogHero ? 'bg-gradient-to-b from-chat to-[#e6e9e3]' : ''}`}>
           <Img
             src={unsplash(car.images[0], 500)}
             srcSet={unsplashSrcSet(car.images[0], [240, 360, 520])}
@@ -142,7 +142,7 @@ export function CarCard({
         style={{ ...tiltStyle, transformStyle: 'preserve-3d' }}
       >
         <article className="card card-hover overflow-hidden transition-colors duration-300 group-hover:border-accent-bright/25">
-          <div className={`relative aspect-[4/3] overflow-hidden ${car.catalogHero ? 'bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e6e9e3]' : 'bg-panel-2'}`}>
+          <div className={`relative aspect-[4/3] overflow-hidden ${car.catalogHero ? 'bg-gradient-to-b from-chat via-[#eef0ec] to-[#e6e9e3]' : 'bg-panel-2'}`}>
             <Img
               src={unsplash(car.images[0], 700)}
               srcSet={unsplashSrcSet(car.images[0], [400, 700, 1000, 1400])}

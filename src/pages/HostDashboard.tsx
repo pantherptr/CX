@@ -960,7 +960,7 @@ export default function HostDashboard() {
                         fallback={<span className="grid h-full w-full place-items-center bg-panel text-muted"><Icon name="car" size={28} /></span>}
                       />
                       <span className="absolute left-2.5 top-2.5 badge badge-glass">
-                        <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-accent' : c.reviewStatus === 'pending' ? 'animate-pulse bg-[#f5a524]' : c.reviewStatus === 'rejected' ? 'bg-danger' : 'bg-faint'}`} />
+                        <span className={`h-1.5 w-1.5 rounded-full ${published ? 'bg-accent' : c.reviewStatus === 'pending' ? 'animate-pulse bg-warn' : c.reviewStatus === 'rejected' ? 'bg-danger' : 'bg-faint'}`} />
                         {published ? 'Published' : c.reviewStatus === 'pending' ? 'In review · live soon' : c.reviewStatus === 'rejected' && c.reviewNote !== 'Withdrawn by the host' ? 'Needs changes' : 'Draft'}
                       </span>
                     </div>

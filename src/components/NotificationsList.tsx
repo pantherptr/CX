@@ -407,7 +407,7 @@ export function NotificationsList({
                         </div>
                         {menuFor === n.id && (
                           <>
-                            <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
+                            <div aria-hidden className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
                             <div className="absolute right-0 top-14 z-20 w-48 origin-top-right animate-scale-in overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-pop">
                               {isUnread && onMarkRead && (
                                 <button

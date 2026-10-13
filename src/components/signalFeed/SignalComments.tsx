@@ -180,7 +180,7 @@ export function SignalComments({
                   </button>
                   {openMenuId === c.id && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                      <div aria-hidden className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
                       <div className="absolute right-0 top-8 z-20 w-36 overflow-hidden rounded-lg border border-line bg-surface shadow-pop">
                         {isMine || canModerateAll ? (
                           <button onClick={() => handleDelete(c.id)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-caption text-danger transition-colors hover:bg-danger/5 active:bg-danger/5">
@@ -217,7 +217,7 @@ export function SignalComments({
             </button>
             {identityPickerOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIdentityPickerOpen(false)} />
+                <div aria-hidden className="fixed inset-0 z-10" onClick={() => setIdentityPickerOpen(false)} />
                 <div className="absolute left-0 top-9 z-20 w-48 overflow-hidden rounded-xl border border-line bg-surface shadow-pop">
                   {SIGNAL_PUBLISHER_TYPES.map((type) => {
                     const identity = resolveSignalIdentity(type, profile?.full_name || 'Owner', profile?.avatar_url ?? null);

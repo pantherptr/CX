@@ -96,7 +96,7 @@ function HeroPager({ images, alt, onOpen, studioFirst }: { images: string[]; alt
         className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
       >
         {(images.length ? images : ['']).map((im, n) => (
-          <button key={n} type="button" onClick={() => onOpen(n)} className={`relative aspect-[4/3] w-full shrink-0 snap-center sm:aspect-[16/10] ${studioFirst && n === 0 ? 'bg-gradient-to-b from-[#f4f5f2] via-[#eef0ec] to-[#e2e5de]' : 'bg-panel'}`} aria-label={`${alt} ${n + 1}`}>
+          <button key={n} type="button" onClick={() => onOpen(n)} className={`relative aspect-[4/3] w-full shrink-0 snap-center sm:aspect-[16/10] ${studioFirst && n === 0 ? 'bg-gradient-to-b from-chat via-[#eef0ec] to-[#e2e5de]' : 'bg-panel'}`} aria-label={`${alt} ${n + 1}`}>
             <Img
               src={unsplash(im, 1400)}
               srcSet={unsplashSrcSet(im, [700, 1100, 1600])}

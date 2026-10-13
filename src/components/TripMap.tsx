@@ -186,7 +186,7 @@ export function TripMap(p: TripMapProps) {
   const chip = live
     ? { text: t('On the road'), cls: 'bg-accent/10 text-accent', dot: true }
     : p.phase === 'upcoming'
-      ? { text: t('Upcoming'), cls: 'bg-[#f5a524]/15 text-[#a86400]', dot: false }
+      ? { text: t('Upcoming'), cls: 'bg-warn/15 text-warn-ink', dot: false }
       : p.phase === 'completed'
         ? { text: t('Completed'), cls: 'bg-panel text-muted', dot: false }
         : { text: p.phase === 'cancelled' || p.phase === 'refunded' ? t('Cancelled') : t('Pending'), cls: 'bg-panel text-muted', dot: false };

@@ -107,7 +107,7 @@ const VALID_TABS: Tab[] = TABS.map((t) => t.id);
 
 const attentionTone: Record<AttentionItem['tone'], string> = {
   danger: 'bg-danger/10 text-danger',
-  warn: 'bg-[#f5a524]/15 text-[#a86400]',
+  warn: 'bg-warn/15 text-warn-ink',
   info: 'bg-panel-2 text-ink-soft',
 };
 
@@ -335,7 +335,7 @@ const VEHICLE_STATUSES: OwnerCarDetail['status'][] = ['draft', 'published', 'sus
 const vehicleStatusBadge: Record<OwnerCarDetail['status'], string> = {
   draft: 'bg-panel-2 text-ink-soft',
   published: 'badge-accent',
-  suspended: 'bg-[#f5a524]/15 text-[#a86400]',
+  suspended: 'bg-warn/15 text-warn-ink',
   removed: 'bg-danger/10 text-danger',
 };
 
@@ -680,7 +680,7 @@ function ReportsPanel() {
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 truncate font-medium text-ink">
               {r.reason}
-              <span className={`badge ${r.status === 'open' ? 'bg-[#f5a524]/15 text-[#a86400]' : 'bg-panel-2 text-ink-soft'}`}>{r.status}</span>
+              <span className={`badge ${r.status === 'open' ? 'bg-warn/15 text-warn-ink' : 'bg-panel-2 text-ink-soft'}`}>{r.status}</span>
             </p>
             <p className="truncate text-caption text-muted">
               {r.reporterName} · {r.carLabel ?? 'Unknown listing'} · {fmtDate(r.createdAt)}
@@ -774,7 +774,7 @@ function ContactGuardPanel({ onOpenMonitor, onOpenCount }: { onOpenMonitor: () =
         </div>
       </div>
       {!canHandle && (
-        <p className="rounded-lg bg-[#f5a524]/15 px-3 py-2 text-detail text-[#a86400]">
+        <p className="rounded-lg bg-warn/15 px-3 py-2 text-detail text-warn-ink">
           Apply migration 0071 in Supabase to be able to mark these as handled.
         </p>
       )}
@@ -788,7 +788,7 @@ function ContactGuardPanel({ onOpenMonitor, onOpenCount }: { onOpenMonitor: () =
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
               {f.userName}
-              <span className="badge bg-[#f5a524]/15 text-[#a86400]">{FLAG_SOURCE_LABEL[f.source] ?? f.source}</span>
+              <span className="badge bg-warn/15 text-warn-ink">{FLAG_SOURCE_LABEL[f.source] ?? f.source}</span>
               {f.handledAt && <span className="badge bg-panel-2 text-ink-soft">Handled</span>}
             </p>
             <p className="text-caption text-muted">{fmtDate(f.createdAt)}</p>
@@ -814,7 +814,7 @@ function ContactGuardPanel({ onOpenMonitor, onOpenCount }: { onOpenMonitor: () =
 
 const CONVERSATION_STATUS_BADGE: Record<ConversationStatus, string> = {
   active: 'badge-accent',
-  paused: 'bg-[#f5a524]/15 text-[#a86400]',
+  paused: 'bg-warn/15 text-warn-ink',
   blocked: 'bg-danger/10 text-danger',
   closed: 'bg-panel-2 text-ink-soft',
 };
@@ -963,7 +963,7 @@ function ConversationMonitorModal({ conv, onClose, onChanged }: { conv: MonitorC
           </button>
           <button
             onClick={() => setSendAsRole('owner_assistant')}
-            className={`flex items-center gap-1 rounded-full px-2 py-1 text-caption font-medium transition-colors ${sendAsRole === 'owner_assistant' ? 'bg-[#f5a524]/15 text-[#a86400]' : 'text-faint hover:bg-panel'}`}
+            className={`flex items-center gap-1 rounded-full px-2 py-1 text-caption font-medium transition-colors ${sendAsRole === 'owner_assistant' ? 'bg-warn/15 text-warn-ink' : 'text-faint hover:bg-panel'}`}
           >
             <VerifiedBadge role="owner_assistant" size={13} /> Owner Assistant
           </button>

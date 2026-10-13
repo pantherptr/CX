@@ -16,7 +16,7 @@ import { uiLocale } from '../lib/i18n/uiLocale';
 const TONE: Record<'green' | 'ink' | 'amber' | 'red', string> = {
   green: 'bg-accent/10 text-accent',
   ink: 'bg-ink text-white',
-  amber: 'bg-[#f5a524]/15 text-[#a86400]',
+  amber: 'bg-warn/15 text-warn-ink',
   red: 'bg-danger/10 text-danger',
 };
 
