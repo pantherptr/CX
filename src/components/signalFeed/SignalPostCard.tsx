@@ -1,3 +1,4 @@
+import { RollingCount } from '../ui/rolling-count';
 import { prefetchProfile } from '../../lib/data/prefetch';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -580,14 +581,54 @@ export function SignalPostCard({
   // demo post routes to its own real (not fabricated) engagement tables
   // instead — see signalDemo.ts's own header comment for why those are
   // separate from empire_post_likes/saves rather than reusing them.
-  const handleRespect = async () => {
-    onChanged({ ...post, likedByMe: !post.likedByMe, likeCount: post.likeCount + (post.likedByMe ? -1 : 1) });
-    if (!post.likedByMe) {
+  //
+  // The count and the hand answer at once; the server hears about it once, 400 ms after the last tap, and
+  // only if the final state differs from what it already has (from 21st's Like Burst: several quick taps
+  // are one request, not a flurry of toggles that can race each other).
+  const postRef = useRef(post);
+  postRef.current = post;
+  const respectTruth = useRef(post.likedByMe);
+  const respectIntent = useRef(post.likedByMe);
+  const respectTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (respectTimer.current === undefined) {
+      respectTruth.current = post.likedByMe;
+      respectIntent.current = post.likedByMe;
+    }
+  }, [post.likedByMe]);
+  const sendRespect = async () => {
+    respectTimer.current = undefined;
+    const intent = respectIntent.current;
+    if (intent === respectTruth.current) return;
+    const cur = postRef.current;
+    const { error } = cur.isDemo ? await toggleSignalDemoPostLike(cur.id) : await toggleEmpirePostLike(cur.id);
+    if (error) {
+      // put back what the server really has
+      const p = postRef.current;
+      respectIntent.current = respectTruth.current;
+      onChanged({ ...p, likedByMe: respectTruth.current, likeCount: Math.max(0, p.likeCount + (p.likedByMe === respectTruth.current ? 0 : respectTruth.current ? 1 : -1)) });
+    } else {
+      respectTruth.current = intent;
+    }
+  };
+  useEffect(() => () => {
+    // leaving the card with a tap still waiting: send it now rather than lose it
+    if (respectTimer.current !== undefined) {
+      window.clearTimeout(respectTimer.current);
+      void sendRespect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleRespect = () => {
+    const next = !post.likedByMe;
+    respectIntent.current = next;
+    onChanged({ ...post, likedByMe: next, likeCount: Math.max(0, post.likeCount + (next ? 1 : -1)) });
+    if (next) {
       fireStamp();
       vibrateTap();
     }
-    const { error } = post.isDemo ? await toggleSignalDemoPostLike(post.id) : await toggleEmpirePostLike(post.id);
-    if (error) onChanged(post);
+    window.clearTimeout(respectTimer.current);
+    respectTimer.current = window.setTimeout(() => { void sendRespect(); }, 400);
   };
 
   // Owner and Admin can Respect a post as many times as they like (0074):
@@ -1314,7 +1355,7 @@ export function SignalPostCard({
                 <span className={BAR_ICON}>
                   <RespectIcon size={14} filled={post.likedByMe} playKey={respectPlay} />
                 </span>
-                <span className="text-[13.5px] font-normal leading-none text-muted">{compact(post.likeCount)}</span>
+                <RollingCount value={post.likeCount} format={compact} className="text-[13.5px] font-normal leading-none text-muted" />
               </Tap>
             )}
             {respected && (
