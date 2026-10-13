@@ -65,26 +65,44 @@ async function freeTranslate(text: string, lang: Lang): Promise<string | null> {
 const hashOf = (s: string) => createHash('sha256').update(s).digest('hex');
 
 async function translateBatch(texts: string[], lang: Lang, key: string): Promise<(string | null)[]> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4096,
-      system:
-        `You translate short user-written texts from a car-rental marketplace into ${LANGS[lang]}. ` +
-        'Keep the meaning, tone, emoji, @mentions, #hashtags, numbers, brand and car names. ' +
-        `If a text is already in ${LANGS[lang]}, return it unchanged. ` +
-        'Reply with ONLY a JSON array of strings, the same length and order as the input, no commentary.',
-      messages: [{ role: 'user', content: JSON.stringify(texts) }],
-    }),
-  });
-  if (!res.ok) {
-    console.error('translate: Anthropic', res.status, (await res.text()).slice(0, 300));
-    return texts.map(() => null);
+  const system =
+    `You translate short user-written texts from a car-rental marketplace into ${LANGS[lang]}. ` +
+    'Keep the meaning, tone, emoji, @mentions, #hashtags, numbers, brand and car names. ' +
+    `If a text is already in ${LANGS[lang]}, return it unchanged. ` +
+    'Reply with ONLY a JSON array of strings, the same length and order as the input, no commentary.';
+  const user = JSON.stringify(texts);
+  // OpenRouter (free models) when OPENROUTER_API_KEY is set, otherwise Anthropic.
+  const orKey = process.env.OPENROUTER_API_KEY;
+  let raw = '';
+  if (orKey) {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${orKey}` },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL || 'openrouter/free',
+        max_tokens: 4096,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+      }),
+    });
+    if (!res.ok) {
+      console.error('translate: OpenRouter', res.status, (await res.text()).slice(0, 300));
+      return texts.map(() => null);
+    }
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    raw = data.choices?.[0]?.message?.content ?? '';
+  } else {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 4096, system, messages: [{ role: 'user', content: user }] }),
+    });
+    if (!res.ok) {
+      console.error('translate: Anthropic', res.status, (await res.text()).slice(0, 300));
+      return texts.map(() => null);
+    }
+    const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+    raw = data.content?.find((c) => c.type === 'text')?.text ?? '';
   }
-  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
-  const raw = data.content?.find((c) => c.type === 'text')?.text ?? '';
   try {
     const parsed = JSON.parse(raw.slice(raw.indexOf('['), raw.lastIndexOf(']') + 1)) as unknown;
     if (!Array.isArray(parsed) || parsed.length !== texts.length) return texts.map(() => null);
@@ -113,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicKey = process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY;
   if (!supabaseUrl || !serviceKey) return res.status(200).json({ skipped: true, results: list.map(() => null) });
 
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
