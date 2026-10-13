@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { Logo } from '../components/primitives';
-import { StatTile, Avatar, fmtDate } from '../components/admin/panels';
+import { StatTile, Avatar, fmtDate, monthBuckets } from '../components/admin/panels';
 import { useAuth } from '../lib/auth';
 import { eur } from '../lib/format';
 import { greeting } from '../components/DashboardShell';
@@ -75,6 +75,8 @@ export default function OwnerHome() {
     pendingVerifications: number;
     openReports: number;
     revenue: number;
+    bookingsByMonth: { values: number[]; labels: string[] };
+    clientsByMonth: { values: number[]; labels: string[] };
   } | null>(null);
   const [balance, setBalance] = useState<{ available: number; pending: number; currency: string } | null | undefined>(undefined);
   const [recentBookings, setRecentBookings] = useState<AdminBooking[]>([]);
@@ -107,6 +109,8 @@ export default function OwnerHome() {
           pendingVerifications: verifications.filter((v) => v.identityStatus === 'pending' || v.licenceStatus === 'pending').length,
           openReports,
           revenue,
+          bookingsByMonth: monthBuckets(bookings.map((b) => b.createdAt)),
+          clientsByMonth: monthBuckets(users.filter((u) => !u.isHost && u.id !== profile?.id).map((u) => u.createdAt)),
         });
         setRecentBookings(bookings.slice(0, 5));
         setRecentHosts(hosts.slice(0, 5));
@@ -177,9 +181,9 @@ export default function OwnerHome() {
         {/* Platform stats */}
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile icon="users" value={stats?.hosts ?? '—'} label="Total hosts" />
-          <StatTile icon="user" value={stats?.clients ?? '—'} label="Total clients" />
+          <StatTile icon="user" value={stats?.clients ?? '—'} label="Total clients" bars={stats?.clientsByMonth.values} barLabels={stats?.clientsByMonth.labels} />
           <StatTile icon="cars" value={stats?.activeCars ?? '—'} label="Active cars" />
-          <StatTile icon="trips" value={stats?.totalBookings ?? '—'} label="Total bookings" />
+          <StatTile icon="trips" value={stats?.totalBookings ?? '—'} label="Total bookings" bars={stats?.bookingsByMonth.values} barLabels={stats?.bookingsByMonth.labels} />
           <StatTile icon="route" value={stats?.activeRentals ?? '—'} label="Active rentals" />
           <StatTile icon="verified" value={stats?.pendingVerifications ?? '—'} label="Pending verifications" />
           <StatTile icon="shield" value={stats?.openReports ?? '—'} label="Open reports" />

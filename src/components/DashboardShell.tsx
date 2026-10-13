@@ -313,7 +313,7 @@ export function StatCard({
 
 /** The small bar chart of a StatCard: heights relative to the largest bar, growing one after another the
  *  first time it is on screen (nothing moves under reduced motion). */
-function MiniBars({ values, labels, accent }: { values: number[]; labels?: string[]; accent?: boolean }) {
+export function MiniBars({ values, labels, accent }: { values: number[]; labels?: string[]; accent?: boolean }) {
   const reduced = useReducedMotion();
   const max = Math.max(...values, 1);
   return (

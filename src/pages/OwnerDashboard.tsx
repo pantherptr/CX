@@ -15,7 +15,7 @@ import {
   type MonitorConversation,
   type ConversationStatus,
 } from '../lib/data/monitor';
-import { VerificationsPanel, UsersPanel, BookingsPanel, Avatar, fmtDate, StatTile } from '../components/admin/panels';
+import { VerificationsPanel, UsersPanel, BookingsPanel, Avatar, fmtDate, StatTile, monthBuckets } from '../components/admin/panels';
 import {
   fetchAllUsers,
   fetchAllBookingsAdmin,
@@ -112,7 +112,7 @@ const attentionTone: Record<AttentionItem['tone'], string> = {
 };
 
 function OverviewPanel({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
-  const [stats, setStats] = useState<{ hosts: number; vehicles: number; bookings: number; users: number } | null>(null);
+  const [stats, setStats] = useState<{ hosts: number; vehicles: number; bookings: number; users: number; bookingsByMonth: { values: number[]; labels: string[] }; usersByMonth: { values: number[]; labels: string[] } } | null>(null);
   const [attention, setAttention] = useState<AttentionItem[] | null>(null);
 
   useEffect(() => {
@@ -123,7 +123,14 @@ function OverviewPanel({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
       fetchAllCarsAdmin().catch(() => []),
       fetchAllBookingsAdmin().catch(() => []),
       fetchAllUsers().catch(() => []),
-    ]).then(([hosts, cars, bookings, users]) => setStats({ hosts: hosts.length, vehicles: cars.length, bookings: bookings.length, users: users.length }));
+    ]).then(([hosts, cars, bookings, users]) => setStats({
+      hosts: hosts.length,
+      vehicles: cars.length,
+      bookings: bookings.length,
+      users: users.length,
+      bookingsByMonth: monthBuckets(bookings.map((b) => b.createdAt)),
+      usersByMonth: monthBuckets(users.map((u) => u.createdAt)),
+    }));
     fetchNeedsAttention().then(setAttention).catch(() => setAttention([]));
   }, []);
   if (!stats) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
@@ -133,8 +140,8 @@ function OverviewPanel({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile icon="users" value={stats.hosts} label="Hosts" />
         <StatTile icon="cars" value={stats.vehicles} label="Vehicles" />
-        <StatTile icon="trips" value={stats.bookings} label="Bookings" />
-        <StatTile icon="user" value={stats.users} label="Platform users" />
+        <StatTile icon="trips" value={stats.bookings} label="Bookings" bars={stats.bookingsByMonth.values} barLabels={stats.bookingsByMonth.labels} />
+        <StatTile icon="user" value={stats.users} label="Platform users" bars={stats.usersByMonth.values} barLabels={stats.usersByMonth.labels} />
       </div>
 
       <div>

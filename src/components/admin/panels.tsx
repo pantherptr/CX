@@ -1,3 +1,4 @@
+import { MiniBars } from '../DashboardShell';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../Icon';
@@ -35,16 +36,36 @@ import { uiLocale } from '../../lib/i18n/uiLocale';
 /** Shared by AdminDashboard/OwnerDashboard's Overview and the Owner's
  *  Home dashboard (OwnerHome.tsx) — one stat-tile look everywhere real
  *  numbers get surfaced. */
-export function StatTile({ icon, value, label }: { icon: IconName; value: ReactNode; label: string }) {
+/** Counts per calendar month for the last `n` months (oldest first), from ISO date strings. */
+export function monthBuckets(dates: (string | null | undefined)[], n = 6): { values: number[]; labels: string[] } {
+  const now = new Date();
+  const keys = Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (n - 1 - i), 1);
+    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString(uiLocale(), { month: 'short' }).slice(0, 1).toUpperCase() };
+  });
+  const counts = new Map(keys.map((k) => [k.key, 0]));
+  for (const d of dates) {
+    const k = d?.slice(0, 7);
+    if (k && counts.has(k)) counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  return { values: keys.map((k) => counts.get(k.key) ?? 0), labels: keys.map((k) => k.label) };
+}
+
+export function StatTile({
+  icon, value, label, bars, barLabels,
+}: { icon: IconName; value: ReactNode; label: string; bars?: number[]; barLabels?: string[] }) {
   return (
-    <div className="card flex items-center gap-3 p-4">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-noir text-accent-bright">
-        <Icon name={icon} size={20} />
-      </span>
-      <div className="min-w-0">
-        <p className="font-display text-xl font-semibold leading-tight text-ink">{value}</p>
-        <p className="text-caption text-muted">{label}</p>
+    <div className="card p-4">
+      <div className="flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-noir text-accent-bright">
+          <Icon name={icon} size={20} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-display text-xl font-semibold leading-tight text-ink">{value}</p>
+          <p className="text-caption text-muted">{label}</p>
+        </div>
       </div>
+      {bars && bars.some((b) => b > 0) && <MiniBars values={bars} labels={barLabels} accent />}
     </div>
   );
 }
