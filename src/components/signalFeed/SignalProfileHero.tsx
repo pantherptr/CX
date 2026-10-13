@@ -140,7 +140,13 @@ export function SignalProfileHero({
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
 
-        <div className="absolute inset-x-5 bottom-12 text-white sm:inset-x-8 sm:bottom-14">
+        {/* With a separate profile photo the avatar rises over the cover, so the name sits above it
+            instead of behind it. */}
+        <div
+          className={`absolute inset-x-5 text-white sm:inset-x-8 ${
+            separateAvatar ? 'bottom-[6.25rem] sm:bottom-[7rem]' : 'bottom-12 sm:bottom-14'
+          }`}
+        >
           <div className="mb-3 flex flex-wrap items-center gap-2">
             {role && role !== 'client' && (
               <span className="rounded-full bg-white/15 px-3 py-1 text-caption font-semibold backdrop-blur-md">{ROLE_LABEL[role]}</span>
