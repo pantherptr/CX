@@ -48,6 +48,8 @@ const ROWS: Row[] = [
   ["Talk to a person", "Parla con una persona", "Vorbește cu o persoană", "Hablar con una persona"],
   ["Write to the team…", "Scrivi al team…", "Scrie echipei…", "Escribe al equipo…"],
   ["Ask {name} anything…", "Chiedi qualsiasi cosa a {name}…", "Întreabă-l pe {name} orice…", "Pregunta lo que quieras a {name}…"],
+  ["Thinking it through", "Ci sto pensando", "Mă gândesc la asta", "Lo estoy pensando"],
+  ["Shift+Enter for a new line", "Maiusc+Invio per andare a capo", "Shift+Enter pentru rând nou", "Mayús+Intro para nueva línea"],
   ["Find me a car for a weekend", "Trovami un'auto per un weekend", "Găsește-mi o mașină pentru un weekend", "Búscame un coche para un fin de semana"],
   ["I have a problem with my booking", "Ho un problema con la mia prenotazione", "Am o problemă cu rezervarea mea", "Tengo un problema con mi reserva"],
   ["How does verification work?", "Come funziona la verifica?", "Cum funcționează verificarea?", "¿Cómo funciona la verificación?"],

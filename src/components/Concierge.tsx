@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -115,6 +115,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   const [convId, setConvId] = useState<string | null>(null);
   const [handing, setHanding] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const live = useConversation(convId);
   const human = convId !== null;
 
@@ -124,6 +125,14 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     const el = listRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [msgs, live.messages, busy]);
+
+  // The composer grows with what is typed (up to ~5 lines), like the 21st thinking prompt.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [input]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -252,13 +261,13 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                   </p>
                 ) : m.role === 'user' ? (
                   <div className="flex justify-end">
-                    <p className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-ink px-3.5 py-2.5 text-body text-white">{m.text}</p>
+                    <p className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-panel px-3.5 py-2.5 text-body text-ink">{m.text}</p>
                   </div>
                 ) : (
                   <div className="flex items-start gap-2.5">
                     <ConciergeMark size={30} />
                     <div className="min-w-0 max-w-[84%] space-y-2">
-                      <p className="whitespace-pre-wrap rounded-2xl rounded-tl-md border border-line bg-surface px-3.5 py-2.5 text-body text-ink">{m.text}</p>
+                      <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">{m.text}</p>
                       {m.cars && m.cars.length > 0 && (
                         <div className="space-y-2">
                           {m.cars.map((slug) => {
@@ -301,7 +310,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                 const mine = m.senderId === userId;
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <p className={`max-w-[82%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-body ${mine ? 'rounded-tr-md bg-ink text-white' : 'rounded-tl-md border border-line bg-surface text-ink'}`}>
+                    <p className={`max-w-[82%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-body ${mine ? 'rounded-br-sm bg-panel text-ink' : 'rounded-tl-md border border-line bg-surface text-ink'}`}>
                       {m.deleted ? t('Message deleted') : m.body}
                     </p>
                   </div>
@@ -310,12 +319,11 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
             ))}
 
           {busy && !human && (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5" role="status">
               <ConciergeMark size={30} />
-              <span className="flex gap-1 rounded-2xl rounded-tl-md border border-line bg-surface px-3.5 py-3" aria-label={t('typing')}>
-                {[0, 1, 2].map((i) => (
-                  <span key={i} className="h-1.5 w-1.5 animate-bounce rounded-full bg-faint" style={{ animationDelay: `${i * 140}ms` }} />
-                ))}
+              <span className="flex items-center gap-1.5 text-detail">
+                <Icon name="sparkles" size={14} className="text-muted" />
+                <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
               </span>
             </div>
           )}
@@ -331,23 +339,34 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <form onSubmit={submit} className="flex items-end gap-2 border-t border-line bg-surface px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
-            maxLength={800}
-            enterKeyHint="send"
-            className="min-w-0 flex-1 rounded-full border border-line bg-bg px-4 py-2.5 text-[16px] text-ink placeholder:text-muted focus:border-ink focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || (busy && !human)}
-            aria-label={t('Send')}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-40"
-          >
-            <Icon name="arrowRight" size={19} />
-          </button>
+        <form onSubmit={submit} className="border-t border-line bg-bg px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-end gap-2 rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              rows={1}
+              aria-label={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
+              placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
+              maxLength={800}
+              enterKeyHint="send"
+              className="max-h-[120px] min-h-[2.5rem] min-w-0 flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || (busy && !human)}
+              aria-label={t('Send')}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
+            >
+              <Icon name="arrowRight" size={18} className="-rotate-90" />
+            </button>
+          </div>
         </form>
       </div>
     </div>,
