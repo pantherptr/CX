@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
 import { findOrCreateCxConversation, sendMessage, useConversation } from '../lib/data/messages';
 import { supabase } from '../lib/supabase';
+import { localReply } from '../lib/assistantLocal';
 import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
@@ -22,6 +23,7 @@ import { useLocale } from '../lib/i18n';
  * ever shown to the model — never private bookings, messages or documents.
  */
 export const ASSISTANT_NAME = 'Kai';
+const AI_ENABLED = import.meta.env.VITE_ASSISTANT_AI === '1';
 
 interface ChatMsg {
   id: string;
@@ -137,6 +139,15 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       setMsgs(next);
       setInput('');
       setBusy(true);
+      // No AI service by default (no cost): Kai answers from the site's FAQ and the car matcher, in the
+      // browser. Set VITE_ASSISTANT_AI=1 (and an Anthropic key on the server) to use the AI instead.
+      if (!AI_ENABLED) {
+        const r = localReply(clean, cars ?? [], t);
+        await new Promise((res) => window.setTimeout(res, 450 + Math.min(600, clean.length * 8)));
+        setMsgs((cur) => [...cur, { id: newId(), role: 'assistant', text: r.text, cars: r.cars, offerHuman: r.offerHuman }]);
+        setBusy(false);
+        return;
+      }
       try {
         const history = next.filter((m) => m.role !== 'note').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
         const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -154,7 +165,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         setBusy(false);
       }
     },
-    [busy, msgs, session, t],
+    [busy, cars, msgs, session, t],
   );
 
   /** Move the conversation to a real CX chat, in this same panel, carrying what was said so far. */

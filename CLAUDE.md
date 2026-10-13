@@ -85,13 +85,13 @@ Code is written to fail soft before a migration is run.
 - Optional `VITE_GEOAPIFY_KEY` switches address search from Photon to Geoapify (`src/lib/geocode.ts`).
 
 - **Kai, the CX assistant** (`src/components/Concierge.tsx`, replaces the old guided matcher; same exports
-  `ConciergeLauncher` / `ConciergeMark`): a chat. Answers come from `api/_lib/assistant.ts` via
-  `POST /api/notify-message {type:'assistant'}` (no new function; needs `ANTHROPIC_API_KEY` on Vercel — without it Kai
-  says so and offers a person). The model sees only the FAQ + published cars. "Talk to a person" opens/reuses the
+  `ConciergeLauncher` / `ConciergeMark`): a chat. **Free by default**: answers are computed in the browser by
+  `src/lib/assistantLocal.ts` (FAQ word matching in en/it/ro/es + `carMatch.matchCars` for car requests; unknown
+  questions offer a person). No API, no cost. The AI path (`api/_lib/assistant.ts` via
+  `POST /api/notify-message {type:'assistant'}`, Anthropic key + guards `ASSISTANT_DAILY_MAX`, `ASSISTANT_ENABLED=0`)
+  is dormant: it only runs if `VITE_ASSISTANT_AI=1` is set at build time. "Talk to a person" opens/reuses the
   CX support conversation (`findOrCreateCxConversation`), posts the last turns as the first message, and the panel
   then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
-  Cost guards in `assistant.ts`: 8 answers/10 min signed out, 40 signed in, `ASSISTANT_DAILY_MAX` (3000), and
-  `ASSISTANT_ENABLED=0` as a kill switch. Set a spend limit in the Anthropic console too.
 
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
