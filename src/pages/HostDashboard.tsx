@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { EmptyState } from '../components/primitives';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
@@ -72,53 +73,105 @@ function monthlySeries(bookings: Booking[]) {
   return months.map((m) => ({ month: m.month, value: sums.get(m.key) ?? 0 }));
 }
 
-function EarningsChart({ data }: { data: { month: string; value: number }[] }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const W = 640;
-  const H = 220;
-  const pad = { t: 20, r: 16, b: 30, l: 16 };
-  const max = Math.max(...data.map((d) => d.value)) * 1.15;
-  const iw = W - pad.l - pad.r;
-  const ih = H - pad.t - pad.b;
-  const x = (i: number) => pad.l + (i / (data.length - 1)) * iw;
-  const y = (v: number) => pad.t + ih - (v / max) * ih;
+const STRIPES_ON = 'repeating-linear-gradient(135deg, var(--color-accent) 0 2px, color-mix(in srgb, var(--color-accent) 35%, transparent) 2px 5px)';
+const STRIPES_OFF = 'repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-ink) 20%, transparent) 0 2px, color-mix(in srgb, var(--color-ink) 7%, transparent) 2px 5px)';
 
-  const line = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.value)}`).join(' ');
-  const area = `${line} L ${x(data.length - 1)} ${pad.t + ih} L ${x(0)} ${pad.t + ih} Z`;
-
+/** The earnings of the last months as columns you can tap: the chosen month is read out big on top (with
+ *  how it compares with the month before), the others are small and hatched. */
+function EarningsBars({ data }: { data: { month: string; value: number }[] }) {
+  const reduced = useReducedMotion();
+  const [sel, setSel] = useState(data.length - 1);
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const cur = data[sel]?.value ?? 0;
+  const prev = sel > 0 ? data[sel - 1].value : 0;
+  const pct = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+  const compactEur = (n: number) => new Intl.NumberFormat(uiLocale(), { style: 'currency', currency: 'EUR', notation: 'compact', maximumFractionDigits: 1 }).format(n);
   return (
-    <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseLeave={() => setHover(null)}>
-        <defs>
-          <linearGradient id="earn" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {[0.25, 0.5, 0.75, 1].map((g) => (
-          <line key={g} x1={pad.l} x2={W - pad.r} y1={pad.t + ih * g} y2={pad.t + ih * g} stroke="var(--color-line)" strokeWidth="1" strokeDasharray="3 4" />
-        ))}
-        <path d={area} fill="url(#earn)" />
-        <path d={line} fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {data.map((d, i) => (
-          <g key={i}>
-            <rect x={x(i) - iw / data.length / 2} y={pad.t} width={iw / data.length} height={ih} fill="transparent" onMouseEnter={() => setHover(i)} />
-            <circle cx={x(i)} cy={y(d.value)} r={hover === i ? 5.5 : 3.5} fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="2.5" style={{ transition: 'r 0.15s' }} />
-            <text x={x(i)} y={H - 8} textAnchor="middle" className="fill-[var(--color-faint)]" style={{ fontSize: 11 }}>{d.month}</text>
-          </g>
-        ))}
-        {hover !== null && (
-          <g>
-            <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={pad.t + ih} stroke="var(--color-line-strong)" strokeWidth="1" />
-          </g>
+    <div>
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+        <p className="font-display text-[2.4rem] font-semibold leading-none tracking-tight text-ink tabular-nums">{eur(cur)}</p>
+        {pct !== null && (
+          <span className={`mb-1 inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-1 text-caption font-semibold shadow-[0_6px_14px_-8px_rgba(0,0,0,0.35)] ${pct < 0 ? 'text-danger' : 'text-accent-700'}`}>
+            <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" className={pct < 0 ? 'rotate-180' : ''}><path d="M5 1.5 9 8.5H1z" fill="currentColor" /></svg>
+            {Math.abs(pct)}%
+          </span>
         )}
-      </svg>
-      {hover !== null && (
-        <div className="pointer-events-none absolute rounded-lg bg-ink px-2.5 py-1.5 text-white shadow-pop" style={{ left: `${(x(hover) / W) * 100}%`, top: `${(y(data[hover].value) / H) * 100}%`, transform: 'translate(-50%, -130%)' }}>
-          <p className="whitespace-nowrap text-caption font-semibold">{eur(data[hover].value)}</p>
-          <p className="text-micro text-white/60">{data[hover].month}</p>
+      </div>
+      <p className="mt-1 text-caption text-muted">{data[sel]?.month}{pct !== null ? ' · vs the month before' : ''}</p>
+      <div className="mt-5 flex h-44 items-stretch gap-2 sm:gap-3" role="list">
+        {data.map((d, i) => {
+          const h = Math.max(4, (d.value / max) * 100);
+          const on = i === sel;
+          return (
+            <button
+              key={`${d.month}-${i}`}
+              type="button"
+              role="listitem"
+              aria-pressed={on}
+              aria-label={`${d.month}: ${eur(d.value)}`}
+              onClick={() => setSel(i)}
+              className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5 rounded-xl px-0.5 pb-1 pt-2 transition-colors hover:bg-panel/60"
+            >
+              <span className={`text-[11px] font-semibold tabular-nums ${on ? 'text-ink' : 'text-faint'}`}>{compactEur(d.value)}</span>
+              <span className="flex w-full flex-1 items-end">
+                <motion.span
+                  initial={reduced ? false : { height: '0%' }}
+                  whileInView={{ height: `${h}%` }}
+                  viewport={{ once: true }}
+                  transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 26, delay: 0.05 + i * 0.06 }}
+                  className="block w-full rounded-md"
+                  style={{ backgroundImage: on ? STRIPES_ON : STRIPES_OFF }}
+                />
+              </span>
+              <span className={`text-[11px] ${on ? 'font-semibold text-ink' : 'text-faint'}`}>{d.month}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Where the earnings come from: one hatched bar per car, longest = the car that earns most. */
+function EarningsByCar({ rows }: { rows: { id: string; name: string; revenue: number }[] }) {
+  const reduced = useReducedMotion();
+  const max = Math.max(...rows.map((r) => r.revenue), 1);
+  const FILLS = [STRIPES_ON, 'repeating-linear-gradient(135deg, var(--color-ink) 0 2px, color-mix(in srgb, var(--color-ink) 30%, transparent) 2px 5px)', 'repeating-linear-gradient(135deg, #c9971c 0 2px, color-mix(in srgb, #c9971c 35%, transparent) 2px 5px)'];
+  return (
+    <div className="space-y-5">
+      {rows.map((r, i) => (
+        <div key={r.id}>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="min-w-0 truncate text-body text-ink-soft">{r.name}</p>
+            <p className="shrink-0 font-display text-body font-semibold tabular-nums text-ink">{eur(r.revenue)}</p>
+          </div>
+          <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-panel">
+            <motion.div
+              initial={reduced ? false : { width: '0%' }}
+              whileInView={{ width: `${Math.max(3, (r.revenue / max) * 100)}%` }}
+              viewport={{ once: true }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 160, damping: 24, delay: 0.1 + i * 0.08 }}
+              className="h-full rounded-full"
+              style={{ backgroundImage: FILLS[i % FILLS.length] }}
+            />
+          </div>
         </div>
-      )}
+      ))}
+    </div>
+  );
+}
+
+/** One sentence worth reading, built only from the host's real numbers, on a deep-green card. */
+function InsightCard({ big, title, text }: { big: string; title: string; text: string }) {
+  return (
+    <div className="relative isolate overflow-hidden rounded-[1.75rem] p-6 text-white sm:p-7" style={{ background: 'linear-gradient(145deg, #0b3d1d 0%, #0a1f12 55%, #050605 100%)' }}>
+      <span aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 -z-10 h-56 w-56 rounded-full" style={{ background: 'radial-gradient(circle, rgba(0,212,71,0.35) 0%, rgba(0,212,71,0) 70%)' }} />
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-caption font-semibold text-white/90">
+        <Icon name="sparkles" size={13} /> Insights
+      </span>
+      <p className="mt-6 font-display text-[3.4rem] font-semibold leading-none tracking-tight tabular-nums">{big}</p>
+      <p className="mt-5 max-w-sm font-display text-lead font-semibold leading-snug">{title}</p>
+      <p className="mt-1.5 max-w-sm text-detail leading-snug text-white/70">{text}</p>
     </div>
   );
 }
@@ -735,6 +788,34 @@ export default function HostDashboard() {
     }
     return map;
   }, [classified]);
+  // Where the money comes from, and one sentence worth reading — only from the host's real numbers.
+  const carRows = useMemo(
+    () => (hostCars ?? [])
+      .map((c) => ({ id: c.id, name: `${c.make} ${c.model}`, revenue: carStats.get(c.id)?.revenue ?? 0 }))
+      .filter((r) => r.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5),
+    [hostCars, carStats],
+  );
+  const insight = (() => {
+    const cur = series[series.length - 1]?.value ?? 0;
+    const prev = series[series.length - 2]?.value ?? 0;
+    if (monthTrend && prev > 0) {
+      const up = cur >= prev;
+      return {
+        big: monthTrend,
+        title: up ? 'Your earnings are up on last month.' : 'Your earnings are down on last month.',
+        text: `This month ${eur(cur)}, last month ${eur(prev)}.`,
+      };
+    }
+    if (carRows.length > 0) {
+      return { big: eur(carRows[0].revenue), title: `${carRows[0].name} earns the most.`, text: `Across ${carRows.length === 1 ? 'your listing' : `your top ${carRows.length} cars`} so far.` };
+    }
+    if (upcomingCount > 0) {
+      return { big: String(upcomingCount), title: upcomingCount === 1 ? 'A trip is coming up.' : 'Trips are coming up.', text: 'Check the handover steps a day before.' };
+    }
+    return null;
+  })();
 
   // "Your cars right now": the host's published cars with their real status (on the road / booked / free).
   const nowCars = useMemo<HostCarNow[]>(
@@ -864,7 +945,7 @@ export default function HostDashboard() {
             {loading ? (
               <div className="skeleton mt-5 h-[220px] rounded-xl" />
             ) : hasEarningsData ? (
-              <div className="mt-3"><EarningsChart data={series} /></div>
+              <div className="mt-4"><EarningsBars data={series} /></div>
             ) : (
               <div className="mt-5 flex flex-col items-center gap-2 rounded-xl border border-line py-10 text-center">
                 <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="euro" size={20} /></span>
@@ -873,6 +954,24 @@ export default function HostDashboard() {
               </div>
             )}
           </section></Reveal>
+
+        {!loading && (carRows.length > 0 || insight) && (
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {carRows.length > 0 && (
+              <Reveal delay={60}>
+                <section className="card p-5 sm:p-6">
+                  <h2 className="font-display text-lg font-semibold text-ink">Earnings by car</h2>
+                  <div className="mt-5"><EarningsByCar rows={carRows} /></div>
+                </section>
+              </Reveal>
+            )}
+            {insight && (
+              <Reveal delay={120}>
+                <InsightCard big={insight.big} title={insight.title} text={insight.text} />
+              </Reveal>
+            )}
+          </div>
+        )}
 
           {/* Upcoming reservations */}
           <Reveal delay={80}><section className="card scroll-mt-20 p-4 sm:p-6" id="upcoming">
