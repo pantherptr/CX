@@ -1139,6 +1139,8 @@
      creates a containing block for `position: fixed` descendants, which
      silently breaks every full-screen modal on the page. */
   .animate-page { animation: page-in 0.4s var(--ease-out-expo) backwards; }
+  .toast-progress { animation-name: toast-progress; animation-timing-function: linear; animation-fill-mode: forwards; }
+  @keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
   /* Hero words: the letters rise into place one after another when the page opens. (The idle wave that
      used to run afterwards is gone: a constantly animated box around clipped text painted the first letter

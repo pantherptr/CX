@@ -18,6 +18,8 @@ export interface Toast {
   title: string;
   desc?: string;
   icon?: IconName;
+  /** A button on the toast (from 21st's Animated Toast "undo" toast): runs, then the toast closes. */
+  action?: { label: string; onClick: () => void };
 }
 
 interface AppState {
@@ -151,6 +153,7 @@ const SUCCESS_ICONS: ReadonlySet<IconName> = new Set(['checkCircle', 'check']);
  *  animates out instead of vanishing mid-frame. */
 function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void }) {
   const [leaving, setLeaving] = useState<false | 'fade' | 'left' | 'right'>(false);
+  const [paused, setPaused] = useState(false);
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startXRef = useRef<number | null>(null);
@@ -170,12 +173,14 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
   const resume = useCallback(() => {
     window.clearTimeout(timerRef.current);
     startedAtRef.current = Date.now();
+    setPaused(false);
     timerRef.current = window.setTimeout(() => leave('fade'), Math.max(600, remainingRef.current));
   }, [leave]);
 
   const pause = () => {
     window.clearTimeout(timerRef.current);
     remainingRef.current -= Date.now() - startedAtRef.current;
+    setPaused(true);
   };
 
   useEffect(() => {
@@ -230,8 +235,14 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
         opacity: leaving ? 0 : dx !== 0 ? Math.max(0.35, 1 - Math.abs(dx) / 220) : undefined,
         transition: dragging ? 'none' : 'transform 220ms var(--ease-out-expo), opacity 200ms ease',
       }}
-      className="pointer-events-auto flex w-full touch-pan-y select-none items-start gap-3 rounded-2xl bg-ink px-4 py-3.5 text-white shadow-pop animate-toast-in"
+      className="pointer-events-auto relative flex w-full touch-pan-y select-none items-start gap-3 overflow-hidden rounded-2xl bg-ink px-4 py-3.5 text-white shadow-pop animate-toast-in"
     >
+      {/* the time left, as a thin line that runs out (paused while you read) */}
+      <span
+        aria-hidden="true"
+        className="toast-progress pointer-events-none absolute inset-x-0 bottom-0 h-[3px] origin-left bg-white/25"
+        style={{ animationDuration: `${TOAST_MS}ms`, animationPlayState: paused ? 'paused' : 'running' }}
+      />
       <span
         className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
           success ? 'bg-accent-bright/20 text-accent-bright' : 'bg-white/12 text-white'
@@ -242,6 +253,15 @@ function ToastItem({ t, onDismiss }: { t: Toast; onDismiss: (id: number) => void
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium leading-snug">{t.title}</p>
         {t.desc && <p className="mt-0.5 text-detail leading-snug text-white/65">{t.desc}</p>}
+        {t.action && (
+          <button
+            type="button"
+            onClick={() => { t.action?.onClick(); leave('fade'); }}
+            className="mt-2 rounded-full bg-[#fff] px-3.5 py-1.5 text-detail font-semibold text-[#0a0b0a]"
+          >
+            {t.action.label}
+          </button>
+        )}
       </div>
       <button
         type="button"
