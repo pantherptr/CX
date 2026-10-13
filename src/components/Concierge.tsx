@@ -31,6 +31,22 @@ interface ChatMsg {
   text: string;
   cars?: string[];
   offerHuman?: boolean;
+  /** What Kai did to get there (the "think" trail) and how long it took. */
+  steps?: string[];
+  seconds?: number;
+}
+
+/** The trail shown for a local answer: it describes what really happened (FAQ lookup / car match). */
+function thoughtSteps(r: { cars?: string[]; offerHuman?: boolean }, t: (s: string, v?: Record<string, string | number>) => string): string[] {
+  const steps = [t('Reading your question…')];
+  if (r.cars && r.cars.length > 0) {
+    steps.push(t('Checking the cars on CX…'), t('{n} matches found', { n: r.cars.length }));
+  } else if (r.offerHuman) {
+    steps.push(t('Looking through the help articles…'), t('No exact answer — offering a person'));
+  } else {
+    steps.push(t('Looking through the help articles…'), t('Found an answer'));
+  }
+  return steps;
 }
 
 let nextId = 0;
@@ -114,6 +130,11 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [convId, setConvId] = useState<string | null>(null);
   const [handing, setHanding] = useState(false);
+  const [think, setThink] = useState(true);
+  const [pending, setPending] = useState<{ steps: string[]; shown: number; seconds: number } | null>(null);
+  const [streaming, setStreaming] = useState<{ id: string; shown: number } | null>(null);
+  const [openThoughts, setOpenThoughts] = useState<Set<string>>(() => new Set());
+  const runRef = useRef<{ cancel: () => void } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const live = useConversation(convId);
@@ -124,7 +145,9 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [msgs, live.messages, busy]);
+  }, [msgs, live.messages, busy, pending, streaming]);
+
+  useEffect(() => () => runRef.current?.cancel(), []);
 
   // The composer grows with what is typed (up to ~5 lines), like the 21st thinking prompt.
   useLayoutEffect(() => {
@@ -144,7 +167,8 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     async (text: string) => {
       const clean = text.trim();
       if (!clean || busy) return;
-      const next: ChatMsg[] = [...msgs, { id: newId(), role: 'user', text: clean }];
+      const userMsg: ChatMsg = { id: newId(), role: 'user', text: clean };
+      const next: ChatMsg[] = [...msgs, userMsg];
       setMsgs(next);
       setInput('');
       setBusy(true);
@@ -152,9 +176,57 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       // browser. Set VITE_ASSISTANT_AI=1 (and an Anthropic key on the server) to use the AI instead.
       if (!AI_ENABLED) {
         const r = localReply(clean, cars ?? [], t);
-        await new Promise((res) => window.setTimeout(res, 450 + Math.min(600, clean.length * 8)));
-        setMsgs((cur) => [...cur, { id: newId(), role: 'assistant', text: r.text, cars: r.cars, offerHuman: r.offerHuman }]);
-        setBusy(false);
+        const steps = thoughtSteps(r, t);
+        const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const started = Date.now();
+        const timers: number[] = [];
+        let interval = 0;
+        const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
+        const clearAll = () => {
+          timers.forEach((id) => window.clearTimeout(id));
+          window.clearInterval(interval);
+        };
+        // The answer appears as a flow of text, then the cars / "talk to a person" button.
+        const reveal = () => {
+          const id = newId();
+          const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
+          setPending(null);
+          setMsgs((cur) => [...cur, { id, role: 'assistant', text: r.text, cars: r.cars, offerHuman: r.offerHuman, steps: think ? steps : undefined, seconds: think ? seconds : undefined }]);
+          const done = () => {
+            window.clearInterval(interval);
+            setStreaming(null);
+            setBusy(false);
+            runRef.current = null;
+          };
+          if (reduced) { done(); return; }
+          setStreaming({ id, shown: 0 });
+          runRef.current = { cancel: done };
+          let n = 0;
+          interval = window.setInterval(() => {
+            n += 5;
+            if (n >= r.text.length) done();
+            else setStreaming({ id, shown: n });
+          }, 28);
+        };
+        // Stop while thinking: nothing is answered, and what you wrote goes back in the box.
+        runRef.current = {
+          cancel: () => {
+            clearAll();
+            runRef.current = null;
+            setPending(null);
+            setBusy(false);
+            setMsgs((cur) => cur.filter((m) => m.id !== userMsg.id));
+            setInput(clean);
+          },
+        };
+        if (think && !reduced) {
+          setPending({ steps, shown: 0, seconds: 0 });
+          steps.forEach((_, i) => later(450 * (i + 1), () => setPending((p) => (p ? { ...p, shown: i + 1 } : p))));
+          interval = window.setInterval(() => setPending((p) => (p ? { ...p, seconds: p.seconds + 1 } : p)), 1000);
+          later(450 * steps.length + 350, () => { window.clearInterval(interval); reveal(); });
+        } else {
+          later(think ? 0 : 250, reveal);
+        }
         return;
       }
       try {
@@ -174,7 +246,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         setBusy(false);
       }
     },
-    [busy, cars, msgs, session, t],
+    [busy, cars, msgs, session, t, think],
   );
 
   /** Move the conversation to a real CX chat, in this same panel, carrying what was said so far. */
@@ -267,8 +339,42 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                   <div className="flex items-start gap-2.5">
                     <ConciergeMark size={30} />
                     <div className="min-w-0 max-w-[84%] space-y-2">
-                      <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">{m.text}</p>
-                      {m.cars && m.cars.length > 0 && (
+                      {m.steps && m.steps.length > 0 && (
+                        <div>
+                          <button
+                            type="button"
+                            aria-expanded={openThoughts.has(m.id)}
+                            onClick={() =>
+                              setOpenThoughts((cur) => {
+                                const nextSet = new Set(cur);
+                                if (nextSet.has(m.id)) nextSet.delete(m.id);
+                                else nextSet.add(m.id);
+                                return nextSet;
+                              })
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel/60 px-2.5 py-1 text-caption text-muted transition-colors hover:bg-panel hover:text-ink"
+                          >
+                            <Icon name="sparkles" size={13} />
+                            {t('Thought for {n}s', { n: m.seconds ?? 1 })}
+                            <Icon name="chevronRight" size={13} className={`transition-transform ${openThoughts.has(m.id) ? 'rotate-90' : ''}`} />
+                          </button>
+                          {openThoughts.has(m.id) && (
+                            <ol className="ml-[7px] mt-2 border-l border-line pl-4">
+                              {m.steps.map((step) => (
+                                <li key={step} className="flex items-center gap-2 py-1 text-caption text-muted">
+                                  <Icon name="check" size={12} className="shrink-0 text-ink" />
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </div>
+                      )}
+                      <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
+                        {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
+                        {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}
+                      </p>
+                      {streaming?.id !== m.id && m.cars && m.cars.length > 0 && (
                         <div className="space-y-2">
                           {m.cars.map((slug) => {
                             const c = carBySlug.get(slug);
@@ -291,7 +397,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                           })}
                         </div>
                       )}
-                      {m.offerHuman && (
+                      {streaming?.id !== m.id && m.offerHuman && (
                         <button type="button" onClick={() => void handOff()} disabled={handing} className="rounded-full border border-line-strong bg-surface px-3.5 py-1.5 text-detail font-semibold text-ink disabled:opacity-60">
                           {handing ? t('Connecting…') : t('Talk to a person')}
                         </button>
@@ -318,7 +424,31 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
               })
             ))}
 
-          {busy && !human && (
+          {pending && !human && (
+            <div className="flex items-start gap-2.5" role="status">
+              <ConciergeMark size={30} />
+              <div className="min-w-0 flex-1 pt-1">
+                <div className="flex items-center gap-1.5 text-detail">
+                  <Icon name="sparkles" size={14} className="text-muted" />
+                  <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
+                  <span className="ml-auto font-mono text-caption tabular-nums text-muted">{pending.seconds}s</span>
+                </div>
+                <ol className="ml-[7px] mt-2 border-l border-line pl-4">
+                  {pending.steps.slice(0, pending.shown).map((step, i, arr) => (
+                    <li key={step} className="flex items-center gap-2 py-1 text-caption text-muted animate-fade-in">
+                      {i < arr.length - 1 || pending.shown === pending.steps.length ? (
+                        <Icon name="check" size={12} className="shrink-0 text-ink" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent-700" />
+                      )}
+                      <span className={i === arr.length - 1 && pending.shown < pending.steps.length ? 'text-ink' : ''}>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+          {busy && !human && !pending && !streaming && (
             <div className="flex items-center gap-2.5" role="status">
               <ConciergeMark size={30} />
               <span className="flex items-center gap-1.5 text-detail">
@@ -340,7 +470,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         </div>
 
         <form onSubmit={submit} className="border-t border-line bg-bg px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-end gap-2 rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
+          <div className="rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
             <textarea
               ref={inputRef}
               value={input}
@@ -356,16 +486,49 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
               placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
               maxLength={800}
               enterKeyHint="send"
-              className="max-h-[120px] min-h-[2.5rem] min-w-0 flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"
+              className="block max-h-[120px] min-h-[2.5rem] w-full resize-none bg-transparent py-2 pr-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || (busy && !human)}
-              aria-label={t('Send')}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
-            >
-              <Icon name="arrowRight" size={18} className="-rotate-90" />
-            </button>
+            <div className="mt-1 flex items-center justify-between pr-0.5">
+              {!human ? (
+                <button
+                  type="button"
+                  aria-pressed={think}
+                  disabled={busy}
+                  onClick={() => setThink((v) => !v)}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-detail font-semibold transition-colors disabled:opacity-50 ${
+                    think ? 'border-ink/15 bg-ink/5 text-ink' : 'border-line bg-surface text-muted'
+                  }`}
+                >
+                  <Icon name="sparkles" size={14} />
+                  {t('Think')}
+                  {think && <Icon name="check" size={12} />}
+                </button>
+              ) : (
+                <span />
+              )}
+              {busy && !human ? (
+                <button
+                  key="stop"
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); runRef.current?.cancel(); }}
+                  disabled={!runRef.current}
+                  aria-label={t('Stop')}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
+                >
+                  <span className="h-3 w-3 rounded-[3px] bg-white" />
+                </button>
+              ) : (
+                <button
+                  key="send"
+                  type="submit"
+                  disabled={!input.trim()}
+                  aria-label={t('Send')}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
+                >
+                  <Icon name="arrowRight" size={18} className="-rotate-90" />
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
