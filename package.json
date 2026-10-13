@@ -40,6 +40,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-medium-image-zoom": "^5.4.9",
     "react-router-dom": "^7.18.2",
     "resend": "^4.0.1",
     "stripe": "^17.4.0",

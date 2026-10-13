@@ -1,6 +1,6 @@
+import { ZoomableImage } from './ui/zoomable-image';
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { Icon } from './Icon';
-import { Img } from './motion';
 import { useApp } from '../lib/store';
 import { getSignedUrl } from '../lib/data/verification';
 import { shrinkImage } from '../lib/shrinkImage';
@@ -56,12 +56,8 @@ function Tile({
   if (signedUrl) {
     return (
       <div className="relative overflow-hidden rounded-xl border border-line">
-        <Img
-          src={signedUrl}
-          alt={label}
-          className="aspect-[4/3] w-full object-cover"
-          fallback={<span className="grid aspect-[4/3] w-full place-items-center bg-panel text-muted"><Icon name="image" size={22} /></span>}
-        />
+        {/* tap to zoom: this is where a scratch or a dent gets checked */}
+        <ZoomableImage src={signedUrl} alt={label} className="aspect-[4/3] w-full object-cover" />
         <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-2 pb-1.5 pt-4 text-label font-medium text-white">{label}</span>
         <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-accent text-white">
           <Icon name="check" size={11} strokeWidth={3} />
