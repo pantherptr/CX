@@ -1,5 +1,5 @@
 import { BlurText } from '../components/ui/blur-text';
-import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SignalS } from '../components/SignalLogo';
 import { RespectGlyph } from '../components/RespectGlyph';
@@ -17,6 +17,9 @@ import { eur } from '../lib/format';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
 import { useLocale } from '../lib/i18n';
+
+// The scroll story for "How it works" carries gsap, so it is only fetched when the section is near.
+const StickySteps = lazy(() => import('../components/StickySteps'));
 
 
 /** The hero words, one letter at a time: each letter rises into place in sequence when the page opens, then
@@ -256,6 +259,53 @@ export default function Home() {
   const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
   const cheapest = allCars && allCars.length > 0 ? Math.min(...allCars.map((c) => c.pricePerDay)) : null;
 
+  // "How it works": the scroll story mounts (and gsap downloads) only when the section is near the screen.
+  const howRef = useRef<HTMLDivElement>(null);
+  const [howNear, setHowNear] = useState(false);
+  useEffect(() => {
+    const el = howRef.current;
+    if (!el || howNear) return;
+    if (typeof IntersectionObserver === 'undefined') { setHowNear(true); return; }
+    const io = new IntersectionObserver(
+      (entries) => { if (entries.some((e) => e.isIntersecting)) { setHowNear(true); io.disconnect(); } },
+      { rootMargin: '900px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [howNear]);
+  const howImages = [2, 3, 0].map((i) => {
+    const src = allCars?.[i]?.images[0] ?? allCars?.[0]?.images[0];
+    return src ? unsplash(src, 1200) : '/hero-car.webp';
+  });
+  const howStatic = (
+        <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
+          {howSteps.map((st, i) => (
+            <Reveal key={st.title} delay={i * 80}>
+              <div role="listitem" className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
+                {/* A thread from this step's icon to the next card — the
+                    three really are one sequence, so they shouldn't read
+                    as three unrelated boxes. Down the gap on phones,
+                    across it on wider screens. */}
+                {i < howSteps.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-[2.625rem] top-full h-3 w-px bg-accent/35 sm:left-full sm:top-[2.875rem] sm:h-px sm:w-5"
+                  />
+                )}
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+                  <Icon name={st.icon} size={20} />
+                </span>
+                <div>
+                  <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">{t('Step {n}', { n: i + 1 })}</p>
+                  <h3 className="mt-1 font-display text-lg font-semibold text-ink">{t(st.title)}</h3>
+                  <p className="mt-1.5 text-detail leading-relaxed text-muted">{t(st.desc)}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+  );
+
   return (
     <div>
       {/* ================= HERO — big type behind a cut-out car =================
@@ -423,31 +473,23 @@ export default function Home() {
             </Link>
           }
         />
-        <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
-          {howSteps.map((st, i) => (
-            <Reveal key={st.title} delay={i * 80}>
-              <div role="listitem" className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
-                {/* A thread from this step's icon to the next card — the
-                    three really are one sequence, so they shouldn't read
-                    as three unrelated boxes. Down the gap on phones,
-                    across it on wider screens. */}
-                {i < howSteps.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-[2.625rem] top-full h-3 w-px bg-accent/35 sm:left-full sm:top-[2.875rem] sm:h-px sm:w-5"
-                  />
-                )}
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
-                  <Icon name={st.icon} size={20} />
-                </span>
-                <div>
-                  <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">{t('Step {n}', { n: i + 1 })}</p>
-                  <h3 className="mt-1 font-display text-lg font-semibold text-ink">{t(st.title)}</h3>
-                  <p className="mt-1.5 text-detail leading-relaxed text-muted">{t(st.desc)}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
+        <div ref={howRef} className="mt-8">
+          {howNear ? (
+            <Suspense fallback={howStatic}>
+              <StickySteps
+                stepWord={t('How it works')}
+                steps={howSteps.map((st, i) => ({
+                  icon: st.icon,
+                  label: t('Step {n}', { n: i + 1 }),
+                  title: t(st.title),
+                  desc: t(st.desc),
+                  image: howImages[i],
+                }))}
+              />
+            </Suspense>
+          ) : (
+            howStatic
+          )}
         </div>
       </section>
 
