@@ -709,6 +709,14 @@ export default function HostDashboard() {
 
   const series = useMemo(() => monthlySeries(hostBookings ?? []), [hostBookings]);
   const hasEarningsData = series.some((d) => d.value > 0);
+  // this month against the one before it, only when the one before it has something to compare with
+  const monthTrend = (() => {
+    const cur = series[series.length - 1]?.value ?? 0;
+    const prev = series[series.length - 2]?.value ?? 0;
+    if (prev <= 0 || cur <= 0) return null;
+    const pct = Math.round(((cur - prev) / prev) * 100);
+    return `${pct >= 0 ? '+' : ''}${pct}%`;
+  })();
 
   // A refunded trip is grouped under the Cancelled tab rather than given
   // its own — see the same note on CustomerDashboard.tsx's tabBookings.
@@ -783,8 +791,8 @@ export default function HostDashboard() {
             </>
           ) : (
             <>
-              <Reveal delay={0}><StatCard icon="euro" label="Total earnings" value={eur(totalEarnings)} accent /></Reveal>
-              <Reveal delay={60}><StatCard icon="trending" label="This month" value={eur(thisMonthEarnings)} /></Reveal>
+              <Reveal delay={0}><StatCard icon="euro" label="Total earnings" value={eur(totalEarnings)} accent bars={series.map((d) => d.value)} barLabels={series.map((d) => d.month.slice(0, 1))} /></Reveal>
+              <Reveal delay={60}><StatCard icon="trending" label="This month" value={eur(thisMonthEarnings)} trend={monthTrend ?? undefined} /></Reveal>
               <Reveal delay={120}><StatCard icon="cars" label="Active cars" value={String(activeCarsCount)} /></Reveal>
               <Reveal delay={180}><StatCard icon="route" label="Completed trips" value={String(completedTrips)} /></Reveal>
             </>

@@ -5,6 +5,7 @@ import { Icon, type IconName } from './Icon';
 import { Logo } from './primitives';
 import { useAuth } from '../lib/auth';
 import { Img, useCountUp } from './motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { useUnreadMessageCount } from '../lib/data/messages';
 import { useUnreadNotificationCount } from '../lib/data/notifications';
 import { customerNav, hostNav } from '../lib/nav';
@@ -273,11 +274,17 @@ export function StatCard({
   accent,
   countTo,
   format,
+  bars,
+  barLabels,
 }: {
   icon: IconName;
   label: string;
   value: string;
   trend?: string;
+  /** A small bar chart under the number (e.g. the last months), the bars growing in turn — from 21st's
+   *  Stats Card. The last bar is the current period and is drawn in the accent colour. */
+  bars?: number[];
+  barLabels?: string[];
   accent?: boolean;
   /** When set, animates the displayed number up from 0 instead of showing `value` statically. */
   countTo?: number;
@@ -292,13 +299,41 @@ export function StatCard({
           <Icon name={icon} size={20} />
         </span>
         {trend && (
-          <span className={`inline-flex items-center gap-1 text-caption font-medium text-accent`}>
+          <span className={`inline-flex items-center gap-1 text-caption font-medium ${trend.startsWith('-') ? 'text-danger' : 'text-accent'}`}>
             <Icon name="trending" size={14} /> {trend}
           </span>
         )}
       </div>
       <p ref={countTo !== undefined ? countRef : undefined} className={`mt-3 font-display text-xl font-semibold sm:mt-4 sm:text-2xl text-ink`}>{display}</p>
       <p className={`mt-0.5 text-detail text-muted`}>{label}</p>
+      {bars && bars.some((b) => b > 0) && <MiniBars values={bars} labels={barLabels} accent={accent} />}
+    </div>
+  );
+}
+
+/** The small bar chart of a StatCard: heights relative to the largest bar, growing one after another the
+ *  first time it is on screen (nothing moves under reduced motion). */
+function MiniBars({ values, labels, accent }: { values: number[]; labels?: string[]; accent?: boolean }) {
+  const reduced = useReducedMotion();
+  const max = Math.max(...values, 1);
+  return (
+    <div className="mt-3 flex h-14 items-end gap-1.5" aria-hidden="true">
+      {values.map((v, i) => {
+        const last = i === values.length - 1;
+        const h = Math.max(6, (v / max) * 100);
+        return (
+          <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+            <motion.div
+              initial={reduced ? false : { height: '0%', opacity: 0 }}
+              whileInView={{ height: `${h}%`, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 25, delay: 0.1 + i * 0.07 }}
+              className={`w-full rounded-[3px] ${last ? (accent ? 'bg-accent' : 'bg-ink') : accent ? 'bg-accent/30' : 'bg-line-strong'}`}
+            />
+            {labels?.[i] && <span className="text-[9px] leading-none text-faint">{labels[i]}</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }
