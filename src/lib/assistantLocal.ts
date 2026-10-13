@@ -39,7 +39,7 @@ const SYNONYMS: Record<string, string> = {
   rimborso: 'refund', rimborsare: 'refund', rambursare: 'refund', reembolso: 'refund',
   cauzione: 'deposit', deposito: 'deposit', garanzia: 'deposit', garantie: 'deposit', garantía: 'deposit',
   pagamento: 'payment', pagare: 'pay', pagato: 'pay', plata: 'payment', plati: 'pay', pago: 'payment', pagar: 'pay',
-  verifica: 'verification', verificare: 'verification', verificarea: 'verification', verificacion: 'verification', verificación: 'verification',
+  verify: 'verification', verified: 'verification', verifying: 'verification', verifica: 'verification', verificare: 'verification', verificarea: 'verification', verificacion: 'verification', verificación: 'verification',
   patente: 'licence', permis: 'licence', licencia: 'licence', carnet: 'licence',
   identita: 'identity', identità: 'identity', identitate: 'identity', identidad: 'identity',
   consegna: 'pickup', ritiro: 'pickup', ritirare: 'pickup', predare: 'pickup', ridicare: 'pickup', recogida: 'pickup', entrega: 'pickup',
@@ -72,18 +72,26 @@ function tokens(text: string): string[] {
 
 const FAQ_TOKENS = faqs.map((f) => ({ f, set: new Set(tokens(`${f.q} ${f.q} ${f.a}`)), qset: new Set(tokens(f.q)) }));
 
+// How many FAQ entries mention each word: a rare word ("verification") says more about what is being
+// asked than a common one ("work"), so matches are weighted by it.
+const DOC_FREQ = new Map<string, number>();
+for (const item of FAQ_TOKENS) for (const w of item.set) DOC_FREQ.set(w, (DOC_FREQ.get(w) ?? 0) + 1);
+const idf = (w: string) => Math.log(1 + FAQ_TOKENS.length / (DOC_FREQ.get(w) ?? 0.5));
+
 function bestFaq(query: string): { q: string; a: string; score: number } | null {
   const qt = tokens(query);
   if (qt.length === 0) return null;
+  const weights = qt.map(idf);
+  const total = weights.reduce((x, y) => x + y, 0);
+  const denom = total + total / qt.length; // same shape as before: (matches) / (words + 1), now weighted
   let best: { q: string; a: string; score: number } | null = null;
   for (const item of FAQ_TOKENS) {
     let hit = 0;
-    let qhit = 0;
-    for (const w of qt) {
-      if (item.set.has(w)) hit += 1;
-      if (item.qset.has(w)) qhit += 1;
-    }
-    const score = (hit + qhit) / (qt.length + 1);
+    qt.forEach((w, i) => {
+      if (item.set.has(w)) hit += weights[i];
+      if (item.qset.has(w)) hit += weights[i];
+    });
+    const score = hit / denom;
     if (!best || score > best.score) best = { q: item.f.q, a: item.f.a, score };
   }
   return best && best.score >= 0.34 ? best : null;
