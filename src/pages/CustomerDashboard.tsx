@@ -1,3 +1,4 @@
+import { monthBuckets } from '../lib/monthBuckets';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
@@ -211,6 +212,23 @@ export default function CustomerDashboard() {
     [bookings],
   );
 
+  // trips and spending per month for the last six months, drawn as the small bars under two of the tiles
+  const tripsByMonth = useMemo(() => monthBuckets(classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active' || c.phase === 'completed').map((c) => c.booking.startDate)), [classified]);
+  const spentByMonth = useMemo(() => {
+    const m = monthBuckets([]);
+    const now = new Date();
+    const keys = m.values.map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (m.values.length - 1 - i), 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const sums = new Map(keys.map((k) => [k, 0]));
+    for (const c of classified) {
+      if (c.phase !== 'upcoming' && c.phase !== 'active' && c.phase !== 'completed') continue;
+      const k = c.booking.startDate.slice(0, 7);
+      if (sums.has(k)) sums.set(k, (sums.get(k) ?? 0) + c.booking.totalPrice);
+    }
+    return { values: keys.map((k) => sums.get(k) ?? 0), labels: m.labels };
+  }, [classified]);
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const completedCount = classified.filter((c) => c.phase === 'completed').length;
   const tier = renterTier(completedCount);
@@ -295,9 +313,9 @@ export default function CustomerDashboard() {
           ) : (
             <>
               <Reveal delay={0}><StatCard icon="trips" label="Upcoming trips" value={String(upcomingCount)} countTo={upcomingCount} /></Reveal>
-              <Reveal delay={60}><StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} countTo={completedCount} /></Reveal>
+              <Reveal delay={60}><StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} countTo={completedCount} bars={tripsByMonth.values} barLabels={tripsByMonth.labels} /></Reveal>
               <Reveal delay={120}><StatCard icon="heart" label="Saved cars" value={String(favorites.size)} countTo={favorites.size} /></Reveal>
-              <Reveal delay={180}><StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} countTo={totalSpent} format={eur} /></Reveal>
+              <Reveal delay={180}><StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} countTo={totalSpent} format={eur} bars={spentByMonth.values} barLabels={spentByMonth.labels} /></Reveal>
             </>
           )}
         </div>
