@@ -1,3 +1,4 @@
+import { MonthColumns, StripedBars, InsightCard } from '../components/ui/dash-widgets';
 import { monthBuckets } from '../lib/monthBuckets';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -227,7 +228,20 @@ export default function CustomerDashboard() {
       const k = c.booking.startDate.slice(0, 7);
       if (sums.has(k)) sums.set(k, (sums.get(k) ?? 0) + c.booking.totalPrice);
     }
-    return { values: keys.map((k) => sums.get(k) ?? 0), labels: m.labels };
+    const names = keys.map((k) => new Date(`${k}-01T00:00:00`).toLocaleDateString(uiLocale(), { month: 'short' }));
+    return { values: keys.map((k) => sums.get(k) ?? 0), labels: m.labels, names };
+  }, [classified]);
+  // money per car, and the one sentence for the Insights card
+  const carSpend = useMemo(() => {
+    const byCar = new Map<string, { id: string; name: string; revenue: number }>();
+    for (const c of classified) {
+      if (c.phase !== 'upcoming' && c.phase !== 'active' && c.phase !== 'completed') continue;
+      const car = c.booking.car;
+      const cur = byCar.get(car.id) ?? { id: car.id, name: `${car.make} ${car.model}`, revenue: 0 };
+      cur.revenue += c.booking.totalPrice;
+      byCar.set(car.id, cur);
+    }
+    return [...byCar.values()].filter((r) => r.revenue > 0).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }, [classified]);
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const completedCount = classified.filter((c) => c.phase === 'completed').length;
@@ -248,6 +262,28 @@ export default function CustomerDashboard() {
     if (active) return active.booking;
     return relevant.sort((a, b) => a.booking.startDate.localeCompare(b.booking.startDate))[0]?.booking;
   }, [classified]);
+
+  const insight = (() => {
+    if (nextTrip) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const start = new Date(`${nextTrip.startDate}T00:00:00`);
+      const days = Math.round((start.getTime() - today.getTime()) / 86_400_000);
+      const car = `${nextTrip.car.make} ${nextTrip.car.model}`;
+      if (days <= 0) return { big: 'Now', title: `You are on the road with the ${car}.`, text: `Back by ${fmtDate(nextTrip.endDate)}.` };
+      return {
+        big: String(days),
+        title: days === 1 ? `Day to go: ${car}.` : `Days to go: ${car}.`,
+        text: `${fmtDate(nextTrip.startDate)} · ${nextTrip.car.location || nextTrip.car.city}`,
+      };
+    }
+    const cur = spentByMonth.values[spentByMonth.values.length - 1] ?? 0;
+    const prev = spentByMonth.values[spentByMonth.values.length - 2] ?? 0;
+    if (cur > 0 && prev > 0) {
+      const pct = Math.round(((cur - prev) / prev) * 100);
+      return { big: `${pct >= 0 ? '+' : ''}${pct}%`, title: pct >= 0 ? 'You travelled more this month.' : 'You spent less this month.', text: `This month ${eur(cur)}, last month ${eur(prev)}.` };
+    }
+    return null;
+  })();
 
   // A refunded trip is grouped under the Cancelled tab rather than given
   // its own — both are "this trip isn't happening"; refunded additionally
@@ -287,25 +323,8 @@ export default function CustomerDashboard() {
         </div>
         <VerifyNudge verification={verification} loading={verificationLoading} />
 
-        {/* Stats — on a phone one slim strip, not four big cards of zeros */}
-        <div className="card mt-5 grid grid-cols-4 divide-x divide-line overflow-hidden sm:hidden">
-          {[
-            { label: 'Upcoming', value: String(upcomingCount) },
-            { label: 'Completed', value: String(completedCount) },
-            { label: 'Saved', value: String(favorites.size) },
-            { label: 'Spent', value: eur(totalSpent) },
-          ].map((st) => (
-            <div key={st.label} className="px-1 py-3.5 text-center">
-              {bookingsLoading ? (
-                <div className="skeleton mx-auto h-5 w-8 rounded-md" />
-              ) : (
-                <p className="truncate px-1 font-display text-[1.15rem] font-semibold leading-none tabular-nums text-ink">{st.value}</p>
-              )}
-              <p className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-faint">{st.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-4">
+        {/* Stats */}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {bookingsLoading ? (
             <>
               <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
@@ -319,6 +338,40 @@ export default function CustomerDashboard() {
             </>
           )}
         </div>
+
+        {/* Where the money went + one sentence worth reading — from this person's real trips only */}
+        {!bookingsLoading && (spentByMonth.values.some((v) => v > 0) || carSpend.length > 0 || insight) && (
+          <div className="mt-6 space-y-4">
+            {spentByMonth.values.some((v) => v > 0) && (
+              <Reveal>
+                <section className="card p-5 sm:p-6">
+                  <h2 className="font-display text-lg font-semibold text-ink">Your spending</h2>
+                  <div className="mt-4">
+                    <MonthColumns
+                      data={spentByMonth.values.map((value, i) => ({ month: spentByMonth.names[i], value }))}
+                      vsLabel="vs the month before"
+                    />
+                  </div>
+                </section>
+              </Reveal>
+            )}
+            <div className="grid gap-4 lg:grid-cols-2">
+              {carSpend.length > 0 && (
+                <Reveal delay={60}>
+                  <section className="card p-5 sm:p-6">
+                    <h2 className="font-display text-lg font-semibold text-ink">Spent by car</h2>
+                    <div className="mt-5"><StripedBars rows={carSpend} /></div>
+                  </section>
+                </Reveal>
+              )}
+              {insight && (
+                <Reveal delay={120}>
+                  <InsightCard big={insight.big} title={insight.title} text={insight.text} />
+                </Reveal>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* No trip yet — an invitation instead of an empty gap */}
         {!bookingsLoading && !nextTrip && (
