@@ -806,10 +806,19 @@
   @keyframes x-car-bot { 0%, 12% { transform: translateX(0); } 38%, 58% { transform: translateX(-84px); } 82%, 100% { transform: translateX(0); } }
   @keyframes x-car-scan { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(600px); opacity: 0; } }
   @keyframes x-car-flash { 0%, 100% { filter: none; } 40%, 60% { filter: drop-shadow(0 0 14px rgba(18, 224, 96, 0.85)); } }
+  /* while X talks the whole car rocks a little, as if it were speaking with its body */
+  .x-car--talk { transform-origin: 50% 85%; animation: x-car-talk 0.85s ease-in-out infinite; }
+  @keyframes x-car-talk {
+    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+    22% { transform: translateY(-1.5px) rotate(-1.6deg) scale(1.04); }
+    50% { transform: translateY(0.5px) rotate(0deg) scale(1.01); }
+    74% { transform: translateY(-1.2px) rotate(1.6deg) scale(1.03); }
+  }
+  .x-car--talk { will-change: transform; }
   .x-car__mouth { transform-box: fill-box; transform-origin: center; animation: x-car-mouth 0.46s ease-in-out infinite alternate; }
   @keyframes x-car-mouth { from { transform: scaleY(0.18); } to { transform: scaleY(0.85); } }
   @media (prefers-reduced-motion: reduce) {
-    .x-car--morph .x-car__band, .x-car--morph svg, .x-car__scan, .x-car__mouth { animation: none; }
+    .x-car--morph .x-car__band, .x-car--morph svg, .x-car__scan, .x-car__mouth, .x-car--talk { animation: none; }
   }
   @keyframes kai-step-in {
     from { opacity: 0; transform: translateY(10px); }

@@ -36,7 +36,7 @@ export function XCar({
   return (
     <span
       ref={root}
-      className={`x-car relative inline-block shrink-0 ${active ? 'x-car--active' : ''} ${gesture ? 'x-car--morph' : ''} ${className}`}
+      className={`x-car relative inline-block shrink-0 ${active ? 'x-car--active' : ''} ${gesture ? 'x-car--morph' : ''} ${speaking ? 'x-car--talk' : ''} ${className}`}
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
@@ -104,10 +104,20 @@ export function XCar({
         <g clipPath={`url(#${id('bot')})`}>
           <g className="x-car__band x-car__band--bot">
             <image href="/brand/x-car-v2.webp" x="0" y="0" width="720" height="558" />
-            {/* the mouth: a small opening in the middle of the grin that moves while X talks */}
+            {/* the mouth: a lens that opens and closes inside the grin (between the lips), only while X talks */}
             {speaking && (
               <g>
-                <ellipse className="x-car__mouth" cx="360" cy="432" rx="92" ry="20" fill="#020403" stroke="#1ee05f" strokeWidth="5" />
+                <path fill="#06160c" stroke="#1ee05f" strokeWidth="5" strokeLinejoin="round" d="M246 446Q360 440 474 446Q360 458 246 446Z">
+                  <animate
+                    attributeName="d"
+                    dur="0.85s"
+                    repeatCount="indefinite"
+                    calcMode="spline"
+                    keyTimes="0;0.2;0.4;0.6;0.8;1"
+                    keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"
+                    values="M246 446Q360 440 474 446Q360 458 246 446Z;M246 444Q360 436 474 444Q360 474 246 444Z;M246 446Q360 441 474 446Q360 462 246 446Z;M246 444Q360 436 474 444Q360 470 246 444Z;M246 446Q360 440 474 446Q360 456 246 446Z;M246 446Q360 440 474 446Q360 458 246 446Z"
+                  />
+                </path>
               </g>
             )}
           </g>
