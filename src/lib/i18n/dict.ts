@@ -32,6 +32,7 @@ const ROWS: Row[] = [
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
   ["Spending & insights", "Spese e statistiche", "Cheltuieli și statistici", "Gastos y estadísticas"],
+  ["Earnings breakdown", "Dettaglio guadagni", "Detalii câștiguri", "Desglose de ingresos"],
   ["Of course — I will connect you with a person from the CX team.", "Certo, ti metto in contatto con una persona del team CX.", "Desigur — te conectez cu o persoană din echipa CX.", "Claro, te pongo en contacto con una persona del equipo CX."],
   ["Hello! Tell me what you need: a car for a trip, or help with something.", "Ciao! Dimmi di cosa hai bisogno: un'auto per un viaggio o aiuto con qualcosa.", "Salut! Spune-mi ce ai nevoie: o mașină pentru o călătorie sau ajutor cu ceva.", "¡Hola! Dime qué necesitas: un coche para un viaje o ayuda con algo."],
   [" in {city}", " a {city}", " în {city}", " en {city}"],

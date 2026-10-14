@@ -4,7 +4,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
-import { EmptyState } from '../components/primitives';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useHostCars } from '../lib/data/cars';
 import { useHostBookings, useBookedRanges, rangesOverlap, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
@@ -654,7 +653,6 @@ export default function HostDashboard() {
   const thisYearEarnings = earningsInRange(`${thisYearKey}-01-01`);
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const activeCarsCount = (hostCars ?? []).filter((c) => c.status === 'published').length;
-  const allReviews = (hostCars ?? []).flatMap((c) => c.reviews);
   const completedTrips = (hostCars ?? []).reduce((sum, c) => sum + (c.trips ?? 0), 0);
 
   const series = useMemo(() => monthlySeries(hostBookings ?? []), [hostBookings]);
@@ -777,15 +775,6 @@ export default function HostDashboard() {
           )}
         </div>
 
-        {/* Your cars right now — real status per published car, no simulation. */}
-        {!loading && nowCars.length > 0 && (
-          <Reveal delay={160}>
-            <div className="mt-6">
-              <HostCarsNow cars={nowCars} trips={nowTrips} />
-            </div>
-          </Reveal>
-        )}
-
         {/* Action Required — the host's real to-do list, built only from
             signals this backend genuinely tracks (see buildActionItems). */}
         {!loading && actionItems.length > 0 && (
@@ -807,6 +796,15 @@ export default function HostDashboard() {
                 ))}
               </div>
             </section>
+          </Reveal>
+        )}
+
+        {/* Your cars right now — real status per published car, no simulation. */}
+        {!loading && nowCars.length > 0 && (
+          <Reveal delay={160}>
+            <div className="mt-6">
+              <HostCarsNow cars={nowCars} trips={nowTrips} />
+            </div>
           </Reveal>
         )}
 
@@ -852,24 +850,6 @@ export default function HostDashboard() {
             )}
           </section></Reveal>
 
-        {!loading && (carRows.length > 0 || insight) && (
-          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {carRows.length > 0 && (
-              <Reveal delay={60}>
-                <section className="card p-5 sm:p-6">
-                  <h2 className="font-display text-lg font-semibold text-ink">Earnings by car</h2>
-                  <div className="mt-5"><StripedBars rows={carRows} /></div>
-                </section>
-              </Reveal>
-            )}
-            {insight && (
-              <Reveal delay={120}>
-                <InsightCard big={insight.big} title={insight.title} text={insight.text} />
-              </Reveal>
-            )}
-          </div>
-        )}
-
           {/* Upcoming reservations */}
           <Reveal delay={80}><section className="card scroll-mt-20 p-4 sm:p-6" id="upcoming">
             <div className="mb-4 flex items-center justify-between">
@@ -896,6 +876,31 @@ export default function HostDashboard() {
             )}
           </section></Reveal>
         </div>
+
+        {!loading && (carRows.length > 0 || insight) && (
+          <details className="group mt-6">
+            <summary className="card flex cursor-pointer list-none items-center justify-between p-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+              <span className="font-display text-lg font-semibold text-ink">Earnings breakdown</span>
+              <Icon name="chevronDown" size={18} className="text-muted transition-transform group-open:rotate-180" />
+            </summary>
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {carRows.length > 0 && (
+              <Reveal delay={60}>
+                <section className="card p-5 sm:p-6">
+                  <h2 className="font-display text-lg font-semibold text-ink">Earnings by car</h2>
+                  <div className="mt-5"><StripedBars rows={carRows} /></div>
+                </section>
+              </Reveal>
+            )}
+            {insight && (
+              <Reveal delay={120}>
+                <InsightCard big={insight.big} title={insight.title} text={insight.text} />
+              </Reveal>
+            )}
+          </div>
+          </details>
+        )}
+
 
         {/* Bookings */}
         <Reveal><section className="mt-8 scroll-mt-20 card overflow-hidden p-4 sm:p-6" id="bookings">
@@ -1001,35 +1006,13 @@ export default function HostDashboard() {
         </section>
         </Reveal>
 
-        {/* Reviews */}
-        <Reveal>
-        <section className="mt-8 scroll-mt-20" id="reviews">
-          <h2 className="mb-4 font-display text-lg font-semibold text-ink">Reviews</h2>
-          {allReviews.length > 0 ? (
-            <div className="card flex items-center gap-4 p-4 sm:gap-6 sm:p-6">
-              <div className="text-center">
-                <p className="font-display text-3xl font-semibold text-ink">{allReviews.length}</p>
-                <p className="mt-1 text-caption text-muted">Total reviews</p>
-              </div>
-            </div>
-          ) : (
-            <div className="card">
-              <EmptyState
-                size="md"
-                icon="reviews"
-                title="No reviews yet"
-                description="Reviews from completed trips will appear here."
-                className="py-12"
-              />
-            </div>
-          )}
-        </section>
-        </Reveal>
-
         {/* Calendar */}
         <Reveal>
-        <section className="mt-8 scroll-mt-20" id="calendar">
-          <h2 className="mb-4 font-display text-lg font-semibold text-ink">Calendar</h2>
+        <details className="group mt-8 scroll-mt-20" id="calendar" open={typeof window !== 'undefined' && window.location.hash === '#calendar'}>
+          <summary className="card mb-4 flex cursor-pointer list-none items-center justify-between p-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+            <span className="font-display text-lg font-semibold text-ink">Calendar</span>
+            <Icon name="chevronDown" size={18} className="text-muted transition-transform group-open:rotate-180" />
+          </summary>
           {loading ? (
             <div className="skeleton h-80 rounded-2xl" />
           ) : hostCars && hostCars.length > 0 ? (
@@ -1072,7 +1055,7 @@ export default function HostDashboard() {
               <p className="mt-1 font-medium text-ink">Add a car to see its calendar</p>
             </div>
           )}
-        </section>
+        </details>
         </Reveal>
 
         <Reveal>
