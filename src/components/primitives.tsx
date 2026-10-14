@@ -662,7 +662,7 @@ export function SectionHead({
     >
       <div className={center ? 'max-w-2xl' : 'max-w-xl'}>
         {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
-        <h2 className="font-display text-[1.75rem] font-semibold leading-[1.1] text-ink sm:text-4xl text-balance">
+        <h2 className="font-display text-[2.05rem] font-semibold leading-[1.05] tracking-[-0.028em] text-ink sm:text-[2.9rem] text-balance">
           {title}
         </h2>
         {desc && <p className="mt-3 text-copy leading-relaxed text-muted text-pretty">{desc}</p>}
