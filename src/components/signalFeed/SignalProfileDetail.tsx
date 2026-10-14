@@ -31,6 +31,7 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
+import { FollowerFaces } from './FollowerFaces';
 import { SignalProfileHero } from './SignalProfileHero';
 import { Tap, motion } from '../motionKit';
 import { useAuth } from '../../lib/auth';
@@ -574,9 +575,12 @@ export function SignalProfileDetail({
             scrollTop={scrollTop}
             action={
               realProfile && isMe ? (
-                <Tap onClick={() => setEditProfileOpen(true)} scale={0.97} className="w-full rounded-2xl bg-ink py-3.5 text-body font-semibold text-white transition-colors hover:bg-ink/90">
-                  Edit profile
-                </Tap>
+                <div>
+                  <FollowerFaces userId={realProfile.id} count={followersCount} onOpen={() => setFollowListMode('followers')} />
+                  <Tap onClick={() => setEditProfileOpen(true)} scale={0.97} className="w-full rounded-2xl bg-ink py-3.5 text-body font-semibold text-white transition-colors hover:bg-ink/90">
+                    Edit profile
+                  </Tap>
+                </div>
               ) : realProfile && canBeFollowed ? (
                 <div>
                   {relation === 'mutual' && (
