@@ -784,8 +784,11 @@
   }
   /* X's logo: the eyes blink now and then. */
   .x-logo__eyes { transform-box: fill-box; transform-origin: center; animation: x-logo-blink 6s infinite; }
+  .x-logo--active .x-logo__eyes { animation-duration: 2.8s; }
+  .x-logo--active .x-logo__halo { animation: x-logo-halo 0.9s ease-in-out infinite; }
+  @keyframes x-logo-halo { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }
   @keyframes x-logo-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
-  @media (prefers-reduced-motion: reduce) { .x-logo__eyes { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .x-logo__eyes, .x-logo--active .x-logo__halo { animation: none; } }
   /* X's car mascot (XCar.tsx): blinking eyes, headlights that wake up while X thinks. */
   .x-car__eyes { transform-box: fill-box; transform-origin: center; animation: x-logo-blink 5.4s infinite; }
   .x-car--active .x-car__eyes { animation-duration: 2.6s; }

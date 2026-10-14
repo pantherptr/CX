@@ -3,26 +3,26 @@ import { useGaze } from '../lib/useGaze';
 
 /**
  * X's logo: a solid, isometric X (two crossing arms on top, two legs under them with an arch between), in
- * black glass with a chrome rim like the CX wordmark. Two green eyes sit side by side in a small visor at the
- * middle of the X: they look at your finger / cursor, blink, and wander when nobody is around. `live` adds
- * the online dot.
+ * black glass with a chrome rim like the CX wordmark. Two slim, glowing green eyes sit directly on the X, side
+ * by side at its heart: they look at your finger / cursor, blink, and wander when nobody is around. `active`
+ * makes them glow while X is thinking. `live` adds the online dot.
  * Pure SVG; with "reduce motion" the eyes stay still.
  */
 
-export function XLogo({ size = 40, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
+export function XLogo({ size = 40, live = false, active = false, className = '' }: { size?: number; live?: boolean; active?: boolean; className?: string }) {
   const uid = useId().replace(/:/g, '');
   const id = (n: string) => `${n}-${uid}`;
   const root = useRef<HTMLSpanElement>(null);
   const pupils = useRef<SVGGElement>(null);
 
-  useGaze(root, pupils);
+  useGaze(root, pupils, { x: 1.9, y: 0.9 });
 
   // the silhouette, clockwise: top peaks and the notch between them, arm tips, inner notches, legs and the arch
   const body =
     'M25.7 0L50 14L75 0.3L100 14L75 28.7L100 43.3V72L75 86.7V58.7L50 43.3L25.7 58.7V86.7L0 72V43.3L25 28.7L0 14Z';
   const inset = 'translate(50 43) scale(0.9) translate(-50 -43)';
   return (
-    <span ref={root} className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }} aria-hidden="true">
+    <span ref={root} className={`relative inline-block shrink-0 ${active ? 'x-logo--active' : ''} ${className}`} style={{ width: size, height: size }} aria-hidden="true">
       <svg viewBox="0 -6.6 100 100" width={size} height={size} className="block overflow-visible">
         <defs>
           <linearGradient id={id('rim')} x1="0" y1="0" x2="1" y2="1">
@@ -64,21 +64,23 @@ export function XLogo({ size = 40, live = false, className = '' }: { size?: numb
           <rect x="0" y="-6" width="100" height="40" fill={`url(#${id('gloss')})`} opacity="0.5" />
         </g>
 
-        {/* the face: a small visor at the heart of the X, an eye on each side, a pupil that follows you */}
+        {/* the eyes, straight on the X: a soft glow, a slim almond of light, an iris that follows you */}
         <g className="x-logo__eyes">
-          <rect x="29.5" y="22" width="41" height="19" rx="5" fill="#030806" stroke={`url(#${id('rim')})`} strokeWidth="1.1" />
-          <rect x="31" y="23.5" width="38" height="16" rx="4" fill="none" stroke="#12e060" strokeOpacity="0.45" strokeWidth="0.5" />
-          {[40.5, 59.5].map((cx) => (
-            <g key={cx}>
-              <ellipse cx={cx} cy="31.5" rx="5.6" ry="5.4" fill="#020a05" />
-              <ellipse cx={cx} cy="31.5" rx="4.8" ry="4.6" fill={`url(#${id('eye')})`} />
-            </g>
-          ))}
+          {[40.5, 59.5].map((cx) => {
+            const almond = `M${cx - 6} 31.5Q${cx} 26.6 ${cx + 6} 31.5Q${cx} 36.4 ${cx - 6} 31.5Z`;
+            return (
+              <g key={cx}>
+                <ellipse cx={cx} cy="31.5" rx="8.5" ry="5.8" fill="#12ff6a" opacity="0.28" style={{ filter: 'blur(2.6px)' }} className="x-logo__halo" />
+                <path d={almond} fill="#031008" />
+                <path d={almond} fill={`url(#${id('eye')})`} transform={`translate(${cx} 31.5) scale(0.88 0.82) translate(${-cx} -31.5)`} />
+              </g>
+            );
+          })}
           <g ref={pupils} style={{ transition: 'transform .35s cubic-bezier(.2,.8,.2,1)' }}>
             {[40.5, 59.5].map((cx) => (
               <g key={cx}>
-                <circle cx={cx} cy="31.5" r="2.5" fill="#03140a" />
-                <circle cx={cx - 0.9} cy="30.4" r="0.85" fill="#fff" />
+                <ellipse cx={cx} cy="31.5" rx="2.3" ry="2.6" fill="#02130a" />
+                <circle cx={cx - 0.8} cy="30.6" r="0.75" fill="#fff" />
               </g>
             ))}
           </g>

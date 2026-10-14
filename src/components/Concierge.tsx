@@ -118,7 +118,7 @@ function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIn
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
-/** The assistant's face — X's mascot: a little CX sports car with eyes in the windscreen and the X on its bonnet. */
+/** The assistant's face — X's mascot: a CX supercar with eyes in the windscreen and the X on its bonnet. */
 export function ConciergeMark({ size = 30, live = false, active = false, className = '' }: { size?: number; live?: boolean; active?: boolean; className?: string }) {
   return <XCar size={size} live={live} active={active} className={className} />;
 }
