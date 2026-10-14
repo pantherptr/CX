@@ -348,7 +348,7 @@ export default function Home() {
                 max={200}
                 className="hero-par-up absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
                 style={{
-                  ['--hero-grad' as string]: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
+                  ['--hero-grad' as string]: 'linear-gradient(180deg, #5cf58c 0%, #1fe563 28%, #00a63e 62%, #006a28 100%)',
                 }}
               >
                 <span className="sr-only">{t('I own the keys')}</span>

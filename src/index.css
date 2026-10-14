@@ -1320,6 +1320,8 @@
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
+    /* a thin dark-green edge under each letter gives it weight and keeps it crisp on any background */
+    filter: drop-shadow(0 0.035em 0 rgba(0, 62, 22, 0.38));
   }
   /* The light: a bright copy of each letter on top, lit one letter after another from left to right at a
      calm pace, then a rest. Only opacity moves, on a layer of its own — the letter below is untouched. */
@@ -1327,7 +1329,7 @@
     content: attr(data-ch);
     position: absolute;
     inset: 0;
-    background-image: linear-gradient(180deg, #ffffff 0%, #e4ffee 50%, #9bf7bb 100%);
+    background-image: linear-gradient(180deg, #f2fff6 0%, #8affb0 38%, #2dea6c 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

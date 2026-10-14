@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import type { Car } from '../../data/types';
 import { unsplash, unsplashSrcSet } from '../../lib/img';
 import { eur } from '../../lib/format';
@@ -7,7 +7,8 @@ import { haptics } from '../../lib/native';
 import { useLocale } from '../../lib/i18n';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
-import { motion, SPRING_SMOOTH } from '../motionKit';
+import { motion, AnimatePresence, useReducedMotion, SPRING_SMOOTH } from '../motionKit';
+import { usePreferredCity } from '../../lib/preferredCity';
 
 /** A car in the Browse grid: a quiet white card — where it is and how it is
  *  rated on top, the photo, then name, price and the three things that matter.
@@ -20,6 +21,42 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
   const { isFavorite, toggleFavorite } = useApp();
   const fav = isFavorite(car.id);
   const rated = car.trips > 0;
+  const reduced = useReducedMotion() === true;
+  const preferred = usePreferredCity();
+  const near = !!preferred && preferred.trim().toLowerCase() === car.city.trim().toLowerCase();
+  const [burst, setBurst] = useState(0);
+  const save = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    haptics.tick();
+    if (!fav) setBurst((b) => b + 1);
+    toggleFavorite(car.id);
+  };
+  // the big heart that pulses over the photo when a car is saved
+  const heart = (
+    <AnimatePresence>
+      {burst > 0 && (
+        <motion.span
+          key={burst}
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 z-20 -ml-10 -mt-10 grid h-20 w-20 place-items-center"
+          initial={{ opacity: 0, scale: reduced ? 1 : 0.4 }}
+          animate={reduced ? { opacity: [0, 1, 0] } : { opacity: [0, 1, 1, 0], scale: [0.4, 1.28, 1, 1.12] }}
+          transition={{ duration: reduced ? 0.7 : 0.9, ease: 'easeOut', times: reduced ? [0, 0.3, 1] : [0, 0.3, 0.6, 1] }}
+          exit={{ opacity: 0 }}
+        >
+          <svg viewBox="0 0 24 24" width="80" height="80" style={{ filter: 'drop-shadow(0 8px 18px rgba(0,170,60,0.55))' }}>
+            <path
+              d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 5 6.4 5c2 0 3.6 1.1 4.4 2.6h2.4C14 6.1 15.6 5 17.6 5 21 5 23.1 8.4 21.6 11.8 19.5 16.4 12 21 12 21z"
+              fill="#00d447"
+              stroke="#ffffff"
+              strokeWidth="1.2"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <motion.div
@@ -56,13 +93,14 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
               />
             </div>
             <button
-              onClick={(e) => { e.stopPropagation(); haptics.tick(); toggleFavorite(car.id); }}
+              onClick={save}
               aria-label={fav ? t('Remove from saved') : t('Save car')}
               aria-pressed={fav}
               className="pressable absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 hover:scale-110"
             >
               <Icon name="heart" size={15} fill={fav} className={fav ? 'text-[#e2384d]' : 'text-ink'} strokeWidth={1.8} />
             </button>
+            {heart}
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5 pr-1">
             <div>
@@ -103,6 +141,11 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
           <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-caption font-semibold text-ink shadow-hair backdrop-blur">
             <Icon name="pin" size={11} className="shrink-0" /> <span className="truncate">{car.city}</span>
           </span>
+          {near && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent-bright px-2.5 py-1 text-caption font-semibold text-noir shadow-hair">
+              {t('Near you')}
+            </span>
+          )}
           {car.instantBook && (
             <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-caption font-semibold text-ink shadow-hair backdrop-blur">
               <Icon name="instant" size={11} className="text-accent" /> {t('Instant book')}
@@ -110,13 +153,14 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
           )}
         </div>
         <button
-          onClick={(e) => { e.stopPropagation(); haptics.tick(); toggleFavorite(car.id); }}
+          onClick={save}
           aria-label={fav ? t('Remove from saved') : t('Save car')}
           aria-pressed={fav}
           className="pressable absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 shadow-hair backdrop-blur transition-transform duration-200 before:absolute before:-inset-1.5 before:content-[''] hover:scale-110"
         >
           <Icon name="heart" size={17} fill={fav} className={fav ? 'text-[#e2384d]' : 'text-ink'} strokeWidth={1.8} />
         </button>
+        {heart}
 
         <div className="absolute inset-x-4 bottom-3.5 flex items-end justify-between gap-3 text-white">
           <div className="min-w-0">
