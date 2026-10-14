@@ -66,6 +66,10 @@ export interface Message {
 
 export interface Conversation {
   id: string;
+  /** 'support' = a request to the CX team (closable), 'notice' = a read-only message from CX, 'chat' = everything else */
+  kind: 'chat' | 'support' | 'notice';
+  /** set when the team closed it: nobody can write any more */
+  closedAt: string | null;
   car: ConversationCar | null;
   other: ConversationParticipant;
   lastMessage: Message | null;
@@ -76,6 +80,8 @@ interface ConversationRow {
   id: string;
   car_id: string | null;
   created_at: string;
+  kind?: string | null;
+  closed_at?: string | null;
   car: {
     id: string;
     slug: string;
@@ -110,8 +116,13 @@ const isMissingColumn = (err: { message?: string; code?: string } | null) =>
   !!err && (err.code === '42703' || /media_path|deleted_at/.test(err.message ?? ''));
 
 
+// Migration 0131 adds kind / closed_at; the same try-then-fall-back as above.
+let supportColumns: boolean | null = null;
+const isMissingSupport = (err: { message?: string; code?: string } | null) =>
+  !!err && (err.code === '42703' || /\bkind\b|closed_at/.test(err.message ?? ''));
+
 const conversationSelect = () => `
-  id, car_id, created_at,
+  id, car_id, created_at${supportColumns === false ? '' : ', kind, closed_at'},
   car:cars (id, slug, make, model, car_images(url, position)),
   participants:conversation_participants (user_id, profile:profiles(id, full_name, avatar_url, is_owner, is_admin, is_host)),
   messages (${msgCols()})
@@ -142,6 +153,8 @@ function mapConversation(row: ConversationRow, myUserId: string): Conversation {
   const last = messages[messages.length - 1];
   return {
     id: row.id,
+    kind: row.kind === 'support' || row.kind === 'notice' ? row.kind : 'chat',
+    closedAt: row.closed_at ?? null,
     car: row.car
       ? { id: row.car.id, slug: row.car.slug, make: row.car.make, model: row.car.model, image: heroId ? unsplash(heroId, 240) : '' }
       : null,
@@ -168,12 +181,15 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   if (!ids.length) return [];
 
   let { data, error } = await supabase.from('conversations').select(conversationSelect()).in('id', ids);
-  if (error && extendedColumns !== false && isMissingColumn(error)) {
-    extendedColumns = false;
+  for (let attempt = 0; error && attempt < 2; attempt += 1) {
+    if (supportColumns !== false && isMissingSupport(error)) supportColumns = false;
+    else if (extendedColumns !== false && isMissingColumn(error)) extendedColumns = false;
+    else break;
     ({ data, error } = await supabase.from('conversations').select(conversationSelect()).in('id', ids));
   }
   if (error) throw error;
   if (extendedColumns === null) extendedColumns = true;
+  if (supportColumns === null) supportColumns = true;
 
   const mapped = (data as unknown as ConversationRow[]).map((row) => mapConversation(row, userId));
   return mapped.sort((a, b) => {
@@ -665,9 +681,55 @@ export async function fetchSupportAccountId(): Promise<string | null> {
  *  straight to the host. Resolves to `null` when there is nobody to talk
  *  to (no support account, or the caller *is* the support account). */
 export async function findOrCreateCxConversation(carId: string | null, myUserId: string): Promise<string | null> {
+  const r = await openSupportConversation(carId, myUserId);
+  return r?.id ?? null;
+}
+
+/** The open support conversation with CX for this car (or none), else a brand new one — a closed one is never reused. */
+export async function openSupportConversation(
+  carId: string | null,
+  myUserId: string,
+): Promise<{ id: string; created: boolean } | null> {
   const supportId = await fetchSupportAccountId();
   if (!supportId || supportId === myUserId) return null;
-  return findOrCreateConversation(carId, myUserId, supportId);
+
+  const base = supabase.from('conversation_participants').select('conversation_id, conversations!inner(car_id)').eq('user_id', myUserId);
+  const { data: mine } = await (carId === null ? base.is('conversations.car_id', null) : base.eq('conversations.car_id', carId));
+  const mineIds = (mine ?? []).map((r) => r.conversation_id);
+  if (mineIds.length) {
+    const { data: shared } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', supportId)
+      .in('conversation_id', mineIds);
+    const sharedIds = (shared ?? []).map((r) => r.conversation_id);
+    if (sharedIds.length) {
+      // before migration 0131 there are no kind / closed_at columns: then the first shared one is reused, as it always was
+      const { data: info, error } = await supabase.from('conversations').select('id, kind, closed_at, created_at').in('id', sharedIds);
+      if (error) return { id: sharedIds[0], created: false };
+      const open = (info ?? [])
+        .filter((c) => !c.closed_at && c.kind !== 'notice')
+        .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))[0];
+      if (open) return { id: open.id, created: false };
+    }
+  }
+
+  const id = crypto.randomUUID();
+  let { error } = await supabase.from('conversations').insert({ id, car_id: carId, kind: 'support' });
+  if (error && isMissingSupport(error)) ({ error } = await supabase.from('conversations').insert({ id, car_id: carId }));
+  if (error) throw error;
+  const { error: partErr } = await supabase.from('conversation_participants').insert([
+    { conversation_id: id, user_id: myUserId },
+    { conversation_id: id, user_id: supportId },
+  ]);
+  if (partErr) throw partErr;
+  return { id, created: true };
+}
+
+/** The team closes a support conversation (needs migration 0131). */
+export async function closeSupportConversation(conversationId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('close_support_conversation', { p_conversation: conversationId });
+  return { error: error?.message ?? null };
 }
 
 export async function searchUsersForMessaging(query: string): Promise<MessagingSearchResult[]> {

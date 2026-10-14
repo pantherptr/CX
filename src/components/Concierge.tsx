@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { Img } from './motion';
 import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
-import { findOrCreateCxConversation, sendMessage, useConversation } from '../lib/data/messages';
+import { openSupportConversation, sendMessage, useConversation } from '../lib/data/messages';
 import { supabase } from '../lib/supabase';
 import { localReply, type LocalReply } from '../lib/assistantLocal';
 import { apiUrl } from '../lib/api';
@@ -467,18 +467,23 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       return;
     }
     setHanding(true);
-    const id = await findOrCreateCxConversation(null, userId);
-    if (!id) {
+    let opened: { id: string; created: boolean } | null = null;
+    try {
+      opened = await openSupportConversation(null, userId);
+    } catch {
+      opened = null;
+    }
+    if (!opened) {
       setHanding(false);
       setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('The team is not reachable right now. Please try again in a moment.') }]);
       return;
     }
-    const transcript = msgs
-      .filter((m) => m.role !== 'note')
-      .slice(-8)
-      .map((m) => `${m.role === 'user' ? 'Me' : ASSISTANT_NAME}: ${m.text}`)
-      .join('\n');
-    await sendMessage(id, userId, `[Chat with ${ASSISTANT_NAME} → CX team]\n${transcript}`);
+    const id = opened.id;
+    // A new request opens with one short line (the last thing asked), not the whole chat with X.
+    if (opened.created) {
+      const lastAsk = [...msgs].reverse().find((m) => m.role === 'user')?.text.trim();
+      await sendMessage(id, userId, lastAsk ? lastAsk.slice(0, 280) : t('Hi, I need help from the team.'));
+    }
     setConvId(id);
     setHanding(false);
   }, [handing, human, msgs, t, userId]);
@@ -504,8 +509,13 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     if (!text) return;
     if (human && userId && convId) {
       setInput('');
-      const { message } = await sendMessage(convId, userId, text);
+      const { message, error } = await sendMessage(convId, userId, text);
       if (message) live.append(message);
+      else if (error && /closed/i.test(error)) {
+        // the team closed it: back to X, the next request opens a new conversation
+        setConvId(null);
+        setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('That conversation was closed by the team. Ask me again, or talk to a person to start a new one.') }]);
+      }
       return;
     }
     void ask(text);
@@ -765,6 +775,12 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
               </div>
             ))}
 
+          {human && (
+            <p className="rounded-2xl bg-panel px-3.5 py-3 text-detail leading-relaxed text-ink-soft">
+              {t('A person from the team will answer you. If you leave this chat, you will find the conversation in Messages.')}{' '}
+              <Link to={`/messages?c=${convId}`} onClick={onClose} className="font-semibold text-accent-700 underline">{t('Open Messages')}</Link>
+            </p>
+          )}
           {human &&
             (live.loading ? (
               <p className="text-center text-detail text-muted">{t('Connecting…')}</p>

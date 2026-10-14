@@ -20,6 +20,8 @@ import {
   chatMediaUrl,
   markConversationRead,
   findOrCreateConversation,
+  openSupportConversation,
+  closeSupportConversation,
   searchUsersForMessaging,
   type Conversation,
   type MessagingSearchResult,
@@ -529,6 +531,41 @@ export default function Messages() {
 
   const { messages, append } = useConversation(activeId);
   const active = (conversations ?? []).find((c) => c.id === activeId) ?? null;
+  // A closed request, or a notice from CX: it can be read, not answered.
+  const readOnly = !!active && (active.closedAt !== null || active.kind === 'notice');
+  const canClose = !!active && !readOnly && active.kind !== 'notice' && (profile?.is_owner || profile?.is_admin) && active.other.role !== 'cx';
+  const startNewSupport = async () => {
+    if (!session) return;
+    try {
+      const r = await openSupportConversation(null, session.user.id);
+      if (r) { refresh(); openConvo(r.id); }
+    } catch {
+      toast({ title: 'Could not start a conversation', desc: 'Please try again in a moment.', icon: 'info' });
+    }
+  };
+  const closeActive = async () => {
+    if (!active) return;
+    const { error } = await closeSupportConversation(active.id);
+    if (error) toast({ title: 'Could not close it', desc: error, icon: 'info' });
+    else { toast({ title: 'Conversation closed', icon: 'check' }); refresh(); }
+  };
+  const readOnlyBar = readOnly && active ? (
+    <div className="shrink-0 bg-chat px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3">
+      <div className="rounded-2xl bg-white p-3.5 text-center shadow-[0_8px_28px_-12px_rgba(22,22,26,0.25)] ring-1 ring-black/[0.05]">
+        <p className="text-detail font-medium text-ink">
+          {active.kind === 'notice' ? 'This is a message from CX — you can’t reply here.' : 'This conversation was closed by the CX team.'}
+        </p>
+        <p className="mt-0.5 text-caption text-muted">
+          {active.kind === 'notice' ? 'Need to talk to someone? Start a conversation with the team.' : 'You can’t write in it any more. Start a new one whenever you need.'}
+        </p>
+        {!profile?.is_owner && (
+          <button type="button" onClick={() => void startNewSupport()} className="btn btn-primary btn-sm mt-3">
+            {active.kind === 'notice' ? 'Talk to a person' : 'Start a new conversation'}
+          </button>
+        )}
+      </div>
+    </div>
+  ) : null;
   const presence = useChatPresence(activeId, session?.user.id, active?.other.id);
   const myRole: VerifiedRole = profile?.is_owner ? 'owner' : profile?.is_admin ? 'admin' : profile?.is_host ? 'host' : 'client';
 
@@ -705,7 +742,7 @@ export default function Messages() {
 
   const send = (override?: string) => {
     const body = (override ?? text).trim();
-    if ((!body && !photo) || !activeId || !session) return;
+    if ((!body && !photo) || !activeId || !session || readOnly) return;
     // Talking to CX is open; between members, contact details and off-app
     // payments stay out (the database hides them too — migration 0070).
     if (body && !profile?.is_owner && active?.other.role !== 'cx' && hasContactInfo(body)) {
@@ -791,13 +828,14 @@ export default function Messages() {
             ) : null
           }
           composer={
-            active ? (
+            readOnlyBar ? readOnlyBar : active ? (
               <div className="z-10 shrink-0 bg-chat-2 p-2.5">
                 {profile?.is_owner && (
                   <div className="mb-1.5 flex items-center gap-1.5 text-[10px]">
                     <span className="text-neutral-500">Sending as:</span>
                     <button onClick={() => setSendAsRole('owner')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner' ? 'bg-red-100 text-red-700' : 'text-neutral-500 hover:bg-black/5'}`}>Owner</button>
                     <button onClick={() => setSendAsRole('owner_assistant')} className={`rounded-full px-2 py-0.5 font-medium ${sendAsRole === 'owner_assistant' ? 'bg-amber-100 text-amber-800' : 'text-neutral-500 hover:bg-black/5'}`}>Owner Assistant</button>
+                    {canClose && <button onClick={() => void closeActive()} className="ml-auto rounded-full px-2 py-0.5 font-medium text-neutral-500 hover:bg-black/5">Close conversation</button>}
                   </div>
                 )}
                 {photo && (
@@ -1043,6 +1081,7 @@ export default function Messages() {
             </button>
             </div>
 
+            {readOnlyBar ?? (
             <div className="shrink-0 bg-gradient-to-t from-chat via-chat to-chat/0 px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2">
               {profile?.is_owner && (
                 <div className="mb-2 flex items-center gap-1.5">
@@ -1053,6 +1092,7 @@ export default function Messages() {
                   <button onClick={() => setSendAsRole('owner_assistant')} className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-caption font-medium ${sendAsRole === 'owner_assistant' ? 'bg-warn/15 text-warn-ink' : 'text-faint'}`}>
                     <VerifiedBadge role="owner_assistant" size={13} /> Assistant
                   </button>
+                  {canClose && <button onClick={() => void closeActive()} className="ml-auto rounded-full px-2.5 py-1 text-caption font-medium text-muted">Close conversation</button>}
                 </div>
               )}
               {photo && (
@@ -1119,6 +1159,7 @@ export default function Messages() {
                 </button>
               </div>
             </div>
+            )}
 
             {profileOpen && (
               <ChatProfileSheet
