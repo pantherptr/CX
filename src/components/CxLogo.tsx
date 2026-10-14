@@ -1,49 +1,20 @@
 import { useId } from 'react';
 
 /**
- * The CX mark, drawn in code (crisp at any size; the C and the road follow the theme through `currentColor`):
- * a heavy C, and an X whose rising stroke is a ROAD running to the horizon, its centre line in brand green;
- * the falling stroke is green. A small even gap separates the two strokes.
+ * The CX mark: a heavy C, an X whose rising stroke is a road curving to the horizon (green, white centre
+ * dashes), and the CX bat above it. Traced from the supplied artwork, so the drawing is exactly that one,
+ * but as vectors: crisp at any size, and the black parts follow the theme through `currentColor` (cream on
+ * dark) while the green lifts to a brighter tone on dark backgrounds.
  *
- * Geometry is in the pixel space of the supplied artwork (viewBox 270 225 1200 415).
+ * viewBox 140 180 1510 525.
  */
 export function CxLogo({ className = '', title = 'CX' }: { className?: string; title?: string }) {
-  const uid = useId().replace(/:/g, '');
-  const id = (n: string) => `${n}-${uid}`;
-  // the rising stroke (the road): from the bottom-left foot to the top-right arm, a little narrower at the far end
-  const road = 'M766 614H992L1433 308H1238Z';
+  const uid = useId();
   return (
-    <svg viewBox="270 225 1200 415" role="img" aria-label={title} className={className} fill="none">
-      <defs>
-        <linearGradient id={id('g')} gradientUnits="userSpaceOnUse" x1="830" y1="250" x2="1450" y2="615">
-          <stop offset="0" stopColor="#5dffa6" />
-          <stop offset="0.55" stopColor="#14e873" />
-          <stop offset="1" stopColor="#00bf49" />
-        </linearGradient>
-        <mask id={id('gap')} maskUnits="userSpaceOnUse" x="200" y="200" width="1400" height="480">
-          <rect x="200" y="200" width="1400" height="480" fill="#fff" />
-          <path d={road} fill="#000" stroke="#000" strokeWidth="46" strokeLinejoin="miter" />
-        </mask>
-      </defs>
-
-      {/* C */}
-      <path
-        fill="currentColor"
-        d="M482 249H790L889 346H491C440 350 410 385 410 426C410 468 440 503 475 503H882L728 613H478C380 613 294 540 294 431C294 320 380 249 482 249Z"
-      />
-      {/* the falling stroke of the X, in green, with the road's gap carved out of it */}
-      <g mask={`url(#${id('gap')})`}>
-        <path fill={`url(#${id('g')})`} d="M828 248H1027L1448 614H1215Z" />
-      </g>
-      {/* the road */}
-      <path fill="currentColor" d={road} />
-      {/* the road's centre line, in green: dashes that thin out towards the horizon */}
-      <g fill={`url(#${id('g')})`}>
-        <path d="M891 589H939L998 549H950Z" />
-        <path d="M1005 516H1043L1094 482H1056Z" />
-        <path d="M1111 448H1139L1180 421H1152Z" />
-        <path d="M1206 387H1226L1258 366H1238Z" />
-      </g>
+    <svg viewBox="140 180 1510 525" role="img" aria-labelledby={`cx-logo-${uid}`} className={className} fill="none">
+      <title id={`cx-logo-${uid}`}>{title}</title>
+      <path fill="currentColor" fillRule="evenodd" d="M700.5 691.0 L759.5 690.5 L924.5 559.5 L1027.0 483.5 L1067.5 456.0 L1128.0 419.0 L1181.5 390.0 L1219.5 372.0 L1295.5 341.5 L1336.5 328.0 L1399.5 310.5 L1491.5 291.0 L1611.5 273.0 L1611.5 274.5 L1585.5 279.5 L1585.0 280.5 L1579.5 280.5 L1530.5 290.0 L1530.5 291.0 L1536.5 290.5 L1539.0 291.5 L1549.0 287.5 L1561.0 286.0 L1561.0 287.5 L1550.0 291.5 L1545.0 291.5 L1539.5 295.0 L1529.5 297.0 L1522.5 301.5 L1520.5 301.5 L1520.5 302.5 L1557.5 290.0 L1569.5 287.5 L1519.5 307.0 L1482.0 324.0 L1438.5 346.5 L1376.5 384.0 L1331.5 415.5 L1275.0 461.0 L1228.5 503.5 L1170.5 563.0 L1304.0 689.5 L1526.5 691.0 L1300.0 497.0 L1299.0 495.0 L1448.0 392.5 L1580.0 305.0 L1639.5 267.5 L1579.5 268.5 L1241.5 268.5 L1085.5 396.5 L943.0 267.5 L742.0 267.5 L978.0 479.0 L930.0 518.5 L878.5 558.5Z M151.5 480.0 L149.5 510.5 L153.0 540.0 L160.0 563.0 L174.5 591.0 L191.0 612.5 L216.5 636.0 L244.0 654.0 L271.0 667.0 L293.5 675.0 L315.0 681.0 L346.5 687.0 L374.5 690.0 L393.0 691.0 L667.0 691.0 L813.5 581.0 L403.5 581.0 L383.5 578.5 L369.0 575.0 L355.0 570.0 L341.0 563.0 L326.5 553.0 L311.0 537.0 L301.0 520.5 L295.0 501.5 L293.5 485.0 L297.0 463.0 L306.0 442.0 L315.0 429.0 L331.0 412.0 L351.5 397.0 L381.0 383.0 L393.5 379.0 L413.0 375.0 L422.5 374.0 L826.5 373.5 L710.0 267.5 L423.0 267.5 L394.0 270.5 L350.5 280.5 L311.5 295.5 L272.0 317.0 L255.0 328.5 L233.0 346.0 L201.5 377.5 L187.0 396.0 L170.5 423.0 L162.0 442.0 L156.5 458.0Z" />
+      <path className="fill-[#0c7a38] dark:fill-[#1be77a]" fillRule="evenodd" d="M1543.5 290.5 L1539.0 292.0 L1529.5 291.0 L1521.5 294.0 L1510.5 295.5 L1504.0 295.0 L1493.0 298.0 L1491.5 299.5 L1490.0 298.5 L1466.5 303.0 L1464.0 304.5 L1452.0 306.5 L1385.0 324.5 L1383.5 326.0 L1378.0 326.5 L1361.5 332.5 L1358.5 332.5 L1357.0 334.0 L1323.0 344.5 L1265.0 367.0 L1217.5 388.5 L1182.0 406.5 L1106.0 450.5 L1066.0 476.5 L1024.0 506.0 L939.0 570.0 L790.5 688.5 L789.0 691.5 L873.0 692.0 L921.5 648.5 L971.0 648.5 L973.0 649.5 L932.0 690.0 L933.0 692.0 L1033.5 691.5 L1124.5 586.0 L1174.5 533.0 L1224.5 485.0 L1279.5 438.0 L1321.0 407.0 L1350.5 387.0 L1395.5 360.0 L1436.0 338.5 L1455.0 330.5 L1458.0 328.0 L1499.5 310.5 L1499.0 309.0 L1503.5 309.5 L1504.5 307.0 L1508.0 307.5 L1513.5 305.5 L1529.5 296.5 L1539.5 294.5 L1543.5 292.5Z M1125.0 510.0 L1032.5 592.0 L986.5 592.0 L988.5 589.0 L1015.0 566.5 L1089.0 507.5 L1112.0 508.0Z M1254.0 416.5 L1231.0 431.0 L1182.0 465.5 L1166.0 464.0 L1154.5 461.0 L1170.0 449.5 L1231.5 412.0 L1239.0 412.5Z M1353.0 361.5 L1350.5 364.0 L1335.0 371.0 L1302.5 388.5 L1295.5 388.5 L1284.0 385.0 L1286.5 382.5 L1337.5 358.5 L1341.5 357.5Z M1426.5 329.0 L1422.5 332.0 L1392.0 344.5 L1385.5 344.0 L1380.5 341.5 L1418.5 326.5 L1422.0 326.5Z M1484.5 308.0 L1483.0 310.0 L1459.0 318.0 L1453.0 316.0 L1454.0 314.5 L1461.0 311.5 L1472.0 309.5 L1481.0 306.0Z M1560.5 286.0 L1546.0 289.0 L1544.5 291.0 L1552.5 290.5 L1560.5 287.5Z M898.5 251.5 L899.0 253.5 L925.0 247.5 L931.0 252.5 L934.0 252.5 L948.5 242.5 L952.5 241.5 L985.0 259.0 L1013.5 259.5 L1045.5 314.5 L1047.5 313.5 L1080.0 259.0 L1111.5 259.0 L1146.5 241.0 L1162.5 252.5 L1165.5 252.5 L1172.5 247.0 L1191.0 252.0 L1198.5 252.5 L1195.5 248.5 L1146.5 206.5 L1111.0 212.0 L1110.5 213.5 L1113.0 217.0 L1112.5 218.0 L1087.0 225.0 L1061.5 190.5 L1058.5 193.0 L1046.0 222.0 L1034.5 195.0 L1031.0 190.5 L1006.5 224.5 L1002.0 224.0 L985.0 218.0 L984.5 216.0 L986.5 214.0 L986.0 212.0 L953.0 206.5Z" />
     </svg>
   );
 }

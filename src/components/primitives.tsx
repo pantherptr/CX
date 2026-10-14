@@ -105,7 +105,7 @@ export function Logo({
     <Link to={session ? homePath : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
       <CxLogo
         title="CX"
-        className="h-8 w-auto shrink-0 text-ink transition-transform duration-300 group-hover:-rotate-3 sm:h-9"
+        className="h-9 w-auto shrink-0 text-ink transition-transform duration-300 group-hover:-rotate-3 sm:h-11"
       />
     </Link>
   );

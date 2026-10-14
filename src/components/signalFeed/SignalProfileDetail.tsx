@@ -715,7 +715,7 @@ function OfficialVoiceHeader({
   const isCx = type === 'cx';
   const avatar = (
     <Img
-      src={isCx ? '/brand/avatar-cx.webp' : '/brand/avatar-assistant.webp'}
+      src={isCx ? '/brand/avatar-cx-flag.webp' : '/brand/avatar-assistant.webp'}
       alt=""
       className="h-24 w-24 rounded-full object-cover shadow-[0_10px_30px_-10px_rgba(0,0,0,0.45)] ring-1 ring-line"
       fallback={
