@@ -35,8 +35,11 @@ export function DateRangeSheet({
 }) {
   const { t } = useLocale();
   const [range, setRange] = useState<{ s: string | null; e: string | null }>({ s: start, e: end });
-  useEffect(() => { if (open) setRange({ s: start, e: end }); }, [open, start, end]);
-  const ready = !!(range.s && range.e);
+  // a pick-up day tapped whose return day is still to choose: shown at once, the old range is not "ready" any more
+  const [draft, setDraft] = useState<string | null>(null);
+  const [calKey, setCalKey] = useState(0);
+  useEffect(() => { if (open) { setRange({ s: start, e: end }); setDraft(null); } }, [open, start, end]);
+  const ready = !draft && !!(range.s && range.e);
   const n = ready ? nights(range.s!, range.e!) : 0;
 
   return (
@@ -49,7 +52,7 @@ export function DateRangeSheet({
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 px-5 pt-2">
-        {([['Pick-up', range.s], ['Return', range.e]] as const).map(([label, v]) => (
+        {([['Pick-up', draft ?? range.s], ['Return', draft ? null : range.e]] as const).map(([label, v]) => (
           <div key={label} className={`rounded-2xl border px-3.5 py-2.5 transition-colors duration-300 ${v ? 'border-ink bg-surface' : 'border-line bg-panel/60'}`}>
             <p className="text-label font-semibold uppercase tracking-wide text-muted">{t(label)}</p>
             <p className={`mt-0.5 text-body font-semibold ${v ? 'text-ink' : 'text-faint'}`}>{v ? short(v) : '—'}</p>
@@ -59,10 +62,12 @@ export function DateRangeSheet({
 
       <div className="px-4 pb-1 pt-3">
         <AvailabilityCalendar
+          key={calKey}
           carId={carId}
           startDate={range.s}
           endDate={range.e}
           onSelect={(s, e) => setRange({ s, e })}
+          onDraft={setDraft}
         />
       </div>
 
@@ -77,8 +82,8 @@ export function DateRangeSheet({
             <p className="text-detail text-muted">{t('Pick a pick-up and a return day')}</p>
           )}
         </div>
-        {ready && (
-          <button onClick={() => setRange({ s: null, e: null })} className="shrink-0 px-2 text-detail font-semibold text-muted underline underline-offset-4 transition-colors hover:text-ink">
+        {(ready || draft) && (
+          <button onClick={() => { setRange({ s: null, e: null }); setDraft(null); setCalKey((k) => k + 1); }} className="shrink-0 px-2 text-detail font-semibold text-muted underline underline-offset-4 transition-colors hover:text-ink">
             {t('Clear')}
           </button>
         )}

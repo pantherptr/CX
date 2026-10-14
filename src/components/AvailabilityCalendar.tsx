@@ -28,12 +28,16 @@ export function AvailabilityCalendar({
   startDate,
   endDate,
   onSelect,
+  onDraft,
   excludeRange,
 }: {
   carId: string;
   startDate: string | null;
   endDate: string | null;
   onSelect: (start: string, end: string) => void;
+  /** Called when a pick-up day has been tapped and the return day is still to choose (null once it is done),
+   *  so the sheet around the calendar can show the new pick-up straight away instead of the old range. */
+  onDraft?: (start: string | null) => void;
   /** Drops a single real range matching these exact dates before
    *  computing booked/disabled cells — used when modifying an existing
    *  booking's own dates, which would otherwise show as "booked" against
@@ -82,10 +86,12 @@ export function AvailabilityCalendar({
     if (iso < todayISO || isBooked(iso)) return;
     if (!draftStart) {
       setDraftStart(iso);
+      onDraft?.(iso);
       return;
     }
     if (iso <= draftStart || hasBookedBetween(draftStart, iso)) {
       setDraftStart(iso);
+      onDraft?.(iso);
       return;
     }
     if (!reduceMotion && gridRef.current) {
@@ -103,6 +109,7 @@ export function AvailabilityCalendar({
     }
     onSelect(draftStart, iso);
     setDraftStart(null);
+    onDraft?.(null);
     setHover(null);
   };
 
