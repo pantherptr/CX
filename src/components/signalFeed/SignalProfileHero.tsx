@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useLocale } from '../../lib/i18n';
 import { useLightStatusBar } from '../../lib/useLightStatusBar';
 import { Icon } from '../Icon';
@@ -7,15 +7,34 @@ import { VerifiedBadge } from '../primitives';
 import { compact } from '../../lib/format';
 import { Ugc } from '../../lib/i18n/ugc';
 import { SignalAvatarExpand } from './SignalAvatarExpand';
+import { AnimatePresence, motion, useReducedMotion } from '../motionKit';
 
 type Role = 'owner' | 'admin' | 'host' | 'client';
 const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client' };
 
 /** The same figures, Instagram-style: three numbers in one row beside the photo, no card. */
 function InlineStat({ value, label, onClick }: { value: number; label: string; onClick?: () => void }) {
+  const reduce = useReducedMotion();
+  const prev = useRef(value);
+  const dir = value >= prev.current ? 1 : -1;
+  prev.current = value;
   const body = (
     <>
-      <span className="block font-display text-[1.25rem] font-semibold leading-none tabular-nums text-ink">{compact(value)}</span>
+      {/* the number slides when it changes (a follow adds one), like the counter on a follow button */}
+      <span className="relative block h-[1.25rem] overflow-hidden font-display text-[1.25rem] font-semibold leading-none tabular-nums text-ink">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={value}
+            className="block"
+            initial={reduce ? false : { y: dir * 14, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduce ? { opacity: 0 } : { y: dir * -14, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            {compact(value)}
+          </motion.span>
+        </AnimatePresence>
+      </span>
       <span className="mt-1 block text-[11px] font-medium text-faint">{label}</span>
     </>
   );

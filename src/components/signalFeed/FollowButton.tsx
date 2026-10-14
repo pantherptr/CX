@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { toggleFollow } from '../../lib/data/signalProfile';
 import { vibrateTap } from '../motion';
 import { Icon } from '../Icon';
-import { Tap, SPRING_SNAPPY, useReducedMotion } from '../motionKit';
+import { AnimatePresence, Tap, SPRING_SNAPPY, motion, useReducedMotion } from '../motionKit';
 
 /** Follow/Following toggle for a Community profile (Host or Verified
  *  Client) — the one new piece of social graph this brief asks for, on
@@ -93,18 +93,31 @@ export function FollowButton({
       }`}
       style={{ transition: 'background-color 200ms, color 200ms, border-color 200ms' }}
     >
-      {on ? (
-        <>
-          <span className="group-hover:hidden">{requested ? 'Requested' : 'Following'}</span>
-          <span className="hidden group-hover:inline">{requested ? 'Cancel request' : 'Unfollow'}</span>
-        </>
-      ) : variant === 'card' || variant === 'wide' ? (
-        <>
-          Follow <Icon name="plus" size={16} strokeWidth={2.5} />
-        </>
-      ) : (
-        'Follow'
-      )}
+      {/* the label swaps with a short slide; the same words as before, with a check once you follow */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={on ? (requested ? 'req' : 'on') : 'off'}
+          initial={reduceMotion ? false : { opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -5 }}
+          transition={{ duration: 0.15 }}
+          className="inline-flex items-center justify-center gap-1.5"
+        >
+          {on ? (
+            <>
+              {!requested && <Icon name="check" size={14} strokeWidth={2.5} className="text-accent" />}
+              <span className="group-hover:hidden">{requested ? 'Requested' : 'Following'}</span>
+              <span className="hidden group-hover:inline">{requested ? 'Cancel request' : 'Unfollow'}</span>
+            </>
+          ) : variant === 'card' || variant === 'wide' ? (
+            <>
+              Follow <Icon name="plus" size={16} strokeWidth={2.5} />
+            </>
+          ) : (
+            'Follow'
+          )}
+        </motion.span>
+      </AnimatePresence>
     </Tap>
   );
 }
