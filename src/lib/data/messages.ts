@@ -30,7 +30,7 @@ export interface ConversationCar {
 export type ParticipantRole = 'owner' | 'admin' | 'host' | 'client' | 'cx';
 
 /** How members see the support account: as the company, never as the person behind it. */
-export const CX_PARTICIPANT = { name: 'CX', avatar: '/brand/avatar-cx-flag.webp', role: 'cx' } as const;
+export const CX_PARTICIPANT = { name: 'CX', avatar: '/brand/avatar-cx-bat.webp', role: 'cx' } as const;
 
 export interface ConversationParticipant {
   id: string;
