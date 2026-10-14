@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
  * the text. The voice is ELEVENLABS_VOICE_ID (default: Marco, Italian, young and friendly; a library voice, so it needs a paid plan).
  */
 const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'V9xYP1XwBnhCPPMDk06A';
-const MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5';
+const MODEL = process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2';
 const MAX_CHARS = 500;
 
 const hits = new Map<string, number[]>();
@@ -58,7 +58,9 @@ export async function handleVoice(req: VercelRequest, res: VercelResponse) {
     const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_64`, {
       method: 'POST',
       headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-      body: JSON.stringify({ text, model_id: MODEL, language_code: lang, voice_settings: { stability: 0.45, similarity_boost: 0.8 } }),
+      // The voice's own saved settings are used (that is what its preview sounds like); the language hint only
+      // exists on the Flash/Turbo models, the multilingual one reads the language from the text itself.
+      body: JSON.stringify({ text, model_id: MODEL, ...(/flash|turbo/.test(MODEL) ? { language_code: lang } : {}) }),
     });
     if (!r.ok) {
       // ElevenLabs says why in `detail.status` (e.g. paid_plan_required, missing_permissions) — no secrets in it.
