@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -12,6 +12,9 @@ import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
+
+// The glow around the composer (21st "border beam") is fetched only when the chat opens.
+const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
 import type { Car } from '../data/types';
 
 /**
@@ -201,6 +204,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   const { cars } = useCars();
   const box = useVisibleBox();
   const [closing, setClosing] = useState(false);
+  const [focused, setFocused] = useState(false);
   /** Closes with a soft exit (the panel eases down and fades) instead of vanishing. */
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -400,6 +404,71 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     ? [t('Find me a car for a weekend'), t('I have a problem with my booking'), t('How does verification work?')]
     : [];
 
+  const composerCard = (
+          <div className="w-full rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm transition-colors focus-within:border-accent/50">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              rows={1}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              aria-label={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
+              placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
+              maxLength={800}
+              enterKeyHint="send"
+              className="block max-h-[120px] min-h-[2.5rem] w-full resize-none bg-transparent py-2 pr-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"
+            />
+            <div className="mt-1 flex items-center justify-between pr-0.5">
+              {!human ? (
+                <button
+                  type="button"
+                  aria-pressed={think}
+                  disabled={busy}
+                  onClick={() => setThink((v) => !v)}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-detail font-semibold transition-colors disabled:opacity-50 ${
+                    think ? 'border-ink/15 bg-ink/5 text-ink' : 'border-line bg-surface text-muted'
+                  }`}
+                >
+                  <Icon name="sparkles" size={14} />
+                  {t('Think')}
+                  {think && <Icon name="check" size={12} />}
+                </button>
+              ) : (
+                <span />
+              )}
+              {busy && !human ? (
+                <button
+                  key="stop"
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); runRef.current?.cancel(); }}
+                  disabled={!runRef.current}
+                  aria-label={t('Stop')}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
+                >
+                  <span className="h-3 w-3 rounded-[3px] bg-white" />
+                </button>
+              ) : (
+                <button
+                  key="send"
+                  type="submit"
+                  disabled={!input.trim()}
+                  aria-label={t('Send')}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
+                >
+                  <Icon name="arrowRight" size={18} className="-rotate-90" />
+                </button>
+              )}
+            </div>
+          </div>
+  );
+
   return createPortal(
     <>
       {/* Opaque floor: the page behind never shows through the gap the keyboard leaves. */}
@@ -584,66 +653,23 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         </div>
 
         <form onSubmit={submit} className={`border-t border-line bg-bg px-3 pt-3 ${box.kb ? 'pb-3' : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]'}`}>
-          <div className="mx-auto w-full max-w-3xl rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  e.currentTarget.form?.requestSubmit();
-                }
-              }}
-              rows={1}
-              aria-label={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
-              placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
-              maxLength={800}
-              enterKeyHint="send"
-              className="block max-h-[120px] min-h-[2.5rem] w-full resize-none bg-transparent py-2 pr-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"
-            />
-            <div className="mt-1 flex items-center justify-between pr-0.5">
-              {!human ? (
-                <button
-                  type="button"
-                  aria-pressed={think}
-                  disabled={busy}
-                  onClick={() => setThink((v) => !v)}
-                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-detail font-semibold transition-colors disabled:opacity-50 ${
-                    think ? 'border-ink/15 bg-ink/5 text-ink' : 'border-line bg-surface text-muted'
-                  }`}
-                >
-                  <Icon name="sparkles" size={14} />
-                  {t('Think')}
-                  {think && <Icon name="check" size={12} />}
-                </button>
-              ) : (
-                <span />
-              )}
-              {busy && !human ? (
-                <button
-                  key="stop"
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); runRef.current?.cancel(); }}
-                  disabled={!runRef.current}
-                  aria-label={t('Stop')}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
-                >
-                  <span className="h-3 w-3 rounded-[3px] bg-white" />
-                </button>
-              ) : (
-                <button
-                  key="send"
-                  type="submit"
-                  disabled={!input.trim()}
-                  aria-label={t('Send')}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
-                >
-                  <Icon name="arrowRight" size={18} className="-rotate-90" />
-                </button>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<div className="mx-auto w-full max-w-3xl">{composerCard}</div>}>
+            <BorderBeam
+              size="md"
+              colorVariant="forest"
+              theme="dark"
+              borderRadius={24}
+              duration={2.6}
+              strength={1}
+              saturation={1.4}
+              brightness={1.2}
+              glowSize={1.15}
+              active={(focused || (busy && !human)) && !closing}
+              className="mx-auto block w-full max-w-3xl"
+            >
+              {composerCard}
+            </BorderBeam>
+          </Suspense>
         </form>
       </div>
       </div>
