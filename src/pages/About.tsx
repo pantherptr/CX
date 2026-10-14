@@ -5,6 +5,7 @@ import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
 import { Reveal } from '../components/motion';
 import { unsplash, avatar } from '../lib/img';
 import { catalogue } from '../lib/catalogue';
+import { CxFlagC } from '../components/CxFlag';
 
 const values: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'shield', title: 'Trust first', desc: 'Every host and vehicle is verified. Safety and transparency underpin every decision we make.' },
@@ -42,6 +43,16 @@ export default function About() {
       </section>
 
       {/* Stats */}
+      <section className="container-page mt-16">
+        <Reveal>
+          <figure className="mx-auto flex max-w-xl flex-col items-center text-center">
+            <CxFlagC className="h-56 w-auto text-ink sm:h-72" title="CX" />
+            <figcaption className="mt-5 font-display text-2xl font-semibold text-ink text-balance">
+              Wherever there’s a road, there’s a CX.
+            </figcaption>
+          </figure>
+        </Reveal>
+      </section>
       <section className="container-page mt-16">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[

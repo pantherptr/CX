@@ -1,3 +1,4 @@
+import { cxFlagMarkup, CX_FLAG_TIP_X } from '../CxFlag';
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { CITY_COORDS } from '../../data/cityCoords';
@@ -53,6 +54,15 @@ export function MiniMap({
         if (interactive) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
         collapseAttribution(map);
         const pin = (lngLat: [number, number], label: string | undefined, kind: 'car' | 'you') => {
+          if (kind === 'car') {
+            // the car's pick-up point: the CX flag planted on the spot (its spear tip is the exact position)
+            const W = 30;
+            const flag = document.createElement('div');
+            flag.style.cssText = `width:${W}px;height:${Math.round(W * 1.26)}px;filter:drop-shadow(0 3px 3px rgba(0,0,0,0.35));pointer-events:none`;
+            flag.innerHTML = cxFlagMarkup();
+            new maplibregl.Marker({ element: flag, anchor: 'bottom', offset: [-(CX_FLAG_TIP_X - 0.5) * W, 0] }).setLngLat(lngLat).addTo(map!);
+            return;
+          }
           const el = document.createElement('div');
           el.className = 'fl-dest';
           if (kind === 'you') el.style.setProperty('--pin', '#00a63e');

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useLocale } from '../lib/i18n';
+import { CxFlag } from './CxFlag';
 
 /** The CX verification mark: the bat from the logo, drawn compact and faceted
  *  in satin metal, with the gold verified seal (public/owner-verified.png) on its chest.
@@ -49,6 +50,14 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const label = t(CX_TIER_LABEL[tier]);
   const m = METAL[tier];
+  // The official CX team is marked with the flag (not a seal): small, upright, next to the name.
+  if (tier === 'team') {
+    return (
+      <span role="img" aria-label={label} className={`inline-flex shrink-0 align-[-0.2em] ${className}`} style={{ height: size * 1.35, width: size * 1.05 }}>
+        <CxFlag className="h-full w-full" />
+      </span>
+    );
+  }
   // Compact next to a name; on a phone a touch smaller still.
   const w = Math.round(size * 1.45 * 10) / 10;
   const h = Math.round(w * 0.64 * 10) / 10;

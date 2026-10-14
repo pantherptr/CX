@@ -1,3 +1,4 @@
+import { cxFlagMarkup, CX_FLAG_TIP_X } from './CxFlag';
 import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from 'maplibre-gl';
 import { AddressInput } from './AddressInput';
@@ -56,15 +57,12 @@ export function LocationPicker({
       mapRef.current = map;
 
       const makeMarker = (lngLat: [number, number]) => {
+        // the pick-up point is the CX flag planted on the spot: drag it, the spear tip is the position
+        const W = 34;
         const el = document.createElement('div');
-        el.className = 'fl-dest';
-        el.style.cursor = 'grab';
-        const pulse = document.createElement('span');
-        pulse.className = 'fl-dest__pulse';
-        const dot = document.createElement('span');
-        dot.className = 'fl-dest__dot';
-        el.append(pulse, dot);
-        const m = new maplibregl.Marker({ element: el, draggable: true }).setLngLat(lngLat).addTo(map);
+        el.style.cssText = `width:${W}px;height:${Math.round(W * 1.26)}px;cursor:grab;filter:drop-shadow(0 3px 3px rgba(0,0,0,0.35))`;
+        el.innerHTML = cxFlagMarkup();
+        const m = new maplibregl.Marker({ element: el, draggable: true, anchor: 'bottom', offset: [-(CX_FLAG_TIP_X - 0.5) * W, 0] }).setLngLat(lngLat).addTo(map);
         m.on('dragend', async () => {
           const ll = m.getLngLat();
           const p = await reversePlace(ll.lat, ll.lng);

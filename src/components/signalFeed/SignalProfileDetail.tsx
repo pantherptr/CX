@@ -31,6 +31,7 @@ import { SignalStoryViewer } from './SignalStoryViewer';
 import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
+import { CxFlag } from '../CxFlag';
 import { FollowerFaces } from './FollowerFaces';
 import { SignalProfileHero } from './SignalProfileHero';
 import { Tap, motion } from '../motionKit';
@@ -398,9 +399,7 @@ export function SignalProfileDetail({
 
       {restPosts && restPosts.length === 0 && !pinnedPost && (
         <div className="flex flex-col items-center px-6 py-14 text-center">
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">
-            <SignalLogo size={42} />
-          </span>
+          <CxFlag className="h-24 w-auto text-ink" />
           <p className="mt-4 text-body text-muted">{isMe ? 'Share your first post.' : 'No posts yet.'}</p>
           {isMe && (
             <Link to="/signal/community" className="btn btn-primary btn-sm mt-3">
@@ -523,6 +522,7 @@ export function SignalProfileDetail({
           respects={(posts ?? []).reduce((sum, p) => sum + p.likeCount, 0)}
           handovers={handovers}
           isMe={isMe}
+          joined={realProfile.joined}
         />
       )}
       {tabs.length > 1 && (

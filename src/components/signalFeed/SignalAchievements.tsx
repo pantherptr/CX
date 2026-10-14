@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon, type IconName } from '../Icon';
 import { useLocale } from '../../lib/i18n';
+import { CxFlag } from '../CxFlag';
 
 interface Ach {
   id: string;
-  icon: IconName;
+  icon: IconName | 'flag';
   title: string;
   hint: string;
   earned: boolean;
@@ -25,6 +26,7 @@ export function SignalAchievements({
   respects,
   handovers,
   isMe,
+  joined,
 }: {
   isHost: boolean;
   trips: number;
@@ -32,6 +34,8 @@ export function SignalAchievements({
   respects: number;
   handovers: number;
   isMe: boolean;
+  /** ISO date the profile joined; used for the founding-member badge */
+  joined?: string | null;
 }) {
   const { t } = useLocale();
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
@@ -54,9 +58,10 @@ export function SignalAchievements({
       ? [
           { id: 'first', icon: 'key' as IconName, title: 'First trip', hint: 'Complete a first trip', how: 'Finish your first trip as a host — the first handover and return.', earned: trips >= 1, progress: [trips, 1] as const },
           { id: 'ten', icon: 'route' as IconName, title: '10 trips', hint: 'Complete 10 trips', how: 'Every completed trip counts. Keep your car available and your replies quick.', earned: trips >= 10, progress: [trips, 10] as const },
-          { id: 'golden', icon: 'trophy' as IconName, title: 'Golden Host', hint: 'Complete 25 trips', how: 'Complete 25 trips as a host to become a Golden Host.', earned: trips >= 25, gold: true, progress: [trips, 25] as const },
+          { id: 'golden', icon: 'flag' as const, title: 'Golden Host', hint: 'Complete 25 trips', how: 'Complete 25 trips as a host to become a Golden Host.', earned: trips >= 25, gold: true, progress: [trips, 25] as const },
         ]
       : []),
+    { id: 'founding', icon: 'flag' as const, title: 'Founding member', hint: 'Join before 2027', how: 'Members who joined CX before 2027 are founding members.', earned: Boolean(joined && joined < '2027-01-01'), progress: [joined && joined < '2027-01-01' ? 1 : 0, 1] as const },
     { id: 'handover', icon: 'verified' as IconName, title: 'Verified handover', hint: 'Scan a CX Pass at a handover', how: 'At the handover, both of you scan each other’s CX Pass from the trip page. Each verified handover counts.', earned: handovers >= 1, progress: [handovers, 1] as const },
     { id: 'respected', icon: 'like' as IconName, title: 'Respected', hint: 'Earn 1,000 Respect', how: 'Share your trips, your car and your moments — every Respect on your posts counts toward 1,000.', earned: respects >= 1000, progress: [respects, 1000] as const },
     { id: 'rising', icon: 'trending' as IconName, title: 'Rising', hint: 'Reach 100 followers', how: 'Post often and follow people you like — 100 followers makes you Rising.', earned: followers >= 100, progress: [followers, 100] as const },
@@ -91,7 +96,11 @@ export function SignalAchievements({
                 : 'border-dashed border-line-strong bg-transparent text-muted'
             }`}
           >
-            <Icon name={a.earned ? a.icon : 'lock'} size={13} />
+            {a.earned && a.icon === 'flag' ? (
+              <CxFlag tone={a.gold ? 'gold' : 'green'} className="h-[15px] w-3 shrink-0" />
+            ) : (
+              <Icon name={a.earned && a.icon !== 'flag' ? a.icon : 'lock'} size={13} />
+            )}
             {a.earned ? t(a.title) : `${t(a.hint)} · ${Math.min(a.progress[0], a.progress[1])}/${a.progress[1]}`}
           </button>
         ))}

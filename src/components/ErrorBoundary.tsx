@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Icon } from './Icon';
+import { CxFlagC } from './CxFlag';
 
 /** The one thing standing between a real render-time error and a
  *  permanent blank white screen — this app had NO error boundary
@@ -62,9 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="container-page flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
-          <span className="grid h-16 w-16 place-items-center rounded-2xl bg-panel text-muted">
-            <Icon name="info" size={30} />
-          </span>
+          <CxFlagC className="h-40 w-auto text-ink" />
           <h1 className="mt-6 font-display text-2xl font-semibold text-ink">Something went wrong</h1>
           <p className="mt-2 max-w-sm text-copy text-muted">
             This page hit an unexpected error. Reloading usually fixes it.

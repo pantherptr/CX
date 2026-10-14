@@ -5,8 +5,8 @@ import { Icon, type IconName } from '../components/Icon';
 import { useLocale } from '../lib/i18n';
 import { useTeamTapMode, setTeamTapMode } from '../lib/teamTapMode';
 import { useMediaQuery, vibrateTap } from '../components/motion';
+import { CxFlag } from '../components/CxFlag';
 import { Tap, AnimatePresence, motion } from '../components/motionKit';
-import { SignalLogo } from '../components/SignalLogo';
 import { SignalFeedHeader } from '../components/signalFeed/SignalFeedHeader';
 import { SignalStoriesBar } from '../components/signalFeed/SignalStoriesBar';
 import { SignalHighlightsBar } from '../components/signalFeed/SignalHighlightsBar';
@@ -591,9 +591,8 @@ export default function Signal() {
           </div>
         ) : posts.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-20 text-center">
-            <span className="grid h-24 w-24 place-items-center rounded-full bg-accent-050 shadow-[0_18px_40px_-18px_rgba(0,212,71,0.55)] ring-1 ring-accent-bright/20">
-              <SignalLogo size={52} />
-            </span>
+            {/* the CX flag, planted: nothing here yet */}
+            <CxFlag className="h-28 w-auto text-ink" />
             <p className="mt-5 font-display text-lead font-semibold text-ink">
               {space === 'official' ? t('Signal is just getting started.') : t('No posts yet')}
             </p>
