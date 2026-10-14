@@ -13,6 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XOrb } from './XOrb';
+import { XIcon } from './XIcon';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -118,26 +119,9 @@ function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIn
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
-/** The assistant's face — the CX bat medallion (the same picture as the CX team), with an "online" dot when `live`. */
+/** The assistant's face — X's logo: a glass tile with a glossy white X, with an "online" dot when `live`. */
 export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
-  return (
-    <span className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }}>
-      <img
-        src="/brand/avatar-cx.webp"
-        alt=""
-        width={size * 2}
-        height={size * 2}
-        draggable={false}
-        className="h-full w-full select-none rounded-full bg-noir object-cover shadow-[0_0_0_1px_rgba(14,20,17,0.18)]"
-      />
-      {live && (
-        <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
-          <span className="absolute inset-0 animate-ping rounded-full bg-[#009646]/55" />
-          <span className="relative h-full w-full rounded-full border-2 border-white bg-[#009646]" />
-        </span>
-      )}
-    </span>
-  );
+  return <XIcon size={size} live={live} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */

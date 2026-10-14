@@ -701,49 +701,120 @@
   .kai-reveal-in { animation: kai-reveal-in 600ms cubic-bezier(0.32, 0.72, 0, 1) both; }
   .kai-reveal-out { animation: kai-reveal-out 340ms cubic-bezier(0.4, 0, 0.2, 1) both; }
   @media (prefers-reduced-motion: reduce) { .kai-reveal-in, .kai-reveal-out { animation: none; } }
-  /* X's living mark (XOrb.tsx): a soft X filled with moving green light. */
+  /* X's living mark (XOrb.tsx): the letter X as green glass — bevelled rim, moving light inside, gliding
+     reflections. */
   :root {
     --x-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg transform='rotate(45 50 50)'%3E%3Crect x='40.5' y='3' width='19' height='94' rx='9.5'/%3E%3C/g%3E%3Cg transform='rotate(-45 50 50)'%3E%3Crect x='40.5' y='3' width='19' height='94' rx='9.5'/%3E%3C/g%3E%3C/svg%3E");
   }
   .x-orb { position: relative; display: inline-block; flex: none; }
+  .x-orb > span { position: absolute; }
   .x-orb__glow {
-    position: absolute; inset: -8%; border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(0, 220, 80, 0.34), rgba(0, 220, 80, 0) 72%);
+    inset: -10%; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(0, 222, 84, 0.34), rgba(0, 222, 84, 0) 72%);
     filter: blur(calc(var(--s) * 0.07));
     animation: x-orb-breathe 5s ease-in-out infinite;
   }
+  /* a soft dark-green shadow under the glass gives it volume */
+  .x-orb__under { inset: 0; transform: translateY(7%); filter: blur(calc(var(--s) * 0.045)); }
+  .x-orb__under-shape {
+    position: absolute; inset: 0; background: rgba(4, 78, 38, 0.5);
+    -webkit-mask: var(--x-mask) center / 94% no-repeat; mask: var(--x-mask) center / 94% no-repeat;
+  }
+  /* the bevel: the X once more, bright at the top-left, saturated at the bottom-right */
+  .x-orb__rim {
+    inset: 0;
+    background: linear-gradient(142deg, #ffffff 0%, #c5f7d6 30%, #3ddc7c 62%, #08934a 100%);
+    -webkit-mask: var(--x-mask) center / contain no-repeat; mask: var(--x-mask) center / contain no-repeat;
+  }
+  /* the glass body, slightly smaller so the rim shows all round */
   .x-orb__shape {
-    position: absolute; inset: 0; overflow: hidden;
-    background: linear-gradient(135deg, #f7fdf9 0%, #d6f2df 52%, #f1fbf4 100%);
-    -webkit-mask: var(--x-mask) center / contain no-repeat;
-    mask: var(--x-mask) center / contain no-repeat;
+    inset: 0; overflow: hidden;
+    background: linear-gradient(135deg, #f4fdf7 0%, #c9f1d6 55%, #e9faef 100%);
+    -webkit-mask: var(--x-mask) center / 88% no-repeat; mask: var(--x-mask) center / 88% no-repeat;
   }
   .x-orb__blob {
-    position: absolute; width: 62%; height: 62%; border-radius: 50%;
-    filter: blur(calc(var(--s) * 0.085));
-    will-change: transform;
+    position: absolute; width: 60%; height: 60%; border-radius: 50%;
+    filter: blur(calc(var(--s) * 0.08)); will-change: transform;
   }
   .x-orb__blob--a { left: -6%; top: -4%; background: #00e65a; animation: x-orb-a 9s ease-in-out infinite; }
   .x-orb__blob--b { right: -8%; top: 4%; background: #00b843; animation: x-orb-b 11s ease-in-out infinite; }
-  .x-orb__blob--c { left: 20%; bottom: -10%; background: #0b4a2a; opacity: 0.85; animation: x-orb-c 13s ease-in-out infinite; }
+  .x-orb__blob--c { left: 20%; bottom: -10%; background: #0b4a2a; opacity: 0.8; animation: x-orb-c 13s ease-in-out infinite; }
   .x-orb__blob--d { right: 2%; bottom: 0%; background: #b9ffd0; animation: x-orb-d 10s ease-in-out infinite; }
-  .x-orb__sheen {
+  /* depth: the glass thickens towards the bottom edge */
+  .x-orb__inner {
     position: absolute; inset: 0;
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 46%);
+    background:
+      radial-gradient(120% 70% at 50% 108%, rgba(3, 70, 32, 0.38), rgba(3, 70, 32, 0) 62%),
+      radial-gradient(80% 60% at 50% -10%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 60%);
   }
+  /* reflections: a bright band and a thin one slide across the body */
+  .x-orb__gloss {
+    position: absolute; top: -10%; bottom: -10%; left: -60%; width: 220%;
+    background:
+      linear-gradient(112deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.92) 44%, rgba(255, 255, 255, 0.18) 49%, rgba(255, 255, 255, 0) 55%),
+      linear-gradient(112deg, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.5) 63%, rgba(255, 255, 255, 0) 66%);
+    mix-blend-mode: soft-light;
+    animation: x-orb-gloss 6.5s ease-in-out infinite;
+  }
+  .x-orb__spark {
+    width: 13%; height: 13%; border-radius: 50%;
+    background: radial-gradient(closest-side, #fff, rgba(255, 255, 255, 0));
+    filter: blur(0.5px);
+    animation: x-orb-twinkle 4.2s ease-in-out infinite;
+  }
+  .x-orb__spark--1 { left: 13%; top: 11%; }
+  .x-orb__spark--2 { right: 13%; top: 14%; width: 9%; height: 9%; animation-delay: -1.6s; }
+  .x-orb__spark--3 { left: 47%; top: 44%; width: 8%; height: 8%; animation-delay: -2.7s; }
   .x-orb--thinking .x-orb__blob--a { animation-duration: 3.2s; }
   .x-orb--thinking .x-orb__blob--b { animation-duration: 4s; }
   .x-orb--thinking .x-orb__blob--c { animation-duration: 4.6s; }
   .x-orb--thinking .x-orb__blob--d { animation-duration: 3.6s; }
   .x-orb--thinking .x-orb__glow { animation-duration: 1.8s; }
+  .x-orb--thinking .x-orb__gloss { animation-duration: 2.6s; }
+  .x-orb--thinking .x-orb__spark { animation-duration: 1.6s; }
   @keyframes x-orb-a { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(55%, 40%) scale(1.15); } 66% { transform: translate(18%, 82%) scale(0.9); } }
   @keyframes x-orb-b { 0%, 100% { transform: translate(0, 0) scale(1); } 40% { transform: translate(-60%, 55%) scale(1.2); } 75% { transform: translate(-25%, 15%) scale(0.85); } }
   @keyframes x-orb-c { 0%, 100% { transform: translate(0, 0) scale(1); } 30% { transform: translate(-40%, -60%) scale(1.1); } 70% { transform: translate(60%, -45%) scale(1.2); } }
   @keyframes x-orb-d { 0%, 100% { transform: translate(0, 0) scale(1); } 35% { transform: translate(-70%, -50%) scale(1.25); } 70% { transform: translate(-20%, -85%) scale(0.9); } }
+  @keyframes x-orb-gloss { 0%, 100% { transform: translateX(-18%); } 50% { transform: translateX(22%); } }
+  @keyframes x-orb-twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.1); } }
   @keyframes x-orb-breathe { 0%, 100% { opacity: 0.7; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.06); } }
   @media (prefers-reduced-motion: reduce) {
-    .x-orb__blob, .x-orb__glow { animation: none; }
+    .x-orb__blob, .x-orb__glow, .x-orb__gloss, .x-orb__spark { animation: none; }
   }
+  /* X's logo (XIcon.tsx): a green glass tile with a glossy white X. */
+  .x-icon__tile {
+    position: absolute; inset: 0; overflow: hidden; border-radius: 27%;
+    background:
+      radial-gradient(90% 70% at 18% 8%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%),
+      radial-gradient(80% 60% at 92% 96%, rgba(150, 255, 190, 0.55), rgba(150, 255, 190, 0) 65%),
+      linear-gradient(150deg, #43ee8a 0%, #00cf48 46%, #007d38 100%);
+    box-shadow:
+      inset 0 0 0 calc(var(--s) * 0.018) rgba(255, 255, 255, 0.55),
+      inset 0 calc(var(--s) * -0.07) calc(var(--s) * 0.12) rgba(0, 64, 30, 0.38),
+      0 calc(var(--s) * 0.1) calc(var(--s) * 0.2) calc(var(--s) * -0.1) rgba(0, 130, 55, 0.55);
+  }
+  .x-icon__reflection {
+    position: absolute; left: 8%; right: 8%; top: 4%; height: 38%; border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0));
+    filter: blur(calc(var(--s) * 0.012));
+  }
+  .x-icon__shade {
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 45% at 50% 108%, rgba(0, 70, 32, 0.4), rgba(0, 70, 32, 0) 70%);
+  }
+  .x-icon__x {
+    position: absolute; inset: 8%;
+    filter:
+      drop-shadow(0 calc(var(--s) * 0.035) calc(var(--s) * 0.035) rgba(0, 62, 28, 0.5))
+      drop-shadow(0 0 calc(var(--s) * 0.01) rgba(255, 255, 255, 0.7));
+  }
+  .x-icon__x-body, .x-icon__x-gloss {
+    position: absolute; inset: 0;
+    -webkit-mask: var(--x-mask) center / contain no-repeat; mask: var(--x-mask) center / contain no-repeat;
+  }
+  .x-icon__x-body { background: linear-gradient(172deg, #ffffff 0%, #f6fff9 45%, #cdeed9 82%, #b4e2c6 100%); }
+  .x-icon__x-gloss { background: radial-gradient(60% 38% at 32% 14%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%); }
   @keyframes kai-step-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
