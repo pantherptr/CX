@@ -2500,3 +2500,8 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .hero-par-up, .hero-par-down { translate: none; }
 }
+
+/* The lit floor under the hero car breathes slowly. */
+.hero-pad { animation: hero-pad-glow 5.5s ease-in-out infinite; }
+@keyframes hero-pad-glow { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .hero-pad { animation: none; } }

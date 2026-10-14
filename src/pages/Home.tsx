@@ -376,15 +376,19 @@ export default function Home() {
               />
               <span
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-[61%] h-[26%] w-[90%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,196,70,0.38)] sm:top-[63%] sm:h-[30%] sm:w-[66%]"
+                className="hero-pad pointer-events-none absolute left-1/2 top-[60%] h-[28%] w-[92%] -translate-x-1/2 rounded-[50%] border-2 border-[rgba(0,206,74,0.7)] sm:top-[62%] sm:h-[32%] sm:w-[68%]"
                 style={{
-                  background: 'radial-gradient(closest-side, rgba(0,222,84,0.26), rgba(0,222,84,0.07) 62%, rgba(0,222,84,0) 78%)',
-                  boxShadow: '0 0 46px rgba(0,222,84,0.28), inset 0 0 36px rgba(0,222,84,0.2)',
+                  background: 'radial-gradient(closest-side, rgba(0,230,90,0.46), rgba(0,230,90,0.16) 58%, rgba(0,230,90,0) 80%)',
+                  boxShadow: '0 0 60px rgba(0,230,90,0.5), 0 0 120px rgba(0,230,90,0.22), inset 0 0 46px rgba(0,230,90,0.34)',
                 }}
               />
               <span
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-[57%] h-[34%] w-[104%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,196,70,0.14)] sm:top-[58%] sm:h-[38%] sm:w-[76%]"
+                className="pointer-events-none absolute left-1/2 top-[57%] h-[34%] w-[106%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,206,74,0.26)] sm:top-[58%] sm:h-[39%] sm:w-[78%]"
+              />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-[54%] h-[40%] w-[120%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,206,74,0.12)] sm:top-[55%] sm:h-[46%] sm:w-[88%]"
               />
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
@@ -393,6 +397,20 @@ export default function Home() {
                 className="hero-car absolute left-1/2 w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[68%]"
                 style={{ aspectRatio: '859 / 386', top: 'calc(50% + var(--hero-p, 0) * 14px)' }}
               >
+                {/* its reflection on the lit floor: the same photo, flipped and fading */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-[96%] h-full w-full"
+                  style={{
+                    transform: 'scaleY(-1)',
+                    opacity: 0.4,
+                    WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0) 50%)',
+                    maskImage: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0) 50%)',
+                    filter: 'blur(1.2px) saturate(1.1)',
+                  }}
+                >
+                  <img src="/hero-car.webp?v=3" alt="" width={859} height={386} draggable={false} className="block h-full w-full" />
+                </div>
                 <div className="hero-car-body relative h-full w-full">
                   <span aria-hidden className="hero-shadow" />
                   <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '0.75s' }} />
