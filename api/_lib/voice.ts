@@ -61,8 +61,11 @@ export async function handleVoice(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({ text, model_id: MODEL, language_code: lang, voice_settings: { stability: 0.45, similarity_boost: 0.8 } }),
     });
     if (!r.ok) {
-      console.error('[voice]', r.status);
-      return res.status(502).json({ error: 'Voice failed.' });
+      // ElevenLabs says why in `detail.status` (e.g. paid_plan_required, missing_permissions) — no secrets in it.
+      const j = (await r.json().catch(() => null)) as { detail?: { status?: string; message?: string } | string } | null;
+      const why = typeof j?.detail === 'string' ? j.detail : (j?.detail?.status ?? '');
+      console.error('[voice]', r.status, why);
+      return res.status(502).json({ error: 'Voice failed.', upstream: r.status, why: String(why).slice(0, 80) });
     }
     const buf = Buffer.from(await r.arrayBuffer());
     res.setHeader('Content-Type', 'audio/mpeg');
