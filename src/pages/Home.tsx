@@ -260,7 +260,6 @@ export default function Home() {
   const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
   // The car the "Find your CX" preview suggests: a real one, from Milan if the fleet has it.
   const glimpseCar = allCars?.find((c) => c.city === 'Milan') ?? allCars?.[0];
-  const cheapestCar = allCars && allCars.length > 0 ? allCars.reduce((a, c) => (c.pricePerDay < a.pricePerDay ? c : a)) : null;
   // The hero has a little depth: headline, car and ghost line drift by different amounts as you scroll.
   const stageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -397,20 +396,6 @@ export default function Home() {
                 className="hero-car absolute left-1/2 w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[68%]"
                 style={{ aspectRatio: '859 / 386', top: 'calc(50% + var(--hero-p, 0) * 14px)' }}
               >
-                {/* its reflection on the lit floor: the same photo, flipped and fading */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute left-0 top-[96%] h-full w-full"
-                  style={{
-                    transform: 'scaleY(-1)',
-                    opacity: 0.4,
-                    WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0) 50%)',
-                    maskImage: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0) 50%)',
-                    filter: 'blur(1.2px) saturate(1.1)',
-                  }}
-                >
-                  <img src="/hero-car.webp?v=3" alt="" width={859} height={386} draggable={false} className="block h-full w-full" />
-                </div>
                 <div className="hero-car-body relative h-full w-full">
                   <span aria-hidden className="hero-shadow" />
                   <span aria-hidden className="hero-flame" style={{ top: '45%', animationDelay: '0.75s' }} />
@@ -432,26 +417,6 @@ export default function Home() {
                   />
                 </div>
               </div>
-
-              {cheapestCar && (
-                <Link
-                  to={`/cars/${cheapestCar.slug}`}
-                  className="absolute -bottom-[5%] left-1/2 z-20 inline-flex w-max max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-full border border-line bg-white/95 py-2 pl-2 pr-4 text-left shadow-[0_18px_36px_-16px_rgba(0,60,25,0.55)] backdrop-blur"
-                >
-                  <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-accent/25" />
-                    <span className="relative h-2.5 w-2.5 rounded-full bg-accent" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-caption font-semibold leading-tight text-ink">
-                      {cheapestCar.make} {cheapestCar.model}
-                    </span>
-                    <span className="block truncate text-[0.6875rem] leading-tight text-muted">
-                      {t('Available now')} · {cheapestCar.city} · {eur(cheapestCar.pricePerDay)}/{t('day')}
-                    </span>
-                  </span>
-                </Link>
-              )}
 
               {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
               <div className="absolute left-0 top-[41%] hidden max-w-[7.5rem] sm:block lg:max-w-[10rem]">
@@ -506,11 +471,8 @@ export default function Home() {
             </div>
             <Reveal delay={280} className="reveal-blur">
               <div className="flex flex-wrap items-center gap-3">
-                <Link to="/browse" className="btn btn-accent-bright btn-lg">
-                  {t('Explore Cars')} <Icon name="arrowRight" size={17} />
-                </Link>
-                <Link to="/list-your-car" className="btn btn-lg border border-ink/15 bg-white/60 text-ink shadow-hair backdrop-blur-md hover:border-ink/30 hover:bg-white/80">
-                  {t('List Your Car')}
+                <Link to="/list-your-car" className="btn btn-accent-bright btn-lg">
+                  {t('List Your Car')} <Icon name="arrowRight" size={17} />
                 </Link>
               </div>
             </Reveal>
