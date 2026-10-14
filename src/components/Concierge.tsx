@@ -120,8 +120,15 @@ let nextId = 0;
 const newId = () => `m${++nextId}`;
 
 /** The assistant's face — X's mascot: a CX supercar with eyes in the windscreen and the X on its bonnet. */
-export function ConciergeMark({ size = 30, live = false, active = false, className = '' }: { size?: number; live?: boolean; active?: boolean; className?: string }) {
-  return <XCar size={size} live={live} active={active} className={className} />;
+export function ConciergeMark({
+  size = 30,
+  live = false,
+  active = false,
+  gesture = false,
+  speaking = false,
+  className = '',
+}: { size?: number; live?: boolean; active?: boolean; gesture?: boolean; speaking?: boolean; className?: string }) {
+  return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */
@@ -278,6 +285,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   }, [requestClose]);
 
   // Voice: the microphone (browser speech recognition, free) and the speaker button on each answer
+  const lastAssistantId = useMemo(() => [...msgs].reverse().find((m) => m.role === 'assistant')?.id ?? null, [msgs]);
   const [listening, setListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const stopListenRef = useRef<(() => void) | null>(null);
@@ -670,7 +678,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   </div>
                 ) : (
                   <div className="flex items-start gap-2.5">
-                    <ConciergeMark size={30} />
+                    <ConciergeMark size={38} gesture={m.id === lastAssistantId} speaking={speakingId === m.id} />
                     <div className="min-w-0 max-w-[84%] space-y-2">
                       {m.steps && m.steps.length > 0 && (
                         <div>

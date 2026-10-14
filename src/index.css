@@ -795,6 +795,22 @@
   .x-car--active .x-car__lamps { animation: x-car-lamps 0.9s ease-in-out infinite; }
   @keyframes x-car-lamps { 0%, 100% { filter: brightness(1) drop-shadow(0 0 0 rgba(18, 224, 96, 0)); } 50% { filter: brightness(1.45) drop-shadow(0 0 3px rgba(18, 224, 96, 0.9)); } }
   @media (prefers-reduced-motion: reduce) { .x-car__eyes, .x-car--active .x-car__lamps { animation: none; } }
+  /* X "reconfigures" on a new answer: top, middle and bottom plates slide apart, click back, a scan runs over it */
+  .x-car--morph .x-car__band--top { animation: x-car-top 1.15s cubic-bezier(0.6, 0, 0.2, 1) both; }
+  .x-car--morph .x-car__band--mid { animation: x-car-mid 1.15s cubic-bezier(0.6, 0, 0.2, 1) both; }
+  .x-car--morph .x-car__band--bot { animation: x-car-bot 1.15s cubic-bezier(0.6, 0, 0.2, 1) both; }
+  .x-car--morph svg { animation: x-car-flash 1.15s ease-out both; }
+  .x-car__scan { animation: x-car-scan 1.15s cubic-bezier(0.5, 0, 0.3, 1) both; }
+  @keyframes x-car-top { 0%, 12% { transform: translateX(0); } 38%, 58% { transform: translateX(-110px); } 82%, 100% { transform: translateX(0); } }
+  @keyframes x-car-mid { 0%, 12% { transform: translateX(0); } 38%, 58% { transform: translateX(130px); } 82%, 100% { transform: translateX(0); } }
+  @keyframes x-car-bot { 0%, 12% { transform: translateX(0); } 38%, 58% { transform: translateX(-84px); } 82%, 100% { transform: translateX(0); } }
+  @keyframes x-car-scan { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(600px); opacity: 0; } }
+  @keyframes x-car-flash { 0%, 100% { filter: none; } 40%, 60% { filter: drop-shadow(0 0 14px rgba(18, 224, 96, 0.85)); } }
+  .x-car__bar { transform-box: fill-box; transform-origin: center; animation: x-car-bar 0.42s ease-in-out infinite alternate; }
+  @keyframes x-car-bar { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) {
+    .x-car--morph .x-car__band, .x-car--morph svg, .x-car__scan, .x-car__bar { animation: none; }
+  }
   @keyframes kai-step-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
