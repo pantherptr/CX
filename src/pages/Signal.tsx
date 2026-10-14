@@ -478,9 +478,9 @@ export default function Signal() {
         {/* Signal Spotlight — in the feeds it is a post that scrolls by date (below); Official also gets a small link to the Spotlight page. */}
         {space === 'official' && <SignalSpotlightPageLink count={spotlights.length} />}
         {space === 'community' && (
-          // Like X's two tabs: full width, a sliding underline, and it stays under the header while you scroll.
+          // An iOS-style segmented control: a pill with a white thumb that slides, under the header while you scroll.
           <div
-            className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-20 -mx-4 mb-3 border-b border-line bg-bg/90 px-4 backdrop-blur-xl lg:top-16 sm:mx-0 sm:px-0"
+            className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-20 -mx-4 mb-3 bg-bg/90 px-4 py-2 backdrop-blur-xl lg:top-16 sm:mx-0 sm:px-0"
             role="tablist"
             aria-label={t('Feed')}
             // arrow keys / Home / End move between the tabs (and select), as a native tab bar does
@@ -495,7 +495,7 @@ export default function Signal() {
               tabs[next].click();
             }}
           >
-            <div className="grid grid-cols-2">
+            <div className="relative grid grid-cols-2 rounded-full bg-panel p-1 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] dark:bg-[#1b1e1c] dark:shadow-none">
               {([['foryou', t('For you')], ['following', t('Following')]] as const).map(([m, label]) => (
                 <button
                   key={m}
@@ -509,16 +509,16 @@ export default function Signal() {
                     setFeedMode(m);
                     window.scrollTo({ top: 0 });
                   }}
-                  className="pressable relative min-h-12 text-[15px] font-semibold transition-colors active:bg-panel/50"
+                  className="pressable relative min-h-10 rounded-full text-[15px] font-semibold"
                 >
-                  <span className={`transition-colors ${feedMode === m ? 'text-ink' : 'text-muted'}`}>{label}</span>
                   {feedMode === m && (
                     <motion.span
-                      layoutId="feed-mode-underline"
-                      className="absolute inset-x-8 bottom-[-1px] h-[3px] rounded-full bg-accent-bright"
+                      layoutId="feed-mode-thumb"
+                      className="absolute inset-0 rounded-full bg-[#ffffff] shadow-[0_1px_3px_rgba(0,0,0,0.14),0_6px_14px_-8px_rgba(0,0,0,0.25)] dark:bg-[#3a3f3c] dark:shadow-none"
                       transition={{ type: 'spring', stiffness: 520, damping: 38 }}
                     />
                   )}
+                  <span className={`relative transition-colors ${feedMode === m ? 'text-ink' : 'text-muted'}`}>{label}</span>
                 </button>
               ))}
             </div>
