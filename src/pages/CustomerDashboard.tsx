@@ -6,10 +6,7 @@ import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../compone
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
 import { PremiumPageLoader } from '../components/PremiumLoader';
-import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/primitives';
-import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
-import { useScramble } from '../lib/useScramble';
 import { Img, Reveal } from '../components/motion';
 import { ActivePill } from '../components/motionKit';
 import { useCars } from '../lib/data/cars';
@@ -86,23 +83,6 @@ function RewardRow({ reward }: { reward: Reward }) {
         <span className={`badge mt-1 ${rewardBadge[status]}`}>{status[0].toUpperCase() + status.slice(1)}</span>
       </div>
     </div>
-  );
-}
-
-function QuickAction({ icon, label, to, onClick }: { icon: IconName; label: string; to?: string; onClick?: () => void }) {
-  const inner = (
-    <>
-      <span className="grid h-11 w-11 place-items-center rounded-xl bg-panel text-ink-soft transition-colors group-hover:bg-ink group-hover:text-white">
-        <Icon name={icon} size={19} />
-      </span>
-      <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">{label}</span>
-    </>
-  );
-  const cls = 'card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 sm:gap-2.5 sm:py-5';
-  return to ? (
-    <Link to={to} className={cls}>{inner}</Link>
-  ) : (
-    <button onClick={onClick} className={cls}>{inner}</button>
   );
 }
 
@@ -191,7 +171,6 @@ function TripRow({ booking }: { booking: Booking }) {
 }
 
 export default function CustomerDashboard() {
-  const askConciergeScramble = useScramble('Ask X');
   const navigate = useNavigate();
   const { favorites, toast } = useApp();
   const { profile, session } = useAuth();
@@ -341,7 +320,12 @@ export default function CustomerDashboard() {
 
         {/* Where the money went + one sentence worth reading — from this person's real trips only */}
         {!bookingsLoading && (spentByMonth.values.some((v) => v > 0) || carSpend.length > 0 || insight) && (
-          <div className="mt-6 space-y-4">
+          <details className="group mt-6">
+            <summary className="card flex cursor-pointer list-none items-center justify-between p-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+              <span className="font-display text-lg font-semibold text-ink">Spending &amp; insights</span>
+              <Icon name="chevronDown" size={18} className="text-muted transition-transform group-open:rotate-180" />
+            </summary>
+          <div className="mt-4 space-y-4">
             {spentByMonth.values.some((v) => v > 0) && (
               <Reveal>
                 <section className="card p-5 sm:p-6">
@@ -371,6 +355,7 @@ export default function CustomerDashboard() {
               )}
             </div>
           </div>
+          </details>
         )}
 
         {/* No trip yet — an invitation instead of an empty gap */}
@@ -391,27 +376,6 @@ export default function CustomerDashboard() {
             </Link>
           </Reveal>
         )}
-
-        {/* Quick actions */}
-        <Reveal delay={220}>
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <QuickAction icon="search" label="Find a Car" to="/browse" />
-            <QuickAction icon="trips" label="My Bookings" to="/dashboard#trips" />
-            <QuickAction icon="heart" label="Favorites" to="/dashboard#saved" />
-            <ConciergeLauncher className="card group flex flex-col items-center justify-center gap-2 py-4 text-center transition-transform hover:-translate-y-0.5 active:scale-[0.97] sm:gap-2.5 sm:py-5">
-              <ConciergeMark size={44} className="transition-transform duration-300 group-hover:scale-105" />
-              <span className="text-detail font-medium text-ink-soft transition-colors group-hover:text-ink">X</span>
-            </ConciergeLauncher>
-          </div>
-        </Reveal>
-
-        {/* Search from dashboard */}
-        <Reveal delay={260}>
-          <section className="mt-6">
-            <h2 className="mb-3 font-display text-lg font-semibold text-ink">Find another car</h2>
-            <SearchBar variant="compact" />
-          </section>
-        </Reveal>
 
         {/* Next trip highlight */}
         {bookingsLoading ? (
@@ -622,7 +586,7 @@ export default function CustomerDashboard() {
           </div>
           {saved.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {saved.map((c) => <CarCard key={c.id} car={c} />)}
+              {saved.slice(0, 4).map((c) => <CarCard key={c.id} car={c} />)}
             </div>
           ) : (
             <div className="card">
@@ -638,29 +602,7 @@ export default function CustomerDashboard() {
           )}
         </section>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.3fr]">
-          {/* Concierge */}
-          <section className="relative overflow-hidden rounded-2xl border border-line bg-panel p-5 sm:p-6">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-60"
-              style={{ background: 'radial-gradient(55% 55% at 85% 10%, rgba(0,212,71,0.10), transparent 62%)' }}
-            />
-            <div className="relative">
-              <p className="inline-flex items-center gap-2.5 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">
-                <ConciergeMark size={30} live /> X · CX assistant
-              </p>
-              <h2 className="mt-2 font-display text-xl font-semibold text-ink">Need something specific?</h2>
-              <p className="mt-2 text-detail leading-relaxed text-muted">
-                Tell us how you want to drive — city, road trip, business, performance — and we'll match you to the
-                right car from the fleet in under a minute.
-              </p>
-              <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-sm mt-5" {...askConciergeScramble}>
-                <span className="btn-glint__sweep" aria-hidden="true" />
-                {askConciergeScramble.display} <Icon name="arrowRight" size={15} />
-              </ConciergeLauncher>
-            </div>
-          </section>
-
+        <div className="mt-8">
           {/* Recent activity */}
           <section>
             <h2 className="mb-4 font-display text-lg font-semibold text-ink">Recent Activity</h2>
