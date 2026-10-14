@@ -129,10 +129,9 @@ export function ConciergeMark({
   active = false,
   gesture = false,
   speaking = false,
-  transforming = false,
   className = '',
-}: { size?: number; live?: boolean; active?: boolean; gesture?: boolean; speaking?: boolean; transforming?: boolean; className?: string }) {
-  return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} transforming={transforming} className={className} />;
+}: { size?: number; live?: boolean; active?: boolean; gesture?: boolean; speaking?: boolean; className?: string }) {
+  return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */
@@ -289,8 +288,6 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   }, [requestClose]);
 
   // Voice: the microphone (browser speech recognition, free) and the speaker button on each answer
-  // the four frames of the transformation, ready before X first moves
-  useEffect(() => { [0, 1, 2, 3].forEach((n) => { new Image().src = `/brand/x-form-${n}.webp`; }); }, []);
   const [listening, setListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const stopListenRef = useRef<(() => void) | null>(null);
@@ -683,9 +680,9 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   </div>
                 ) : (
                   <div className="relative">
-                    {/* the car sits at the left; while X works it shifts into its robot form and back */}
+                    {/* the car sits at the left; its mouth moves a little while X reads, writes and talks */}
                     <span className="absolute left-0 top-0">
-                      <ConciergeMark size={CAR} speaking={speakingId === m.id} transforming={streaming?.id === m.id || speakingId === m.id} />
+                      <ConciergeMark size={CAR} speaking={streaming?.id === m.id || speakingId === m.id} />
                     </span>
                     {m.steps && m.steps.length > 0 && (
                       <div>
@@ -787,7 +784,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
           {pending && !human && (
             <div className="relative" role="status">
               <span className="absolute left-0 top-0">
-                <ConciergeMark size={CAR} transforming />
+                <ConciergeMark size={CAR} speaking />
               </span>
               <div className="flex items-center gap-2 text-xs" style={{ minHeight: CAR, paddingLeft: CAR + 10 }}>
                 <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
@@ -803,7 +800,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
           )}
           {busy && !human && !pending && !streaming && (
             <div className="flex items-center gap-2.5" role="status">
-              <ConciergeMark size={CAR} transforming />
+              <ConciergeMark size={CAR} speaking />
               <span className="flex items-center gap-1.5 text-detail">
                 <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
               </span>
