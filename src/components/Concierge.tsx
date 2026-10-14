@@ -151,25 +151,44 @@ export function ConciergeLauncher({
   );
 }
 
-/** The visible area (top + height) while the keyboard is up, so the chat ends right above it. */
+/**
+ * The visible area (top + height) of the phone while the keyboard is up. iOS fires a burst of
+ * resize/scroll events while the keyboard animates, and following each one made the chat shake; so the box
+ * is only updated once the burst goes quiet and then glides there (a CSS transition). `kb` is true while
+ * the keyboard is covering the bottom of the screen. The page behind is locked in place meanwhile.
+ */
 function useVisibleBox() {
   const read = () => {
     const v = typeof window !== 'undefined' ? window.visualViewport : null;
-    return { top: Math.round(v?.offsetTop ?? 0), height: Math.round(v?.height ?? window.innerHeight) };
+    const full = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const h = Math.round(v?.height ?? full);
+    return { top: Math.max(0, Math.round(v?.offsetTop ?? 0)), height: h, kb: full - h > 120 };
   };
   const [box, setBox] = useState(read);
   useEffect(() => {
     const v = window.visualViewport;
-    const upd = () => setBox(read());
-    upd();
-    v?.addEventListener('resize', upd);
-    v?.addEventListener('scroll', upd);
+    let timer = 0;
+    const apply = () => {
+      timer = 0;
+      setBox(read());
+    };
+    const later = () => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(apply, 90);
+    };
+    apply();
+    v?.addEventListener('resize', later);
+    v?.addEventListener('scroll', later);
     const prev = document.body.style.overflow;
+    const prevOb = document.documentElement.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     return () => {
-      v?.removeEventListener('resize', upd);
-      v?.removeEventListener('scroll', upd);
+      if (timer) window.clearTimeout(timer);
+      v?.removeEventListener('resize', later);
+      v?.removeEventListener('scroll', later);
       document.body.style.overflow = prev;
+      document.documentElement.style.overscrollBehavior = prevOb;
     };
   }, []);
   return box;
@@ -181,6 +200,15 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   const userId = session?.user.id;
   const { cars } = useCars();
   const box = useVisibleBox();
+  const [closing, setClosing] = useState(false);
+  /** Closes with a soft exit (the panel eases down and fades) instead of vanishing. */
+  const requestClose = useCallback(() => {
+    if (closing) return;
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { onClose(); return; }
+    setClosing(true);
+    window.setTimeout(onClose, 240);
+  }, [closing, onClose]);
   const [msgs, setMsgs] = useState<ChatMsg[]>(() => [
     {
       id: newId(),
@@ -209,6 +237,11 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [msgs, live.messages, busy, pending, streaming]);
 
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [box.height]);
+
   useEffect(() => () => runRef.current?.cancel(), []);
 
   // The composer grows with what is typed (up to ~5 lines), like the 21st thinking prompt.
@@ -220,10 +253,10 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   }, [input]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
 
   const ask = useCallback(
     async (text: string) => {
@@ -368,15 +401,27 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     : [];
 
   return createPortal(
-    <div className="fixed inset-x-0 z-[310] flex items-end justify-center sm:items-center" style={{ top: box.top, height: box.height }}>
-      <button type="button" aria-label={t('Close')} onClick={onClose} className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-fade-in" />
+    <>
+      {/* Opaque floor: the page behind never shows through the gap the keyboard leaves. */}
+      <div aria-hidden className={`fixed inset-0 z-[309] bg-bg ${closing ? 'kai-floor-out' : 'kai-floor-in'}`} />
+      <div
+        data-no-pull
+        className="fixed inset-x-0 z-[310] flex flex-col overflow-hidden overscroll-none"
+        style={{
+          top: box.top,
+          height: box.height,
+          transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)',
+        }}
+      >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={ASSISTANT_NAME}
-        className="relative flex h-full w-full max-w-md animate-sheet-in flex-col overflow-hidden bg-bg shadow-pop sm:h-[min(42rem,92%)] sm:rounded-3xl max-sm:rounded-t-[1.75rem]"
+        data-kb={box.kb ? '1' : undefined}
+        className={`relative flex h-full w-full flex-col overflow-hidden bg-bg ${closing ? 'kai-panel-out' : 'kai-panel-in'}`}
       >
-        <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-3">
+        <header className="border-b border-line bg-surface pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 pb-3">
           <ConciergeMark size={40} live />
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-body font-semibold text-ink">{human ? t('CX team') : ASSISTANT_NAME}</p>
@@ -394,12 +439,14 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
               {handing ? t('Connecting…') : t('Talk to a person')}
             </button>
           )}
-          <button type="button" onClick={onClose} aria-label={t('Close')} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <button type="button" onClick={requestClose} aria-label={t('Close')} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
+          </div>
         </header>
 
-        <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4">
+        <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto w-full max-w-3xl space-y-3 px-4 py-4">
           {!human &&
             msgs.map((m) => (
               <div key={m.id}>
@@ -533,10 +580,11 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           )}
+          </div>
         </div>
 
-        <form onSubmit={submit} className="border-t border-line bg-bg px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
+        <form onSubmit={submit} className={`border-t border-line bg-bg px-3 pt-3 ${box.kb ? 'pb-3' : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]'}`}>
+          <div className="mx-auto w-full max-w-3xl rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm focus-within:border-ink">
             <textarea
               ref={inputRef}
               value={input}
@@ -598,7 +646,8 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </div>
-    </div>,
+      </div>
+    </>,
     document.body,
   );
 }

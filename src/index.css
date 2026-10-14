@@ -671,6 +671,24 @@
   @media (prefers-reduced-motion: reduce) {
     .kai-thinking { animation: none; background-image: none; color: var(--color-muted); }
   }
+  /* Kai opens full screen with a soft rise and eases back down on close. */
+  @keyframes kai-panel-in {
+    from { opacity: 0; transform: translateY(40px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes kai-panel-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(32px) scale(0.99); }
+  }
+  @keyframes kai-floor-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes kai-floor-out { from { opacity: 1; } to { opacity: 0; } }
+  .kai-panel-in { animation: kai-panel-in 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+  .kai-panel-out { animation: kai-panel-out 240ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+  .kai-floor-in { animation: kai-floor-in 300ms ease-out backwards; }
+  .kai-floor-out { animation: kai-floor-out 240ms ease-in forwards; }
+  @media (prefers-reduced-motion: reduce) {
+    .kai-panel-in, .kai-panel-out, .kai-floor-in, .kai-floor-out { animation: none; }
+  }
   @keyframes kai-step-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
