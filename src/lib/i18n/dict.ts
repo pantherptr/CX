@@ -49,6 +49,7 @@ const ROWS: Row[] = [
   ["Write to the team…", "Scrivi al team…", "Scrie echipei…", "Escribe al equipo…"],
   ["Ask {name} anything…", "Chiedi qualsiasi cosa a {name}…", "Întreabă-l pe {name} orice…", "Pregunta lo que quieras a {name}…"],
   ["Thinking it through", "Ci sto pensando", "Mă gândesc la asta", "Lo estoy pensando"],
+  ["A car for a weekend in {city}, under {price}", "Un’auto per un weekend a {city}, sotto {price}", "O mașină pentru un weekend în {city}, sub {price}", "Un coche para un fin de semana en {city}, por menos de {price}"],
   ["Reading your question…", "Leggo la tua domanda…", "Citesc întrebarea ta…", "Leyendo tu pregunta…"],
   ["Checking the cars on CX…", "Controllo le auto su CX…", "Verific mașinile de pe CX…", "Revisando los coches de CX…"],
   ["{n} matches found", "{n} auto trovate", "{n} potriviri găsite", "{n} coincidencias encontradas"],

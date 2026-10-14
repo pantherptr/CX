@@ -8,8 +8,8 @@ import { CxMark } from '../components/CxBadge';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
-import { Reveal } from '../components/motion';
-import { ScrollRevealImage } from '../components/ScrollRevealImage';
+import { Reveal, Img } from '../components/motion';
+import { ScrollRevealImage, ScrollRevealPanel } from '../components/ScrollRevealImage';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
@@ -258,6 +258,8 @@ export default function Home() {
   // A real car photo for the delivery story (second-best rated so it
   // differs from the first fleet card).
   const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
+  // The car the "Find your CX" preview suggests: a real one, from Milan if the fleet has it.
+  const glimpseCar = allCars?.find((c) => c.city === 'Milan') ?? allCars?.[0];
   const cheapest = allCars && allCars.length > 0 ? Math.min(...allCars.map((c) => c.pricePerDay)) : null;
 
   // "How it works": the scroll story mounts (and gsap downloads) only when the section is near the screen.
@@ -542,7 +544,7 @@ export default function Home() {
 
       {/* ================= CONCIERGE — find your CX ================= */}
       <section className="container-page section">
-        <Reveal>
+        <ScrollRevealPanel>
           <div className="relative overflow-hidden rounded-[1.75rem] border border-accent/10 bg-[#eaf7ef] px-6 py-12 shadow-card sm:px-12 sm:py-16">
             <div
               className="pointer-events-none absolute inset-0 opacity-80"
@@ -563,49 +565,69 @@ export default function Home() {
                 </ConciergeLauncher>
               </div>
 
-              {/* A glimpse of the real conversation — the same bubble,
-                  answer cards and selected state the Concierge opens into,
-                  so the card shows what it does instead of only saying it.
-                  Decorative only; the button above is the way in. */}
-              <div aria-hidden="true" className="w-full max-w-[300px] md:rotate-[1.5deg]">
+              {/* A glimpse of the real chat with Kai — a request, the steps Kai takes, and the car it
+                  suggests (a real one from the fleet), with the same composer the chat opens with.
+                  Decorative only; the button on the left is the way in. */}
+              <div aria-hidden="true" className="w-full max-w-[320px] md:rotate-[1.5deg]">
                 <div className="rounded-[1.5rem] border border-white/80 bg-white/70 p-4 shadow-[0_24px_50px_-24px_rgba(0,80,30,0.35)] backdrop-blur-md">
-                  <div className="flex items-start gap-2.5">
-                    <ConciergeMark size={28} />
-                    <span className="rounded-2xl rounded-tl-md border border-line bg-white px-3.5 py-2 text-detail text-ink-soft shadow-hair">
-                      {t('What kind of trip is this?')}
+                  <div className="flex justify-end">
+                    <span className="max-w-[88%] rounded-2xl rounded-br-sm bg-white px-3.5 py-2 text-detail text-ink shadow-hair">
+                      {t('A car for a weekend in {city}, under {price}', { city: glimpseCar?.city ?? 'Milan', price: eur(200) })}
                     </span>
                   </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[
-                      { icon: 'route' as IconName, label: 'Road Trip', sub: 'Long-haul comfort', on: true },
-                      { icon: 'gem' as IconName, label: 'Luxury', sub: 'The finest ride', on: false },
-                      { icon: 'pin' as IconName, label: 'City', sub: 'Nimble around town', on: false },
-                      { icon: 'gauge' as IconName, label: 'Performance', sub: 'Pure thrill', on: false },
-                    ].map((o) => (
-                      <span
-                        key={o.label}
-                        className={`flex items-center gap-2 rounded-xl border p-2 ${
-                          o.on ? 'border-accent bg-accent-050 text-ink shadow-[0_0_0_1px_var(--color-accent)]' : 'border-line bg-white text-ink'
-                        }`}
-                      >
-                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${o.on ? 'bg-accent text-white' : 'bg-panel text-ink-soft'}`}>
-                          <Icon name={o.icon} size={14} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-caption font-semibold leading-tight">{t(o.label)}</span>
-                          <span className="block truncate text-[0.625rem] leading-tight text-muted">{t(o.sub)}</span>
-                        </span>
+
+                  <div className="mt-3 flex items-start gap-2.5">
+                    <ConciergeMark size={28} />
+                    <div className="min-w-0 flex-1">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/80 px-2.5 py-1 text-caption text-muted">
+                        <Icon name="sparkles" size={12} /> {t('Thought for {n}s', { n: 2 })}
                       </span>
-                    ))}
+                      <ol className="relative ml-[5px] mt-1.5 border-l border-line pl-4">
+                        {[
+                          allCars && allCars.length > 0
+                            ? t('Comparing {n} cars in {c} cities…', { n: allCars.length, c: new Set(allCars.map((c) => c.city)).size })
+                            : t('Checking the cars on CX…'),
+                          t('City: {city}', { city: glimpseCar?.city ?? 'Milan' }),
+                          t('Budget: up to {price}/day', { price: eur(200) }),
+                        ].map((step) => (
+                          <li key={step} className="relative flex min-h-6 items-center py-1 text-[0.6875rem] leading-4 text-muted">
+                            <span className="absolute -left-[21px] flex size-[11px] items-center justify-center rounded-full bg-[#f3faf5] ring-4 ring-[#f3faf5]">
+                              <Icon name="check" size={11} className="text-ink" />
+                            </span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
                   </div>
-                  <div className="mt-3 flex justify-end">
-                    <span className="rounded-2xl rounded-tr-md bg-ink px-3.5 py-2 text-detail font-medium text-white">{t('Road Trip')}</span>
+
+                  {glimpseCar && (
+                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-line bg-white p-2 pr-3 shadow-hair">
+                      <Img src={unsplash(glimpseCar.images[0], 240)} alt="" className="h-12 w-[4.25rem] shrink-0 rounded-xl bg-panel object-cover" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-caption font-semibold text-ink">{glimpseCar.make} {glimpseCar.model}</span>
+                        <span className="block truncate text-[0.625rem] text-muted">{glimpseCar.city} · {eur(glimpseCar.pricePerDay)}/{t('day')}</span>
+                      </span>
+                      <Icon name="chevronRight" size={14} className="shrink-0 text-faint" />
+                    </div>
+                  )}
+
+                  <div className="mt-3 rounded-2xl border border-line-strong bg-white p-2 pl-3">
+                    <span className="block py-1 text-detail text-muted">{t('Ask {name} anything…', { name: 'Kai' })}</span>
+                    <span className="mt-1 flex items-center justify-between">
+                      <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-ink/15 bg-ink/5 px-2.5 text-caption font-semibold text-ink">
+                        <Icon name="sparkles" size={12} /> {t('Think')} <Icon name="check" size={11} />
+                      </span>
+                      <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white">
+                        <Icon name="arrowRight" size={15} className="-rotate-90" />
+                      </span>
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </Reveal>
+        </ScrollRevealPanel>
       </section>
 
       {/* ================= SIGNAL — the community advantage ================= */}

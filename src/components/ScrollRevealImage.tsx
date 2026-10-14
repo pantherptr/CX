@@ -66,3 +66,33 @@ export function ScrollRevealImage({
     </div>
   );
 }
+
+/**
+ * The same reveal for a whole card: it opens from a narrower window to the full column and settles
+ * a touch larger, as it scrolls into view. Only a clip and a tiny scale — the content never reflows.
+ */
+export function ScrollRevealPanel({ children, fromWidth = 86, fromScale = 0.97, radius = 28 }: {
+  children: ReactNode;
+  fromWidth?: number;
+  fromScale?: number;
+  radius?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 40%'] });
+  const p = useSpring(scrollYProgress, { stiffness: 120, damping: 34, mass: 0.6 });
+  const side = (100 - fromWidth) / 2;
+  const clipPath = useTransform(p, (v) => {
+    const k = Math.min(1, Math.max(0, v));
+    if (k >= 0.995) return 'none'; // settled: no clip, so the card's shadow is not cut
+    const s = side * (1 - k);
+    return `inset(-60px ${s.toFixed(2)}% -60px ${s.toFixed(2)}% round ${radius}px)`;
+  });
+  const scale = useTransform(p, [0, 1], [fromScale, 1]);
+  if (reduced) return <div>{children}</div>;
+  return (
+    <motion.div ref={ref} style={{ clipPath, WebkitClipPath: clipPath, scale }}>
+      {children}
+    </motion.div>
+  );
+}
