@@ -58,7 +58,7 @@ function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
       const line = el.querySelector<HTMLElement>('[data-fit]');
       const w = line?.scrollWidth ?? 0;
       if (!avail || !w) { el.style.fontSize = ''; return; }
-      el.style.fontSize = `${Math.min(max, (avail / w) * 100 * 0.97)}px`;
+      el.style.fontSize = `${Math.min(max, (avail / w) * 100 * 0.94)}px`;
     };
     fit();
     const ro = new ResizeObserver(fit);

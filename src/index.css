@@ -1323,6 +1323,10 @@
   .hero-glyph {
     position: relative;
     display: inline-block;
+    /* background-clip:text only paints inside the box, and a bold italic letter overhangs its advance
+       width: a little room each side (cancelled by the negative margin) keeps the last S whole */
+    padding: 0 0.1em;
+    margin: 0 -0.1em;
     background-image: var(--hero-grad);
     -webkit-background-clip: text;
     background-clip: text;
