@@ -45,7 +45,7 @@ const METAL: Record<CxTier, Metal> = {
   team: { top: '#f3dd92', bottom: '#ae8830', edge: 'rgba(84,60,8,0.55)', plate: 'rgba(60,40,4,0.62)', plateRing: 'rgba(255,248,224,0.55)', check: '#fff9e6' },
 };
 
-export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size?: number; className?: string }) {
+export function CxMark({ tier, size = 16, className = '', gold = false }: { tier: CxTier; size?: number; className?: string; /** the Owner account wears the flag in gold (same gold as the old seal) */ gold?: boolean }) {
   const { t } = useLocale();
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const label = t(CX_TIER_LABEL[tier]);
@@ -54,7 +54,7 @@ export function CxMark({ tier, size = 16, className = '' }: { tier: CxTier; size
   if (tier === 'team') {
     return (
       <span role="img" aria-label={label} className={`inline-flex shrink-0 align-[-0.2em] ${className}`} style={{ height: size * 1.35, width: size * 1.05 }}>
-        <CxFlag className="h-full w-full" />
+        <CxFlag className="h-full w-full" tone={gold ? 'gold' : 'green'} />
       </span>
     );
   }

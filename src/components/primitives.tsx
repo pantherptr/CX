@@ -488,7 +488,7 @@ export function cxTierForRole(role: VerifiedRole): CxTier {
 }
 
 function BadgeMark({ role, size }: { role: VerifiedRole; size: number }) {
-  return <CxMark tier={cxTierForRole(role)} size={size} />;
+  return <CxMark tier={cxTierForRole(role)} size={size} gold={role === 'owner'} />;
 }
 
 export function VerifiedBadge({

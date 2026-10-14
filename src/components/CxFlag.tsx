@@ -1,12 +1,23 @@
+import { useId } from 'react';
+
 /**
  * The CX flag: a bat-shaped flag on a spear, traced from the supplied artwork (vectors, crisp at any size).
  * The pole follows the text colour; the bat is brand green (a brighter green on dark backgrounds).
  */
 export function CxFlag({ className = '', title, tone = 'green' }: { className?: string; title?: string; tone?: 'green' | 'gold' }) {
+  const gid = `cxflag-gold-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
     <svg viewBox="170 180 740 930" role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true} className={className} fill="none">
       <path fill="currentColor" fillRule="evenodd" d="M853.0 195.5 L838.5 195.5 L834.0 196.5 L819.5 203.0 L810.0 211.5 L806.0 217.0 L801.5 226.5 L799.5 234.5 L799.5 247.5 L803.5 260.5 L809.0 269.5 L817.0 277.5 L823.5 282.0 L792.5 881.0 L791.5 896.5 L757.5 933.0 L793.5 1096.0 L858.0 942.5 L857.5 939.0 L833.5 902.5 L831.0 897.0 L849.0 574.5 L864.0 283.0 L874.5 276.0 L882.0 268.5 L887.0 260.5 L891.0 249.0 L891.5 236.0 L889.0 225.0 L882.5 213.0 L875.0 205.5 L868.5 201.0Z M810.0 917.0 L814.0 918.5 L800.5 1044.0 L799.0 1047.0 L798.5 1040.5 L804.5 918.0 L805.5 917.0Z" />
-      <path className={tone === 'gold' ? 'fill-[#c9971c]' : 'fill-[#0c7a38] dark:fill-[#1be77a]'} fillRule="evenodd" d="M807.0 302.5 L805.0 302.5 L642.0 388.5 L640.5 387.5 L623.0 330.0 L616.5 312.0 L614.5 313.0 L577.5 375.0 L546.0 318.0 L544.0 316.5 L540.5 323.0 L520.0 375.0 L511.0 395.0 L391.5 328.5 L383.0 337.0 L320.0 409.5 L315.0 414.0 L190.0 555.5 L185.5 562.0 L187.5 562.0 L308.0 504.5 L365.0 568.0 L367.0 568.0 L455.0 505.5 L567.0 652.0 L568.5 652.0 L700.0 498.0 L786.5 566.5 L793.5 571.0 L799.0 467.5 L800.0 463.0Z" />
+      {tone === 'gold' && (
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f3dd92" />
+            <stop offset="1" stopColor="#ae8830" />
+          </linearGradient>
+        </defs>
+      )}
+      <path className={tone === 'gold' ? undefined : 'fill-[#0c7a38] dark:fill-[#1be77a]'} fill={tone === 'gold' ? `url(#${gid})` : undefined} fillRule="evenodd" d="M807.0 302.5 L805.0 302.5 L642.0 388.5 L640.5 387.5 L623.0 330.0 L616.5 312.0 L614.5 313.0 L577.5 375.0 L546.0 318.0 L544.0 316.5 L540.5 323.0 L520.0 375.0 L511.0 395.0 L391.5 328.5 L383.0 337.0 L320.0 409.5 L315.0 414.0 L190.0 555.5 L185.5 562.0 L187.5 562.0 L308.0 504.5 L365.0 568.0 L367.0 568.0 L455.0 505.5 L567.0 652.0 L568.5 652.0 L700.0 498.0 L786.5 566.5 L793.5 571.0 L799.0 467.5 L800.0 463.0Z" />
     </svg>
   );
 }
