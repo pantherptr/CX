@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { useLocale } from '../lib/i18n';
 import { DateRangeField } from './DateRangePicker';
+import { getPreferredCity, setPreferredCity } from '../lib/preferredCity';
 
 const cities = ['Milan', 'Rome', 'Florence', 'Paris', 'Barcelona', 'Munich', 'Amsterdam'];
 const types = ['Any type', 'Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -25,7 +26,15 @@ export function SearchBar({
 }) {
   const navigate = useNavigate();
   const { t, country } = useLocale();
-  const [location, setLocation] = useState(country?.code === 'ES' ? 'Barcelona' : 'Milan');
+  const [location, setLocationState] = useState(() => {
+    const last = getPreferredCity();
+    if (last && cities.includes(last)) return last;
+    return country?.code === 'ES' ? 'Barcelona' : 'Milan';
+  });
+  const setLocation = (c: string) => {
+    setLocationState(c);
+    setPreferredCity(c);
+  };
   const [pickup, setPickup] = useState(today(3));
   const [ret, setRet] = useState(today(6));
   const [type, setType] = useState('Any type');

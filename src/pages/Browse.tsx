@@ -13,6 +13,7 @@ import { motion, AnimatePresence, SPRING_SNAPPY } from '../components/motionKit'
 import { useScramble } from '../lib/useScramble';
 import { useMediaQuery } from '../components/motion';
 import { eur } from '../lib/format';
+import { FindCarDeck } from '../components/FindCarDeck';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 
@@ -425,6 +426,16 @@ export default function Browse() {
               </div>
             </div>
           </div>
+
+          {/* On the phone: the swipe deck first, starting from the city in the filter below */}
+          {!loading && !error && !mapView && (
+            <div className="-mx-1 mb-6 md:hidden">
+              <p className="mb-3 px-1 text-label font-semibold uppercase tracking-[0.14em] text-accent-700">{t('Swipe to find your car')}</p>
+              <div className="-mx-4">
+                <FindCarDeck city={city.trim() || null} />
+              </div>
+            </div>
+          )}
 
           <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
             <div className="relative flex-1">

@@ -275,6 +275,8 @@ export type SwipeDeckProps<T> = {
   rightLabel?: string;
   undoLabel?: string;
   emptyLabel?: string;
+  /** What the empty box shows instead of the plain sentence (a teaser, a button…). */
+  emptyContent?: React.ReactNode;
   /** Text next to the counter, e.g. "3 left". */
   remainingText?: (remaining: number) => string;
   /** Screen-reader announcement for the top card, e.g. "BMW M4. Card 2 of 8." */
@@ -299,6 +301,7 @@ export function SwipeDeck<T>({
   rightLabel = 'Keep',
   undoLabel = 'Undo',
   emptyLabel = 'Deck cleared',
+  emptyContent,
   remainingText = (n) => `${n} left`,
   positionText = (item, i, n) => `${item}. Card ${i + 1} of ${n}.`,
   hint = 'Left and right arrow keys decide the top card. Backspace brings the last one back.',
@@ -347,9 +350,9 @@ export function SwipeDeck<T>({
             animate={{ opacity: deck.done ? 1 : 0 }}
             transition={reduced ? { duration: 0 } : CROSSFADE}
             style={{ height }}
-            className="absolute inset-x-5 top-0 z-0 grid place-items-center rounded-3xl bg-panel px-4 text-center text-body text-muted"
+            className="absolute inset-x-5 top-0 z-0 grid place-items-center rounded-3xl bg-gradient-to-b from-accent-050 to-panel px-5 text-center text-body text-muted"
           >
-            {emptyLabel}
+            {emptyContent ?? emptyLabel}
           </motion.div>
           <AnimatePresence initial={false} custom={deck.flow.dir}>
             {stack.map((item, depth) => (
