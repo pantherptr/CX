@@ -117,22 +117,24 @@ function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIn
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
-/** The assistant's face — the CX key mark on a white disc, with an "online" dot when `live`. */
+/** The assistant's face — the CX bat medallion (the same picture as the CX team), with an "online" dot when `live`. */
 export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
   return (
-    <span
-      className={`relative inline-grid shrink-0 place-items-center rounded-full bg-white shadow-[0_0_0_1px_rgba(14,20,17,0.12)] ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <span className="relative h-[78%] w-[78%]">
-        <img data-invert-dark src="/brand/cx-bat-man.webp" alt="" width={120} height={57} draggable={false} className="h-full w-full select-none object-contain" />
-        {live && (
-          <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
-            <span className="absolute inset-0 animate-ping rounded-full bg-[#009646]/55" />
-            <span className="relative h-full w-full rounded-full border-2 border-white bg-[#009646]" />
-          </span>
-        )}
-      </span>
+    <span className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }}>
+      <img
+        src="/brand/avatar-cx.webp"
+        alt=""
+        width={size * 2}
+        height={size * 2}
+        draggable={false}
+        className="h-full w-full select-none rounded-full bg-noir object-cover shadow-[0_0_0_1px_rgba(14,20,17,0.18)]"
+      />
+      {live && (
+        <span className="absolute -bottom-px -right-px flex h-[26%] min-h-2 w-[26%] min-w-2">
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#009646]/55" />
+          <span className="relative h-full w-full rounded-full border-2 border-white bg-[#009646]" />
+        </span>
+      )}
     </span>
   );
 }
