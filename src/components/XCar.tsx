@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useGaze } from '../lib/useGaze';
 
 /**
@@ -13,6 +13,7 @@ export function XCar({
   active = false,
   gesture = false,
   speaking = false,
+  transforming = false,
   className = '',
 }: {
   size?: number;
@@ -22,8 +23,20 @@ export function XCar({
   gesture?: boolean;
   /** the grin lights up like a voice meter while X is talking */
   speaking?: boolean;
+  /** X is working (reading, thinking, writing, talking): the car shifts into its robot form and back, over and over */
+  transforming?: boolean;
   className?: string;
 }) {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    if (!transforming) { setFrame(0); return; }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setFrame(3); return; }
+    // car -> half open -> open -> robot -> and back, at a steady beat
+    const seq = [0, 0, 1, 2, 3, 3, 3, 2, 1];
+    let i = 0;
+    const id = window.setInterval(() => { i = (i + 1) % seq.length; setFrame(seq[i]); }, 240);
+    return () => window.clearInterval(id);
+  }, [transforming]);
   const uid = useId().replace(/:/g, '');
   const id = (n: string) => `${n}-${uid}`;
   const root = useRef<HTMLSpanElement>(null);
@@ -33,6 +46,31 @@ export function XCar({
   // the isometric X of the logo, drawn on the bonnet over the original badge
   const xMark = 'M25.7 0L50 14L75 0.3L100 14L75 28.7L100 43.3V72L75 86.7V58.7L50 43.3L25.7 58.7V86.7L0 72V43.3L25 28.7L0 14Z';
   const eyes: [number, number][] = [[299, 188], [413, 188]];
+  if (transforming) {
+    return (
+      <span
+        ref={root}
+        className={`x-form relative inline-block shrink-0 overflow-hidden rounded-2xl bg-black shadow-[0_0_18px_-4px_rgba(18,224,96,0.7)] ring-1 ring-[#12e060]/40 ${className}`}
+        style={{ width: size, height: size }}
+        aria-hidden="true"
+      >
+        {[0, 1, 2, 3].map((n) => (
+          <img
+            key={n}
+            src={`/brand/x-form-${n}.webp`}
+            alt=""
+            width={size}
+            height={size}
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-150"
+            style={{ opacity: frame === n ? 1 : 0 }}
+          />
+        ))}
+        {live && <span className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-[#00d447] ring-2 ring-black" />}
+      </span>
+    );
+  }
+
   return (
     <span
       ref={root}

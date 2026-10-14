@@ -93,6 +93,9 @@ function thoughtSteps(
 }
 
 /** The steps on a vertical rail, a tick sitting on the line for each finished one (the 21st thinking-prompt look). */
+/** The size of X's car next to its answers; the thought trail hangs from its middle. */
+const CAR = 52;
+
 function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIndex?: number | null }) {
   return (
     <ol className="relative ml-[7px] border-l border-line pl-5">
@@ -126,9 +129,10 @@ export function ConciergeMark({
   active = false,
   gesture = false,
   speaking = false,
+  transforming = false,
   className = '',
-}: { size?: number; live?: boolean; active?: boolean; gesture?: boolean; speaking?: boolean; className?: string }) {
-  return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} className={className} />;
+}: { size?: number; live?: boolean; active?: boolean; gesture?: boolean; speaking?: boolean; transforming?: boolean; className?: string }) {
+  return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} transforming={transforming} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */
@@ -285,7 +289,8 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   }, [requestClose]);
 
   // Voice: the microphone (browser speech recognition, free) and the speaker button on each answer
-  const lastAssistantId = useMemo(() => [...msgs].reverse().find((m) => m.role === 'assistant')?.id ?? null, [msgs]);
+  // the four frames of the transformation, ready before X first moves
+  useEffect(() => { [0, 1, 2, 3].forEach((n) => { new Image().src = `/brand/x-form-${n}.webp`; }); }, []);
   const [listening, setListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const stopListenRef = useRef<(() => void) | null>(null);
@@ -677,11 +682,14 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                     <p className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-panel px-3.5 py-2.5 text-body text-ink">{m.text}</p>
                   </div>
                 ) : (
-                  <div className="flex items-start gap-2.5">
-                    <ConciergeMark size={38} gesture={m.id === lastAssistantId} speaking={speakingId === m.id} />
-                    <div className="min-w-0 max-w-[84%] space-y-2">
-                      {m.steps && m.steps.length > 0 && (
-                        <div>
+                  <div className="relative">
+                    {/* the car sits at the left; while X works it shifts into its robot form and back */}
+                    <span className="absolute left-0 top-0">
+                      <ConciergeMark size={CAR} speaking={speakingId === m.id} transforming={streaming?.id === m.id || speakingId === m.id} />
+                    </span>
+                    {m.steps && m.steps.length > 0 && (
+                      <div>
+                        <div className="flex items-center" style={{ minHeight: CAR, paddingLeft: CAR + 10 }}>
                           <button
                             type="button"
                             aria-expanded={openThoughts.has(m.id)}
@@ -693,19 +701,20 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                                 return nextSet;
                               })
                             }
-                            className="hit-44 inline-flex items-center gap-1.5 rounded-full border border-line bg-panel/60 px-2.5 py-1 text-caption text-muted transition-colors hover:bg-panel hover:text-ink"
+                            className="hit-44 inline-flex items-center gap-1.5 rounded-full border border-line bg-panel/60 px-3 py-1 text-caption text-muted transition-colors hover:bg-panel hover:text-ink"
                           >
-                            <Icon name="sparkles" size={13} />
                             {t('Thought for {n}s', { n: m.seconds ?? 1 })}
                             <Icon name="chevronRight" size={13} className={`transition-transform ${openThoughts.has(m.id) ? 'rotate-90' : ''}`} />
                           </button>
-                          {openThoughts.has(m.id) && (
-                            <div className="mt-2">
-                              <ThoughtTrail steps={m.steps} />
-                            </div>
-                          )}
                         </div>
-                      )}
+                        {openThoughts.has(m.id) && (
+                          <div className="pb-2 pt-1" style={{ marginLeft: CAR / 2 - 7 }}>
+                            <ThoughtTrail steps={m.steps} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}
@@ -776,28 +785,26 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
             ))}
 
           {pending && !human && (
-            <div className="flex items-start gap-2.5" role="status">
-              <ConciergeMark size={36} active />
-              <div className="min-w-0 flex-1 pt-1">
-                <div className="flex h-7 items-center gap-2 text-xs">
-                  <Icon name="sparkles" size={14} className="shrink-0 text-muted" />
-                  <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
-                  <span className="ml-auto font-mono text-[11px] tabular-nums text-muted">{pending.seconds}s</span>
-                </div>
-                <div className="mt-2">
-                  <ThoughtTrail
-                    steps={pending.steps.slice(0, pending.shown)}
-                    activeIndex={pending.shown < pending.steps.length || pending.live ? pending.shown - 1 : null}
-                  />
-                </div>
+            <div className="relative" role="status">
+              <span className="absolute left-0 top-0">
+                <ConciergeMark size={CAR} transforming />
+              </span>
+              <div className="flex items-center gap-2 text-xs" style={{ minHeight: CAR, paddingLeft: CAR + 10 }}>
+                <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
+                <span className="ml-auto font-mono text-[11px] tabular-nums text-muted">{pending.seconds}s</span>
+              </div>
+              <div className="pt-1" style={{ marginLeft: CAR / 2 - 7 }}>
+                <ThoughtTrail
+                  steps={pending.steps.slice(0, pending.shown)}
+                  activeIndex={pending.shown < pending.steps.length || pending.live ? pending.shown - 1 : null}
+                />
               </div>
             </div>
           )}
           {busy && !human && !pending && !streaming && (
             <div className="flex items-center gap-2.5" role="status">
-              <ConciergeMark size={30} />
+              <ConciergeMark size={CAR} transforming />
               <span className="flex items-center gap-1.5 text-detail">
-                <Icon name="sparkles" size={14} className="text-muted" />
                 <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
               </span>
             </div>
