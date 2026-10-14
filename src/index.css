@@ -2493,3 +2493,10 @@ html [data-rmiz-btn-unzoom] { display: none; }
     transform: translate(-50%, -50%);
   }
 }
+
+/* Hero depth: the headline, the car and the ghost line drift by different amounts while you scroll (--hero-p 0..1). */
+.hero-par-up { translate: 0 calc(var(--hero-p, 0) * -28px); }
+.hero-par-down { translate: 0 calc(var(--hero-p, 0) * 36px); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-par-up, .hero-par-down { translate: none; }
+}

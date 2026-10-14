@@ -260,6 +260,23 @@ export default function Home() {
   const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
   // The car the "Find your CX" preview suggests: a real one, from Milan if the fleet has it.
   const glimpseCar = allCars?.find((c) => c.city === 'Milan') ?? allCars?.[0];
+  const cheapestCar = allCars && allCars.length > 0 ? allCars.reduce((a, c) => (c.pricePerDay < a.pricePerDay ? c : a)) : null;
+  // The hero has a little depth: headline, car and ghost line drift by different amounts as you scroll.
+  const stageRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const h = el.offsetHeight || 1;
+      el.style.setProperty('--hero-p', String(Math.min(1, Math.max(0, window.scrollY / h)).toFixed(3)));
+    };
+    const onScroll = () => { if (!raf) raf = window.requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) window.cancelAnimationFrame(raf); };
+  }, []);
   const cheapest = allCars && allCars.length > 0 ? Math.min(...allCars.map((c) => c.pricePerDay)) : null;
 
   // "How it works": the scroll story mounts (and gsap downloads) only when the section is near the screen.
@@ -325,11 +342,11 @@ export default function Home() {
         <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
-            <div className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">
+            <div ref={stageRef} className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">
               <FitHeading
                 as="h1"
                 max={200}
-                className="absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
+                className="hero-par-up absolute inset-x-0 top-[3%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[18.5vw]"
                 style={{
                   ['--hero-grad' as string]: 'linear-gradient(180deg, #1fe563 0%, #00a63e 55%, #007a30 100%)',
                 }}
@@ -342,7 +359,7 @@ export default function Home() {
                 as="p"
                 ariaHidden
                 max={170}
-                className="absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw]"
+                className="hero-par-down absolute inset-x-0 bottom-[0%] -skew-x-[9deg] text-center font-display font-black uppercase leading-[0.84] tracking-[-0.045em] text-transparent text-[19.5vw]"
                 style={{
                   ['--hero-grad' as string]: 'linear-gradient(180deg, var(--hero-ghost-a) 0%, var(--hero-ghost-b) 55%, var(--hero-ghost-c) 100%)',
                 }}
@@ -357,13 +374,24 @@ export default function Home() {
                 className="pointer-events-none absolute left-1/2 top-[52%] h-[72%] w-[94%] -translate-x-1/2 -translate-y-1/2 rounded-[50%]"
                 style={{ background: 'radial-gradient(closest-side, rgba(0,222,84,0.30), rgba(0,222,84,0.10) 55%, rgba(0,222,84,0) 78%)', filter: 'blur(14px)' }}
               />
-              <span aria-hidden className="pointer-events-none absolute left-[6%] right-[6%] top-[73%] h-px bg-gradient-to-r from-transparent via-ink/25 to-transparent" />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-[61%] h-[26%] w-[90%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,196,70,0.38)] sm:top-[63%] sm:h-[30%] sm:w-[66%]"
+                style={{
+                  background: 'radial-gradient(closest-side, rgba(0,222,84,0.26), rgba(0,222,84,0.07) 62%, rgba(0,222,84,0) 78%)',
+                  boxShadow: '0 0 46px rgba(0,222,84,0.28), inset 0 0 36px rgba(0,222,84,0.2)',
+                }}
+              />
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-[57%] h-[34%] w-[104%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,196,70,0.14)] sm:top-[58%] sm:h-[38%] sm:w-[76%]"
+              />
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
                   as the page opens (CSS only, see .hero-car in index.css). */}
               <div
-                className="hero-car absolute left-1/2 top-[50%] w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[68%]"
-                style={{ aspectRatio: '859 / 386' }}
+                className="hero-car absolute left-1/2 w-[96%] max-w-[1180px] -translate-x-1/2 -translate-y-1/2 sm:w-[68%]"
+                style={{ aspectRatio: '859 / 386', top: 'calc(50% + var(--hero-p, 0) * 14px)' }}
               >
                 <div className="hero-car-body relative h-full w-full">
                   <span aria-hidden className="hero-shadow" />
@@ -386,6 +414,26 @@ export default function Home() {
                   />
                 </div>
               </div>
+
+              {cheapestCar && (
+                <Link
+                  to={`/cars/${cheapestCar.slug}`}
+                  className="absolute -bottom-[5%] left-1/2 z-20 inline-flex w-max max-w-[92%] -translate-x-1/2 items-center gap-2.5 rounded-full border border-line bg-white/95 py-2 pl-2 pr-4 text-left shadow-[0_18px_36px_-16px_rgba(0,60,25,0.55)] backdrop-blur"
+                >
+                  <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-050">
+                    <span className="absolute inset-0 animate-ping rounded-full bg-accent/25" />
+                    <span className="relative h-2.5 w-2.5 rounded-full bg-accent" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-caption font-semibold leading-tight text-ink">
+                      {cheapestCar.make} {cheapestCar.model}
+                    </span>
+                    <span className="block truncate text-[0.6875rem] leading-tight text-muted">
+                      {t('Available now')} · {cheapestCar.city} · {eur(cheapestCar.pricePerDay)}/{t('day')}
+                    </span>
+                  </span>
+                </Link>
+              )}
 
               {/* Captions, like the reference: a rule + two lines left, an icon + two lines right */}
               <div className="absolute left-0 top-[41%] hidden max-w-[7.5rem] sm:block lg:max-w-[10rem]">
