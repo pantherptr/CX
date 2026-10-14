@@ -1,0 +1,68 @@
+import { useRef, type ReactNode } from 'react';
+import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
+import { Img } from './motion';
+
+/**
+ * A photo that opens up as it scrolls into view: it starts as a narrower, zoomed-in window and widens to
+ * the full column while the zoom eases out and the corners round (the 21st "scroll reveal image").
+ * The widening is a clip, so the photo itself never reflows. With "reduce motion" it is simply shown.
+ */
+export function ScrollRevealImage({
+  src,
+  srcSet,
+  alt = '',
+  className = '',
+  fromWidth = 64,
+  fromScale = 1.45,
+  toRadius = 28,
+  children,
+}: {
+  src: string;
+  srcSet?: string;
+  alt?: string;
+  /** Sets the height (the width is the column's). */
+  className?: string;
+  /** Percent of the column the window starts at. */
+  fromWidth?: number;
+  fromScale?: number;
+  /** Corner radius (px) it settles at. */
+  toRadius?: number;
+  /** Overlays that reveal together with the photo. */
+  children?: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 22%'] });
+  const p = useSpring(scrollYProgress, { stiffness: 120, damping: 34, mass: 0.6 });
+
+  const side = (100 - fromWidth) / 2;
+  const clipPath = useTransform(p, (v) => {
+    const k = Math.min(1, Math.max(0, v));
+    const s = side * (1 - k);
+    const r = toRadius * Math.min(1, Math.max(0, (k - 0.35) / 0.65));
+    return `inset(0% ${s.toFixed(2)}% 0% ${s.toFixed(2)}% round ${r.toFixed(1)}px)`;
+  });
+  const scale = useTransform(p, [0, 1], [fromScale, 1]);
+
+  return (
+    <div ref={ref} className={`relative w-full ${className}`}>
+      <motion.div
+        className="absolute inset-0 overflow-hidden bg-panel"
+        style={reduced ? { borderRadius: toRadius } : { clipPath, WebkitClipPath: clipPath }}
+      >
+        <motion.div className="absolute inset-0" style={reduced ? undefined : { scale }}>
+          <Img
+            src={src}
+            srcSet={srcSet}
+            sizes="(min-width: 1024px) 1100px, 100vw"
+            alt={alt}
+            loading="lazy"
+            className="h-full w-full object-cover"
+            fallback={null}
+          />
+        </motion.div>
+        {children}
+      </motion.div>
+    </div>
+  );
+}

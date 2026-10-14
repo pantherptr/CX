@@ -8,7 +8,8 @@ import { CxMark } from '../components/CxBadge';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
-import { Reveal, Img } from '../components/motion';
+import { Reveal } from '../components/motion';
+import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
@@ -493,34 +494,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= DELIVERY — the emotional promise ================= */}
+      {/* ================= DELIVERY — the emotional promise =================
+          The photo opens up as you scroll to it (a narrower, zoomed window that widens to the full
+          column); the story sits under it. */}
       <section className="container-page section-tight">
+        <ScrollRevealImage
+          src={deliveryImage ? unsplash(deliveryImage, 1400) : '/hero-car.webp'}
+          srcSet={deliveryImage ? unsplashSrcSet(deliveryImage, [800, 1200, 1600]) : undefined}
+          className="h-[46svh] min-h-[300px] max-h-[620px] sm:h-[60svh]"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
+          <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+            <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
+          </span>
+        </ScrollRevealImage>
         <Reveal>
-          <div className="grid overflow-hidden rounded-[1.75rem] border border-line bg-surface lg:grid-cols-2">
-            <div className="relative min-h-[220px] bg-panel sm:min-h-[300px]">
-              {deliveryImage && (
-                <Img
-                  src={unsplash(deliveryImage, 1000)}
-                  srcSet={unsplashSrcSet(deliveryImage, [600, 1000, 1400])}
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover"
-                  fallback={null}
-                />
-              )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
-              <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
-                <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
-              </span>
-            </div>
-            <div className="px-6 py-9 sm:px-10 sm:py-12">
+          <div className="mt-4 rounded-[1.75rem] border border-line bg-surface px-6 py-9 sm:px-10 sm:py-12 lg:grid lg:grid-cols-2 lg:gap-14">
+            <div>
               <p className="eyebrow">{t('CX Delivery')}</p>
               <BlurText as="h2" className="mt-3 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Your journey starts at your door.')} />
               <p className="mt-3 text-copy leading-relaxed text-muted">
                 {t('Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.')}
               </p>
-              <ul className="mt-6 space-y-3">
+            </div>
+            <div className="mt-6 lg:mt-0 lg:self-end">
+              <ul className="space-y-3">
                 {[
                   'Choose delivery at checkout, to the address you pick',
                   'Hosts set their own delivery fee — you see it before you pay',
