@@ -144,12 +144,23 @@ export function ConciergeLauncher({
   ...rest
 }: { className?: string; children: ReactNode } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'children' | 'onClick'>) {
   const [open, setOpen] = useState(false);
+  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
   return (
     <>
-      <button onClick={() => setOpen(true)} className={className} {...rest}>
+      <button
+        onClick={(e) => {
+          // The chat opens out of the button you pressed (keyboard presses: from its centre).
+          const r = e.currentTarget.getBoundingClientRect();
+          const fromPointer = e.clientX !== 0 || e.clientY !== 0;
+          setOrigin({ x: fromPointer ? e.clientX : r.left + r.width / 2, y: fromPointer ? e.clientY : r.top + r.height / 2 });
+          setOpen(true);
+        }}
+        className={className}
+        {...rest}
+      >
         {children}
       </button>
-      {open && <AssistantChat onClose={() => setOpen(false)} />}
+      {open && <AssistantChat origin={origin} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -171,13 +182,19 @@ function useVisibleBox() {
   useEffect(() => {
     const v = window.visualViewport;
     let timer = 0;
+    let lastHeight = read().height;
     const apply = () => {
       timer = 0;
-      setBox(read());
+      const next = read();
+      lastHeight = next.height;
+      setBox(next);
     };
     const later = () => {
       if (timer) window.clearTimeout(timer);
-      timer = window.setTimeout(apply, 90);
+      // The keyboard coming or going (a big jump) is followed at once, so the composer rides up with it
+      // instead of waiting hidden behind it; the small stream of events that follows is let to settle.
+      if (Math.abs(read().height - lastHeight) > 80) apply();
+      else timer = window.setTimeout(apply, 90);
     };
     apply();
     v?.addEventListener('resize', later);
@@ -197,14 +214,13 @@ function useVisibleBox() {
   return box;
 }
 
-function AssistantChat({ onClose }: { onClose: () => void }) {
+function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: number; y: number } | null }) {
   const { t } = useLocale();
   const { session } = useAuth();
   const userId = session?.user.id;
   const { cars } = useCars();
   const box = useVisibleBox();
   const [closing, setClosing] = useState(false);
-  const [focused, setFocused] = useState(false);
   /** Closes with a soft exit (the panel eases down and fades) instead of vanishing. */
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -404,6 +420,17 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
     ? [t('Find me a car for a weekend'), t('I have a problem with my booking'), t('How does verification work?')]
     : [];
 
+  // The circle grows from the tap point to just past the farthest corner — no wasted travel, so the
+  // whole easing is seen.
+  const revealVars = useMemo(() => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const x = origin?.x ?? w / 2;
+    const y = origin?.y ?? h;
+    const r = Math.hypot(Math.max(x, w - x), Math.max(y, h - y)) + 6;
+    return { '--kai-x': `${Math.round(x)}px`, '--kai-y': `${Math.round(y)}px`, '--kai-r': `${Math.ceil(r)}px` } as React.CSSProperties;
+  }, [origin]);
+
   const composerCard = (
           <div className="w-full rounded-3xl border border-line-strong bg-surface p-2 pl-4 shadow-sm transition-colors focus-within:border-accent/50">
             <textarea
@@ -417,8 +444,6 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                 }
               }}
               rows={1}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
               aria-label={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
               placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
               maxLength={800}
@@ -472,14 +497,15 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   return createPortal(
     <>
       {/* Opaque floor: the page behind never shows through the gap the keyboard leaves. */}
-      <div aria-hidden className={`fixed inset-0 z-[309] bg-bg ${closing ? 'kai-floor-out' : 'kai-floor-in'}`} />
+      <div aria-hidden className={`fixed inset-0 z-[309] bg-bg ${closing ? 'kai-reveal-out' : 'kai-reveal-in'}`} style={revealVars} />
       <div
         data-no-pull
-        className="fixed inset-x-0 z-[310] flex flex-col overflow-hidden overscroll-none"
+        className={`fixed inset-x-0 z-[310] flex flex-col overflow-hidden overscroll-none ${closing ? 'kai-reveal-out' : 'kai-reveal-in'}`}
         style={{
           top: box.top,
           height: box.height,
           transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)',
+          ...revealVars,
         }}
       >
       <div
@@ -487,7 +513,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label={ASSISTANT_NAME}
         data-kb={box.kb ? '1' : undefined}
-        className={`relative flex h-full w-full flex-col overflow-hidden bg-bg ${closing ? 'kai-panel-out' : 'kai-panel-in'}`}
+        className="relative flex h-full w-full flex-col overflow-hidden bg-bg"
       >
         <header className="border-b border-line bg-surface pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 pb-3">
@@ -664,7 +690,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
               saturation={1.4}
               brightness={1.2}
               glowSize={1.15}
-              active={(focused || (busy && !human)) && !closing}
+              active={!closing}
               className="mx-auto block w-full max-w-3xl"
             >
               {composerCard}
