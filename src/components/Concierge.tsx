@@ -13,7 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XOrb } from './XOrb';
-import { XIcon } from './XIcon';
+import { XLogo } from './XLogo';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -119,9 +119,9 @@ function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIn
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
-/** The assistant's face — X's logo: a glass tile with a glossy white X, with an "online" dot when `live`. */
+/** The assistant's face — X's logo (a black glass X with a chrome rim), with an "online" dot when `live`. */
 export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
-  return <XIcon size={size} live={live} className={className} />;
+  return <XLogo size={size} live={live} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */
