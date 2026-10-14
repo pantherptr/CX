@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+["This weekend", "Questo weekend", "Acest weekend", "Este fin de semana"],
+  ["Next weekend", "Il prossimo weekend", "Weekendul viitor", "El próximo fin de semana"],
+  ["One week", "Una settimana", "O săptămână", "Una semana"],
 ["A person from the team will answer you. If you leave this chat, you will find the conversation in Messages.", "Ti risponderà una persona del team. Se esci da questa chat, troverai la conversazione nei Messaggi.", "Îți va răspunde o persoană din echipă. Dacă ieși din acest chat, vei găsi conversația în Mesaje.", "Te responderá una persona del equipo. Si sales de este chat, encontrarás la conversación en Mensajes."],
   ["Open Messages", "Apri i Messaggi", "Deschide Mesajele", "Abrir Mensajes"],
   ["Hi, I need help from the team.", "Ciao, ho bisogno di aiuto dal team.", "Salut, am nevoie de ajutor de la echipă.", "Hola, necesito ayuda del equipo."],

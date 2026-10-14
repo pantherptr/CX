@@ -75,7 +75,7 @@ function RangeCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7" onMouseLeave={() => setHover(null)}>
+      <div key={monthLabel} className="grid animate-fade-in grid-cols-7" onMouseLeave={() => setHover(null)}>
         {cells.map((d, i) => {
           if (!d) return <span key={i} className="h-11" />;
           const disabled = d < minDate;
@@ -123,6 +123,27 @@ function RangeCalendar({
 
 /** The search bar's date field: pick-up → return in one tap target. Opens a sheet (bottom sheet on a
  *  phone, centred card on a desktop) with the range calendar; nothing changes until Apply. */
+/** Ready-made ranges from today: the coming weekend (Fri → Sun), the one after, and a week. All respect minDate. */
+function presetRanges(minDate: string): { label: string; s: string; e: string }[] {
+  const base = parse(minDate);
+  const add = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const friday = (from: Date) => add(from, (5 - from.getDay() + 7) % 7);
+  let fri = friday(base);
+  // if it is already the weekend, "this weekend" starts today
+  const dow = base.getDay();
+  const thisStart = dow === 6 || dow === 0 ? base : fri;
+  const thisEnd = dow === 6 ? add(base, 1) : dow === 0 ? base : add(fri, 2);
+  fri = add(friday(add(thisEnd, 1)), 0);
+  const nextStart = fri;
+  const nextEnd = add(fri, 2);
+  const out = [
+    { label: 'This weekend', s: iso(thisStart), e: iso(thisEnd <= thisStart ? add(thisStart, 1) : thisEnd) },
+    { label: 'Next weekend', s: iso(nextStart), e: iso(nextEnd) },
+    { label: 'One week', s: iso(add(base, 1)), e: iso(add(base, 8)) },
+  ];
+  return out.filter((r) => r.s >= minDate);
+}
+
 export function DateRangeField({
   start, end, onApply, dark = false, minDate,
 }: { start: string; end: string; onApply: (s: string, e: string) => void; dark?: boolean; minDate: string }) {
@@ -184,7 +205,24 @@ export function DateRangeField({
           ))}
         </div>
 
-        <div className="px-4 pb-2 pt-4">
+        <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pt-3">
+          {presetRanges(minDate).map((p) => {
+            const on = range.s === p.s && range.e === p.e;
+            return (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => setRange({ s: p.s, e: p.e })}
+                aria-pressed={on}
+                className={`pressable shrink-0 rounded-full border px-3.5 py-1.5 text-detail font-semibold transition-colors ${on ? 'border-ink bg-ink text-white' : 'border-line bg-surface text-ink-soft hover:text-ink'}`}
+              >
+                {t(p.label)}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="px-4 pb-2 pt-3">
           <RangeCalendar start={range.s} end={range.e} minDate={minDate} onChange={(s, e) => setRange({ s, e })} />
         </div>
 

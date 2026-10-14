@@ -256,6 +256,9 @@ export function Modal({
   const [settling, setSettling] = useState(false);
   const [closing, setClosing] = useState(false);
   const startYRef = useRef<number | null>(null);
+  // Whole-sheet drag state (see onBodyTouchStart). Declared up here: a hook below the `if (!open) return null`
+  // changes the hook count when the sheet opens, and React throws (error #310).
+  const bodyDrag = useRef<{ y: number; x: number; ok: boolean; live: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -325,7 +328,6 @@ export function Modal({
 
   // Whole-sheet drag: a downward pull that starts on content scrolled to the top (and not on a field,
   // map or anything marked data-no-sheet-drag) takes the sheet down, the way a native sheet does.
-  const bodyDrag = useRef<{ y: number; x: number; ok: boolean; live: boolean } | null>(null);
   const onBodyTouchStart = (e: ReactTouchEvent) => {
     const target = e.target instanceof Element ? e.target : null;
     let ok = !target?.closest('input, textarea, select, canvas, video, .maplibregl-map, [data-no-sheet-drag], [contenteditable="true"]');
