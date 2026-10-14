@@ -276,6 +276,14 @@ export function Modal({
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // `overflow: hidden` alone does not stop the page scrolling behind a sheet on a phone (a swipe on the sheet
+    // chained into the page): pin the body where it is and give the scroll position back on close.
+    const lockY = window.scrollY;
+    const bs = document.body.style;
+    const prevPos = { position: bs.position, top: bs.top, width: bs.width };
+    bs.position = 'fixed';
+    bs.top = `-${lockY}px`;
+    bs.width = '100%';
     // After paint, so a child with its own autoFocus wins.
     const raf = requestAnimationFrame(() => {
       const el = dialogRef.current;
@@ -286,6 +294,10 @@ export function Modal({
       document.removeEventListener('keydown', onKey);
       openModalStack.splice(openModalStack.indexOf(stackId), 1);
       document.body.style.overflow = prevOverflow;
+      bs.position = prevPos.position;
+      bs.top = prevPos.top;
+      bs.width = prevPos.width;
+      if (!prevPos.position) window.scrollTo({ top: lockY, behavior: 'instant' as ScrollBehavior });
       // Only if it's still in the page — the opener can unmount with
       // whatever closed this (a parent sheet, a route change).
       if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
@@ -377,7 +389,9 @@ export function Modal({
         }
       : undefined;
 
-  return (
+  // Rendered on <body>: `position: fixed` is relative to the nearest transformed / filtered ancestor, and
+  // the home hero (parallax) is one — the sheet used to open inside the page and scroll away with it.
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center">
       <div
         className="absolute inset-0 touch-none bg-ink/45 backdrop-blur-[3px] animate-fade-in transition-opacity duration-200"
@@ -410,7 +424,8 @@ export function Modal({
         {children}
         {safeArea && <div aria-hidden="true" className="h-[env(safe-area-inset-bottom,0px)] shrink-0 sm:hidden" />}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

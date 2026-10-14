@@ -43,7 +43,7 @@ export function DateRangeSheet({
   const n = ready ? nights(range.s!, range.e!) : 0;
 
   return (
-    <Modal open={open} onClose={onClose} className="rounded-t-[28px] sm:max-w-[420px] sm:rounded-[28px]" labelledBy="date-sheet-title">
+    <Modal open={open} onClose={onClose} className="max-h-[92dvh] overflow-y-auto rounded-t-[28px] sm:max-w-[420px] sm:rounded-[28px]" labelledBy="date-sheet-title">
       <div className="flex items-center justify-between px-5 pb-1 pt-4">
         <h2 id="date-sheet-title" className="font-display text-lg font-semibold text-ink">{t('Select your dates')}</h2>
         <button onClick={onClose} aria-label={t('Close')} className="pressable grid h-9 w-9 place-items-center rounded-full bg-panel text-ink-soft">
