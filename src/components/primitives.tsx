@@ -288,7 +288,17 @@ export function Modal({
       bs.position = prevPos.position;
       bs.top = prevPos.top;
       bs.width = prevPos.width;
-      if (!prevPos.position) window.scrollTo({ top: lockY, behavior: 'instant' as ScrollBehavior });
+      if (!prevPos.position) {
+        // back to the exact spot: smooth-scrolling CSS and late layout changes can leave it a few pixels off
+        const root = document.documentElement;
+        const prevBehavior = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(0, lockY);
+        requestAnimationFrame(() => {
+          window.scrollTo(0, lockY);
+          root.style.scrollBehavior = prevBehavior;
+        });
+      }
       // Only if it's still in the page — the opener can unmount with
       // whatever closed this (a parent sheet, a route change).
       if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
