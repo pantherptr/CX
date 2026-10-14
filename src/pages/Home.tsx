@@ -10,6 +10,7 @@ import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img } from '../components/motion';
 import { ScrollRevealImage, ScrollRevealPanel } from '../components/ScrollRevealImage';
+import { FindCarDeck } from '../components/FindCarDeck';
 import { ASSISTANT_NAME, ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
@@ -577,6 +578,23 @@ export default function Home() {
             </div>
           </div>
         </Reveal>
+      </section>
+
+      {/* ================= SWIPE — find your car by swiping ================= */}
+      <section className="container-page section-tight">
+        <div className="mx-auto max-w-md sm:max-w-lg">
+          <p className="eyebrow">{t('Swipe to find')}</p>
+          <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your car by swiping.')} />
+          <p className="mt-3 text-copy leading-relaxed text-muted">
+            {t('Swipe right to save a car, left to skip it. Tap View to see it.')}
+          </p>
+          <div className="mt-7 -mx-5">
+            <FindCarDeck />
+          </div>
+          <Link to="/browse" className="btn btn-lg mt-6 border border-line-strong bg-surface text-ink">
+            {t('Browse all cars')} <Icon name="arrowRight" size={17} />
+          </Link>
+        </div>
       </section>
 
       {/* ================= CONCIERGE — find your CX ================= */}
