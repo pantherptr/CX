@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
+import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
 import { Img } from './motion';
 
@@ -28,7 +29,7 @@ const prefersReducedMotion = () =>
  * control — no snapping, so it never fights the phone's own momentum. With "reduce motion" the steps
  * simply cross-fade. Loaded on demand (gsap is not part of the first load).
  */
-export default function StickySteps({ steps, stepWord }: { steps: StickyStep[]; stepWord: string }) {
+export default function StickySteps({ steps, stepWord, cta }: { steps: StickyStep[]; stepWord: string; cta?: { label: string; to: string } }) {
   const sectionRef = useRef<HTMLElement>(null);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
   const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -102,7 +103,7 @@ export default function StickySteps({ steps, stepWord }: { steps: StickyStep[]; 
     >
       <div className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] flex h-[calc(100svh-4rem-env(safe-area-inset-top,0px))] flex-col gap-4 pb-[5.75rem] sm:flex-row-reverse sm:items-stretch sm:gap-10 sm:pb-8">
         {/* Photos */}
-        <div className="relative h-[46%] shrink-0 overflow-hidden rounded-3xl bg-panel sm:h-auto sm:w-[52%]">
+        <div className="relative h-[54%] shrink-0 overflow-hidden rounded-3xl bg-panel shadow-[0_24px_48px_-28px_rgba(0,40,15,0.45)] sm:h-auto sm:w-[52%]">
           {steps.map((s, i) => (
             <div
               key={s.title}
@@ -149,14 +150,26 @@ export default function StickySteps({ steps, stepWord }: { steps: StickyStep[]; 
                 className="absolute inset-0"
                 style={{ opacity: i === 0 ? 1 : 0 }}
               >
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
-                  <Icon name={s.icon} size={22} />
+                {/* a big ghost numeral behind the text */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-3 right-0 select-none font-display text-[6.5rem] font-semibold leading-none tracking-[-0.04em] text-accent/[0.09] sm:text-[9rem]"
+                >
+                  {String(i + 1).padStart(2, '0')}
                 </span>
-                <p className="mt-5 text-label font-semibold uppercase tracking-[0.14em] text-muted">{s.label}</p>
-                <h3 className="mt-1.5 font-display text-[1.75rem] font-semibold leading-[1.1] tracking-[-0.02em] text-ink sm:text-[2.5rem]">
+                <span className="relative grid h-14 w-14 place-items-center rounded-2xl bg-accent-050 text-accent-700 shadow-[inset_0_0_0_1px_rgba(0,120,50,0.12)]">
+                  <Icon name={s.icon} size={26} />
+                </span>
+                <p className="relative mt-6 text-label font-semibold uppercase tracking-[0.16em] text-accent-700">{s.label}</p>
+                <h3 className="relative mt-2 font-display text-[2.15rem] font-semibold leading-[1.05] tracking-[-0.025em] text-ink text-balance sm:text-[3rem]">
                   {s.title}
                 </h3>
-                <p className="mt-3 max-w-md text-body leading-relaxed text-muted sm:text-[1.0625rem]">{s.desc}</p>
+                <p className="relative mt-4 max-w-md text-[1.0625rem] leading-relaxed text-muted sm:text-[1.1875rem]">{s.desc}</p>
+                {cta && i === steps.length - 1 && (
+                  <Link to={cta.to} className="btn btn-accent-bright btn-lg relative mt-7">
+                    {cta.label} <Icon name="arrowRight" size={17} />
+                  </Link>
+                )}
               </div>
             ))}
           </div>

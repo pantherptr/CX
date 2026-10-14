@@ -481,6 +481,7 @@ export default function Home() {
             <Suspense fallback={howStatic}>
               <StickySteps
                 stepWord={t('How it works')}
+                cta={{ label: t('Find a car near you'), to: '/browse' }}
                 steps={howSteps.map((st, i) => ({
                   icon: st.icon,
                   label: t('Step {n}', { n: i + 1 }),
