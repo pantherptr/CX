@@ -2,8 +2,9 @@ import { useEffect, useId, useRef } from 'react';
 
 /**
  * X's logo: a solid, isometric X (two crossing arms on top, two legs under them with an arch between), in
- * black glass with a chrome rim like the CX wordmark. Two green eyes sit in the arch: they look at your
- * finger / cursor, blink, and wander when nobody is around. `live` adds the online dot.
+ * black glass with a chrome rim like the CX wordmark. Two green eyes sit side by side in a small visor at the
+ * middle of the X: they look at your finger / cursor, blink, and wander when nobody is around. `live` adds
+ * the online dot.
  * Pure SVG; with "reduce motion" the eyes stay still.
  */
 
@@ -46,7 +47,7 @@ export function XLogo({ size = 40, live = false, className = '' }: { size?: numb
     startDriver();
     const move = (g: Gaze) => {
       const el = pupils.current;
-      if (el) el.style.transform = `translate(${(g.x * 2.4).toFixed(2)}px, ${(g.y * 1.9).toFixed(2)}px)`;
+      if (el) el.style.transform = `translate(${(g.x * 2.1).toFixed(2)}px, ${(g.y * 1.7).toFixed(2)}px)`;
     };
     const onGaze = (idle: Gaze | null) => {
       if (idle) { move(idle); return; }
@@ -116,19 +117,21 @@ export function XLogo({ size = 40, live = false, className = '' }: { size?: numb
           <rect x="0" y="-6" width="100" height="40" fill={`url(#${id('gloss')})`} opacity="0.5" />
         </g>
 
-        {/* the eyes: socket, bright eye, a pupil that follows you, and a small highlight */}
+        {/* the face: a small visor at the heart of the X, an eye on each side, a pupil that follows you */}
         <g className="x-logo__eyes">
-          {[38, 62].map((cx) => (
+          <rect x="29.5" y="22" width="41" height="19" rx="5" fill="#030806" stroke={`url(#${id('rim')})`} strokeWidth="1.1" />
+          <rect x="31" y="23.5" width="38" height="16" rx="4" fill="none" stroke="#12e060" strokeOpacity="0.45" strokeWidth="0.5" />
+          {[40.5, 59.5].map((cx) => (
             <g key={cx}>
-              <ellipse cx={cx} cy="69" rx="8.2" ry="7.4" fill="#020a05" />
-              <ellipse cx={cx} cy="69" rx="6.9" ry="6.1" fill={`url(#${id('eye')})`} />
+              <ellipse cx={cx} cy="31.5" rx="5.6" ry="5.4" fill="#020a05" />
+              <ellipse cx={cx} cy="31.5" rx="4.8" ry="4.6" fill={`url(#${id('eye')})`} />
             </g>
           ))}
           <g ref={pupils} style={{ transition: 'transform .35s cubic-bezier(.2,.8,.2,1)' }}>
-            {[38, 62].map((cx) => (
+            {[40.5, 59.5].map((cx) => (
               <g key={cx}>
-                <circle cx={cx} cy="69" r="3.3" fill="#03140a" />
-                <circle cx={cx - 1} cy="67.8" r="1" fill="#fff" />
+                <circle cx={cx} cy="31.5" r="2.5" fill="#03140a" />
+                <circle cx={cx - 0.9} cy="30.4" r="0.85" fill="#fff" />
               </g>
             ))}
           </g>

@@ -675,12 +675,6 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
           )}
 
           {chips.length > 0 && (
-            <div className="flex justify-center pb-2 pt-10">
-              <XOrb size={176} />
-            </div>
-          )}
-
-          {chips.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {chips.map((c) => (
                 <button key={c} type="button" onClick={() => void ask(c)} className="rounded-full border border-line-strong bg-surface px-3.5 py-2 text-detail font-semibold text-ink">
