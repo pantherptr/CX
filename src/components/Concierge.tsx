@@ -13,7 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
-import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, primeVoice, setAutoVoice, speak, stopSpeaking } from '../lib/voice';
+import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -348,24 +348,46 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       const deliver = (reply: { text: string; cars?: string[]; offerHuman?: boolean }, steps?: string[]) => {
         const id = newId();
         const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
-        setPending(null);
-        setMsgs((cur) => [...cur, { id, role: 'assistant', text: reply.text, cars: reply.cars, offerHuman: reply.offerHuman, steps, seconds: steps ? seconds : undefined }]);
-        if (VOICE_ENABLED && autoVoiceAllowed()) speakFor(id, reply.text);
-        const done = () => {
-          window.clearInterval(interval);
-          setStreaming(null);
-          setBusy(false);
-          runRef.current = null;
+        // The text is written at the pace of the voice and both start together: the audio is fetched first
+        // (the "thinking" state stays up meanwhile, at most a few seconds), then the words and Marco go out as one.
+        const begin = (voice: PreparedVoice | null) => {
+          if (cancelled) return;
+          setPending(null);
+          setMsgs((cur) => [...cur, { id, role: 'assistant', text: reply.text, cars: reply.cars, offerHuman: reply.offerHuman, steps, seconds: steps ? seconds : undefined }]);
+          const done = () => {
+            window.clearInterval(interval);
+            setStreaming(null);
+            setBusy(false);
+            runRef.current = null;
+          };
+          if (voice) {
+            setSpeakingId(id);
+            voice.play().catch(() => {}).finally(() => setSpeakingId((cur) => (cur === id ? null : cur)));
+          }
+          if (reduced) { done(); return; }
+          setStreaming({ id, shown: 0 });
+          runRef.current = { cancel: done };
+          const tick = 28;
+          // finish the text slightly before the voice does; without a voice, the usual quick flow
+          const perTick = voice && voice.duration > 0 ? Math.max(1, (reply.text.length * tick) / (voice.duration * 1000 * 0.92)) : 5;
+          let n = 0;
+          interval = window.setInterval(() => {
+            n += perTick;
+            if (n >= reply.text.length) done();
+            else setStreaming({ id, shown: Math.floor(n) });
+          }, tick);
         };
-        if (reduced) { done(); return; }
-        setStreaming({ id, shown: 0 });
-        runRef.current = { cancel: done };
-        let n = 0;
-        interval = window.setInterval(() => {
-          n += 5;
-          if (n >= reply.text.length) done();
-          else setStreaming({ id, shown: n });
-        }, 28);
+        if (!(VOICE_ENABLED && autoVoiceAllowed())) { begin(null); return; }
+        let settled = false;
+        const go = (v: PreparedVoice | null) => { if (settled) return; settled = true; begin(v); };
+        later(7000, () => go(null));
+        prepareSpeech(reply.text, lang).then(go, () => {
+          if (!voiceFailed.current) {
+            voiceFailed.current = true;
+            setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('Voice is not available right now.') }]);
+          }
+          go(null);
+        });
       };
       // Stop while thinking: nothing is answered, and what you wrote goes back in the box.
       runRef.current = {
@@ -424,7 +446,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
         deliver({ text: fallback, offerHuman: true });
       }
     },
-    [busy, cars, msgs, session, speakFor, t, think],
+    [busy, cars, lang, msgs, session, t, think],
   );
 
   /** Move the conversation to a real CX chat, in this same panel, carrying what was said so far. */

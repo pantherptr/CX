@@ -99,6 +99,43 @@ export async function speak(text: string, lang: string, opts: { persist?: boolea
   });
 }
 
+export interface PreparedVoice {
+  /** seconds of audio (0 when the browser could not tell) */
+  duration: number;
+  /** starts playing; resolves when it ends or is stopped */
+  play: () => Promise<void>;
+}
+
+/** Fetches the audio first so the text can be written at the voice's own pace and both start together. */
+export async function prepareSpeech(text: string, lang: string, opts: { persist?: boolean } = {}): Promise<PreparedVoice | null> {
+  const clean = speakable(text);
+  if (!clean) return null;
+  const url = await fetchAudio(clean, lang, Boolean(opts.persist));
+  const duration = await new Promise<number>((resolve) => {
+    const probe = new Audio();
+    const finish = () => resolve(Number.isFinite(probe.duration) ? probe.duration : 0);
+    probe.preload = 'metadata';
+    probe.onloadedmetadata = finish;
+    probe.onerror = () => resolve(0);
+    window.setTimeout(finish, 1500);
+    probe.src = url;
+  });
+  return {
+    duration,
+    play: async () => {
+      stopSpeaking();
+      await new Promise<void>((resolve, reject) => {
+        const audio = player();
+        settle = resolve;
+        audio.onended = () => { settle = null; resolve(); };
+        audio.onerror = () => { settle = null; reject(new Error('playback failed')); };
+        audio.src = url;
+        void audio.play().catch((e) => { settle = null; reject(e); });
+      });
+    },
+  };
+}
+
 /* ---- listening ---- */
 type Recognition = {
   lang: string; interimResults: boolean; continuous: boolean;
