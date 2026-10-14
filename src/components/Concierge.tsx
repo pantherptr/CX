@@ -13,6 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
+import { VOICE_ENABLED, canListen, listen, speak, stopSpeaking } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -192,7 +193,7 @@ function useVisibleBox(ref: RefObject<HTMLDivElement | null>) {
 }
 
 function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: number; y: number } | null }) {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const { session } = useAuth();
   const userId = session?.user.id;
   const { cars } = useCars();
@@ -274,6 +275,20 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [requestClose]);
+
+  // Voice: the microphone (browser speech recognition, free) and the speaker button on each answer
+  const [listening, setListening] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const stopListenRef = useRef<(() => void) | null>(null);
+  const micOk = useMemo(() => canListen(), []);
+  useEffect(() => () => { stopListenRef.current?.(); stopSpeaking(); }, []);
+  const toggleSpeak = (id: string, text: string) => {
+    if (speakingId === id) { stopSpeaking(); setSpeakingId(null); return; }
+    setSpeakingId(id);
+    speak(text, lang)
+      .catch(() => setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('Voice is not available right now.') }]))
+      .finally(() => setSpeakingId((cur) => (cur === id ? null : cur)));
+  };
 
   const ask = useCallback(
     async (text: string) => {
@@ -400,6 +415,21 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     setHanding(false);
   }, [handing, human, msgs, t, userId]);
 
+  const toggleMic = () => {
+    if (listening) { stopListenRef.current?.(); return; }
+    stopSpeaking();
+    setSpeakingId(null);
+    setListening(true);
+    stopListenRef.current = listen(
+      lang,
+      (txt) => setInput(txt),
+      (final) => {
+        setListening(false);
+        stopListenRef.current = null;
+        if (final) void ask(final);
+      },
+    );
+  };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const text = input.trim();
@@ -471,6 +501,24 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
               ) : (
                 <span />
               )}
+              <span className="flex items-center gap-1.5">
+              {micOk && !human && !busy && (
+                <button
+                  key="mic"
+                  type="button"
+                  onClick={toggleMic}
+                  aria-pressed={listening}
+                  aria-label={listening ? t('Stop listening') : t('Speak to {name}', { name: ASSISTANT_NAME })}
+                  className={`hit-44 grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors ${
+                    listening ? 'animate-pulse border-accent-bright bg-accent-bright text-noir' : 'border-line bg-surface text-ink'
+                  }`}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                  </svg>
+                </button>
+              )}
               {busy && !human ? (
                 <button
                   key="stop"
@@ -493,6 +541,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   <Icon name="arrowRight" size={18} className="-rotate-90" />
                 </button>
               )}
+              </span>
             </div>
           </div>
   );
@@ -595,6 +644,21 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}
                       </p>
+                      {VOICE_ENABLED && streaming?.id !== m.id && m.text && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSpeak(m.id, m.text)}
+                          aria-pressed={speakingId === m.id}
+                          aria-label={speakingId === m.id ? t('Stop') : t('Listen')}
+                          className="hit-44 -mt-1 inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-caption font-medium text-muted transition-colors hover:text-ink"
+                        >
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M11 5 6 9H3v6h3l5 4z" />
+                            {speakingId === m.id ? <path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12" /> : <path d="M16 9a4 4 0 0 1 0 6" />}
+                          </svg>
+                          {speakingId === m.id ? t('Stop') : t('Listen')}
+                        </button>
+                      )}
                       {streaming?.id !== m.id && m.cars && m.cars.length > 0 && (
                         <div className="space-y-2">
                           {m.cars.map((slug) => {

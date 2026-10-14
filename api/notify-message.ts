@@ -7,6 +7,7 @@ import { sendVerificationDecisionEmail } from './_lib/email.js';
 import Stripe from 'stripe';
 import { PAYOUT_SELECT, loadCommissionPct, payHostForBooking, type PayoutRow } from './_lib/payout.js';
 import { handleAssistant } from './_lib/assistant.js';
+import { handleVoice } from './_lib/voice.js';
 
 /**
  * Pushes the other participant(s) in a conversation after a message is
@@ -33,6 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // The CX assistant answers anyone, signed in or not (it sees only public facts) — see _lib/assistant.ts.
   if ((req.body ?? {}).type === 'assistant') return handleAssistant(req, res);
+  // X's voice (ElevenLabs) — same rules: anyone, guarded by rate limits — see _lib/voice.ts.
+  if ((req.body ?? {}).type === 'voice') return handleVoice(req, res);
 
   // Database → push: a row written by a database function (notify_config, migration 0110) calls us
   // with a shared secret instead of a user session.

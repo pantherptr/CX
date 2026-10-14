@@ -93,6 +93,10 @@ Code is written to fail soft before a migration is run.
   `OPENROUTER_MODEL`, default `openrouter/free`) the server uses OpenRouter's free models instead of Anthropic. `api/translate.ts` (post/profile translation, cached in `content_translations`) uses the same key/model. "Talk to a person" opens/reuses the
   CX support conversation (`findOrCreateCxConversation`), posts the last turns as the first message, and the panel
   then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
+  **Voice** (`src/lib/voice.ts`, `api/_lib/voice.ts` via notify-message type `voice`): the mic uses the browser's speech
+  recognition (free, always on where supported); the per-answer speaker button uses ElevenLabs and only shows when
+  built with `VITE_VOICE=1`. Server env: `ELEVENLABS_API_KEY` (+ optional `ELEVENLABS_VOICE_ID`, default Marco
+  `V9xYP1XwBnhCPPMDk06A`; `ELEVENLABS_MODEL`; `VOICE_DAILY_MAX` default 400; `VOICE_ENABLED=0` switches it off).
 
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
