@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useLocale } from '../lib/i18n';
 import { Icon, type IconName } from './Icon';
-import { Img } from './motion';
+import { CxLogo } from './CxLogo';
 import { CxMark, type CxTier } from './CxBadge';
 import { useAuth } from '../lib/auth';
 import { useHomePath } from '../lib/workspace';
@@ -101,20 +101,11 @@ export function Logo({
   // rather than round-trip through a redirect.
   const { session } = useAuth();
   const homePath = useHomePath();
-  const fallback = (
-    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-panel text-xs font-semibold text-ink-soft">
-      CX
-    </span>
-  );
   return (
     <Link to={session ? homePath : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
-      <Img
-        src={LOGO_SRC.wordmark}
-        alt="CX"
-        width={1633}
-        height={296}
-        className="h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-7"
-        fallback={fallback}
+      <CxLogo
+        title="CX"
+        className="h-8 w-auto shrink-0 text-ink transition-transform duration-300 group-hover:-rotate-3 sm:h-9"
       />
     </Link>
   );
