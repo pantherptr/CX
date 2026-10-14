@@ -12,6 +12,7 @@ import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
+import { XOrb } from './XOrb';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -663,7 +664,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
 
           {pending && !human && (
             <div className="flex items-start gap-2.5" role="status">
-              <ConciergeMark size={30} />
+              <XOrb size={36} thinking />
               <div className="min-w-0 flex-1 pt-1">
                 <div className="flex h-7 items-center gap-2 text-xs">
                   <Icon name="sparkles" size={14} className="shrink-0 text-muted" />
@@ -686,6 +687,12 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                 <Icon name="sparkles" size={14} className="text-muted" />
                 <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
               </span>
+            </div>
+          )}
+
+          {chips.length > 0 && (
+            <div className="flex justify-center pb-2 pt-10">
+              <XOrb size={176} />
             </div>
           )}
 
