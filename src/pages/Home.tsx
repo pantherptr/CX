@@ -138,17 +138,30 @@ function SignalBackdrop() {
  *  fixed design size and scaled down to fit. */
 function SignalFan() {
   const { t } = useLocale();
-  const shell = 'absolute left-1/2 top-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_30px_55px_-26px_rgba(0,50,20,0.55)]';
+  // the centre post is "alive": Respect is given and taken back every few seconds (still when motion is reduced)
+  const [respectOn, setRespectOn] = useState(true);
+  const [pop, setPop] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => {
+      setRespectOn((v) => {
+        if (!v) setPop((n) => n + 1);
+        return !v;
+      });
+    }, 2800);
+    return () => window.clearInterval(id);
+  }, []);
+  const shell = 'signal-float absolute left-1/2 top-1/2 overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_30px_55px_-26px_rgba(0,50,20,0.55)]';
   const place = (dx: number, rot: number, dy: number) => ({
     transform: `translate(calc(-50% + ${dx}rem), calc(-50% + ${dy}rem)) rotate(${rot}deg)`,
   });
   const Avatar = ({ src, size = 40 }: { src: string; size?: number }) => (
     <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-full object-cover ring-1 ring-accent-bright/30" style={{ height: size, width: size }} />
   );
-  const Actions = ({ respected }: { respected?: boolean }) => (
+  const Actions = ({ respected, live }: { respected?: boolean; live?: boolean }) => (
     <div className="grid grid-cols-3 gap-1 px-2 py-1">
-      <span className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold ${respected ? 'bg-accent-050 text-accent-700' : 'text-ink-soft'}`}>
-        <Icon name="like" size={18} fill={respected} /> {respected ? t('Respected') : t('Respect')}
+      <span className={`flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full py-2 text-detail font-semibold transition-colors duration-300 ${respected ? 'bg-accent-050 text-accent-700' : 'text-ink-soft'}`}>
+        <span key={live ? pop : 0} className={`inline-flex ${live && respected ? 'animate-heart-pop' : ''}`}><Icon name="like" size={18} fill={respected} /></span> {respected ? t('Respected') : t('Respect')}
       </span>
       <span className="flex items-center justify-center gap-1.5 rounded-full py-2 text-detail font-semibold text-ink-soft">
         <Icon name="bookmark" size={17} /> {t('Save')}
@@ -162,7 +175,7 @@ function SignalFan() {
     <div aria-hidden="true" inert className="relative mx-auto h-[16.5rem] w-full sm:h-[30rem] lg:h-[25.5rem]">
       <div className="absolute left-1/2 top-0 -ml-[18rem] h-[30rem] w-[36rem] origin-top scale-[0.55] sm:scale-100 lg:scale-[0.85]">
         {/* Story */}
-        <div className={`${shell} z-10 h-[24rem] w-[12rem] border-white/70 bg-noir`} style={place(-13.6, -7, 1.2)}>
+        <div className={`${shell} z-10 h-[24rem] w-[12rem] border-white/70 bg-noir`} style={{ ...place(-13.6, -7, 1.2), ['--fd' as string]: '0s' }}>
           <img src="/signal/story.webp" alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/70" />
           <div className="absolute inset-x-3 top-3 flex gap-1">
@@ -183,7 +196,7 @@ function SignalFan() {
         </div>
 
         {/* Post — Luca, with a CX team comment */}
-        <div className={`${shell} z-10 w-[13.5rem]`} style={place(13.6, 7, 1.4)}>
+        <div className={`${shell} z-10 w-[13.5rem]`} style={{ ...place(13.6, 7, 1.4), ['--fd' as string]: '-2s' }}>
           <div className="flex items-center gap-2.5 p-3">
             <Avatar src="/signal/av-luca.webp" size={36} />
             <span className="min-w-0 flex-1">
@@ -205,7 +218,7 @@ function SignalFan() {
         </div>
 
         {/* Post — Giulia, with the vehicle link (centre, on top) */}
-        <div className={`${shell} z-20 w-[17rem]`} style={place(0, 0, -0.4)}>
+        <div className={`${shell} z-20 w-[17rem]`} style={{ ...place(0, 0, -0.4), ['--fd' as string]: '-4s' }}>
           <div className="flex items-center gap-2.5 p-3">
             <Avatar src="/signal/av-giulia.webp" size={40} />
             <span className="min-w-0 flex-1">
@@ -216,7 +229,7 @@ function SignalFan() {
           </div>
           <p className="px-3 pb-2 text-detail leading-relaxed text-ink">{t('Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤')}</p>
           <img src="/signal/giulia.webp" alt="" className="aspect-[16/10] w-full object-cover" loading="lazy" />
-          <Actions respected />
+          <Actions respected={respectOn} live />
         </div>
       </div>
     </div>
@@ -714,13 +727,13 @@ export default function Home() {
                     { icon: 'heart' as IconName, title: 'Real stories', desc: 'Verified hosts and drivers share their cars and their drives — Stories, Respect and more.' },
                     { icon: 'trending' as IconName, title: 'A stage for your car', desc: 'Hosts can show their car to the community and put it in front of renters who care.' },
                   ].map((f) => (
-                    <li key={f.title} className="flex items-start gap-4 py-4">
+                    <li key={f.title} className="flex items-center gap-4 py-3 sm:items-start sm:py-4">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-accent-bright ring-1 ring-white/10">
                         <Icon name={f.icon} size={19} />
                       </span>
                       <div className="min-w-0">
                         <h3 className="font-display text-copy font-semibold text-on-noir">{t(f.title)}</h3>
-                        <p className="mt-0.5 text-detail leading-relaxed text-on-noir-muted">{t(f.desc)}</p>
+                        <p className="mt-0.5 hidden text-detail leading-relaxed text-on-noir-muted sm:block">{t(f.desc)}</p>
                       </div>
                     </li>
                   ))}

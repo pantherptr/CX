@@ -1312,6 +1312,14 @@
     animation: hero-letter-in 0.7s var(--ease-out-expo) backwards;
     animation-delay: calc(var(--i, 0) * 38ms + 250ms);
   }
+  /* the SIGNAL preview cards drift up and down, each on its own beat (translate is separate from the
+     card's own transform, so the fan's rotation is untouched) */
+  .signal-float { animation: signal-float 7s ease-in-out infinite; animation-delay: var(--fd, 0s); }
+  @keyframes signal-float {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -0.55rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .signal-float { animation: none; } }
   .hero-glyph {
     position: relative;
     display: inline-block;
