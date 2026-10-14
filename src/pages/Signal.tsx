@@ -483,6 +483,17 @@ export default function Signal() {
             className="sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-20 -mx-4 mb-3 border-b border-line bg-bg/90 px-4 backdrop-blur-xl lg:top-16 sm:mx-0 sm:px-0"
             role="tablist"
             aria-label={t('Feed')}
+            // arrow keys / Home / End move between the tabs (and select), as a native tab bar does
+            onKeyDown={(e) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+              const tabs = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+              const i = tabs.indexOf(document.activeElement as HTMLButtonElement);
+              if (i < 0) return;
+              const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+              e.preventDefault();
+              tabs[next].focus();
+              tabs[next].click();
+            }}
           >
             <div className="grid grid-cols-2">
               {([['foryou', t('For you')], ['following', t('Following')]] as const).map(([m, label]) => (
@@ -491,6 +502,7 @@ export default function Signal() {
                   type="button"
                   role="tab"
                   aria-selected={feedMode === m}
+                  tabIndex={feedMode === m ? 0 : -1}
                   onClick={() => {
                     if (feedMode === m) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
                     vibrateTap();
