@@ -190,7 +190,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
   const [convId, setConvId] = useState<string | null>(null);
   const [handing, setHanding] = useState(false);
   const [think, setThink] = useState(true);
-  const [pending, setPending] = useState<{ steps: string[]; shown: number; seconds: number } | null>(null);
+  const [pending, setPending] = useState<{ steps: string[]; shown: number; seconds: number; live?: boolean } | null>(null);
   const [streaming, setStreaming] = useState<{ id: string; shown: number } | null>(null);
   const [openThoughts, setOpenThoughts] = useState<Set<string>>(() => new Set());
   const runRef = useRef<{ cancel: () => void } | null>(null);
@@ -231,63 +231,76 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       setMsgs(next);
       setInput('');
       setBusy(true);
+      const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const started = Date.now();
+      const timers: number[] = [];
+      let interval = 0;
+      let cancelled = false;
+      const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
+      const clearAll = () => {
+        timers.forEach((id) => window.clearTimeout(id));
+        window.clearInterval(interval);
+      };
+      // The answer appears as a flow of text, then the cars / "talk to a person" button.
+      const deliver = (reply: { text: string; cars?: string[]; offerHuman?: boolean }, steps?: string[]) => {
+        const id = newId();
+        const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
+        setPending(null);
+        setMsgs((cur) => [...cur, { id, role: 'assistant', text: reply.text, cars: reply.cars, offerHuman: reply.offerHuman, steps, seconds: steps ? seconds : undefined }]);
+        const done = () => {
+          window.clearInterval(interval);
+          setStreaming(null);
+          setBusy(false);
+          runRef.current = null;
+        };
+        if (reduced) { done(); return; }
+        setStreaming({ id, shown: 0 });
+        runRef.current = { cancel: done };
+        let n = 0;
+        interval = window.setInterval(() => {
+          n += 5;
+          if (n >= reply.text.length) done();
+          else setStreaming({ id, shown: n });
+        }, 28);
+      };
+      // Stop while thinking: nothing is answered, and what you wrote goes back in the box.
+      runRef.current = {
+        cancel: () => {
+          cancelled = true;
+          clearAll();
+          runRef.current = null;
+          setPending(null);
+          setBusy(false);
+          setMsgs((cur) => cur.filter((m) => m.id !== userMsg.id));
+          setInput(clean);
+        },
+      };
+
       // No AI service by default (no cost): Kai answers from the site's FAQ and the car matcher, in the
-      // browser. Set VITE_ASSISTANT_AI=1 (and an Anthropic key on the server) to use the AI instead.
+      // browser. Set VITE_ASSISTANT_AI=1 (and a key on the server) to use the AI instead.
       if (!AI_ENABLED) {
         const r = localReply(clean, cars ?? [], t);
         const steps = thoughtSteps(r, cars ?? [], t);
-        const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const started = Date.now();
-        const timers: number[] = [];
-        let interval = 0;
-        const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(fn, ms));
-        const clearAll = () => {
-          timers.forEach((id) => window.clearTimeout(id));
-          window.clearInterval(interval);
-        };
-        // The answer appears as a flow of text, then the cars / "talk to a person" button.
-        const reveal = () => {
-          const id = newId();
-          const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
-          setPending(null);
-          setMsgs((cur) => [...cur, { id, role: 'assistant', text: r.text, cars: r.cars, offerHuman: r.offerHuman, steps: think ? steps : undefined, seconds: think ? seconds : undefined }]);
-          const done = () => {
-            window.clearInterval(interval);
-            setStreaming(null);
-            setBusy(false);
-            runRef.current = null;
-          };
-          if (reduced) { done(); return; }
-          setStreaming({ id, shown: 0 });
-          runRef.current = { cancel: done };
-          let n = 0;
-          interval = window.setInterval(() => {
-            n += 5;
-            if (n >= r.text.length) done();
-            else setStreaming({ id, shown: n });
-          }, 28);
-        };
-        // Stop while thinking: nothing is answered, and what you wrote goes back in the box.
-        runRef.current = {
-          cancel: () => {
-            clearAll();
-            runRef.current = null;
-            setPending(null);
-            setBusy(false);
-            setMsgs((cur) => cur.filter((m) => m.id !== userMsg.id));
-            setInput(clean);
-          },
-        };
         if (think && !reduced) {
           setPending({ steps, shown: 0, seconds: 0 });
           steps.forEach((_, i) => later(400 * (i + 1), () => setPending((p) => (p ? { ...p, shown: i + 1 } : p))));
           interval = window.setInterval(() => setPending((p) => (p ? { ...p, seconds: p.seconds + 1 } : p)), 1000);
-          later(400 * steps.length + 300, () => { window.clearInterval(interval); reveal(); });
+          later(400 * steps.length + 300, () => { window.clearInterval(interval); deliver(r, steps); });
         } else {
-          later(think ? 0 : 250, reveal);
+          later(think ? 0 : 250, () => deliver(r, think ? steps : undefined));
         }
         return;
       }
+
+      // With the AI service on, the trail shows the real stages of getting an answer from it.
+      const stages = [t('Reading your request…'), t('Looking through the help articles and the cars on CX…'), t('Writing the answer…')];
+      if (think && !reduced) {
+        setPending({ steps: stages, shown: 1, seconds: 0, live: true });
+        later(700, () => setPending((p) => (p ? { ...p, shown: 2 } : p)));
+        later(1500, () => setPending((p) => (p ? { ...p, shown: 3 } : p)));
+        interval = window.setInterval(() => setPending((p) => (p ? { ...p, seconds: p.seconds + 1 } : p)), 1000);
+      }
+      const fallback = t('I had trouble answering that. You can try again, or talk to a person from the team.');
       try {
         const history = next.filter((m) => m.role !== 'note').map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text }));
         const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -297,12 +310,14 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
           body: JSON.stringify({ type: 'assistant', messages: history, signedIn: Boolean(session) }),
         });
         const j = (await res.json().catch(() => null)) as { reply?: string; cars?: string[]; human?: boolean; error?: string } | null;
-        const reply = j?.reply || j?.error || t('I had trouble answering that. You can try again, or talk to a person from the team.');
-        setMsgs((cur) => [...cur, { id: newId(), role: 'assistant', text: reply, cars: j?.cars, offerHuman: Boolean(j?.human) || !j?.reply }]);
+        if (cancelled) return;
+        clearAll();
+        const reply = j?.reply || j?.error || fallback;
+        deliver({ text: reply, cars: j?.cars, offerHuman: Boolean(j?.human) || !j?.reply }, think && !reduced ? stages : undefined);
       } catch {
-        setMsgs((cur) => [...cur, { id: newId(), role: 'assistant', text: t('I had trouble answering that. You can try again, or talk to a person from the team.'), offerHuman: true }]);
-      } finally {
-        setBusy(false);
+        if (cancelled) return;
+        clearAll();
+        deliver({ text: fallback, offerHuman: true });
       }
     },
     [busy, cars, msgs, session, t, think],
@@ -490,7 +505,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                 <div className="mt-2">
                   <ThoughtTrail
                     steps={pending.steps.slice(0, pending.shown)}
-                    activeIndex={pending.shown < pending.steps.length ? pending.shown - 1 : null}
+                    activeIndex={pending.shown < pending.steps.length || pending.live ? pending.shown - 1 : null}
                   />
                 </div>
               </div>

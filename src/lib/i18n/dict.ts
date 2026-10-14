@@ -74,6 +74,8 @@ const ROWS: Row[] = [
   ["Searching {n} help topics…", "Cerco tra {n} argomenti di aiuto…", "Caut în {n} subiecte de ajutor…", "Buscando en {n} temas de ayuda…"],
   ["Closest topic: {topic}", "Argomento più vicino: {topic}", "Cel mai apropiat subiect: {topic}", "Tema más cercano: {topic}"],
   ["Answer ready", "Risposta pronta", "Răspuns gata", "Respuesta lista"],
+  ["Looking through the help articles and the cars on CX…", "Cerco negli articoli di aiuto e tra le auto CX…", "Caut în articolele de ajutor și printre mașinile CX…", "Buscando en los artículos de ayuda y entre los coches de CX…"],
+  ["Writing the answer…", "Scrivo la risposta…", "Scriu răspunsul…", "Escribiendo la respuesta…"],
   ["No close answer found", "Nessuna risposta vicina trovata", "Nu am găsit un răspuns apropiat", "No encontré una respuesta cercana"],
   ["Offering a person from the team", "Ti propongo una persona del team", "Îți propun o persoană din echipă", "Te propongo a una persona del equipo"],
   ["Weekend", "Weekend", "Weekend", "Fin de semana"],
