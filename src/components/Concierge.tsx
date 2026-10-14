@@ -298,17 +298,30 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       .finally(() => setSpeakingId((cur) => (cur === id ? null : cur)));
   };
 
+  // Answers are spoken as they are written (unless the person silenced X); a failure is shown once, with its code.
+  const voiceFailed = useRef(false);
+  const speakFor = useCallback(
+    (id: string, text: string, persist = false) => {
+      setSpeakingId(id);
+      speak(text, lang, { persist })
+        .catch((e: unknown) => {
+          if (voiceFailed.current) return;
+          voiceFailed.current = true;
+          const code = e instanceof Error && /\d{3}/.test(e.message) ? ` (${e.message.replace(/\D/g, '')})` : '';
+          setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: `${t('Voice is not available right now.')}${code}` }]);
+        })
+        .finally(() => setSpeakingId((cur) => (cur === id ? null : cur)));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang],
+  );
+
   // The welcome is spoken once when X opens (unless silenced); it is generated once per device and kept.
   useEffect(() => {
     if (!VOICE_ENABLED || !autoVoiceAllowed()) return;
     const first = msgs[0];
     if (!first) return;
-    let alive = true;
-    setSpeakingId(first.id);
-    speak(first.text, lang, { persist: true })
-      .catch(() => {})
-      .finally(() => { if (alive) setSpeakingId((cur) => (cur === first.id ? null : cur)); });
-    return () => { alive = false; };
+    speakFor(first.id, first.text, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -337,6 +350,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
         const seconds = Math.max(1, Math.round((Date.now() - started) / 1000));
         setPending(null);
         setMsgs((cur) => [...cur, { id, role: 'assistant', text: reply.text, cars: reply.cars, offerHuman: reply.offerHuman, steps, seconds: steps ? seconds : undefined }]);
+        if (VOICE_ENABLED && autoVoiceAllowed()) speakFor(id, reply.text);
         const done = () => {
           window.clearInterval(interval);
           setStreaming(null);
@@ -410,7 +424,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
         deliver({ text: fallback, offerHuman: true });
       }
     },
-    [busy, cars, msgs, session, t, think],
+    [busy, cars, msgs, session, speakFor, t, think],
   );
 
   /** Move the conversation to a real CX chat, in this same panel, carrying what was said so far. */

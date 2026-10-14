@@ -71,7 +71,7 @@ async function fetchAudio(clean: string, lang: string, persist: boolean): Promis
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ type: 'voice', text: clean, lang }),
     });
-    if (!res.ok) throw new Error('voice unavailable');
+    if (!res.ok) throw new Error(`voice ${res.status}`);
     blob = await res.blob();
     if (persist && typeof caches !== 'undefined') {
       try { await (await caches.open('cx-voice-v1')).put(cacheKey, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })); } catch { /* no cache */ }
