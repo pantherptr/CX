@@ -9,7 +9,33 @@ import { supabase } from './supabase';
 export const VOICE_ENABLED = import.meta.env.VITE_VOICE === '1';
 
 const cache = new Map<string, string>();
-let current: { audio: HTMLAudioElement; done: () => void } | null = null;
+// One audio element for the whole session: it is "unlocked" by the tap that opens X (see primeVoice), which is
+// what lets the welcome play by itself afterwards, even on iPhone.
+let shared: HTMLAudioElement | null = null;
+let settle: (() => void) | null = null;
+const SILENCE = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+
+function player(): HTMLAudioElement {
+  if (!shared) shared = new Audio();
+  return shared;
+}
+
+/** Call from the tap that opens the chat: unlocks audio so the welcome may play without another tap. */
+export function primeVoice(): void {
+  if (!VOICE_ENABLED || typeof window === 'undefined') return;
+  const a = player();
+  a.src = SILENCE;
+  void a.play().catch(() => {});
+}
+
+const PREF = 'cx-x-voice';
+/** The welcome (and nothing else) plays by itself — unless the person silenced it. */
+export const autoVoiceAllowed = (): boolean => {
+  try { return window.localStorage.getItem(PREF) !== 'off'; } catch { return true; }
+};
+export const setAutoVoice = (on: boolean): void => {
+  try { window.localStorage.setItem(PREF, on ? 'on' : 'off'); } catch { /* storage unavailable */ }
+};
 
 /** Text as it should be read aloud: no emoji, no markdown marks, no links. */
 export function speakable(text: string): string {
@@ -23,20 +49,22 @@ export function speakable(text: string): string {
 }
 
 export function stopSpeaking(): void {
-  if (!current) return;
-  current.audio.pause();
-  current.done();
-  current = null;
+  if (shared) shared.pause();
+  const done = settle;
+  settle = null;
+  done?.();
 }
 
-/** Plays `text`; resolves when it ends (or is stopped). Rejects if the voice is unavailable. */
-export async function speak(text: string, lang: string): Promise<void> {
-  stopSpeaking();
-  const clean = speakable(text);
-  if (!clean) return;
+async function fetchAudio(clean: string, lang: string, persist: boolean): Promise<string> {
   const key = `${lang}:${clean}`;
-  let url = cache.get(key);
-  if (!url) {
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const cacheKey = `https://voice.local/${encodeURIComponent(key)}`;
+  let blob: Blob | null = null;
+  if (persist && typeof caches !== 'undefined') {
+    try { blob = await (await caches.open('cx-voice-v1')).match(cacheKey).then((r) => (r ? r.blob() : null)); } catch { /* no cache */ }
+  }
+  if (!blob) {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch(apiUrl('/api/notify-message'), {
       method: 'POST',
@@ -44,16 +72,30 @@ export async function speak(text: string, lang: string): Promise<void> {
       body: JSON.stringify({ type: 'voice', text: clean, lang }),
     });
     if (!res.ok) throw new Error('voice unavailable');
-    url = URL.createObjectURL(await res.blob());
-    cache.set(key, url);
+    blob = await res.blob();
+    if (persist && typeof caches !== 'undefined') {
+      try { await (await caches.open('cx-voice-v1')).put(cacheKey, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })); } catch { /* no cache */ }
+    }
   }
+  const url = URL.createObjectURL(blob);
+  cache.set(key, url);
+  return url;
+}
+
+/** Plays `text`; resolves when it ends (or is stopped). Rejects if the voice is unavailable.
+ *  `persist` keeps the audio on this device (used for the welcome, so it is generated once per phone). */
+export async function speak(text: string, lang: string, opts: { persist?: boolean } = {}): Promise<void> {
+  stopSpeaking();
+  const clean = speakable(text);
+  if (!clean) return;
+  const url = await fetchAudio(clean, lang, Boolean(opts.persist));
   await new Promise<void>((resolve, reject) => {
-    const audio = new Audio(url);
-    const done = () => resolve();
-    current = { audio, done };
-    audio.onended = () => { current = null; done(); };
-    audio.onerror = () => { current = null; reject(new Error('playback failed')); };
-    void audio.play().catch((e) => { current = null; reject(e); });
+    const audio = player();
+    settle = resolve;
+    audio.onended = () => { settle = null; resolve(); };
+    audio.onerror = () => { settle = null; reject(new Error('playback failed')); };
+    audio.src = url;
+    void audio.play().catch((e) => { settle = null; reject(e); });
   });
 }
 

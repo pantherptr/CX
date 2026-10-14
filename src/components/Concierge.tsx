@@ -13,7 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
-import { VOICE_ENABLED, canListen, listen, speak, stopSpeaking } from '../lib/voice';
+import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, primeVoice, setAutoVoice, speak, stopSpeaking } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -140,6 +140,7 @@ export function ConciergeLauncher({
           const r = e.currentTarget.getBoundingClientRect();
           const fromPointer = e.clientX !== 0 || e.clientY !== 0;
           setOrigin({ x: fromPointer ? e.clientX : r.left + r.width / 2, y: fromPointer ? e.clientY : r.top + r.height / 2 });
+          primeVoice();
           setOpen(true);
         }}
         className={className}
@@ -283,12 +284,33 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   const micOk = useMemo(() => canListen(), []);
   useEffect(() => () => { stopListenRef.current?.(); stopSpeaking(); }, []);
   const toggleSpeak = (id: string, text: string) => {
-    if (speakingId === id) { stopSpeaking(); setSpeakingId(null); return; }
+    if (speakingId === id) {
+      // stopping the welcome means "no talking by itself" from now on
+      if (id === msgs[0]?.id) setAutoVoice(false);
+      stopSpeaking();
+      setSpeakingId(null);
+      return;
+    }
+    if (id === msgs[0]?.id) setAutoVoice(true);
     setSpeakingId(id);
     speak(text, lang)
       .catch(() => setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('Voice is not available right now.') }]))
       .finally(() => setSpeakingId((cur) => (cur === id ? null : cur)));
   };
+
+  // The welcome is spoken once when X opens (unless silenced); it is generated once per device and kept.
+  useEffect(() => {
+    if (!VOICE_ENABLED || !autoVoiceAllowed()) return;
+    const first = msgs[0];
+    if (!first) return;
+    let alive = true;
+    setSpeakingId(first.id);
+    speak(first.text, lang, { persist: true })
+      .catch(() => {})
+      .finally(() => { if (alive) setSpeakingId((cur) => (cur === first.id ? null : cur)); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ask = useCallback(
     async (text: string) => {
