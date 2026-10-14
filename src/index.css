@@ -782,39 +782,10 @@
   @media (prefers-reduced-motion: reduce) {
     .x-orb__blob, .x-orb__glow, .x-orb__gloss, .x-orb__spark { animation: none; }
   }
-  /* X's logo (XIcon.tsx): a green glass tile with a glossy white X. */
-  .x-icon__tile {
-    position: absolute; inset: 0; overflow: hidden; border-radius: 27%;
-    background:
-      radial-gradient(90% 70% at 18% 8%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 60%),
-      radial-gradient(80% 60% at 92% 96%, rgba(150, 255, 190, 0.55), rgba(150, 255, 190, 0) 65%),
-      linear-gradient(150deg, #43ee8a 0%, #00cf48 46%, #007d38 100%);
-    box-shadow:
-      inset 0 0 0 calc(var(--s) * 0.018) rgba(255, 255, 255, 0.55),
-      inset 0 calc(var(--s) * -0.07) calc(var(--s) * 0.12) rgba(0, 64, 30, 0.38),
-      0 calc(var(--s) * 0.1) calc(var(--s) * 0.2) calc(var(--s) * -0.1) rgba(0, 130, 55, 0.55);
-  }
-  .x-icon__reflection {
-    position: absolute; left: 8%; right: 8%; top: 4%; height: 38%; border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0));
-    filter: blur(calc(var(--s) * 0.012));
-  }
-  .x-icon__shade {
-    position: absolute; inset: 0;
-    background: radial-gradient(70% 45% at 50% 108%, rgba(0, 70, 32, 0.4), rgba(0, 70, 32, 0) 70%);
-  }
-  .x-icon__x {
-    position: absolute; inset: 8%;
-    filter:
-      drop-shadow(0 calc(var(--s) * 0.035) calc(var(--s) * 0.035) rgba(0, 62, 28, 0.5))
-      drop-shadow(0 0 calc(var(--s) * 0.01) rgba(255, 255, 255, 0.7));
-  }
-  .x-icon__x-body, .x-icon__x-gloss {
-    position: absolute; inset: 0;
-    -webkit-mask: var(--x-mask) center / contain no-repeat; mask: var(--x-mask) center / contain no-repeat;
-  }
-  .x-icon__x-body { background: linear-gradient(172deg, #ffffff 0%, #f6fff9 45%, #cdeed9 82%, #b4e2c6 100%); }
-  .x-icon__x-gloss { background: radial-gradient(60% 38% at 32% 14%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%); }
+  /* X's logo: the eyes blink now and then. */
+  .x-logo__eyes { transform-box: fill-box; transform-origin: center; animation: x-logo-blink 6s infinite; }
+  @keyframes x-logo-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.08); } }
+  @media (prefers-reduced-motion: reduce) { .x-logo__eyes { animation: none; } }
   @keyframes kai-step-in {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
