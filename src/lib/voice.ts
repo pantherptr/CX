@@ -62,7 +62,7 @@ async function fetchAudio(clean: string, lang: string, persist: boolean): Promis
   const cacheKey = `https://voice.local/${encodeURIComponent(key)}`;
   let blob: Blob | null = null;
   if (persist && typeof caches !== 'undefined') {
-    try { blob = await (await caches.open('cx-voice-v2')).match(cacheKey).then((r) => (r ? r.blob() : null)); } catch { /* no cache */ }
+    try { blob = await (await caches.open('cx-voice-v3')).match(cacheKey).then((r) => (r ? r.blob() : null)); } catch { /* no cache */ }
   }
   if (!blob) {
     const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -74,7 +74,7 @@ async function fetchAudio(clean: string, lang: string, persist: boolean): Promis
     if (!res.ok) throw new Error(`voice ${res.status}`);
     blob = await res.blob();
     if (persist && typeof caches !== 'undefined') {
-      try { await (await caches.open('cx-voice-v2')).put(cacheKey, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })); } catch { /* no cache */ }
+      try { await (await caches.open('cx-voice-v3')).put(cacheKey, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })); } catch { /* no cache */ }
     }
   }
   const url = URL.createObjectURL(blob);
