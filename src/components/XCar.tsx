@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import { useGaze } from '../lib/useGaze';
 
 /**
- * X's mascot: the CX supercar seen from the front (artwork in /brand/x-car.webp), with the X mark on the
+ * X's mascot: the CX supercar seen from the front (artwork in /brand/x-car-v2.webp), with the X mark on the
  * bonnet and live eyes. The eyes are redrawn over the picture: the iris follows your finger / cursor,
  * blinks and wanders when nobody is around; `active` wakes it up (quick blinks) while X is thinking.
  * `live` adds the online dot. With "reduce motion" the eyes stay still.
@@ -54,7 +54,7 @@ export function XCar({
           </filter>
         </defs>
 
-        <image href="/brand/x-car.webp" x="0" y="0" width="720" height="558" />
+        <image href="/brand/x-car-v2.webp" x="0" y="0" width="720" height="558" />
 
         {/* the X on the bonnet replaces the old badge */}
         <ellipse cx="365" cy="311" rx="62" ry="40" fill={`url(#${id('patch')})`} filter={`url(#${id('soft')})`} />
