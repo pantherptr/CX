@@ -24,7 +24,10 @@ import type { Car } from '../data/types';
  * ever shown to the model — never private bookings, messages or documents.
  */
 export const ASSISTANT_NAME = 'Kai';
-const AI_ENABLED = import.meta.env.VITE_ASSISTANT_AI === '1';
+// Kai is free: answers are computed in the browser. The AI service only runs when this exact switch is set
+// at build time. (It used to be VITE_ASSISTANT_AI; that old name is deliberately ignored now, so a leftover
+// value in the hosting settings can no longer turn on a paid service by accident.)
+const AI_ENABLED = import.meta.env.VITE_KAI_USE_AI === '1';
 
 interface ChatMsg {
   id: string;
@@ -277,7 +280,7 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
       };
 
       // No AI service by default (no cost): Kai answers from the site's FAQ and the car matcher, in the
-      // browser. Set VITE_ASSISTANT_AI=1 (and a key on the server) to use the AI instead.
+      // browser. Set VITE_KAI_USE_AI=1 (and a key on the server) to use the AI instead.
       if (!AI_ENABLED) {
         const r = localReply(clean, cars ?? [], t);
         const steps = thoughtSteps(r, cars ?? [], t);

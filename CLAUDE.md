@@ -89,7 +89,7 @@ Code is written to fail soft before a migration is run.
   `src/lib/assistantLocal.ts` (FAQ word matching in en/it/ro/es + `carMatch.matchCars` for car requests; unknown
   questions offer a person). No API, no cost. The AI path (`api/_lib/assistant.ts` via
   `POST /api/notify-message {type:'assistant'}`, Anthropic key + guards `ASSISTANT_DAILY_MAX`, `ASSISTANT_ENABLED=0`)
-  is dormant: it only runs if `VITE_ASSISTANT_AI=1` is set at build time. With `OPENROUTER_API_KEY` (+ optional
+  is dormant: it only runs if `VITE_KAI_USE_AI=1` is set at build time (the old name `VITE_ASSISTANT_AI` is ignored on purpose, after a leftover value on Vercel switched the AI on in production). With `OPENROUTER_API_KEY` (+ optional
   `OPENROUTER_MODEL`, default `openrouter/free`) the server uses OpenRouter's free models instead of Anthropic. `api/translate.ts` (post/profile translation, cached in `content_translations`) uses the same key/model. "Talk to a person" opens/reuses the
   CX support conversation (`findOrCreateCxConversation`), posts the last turns as the first message, and the panel
   then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
