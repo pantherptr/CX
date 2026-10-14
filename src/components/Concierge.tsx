@@ -84,6 +84,30 @@ function thoughtSteps(
   return steps;
 }
 
+/** The steps on a vertical rail, a tick sitting on the line for each finished one (the 21st thinking-prompt look). */
+function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIndex?: number | null }) {
+  return (
+    <ol className="relative ml-[7px] border-l border-line pl-5">
+      {steps.map((step, i) => (
+        <li
+          key={step}
+          className="kai-step-in relative flex min-h-9 items-center gap-3 py-2 text-xs leading-5"
+          style={{ animationDelay: `${i * 45}ms` }}
+        >
+          <span className="absolute -left-[26px] flex size-[11px] items-center justify-center rounded-full bg-bg ring-4 ring-bg">
+            {i === activeIndex ? (
+              <span className="size-1.5 animate-pulse rounded-full bg-accent-700" aria-label="In progress" />
+            ) : (
+              <Icon name="check" size={12} className="text-ink" />
+            )}
+          </span>
+          <span className={i === activeIndex ? 'text-ink' : 'text-muted'}>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
@@ -394,14 +418,9 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
                             <Icon name="chevronRight" size={13} className={`transition-transform ${openThoughts.has(m.id) ? 'rotate-90' : ''}`} />
                           </button>
                           {openThoughts.has(m.id) && (
-                            <ol className="ml-[7px] mt-2 border-l border-line pl-4">
-                              {m.steps.map((step) => (
-                                <li key={step} className="flex items-center gap-2 py-1 text-caption text-muted">
-                                  <Icon name="check" size={12} className="shrink-0 text-ink" />
-                                  {step}
-                                </li>
-                              ))}
-                            </ol>
+                            <div className="mt-2">
+                              <ThoughtTrail steps={m.steps} />
+                            </div>
                           )}
                         </div>
                       )}
@@ -463,23 +482,17 @@ function AssistantChat({ onClose }: { onClose: () => void }) {
             <div className="flex items-start gap-2.5" role="status">
               <ConciergeMark size={30} />
               <div className="min-w-0 flex-1 pt-1">
-                <div className="flex items-center gap-1.5 text-detail">
-                  <Icon name="sparkles" size={14} className="text-muted" />
+                <div className="flex h-7 items-center gap-2 text-xs">
+                  <Icon name="sparkles" size={14} className="shrink-0 text-muted" />
                   <span className="kai-thinking font-medium">{t('Thinking it through')}</span>
-                  <span className="ml-auto font-mono text-caption tabular-nums text-muted">{pending.seconds}s</span>
+                  <span className="ml-auto font-mono text-[11px] tabular-nums text-muted">{pending.seconds}s</span>
                 </div>
-                <ol className="ml-[7px] mt-2 border-l border-line pl-4">
-                  {pending.steps.slice(0, pending.shown).map((step, i, arr) => (
-                    <li key={step} className="flex items-center gap-2 py-1 text-caption text-muted animate-fade-in">
-                      {i < arr.length - 1 || pending.shown === pending.steps.length ? (
-                        <Icon name="check" size={12} className="shrink-0 text-ink" />
-                      ) : (
-                        <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-accent-700" />
-                      )}
-                      <span className={i === arr.length - 1 && pending.shown < pending.steps.length ? 'text-ink' : ''}>{step}</span>
-                    </li>
-                  ))}
-                </ol>
+                <div className="mt-2">
+                  <ThoughtTrail
+                    steps={pending.steps.slice(0, pending.shown)}
+                    activeIndex={pending.shown < pending.steps.length ? pending.shown - 1 : null}
+                  />
+                </div>
               </div>
             </div>
           )}
