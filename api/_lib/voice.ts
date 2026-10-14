@@ -5,9 +5,9 @@ import { createClient } from '@supabase/supabase-js';
  * X's voice: turns one answer into speech with ElevenLabs. Opt-in on the page (the speaker button) and
  * guarded like the assistant: a few sentences per 10 minutes for visitors, more for members, and a daily
  * cap (VOICE_DAILY_MAX, default 400). Without ELEVENLABS_API_KEY it answers 503 and the page simply keeps
- * the text. The voice is ELEVENLABS_VOICE_ID (default: Charlie, a premade voice; library voices such as Marco need a paid plan).
+ * the text. The voice is ELEVENLABS_VOICE_ID (default: Marco, Italian, young and friendly; a library voice, so it needs a paid plan).
  */
-const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'IKne3meq5aSn9XLyUdCD';
+const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'V9xYP1XwBnhCPPMDk06A';
 const MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5';
 const MAX_CHARS = 500;
 
