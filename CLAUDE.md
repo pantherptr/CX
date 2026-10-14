@@ -95,8 +95,8 @@ Code is written to fail soft before a migration is run.
   then shows that real thread (realtime) — the team answers from Messages / Owner chat monitor.
   **Voice** (`src/lib/voice.ts`, `api/_lib/voice.ts` via notify-message type `voice`): the mic uses the browser's speech
   recognition (free, always on where supported); the per-answer speaker button uses ElevenLabs and only shows when
-  built with `VITE_VOICE=1`. Server env: `ELEVENLABS_API_KEY` (+ optional `ELEVENLABS_VOICE_ID`, default Marco
-  `V9xYP1XwBnhCPPMDk06A`; `ELEVENLABS_MODEL`; `VOICE_DAILY_MAX` default 400; `VOICE_ENABLED=0` switches it off).
+  built with `VITE_VOICE=1`. Server env: `ELEVENLABS_API_KEY` (+ optional `ELEVENLABS_VOICE_ID`, default Charlie, a premade voice that works on the free plan; Marco
+  `V9xYP1XwBnhCPPMDk06A` needs a paid plan; `ELEVENLABS_MODEL`; `VOICE_DAILY_MAX` default 400; `VOICE_ENABLED=0` switches it off).
 
 ## Tests (Playwright)
 - `npm run test:e2e` (config `playwright.config.ts`, tests in `e2e/`): public pages × light/dark × phone/desktop —
