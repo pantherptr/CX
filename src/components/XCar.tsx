@@ -2,7 +2,8 @@ import { useId, useRef } from 'react';
 import { useGaze } from '../lib/useGaze';
 
 /**
- * X's mascot: a low, wide supercar seen from the front, drawn for CX (an original character). Big eyes with
+ * X's mascot: a low, wide supercar seen from the front, drawn for CX (an original character): raked
+ * tinted windscreen, rear wing above the roof, bonnet vents, front splitter. Big eyes with
  * eyelids sit in the windscreen and follow your finger / cursor, blink, and wander when nobody is around;
  * a grin runs along the bumper, the X mark sits on the bonnet and the headlights are green. `active` wakes
  * it up (quick blinks, pulsing headlights) while X is thinking. `live` adds the online dot.
@@ -76,13 +77,24 @@ export function XCar({
         <rect x="81.5" y="58" width="17" height="31" rx="6" fill="#060706" stroke="#2c312e" strokeWidth="1" />
         <rect x="5" y="63" width="4.5" height="21" rx="2.2" fill="#1d2220" />
         <rect x="90.5" y="63" width="4.5" height="21" rx="2.2" fill="#1d2220" />
+        {/* the rear wing, seen over the roof: two end plates, the blade and its stays */}
+        <g>
+          <rect x="39" y="18" width="3" height="8" fill="#0a0c0b" />
+          <rect x="58" y="18" width="3" height="8" fill="#0a0c0b" />
+          <rect x="21.5" y="9" width="4.2" height="15" rx="1.6" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
+          <rect x="74.3" y="9" width="4.2" height="15" rx="1.6" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
+          <path d="M22.5 11.5H77.5Q79 11.5 78.6 13.4L77.8 17H22.2L21.4 13.4Q21 11.5 22.5 11.5Z" fill={`url(#${id('body')})`} stroke="#0b0d0c" strokeWidth="0.8" />
+          <path d="M24 12.8H76" stroke="#12e060" strokeWidth="1" strokeLinecap="round" strokeOpacity="0.9" />
+        </g>
         {/* side mirrors */}
-        <path d="M13 45Q8 44 8.5 40.5Q10 38.5 15 40L21 43Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
-        <path d="M87 45Q92 44 91.5 40.5Q90 38.5 85 40L79 43Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
-        {/* the low cabin: roof, frame and windscreen */}
-        <path d="M23 49L31.5 23Q33 17.5 39.5 17.5H60.5Q67 17.5 68.5 23L77 49Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="1" strokeLinejoin="round" />
-        <path d="M27.8 47L35.2 24.6Q36.4 21 40.4 21H59.6Q63.6 21 64.8 24.6L72.2 47Z" fill={`url(#${id('glass')})`} />
-        <path d="M27.8 47L35.2 24.6Q36.4 21 40.4 21H59.6Q63.6 21 64.8 24.6L72.2 47Z" fill={`url(#${id('gloss')})`} opacity="0.22" />
+        <path d="M13 46Q7.5 45 8 41Q9.8 38.8 15.5 40.6L21.5 44Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
+        <path d="M87 46Q92.5 45 92 41Q90.2 38.8 84.5 40.6L78.5 44Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="0.8" />
+        {/* the low, raked cabin: roof, frame and a dark tinted windscreen with glare */}
+        <path d="M21.5 50L32.5 28Q34.5 23.2 41 23.2H59Q65.5 23.2 67.5 28L78.5 50Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M26.4 48L35.8 29.4Q37 26.6 41.4 26.6H58.6Q63 26.6 64.2 29.4L73.6 48Z" fill={`url(#${id('glass')})`} />
+        <path d="M26.4 48L35.8 29.4Q37 26.6 41.4 26.6H58.6Q63 26.6 64.2 29.4L73.6 48Z" fill="#1affa0" opacity="0.07" />
+        <path d="M31 48L40.2 28.2L44.6 28.2L36.2 48Z" fill="#fff" opacity="0.13" />
+        <path d="M38.6 48L45.6 29.6L47.4 29.6L41.6 48Z" fill="#fff" opacity="0.09" />
         {/* muscular front wings over the tyres */}
         <path d="M2.5 66Q1.5 52 12 48.5L24 46.5V66Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="1" strokeLinejoin="round" />
         <path d="M97.5 66Q98.5 52 88 48.5L76 46.5V66Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="1" strokeLinejoin="round" />
@@ -90,6 +102,10 @@ export function XCar({
         <path d="M9 67Q7 54 16 50L27 46.5H73L84 50Q93 54 91 67L90 82Q89 87 83 87H17Q11 87 10 82Z" fill={`url(#${id('rim')})`} stroke="#0b0d0c" strokeWidth="1" strokeLinejoin="round" />
         <path d="M12.8 67Q11 56.5 18.5 53L28 49.8H72L81.5 53Q89 56.5 87.2 67L86.4 81Q86 83.6 82.2 83.6H17.8Q14 83.6 13.6 81Z" fill={`url(#${id('body')})`} />
         <path d="M18 53.5L28 49.8H72L82 53.5Q75 56.6 50 56.6Q25 56.6 18 53.5Z" fill={`url(#${id('gloss')})`} opacity="0.6" />
+        {/* bonnet vents and gills on the wings */}
+        <path d="M26.5 52.4L38 50.6L38.8 53.2L28 55.2Z M73.5 52.4L62 50.6L61.2 53.2L72 55.2Z" fill="#020302" />
+        <path d="M27.4 54.6L37.6 52.8M72.6 54.6L62.4 52.8" stroke="#12e060" strokeOpacity="0.6" strokeWidth="0.7" />
+        <path d="M6.5 70L13.5 71.4M6 73.4L13.2 74.8M6 76.8L13 78.2M93.5 70L86.5 71.4M94 73.4L86.8 74.8M94 76.8L87 78.2" stroke="#1b1f1d" strokeWidth="1.1" strokeLinecap="round" />
         {/* a green stripe down the bonnet and the X mark */}
         <path d="M47 50H53L52 58H48Z" fill="#0c7a38" opacity="0.7" />
         <g transform="translate(44 51) scale(0.12)">
@@ -101,30 +117,32 @@ export function XCar({
           <path d="M14 63Q14 58.5 21 58L34 60Q37 61.5 35 64.5L26 67.5Q17 67 14 63Z" fill={`url(#${id('lamp')})`} stroke="#0b0d0c" strokeWidth="0.8" />
           <path d="M86 63Q86 58.5 79 58L66 60Q63 61.5 65 64.5L74 67.5Q83 67 86 63Z" fill={`url(#${id('lamp')})`} stroke="#0b0d0c" strokeWidth="0.8" />
         </g>
+        {/* the front splitter */}
+        <path d="M11 87H89L86.2 91H13.8Z" fill="#050605" stroke="#2d3331" strokeWidth="0.7" />
+        <path d="M18 89.2H82" stroke="#12e060" strokeWidth="0.9" strokeOpacity="0.8" strokeLinecap="round" />
         {/* air intakes and the grin */}
         <path d="M17 73L26 71.5L28 77L19 78.5Z" fill="#020302" />
         <path d="M83 73L74 71.5L72 77L81 78.5Z" fill="#020302" />
         <path d="M33 72Q50 83 67 72L65.5 76.8Q50 85.6 34.5 76.8Z" fill="#020302" stroke="#3a403d" strokeWidth="0.7" />
         <path d="M40 76.4V80M46 77.6V81.2M54 77.6V81.2M60 76.4V80" stroke="#12e060" strokeOpacity="0.7" strokeWidth="1.1" strokeLinecap="round" />
-        {/* the eyes, in the windscreen: socket, bright eye, iris that follows you, lid on top */}
+        {/* the eyes, in the windscreen: socket, bright eye, iris that follows you, a sharp lid on top */}
         <g className="x-car__eyes">
-          {[42.4, 57.6].map((cx) => (
+          {[42.6, 57.4].map((cx) => (
             <g key={cx}>
-              <ellipse cx={cx} cy="33.5" rx="7.6" ry="8.4" fill="#020a05" />
-              <ellipse cx={cx} cy="33.5" rx="6.6" ry="7.4" fill={`url(#${id('eye')})`} />
+              <ellipse cx={cx} cy="38" rx="6.9" ry="7.6" fill="#020a05" />
+              <ellipse cx={cx} cy="38" rx="6" ry="6.7" fill={`url(#${id('eye')})`} />
             </g>
           ))}
           <g ref={pupils} style={{ transition: 'transform .35s cubic-bezier(.2,.8,.2,1)' }}>
-            {[42.4, 57.6].map((cx) => (
+            {[42.6, 57.4].map((cx) => (
               <g key={cx}>
-                <circle cx={cx} cy="33.5" r="3.3" fill="#03140a" />
-                <circle cx={cx - 1.2} cy="32" r="1.15" fill="#fff" />
+                <circle cx={cx} cy="38.2" r="3" fill="#03140a" />
+                <circle cx={cx - 1.1} cy="36.8" r="1.05" fill="#fff" />
               </g>
             ))}
           </g>
-          {/* eyelids give it attitude */}
-          <path d="M34.8 33.3Q42.4 22.8 50 31.4L50 25.8Q42.4 20.6 34.8 27.6Z" fill="#0b2216" />
-          <path d="M65.2 33.3Q57.6 22.8 50 31.4L50 25.8Q57.6 20.6 65.2 27.6Z" fill="#0b2216" />
+          <path d="M35.4 36.6Q39 30.4 44.4 31.4L50 36.2L50 29.4Q42.6 26.4 35.4 30.6Z" fill="#0b2216" />
+          <path d="M64.6 36.6Q61 30.4 55.6 31.4L50 36.2L50 29.4Q57.4 26.4 64.6 30.6Z" fill="#0b2216" />
         </g>
       </svg>
       {live && (
