@@ -460,7 +460,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   aria-pressed={think}
                   disabled={busy}
                   onClick={() => setThink((v) => !v)}
-                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-detail font-semibold transition-colors disabled:opacity-50 ${
+                  className={`hit-44 inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-detail font-semibold transition-colors disabled:opacity-50 ${
                     think ? 'border-ink/15 bg-ink/5 text-ink' : 'border-line bg-surface text-muted'
                   }`}
                 >
@@ -478,7 +478,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   onClick={(e) => { e.preventDefault(); runRef.current?.cancel(); }}
                   disabled={!runRef.current}
                   aria-label={t('Stop')}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
+                  className="hit-44 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-30"
                 >
                   <span className="h-3 w-3 rounded-[3px] bg-white" />
                 </button>
@@ -488,7 +488,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                   type="submit"
                   disabled={!input.trim()}
                   aria-label={t('Send')}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
+                  className="hit-44 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink text-white transition-opacity disabled:opacity-30"
                 >
                   <Icon name="arrowRight" size={18} className="-rotate-90" />
                 </button>
@@ -536,12 +536,12 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
               type="button"
               onClick={() => void handOff()}
               disabled={handing}
-              className="shrink-0 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-detail font-semibold text-ink disabled:opacity-60"
+              className="hit-44 shrink-0 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-detail font-semibold text-ink disabled:opacity-60"
             >
               {handing ? t('Connecting…') : t('Talk to a person')}
             </button>
           )}
-          <button type="button" onClick={requestClose} aria-label={t('Close')} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
+          <button type="button" onClick={requestClose} aria-label={t('Close')} className="hit-44 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-panel">
             <Icon name="x" size={19} />
           </button>
           </div>
@@ -578,7 +578,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                                 return nextSet;
                               })
                             }
-                            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel/60 px-2.5 py-1 text-caption text-muted transition-colors hover:bg-panel hover:text-ink"
+                            className="hit-44 inline-flex items-center gap-1.5 rounded-full border border-line bg-panel/60 px-2.5 py-1 text-caption text-muted transition-colors hover:bg-panel hover:text-ink"
                           >
                             <Icon name="sparkles" size={13} />
                             {t('Thought for {n}s', { n: m.seconds ?? 1 })}
@@ -676,13 +676,17 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
           {chips.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {chips.map((c) => (
-                <button key={c} type="button" onClick={() => void ask(c)} className="rounded-full border border-line-strong bg-surface px-3.5 py-2 text-detail font-semibold text-ink">
+                <button key={c} type="button" onClick={() => void ask(c)} className="hit-44 rounded-full border border-line-strong bg-surface px-3.5 py-2 text-detail font-semibold text-ink">
                   {c}
                 </button>
               ))}
             </div>
           )}
           </div>
+        </div>
+
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {!streaming && !pending ? [...msgs].reverse().find((m) => m.role === 'assistant')?.text ?? '' : ''}
         </div>
 
         <form onSubmit={submit} className={`border-t border-line bg-bg px-3 pt-3 ${box.kb ? 'pb-3' : 'pb-[max(0.75rem,env(safe-area-inset-bottom))]'}`}>

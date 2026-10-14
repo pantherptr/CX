@@ -2479,3 +2479,17 @@ html [data-rmiz-btn-unzoom] { display: none; }
     transform: translate(-50%, -50%);
   }
 }
+
+/* Opt-in 44px touch area for pills and small buttons (X's chat): the look stays, the invisible ::after grows. */
+@media (pointer: coarse) {
+  .hit-44 { position: relative; }
+  .hit-44::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
