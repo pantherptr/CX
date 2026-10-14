@@ -100,6 +100,10 @@ export const TEXTS: Record<string, Entry> = {
     title: { en: 'Your driving licence needs a new photo', it: 'La tua patente ha bisogno di una nuova foto', ro: 'Permisul tău de conducere are nevoie de o fotografie nouă', es: 'Tu carnet de conducir necesita una foto nueva' },
     body: { en: '{reason}', it: '{reason}', ro: '{reason}', es: '{reason}' },
   },
+  saved_car: {
+    title: { en: 'Your saved {car} is still free', it: 'La {car} che hai salvato è ancora libera', ro: '{car} salvată de tine este încă liberă', es: 'El {car} que guardaste sigue libre' },
+    body: { en: 'Available in {city} this week. Book it before someone else does.', it: 'Disponibile a {city} questa settimana. Prenotala prima che lo faccia qualcun altro.', ro: 'Disponibilă în {city} săptămâna aceasta. Rezerv-o înainte să o facă altcineva.', es: 'Disponible en {city} esta semana. Resérvalo antes de que lo haga otra persona.' },
+  },
   listing_live: {
     title: { en: 'Your {car} is live', it: 'Il tuo annuncio {car} è online', ro: 'Anunțul {car} este live', es: 'Tu anuncio de {car} está en línea' },
     body: { en: 'Renters can find it now.', it: 'Ora i clienti possono trovarlo.', ro: 'Chiriașii îl pot găsi acum.', es: 'Los clientes ya pueden encontrarlo.' },

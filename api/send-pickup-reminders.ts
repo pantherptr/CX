@@ -186,6 +186,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
+  // --- "A car you saved is still free": one reminder per person per week (migration 0130) ---------------
+  let savedReminders = 0;
+  try {
+    const { data: due, error: dueErr } = await supabase.rpc('saved_car_reminder_candidates', { max_rows: 200 });
+    if (!dueErr) {
+      for (const r of (due ?? []) as { user_id: string; car_id: string; slug: string; make: string; model: string; city: string }[]) {
+        const car = `${r.make} ${r.model}`;
+        await notifyUser(supabase, r.user_id, {
+          kind: 'saved_car',
+          key: 'saved_car',
+          vars: { car, city: r.city },
+          title: `Your saved ${car} is still free`,
+          body: `Available in ${r.city} this week. Book it before someone else does.`,
+          url: `/cars/${r.slug}`,
+        });
+        await supabase.from('favorites').update({ reminded_at: new Date().toISOString() }).eq('user_id', r.user_id).eq('car_id', r.car_id);
+        savedReminders += 1;
+      }
+    }
+  } catch (err) {
+    console.error('[send-pickup-reminders] saved-car reminders failed', err);
+  }
+
   // --- Release security deposits for trips that have ended -------------
   // One day of buffer after end_date (rather than releasing the moment a
   // trip ends) gives a host a small window to flag damage before the
@@ -254,5 +277,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  return res.status(200).json({ date: tomorrowISO, pickupSent, returnSent, depositsReleased, payoutsSent, payoutsBlocked });
+  return res.status(200).json({ date: tomorrowISO, pickupSent, returnSent, depositsReleased, payoutsSent, payoutsBlocked, savedReminders });
 }

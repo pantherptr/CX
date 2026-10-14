@@ -19,6 +19,7 @@ import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
 import { PostText } from './PostText';
+import { VOICE_ENABLED, speak, stopSpeaking } from '../../lib/voice';
 import { fetchTripBadge, formatTripPeriod, type TripBadge } from '../../lib/data/tripMemories';
 import { VerifiedTripBadge } from './SignalKeychainTab';
 import { SignalVehicleCard } from './SignalVehicleCard';
@@ -521,6 +522,21 @@ export function SignalPostCard({
   const [busy, setBusy] = useState(false);
   const { t, lang } = useLocale();
   const tr = useManualTranslate([post.title, post.body]);
+  // "Listen": the post read aloud in the voice of CX (what is shown, so a translated post is read translated)
+  const [listening, setListening] = useState<'idle' | 'loading' | 'playing'>('idle');
+  const listeningRef = useRef(listening);
+  listeningRef.current = listening;
+  useEffect(() => () => { if (listeningRef.current !== 'idle') stopSpeaking(); }, []);
+  const toggleListen = () => {
+    if (listening !== 'idle') { stopSpeaking(); setListening('idle'); return; }
+    setListening('loading');
+    const said = [tr.texts[0], tr.texts[1]].filter(Boolean).join('. ');
+    // `speak` resolves when it ends; the button shows "loading" until the audio has been fetched
+    speak(said, lang)
+      .catch(() => {})
+      .finally(() => setListening('idle'));
+    window.setTimeout(() => setListening((cur) => (cur === 'loading' ? 'playing' : cur)), 1200);
+  };
 
   // Long text is cut in the feed ("Show more"); the single-post page shows it all.
   const clampText = !detail && !featured;
@@ -1186,8 +1202,36 @@ export function SignalPostCard({
         </div>
       )}
 
-      {tr.available && post.body.trim() !== '' && !isSpotlightPost && (
+      {VOICE_ENABLED && !tr.available && post.body.trim() !== '' && !isSpotlightPost && (
         <div className="px-4 pb-3 sm:px-5">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); toggleListen(); }}
+            aria-pressed={listening !== 'idle'}
+            className={`pressable inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold transition-colors ${
+              listening !== 'idle' ? 'bg-accent-050 text-accent-bright' : 'bg-panel text-ink-soft hover:text-ink'
+            }`}
+          >
+            <Icon name="volume" size={13} className={listening === 'loading' ? 'animate-pulse' : ''} />
+            {listening === 'idle' ? t('Listen') : listening === 'loading' ? t('Loading…') : t('Stop')}
+          </button>
+        </div>
+      )}
+      {tr.available && post.body.trim() !== '' && !isSpotlightPost && (
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-3 sm:px-5">
+          {VOICE_ENABLED && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleListen(); }}
+              aria-pressed={listening !== 'idle'}
+              className={`pressable inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold transition-colors ${
+                listening !== 'idle' ? 'bg-accent-050 text-accent-bright' : 'bg-panel text-ink-soft hover:text-ink'
+              }`}
+            >
+              <Icon name="volume" size={13} className={listening === 'loading' ? 'animate-pulse' : ''} />
+              {listening === 'idle' ? t('Listen') : listening === 'loading' ? t('Loading…') : t('Stop')}
+            </button>
+          )}
           <button
             type="button"
             onClick={tr.toggle}
