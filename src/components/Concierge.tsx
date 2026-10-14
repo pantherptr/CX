@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -166,52 +166,43 @@ export function ConciergeLauncher({
 }
 
 /**
- * The visible area (top + height) of the phone while the keyboard is up. iOS fires a burst of
- * resize/scroll events while the keyboard animates, and following each one made the chat shake; so the box
- * is only updated once the burst goes quiet and then glides there (a CSS transition). `kb` is true while
- * the keyboard is covering the bottom of the screen. The page behind is locked in place meanwhile.
+ * Keeps the chat glued to the part of the screen you can actually see. On iPhone, Safari pans the page and
+ * shrinks the visual viewport while the keyboard comes up; the panel is therefore moved/resized straight
+ * from each visualViewport event (written to the element, no re-render, no transition, no delay), so it
+ * never lags behind the pan and never flashes. `kb` is true while the keyboard covers the bottom.
  */
-function useVisibleBox() {
-  const read = () => {
-    const v = typeof window !== 'undefined' ? window.visualViewport : null;
-    const full = typeof window !== 'undefined' ? window.innerHeight : 0;
-    const h = Math.round(v?.height ?? full);
-    return { top: Math.max(0, Math.round(v?.offsetTop ?? 0)), height: h, kb: full - h > 120 };
-  };
-  const [box, setBox] = useState(read);
-  useEffect(() => {
+function useVisibleBox(ref: RefObject<HTMLDivElement | null>) {
+  const [info, setInfo] = useState({ kb: false, height: typeof window !== 'undefined' ? window.innerHeight : 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
     const v = window.visualViewport;
-    let timer = 0;
-    let lastHeight = read().height;
-    const apply = () => {
-      timer = 0;
-      const next = read();
-      lastHeight = next.height;
-      setBox(next);
+    if (!el) return;
+    const place = () => {
+      const full = window.innerHeight;
+      const h = Math.round(v?.height ?? full);
+      const top = Math.max(0, Math.round(v?.offsetTop ?? 0));
+      el.style.top = `${top}px`;
+      el.style.height = `${h}px`;
+      const kb = full - h > 120;
+      setInfo((cur) => (cur.kb === kb && Math.abs(cur.height - h) < 3 ? cur : { kb, height: h }));
     };
-    const later = () => {
-      if (timer) window.clearTimeout(timer);
-      // The keyboard coming or going (a big jump) is followed at once, so the composer rides up with it
-      // instead of waiting hidden behind it; the small stream of events that follows is let to settle.
-      if (Math.abs(read().height - lastHeight) > 80) apply();
-      else timer = window.setTimeout(apply, 90);
-    };
-    apply();
-    v?.addEventListener('resize', later);
-    v?.addEventListener('scroll', later);
+    place();
+    v?.addEventListener('resize', place);
+    v?.addEventListener('scroll', place);
+    window.addEventListener('orientationchange', place);
     const prev = document.body.style.overflow;
     const prevOb = document.documentElement.style.overscrollBehavior;
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     return () => {
-      if (timer) window.clearTimeout(timer);
-      v?.removeEventListener('resize', later);
-      v?.removeEventListener('scroll', later);
+      v?.removeEventListener('resize', place);
+      v?.removeEventListener('scroll', place);
+      window.removeEventListener('orientationchange', place);
       document.body.style.overflow = prev;
       document.documentElement.style.overscrollBehavior = prevOb;
     };
-  }, []);
-  return box;
+  }, [ref]);
+  return info;
 }
 
 function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: number; y: number } | null }) {
@@ -219,8 +210,28 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   const { session } = useAuth();
   const userId = session?.user.id;
   const { cars } = useCars();
-  const box = useVisibleBox();
+  const boxRef = useRef<HTMLDivElement>(null);
+  const box = useVisibleBox(boxRef);
   const [closing, setClosing] = useState(false);
+  // Once the opening circle has finished its clip is dropped (so it can never cut the screen when Safari's
+  // toolbar changes the viewport), and the page behind is hidden so nothing of it can show through.
+  const [revealed, setRevealed] = useState(
+    () => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    const id = window.setTimeout(() => setRevealed(true), 900);
+    return () => window.clearTimeout(id);
+  }, []);
+  useEffect(() => {
+    if (!revealed || closing) return;
+    const root = document.getElementById('root');
+    if (!root) return;
+    const prev = root.style.visibility;
+    root.style.visibility = 'hidden';
+    return () => {
+      root.style.visibility = prev;
+    };
+  }, [revealed, closing]);
   /** Closes with a soft exit (the panel eases down and fades) instead of vanishing. */
   const requestClose = useCallback(() => {
     if (closing) return;
@@ -421,14 +432,20 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     : [];
 
   // The circle grows from the tap point to just past the farthest corner — no wasted travel, so the
-  // whole easing is seen.
-  const revealVars = useMemo(() => {
+  // whole easing is seen. The floor is taller than the screen (`pad` above and below), so its circle
+  // centre is lower by `pad` in its own coordinates.
+  const { revealVars, floorStyle } = useMemo(() => {
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    const h = Math.max(window.innerHeight, window.screen?.height ?? 0);
+    const pad = Math.round(window.innerHeight * 0.6);
     const x = origin?.x ?? w / 2;
-    const y = origin?.y ?? h;
+    const y = origin?.y ?? window.innerHeight;
     const r = Math.hypot(Math.max(x, w - x), Math.max(y, h - y)) + 6;
-    return { '--kai-x': `${Math.round(x)}px`, '--kai-y': `${Math.round(y)}px`, '--kai-r': `${Math.ceil(r)}px` } as React.CSSProperties;
+    const base = { '--kai-x': `${Math.round(x)}px`, '--kai-y': `${Math.round(y)}px`, '--kai-r': `${Math.ceil(r)}px` };
+    return {
+      revealVars: base as React.CSSProperties,
+      floorStyle: { ...base, '--kai-y': `${Math.round(y) + pad}px`, top: -pad, bottom: -pad } as React.CSSProperties,
+    };
   }, [origin]);
 
   const composerCard = (
@@ -496,17 +513,21 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
 
   return createPortal(
     <>
-      {/* Opaque floor: the page behind never shows through the gap the keyboard leaves. */}
-      <div aria-hidden className={`fixed inset-0 z-[309] bg-bg ${closing ? 'kai-reveal-out' : 'kai-reveal-in'}`} style={revealVars} />
+      {/* Opaque floor, taller than the screen on purpose: the page behind never shows through the gap the
+          keyboard (or Safari's toolbar) leaves. */}
       <div
+        aria-hidden
+        className={`fixed inset-x-0 z-[309] bg-bg ${closing ? 'kai-reveal-out' : revealed ? '' : 'kai-reveal-in'}`}
+        style={floorStyle}
+      />
+      <div
+        ref={boxRef}
         data-no-pull
-        className={`fixed inset-x-0 z-[310] flex flex-col overflow-hidden overscroll-none ${closing ? 'kai-reveal-out' : 'kai-reveal-in'}`}
-        style={{
-          top: box.top,
-          height: box.height,
-          transition: 'top .22s cubic-bezier(.2,.8,.2,1), height .22s cubic-bezier(.2,.8,.2,1)',
-          ...revealVars,
-        }}
+        onAnimationEnd={(e) => { if (e.target === e.currentTarget && !closing) setRevealed(true); }}
+        className={`fixed inset-x-0 top-0 z-[310] flex h-[100dvh] flex-col overflow-hidden overscroll-none ${
+          closing ? 'kai-reveal-out' : revealed ? '' : 'kai-reveal-in'
+        }`}
+        style={revealVars}
       >
       <div
         role="dialog"
