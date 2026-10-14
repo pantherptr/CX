@@ -12,8 +12,7 @@ import { apiUrl } from '../lib/api';
 import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
-import { XOrb } from './XOrb';
-import { XLogo } from './XLogo';
+import { XCar } from './XCar';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
 const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.BorderBeam })));
@@ -119,9 +118,9 @@ function ThoughtTrail({ steps, activeIndex = null }: { steps: string[]; activeIn
 let nextId = 0;
 const newId = () => `m${++nextId}`;
 
-/** The assistant's face — X's logo (a black glass X with a chrome rim), with an "online" dot when `live`. */
-export function ConciergeMark({ size = 30, live = false, className = '' }: { size?: number; live?: boolean; className?: string }) {
-  return <XLogo size={size} live={live} className={className} />;
+/** The assistant's face — X's mascot: a little CX sports car with eyes in the windscreen and the X on its bonnet. */
+export function ConciergeMark({ size = 30, live = false, active = false, className = '' }: { size?: number; live?: boolean; active?: boolean; className?: string }) {
+  return <XCar size={size} live={live} active={active} className={className} />;
 }
 
 /** The trigger button — pass whatever styling the placement wants via `className`. */
@@ -648,7 +647,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
 
           {pending && !human && (
             <div className="flex items-start gap-2.5" role="status">
-              <XOrb size={36} thinking />
+              <ConciergeMark size={36} active />
               <div className="min-w-0 flex-1 pt-1">
                 <div className="flex h-7 items-center gap-2 text-xs">
                   <Icon name="sparkles" size={14} className="shrink-0 text-muted" />
