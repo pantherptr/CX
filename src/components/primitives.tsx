@@ -111,6 +111,8 @@ export function Logo({
       <Img
         src={LOGO_SRC.wordmark}
         alt="CX"
+        width={1633}
+        height={296}
         className="h-6 w-auto shrink-0 object-contain transition-transform duration-300 group-hover:-rotate-3 sm:h-7"
         fallback={fallback}
       />

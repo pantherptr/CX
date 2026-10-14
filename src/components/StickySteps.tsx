@@ -136,7 +136,7 @@ export default function StickySteps({ steps, stepWord }: { steps: StickyStep[]; 
             <span className="relative block h-px flex-1 bg-line">
               <span ref={barRef} className="absolute inset-y-0 left-0 block w-full bg-accent" />
             </span>
-            <span className="font-mono text-detail tabular-nums text-faint">{String(steps.length).padStart(2, '0')}</span>
+            <span className="font-mono text-detail tabular-nums text-muted">{String(steps.length).padStart(2, '0')}</span>
           </div>
 
           <div className="relative mt-5 h-[calc(100%-2.5rem)] sm:mt-8">
@@ -152,7 +152,7 @@ export default function StickySteps({ steps, stepWord }: { steps: StickyStep[]; 
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
                   <Icon name={s.icon} size={22} />
                 </span>
-                <p className="mt-5 text-label font-semibold uppercase tracking-[0.14em] text-faint">{s.label}</p>
+                <p className="mt-5 text-label font-semibold uppercase tracking-[0.14em] text-muted">{s.label}</p>
                 <h3 className="mt-1.5 font-display text-[1.75rem] font-semibold leading-[1.1] tracking-[-0.02em] text-ink sm:text-[2.5rem]">
                   {s.title}
                 </h3>

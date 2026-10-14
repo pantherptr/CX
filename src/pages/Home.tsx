@@ -187,7 +187,7 @@ function SignalFan() {
             <Avatar src="/signal/av-luca.webp" size={36} />
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1 text-detail font-semibold text-ink">Luca <VerifiedBadge role="client" size={13} /></span>
-              <span className="block text-caption text-faint">Milano</span>
+              <span className="block text-caption text-muted">Milano</span>
             </span>
             <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
           </div>
@@ -209,7 +209,7 @@ function SignalFan() {
             <Avatar src="/signal/av-giulia.webp" size={40} />
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1 text-detail font-semibold text-ink">Giulia <VerifiedBadge role="client" size={14} /></span>
-              <span className="block text-caption text-faint">Milano · 2h</span>
+              <span className="block text-caption text-muted">Milano · 2h</span>
             </span>
             <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
           </div>
@@ -470,7 +470,7 @@ export default function Home() {
           action={
             <Link
               to="/how-it-works"
-              className="inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
+              className="hit-44 inline-flex items-center gap-1.5 text-body font-medium text-accent transition-colors hover:text-accent-600"
             >
               {t('Learn more')} <Icon name="arrowRight" size={15} />
             </Link>
@@ -731,7 +731,7 @@ export default function Home() {
               <p className="mt-4 max-w-sm text-copy leading-relaxed text-muted text-pretty">
                 {t('The essentials about booking, protection and cancellations — before you book.')}
               </p>
-              <Link to="/help" className="mt-5 inline-flex items-center gap-1.5 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600">
+              <Link to="/help" className="hit-44 mt-5 inline-flex items-center gap-1.5 text-body font-semibold text-accent-700 transition-colors hover:text-accent-600">
                 {t('Visit the Help Center')} <Icon name="arrowRight" size={16} />
               </Link>
             </div>

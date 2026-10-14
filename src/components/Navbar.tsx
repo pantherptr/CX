@@ -200,7 +200,7 @@ function PublicNavbar() {
               <>
                 <Link
                   to="/login"
-                  className={`pressable btn-glint inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
+                  className={`hit-44 pressable btn-glint inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-detail font-semibold transition-colors duration-200 ${
                     transparent
                       ? 'border-ink/15 bg-white/55 text-ink backdrop-blur-md hover:border-ink/35 hover:bg-white/75'
                       : 'border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-panel'
@@ -218,7 +218,7 @@ function PublicNavbar() {
                 setMenuEverOpened(true);
                 setMenuOpen(true);
               }}
-              className={`grid h-10 w-10 place-items-center rounded-xl transition-colors lg:hidden ${
+              className={`hit-44 grid h-10 w-10 place-items-center rounded-xl transition-colors lg:hidden ${
                 transparent ? 'text-ink hover:bg-white/45' : 'text-ink hover:bg-panel'
               }`}
               aria-label="Open menu"
@@ -311,7 +311,7 @@ function AppNavbar() {
                 setDrawerEverOpened(true);
                 setDrawerOpen(true);
               }}
-              className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
+              className="hit-44 grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"
               aria-label="Open menu"
             >
               <Icon name="menu" size={20} />

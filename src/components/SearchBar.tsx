@@ -65,7 +65,8 @@ export function SearchBar({
     </div>
   );
 
-  const selectCls = `w-full appearance-none bg-transparent text-copy font-medium outline-none cursor-pointer -ml-0.5 ${
+  // py-3 / -my-3: the visible size is unchanged, but the select's own touch area is 48px tall
+  const selectCls = `w-full appearance-none bg-transparent py-3 -my-3 text-copy font-medium outline-none cursor-pointer -ml-0.5 ${
     dark ? 'text-white [color-scheme:dark]' : 'text-ink'
   }`;
 
