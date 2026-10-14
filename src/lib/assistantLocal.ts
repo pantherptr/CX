@@ -3,7 +3,7 @@ import type { Car } from '../data/types';
 import { matchCars, type DriveType, type Preferences, type Priority } from './carMatch';
 
 /**
- * Kai's brain, with no AI service and no cost: it runs in the browser. Two things only —
+ * X's brain, with no AI service and no cost: it runs in the browser. Two things only —
  *   1. questions and problems → the closest answer in the site's own FAQ (word overlap, in four languages
  *      for the key words), and a person from the team when nothing fits;
  *   2. "find me a car" → the deterministic car matcher the site already had (carMatch.ts), fed with what
@@ -11,7 +11,7 @@ import { matchCars, type DriveType, type Preferences, type Priority } from './ca
  * It never invents a price, policy or car; what it cannot answer it hands to a person.
  */
 
-/** What Kai actually did to get the answer — shown as the "think" trail in the chat. */
+/** What X actually did to get the answer — shown as the "think" trail in the chat. */
 export interface ReplyTrace {
   kind: 'cars' | 'faq' | 'greeting' | 'person' | 'unknown';
   carsConsidered?: number;

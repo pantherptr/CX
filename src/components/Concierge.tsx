@@ -18,16 +18,16 @@ const BorderBeam = lazy(() => import('border-beam').then((m) => ({ default: m.Bo
 import type { Car } from '../data/types';
 
 /**
- * Kai — the CX assistant. A plain chat: you write what you need (a car for a trip, a problem with a
- * booking, how verification works) and Kai answers, showing real cars when it recommends some. It can
+ * X — the CX assistant. A plain chat: you write what you need (a car for a trip, a problem with a
+ * booking, how verification works) and X answers, showing real cars when it recommends some. It can
  * hand you to a person from the team: the conversation moves to a real CX chat *in the same panel*, with
- * what you said to Kai already in it, and the team's replies appear right there.
+ * what you said to X already in it, and the team's replies appear right there.
  *
  * The answers come from /api/notify-message (type "assistant"): only the FAQ and the published cars are
  * ever shown to the model — never private bookings, messages or documents.
  */
-export const ASSISTANT_NAME = 'Kai';
-// Kai is free: answers are computed in the browser. The AI service only runs when this exact switch is set
+export const ASSISTANT_NAME = 'X';
+// X is free: answers are computed in the browser. The AI service only runs when this exact switch is set
 // at build time. (It used to be VITE_ASSISTANT_AI; that old name is deliberately ignored now, so a leftover
 // value in the hosting settings can no longer turn on a paid service by accident.)
 const AI_ENABLED = import.meta.env.VITE_KAI_USE_AI === '1';
@@ -38,12 +38,12 @@ interface ChatMsg {
   text: string;
   cars?: string[];
   offerHuman?: boolean;
-  /** What Kai did to get there (the "think" trail) and how long it took. */
+  /** What X did to get there (the "think" trail) and how long it took. */
   steps?: string[];
   seconds?: number;
 }
 
-/** The trail shown for a local answer. Every line is something Kai really did or found for this question. */
+/** The trail shown for a local answer. Every line is something X really did or found for this question. */
 function thoughtSteps(
   r: LocalReply,
   cars: Car[],
@@ -343,7 +343,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
         },
       };
 
-      // No AI service by default (no cost): Kai answers from the site's FAQ and the car matcher, in the
+      // No AI service by default (no cost): X answers from the site's FAQ and the car matcher, in the
       // browser. Set VITE_KAI_USE_AI=1 (and a key on the server) to use the AI instead.
       if (!AI_ENABLED) {
         const r = localReply(clean, cars ?? [], t);

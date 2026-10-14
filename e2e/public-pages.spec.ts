@@ -137,8 +137,8 @@ test('installed-app mode (?app=1): dragging from the left edge goes back one pag
 test('the assistant opens from Browse with its greeting and a way to reach a person', async ({ page }) => {
   await open(page, '/browse', 'light');
   await page.getByRole('button', { name: /find your cx/i }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Kai' });
+  const dialog = page.getByRole('dialog', { name: 'X', exact: true });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByText(/I'm Kai/)).toBeVisible();
+  await expect(dialog.getByText(/I'm X\b/)).toBeVisible();
   await expect(dialog.getByRole('button', { name: /talk to a person/i }).first()).toBeVisible();
 });

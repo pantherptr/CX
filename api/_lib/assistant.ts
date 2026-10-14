@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { faqs } from '../../src/data/faqs.js';
 
 /**
- * The CX assistant ("Kai"): answers visitors and members about cars and about problems, and says when a
+ * The CX assistant ("X"): answers visitors and members about cars and about problems, and says when a
  * person from the team should take over. It is stateless — the page sends the last few messages — and it
  * only ever sees public facts: the FAQ and the published car list. Private data (bookings, messages,
  * documents) is never sent to the model, and it is told never to ask for card numbers, passwords or codes.
@@ -19,7 +19,7 @@ const MAX_CHARS = 900;
 // spend limit set in the Anthropic console):
 //  - visitors who are not signed in get a few answers per 10 minutes, members get more;
 //  - ASSISTANT_DAILY_MAX caps the answers a day (default 3000);
-//  - ASSISTANT_ENABLED=0 switches the AI off (Kai then only hands over to a person).
+//  - ASSISTANT_ENABLED=0 switches the AI off (X then only hands over to a person).
 const hits = new Map<string, number[]>();
 function limited(key: string, max: number): boolean {
   const now = Date.now();
@@ -76,7 +76,7 @@ export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
   const ip = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || 'unknown';
   const uid = await signedInUser(req);
   if (limited(uid ? `u:${uid}` : `ip:${ip}`, uid ? 40 : 8)) {
-    return res.status(429).json({ error: uid ? 'Too many messages. Please wait a moment.' : 'Sign in to keep chatting with Kai, or talk to a person from the team.' });
+    return res.status(429).json({ error: uid ? 'Too many messages. Please wait a moment.' : 'Sign in to keep chatting with X, or talk to a person from the team.' });
   }
 
   const body = (req.body ?? {}) as { messages?: { role?: string; content?: string }[]; signedIn?: boolean };
@@ -98,7 +98,7 @@ export async function handleAssistant(req: VercelRequest, res: VercelResponse) {
 
   const { text: cars, slugs } = await carContext();
   const system = [
-    'You are Kai, the assistant of CX, a premium car-rental marketplace where people rent cars from local hosts.',
+    'You are X, the assistant of CX, a premium car-rental marketplace where people rent cars from local hosts.',
     'Be warm, brief and concrete: usually 1–3 short sentences, plain text, no markdown headings. Reply in the language of the user\'s last message.',
     'You help with two things: (1) finding the right car — ask at most one short question at a time (trip type, people, budget, city) and then suggest 1–3 cars from the list; (2) problems and questions about booking, payments, verification, handover, cancellation, hosting — answer from the FAQ below only.',
     'Never invent prices, policies, availability, legal or insurance details. If something is not in the FAQ or the car list, say you are not sure and offer a person from the team.',

@@ -10,7 +10,7 @@ import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
 import { Reveal, Img } from '../components/motion';
 import { ScrollRevealImage, ScrollRevealPanel } from '../components/ScrollRevealImage';
-import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
+import { ASSISTANT_NAME, ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
 import { unsplash, unsplashSrcSet } from '../lib/img';
@@ -553,7 +553,7 @@ export default function Home() {
             <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
               <div className="max-w-xl">
                 <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
-                  <ConciergeMark size={44} live /> {t('Kai · CX assistant')}
+                  <ConciergeMark size={44} live /> {t('X · CX assistant')}
                 </p>
                 <BlurText as="h2" className="mt-4 font-display text-3xl font-semibold text-ink text-balance sm:text-4xl" text={t('Find your CX')} />
                 <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
@@ -565,7 +565,7 @@ export default function Home() {
                 </ConciergeLauncher>
               </div>
 
-              {/* A glimpse of the real chat with Kai — a request, the steps Kai takes, and the car it
+              {/* A glimpse of the real chat with X — a request, the steps X takes, and the car it
                   suggests (a real one from the fleet), with the same composer the chat opens with.
                   Decorative only; the button on the left is the way in. */}
               <div aria-hidden="true" className="w-full max-w-[320px] md:rotate-[1.5deg]">
@@ -613,7 +613,7 @@ export default function Home() {
                   )}
 
                   <div className="mt-3 rounded-2xl border border-line-strong bg-white p-2 pl-3">
-                    <span className="block py-1 text-detail text-muted">{t('Ask {name} anything…', { name: 'Kai' })}</span>
+                    <span className="block py-1 text-detail text-muted">{t('Ask {name} anything…', { name: ASSISTANT_NAME })}</span>
                     <span className="mt-1 flex items-center justify-between">
                       <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-ink/15 bg-ink/5 px-2.5 text-caption font-semibold text-ink">
                         <Icon name="sparkles" size={12} /> {t('Think')} <Icon name="check" size={11} />

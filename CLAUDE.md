@@ -84,7 +84,7 @@ Code is written to fail soft before a migration is run.
 - Images already in Storage: `scripts/recompress-images.mjs` (dry run by default; `--apply` backs originals up locally first).
 - Optional `VITE_GEOAPIFY_KEY` switches address search from Photon to Geoapify (`src/lib/geocode.ts`).
 
-- **Kai, the CX assistant** (`src/components/Concierge.tsx`, replaces the old guided matcher; same exports
+- **X (was Kai), the CX assistant** (`src/components/Concierge.tsx`, replaces the old guided matcher; same exports
   `ConciergeLauncher` / `ConciergeMark`): a chat. **Free by default**: answers are computed in the browser by
   `src/lib/assistantLocal.ts` (FAQ word matching in en/it/ro/es + `carMatch.matchCars` for car requests; unknown
   questions offer a person). No API, no cost. The AI path (`api/_lib/assistant.ts` via
