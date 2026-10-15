@@ -32,6 +32,7 @@ import { SignalEditProfileSheet } from './SignalEditProfileSheet';
 import { SignalFollowListSheet } from './SignalFollowListSheet';
 import { FollowButton } from './FollowButton';
 import { CxFlag } from '../CxFlag';
+import { OWNER_AVATAR } from '../../lib/data/signalIdentity';
 import { FollowerFaces } from './FollowerFaces';
 import { SignalProfileHero } from './SignalProfileHero';
 import { Tap, motion } from '../motionKit';
@@ -562,7 +563,7 @@ export function SignalProfileDetail({
             username={realProfile?.username ?? demo?.username}
             bio={realProfile?.bio ?? demo?.bio}
             coverUrl={realProfile?.coverUrl ?? null}
-            avatarUrl={realProfile?.avatarUrl ?? demo?.avatarUrl ?? null}
+            avatarUrl={realProfile?.isOwner ? OWNER_AVATAR : (realProfile?.avatarUrl ?? demo?.avatarUrl ?? null)}
             hostStats={realProfile?.isHost ? { rating: realProfile.rating, trips: realProfile.trips } : null}
             followers={showFollowCounts && realProfile ? { count: followersCount, onOpen: () => setFollowListMode('followers') } : undefined}
             following={showFollowCounts && realProfile ? { count: realProfile.followingCount, onOpen: () => setFollowListMode('following') } : undefined}

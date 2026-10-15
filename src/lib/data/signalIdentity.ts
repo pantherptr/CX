@@ -52,6 +52,9 @@ export interface SignalIdentity {
   selfRole?: 'owner' | 'admin' | 'host' | 'verified_client' | 'client';
 }
 
+/** The Owner's profile photo everywhere in SIGNAL: the gold chrome bat. */
+export const OWNER_AVATAR = '/brand/avatar-owner-gold.png';
+
 export function resolveSignalIdentity(
   publisherType: SignalPublisherType,
   authorName: string,
@@ -78,10 +81,10 @@ export function resolveSignalIdentity(
         : selfRole === 'host' ? 'Host'
         : selfRole === 'verified_client' ? 'Verified Client'
         : 'Client';
-      return { type: 'self', name: authorName, subtitle, avatarUrl: authorAvatarUrl, selfRole, username: authorUsername ?? null };
+      return { type: 'self', name: authorName, subtitle, avatarUrl: authorIsOwner ? OWNER_AVATAR : authorAvatarUrl, selfRole, username: authorUsername ?? null };
     }
     case 'owner':
     default:
-      return { type: 'owner', name: authorName, subtitle: 'Owner', avatarUrl: authorAvatarUrl, username: authorUsername ?? null };
+      return { type: 'owner', name: authorName, subtitle: 'Owner', avatarUrl: OWNER_AVATAR, username: authorUsername ?? null };
   }
 }
