@@ -203,6 +203,9 @@ export function useBottomNavVisible() {
 const DOCK_MORPH = true;
 const CIRCLE = 60; // px, the folded dock
 const SIGNAL_ROUTE = /^\/signal(\/|$)/;
+// On Browse the dock starts folded into its small circle (the map and the list get the whole screen) and only a
+// touch on the circle opens it; scrolling down folds it again, scrolling up never opens it by itself.
+const BROWSE_ROUTE = /^\/browse(\/|$)/;
 const SHRINK_AFTER = 56; // px of sustained downward scrolling before it folds
 const RESTORE_AFTER = 22; // px of upward scrolling is enough to open it again
 const TOP_GUARD = 64; // always open near the very top
@@ -213,7 +216,7 @@ const COOLDOWN_MS = 420; // never flip twice in quick succession
  *  `data-folded`, and every movement is a CSS transition on transform/opacity (see `.dock-*` in
  *  index.css) that the compositor runs on its own — nothing on the JS thread to stutter while the
  *  page is scrolling. */
-function useDockFold(active: boolean, pathname: string, navRef: React.RefObject<HTMLElement | null>) {
+function useDockFold(active: boolean, pathname: string, navRef: React.RefObject<HTMLElement | null>, touchOnly = false) {
   const foldedRef = useRef(false);
   const lastY = useRef(0);
   const accum = useRef(0);
@@ -235,8 +238,10 @@ function useDockFold(active: boolean, pathname: string, navRef: React.RefObject<
     set(false);
   }, [set]);
 
-  // A new screen always starts open.
-  useEffect(() => { open(); }, [pathname, open]);
+  // A new screen starts open — except Browse, which starts folded and is opened by a touch.
+  useEffect(() => {
+    if (touchOnly) { accum.current = 0; dir.current = 0; set(true); } else open();
+  }, [pathname, open, set, touchOnly]);
 
   useEffect(() => {
     if (!active) { set(false); return; }
@@ -254,19 +259,19 @@ function useDockFold(active: boolean, pathname: string, navRef: React.RefObject<
         if (rawY < 0 || rawY > maxY) { lastY.current = Math.min(Math.max(rawY, 0), maxY); return; }
         const delta = rawY - lastY.current;
         lastY.current = rawY;
-        if (rawY <= TOP_GUARD) { accum.current = 0; dir.current = 0; set(false); return; }
+        if (rawY <= TOP_GUARD) { accum.current = 0; dir.current = 0; if (!touchOnly) set(false); return; }
         if (Math.abs(delta) < 1 || Math.abs(delta) > MAX_STEP) return;
         const nextDir = delta > 0 ? 1 : -1;
         if (nextDir !== dir.current) { dir.current = nextDir; accum.current = 0; }
         accum.current += Math.abs(delta);
         if (performance.now() - lastFlip.current < COOLDOWN_MS) return;
         if (nextDir === 1 && accum.current >= SHRINK_AFTER) set(true);
-        else if (nextDir === -1 && accum.current >= RESTORE_AFTER) set(false);
+        else if (nextDir === -1 && accum.current >= RESTORE_AFTER && !touchOnly) set(false);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [active, set]);
+  }, [active, set, touchOnly]);
 
   return { foldedRef, open };
 }
@@ -278,7 +283,8 @@ export function BottomNav() {
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
   const navRef = useRef<HTMLElement>(null);
-  const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname, navRef);
+  const onBrowse = BROWSE_ROUTE.test(pathname);
+  const fold = useDockFold(visible && DOCK_MORPH && (SIGNAL_ROUTE.test(pathname) || onBrowse), pathname, navRef, onBrowse);
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge
   // here too the moment the pathname lands on /signal, rather than

@@ -67,7 +67,7 @@ export function BrowseMap({
   /** the results are limited to a map area: the map stays where the person put it */
   areaActive?: boolean;
   onAreaChange?: (b: AreaBounds | null) => void;
-  /** pulling the sheet all the way up (or tapping its handle) opens the full Browse list page */
+  /** tapping the sheet's handle brings the list up over the map */
   onExpand?: () => void;
 }) {
   const { t } = useLocale();
@@ -85,8 +85,6 @@ export function BrowseMap({
   const youMarker = useRef<MapLibreMarker | null>(null);
   const [locating, setLocating] = useState(false);
   const [moved, setMoved] = useState(false);
-  const [pull, setPull] = useState<number | null>(null); // px the sheet is pulled up while a finger holds it
-  const [leaving, setLeaving] = useState(false);
 
   // cities present in the results, busiest first
   const cities = useMemo(() => {
@@ -310,15 +308,7 @@ export function BrowseMap({
     setMoved(false);
   };
 
-  // pulling the sheet: it follows the finger; far enough (or a tap) and the full Browse list page opens
-  const dragY = useRef<number | null>(null);
-  const moved2 = useRef(false);
   const showSheet = variant === 'main' && placed.length > 0;
-  const expand = () => {
-    if (!onExpand) return;
-    setLeaving(true);
-    window.setTimeout(() => { onExpand(); setLeaving(false); setPull(null); }, 240);
-  };
 
   return (
     <div className={`relative overflow-hidden bg-[#f2f4f7] ${className}`}>
@@ -370,32 +360,14 @@ export function BrowseMap({
 
       {ready && showSheet && (
         <div
-          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur ${pull === null || leaving ? 'transition-[height] duration-[240ms]' : ''}`}
-          style={{ height: leaving ? '100%' : pull !== null ? `calc(9.6rem + ${Math.max(0, pull)}px)` : '9.6rem' }}
+          className="absolute inset-x-0 bottom-0 z-10 flex h-[9.6rem] flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur"
+          style={{ touchAction: 'pan-y' }}
         >
           <button
             type="button"
             aria-label={t('Show all cars')}
-            onPointerDown={(e) => {
-              dragY.current = e.clientY;
-              moved2.current = false;
-              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-              setPull(0);
-            }}
-            onPointerMove={(e) => {
-              if (dragY.current === null) return;
-              const dy = dragY.current - e.clientY;
-              if (Math.abs(dy) > 6) moved2.current = true;
-              setPull(Math.max(0, dy));
-            }}
-            onPointerUp={(e) => {
-              const dy = dragY.current === null ? 0 : dragY.current - e.clientY;
-              dragY.current = null;
-              if (!moved2.current || dy > 90) { expand(); return; }
-              setPull(null);
-            }}
-            onPointerCancel={() => { dragY.current = null; setPull(null); }}
-            className="flex w-full shrink-0 touch-none flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
+            onClick={() => onExpand?.()}
+            className="flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
           >
             <span className="h-1 w-10 rounded-full bg-line-strong" />
             <span className="text-caption font-semibold text-ink-soft">
