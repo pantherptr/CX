@@ -1,6 +1,7 @@
 import { MonthColumns, StripedBars, InsightCard } from '../components/ui/dash-widgets';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { SkeletonSwap } from '../components/SkeletonSwap';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
@@ -760,20 +761,22 @@ export default function HostDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {loading ? (
-            <>
+        <SkeletonSwap
+          ready={!loading}
+          className="mt-6"
+          skeleton={
+            <div className="grid grid grid-cols-2 gap-4 lg:grid-cols-4">
               <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
-            </>
-          ) : (
-            <>
+            </div>
+          }
+        >
+          <div className="grid grid grid-cols-2 gap-4 lg:grid-cols-4">
               <Reveal delay={0}><StatCard icon="euro" label="Total earnings" value={eur(totalEarnings)} accent bars={series.map((d) => d.value)} barLabels={series.map((d) => d.month.slice(0, 1))} /></Reveal>
               <Reveal delay={60}><StatCard icon="trending" label="This month" value={eur(thisMonthEarnings)} trend={monthTrend ?? undefined} /></Reveal>
               <Reveal delay={120}><StatCard icon="cars" label="Active cars" value={String(activeCarsCount)} /></Reveal>
               <Reveal delay={180}><StatCard icon="route" label="Completed trips" value={String(completedTrips)} /></Reveal>
-            </>
-          )}
-        </div>
+          </div>
+        </SkeletonSwap>
 
         {/* Action Required — the host's real to-do list, built only from
             signals this backend genuinely tracks (see buildActionItems). */}

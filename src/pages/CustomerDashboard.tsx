@@ -2,6 +2,7 @@ import { MonthColumns, StripedBars, InsightCard } from '../components/ui/dash-wi
 import { monthBuckets } from '../lib/monthBuckets';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { SkeletonSwap } from '../components/SkeletonSwap';
 import { DashboardShell, StatCard, StatCardSkeleton, greeting } from '../components/DashboardShell';
 import { Icon, type IconName } from '../components/Icon';
 import { CarCard } from '../components/CarCard';
@@ -307,20 +308,22 @@ export default function CustomerDashboard() {
         <VerifyNudge verification={verification} loading={verificationLoading} />
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          {bookingsLoading ? (
-            <>
+        <SkeletonSwap
+          ready={!bookingsLoading}
+          className="mt-6"
+          skeleton={
+            <div className="grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
-            </>
-          ) : (
-            <>
+            </div>
+          }
+        >
+          <div className="grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <Reveal delay={0}><StatCard icon="trips" label="Upcoming trips" value={String(upcomingCount)} countTo={upcomingCount} /></Reveal>
               <Reveal delay={60}><StatCard icon="checkCircle" label="Completed trips" value={String(completedCount)} countTo={completedCount} bars={tripsByMonth.values} barLabels={tripsByMonth.labels} /></Reveal>
               <Reveal delay={120}><StatCard icon="heart" label="Saved cars" value={String(favorites.size)} countTo={favorites.size} /></Reveal>
               <Reveal delay={180}><StatCard icon="wallet" label="Total spent" value={eur(totalSpent)} countTo={totalSpent} format={eur} bars={spentByMonth.values} barLabels={spentByMonth.labels} /></Reveal>
-            </>
-          )}
-        </div>
+          </div>
+        </SkeletonSwap>
 
         {/* Where the money went + one sentence worth reading — from this person's real trips only */}
         {!bookingsLoading && (spentByMonth.values.some((v) => v > 0) || carSpend.length > 0 || insight) && (

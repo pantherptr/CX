@@ -6,6 +6,7 @@ import { BrowseCard } from '../components/browse/BrowseCard';
 import { CarDrawer } from '../components/browse/CarDrawer';
 import { PriceHistogram } from '../components/browse/PriceHistogram';
 import { BrowseMap } from '../components/browse/BrowseMap';
+import { SkeletonSwap } from '../components/SkeletonSwap';
 import { Icon } from '../components/Icon';
 import { EmptyState, Modal } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
@@ -455,13 +456,17 @@ export default function Browse() {
 
           <div className={mapBeside ? 'flex items-start gap-5' : ''}>
             <div className={mapBeside ? 'w-[470px] shrink-0' : 'min-w-0'}>
-              {loading ? (
+              <SkeletonSwap
+                ready={!loading}
+                skeleton={
                 <div className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <CarCardSkeleton key={i} />
                   ))}
                 </div>
-              ) : error ? (
+                }
+              >
+              {error ? (
                 <div className="card">
                   <EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-20" />
                 </div>
@@ -496,6 +501,7 @@ export default function Browse() {
                   </AnimatePresence>
                 </motion.div>
               )}
+              </SkeletonSwap>
             </div>
 
             {mapBeside && (
