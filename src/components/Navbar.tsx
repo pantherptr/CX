@@ -5,6 +5,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 import { Img } from './motion';
 import { Logo } from './primitives';
+import { AskXIcon } from './AskX';
 import { SignalS } from './SignalLogo';
 import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
@@ -283,6 +284,7 @@ function AppNavbar() {
             >
               <Icon name="search" size={19} />
             </button>
+            <AskXIcon />
             <Link
               to="/notifications"
               className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"

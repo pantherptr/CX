@@ -134,6 +134,33 @@ export function ConciergeMark({
   return <XCar size={size} live={live} active={active} gesture={gesture} speaking={speaking} className={className} />;
 }
 
+/** The two ready-made placements used outside Home: a round header button and a "row" for lists. */
+export function AskXLaunchers({ variant, className = '' }: { variant: 'icon' | 'row'; className?: string }) {
+  const { t } = useLocale();
+  if (variant === 'icon') {
+    return (
+      <ConciergeLauncher
+        aria-label={t('Ask X')}
+        className={`grid h-10 w-10 place-items-center rounded-xl hover:bg-panel ${className}`}
+      >
+        <ConciergeMark size={28} />
+      </ConciergeLauncher>
+    );
+  }
+  return (
+    <ConciergeLauncher
+      className={`flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-[0_6px_20px_-12px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.05] transition-transform active:scale-[0.99] ${className}`}
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel"><ConciergeMark size={32} /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold text-ink">X · {t('CX assistant')}</span>
+        <span className="block truncate text-detail text-muted">{t('Ask anything, or get to someone from the team')}</span>
+      </span>
+      <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+    </ConciergeLauncher>
+  );
+}
+
 /** The trigger button — pass whatever styling the placement wants via `className`. */
 export function ConciergeLauncher({
   className,

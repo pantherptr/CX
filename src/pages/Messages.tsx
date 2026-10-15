@@ -1,5 +1,6 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
 import { supabase } from '../lib/supabase';
+import { AskXRow } from '../components/AskX';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
@@ -1101,6 +1102,7 @@ export default function Messages() {
             )}
           </div>
           <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+            <div className="px-3 pb-2 pt-1"><AskXRow /></div>
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
             ) : conversations && conversations.length > 0 ? (

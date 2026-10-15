@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Ask X", "Chiedi a X", "Întreabă X", "Pregunta a X"],
+  ["CX assistant", "Assistente CX", "Asistent CX", "Asistente CX"],
+  ["Ask anything, or get to someone from the team", "Chiedi qualsiasi cosa, o parla con qualcuno del team", "Întreabă orice sau vorbește cu cineva din echipă", "Pregunta lo que quieras o habla con alguien del equipo"],
   ["Tell me what the problem is, here, in a few lines. I will pass it to someone from the team.", "Dimmi qual è il problema, qui, in poche righe. Lo passo a qualcuno del team.", "Spune-mi care este problema, aici, în câteva rânduri. O trimit cuiva din echipă.", "Cuéntame cuál es el problema, aquí, en pocas líneas. Se lo paso a alguien del equipo."],
   ["Describe the problem…", "Descrivi il problema…", "Descrie problema…", "Describe el problema…"],
   ["Done. Someone from the team will write to you soon — you will find the conversation in Messages.", "Fatto. Qualcuno del team ti scriverà a breve: troverai la conversazione nei Messaggi.", "Gata. Cineva din echipă îți va scrie în curând: vei găsi conversația în Mesaje.", "Listo. Alguien del equipo te escribirá pronto: encontrarás la conversación en Mensajes."],
