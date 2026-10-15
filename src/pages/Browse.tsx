@@ -476,14 +476,16 @@ export default function Browse() {
           </div>
         </div>
 
-        {/* the map: the whole screen, behind everything */}
-        <div className="sticky top-0 z-0 h-[100lvh]">
+        {/* the map: the whole screen, fixed behind everything (a sticky layer made Safari stop painting the page
+            under its toolbar); the spacer below gives the page the height the map used to take */}
+        <div className="fixed inset-x-0 top-0 z-0 h-[calc(100lvh-3.4rem)]">
           {loading ? (
             <div className="skeleton h-full w-full" />
           ) : (
             <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-full w-full" />
           )}
         </div>
+        <div aria-hidden className="pointer-events-none h-[100lvh]" />
 
         {/* the list: a sheet whose top edge peeks over the map and rises with the page */}
         <div
