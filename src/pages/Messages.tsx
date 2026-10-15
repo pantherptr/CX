@@ -1,5 +1,4 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
-import { supabase } from '../lib/supabase';
 import { AskXRow } from '../components/AskX';
 import { CxTeamCover } from '../components/CxTeamCover';
 import { useOfficialStats } from '../lib/data/cxTeam';
