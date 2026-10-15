@@ -5,7 +5,9 @@
  *
  * For each photo it:
  *   1. makes NAME.v480.jpg and NAME.v960.jpg and uploads them,
- *   2. copies the original to NAME.v.ext (the ".v." name tells the app that the copies exist),
+ *   2. stores the main photo as NAME.v.jpg / NAME.v.ext (the ".v." name tells the app that the copies exist):
+ *      car photos are re-encoded to the app's 1600 px JPEG (a 14 MB PNG becomes a few hundred KB), SIGNAL
+ *      photos are copied untouched,
  *   3. points every database reference at the new name,
  *   4. only then removes the old object.
  * A photo that nothing in the database points to, or that is already small, is left alone.
@@ -128,7 +130,10 @@ async function processBucket(bucket) {
   for (const o of todo) {
     const ext = o.path.split('.').pop().toLowerCase();
     const base = o.path.slice(0, -(ext.length + 1));
-    const newPath = `${base}.v.${ext}`;
+    // car photos are the site's own 1600 px JPEG (what the app uploads today), so a heavy PNG becomes a light
+    // JPEG; SIGNAL photos keep their original bytes (no quality limit there on purpose)
+    const reencode = bucket === 'car-photos';
+    const newPath = reencode ? `${base}.v.jpg` : `${base}.v.${ext}`;
     try {
       const refs = await referencesTo(bucket, o.path);
       if (refs.length === 0) { skipped++; console.log(`  skip ${o.path}: nothing in the database points to it`); continue; }
@@ -149,8 +154,15 @@ async function processBucket(bucket) {
         const { error } = await supabase.storage.from(bucket).upload(`${base}.v${w}.jpg`, small, { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' });
         if (error) throw error;
       }
-      const cp = await supabase.storage.from(bucket).copy(o.path, newPath);
-      if (cp.error) throw cp.error;
+      if (reencode) {
+        const main = await sharp(buf).rotate().resize({ width: 1600, withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toBuffer();
+        const up = await supabase.storage.from(bucket).upload(newPath, main, { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' });
+        if (up.error) throw up.error;
+        console.log(`    ${mb(o.size)} -> ${mb(main.length)}`);
+      } else {
+        const cp = await supabase.storage.from(bucket).copy(o.path, newPath);
+        if (cp.error) throw cp.error;
+      }
       await repoint(bucket, o.path, newPath, refs);
       const rm = await supabase.storage.from(bucket).remove([o.path]);
       if (rm.error) console.log(`  note: ${o.path} converted but the old object was not removed (${rm.error.message})`);
