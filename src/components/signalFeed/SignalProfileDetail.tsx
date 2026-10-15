@@ -40,6 +40,9 @@ import { SignalProfileHero } from './SignalProfileHero';
 import { Tap, motion } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
+import { CxTeamCover } from '../CxTeamCover';
+import { useOfficialStats } from '../../lib/data/cxTeam';
+import { uiLocale } from '../../lib/i18n/uiLocale';
 
 // How far (px) into the scroll the header compresses — a subtle,
 // transform/opacity-only effect (never a sticky mini-header; the whole
@@ -717,35 +720,59 @@ function OfficialVoiceHeader({
   compress: number;
 }) {
   const isCx = type === 'cx';
+  const stats = useOfficialStats(type);
+  const since = stats?.since ? new Date(stats.since).toLocaleDateString(uiLocale(), { month: 'short', year: 'numeric' }) : '—';
   const avatar = (
     <Img
       src={isCx ? '/brand/avatar-cx-chrome.png?v=3' : '/brand/avatar-x.png?v=4'}
       alt=""
-      className="h-24 w-24 rounded-full object-cover shadow-[0_10px_30px_-10px_rgba(0,0,0,0.45)] ring-1 ring-line"
+      className="h-[92px] w-[92px] rounded-full bg-black object-cover ring-4 ring-surface"
       fallback={
-        <span className="grid h-24 w-24 place-items-center rounded-full bg-noir text-accent-bright">
+        <span className="grid h-[92px] w-[92px] place-items-center rounded-full bg-noir text-accent-bright ring-4 ring-surface">
           <Icon name="headset" size={32} />
         </span>
       }
     />
   );
+  const ring = isCx
+    ? 'bg-gradient-to-b from-[#f6e3a1] via-[#d9b24c] to-[#8a6a1c] shadow-[0_12px_30px_-10px_rgba(217,178,76,0.7)]'
+    : 'bg-gradient-to-b from-accent-bright to-accent-700 shadow-[0_12px_30px_-10px_rgba(0,133,54,0.6)]';
   return (
-    <div className="flex flex-col items-center gap-2.5 pb-6 pt-7 text-center" style={{ transform: `scale(${1 - compress * 0.12})`, transformOrigin: 'top center' }}>
-      {hasActiveStory ? (
-        <button onClick={onOpenStory} aria-label="View Story" className="pressable inline-grid place-items-center rounded-full bg-gradient-to-tr from-accent-bright via-accent to-accent-700 p-[3px]">
-          <span className="inline-grid place-items-center rounded-full border-2 border-surface">{avatar}</span>
-        </button>
-      ) : (
-        avatar
-      )}
-      <div>
-        <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-feature font-semibold text-ink">{isCx ? 'CX' : 'X'}</span>
-          <VerifiedBadge role={isCx ? 'cx' : 'assistant'} size={18} />
+    <div className="pb-6 pt-4 text-center" style={{ transform: `scale(${1 - compress * 0.06})`, transformOrigin: 'top center' }}>
+      <div className="overflow-hidden rounded-3xl">
+        <CxTeamCover className="h-32" />
+      </div>
+      <div className="-mt-12 flex flex-col items-center">
+        {hasActiveStory ? (
+          <button onClick={onOpenStory} aria-label="View Story" className={`pressable inline-grid place-items-center rounded-full p-[3px] ${ring}`}>
+            {avatar}
+          </button>
+        ) : (
+          <span className={`inline-grid place-items-center rounded-full p-[3px] ${ring}`}>{avatar}</span>
+        )}
+        <div className="mt-3 flex items-center justify-center gap-1.5">
+          <span className="font-display text-[1.45rem] font-bold leading-tight tracking-tight text-ink">{isCx ? 'CX' : 'X'}</span>
+          <VerifiedBadge role={isCx ? 'cx' : 'assistant'} size={19} />
         </div>
-        <p style={{ opacity: 1 - compress }} className="mt-2 max-w-xs text-detail text-muted">
-          {isCx ? 'The official CX Rent brand account.' : 'CX Rent’s official AI assistant.'}
+        <p className={`mt-1 inline-flex rounded-full px-3 py-1 text-caption font-bold uppercase tracking-[0.12em] ${isCx ? 'bg-[#fbf3d7] text-[#7a5a0f]' : 'bg-accent/10 text-accent'}`}>
+          {isCx ? 'Official CX team' : 'CX assistant'}
         </p>
+        <p style={{ opacity: 1 - compress }} className="mt-3 max-w-xs text-detail leading-snug text-muted">
+          {isCx
+            ? 'The people behind CX Rent. News, updates and what is new on the platform — straight from the team.'
+            : 'CX Rent’s official assistant. Ask me for a car, a how-to, or to reach someone from the team.'}
+        </p>
+        <div style={{ opacity: 1 - compress }} className="mt-4 grid w-full max-w-sm grid-cols-2 gap-2">
+          {[
+            { k: 'Posts', v: stats ? String(stats.posts) : '…' },
+            { k: 'On SIGNAL since', v: stats ? since : '…' },
+          ].map((x) => (
+            <div key={x.k} className="rounded-2xl bg-panel px-2 py-3">
+              <p className="text-[16px] font-bold text-ink">{x.v}</p>
+              <p className="mt-0.5 text-label font-medium text-muted">{x.k}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

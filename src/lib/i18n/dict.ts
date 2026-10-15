@@ -31,6 +31,8 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["The people behind CX Rent. News, updates and what is new on the platform — straight from the team.", "Le persone dietro CX Rent. Novità e aggiornamenti della piattaforma, direttamente dal team.", "Oamenii din spatele CX Rent. Noutăți și actualizări despre platformă, direct de la echipă.", "Las personas detrás de CX Rent. Novedades y actualizaciones de la plataforma, directamente del equipo."],
+  ["CX Rent’s official assistant. Ask me for a car, a how-to, or to reach someone from the team.", "L’assistente ufficiale di CX Rent. Chiedimi un’auto, una guida, o di parlare con qualcuno del team.", "Asistentul oficial CX Rent. Cere-mi o mașină, un ghid sau să vorbești cu cineva din echipă.", "El asistente oficial de CX Rent. Pídeme un coche, una guía o hablar con alguien del equipo."],
   ["Ask X", "Chiedi a X", "Întreabă X", "Pregunta a X"],
   ["CX assistant", "Assistente CX", "Asistent CX", "Asistente CX"],
   ["Ask anything, or get to someone from the team", "Chiedi qualsiasi cosa, o parla con qualcuno del team", "Întreabă orice sau vorbește cu cineva din echipă", "Pregunta lo que quieras o habla con alguien del equipo"],
