@@ -21,10 +21,29 @@ function positionOf(car: Car, exact: boolean): [number, number] | null {
   return [Math.round(car.lng / step) * step, Math.round(car.lat / step) * step];
 }
 
-/** A real map of the cars currently listed: one white price pill per car, the
- *  hovered or open car in black. Clicking a pill opens that car. The map follows
- *  the results — it frames the city that has the most cars, with a switcher for
- *  the others. */
+export interface AreaBounds { west: number; south: number; east: number; north: number }
+
+type Pin = { car: Car; pos: [number, number] };
+
+/** Greedy clustering in screen pixels: pins closer than `radius` px become one bubble with a count. */
+function clusterPins(pins: Pin[], project: (p: [number, number]) => { x: number; y: number }, radius = 44) {
+  const out: { x: number; y: number; items: Pin[] }[] = [];
+  for (const it of pins) {
+    const p = project(it.pos);
+    const hit = out.find((c) => Math.hypot(c.x - p.x, c.y - p.y) < radius);
+    if (hit) {
+      hit.x = (hit.x * hit.items.length + p.x) / (hit.items.length + 1);
+      hit.y = (hit.y * hit.items.length + p.y) / (hit.items.length + 1);
+      hit.items.push(it);
+    } else out.push({ x: p.x, y: p.y, items: [it] });
+  }
+  return out;
+}
+
+/** A real map of the cars currently listed: one price pill per car (the tip on the exact spot), nearby cars
+ *  gathered into a counted bubble that opens up as you zoom, the hovered or open car in black. The map follows
+ *  the results — it frames the city that has the most cars, with a switcher for the others — and "Search this
+ *  area" turns whatever you are looking at into the results. */
 export function BrowseMap({
   cars,
   activeId,
@@ -32,22 +51,28 @@ export function BrowseMap({
   onSelect,
   className = '',
   variant = 'side',
+  areaActive = false,
+  onAreaChange,
 }: {
   cars: Car[];
   activeId: string | null;
   hoverId: string | null;
   onSelect: (car: Car) => void;
   className?: string;
-  /** 'main': the map IS the page on a phone — one finger moves it, the cars sit below it as a row of cards that
-   *  follows the pins, and there is a "where am I" button. 'side': the map beside the list on a wide screen. */
+  /** 'main': the map IS the page on a phone — one finger moves it, a sheet below holds the cars (a row of cards
+   *  that follows the pins, pulled up into the full list), and there is a "where am I" button.
+   *  'side': the map beside the list on a wide screen. */
   variant?: 'side' | 'main';
+  /** the results are limited to a map area: the map stays where the person put it */
+  areaActive?: boolean;
+  onAreaChange?: (b: AreaBounds | null) => void;
 }) {
   const { t } = useLocale();
   const exact = useHasAccess();
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const mlRef = useRef<typeof import('maplibre-gl') | null>(null);
-  const markers = useRef<Map<string, { marker: MapLibreMarker; el: HTMLButtonElement }>>(new Map());
+  const markers = useRef<{ marker: MapLibreMarker; el: HTMLButtonElement; ids: string[] }[]>([]);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [pick, setPick] = useState<string | null>(null);
@@ -56,6 +81,8 @@ export function BrowseMap({
   const programmatic = useRef(false);
   const youMarker = useRef<MapLibreMarker | null>(null);
   const [locating, setLocating] = useState(false);
+  const [moved, setMoved] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // cities present in the results, busiest first
   const cities = useMemo(() => {
@@ -66,6 +93,19 @@ export function BrowseMap({
   const city = pick && cities.includes(pick) ? pick : cities[0] ?? null;
   // cars shown in the list whose host has not marked the exact spot yet
   const unplaced = useMemo(() => cars.filter((c) => c.lat == null || c.lng == null).length, [cars]);
+  // cars that have an exact spot, in the order of the list: these are the cards under the map
+  const placed = useMemo(() => cars.filter((c) => c.lat != null && c.lng != null), [cars]);
+
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const variantRef = useRef(variant);
+  variantRef.current = variant;
+  const placedRef = useRef(placed);
+  placedRef.current = placed;
+  const exactRef = useRef(exact);
+  exactRef.current = exact;
+  const drawRef = useRef<() => void>(() => {});
+  const highlightRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!box.current) return;
@@ -89,6 +129,9 @@ export function BrowseMap({
         mapRef.current = map;
         collapseAttribution(map);
         map.on('load', () => { if (!cancelled) setReady(true); });
+        map.on('zoomend', () => drawRef.current());
+        // only a move made by the person (not the map framing the results) offers "Search this area"
+        map.on('moveend', (e) => { if ((e as { originalEvent?: unknown }).originalEvent) setMoved(true); });
       } catch {
         if (!cancelled) setFailed(true);
       }
@@ -96,7 +139,7 @@ export function BrowseMap({
     return () => {
       cancelled = true;
       markers.current.forEach(({ marker }) => marker.remove());
-      markers.current.clear();
+      markers.current = [];
       youMarker.current?.remove();
       youMarker.current = null;
       mapRef.current?.remove();
@@ -106,65 +149,97 @@ export function BrowseMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // pins follow the results (and whether the viewer may see the exact spot)
-  useEffect(() => {
-    const map = mapRef.current;
-    const ml = mlRef.current;
-    if (!ready || !map || !ml) return;
-    markers.current.forEach(({ marker }) => marker.remove());
-    markers.current.clear();
-    // cars sharing a spot (same building, or the same block when signed out) get a small sideways step
-    const seen = new Map<string, number>();
-    cars.forEach((car) => {
-      const pos = positionOf(car, exact);
-      if (!pos) return;
-      const k = `${pos[0].toFixed(5)},${pos[1].toFixed(5)}`;
-      const n = seen.get(k) ?? 0;
-      seen.set(k, n + 1);
-      const el = document.createElement('button');
-      el.className = 'bm-pin';
-      if (exact) el.dataset.exact = '1';
-      el.textContent = eur(car.pricePerDay);
-      el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}${exact && car.addressLabel ? ` — ${car.addressLabel}` : ''}`);
-      if (exact && car.addressLabel) el.title = car.addressLabel;
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (variantRef.current === 'main') focusRef.current(car.id, true);
-        else onSelectRef.current(car);
-      });
-      const side = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2) * 58;
-      const marker = new ml.Marker({ element: el, anchor: exact ? 'bottom' : 'center', offset: [side, exact ? -6 : 0] }).setLngLat(pos).addTo(map);
-      markers.current.set(car.id, { marker, el });
-    });
-  }, [cars, ready, exact]);
-
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
-  const variantRef = useRef(variant);
-  variantRef.current = variant;
-
-  // cars that have an exact spot, in the order of the list: these are the cards under the map
-  const placed = useMemo(() => cars.filter((c) => c.lat != null && c.lng != null), [cars]);
-
-  /** Focus a car: its pin lights up, the map moves to it and (when asked) the card slides into view. */
+  /** Focus a car: its pin lights up, the map moves to it and (when asked) its card comes into view. */
   const focusCar = (id: string, scrollCard: boolean) => {
     setFocusId(id);
-    const car = placed.find((c) => c.id === id);
-    const pos = car ? positionOf(car, exact) : null;
-    if (pos) mapRef.current?.easeTo({ center: pos, zoom: Math.max(mapRef.current.getZoom(), exact ? 14.5 : 13.5), duration: 450 });
-    if (scrollCard) {
-      const idx = placed.findIndex((c) => c.id === id);
-      const row = strip.current;
-      const card = row?.children[idx] as HTMLElement | undefined;
-      if (row && card) {
-        programmatic.current = true;
-        row.scrollTo({ left: card.offsetLeft - (row.clientWidth - card.clientWidth) / 2, behavior: 'smooth' });
-        window.setTimeout(() => { programmatic.current = false; }, 600);
-      }
+    const car = placedRef.current.find((c) => c.id === id);
+    const pos = car ? positionOf(car, exactRef.current) : null;
+    const map = mapRef.current;
+    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), duration: 450 });
+    if (!scrollCard) return;
+    const idx = placedRef.current.findIndex((c) => c.id === id);
+    const row = strip.current;
+    const card = row?.children[idx] as HTMLElement | undefined;
+    if (row && card) {
+      programmatic.current = true;
+      row.scrollTo({ left: card.offsetLeft - (row.clientWidth - card.clientWidth) / 2, behavior: 'smooth' });
+      window.setTimeout(() => { programmatic.current = false; }, 600);
+    } else {
+      box.current?.parentElement?.querySelector(`[data-card="${id}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   };
   const focusRef = useRef(focusCar);
   focusRef.current = focusCar;
+
+  // draw the pins and the bubbles for the current zoom
+  const draw = () => {
+    const map = mapRef.current;
+    const ml = mlRef.current;
+    if (!ready || !map || !ml) return;
+    markers.current.forEach(({ marker }) => marker.remove());
+    markers.current = [];
+    const pins: Pin[] = [];
+    placedRef.current.forEach((car) => {
+      const pos = positionOf(car, exactRef.current);
+      if (pos) pins.push({ car, pos });
+    });
+    const ex = exactRef.current;
+    clusterPins(pins, (p) => map.project(p)).forEach((cl) => {
+      if (cl.items.length === 1) {
+        const { car, pos } = cl.items[0];
+        const el = document.createElement('button');
+        el.className = 'bm-pin';
+        if (ex) el.dataset.exact = '1';
+        el.textContent = eur(car.pricePerDay);
+        el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}${ex && car.addressLabel ? ` — ${car.addressLabel}` : ''}`);
+        if (ex && car.addressLabel) el.title = car.addressLabel;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (variantRef.current === 'main') focusRef.current(car.id, true);
+          else onSelectRef.current(car);
+        });
+        const marker = new ml.Marker({ element: el, anchor: ex ? 'bottom' : 'center', offset: [0, ex ? -6 : 0] }).setLngLat(pos).addTo(map);
+        markers.current.push({ marker, el, ids: [car.id] });
+        return;
+      }
+      // a bubble: the middle of its cars
+      const lng = cl.items.reduce((a, i) => a + i.pos[0], 0) / cl.items.length;
+      const lat = cl.items.reduce((a, i) => a + i.pos[1], 0) / cl.items.length;
+      const el = document.createElement('button');
+      el.className = 'bm-cluster';
+      el.textContent = String(cl.items.length);
+      el.setAttribute('aria-label', `${cl.items.length}`);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const lngs = cl.items.map((i) => i.pos[0]);
+        const lats = cl.items.map((i) => i.pos[1]);
+        const same = Math.max(...lngs) - Math.min(...lngs) < 1e-6 && Math.max(...lats) - Math.min(...lats) < 1e-6;
+        if (same || map.getZoom() >= 17) {
+          // the same building: open the cars one by one
+          if (variantRef.current === 'main') { setSheetOpen(true); focusRef.current(cl.items[0].car.id, true); }
+          else onSelectRef.current(cl.items[0].car);
+          return;
+        }
+        map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 90, maxZoom: 17, duration: 500 });
+      });
+      const marker = new ml.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+      markers.current.push({ marker, el, ids: cl.items.map((i) => i.car.id) });
+    });
+    highlightRef.current();
+  };
+  drawRef.current = draw;
+
+  useEffect(() => { draw(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [placed, ready, exact]);
+
+  // highlight
+  highlightRef.current = () => {
+    markers.current.forEach(({ el, ids }) => {
+      const on = ids.some((id) => id === activeId || id === focusId);
+      const hover = ids.some((id) => id === hoverId);
+      el.dataset.on = on ? 'active' : hover ? 'hover' : '';
+    });
+  };
+  useEffect(() => { highlightRef.current(); }, [activeId, hoverId, focusId, placed, ready]);
 
   // a swipe on the cards moves the map to that car
   const onStripScroll = () => {
@@ -209,23 +284,29 @@ export function BrowseMap({
     );
   };
 
-  // fit the busiest city
+  // fit the busiest city (not while the results are an area the person chose: the map stays put)
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !city) return;
+    if (!ready || !map || !city || areaActive) return;
     const pts = cars.filter((c) => c.city === city).map((c) => positionOf(c, exact)).filter((p): p is [number, number] => !!p);
     if (pts.length === 0) return;
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
     map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: 70, maxZoom: exact ? 15.5 : 14, duration: 900 });
-  }, [city, cars, ready, exact]);
+    setMoved(false);
+  }, [city, cars, ready, exact, areaActive]);
 
-  // highlight
-  useEffect(() => {
-    markers.current.forEach(({ el }, id) => {
-      el.dataset.on = id === activeId || id === focusId ? 'active' : id === hoverId ? 'hover' : '';
-    });
-  }, [activeId, hoverId, focusId, cars, ready]);
+  const applyArea = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const b = map.getBounds();
+    onAreaChange?.({ west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() });
+    setMoved(false);
+  };
+
+  // pulling the sheet: a tap toggles, a drag up opens, a drag down closes
+  const dragY = useRef<number | null>(null);
+  const showSheet = variant === 'main' && placed.length > 0;
 
   return (
     <div className={`relative overflow-hidden bg-[#f2f4f7] ${className}`}>
@@ -241,6 +322,29 @@ export function BrowseMap({
           ))}
         </div>
       )}
+
+      {ready && onAreaChange && (moved || areaActive) && (
+        <div className={`absolute left-1/2 z-20 -translate-x-1/2 ${cities.length > 1 ? 'top-14' : 'top-3'}`}>
+          {areaActive ? (
+            <button
+              type="button"
+              onClick={() => { onAreaChange(null); setMoved(false); }}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-caption font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
+            >
+              {t('Showing this area')} <Icon name="x" size={13} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={applyArea}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white px-4 text-caption font-semibold text-ink shadow-[0_8px_20px_-8px_rgba(0,0,0,0.5)] active:scale-95"
+            >
+              <Icon name="search" size={14} /> {t('Search this area')}
+            </button>
+          )}
+        </div>
+      )}
+
       {ready && variant === 'main' && (
         <button
           type="button"
@@ -251,31 +355,76 @@ export function BrowseMap({
           <Icon name="compass" size={19} className={locating ? 'animate-spin' : ''} />
         </button>
       )}
-      {ready && variant === 'main' && placed.length > 0 && (
+
+      {ready && showSheet && (
         <div
-          ref={strip}
-          onScroll={onStripScroll}
-          className="scrollbar-none absolute inset-x-0 bottom-0 z-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 pt-2"
+          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur transition-[height] duration-300 ${sheetOpen ? 'h-[66%]' : 'h-[9.6rem]'}`}
         >
-          {placed.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
-              className={`flex w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_10px_26px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
+          <button
+            type="button"
+            aria-label={sheetOpen ? t('Show the map') : t('Show the list')}
+            aria-expanded={sheetOpen}
+            onPointerDown={(e) => { dragY.current = e.clientY; }}
+            onPointerUp={(e) => {
+              const dy = dragY.current === null ? 0 : e.clientY - dragY.current;
+              dragY.current = null;
+              if (dy < -28) setSheetOpen(true);
+              else if (dy > 28) setSheetOpen(false);
+              else setSheetOpen((o) => !o);
+            }}
+            className="flex w-full shrink-0 touch-none flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
+          >
+            <span className="h-1 w-10 rounded-full bg-line-strong" />
+            <span className="text-caption font-semibold text-ink-soft">{t('{n} cars here', { n: placed.length })}</span>
+          </button>
+
+          {sheetOpen ? (
+            <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-4 pb-5 pt-1">
+              {placed.map((c) => (
+                <li key={c.id} data-card={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(c)}
+                    className={`flex w-full gap-3 rounded-2xl bg-surface p-2 text-left ring-1 ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
+                  >
+                    <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-20 w-28 shrink-0 rounded-xl bg-panel object-cover" />
+                    <span className="min-w-0 flex-1 py-0.5">
+                      <span className="block truncate text-body font-semibold text-ink">{c.make} {c.model}</span>
+                      <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
+                      <span className="mt-1.5 block text-body font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div
+              ref={strip}
+              onScroll={onStripScroll}
+              className="scrollbar-none flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4"
             >
-              <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-[4.6rem] w-24 shrink-0 rounded-xl bg-panel object-cover" />
-              <span className="min-w-0 flex-1 py-0.5">
-                <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
-                <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
-                <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
-              </span>
-            </button>
-          ))}
+              {placed.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
+                  className={`flex h-[5.4rem] w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
+                >
+                  <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
+                  <span className="min-w-0 flex-1 py-0.5">
+                    <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
+                    <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
+                    <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      {ready && (
-        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${variant === 'main' && placed.length > 0 ? 'bottom-[7.6rem]' : 'bottom-7'}`}>
+
+      {ready && !(showSheet && sheetOpen) && (
+        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${showSheet ? 'bottom-[10.2rem]' : 'bottom-7'}`}>
           <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
             {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}
           </p>

@@ -5,7 +5,7 @@ import type { Car } from '../data/types';
 import { BrowseCard } from '../components/browse/BrowseCard';
 import { CarDrawer } from '../components/browse/CarDrawer';
 import { PriceHistogram } from '../components/browse/PriceHistogram';
-import { BrowseMap } from '../components/browse/BrowseMap';
+import { BrowseMap, type AreaBounds } from '../components/browse/BrowseMap';
 import { SkeletonSwap } from '../components/SkeletonSwap';
 import { Icon } from '../components/Icon';
 import { EmptyState, Modal } from '../components/primitives';
@@ -338,8 +338,18 @@ export default function Browse() {
     return out;
   }, [cars, filters, sort, city, hasDateFilter, pickupDate, returnDate, bookedByCar]);
 
+  // "Search this area": the results narrowed to what the map shows
+  const [area, setArea] = useState<AreaBounds | null>(null);
+  const shown = useMemo(
+    () => (area
+      ? results.filter((c) => c.lat != null && c.lng != null && c.lng >= area.west && c.lng <= area.east && c.lat >= area.south && c.lat <= area.north)
+      : results),
+    [results, area],
+  );
+
   const reset = () => {
     setFilters(emptyFilters);
+    setArea(null);
     setCity('');
     setPickupDate('');
     setReturnDate('');
@@ -478,7 +488,7 @@ export default function Browse() {
                 <div className="card">
                   <EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-20" />
                 </div>
-              ) : results.length === 0 ? (
+              ) : shown.length === 0 ? (
                 <div className="card">
                   <EmptyState
                     size="lg"
@@ -490,11 +500,11 @@ export default function Browse() {
                   />
                 </div>
               ) : mapOnly ? (
-                <BrowseMap variant="main" cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
+                <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
               ) : (
                 <motion.div layout className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
                   <AnimatePresence mode="popLayout">
-                    {results.map((car, i) => (
+                    {shown.map((car, i) => (
                       <BrowseCard
                         key={car.id}
                         car={car}
@@ -514,7 +524,7 @@ export default function Browse() {
 
             {mapBeside && (
               <div className="sticky top-[84px] min-w-0 flex-1">
-                <BrowseMap cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-104px)] rounded-[24px] border border-line" />
+                <BrowseMap cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-104px)] rounded-[24px] border border-line" />
               </div>
             )}
           </div>
