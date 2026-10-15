@@ -33,12 +33,24 @@ let lastIntro = 0;
 const letterDelay = (i: number) => 0.08 + i * 0.11;
 const roadStart = 0.08 + 6 * 0.11 + 0.25;
 
-export function SignalBarLogo({ size = 22, className = '' }: { size?: number; className?: string }) {
+export function SignalBarLogo({
+  size = 22,
+  className = '',
+  intro = 'auto',
+  onDark = false,
+}: {
+  size?: number;
+  className?: string;
+  /** 'always' plays the entrance every time it mounts (the sign-in screen); 'auto' skips quick re-opens */
+  intro?: 'auto' | 'always';
+  /** always the silver letters (a surface that is dark whatever the theme) */
+  onDark?: boolean;
+}) {
   const width = size * ASPECT_RATIO;
   const ids = useSignalChrome();
   const [play] = useState(() => {
     const now = Date.now();
-    const go = now - lastIntro > 8000;
+    const go = intro === 'always' || now - lastIntro > 8000;
     lastIntro = now;
     return go;
   });
@@ -53,8 +65,8 @@ export function SignalBarLogo({ size = 22, className = '' }: { size?: number; cl
         <SignalChromeDefs ids={ids} />
         {LETTERS.map((d, i) => (
           <g key={i} className={inCls} style={letterStyle(i)}>
-            <path className="dark:hidden" fill={`url(#${ids.graphite})`} fillRule="evenodd" d={d} />
-            <path className="hidden dark:inline" fill={`url(#${ids.silver})`} fillRule="evenodd" d={d} />
+            {!onDark && <path className="dark:hidden" fill={`url(#${ids.graphite})`} fillRule="evenodd" d={d} />}
+            <path className={onDark ? '' : 'hidden dark:inline'} fill={`url(#${ids.silver})`} fillRule="evenodd" d={d} />
           </g>
         ))}
         {SLASH.map((d, i) => (

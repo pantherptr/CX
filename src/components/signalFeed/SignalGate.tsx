@@ -1,7 +1,7 @@
 import { BlurText } from '../ui/blur-text';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../Icon';
-import { SignalSHero } from '../SignalLogo';
+import { SignalBarLogo } from '../SignalBarLogo';
 import { SpotlightLogo } from '../SpotlightLogo';
 import { useLocale } from '../../lib/i18n';
 import { useAlwaysDarkChrome } from '../../lib/theme';
@@ -83,8 +83,9 @@ export function SignalGate() {
 
         {/* the mark */}
         <section className="order-1 flex justify-center lg:order-2 lg:col-start-2 lg:row-start-1 lg:self-end">
-          <div className="animate-scale-in">
-            <SignalSHero height={92} />
+          <div className="relative" style={{ width: 'min(24rem, calc(100vw - 3rem))' }}>
+            <span aria-hidden="true" className="s-breathe pointer-events-none absolute -inset-x-[10%] -inset-y-[90%] rounded-full bg-[radial-gradient(closest-side,rgba(0,212,71,0.32),transparent)]" />
+            <SignalBarLogo size={52} intro="always" onDark className="relative block" />
           </div>
         </section>
 
