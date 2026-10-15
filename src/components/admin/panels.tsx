@@ -195,7 +195,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
             })()}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {creators.has(u.id) && <span className="badge bg-panel-2 text-ink-soft"><Icon name="sparkles" size={12} /> Creator</span>}
+            {canManageRoles && creators.has(u.id) && <span className="badge bg-panel-2 text-ink-soft"><Icon name="sparkles" size={12} /> Creator</span>}
             {u.isAdmin && <span className="badge badge-accent"><Icon name="shield" size={12} /> Admin</span>}
             {u.isHost && <span className="badge bg-panel-2 text-ink-soft"><Icon name="cars" size={12} /> Host</span>}
             {canManageRoles ? (
@@ -216,6 +216,17 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
               </>
             ) : (
               !u.isAdmin && (
+                <>
+                {!u.isHost && !u.isOwner && (
+                  <button
+                    onClick={() => toggleCreator(u)}
+                    disabled={busyId === u.id}
+                    className={`badge disabled:opacity-50 ${creators.has(u.id) ? 'badge-accent' : 'bg-panel-2 text-ink-soft hover:bg-panel'}`}
+                    title={creators.has(u.id) ? 'Remove the SIGNAL Creator plan' : 'Give the SIGNAL Creator plan'}
+                  >
+                    <Icon name="sparkles" size={12} /> {creators.has(u.id) ? 'Creator' : 'Make Creator'}
+                  </button>
+                )}
                 <button
                   onClick={() => toggleVerifiedClient(u)}
                   disabled={busyId === u.id}
@@ -224,6 +235,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
                 >
                   <Icon name="verified" size={12} /> {u.isVerifiedClient ? 'Verified Client' : 'Verify Client'}
                 </button>
+                </>
               )
             )}
           </div>
