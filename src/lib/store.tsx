@@ -24,7 +24,8 @@ export interface Toast {
 
 interface AppState {
   favorites: Set<string>;
-  toggleFavorite: (id: string) => void;
+  /** `undo: false` is used by the Undo button itself so it does not offer to undo the undo. */
+  toggleFavorite: (id: string, opts?: { undo?: boolean }) => void;
   isFavorite: (id: string) => boolean;
   toasts: Toast[];
   toast: (t: Omit<Toast, 'id'>) => void;
@@ -86,8 +87,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
+  const toggleRef = useRef<(id: string, opts?: { undo?: boolean }) => void>(() => {});
   const toggleFavorite = useCallback(
-    (id: string) => {
+    (id: string, opts?: { undo?: boolean }) => {
       if (!session) {
         toast({
           title: 'Sign in to save cars',
@@ -114,7 +116,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       write.then(({ error }) => {
         if (!error) {
-          toast({ title: wasFav ? 'Removed from saved' : 'Saved to your list', icon: 'heart' });
+          toast({
+            title: wasFav ? 'Removed from saved' : 'Saved to your list',
+            icon: 'heart',
+            action: opts?.undo === false ? undefined : { label: 'Undo', onClick: () => toggleRef.current(id, { undo: false }) },
+          });
           return;
         }
         // Revert the optimistic update on failure.
@@ -130,6 +136,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [session, favorites, toast],
   );
 
+  toggleRef.current = toggleFavorite;
   const isFavorite = useCallback((id: string) => favorites.has(id), [favorites]);
 
   const value = useMemo(

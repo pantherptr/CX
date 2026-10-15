@@ -70,14 +70,14 @@ export function FindCarDeck({ city }: { city?: string | null }) {
         height={330}
         onDecide={(car, choice) => {
           if (choice !== 'right') return;
-          if (!isFavorite(car.id)) toggleFavorite(car.id);
+          if (!isFavorite(car.id)) toggleFavorite(car.id, { undo: false });
           if (session) {
             setBurst((b) => b + 1);
             vibrateTap();
           }
         }}
         onUndo={(car) => {
-          if (isFavorite(car.id)) toggleFavorite(car.id);
+          if (isFavorite(car.id)) toggleFavorite(car.id, { undo: false });
         }}
       >
         {(car) => (
