@@ -317,14 +317,16 @@ export default function Browse() {
     const id = window.setTimeout(go, 60);
     return () => window.clearTimeout(id);
   }, [mapFirst, phone]);
-  // when Safari's toolbar opens it no longer floats over the page: the strip it covers shows the canvas colour,
-  // which is plain white unless the root has a real colour. Give it the sheet's own, only while on this page.
+  // Safari paints the page under its floating toolbar only while nothing clips the root: here the page's own
+  // `overflow-x: clip` on html/body/#root is lifted (nothing on this page is wider than the screen), and the
+  // root is given the sheet's colour so whatever the toolbar still covers is the same cream as the list.
   useEffect(() => {
     if (!phone) return;
-    const root = document.documentElement;
-    const prev = root.style.backgroundColor;
-    root.style.backgroundColor = 'var(--color-bg)';
-    return () => { root.style.backgroundColor = prev; };
+    const els = [document.documentElement, document.body, document.getElementById('root')].filter(Boolean) as HTMLElement[];
+    const prev = els.map((e) => [e.style.overflowX, e.style.backgroundColor]);
+    els.forEach((e) => { e.style.overflowX = 'visible'; });
+    document.documentElement.style.backgroundColor = 'var(--color-bg)';
+    return () => els.forEach((e, i) => { e.style.overflowX = prev[i][0]; e.style.backgroundColor = prev[i][1]; });
   }, [phone]);
   const goList = () => window.scrollTo({ top: window.innerHeight * 0.5 - 57.6 + window.innerHeight * 0.42, behavior: 'smooth' });
   const goMap = () => window.scrollTo({ top: 0, behavior: 'smooth' });
