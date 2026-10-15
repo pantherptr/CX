@@ -5,6 +5,10 @@ import { mediaKindFromPath } from './empireFeed';
 export interface MediaOverview {
   buckets: { bucket: string; files: number; bytes: number }[];
   last24h: { files: number; bytes: number };
+  /** since the 1st of the month; null until migration 0137 has run */
+  month: { files: number; bytes: number } | null;
+  activeUsers30d: number | null;
+  members: number | null;
   topUploaders: { userId: string; name: string; files: number; bytes: number }[];
 }
 
@@ -14,12 +18,18 @@ export async function fetchMediaOverview(): Promise<{ data: MediaOverview | null
   const d = data as {
     buckets?: { bucket: string; files: number; bytes: number }[];
     last24h?: { files: number; bytes: number };
+    month?: { files: number; bytes: number };
+    active_30d?: number;
+    members?: number;
     top_uploaders?: { user_id: string; name: string; files: number; bytes: number }[];
   };
   return {
     data: {
       buckets: d.buckets ?? [],
       last24h: d.last24h ?? { files: 0, bytes: 0 },
+      month: d.month ?? null,
+      activeUsers30d: typeof d.active_30d === 'number' ? d.active_30d : null,
+      members: typeof d.members === 'number' ? d.members : null,
       topUploaders: (d.top_uploaders ?? []).map((u) => ({ userId: u.user_id, name: u.name, files: u.files, bytes: u.bytes })),
     },
     error: null,

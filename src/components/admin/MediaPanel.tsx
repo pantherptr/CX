@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { Modal } from '../primitives';
@@ -10,6 +10,86 @@ import { fetchMediaOverview, fetchRecentMediaPosts, type MediaOverview, type Med
 
 const fmtBytes = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(2)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.round(b / 1e3)} KB`);
 const fmtWhen = (iso: string) => new Date(iso).toLocaleString(uiLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+
+/** What the plan includes (Supabase, per month). Figures as published; check supabase.com/pricing. */
+const PLANS = {
+  free: { label: 'Free', storageGb: 1, egressGb: 5, mau: 50000 },
+  pro: { label: 'Pro', storageGb: 100, egressGb: 250, mau: 100000 },
+} as const;
+type PlanKey = keyof typeof PLANS;
+const LS = { plan: 'cx-usage-plan', egress: 'cx-usage-egress' };
+
+function Meter({ label, value, limit, unit, hint }: { label: string; value: number; limit: number; unit: string; hint?: string }) {
+  const pct = limit > 0 ? Math.min(999, (value / limit) * 100) : 0;
+  const tone = pct >= 100 ? 'bg-danger' : pct >= 70 ? 'bg-warn' : 'bg-accent-bright';
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-detail font-semibold text-ink">{label}</p>
+        <p className={`text-detail font-semibold ${pct >= 100 ? 'text-danger' : pct >= 70 ? 'text-warn-ink' : 'text-ink-soft'}`}>{Math.round(pct)}%</p>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-panel">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      <p className="mt-2 text-caption text-muted">{value.toLocaleString(uiLocale(), { maximumFractionDigits: 2 })} / {limit.toLocaleString(uiLocale())} {unit}</p>
+      {hint && <p className="mt-1 text-caption text-faint">{hint}</p>}
+    </div>
+  );
+}
+
+/** This month against the plan: storage, people and (typed in from Supabase's Usage page) traffic. */
+function MonthUsage({ overview }: { overview: MediaOverview }) {
+  const [plan, setPlan] = useState<PlanKey>(() => {
+    try { return localStorage.getItem(LS.plan) === 'free' ? 'free' : 'pro'; } catch { return 'pro'; }
+  });
+  const [egress, setEgress] = useState<string>(() => {
+    try { return localStorage.getItem(LS.egress) ?? ''; } catch { return ''; }
+  });
+  const p = PLANS[plan];
+  const storedGb = useMemo(() => overview.buckets.reduce((s, b) => s + b.bytes, 0) / 1e9, [overview]);
+  const egressGb = Number(egress.replace(',', '.')) || 0;
+
+  const save = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
+
+  return (
+    <section>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lead font-semibold text-ink">This month</h2>
+          <p className="mt-1 text-detail text-muted">Against what the plan includes. Amber from 70%, red from 100%.</p>
+        </div>
+        <div className="flex rounded-full bg-panel p-0.5 text-caption font-semibold">
+          {(Object.keys(PLANS) as PlanKey[]).map((k) => (
+            <button key={k} type="button" onClick={() => { setPlan(k); save(LS.plan, k); }} className={`rounded-full px-3 py-1.5 ${plan === k ? 'bg-surface text-ink shadow-hair' : 'text-muted'}`}>{PLANS[k].label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Meter label="Storage" value={storedGb} limit={p.storageGb} unit="GB" hint={overview.month ? `${fmtBytes(overview.month.bytes)} added this month (${overview.month.files} files)` : 'Run migration 0137 for the month’s uploads.'} />
+        <Meter label="Active people (30 days)" value={overview.activeUsers30d ?? 0} limit={p.mau} unit="people" hint={overview.members !== null ? `${overview.members} members in total` : 'Run migration 0137 to see this.'} />
+        <div className="rounded-2xl border border-line bg-surface p-4">
+          <label htmlFor="usage-egress" className="text-detail font-semibold text-ink">Traffic (cached egress), GB</label>
+          <input
+            id="usage-egress"
+            inputMode="decimal"
+            value={egress}
+            onChange={(e) => { setEgress(e.target.value); save(LS.egress, e.target.value); }}
+            placeholder="from Supabase → Usage"
+            className="input mt-2"
+          />
+          <p className="mt-2 text-caption text-faint">Supabase does not share this with the site: copy the number from its Usage page.</p>
+        </div>
+      </div>
+      {egress.trim() !== '' && (
+        <div className="mt-3">
+          <Meter label="Traffic this month" value={egressGb} limit={p.egressGb} unit="GB" hint={egressGb / p.egressGb >= 0.7 ? 'Look at the photos and videos above: what weighs the most?' : undefined} />
+        </div>
+      )}
+    </section>
+  );
+}
 
 /** Owner / Admin: what is being uploaded, and a quick queue to look at the newest photos and videos and remove
  *  what should not be there. */
@@ -63,7 +143,10 @@ export function MediaPanel() {
           <p className="py-6 text-center text-detail text-muted">Loading…</p>
         ) : (
           <>
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="mt-4">
+              <MonthUsage overview={overview} />
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[
                 ['Stored', fmtBytes(total)],
                 ['Files', overview.buckets.reduce((s, b) => s + b.files, 0).toLocaleString(uiLocale())],
