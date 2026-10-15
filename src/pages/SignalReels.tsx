@@ -9,6 +9,7 @@ import { setChromeOverride, setChromeSuspended } from '../lib/theme';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { haptics, shareLink } from '../lib/native';
+import { fetchSignalProfile, toggleFollow } from '../lib/data/signalProfile';
 import {
   fetchForYouFeed, fetchEmpirePostsByAuthor, mediaKindFromPath, toggleEmpirePostLike, toggleEmpirePostSave, incrementEmpirePostShare,
   type EmpirePost,
@@ -21,8 +22,14 @@ function videoUrlOf(p: EmpirePost): string | null {
   return i >= 0 ? p.mediaUrls[i] ?? null : null;
 }
 
-function Reel({ post, active, next, muted, onToggleMute, onChange }: {
-  post: EmpirePost; active: boolean; next: boolean; muted: boolean; onToggleMute: () => void; onChange: (p: EmpirePost) => void;
+/** followers + "do I follow" per author, loaded when their reel is on screen and kept for the session */
+const authorStats = new Map<string, { followers: number; following: boolean; requested: boolean }>();
+
+const compact = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K` : String(n));
+const hashtagsOf = (text: string) => Array.from(new Set(text.match(/#[\p{L}\p{N}_]+/gu) ?? [])).slice(0, 4);
+
+function Reel({ post, active, next, muted, onToggleMute, onChange, meId }: {
+  post: EmpirePost; active: boolean; next: boolean; muted: boolean; onToggleMute: () => void; onChange: (p: EmpirePost) => void; meId: string | null;
 }) {
   const { t } = useLocale();
   const video = useRef<HTMLVideoElement>(null);
@@ -36,6 +43,41 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
   const [scrubbing, setScrubbing] = useState(false);
   const lastTap = useRef(0);
   const src = videoUrlOf(post);
+  const isMe = meId === post.authorId;
+  const [menu, setMenu] = useState(false);
+  const [stats, setStats] = useState(() => authorStats.get(post.authorId) ?? null);
+  const [copied, setCopied] = useState(false);
+
+  // The author's follower count and whether you follow them, fetched when this reel comes on screen.
+  useEffect(() => {
+    if (!active || isMe || authorStats.has(post.authorId)) return;
+    let cancelled = false;
+    fetchSignalProfile(post.authorId)
+      .then((p) => {
+        if (!p || cancelled) return;
+        const v = { followers: p.followersCount, following: p.followStatus === 'following' || p.followedByMe, requested: p.followStatus === 'requested' };
+        authorStats.set(post.authorId, v);
+        setStats(v);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [active, isMe, post.authorId]);
+
+  const follow = async () => {
+    const cur = stats ?? { followers: 0, following: false, requested: false };
+    haptics.light();
+    const optimistic = { ...cur, following: !cur.following && !cur.requested, requested: false, followers: cur.followers + (cur.following ? -1 : 1) };
+    authorStats.set(post.authorId, optimistic);
+    setStats(optimistic);
+    const r = await toggleFollow(post.authorId);
+    if (r.error || !r.status) { authorStats.set(post.authorId, cur); setStats(cur); return; }
+    const real = { followers: cur.followers + (r.status === 'following' ? (cur.following ? 0 : 1) : (cur.following ? -1 : 0)), following: r.status === 'following', requested: r.status === 'requested' };
+    authorStats.set(post.authorId, real);
+    setStats(real);
+  };
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(`${window.location.origin}/signal/post/${post.id}`); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ }
+  };
 
   // Plays only while it is the reel on screen; one reel at a time. `muted` is also set on the element itself
   // (React only sets it as a property after the element exists, and iOS decides about autoplay at that moment),
@@ -136,53 +178,85 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
       )}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-2/5 bg-gradient-to-t from-black/85 to-transparent" />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end gap-3 px-4 pb-[calc(max(1.75rem,env(safe-area-inset-bottom))+4.75rem)] text-white">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end gap-3 px-4 pb-[calc(max(1.75rem,env(safe-area-inset-bottom))+1.5rem)] text-white">
         <div className="pointer-events-auto min-w-0 flex-1">
-          <Link to={`/signal/profile/${post.authorId}`} className="inline-flex items-center gap-2.5">
-            <Img
-              src={post.authorAvatarUrl ?? ''}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/60"
-              fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20"><Icon name="user" size={18} /></span>}
-            />
-            <span className="truncate font-display text-copy font-semibold">{post.authorName}</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to={`/signal/profile/${post.authorId}`} className="flex min-w-0 flex-1 items-center gap-3">
+              <Img
+                src={post.authorAvatarUrl ?? ''}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-white/50"
+                fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/20"><Icon name="user" size={20} /></span>}
+              />
+              <span className="min-w-0">
+                <span className="block truncate font-display text-lead font-semibold leading-tight">{post.authorName}</span>
+                {stats && <span className="block truncate text-detail text-white/65">{compact(Math.max(0, stats.followers))} {t('followers')}</span>}
+              </span>
+            </Link>
+            {!isMe && (
+              <button
+                type="button"
+                onClick={() => void follow()}
+                className={`shrink-0 rounded-full px-5 py-2.5 text-detail font-semibold transition-colors ${stats?.following || stats?.requested ? 'bg-white/20 text-white backdrop-blur-md' : 'bg-[#ffffff] text-[#000000]'}`}
+              >
+                {stats?.following ? t('Following') : stats?.requested ? t('Requested') : t('Follow')}
+              </button>
+            )}
+          </div>
           {text && (
-            <button type="button" onClick={() => setMore((m) => !m)} className="mt-2.5 block w-full text-left">
-              <span className={`block text-detail leading-snug text-white/90 ${more ? '' : 'line-clamp-2'}`}>{text}</span>
+            <button type="button" onClick={() => setMore((m) => !m)} className="mt-3 block w-full text-left">
+              <span className={`block text-copy leading-snug text-white ${more ? '' : 'line-clamp-1'}`}>
+                {text}
+                {!more && <span className="ml-1 text-white/60"> …</span>}
+              </span>
+              {hashtagsOf(text).length > 0 && (
+                <span className="mt-1 block truncate text-detail text-white/60">{hashtagsOf(text).join(' ')}</span>
+              )}
             </button>
           )}
           {post.vehicle && (
             <Link to={`/cars/${post.vehicle.slug}`} className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full bg-white/15 py-1.5 pl-1.5 pr-3.5 backdrop-blur-md">
               {post.vehicle.imageUrl && <img src={post.vehicle.imageUrl} alt="" className="h-8 w-8 rounded-full object-cover" />}
               <span className="truncate text-caption font-semibold">{post.vehicle.make} {post.vehicle.model}</span>
-              <span className="shrink-0 rounded-full bg-[#fff] px-2.5 py-1 text-label font-bold text-noir">{t('Book')}</span>
+              <span className="shrink-0 rounded-full bg-[#ffffff] px-2.5 py-1 text-label font-bold text-[#000000]">{t('Book')}</span>
             </Link>
           )}
         </div>
 
-        <div className="pointer-events-auto flex shrink-0 flex-col items-center gap-5 pb-1">
+        <div className="pointer-events-auto flex shrink-0 flex-col items-center gap-5 self-end pb-[5.5rem]">
           <button type="button" onClick={() => void respect()} aria-label="Respect" className="flex flex-col items-center gap-1">
-            <span className={`relative grid h-12 w-12 place-items-center rounded-full backdrop-blur-md ${post.likedByMe ? 'bg-white/25' : 'bg-white/15'}`}>
-              <RespectIcon size={20} filled={post.likedByMe} playKey={fire} className={post.likedByMe ? '' : 'text-white'} />
+            <span className="relative grid h-11 w-11 place-items-center">
+              <RespectIcon size={26} filled={post.likedByMe} playKey={fire} className={post.likedByMe ? '' : 'text-white'} />
               <RespectParticles fireKey={post.likedByMe ? fire : 0} className="left-1/2 top-1/2" />
             </span>
-            <span className="text-caption font-semibold">{post.likeCount}</span>
+            <span className="text-caption font-semibold">{compact(post.likeCount)}</span>
           </button>
           <button type="button" onClick={() => void save()} aria-label={t('Save')} className="flex flex-col items-center gap-1">
-            <span className={`grid h-12 w-12 place-items-center rounded-full backdrop-blur-md ${post.savedByMe ? 'bg-white/25' : 'bg-white/15'}`}>
-              <Icon name="bookmark" size={22} fill={post.savedByMe} />
-            </span>
-            <span className="text-caption font-semibold">{post.saveCount}</span>
+            <span className="grid h-11 w-11 place-items-center"><Icon name="bookmark" size={25} fill={post.savedByMe} /></span>
+            <span className="text-caption font-semibold">{compact(post.saveCount)}</span>
           </button>
           <button type="button" onClick={() => void share()} aria-label={t('Share')} className="flex flex-col items-center gap-1">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-white/15 backdrop-blur-md"><Icon name="share" size={21} /></span>
+            <span className="grid h-11 w-11 place-items-center"><Icon name="share" size={24} /></span>
+            {post.shareCount > 0 && <span className="text-caption font-semibold">{compact(post.shareCount)}</span>}
           </button>
-          <button type="button" onClick={onToggleMute} aria-label={muted ? t('Sound on') : t('Sound off')} className="grid h-11 w-11 place-items-center rounded-full bg-white/15 backdrop-blur-md">
-            <Icon name={muted ? 'volumeOff' : 'volume'} size={19} />
+          <button type="button" onClick={() => setMenu(true)} aria-label={t('More')} className="grid h-11 w-11 place-items-center">
+            <Icon name="moreHorizontal" size={24} />
           </button>
         </div>
       </div>
+
+      {menu && (
+        <div className="absolute inset-0 z-[6]">
+          <button type="button" aria-label={t('Close')} onClick={() => setMenu(false)} className="absolute inset-0 bg-black/55" />
+          <div className="absolute inset-x-0 bottom-0 rounded-t-[26px] bg-[#1a1b1a] px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 text-white">
+            <span className="mx-auto mb-3 block h-1 w-10 rounded-full bg-white/25" />
+            <Link to={`/signal/post/${post.id}`} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-copy"><Icon name="arrowUpRight" size={19} /> {t('View post')}</Link>
+            <Link to={`/signal/profile/${post.authorId}`} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-copy"><Icon name="user" size={19} /> {t('Go to profile')}</Link>
+            <button type="button" onClick={() => void copyLink()} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-copy"><Icon name={copied ? 'check' : 'share'} size={19} /> {copied ? t('Link copied') : t('Copy link')}</button>
+            <button type="button" onClick={() => { onToggleMute(); setMenu(false); }} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-left text-copy"><Icon name={muted ? 'volume' : 'volumeOff'} size={19} /> {muted ? t('Sound on') : t('Sound off')}</button>
+          </div>
+        </div>
+      )}
 
       {/* progress — drag it to scrub (a tall invisible touch area around the thin line) */}
       <div
@@ -233,17 +307,23 @@ export default function SignalReels() {
     try { return localStorage.getItem(MUTE_KEY) !== '0'; } catch { return true; }
   });
   const [index, setIndex] = useState(0);
-  const loadRef = useRef({ offset: 0, seed: Math.floor(Math.random() * 2147483000), since: new Date().toISOString(), done: false, busy: false });
+  // For You (ranked Community) or Followed (people you follow)
+  const [mode, setMode] = useState<'foryou' | 'following'>('foryou');
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const loadRef = useRef({ offset: 0, seed: Math.floor(Math.random() * 2147483000), since: new Date().toISOString(), done: false, busy: false, gen: 0 });
 
   // Pages of the ranked Community feed until there are enough videos in them.
   const loadMore = useCallback(async () => {
     const s = loadRef.current;
     if (s.done || s.busy) return;
     s.busy = true;
+    const gen = s.gen;
     try {
       let total = 0;
       for (let i = 0; i < 4 && total < 6 && !s.done; i++) {
-        const rows = await fetchForYouFeed({ limit: 20, offset: s.offset, seed: s.seed, since: s.since, mode: 'foryou', scope: 'community' });
+        const rows = await fetchForYouFeed({ limit: 20, offset: s.offset, seed: s.seed, since: s.since, mode: modeRef.current, scope: 'community' });
+        if (gen !== s.gen) return; // the tab changed while this page was loading
         s.offset += rows.length;
         if (rows.length < 20) s.done = true;
         const withVideo = rows.filter((p) => videoUrlOf(p));
@@ -257,12 +337,31 @@ export default function SignalReels() {
       }
       setPosts((prev) => prev ?? []);
     } catch {
-      loadRef.current.done = true;
-      setPosts((prev) => prev ?? []);
+      if (gen === loadRef.current.gen) {
+        loadRef.current.done = true;
+        setPosts((prev) => prev ?? []);
+      }
     } finally {
-      s.busy = false;
+      if (gen === loadRef.current.gen) s.busy = false;
     }
   }, []);
+
+  const switchMode = (m: 'foryou' | 'following') => {
+    if (m === modeRef.current) return;
+    haptics.light();
+    modeRef.current = m;
+    setMode(m);
+    const s = loadRef.current;
+    s.gen += 1;
+    s.offset = 0;
+    s.done = false;
+    s.busy = false;
+    s.seed = Math.floor(Math.random() * 2147483000);
+    setPosts(null);
+    setIndex(0);
+    window.scrollTo(0, 0);
+    void loadMore();
+  };
 
   useEffect(() => {
     if (!authorId) { void loadMore(); return; }
@@ -355,15 +454,42 @@ export default function SignalReels() {
 
   return createPortal(
     <div className="relative bg-black text-white">
-      <button
-        type="button"
-        onClick={() => navigate(authorId ? `/signal/profile/${authorId}` : '/signal/community')}
-        aria-label={t('Close')}
-        className="fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid h-11 w-11 place-items-center rounded-full bg-black/40 backdrop-blur-md"
-      >
-        <Icon name="chevronLeft" size={20} />
-      </button>
-      <span className="pointer-events-none fixed left-1/2 top-[max(1.1rem,calc(env(safe-area-inset-top)+0.35rem))] z-20 -translate-x-1/2 text-detail font-bold uppercase tracking-[0.25em]">Reels</span>
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <button
+          type="button"
+          onClick={() => navigate(authorId ? `/signal/profile/${authorId}` : '/signal/community')}
+          aria-label={t('Close')}
+          className="pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/40 backdrop-blur-md"
+        >
+          <Icon name="chevronLeft" size={20} />
+        </button>
+        {authorId ? (
+          <span className="rounded-full bg-black/40 px-5 py-2.5 text-detail font-bold uppercase tracking-[0.2em] backdrop-blur-md">Reels</span>
+        ) : (
+          <div role="tablist" aria-label="Reels" className="pointer-events-auto flex rounded-full bg-black/40 p-1 backdrop-blur-md">
+            {([['foryou', t('For You')], ['following', t('Followed')]] as const).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={mode === k}
+                onClick={() => switchMode(k)}
+                className={`rounded-full px-5 py-2 text-detail font-semibold transition-colors ${mode === k ? 'bg-[#ffffff] text-[#000000]' : 'text-white/85'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? t('Sound on') : t('Sound off')}
+          className="pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/40 backdrop-blur-md"
+        >
+          <Icon name={muted ? 'volumeOff' : 'volume'} size={19} />
+        </button>
+      </div>
 
       {posts === null ? (
         <div className="grid place-items-center" style={{ height: '100lvh' }}><span className="skeleton h-40 w-24 rounded-2xl" /></div>
@@ -372,7 +498,7 @@ export default function SignalReels() {
           <div>
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-white/10"><Icon name="play" size={26} /></span>
             <p className="mt-4 font-display text-lead font-semibold">{t('No videos yet')}</p>
-            <p className="mt-1 text-detail text-white/70">{t('Videos shared by the Community appear here.')}</p>
+            <p className="mt-1 text-detail text-white/70">{mode === 'following' && !authorId ? t('Videos from people you follow appear here.') : t('Videos shared by the Community appear here.')}</p>
           </div>
         </div>
       ) : (
@@ -384,6 +510,7 @@ export default function SignalReels() {
               active={Math.abs(i - index) === 0}
               next={i === index + 1}
               muted={muted}
+              meId={session.user.id}
               onToggleMute={toggleMute}
               onChange={(np) => setPosts((cur) => (cur ? cur.map((x) => (x.id === np.id ? np : x)) : cur))}
             />
