@@ -66,7 +66,7 @@ export function resolveSignalIdentity(
     case 'assistant':
       return { type: 'assistant', name: 'X', subtitle: 'The CX assistant', avatarUrl: '/brand/avatar-x.png?v=4', username: null };
     case 'cx':
-      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/brand/avatar-cx-chrome.png', username: null };
+      return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/brand/avatar-cx-chrome.png?v=3', username: null };
     case 'self': {
       const selfRole: 'owner' | 'admin' | 'host' | 'verified_client' | 'client' =
         authorIsOwner ? 'owner'
