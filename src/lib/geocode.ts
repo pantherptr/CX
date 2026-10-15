@@ -121,7 +121,7 @@ export async function reversePlace(lat: number, lng: number, signal?: AbortSigna
   }
   let first: Response | null = null;
   if (useGeoapify()) {
-    first = await fetchWithin(`${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`, 3500, signal);
+    first = await fetchWithin(`${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&limit=5&apiKey=${GEOAPIFY_KEY}`, 3500, signal);
     if (!first) {
       // a refused key answers 401/403, which fetchWithin reports as null: check once so later calls skip Geoapify
       try {
@@ -134,7 +134,9 @@ export async function reversePlace(lat: number, lng: number, signal?: AbortSigna
   if (first) {
     try {
       const json = (await first.json()) as { features?: Feature[] };
-      const f = json.features?.[0];
+      const list = json.features ?? [];
+      // a street address is what a pick-up point needs: prefer one with a number, then a street, then whatever came first
+      const f = list.find((x) => x.properties.street && x.properties.housenumber) ?? list.find((x) => x.properties.street) ?? list[0];
       if (f) {
         const place = { ...toPlace(f), lat, lng };
         reverseCache.set(key, place);
