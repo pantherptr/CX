@@ -7,6 +7,7 @@ import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
 import { withoutHidden } from './privacy';
 import { withCollabs, type CollabInfo } from './collab';
+import { planImageUpload, withVariantPaths } from '../imageVariants';
 import { shrinkImage } from '../shrinkImage';
 
 /**
@@ -865,7 +866,7 @@ export async function deleteEmpirePost(postId: string): Promise<{ error: string 
   if (error) return { error: error.message };
   const paths = (data as { media_paths: string[] } | null)?.media_paths ?? [];
   if (paths.length > 0) {
-    await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+    await supabase.storage.from(MEDIA_BUCKET).remove(withVariantPaths(paths));
   }
   return { error: null };
 }
@@ -1105,8 +1106,25 @@ export async function uploadEmpirePostMedia(
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `${uid}/${crypto.randomUUID()}.${ext}`;
+  const stem = `${uid}/${crypto.randomUUID()}`;
+  // photos: the smaller copies go up first, and only when all are there is the original marked as "has copies"
+  let path: string;
+  if (file.type.startsWith('image/')) {
+    const plan = await planImageUpload(stem, file);
+    const bucket = supabase.storage.from(MEDIA_BUCKET);
+    let marked = plan.markedPath !== null;
+    const stored: string[] = [];
+    for (const v of plan.variants) {
+      const r = await bucket.upload(v.path, v.blob, { cacheControl: '31536000', upsert: false, contentType: 'image/jpeg' });
+      if (r.error) { marked = false; break; }
+      stored.push(v.path);
+    }
+    if (!marked && stored.length) await bucket.remove(stored);
+    path = marked && plan.markedPath ? plan.markedPath : plan.plainPath;
+  } else {
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+    path = `${stem}.${ext}`;
+  }
   if (!onProgress) {
     const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
     if (error) throw error;

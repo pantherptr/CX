@@ -1,3 +1,4 @@
+import { variantUrl } from '../../lib/imageVariants';
 import { SignalS } from '../SignalLogo';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -229,7 +230,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                     className="pressable flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-0 active:bg-panel"
                   >
                     {r.mediaUrls[0] ? (
-                      <Img src={r.mediaUrls[0]} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>} />
+                      <Img src={variantUrl(r.mediaUrls[0], 160)} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>} />
                     ) : (
                       <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>
                     )}
@@ -391,7 +392,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
                       >
                         {r.mediaUrls[0] ? (
                           <Img
-                            src={r.mediaUrls[0]}
+                            src={variantUrl(r.mediaUrls[0], 480)}
                             alt=""
                             className="h-14 w-14 shrink-0 rounded-xl object-cover"
                             fallback={<span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-panel text-muted"><Icon name="image" size={18} /></span>}

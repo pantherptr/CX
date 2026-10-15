@@ -1,3 +1,4 @@
+import { variantSrcSet, variantUrl } from '../../lib/imageVariants';
 import { RollingCount } from '../ui/rolling-count';
 import { prefetchProfile } from '../../lib/data/prefetch';
 import { useEffect, useRef, useState } from 'react';
@@ -168,7 +169,9 @@ function PostImage({
     <>
       {!loaded && <div className="skeleton absolute inset-0" />}
       <Img
-        src={src}
+        src={variantUrl(src, 960)}
+        srcSet={variantSrcSet(src)}
+        sizes="(min-width: 640px) 640px, 100vw"
         alt=""
         loading="lazy"
         fallback={fallback}

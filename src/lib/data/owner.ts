@@ -1,3 +1,4 @@
+import { withVariantPaths } from '../imageVariants';
 import { supabase } from '../supabase';
 import type { Car } from '../../data/types';
 import { uploadCarPhoto } from './cars';
@@ -393,7 +394,7 @@ export async function deleteCarImage(carId: string, image: OwnerCarImage): Promi
   const { error } = await supabase.from('car_images').delete().eq('id', image.id);
   if (error) return { error: error.message };
   const path = storagePathFromPublicUrl(image.url);
-  if (path) await supabase.storage.from('car-photos').remove([path]);
+  if (path) await supabase.storage.from('car-photos').remove(withVariantPaths([path]));
   void logOwnerAction('delete_vehicle_photo', 'car', carId, {});
   return { error: null };
 }

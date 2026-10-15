@@ -1,3 +1,4 @@
+import { variantUrl } from '../../lib/imageVariants';
 import { useScrollMemory } from '../../lib/scrollMemory';
 import { SignalPostSkeleton } from './SignalPostSkeleton';
 import { useEffect, useRef, useState } from 'react';
@@ -52,7 +53,7 @@ export function SignalPostListOverlay({
     const pool = (posts ?? []).filter((p) => !ids || ids.has(p.id));
     for (const p of pool) {
       const img = p.mediaUrls.find((u) => !isVideoUrl(u));
-      if (img) return img;
+      if (img) return variantUrl(img, 480);
     }
     return null;
   };

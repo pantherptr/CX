@@ -1,3 +1,4 @@
+import { variantUrl } from '../../lib/imageVariants';
 import { recallProfile, rememberProfile, rememberPosts } from '../../lib/data/seedCache';
 import { useScrollMemory } from '../../lib/scrollMemory';
 import { SignalAchievements } from './SignalAchievements';
@@ -344,7 +345,7 @@ export function SignalProfileDetail({
             className="pressable group relative aspect-square overflow-hidden bg-panel"
           >
             {img ? (
-              <Img src={img} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>} />
+              <Img src={variantUrl(img, 480)} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" fallback={<span className="grid h-full w-full place-items-center text-muted"><Icon name="image" size={20} /></span>} />
             ) : vid ? (
               <video src={vid.includes('#') ? vid : `${vid}#t=0.1`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
             ) : (

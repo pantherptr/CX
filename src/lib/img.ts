@@ -15,6 +15,8 @@
  * requested at the width it is actually shown at instead of the full 1920 px file: roughly a tenth of the
  * bytes for a card in a grid, and no visible change. Anything else is passed through untouched.
  */
+import { hasVariants, variantSrcSet, variantUrl } from './imageVariants';
+
 const TRANSFORM = import.meta.env.VITE_IMG_TRANSFORM === '1';
 const SUPA_PUBLIC = /^(https?:\/\/[^/]+)\/storage\/v1\/object\/public\/([^?#]+\.(?:jpe?g|png|webp|avif))(\?.*)?$/i;
 const supaSized = (url: string, w: number): string | null => {
@@ -26,7 +28,10 @@ const supaSized = (url: string, w: number): string | null => {
 
 export const unsplash = (id: string, w = 1200, h?: number) => {
   if (!id) return '';
-  if (/^https?:\/\//i.test(id)) return supaSized(id, w) ?? id;
+  if (/^https?:\/\//i.test(id)) {
+    if (hasVariants(id)) return variantUrl(id, w);
+    return supaSized(id, w) ?? id;
+  }
   return `https://images.unsplash.com/${id}?auto=format&fit=crop&q=80&w=${w}${
     h ? `&h=${h}` : ''
   }`;
@@ -42,7 +47,9 @@ export const unsplash = (id: string, w = 1200, h?: number) => {
 export const unsplashSrcSet = (id: string, widths: readonly number[] = [480, 800, 1200, 1600]) => {
   if (!id) return undefined;
   if (/^https?:\/\//i.test(id)) {
-    // host-uploaded photo: a real srcset only when Storage transformations are on, else the plain `src`
+    // host-uploaded photo with its own smaller copies: a srcset of them
+    if (hasVariants(id)) return variantSrcSet(id);
+    // otherwise a real srcset only when Storage transformations are on, else the plain `src`
     if (!TRANSFORM || !SUPA_PUBLIC.test(id)) return undefined;
     return widths.map((w) => `${supaSized(id, w)} ${w}w`).join(', ');
   }

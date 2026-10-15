@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isPolicy, type CancellationPolicy } from '../cancellationPolicy';
 import { supabase } from '../supabase';
+import { planImageUpload, withVariantPaths } from '../imageVariants';
 import { shrinkImage } from '../shrinkImage';
 import { catalogHeroUrl, loadCatalog } from './catalog';
 import { uiLocale } from '../i18n/uiLocale';
@@ -325,13 +326,24 @@ export async function uploadCarPhoto(
   original: File,
 ): Promise<{ url: string; path: string }> {
   const file = await shrinkImage(original, 1600, 0.8);
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage
-    .from('car-photos')
-    .upload(path, file, { cacheControl: '31536000', upsert: false });
-  if (error) throw error;
-  const { data } = supabase.storage.from('car-photos').getPublicUrl(path);
+  // the smaller copies go up first; only when all of them are there is the original named as "has copies"
+  const plan = await planImageUpload(`${userId}/${crypto.randomUUID()}`, file);
+  const bucket = supabase.storage.from('car-photos');
+  let marked = plan.markedPath !== null;
+  const stored: string[] = [];
+  for (const v of plan.variants) {
+    const r = await bucket.upload(v.path, v.blob, { cacheControl: '31536000', upsert: false, contentType: 'image/jpeg' });
+    if (r.error) { marked = false; break; }
+    stored.push(v.path);
+  }
+  const path = marked && plan.markedPath ? plan.markedPath : plan.plainPath;
+  if (!marked && stored.length) await bucket.remove(stored); // copies that nothing points to
+  const { error } = await bucket.upload(path, file, { cacheControl: '31536000', upsert: false });
+  if (error) {
+    if (stored.length && marked) await bucket.remove(stored);
+    throw error;
+  }
+  const { data } = bucket.getPublicUrl(path);
   return { url: data.publicUrl, path };
 }
 
@@ -405,13 +417,13 @@ export async function createCar(
     }
   } catch (err) {
     if (uploaded.length) {
-      await supabase.storage.from('car-photos').remove(uploaded.map((u) => u.path));
+      await supabase.storage.from('car-photos').remove(withVariantPaths(uploaded.map((u) => u.path)));
     }
     return { car: null, error: err instanceof Error ? err.message : 'Could not upload your photos.' };
   }
 
   const cleanupPhotos = () =>
-    supabase.storage.from('car-photos').remove(uploaded.map((u) => u.path));
+    supabase.storage.from('car-photos').remove(withVariantPaths(uploaded.map((u) => u.path)));
 
   // 2. The car row, retrying only on a slug collision.
   const base = slugify([input.make, input.model, input.trim].filter(Boolean).join(' ')) || 'car';
