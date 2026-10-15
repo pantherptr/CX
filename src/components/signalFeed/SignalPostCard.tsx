@@ -1325,7 +1325,7 @@ export function SignalPostCard({
           Shares and the "Performance" label for Owner/Admin. It fills in as
           people react. For Owner/Admin the eye also adds a view on tap (hold
           removes the extras you added; the +N counts them). */}
-      <div className="mx-3 flex items-center justify-between gap-1.5 border-t border-line/70 py-1 sm:mx-5">
+      <div className="mx-3 flex items-center justify-between gap-1.5 py-1 sm:mx-5">
         <div className="flex items-center gap-5 text-ink-soft">
             {(isTeamViewer ? (
                 <button
