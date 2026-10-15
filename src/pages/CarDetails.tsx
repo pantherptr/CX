@@ -11,6 +11,7 @@ import { Modal } from '../components/primitives';
 import { Img } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
+import { useSnapCarousel, motion } from '../lib/useSnapCarousel';
 import { MiniMap } from '../components/browse/MiniMap';
 import { mapsLink } from '../lib/geocode';
 import { HostCard } from '../components/HostCard';
@@ -83,49 +84,61 @@ const featureIcon: Record<string, IconName> = {
   'Rear entertainment': 'music',
 };
 
-/** Swipeable photo pager with a translucent page control — tap a photo for full screen. */
+/** Swipeable photo pager (spring snap carousel) with a translucent page control — tap a photo for full screen. */
 function HeroPager({ images, alt, onOpen, studioFirst }: { images: string[]; alt: string; onOpen: (i: number) => void; studioFirst?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [i, setI] = useState(0);
-  const go = (n: number) => ref.current?.scrollTo({ left: n * ref.current.clientWidth, behavior: 'smooth' });
+  const list = images.length ? images : [''];
+  const car = useSnapCarousel({ count: list.length });
+  const i = car.shown;
+  const downX = useRef(0);
   return (
     <div className="group relative">
-      <div
-        ref={ref}
-        onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
-      >
-        {(images.length ? images : ['']).map((im, n) => (
-          <button key={n} type="button" onClick={() => onOpen(n)} className={`relative aspect-[4/3] w-full shrink-0 snap-center sm:aspect-[16/10] ${studioFirst && n === 0 ? 'bg-gradient-to-b from-chat via-[#eef0ec] to-[#e2e5de]' : 'bg-panel'}`} aria-label={`${alt} ${n + 1}`}>
-            <Img
-              src={unsplash(im, 1400)}
-              srcSet={unsplashSrcSet(im, [700, 1100, 1600])}
-              sizes="(min-width: 1024px) 720px, 100vw"
-              alt={alt}
-              loading={n === 0 ? 'eager' : 'lazy'}
-              fetchPriority={n === 0 ? 'high' : undefined}
-              className={`h-full w-full ${studioFirst && n === 0 ? 'object-contain p-6 pb-12 drop-shadow-[0_22px_22px_rgba(22,22,26,0.2)]' : 'object-cover'}`}
-              fallback={<span className="grid h-full w-full place-items-center text-faint"><Icon name="car" size={42} /></span>}
-            />
-          </button>
-        ))}
+      <div ref={car.viewportRef} aria-label={alt} className="overflow-hidden outline-none" {...car.viewportProps}>
+        <motion.div
+          {...car.trackProps}
+          className={`flex items-stretch ${car.dragging ? 'cursor-grabbing' : list.length > 1 ? 'cursor-grab' : ''}`}
+        >
+          {list.map((im, n) => (
+            <button
+              key={n}
+              type="button"
+              onPointerDown={(e) => { downX.current = e.clientX; }}
+              // a drag that ends on a photo must not open it
+              onClick={(e) => { if (Math.abs(e.clientX - downX.current) < 6) onOpen(n); }}
+              draggable={false}
+              className={`relative aspect-[4/3] w-full shrink-0 select-none sm:aspect-[16/10] ${studioFirst && n === 0 ? 'bg-gradient-to-b from-chat via-[#eef0ec] to-[#e2e5de]' : 'bg-panel'}`}
+              aria-label={`${alt} ${n + 1}`}
+            >
+              <Img
+                src={unsplash(im, 1400)}
+                srcSet={unsplashSrcSet(im, [700, 1100, 1600])}
+                sizes="(min-width: 1024px) 720px, 100vw"
+                alt={alt}
+                draggable={false}
+                loading={n === 0 ? 'eager' : 'lazy'}
+                fetchPriority={n === 0 ? 'high' : undefined}
+                className={`pointer-events-none h-full w-full ${studioFirst && n === 0 ? 'object-contain p-6 pb-12 drop-shadow-[0_22px_22px_rgba(22,22,26,0.2)]' : 'object-cover'}`}
+                fallback={<span className="grid h-full w-full place-items-center text-faint"><Icon name="car" size={42} /></span>}
+              />
+            </button>
+          ))}
+        </motion.div>
       </div>
       {studioFirst && i === 0 && (
         <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-white/85 px-2.5 py-1 text-caption font-semibold text-ink-soft shadow-hair backdrop-blur sm:bottom-4 sm:left-4">
           CX studio image · photos of this exact car follow
         </span>
       )}
-      {images.length > 1 && (
+      {list.length > 1 && (
         <>
           <div className="pointer-events-none absolute inset-x-0 bottom-9 flex justify-center sm:bottom-10">
             <span className="flex items-center gap-1.5 rounded-full bg-black/30 px-2.5 py-1.5 backdrop-blur-md">
-              {images.map((_, n) => (
+              {list.map((_, n) => (
                 <span key={n} className={`h-1.5 rounded-full bg-white transition-all duration-300 ${n === i ? 'w-4 opacity-100' : 'w-1.5 opacity-60'}`} />
               ))}
             </span>
           </div>
-          <button type="button" onClick={() => go(Math.max(0, i - 1))} aria-label="Previous photo" className={`absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow-hair backdrop-blur transition-opacity lg:grid ${i === 0 ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}><Icon name="chevronLeft" size={18} /></button>
-          <button type="button" onClick={() => go(Math.min(images.length - 1, i + 1))} aria-label="Next photo" className={`absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow-hair backdrop-blur transition-opacity lg:grid ${i === images.length - 1 ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}><Icon name="chevronRight" size={18} /></button>
+          <button type="button" onClick={car.prev} aria-label="Previous photo" className={`absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow-hair backdrop-blur transition-opacity lg:grid ${i === 0 ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}><Icon name="chevronLeft" size={18} /></button>
+          <button type="button" onClick={car.next} aria-label="Next photo" className={`absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/85 shadow-hair backdrop-blur transition-opacity lg:grid ${i === list.length - 1 ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}><Icon name="chevronRight" size={18} /></button>
         </>
       )}
     </div>
