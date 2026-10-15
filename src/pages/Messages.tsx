@@ -1,4 +1,5 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
+import { supabase } from '../lib/supabase';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
@@ -33,6 +34,105 @@ import type { Message } from '../lib/data/messages';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
 type SendAsRole = 'owner' | 'owner_assistant';
+
+/** The team's public numbers: how many posts it has published on SIGNAL and since when. */
+function useCxTeamStats() {
+  const [stats, setStats] = useState<{ posts: number; since: string | null } | null>(null);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const [{ count }, { data }] = await Promise.all([
+          supabase.from('empire_posts').select('id', { count: 'exact', head: true }).eq('publisher_type', 'cx'),
+          supabase.from('empire_posts').select('created_at').eq('publisher_type', 'cx').order('created_at', { ascending: true }).limit(1),
+        ]);
+        if (live) setStats({ posts: count ?? 0, since: (data?.[0]?.created_at as string | undefined) ?? null });
+      } catch {
+        if (live) setStats({ posts: 0, since: null });
+      }
+    })();
+    return () => { live = false; };
+  }, []);
+  return stats;
+}
+
+/** Tap the CX team's name: an official card, not a person's profile — cover, seal, the team's numbers. */
+function CxTeamSheet({ active, messages, onClose }: { active: Conversation; messages: Message[] | null; onClose: () => void }) {
+  const stats = useCxTeamStats();
+  const total = messages?.length ?? 0;
+  const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(uiLocale(), { month: 'short', year: 'numeric' }) : '—');
+  return (
+    <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="CX team info">
+      <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-[fade-in_.2s_ease-out_both] bg-black/45 backdrop-blur-[3px]" />
+      <div className="animate-sheet-in relative overflow-hidden rounded-t-[32px] bg-white pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-[0_-24px_60px_-20px_rgba(22,22,26,0.5)]">
+        {/* cover: night road with the team's bat, drawn — no photo needed */}
+        <div className="relative h-36 overflow-hidden bg-[#050806]">
+          <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_120%,rgba(0,212,71,0.55),rgba(0,133,54,0.18)_45%,transparent_70%)]" />
+          <svg aria-hidden viewBox="0 0 400 144" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-70">
+            <defs>
+              <linearGradient id="cxroad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#0c1a12" stopOpacity="0" />
+                <stop offset="1" stopColor="#00d447" stopOpacity="0.5" />
+              </linearGradient>
+            </defs>
+            {[-3, -2, -1, 0, 1, 2, 3].map((i) => (
+              <line key={i} x1={200 + i * 12} y1="40" x2={200 + i * 120} y2="144" stroke="url(#cxroad)" strokeWidth="1.2" />
+            ))}
+            <line x1="0" y1="40" x2="400" y2="40" stroke="#00d447" strokeOpacity="0.25" />
+          </svg>
+          <img src="/brand/cx-bat.webp" alt="" className="absolute left-1/2 top-3 h-14 -translate-x-1/2 opacity-90 drop-shadow-[0_0_18px_rgba(0,212,71,0.6)]" />
+          <span className="absolute left-1/2 top-2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-white/30" />
+          <button onClick={onClose} aria-label="Close" className="pressable absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white backdrop-blur active:scale-90">
+            <Icon name="x" size={18} />
+          </button>
+        </div>
+        <div className="-mt-12 flex flex-col items-center px-5 text-center">
+          <span className="rounded-full bg-gradient-to-b from-[#f6e3a1] via-[#d9b24c] to-[#8a6a1c] p-[3px] shadow-[0_12px_30px_-10px_rgba(217,178,76,0.7)]">
+            <Img
+              src={active.other.avatar ?? '/brand/avatar-cx-chrome.png?v=3'}
+              alt=""
+              className="h-[92px] w-[92px] rounded-full bg-black object-cover ring-4 ring-white"
+              fallback={<span className="grid h-[92px] w-[92px] place-items-center rounded-full bg-black text-white ring-4 ring-white"><Icon name="user" size={30} /></span>}
+            />
+          </span>
+          <p className="mt-3 flex items-center gap-1.5 font-display text-[1.45rem] font-bold leading-tight tracking-tight text-ink">
+            CX
+            <VerifiedBadge role="cx" size={19} />
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#fbf3d7] px-3 py-1 text-caption font-bold uppercase tracking-[0.12em] text-[#7a5a0f]">
+            Official CX team
+          </p>
+          <p className="mt-3 max-w-[18rem] text-detail leading-snug text-muted">
+            The people behind CX Rent. We answer here, announce what is new, and keep trips, payments and verification safe.
+          </p>
+
+          <div className="mt-4 grid w-full grid-cols-3 gap-2">
+            {[
+              { k: 'Posts', v: stats ? String(stats.posts) : '…' },
+              { k: 'On SIGNAL since', v: stats ? fmt(stats.since) : '…' },
+              { k: 'Messages here', v: String(total) },
+            ].map((x) => (
+              <div key={x.k} className="rounded-2xl bg-chat px-2 py-3">
+                <p className="truncate text-[16px] font-bold text-ink">{x.v}</p>
+                <p className="mt-0.5 text-label font-medium leading-tight text-muted">{x.k}</p>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            to="/signal"
+            className="pressable mt-4 grid h-12 w-full place-items-center rounded-full bg-ink text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+          >
+            See the team on SIGNAL
+          </Link>
+          <p className="mt-3 flex items-center gap-1.5 text-caption text-faint">
+            <Icon name="lock" size={13} /> We never ask for passwords or card details in chat.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Tap the name in a phone chat: who you are talking to, at a glance, with the shortcuts that matter. */
 function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void }) {
@@ -1195,7 +1295,10 @@ export default function Messages() {
             </div>
             )}
 
-            {profileOpen && (
+            {profileOpen && active.other.role === 'cx' && (
+              <CxTeamSheet active={active} messages={messages} onClose={() => setProfileOpen(false)} />
+            )}
+            {profileOpen && active.other.role !== 'cx' && (
               <ChatProfileSheet
                 active={active}
                 myId={session?.user.id}

@@ -31,6 +31,12 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Official CX team", "Team ufficiale CX", "Echipa oficială CX", "Equipo oficial de CX"],
+  ["The people behind CX Rent. We answer here, announce what is new, and keep trips, payments and verification safe.", "Le persone dietro CX Rent. Rispondiamo qui, annunciamo le novità e teniamo al sicuro viaggi, pagamenti e verifiche.", "Oamenii din spatele CX Rent. Răspundem aici, anunțăm noutățile și păstrăm în siguranță călătoriile, plățile și verificările.", "Las personas detrás de CX Rent. Respondemos aquí, anunciamos novedades y cuidamos viajes, pagos y verificaciones."],
+  ["On SIGNAL since", "Su SIGNAL dal", "Pe SIGNAL din", "En SIGNAL desde"],
+  ["Messages here", "Messaggi qui", "Mesaje aici", "Mensajes aquí"],
+  ["See the team on SIGNAL", "Vedi il team su SIGNAL", "Vezi echipa pe SIGNAL", "Ver al equipo en SIGNAL"],
+  ["We never ask for passwords or card details in chat.", "Non chiediamo mai password o dati della carta in chat.", "Nu cerem niciodată parole sau date de card în chat.", "Nunca pedimos contraseñas ni datos de tarjeta en el chat."],
   ["Cars in the map area", "Auto nell'area della mappa", "Mașini în zona hărții", "Coches en la zona del mapa"],
   ["Any dates", "Qualsiasi data", "Orice dată", "Cualquier fecha"],
   ["Instant book", "Prenotazione immediata", "Rezervare instant", "Reserva instantánea"],
