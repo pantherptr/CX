@@ -7,6 +7,8 @@
  * half-created Story slide or post behind.
  */
 
+import { freeVideoBlockReason } from './data/signalPlan';
+
 /** Any video the phone can record or the person picks (MP4, MOV, WebM, 3GP…): nothing is refused for its
  *  format, size or length. Used as the `accept` attribute of file inputs. */
 export const VIDEO_MIME_TYPES = ['video/*'];
@@ -70,6 +72,9 @@ export async function validateVideoFile(
   } catch {
     durationSec = undefined;
   }
+  // The free plan's limits (off until the team switches them on; Creator, hosts and the team are exempt).
+  const blocked = await freeVideoBlockReason(durationSec);
+  if (blocked) return { ok: false, error: blocked };
   return { ok: true, durationSec };
 }
 

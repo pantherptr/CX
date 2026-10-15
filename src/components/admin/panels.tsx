@@ -21,7 +21,7 @@ import {
   type AdminCar,
 } from '../../lib/data/admin';
 import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
-import { fetchCreatorIds, setSignalPlan } from '../../lib/data/signalPlan';
+import { fetchCreatorIds, setSignalPlan, fetchPlanConfig, savePlanConfig } from '../../lib/data/signalPlan';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
 import { uiLocale } from '../../lib/i18n/uiLocale';
 
@@ -98,6 +98,73 @@ function seenAgo(iso: string): string {
   if (h < 24) return `${h} h ago`;
   const d = Math.floor(h / 24);
   return d === 1 ? 'yesterday' : `${d} days ago`;
+}
+
+
+/** Owner / Admin: the free-plan limits of SIGNAL. Off by default: while it is off nobody is limited. */
+function PlanLimitsCard() {
+  const { toast } = useApp();
+  const [cfg, setCfg] = useState<{ enforce: boolean; maxSeconds: number; perMonth: number } | null | undefined>(undefined);
+  const [minutes, setMinutes] = useState('3');
+  const [perMonth, setPerMonth] = useState('10');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void fetchPlanConfig().then((c) => {
+      setCfg(c);
+      if (c) { setMinutes(String(Math.max(1, Math.round(c.maxSeconds / 60)))); setPerMonth(String(c.perMonth)); }
+    });
+  }, []);
+
+  if (cfg === undefined) return null;
+  if (cfg === null) {
+    return <p className="rounded-xl bg-panel px-3.5 py-2.5 text-caption text-muted">SIGNAL plan limits: run migrations 0138 and 0139 in Supabase to manage them here.</p>;
+  }
+
+  const save = async (enforce: boolean) => {
+    const m = Math.max(1, Math.round(Number(minutes) || 3));
+    const n = Math.max(0, Math.round(Number(perMonth) || 0));
+    setSaving(true);
+    const { error } = await savePlanConfig({ enforce, maxSeconds: m * 60, perMonth: n });
+    setSaving(false);
+    if (error) { toast({ title: 'Could not save the limits', desc: error, icon: 'info' }); return; }
+    setCfg({ enforce, maxSeconds: m * 60, perMonth: n });
+    toast({ title: enforce ? 'Free-plan limits are ON' : 'Free-plan limits are off', icon: 'checkCircle' });
+  };
+
+  return (
+    <div className="card mb-3 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-ink">SIGNAL plan limits</p>
+          <p className="text-caption text-muted">
+            {cfg.enforce ? 'ON — free members are limited. Creators, hosts and the team are not.' : 'Off — nobody is limited. The numbers below apply when you switch it on.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void save(!cfg.enforce)}
+          className={`min-h-11 rounded-full px-5 text-detail font-semibold disabled:opacity-50 ${cfg.enforce ? 'bg-panel text-ink' : 'bg-ink text-white'}`}
+        >
+          {cfg.enforce ? 'Turn off' : 'Turn on'}
+        </button>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:max-w-md">
+        <label className="text-caption font-semibold text-muted">
+          Longest video (minutes)
+          <input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" className="input mt-1" />
+        </label>
+        <label className="text-caption font-semibold text-muted">
+          Videos per month
+          <input value={perMonth} onChange={(e) => setPerMonth(e.target.value)} inputMode="numeric" className="input mt-1" />
+        </label>
+      </div>
+      <button type="button" disabled={saving} onClick={() => void save(cfg.enforce)} className="mt-3 rounded-full bg-panel px-4 py-2 text-caption font-semibold text-ink disabled:opacity-50">
+        Save numbers
+      </button>
+    </div>
+  );
 }
 
 export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolean } = {}) {
@@ -177,6 +244,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
 
   return (
     <div className="flex flex-col gap-2">
+      <PlanLimitsCard />
       {items.map((u) => (
         <div key={u.id} className="card flex items-center gap-3 p-4">
           <Avatar url={u.avatarUrl} />
