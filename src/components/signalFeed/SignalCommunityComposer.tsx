@@ -654,6 +654,11 @@ export function SignalCommunityComposer({
                 transition={SPRING_SMOOTH}
                 className={full ? 'sticky bottom-0 mt-auto overflow-hidden bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'overflow-hidden'}
               >
+                {!editing && body.trim().length > 0 && (
+                  <p className="mt-2 flex items-center gap-1.5 text-caption text-faint">
+                    <Icon name="check" size={12} /> Draft saved on this device
+                  </p>
+                )}
                 <div className="mt-3 flex items-center gap-1 border-t border-line pt-3">
                   <label
                     onMouseDown={holdFocus}
@@ -670,6 +675,23 @@ export function SignalCommunityComposer({
                       onChange={(e) => { void addMediaFiles(e.target.files); e.target.value = ''; }}
                     />
                   </label>
+                  {full && (
+                    // straight to the phone's camera: most posts are made on the spot
+                    <label
+                      onMouseDown={holdFocus}
+                      aria-label="Take a photo"
+                      className={`pressable grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full text-accent-700 transition-colors hover:bg-accent-050 ${totalMedia >= MAX_MEDIA || validatingVideo ? 'pointer-events-none opacity-40' : ''}`}
+                    >
+                      <Icon name="camera" size={20} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => { void addMediaFiles(e.target.files); e.target.value = ''; }}
+                      />
+                    </label>
+                  )}
                   {!editing && (
                     <Tap
                       onMouseDown={holdFocus}

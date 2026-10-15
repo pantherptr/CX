@@ -14,6 +14,10 @@ const DISMISS_FOR_MS = 3 * 24 * 60 * 60 * 1000;
 /** Someone who follows fewer accounts than this sees the shelf at the very top of the feed;
  *  everyone else sees it inside the feed, after the first posts — never gone, just out of the way. */
 const TOP_UNDER = 5;
+/** Remembers whether the shelf was last shown at the top, so its place can be kept free while it loads
+ *  (otherwise the feed jumps down the moment it arrives). */
+const HINT_KEY = 'cx.signal.people-shelf-top';
+const hintTop = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch { return false; } };
 
 const dismissedRecently = () => {
   try {
@@ -56,6 +60,23 @@ export function SignalPeopleShelf({ profileBase, placement = 'top' }: { profileB
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uid, dismissed]);
 
+  // remember where it ended up, for the next load
+  useEffect(() => {
+    if (following === null || people.length === 0) return;
+    try { localStorage.setItem(HINT_KEY, following < TOP_UNDER ? '1' : '0'); } catch { /* ignore */ }
+  }, [following, people.length]);
+
+  // still loading, and it was at the top last time: keep its place so the feed below does not jump
+  if (!dismissed && uid && following === null && placement === 'top' && hintTop()) {
+    return (
+      <section aria-hidden="true" className="mb-4 rounded-2xl border border-line bg-surface p-3.5 shadow-hair">
+        <div className="mb-3 h-5 w-32 rounded-md skeleton" />
+        <div className="flex gap-2.5 overflow-hidden">
+          {[0, 1, 2].map((i) => <div key={i} className="h-[10.25rem] w-36 shrink-0 rounded-2xl skeleton" />)}
+        </div>
+      </section>
+    );
+  }
   if (dismissed || people.length === 0 || following === null) return null;
   if (placement === 'top' ? following >= TOP_UNDER : following < TOP_UNDER) return null;
   const dismiss = () => {
