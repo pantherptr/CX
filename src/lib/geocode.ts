@@ -42,23 +42,36 @@ function toPlace(f: Feature): Place {
   };
 }
 
-export async function searchPlaces(query: string, near?: [number, number], signal?: AbortSignal): Promise<Place[]> {
-  const q = query.trim();
-  if (q.length < 3) return [];
-  const url = new URL(GEOAPIFY_KEY ? `${GEOAPIFY}/autocomplete` : `${BASE}/api/`);
-  if (GEOAPIFY_KEY) {
-    url.searchParams.set('text', q);
-    url.searchParams.set('limit', '6');
-    url.searchParams.set('lang', 'en');
-    url.searchParams.set('format', 'geojson');
-    if (near) url.searchParams.set('bias', `proximity:${near[0]},${near[1]}`);
-    url.searchParams.set('apiKey', GEOAPIFY_KEY);
-  } else {
-    url.searchParams.set('q', q);
-    url.searchParams.set('limit', '6');
-    url.searchParams.set('lang', 'en');
-    if (near) { url.searchParams.set('lon', String(near[0])); url.searchParams.set('lat', String(near[1])); }
+/** Set once Geoapify has refused the key (wrong key, or the domain is not on its allow-list): for the rest of the
+ *  session the public service answers instead, so a key problem never leaves the address search empty. */
+let geoapifyRefused = false;
+const useGeoapify = () => Boolean(GEOAPIFY_KEY) && !geoapifyRefused;
+
+async function searchGeoapify(q: string, near: [number, number] | undefined, signal?: AbortSignal): Promise<Place[] | null> {
+  const url = new URL(`${GEOAPIFY}/autocomplete`);
+  url.searchParams.set('text', q);
+  url.searchParams.set('limit', '6');
+  url.searchParams.set('lang', 'en');
+  url.searchParams.set('format', 'geojson');
+  if (near) url.searchParams.set('bias', `proximity:${near[0]},${near[1]}`);
+  url.searchParams.set('apiKey', GEOAPIFY_KEY);
+  try {
+    const res = await fetch(url, { signal });
+    if (res.status === 401 || res.status === 403) { geoapifyRefused = true; return null; }
+    if (!res.ok) return null;
+    const json = (await res.json()) as { features?: Feature[] };
+    return (json.features ?? []).map(toPlace);
+  } catch {
+    return null;
   }
+}
+
+async function searchPhoton(q: string, near: [number, number] | undefined, signal?: AbortSignal): Promise<Place[]> {
+  const url = new URL(`${BASE}/api/`);
+  url.searchParams.set('q', q);
+  url.searchParams.set('limit', '6');
+  url.searchParams.set('lang', 'en');
+  if (near) { url.searchParams.set('lon', String(near[0])); url.searchParams.set('lat', String(near[1])); }
   try {
     const res = await fetch(url, { signal });
     if (!res.ok) return [];
@@ -67,6 +80,17 @@ export async function searchPlaces(query: string, near?: [number, number], signa
   } catch {
     return [];
   }
+}
+
+export async function searchPlaces(query: string, near?: [number, number], signal?: AbortSignal): Promise<Place[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+  if (useGeoapify()) {
+    const r = await searchGeoapify(q, near, signal);
+    if (r !== null) return r;
+    if (signal?.aborted) return [];
+  }
+  return searchPhoton(q, near, signal);
 }
 
 /** fetch with a deadline: a slow public geocoder must never keep the host waiting */
@@ -95,13 +119,18 @@ export async function reversePlace(lat: number, lng: number, signal?: AbortSigna
     const hit = reverseCache.get(key);
     return hit ? { ...hit, lat, lng } : null;
   }
-  const first = await fetchWithin(
-    GEOAPIFY_KEY
-      ? `${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`
-      : `${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`,
-    3500,
-    signal,
-  );
+  let first: Response | null = null;
+  if (useGeoapify()) {
+    first = await fetchWithin(`${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`, 3500, signal);
+    if (!first) {
+      // a refused key answers 401/403, which fetchWithin reports as null: check once so later calls skip Geoapify
+      try {
+        const probe = await fetch(`${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&format=geojson&apiKey=${GEOAPIFY_KEY}`, { signal });
+        if (probe.status === 401 || probe.status === 403) geoapifyRefused = true;
+      } catch { /* offline or aborted */ }
+    }
+  }
+  if (!first && !signal?.aborted) first = await fetchWithin(`${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`, 3500, signal);
   if (first) {
     try {
       const json = (await first.json()) as { features?: Feature[] };
