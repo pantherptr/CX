@@ -375,7 +375,7 @@ export function BrowseMap({
             className="flex w-full shrink-0 touch-none flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
           >
             <span className="h-1 w-10 rounded-full bg-line-strong" />
-            <span className="text-caption font-semibold text-ink-soft">{t('{n} cars here', { n: placed.length })}</span>
+            <span className="text-caption font-semibold text-ink-soft">{placed.length === 1 ? t('1 car here') : t('{n} cars here', { n: placed.length })}</span>
           </button>
 
           {sheetOpen ? (
