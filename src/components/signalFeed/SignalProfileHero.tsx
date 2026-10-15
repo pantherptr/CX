@@ -9,8 +9,8 @@ import { Ugc } from '../../lib/i18n/ugc';
 import { SignalAvatarExpand } from './SignalAvatarExpand';
 import { AnimatePresence, motion, useReducedMotion } from '../motionKit';
 
-type Role = 'owner' | 'admin' | 'host' | 'client';
-const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client' };
+type Role = 'owner' | 'admin' | 'host' | 'client' | 'creator';
+const ROLE_LABEL: Record<Role, string> = { owner: 'Owner', admin: 'Admin', host: 'Host', client: 'Verified Client', creator: 'Creator' };
 
 /** The same figures, Instagram-style: three numbers in one row beside the photo, no card. */
 function InlineStat({ value, label, onClick }: { value: number; label: string; onClick?: () => void }) {

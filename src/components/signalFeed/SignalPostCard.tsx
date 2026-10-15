@@ -566,7 +566,7 @@ export function SignalPostCard({
   const postedAt = new Date(post.createdAt).toLocaleString(lang === 'en' ? uiLocale() : lang, { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long', year: 'numeric' });
 
   const isExclusive = post.category === 'exclusive';
-  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername, post.authorId);
   // Real ownership (not just admin moderation) — a Host/Verified Client
   // can edit/delete their own post even without canManage's broader
   // pin/feature/Performance-line privileges. Admin keeps everything.

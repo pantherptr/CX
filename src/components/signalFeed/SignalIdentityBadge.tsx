@@ -1,3 +1,4 @@
+import { useIsCreator } from '../../lib/data/signalPlan';
 import { Icon } from '../Icon';
 import { Img } from '../motion';
 import { VerifiedBadge, type VerifiedRole } from '../primitives';
@@ -122,5 +123,8 @@ export function identityBadgeRole(identity: SignalIdentity): VerifiedRole | null
 
 export function SignalIdentityBadge({ identity, size = 16 }: { identity: SignalIdentity; size?: number }) {
   const role = identityBadgeRole(identity);
-  return role ? <VerifiedBadge role={role} size={size} /> : null;
+  // someone with no badge of their own may be on the Creator plan (quiet grey mark with the S)
+  const creator = useIsCreator(!role && identity.type === 'self' ? identity.userId : null);
+  if (role) return <VerifiedBadge role={role} size={size} />;
+  return creator ? <VerifiedBadge role="creator" size={size} /> : null;
 }

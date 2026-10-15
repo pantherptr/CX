@@ -50,6 +50,8 @@ export interface SignalIdentity {
    *  identity ('self', not the fixed 'owner' voice) needs their real
    *  platform tier recognized too, not silently downgraded to 'client'. */
   selfRole?: 'owner' | 'admin' | 'host' | 'verified_client' | 'client';
+  /** The real account behind a 'self' identity — lets the badge look up a Creator plan. */
+  userId?: string | null;
 }
 
 /** The Owner's profile photo everywhere in SIGNAL: the gold chrome bat. */
@@ -64,6 +66,7 @@ export function resolveSignalIdentity(
   authorIsOwner?: boolean,
   _authorIsAdmin?: boolean,
   authorUsername?: string | null,
+  authorId?: string | null,
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
@@ -81,7 +84,7 @@ export function resolveSignalIdentity(
         : selfRole === 'host' ? 'Host'
         : selfRole === 'verified_client' ? 'Verified Client'
         : 'Client';
-      return { type: 'self', name: authorName, subtitle, avatarUrl: authorIsOwner ? OWNER_AVATAR : authorAvatarUrl, selfRole, username: authorUsername ?? null };
+      return { type: 'self', name: authorName, subtitle, avatarUrl: authorIsOwner ? OWNER_AVATAR : authorAvatarUrl, selfRole, username: authorUsername ?? null, userId: authorId ?? null };
     }
     case 'owner':
     default:

@@ -1,3 +1,4 @@
+import { useIsCreator } from '../../lib/data/signalPlan';
 import { variantUrl } from '../../lib/imageVariants';
 import { recallProfile, rememberProfile, rememberPosts } from '../../lib/data/seedCache';
 import { useScrollMemory } from '../../lib/scrollMemory';
@@ -210,8 +211,9 @@ export function SignalProfileDetail({
     return () => { cancelled = true; };
   }, [activeTab, savedPosts]);
 
-  const role: 'owner' | 'admin' | 'host' | 'client' | null = realProfile
-    ? realProfile.isOwner ? 'owner' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : null
+  const isCreator = useIsCreator(realProfile?.id);
+  const role: 'owner' | 'admin' | 'host' | 'client' | 'creator' | null = realProfile
+    ? realProfile.isOwner ? 'owner' : realProfile.isHost ? 'host' : realProfile.isVerifiedClient ? 'client' : isCreator ? 'creator' : null
     : demo ? (demo.role === 'host' ? 'host' : 'client') : null;
   const [followersCount, setFollowersCount] = useState(0);
   useEffect(() => {

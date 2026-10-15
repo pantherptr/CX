@@ -145,7 +145,7 @@ export function SignalComments({
         <div className="flex flex-col gap-3">
           {comments.map((c) => {
             const isMine = c.userId === session?.user.id;
-            const identity = resolveSignalIdentity(c.publisherType, c.authorName, c.authorAvatarUrl, c.authorIsHost, c.authorIsVerifiedClient, c.authorIsOwner, c.authorIsAdmin, c.authorUsername);
+            const identity = resolveSignalIdentity(c.publisherType, c.authorName, c.authorAvatarUrl, c.authorIsHost, c.authorIsVerifiedClient, c.authorIsOwner, c.authorIsAdmin, c.authorUsername, c.userId);
             return (
               <div key={c.id} className="group flex items-start gap-2.5">
                 <Link to={commentProfileHref(c, profileBase)} viewTransition className="shrink-0">

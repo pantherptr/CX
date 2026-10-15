@@ -89,7 +89,7 @@ export function SignalStoriesBar({
           // not a preview of the Story's own content — matches how the
           // identity system's own examples present the bar, and reads
           // as a broadcast channel rather than a personal-content ring.
-          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin, story.authorUsername);
+          const identity = resolveSignalIdentity(story.publisherType, story.authorName, story.authorAvatarUrl, story.authorIsHost, story.authorIsVerifiedClient, story.authorIsOwner, story.authorIsAdmin, story.authorUsername, story.authorId);
           // A restrained, solid-color CX Rent take — never the raw
           // multi-stop gradient ring Instagram itself uses. Your own
           // Story gets a solid deep-accent ring regardless of viewed

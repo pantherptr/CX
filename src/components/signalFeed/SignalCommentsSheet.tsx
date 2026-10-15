@@ -27,7 +27,7 @@ export function SignalCommentsSheet({
 }) {
   const [closing, setClosing] = useState(false);
   const requestClose = () => setClosing(true);
-  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername);
+  const identity = resolveSignalIdentity(post.publisherType, post.authorName, post.authorAvatarUrl, post.authorIsHost, post.authorIsVerifiedClient, post.authorIsOwner, post.authorIsAdmin, post.authorUsername, post.authorId);
 
   return (
     <MotionSheet

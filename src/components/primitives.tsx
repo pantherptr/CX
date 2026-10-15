@@ -464,7 +464,7 @@ export function Modal({
 // pre-existing 'owner_assistant' (a real human tier, still gold, used
 // elsewhere for conversation-participant labeling) so recoloring one
 // never touches the other.
-export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client' | 'assistant' | 'cx';
+export type VerifiedRole = 'owner' | 'owner_assistant' | 'admin' | 'host' | 'client' | 'assistant' | 'cx' | 'creator';
 
 const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: string }> = {
   owner: { fg: 'text-[#8a6d1f]', bg: 'bg-noir/5', label: 'Owner' },
@@ -475,11 +475,13 @@ const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: 
   assistant: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'X' },
   // The company's own voice — what members see when they talk to support.
   cx: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'CX' },
+  creator: { fg: 'text-ink-soft', bg: 'bg-panel-2', label: 'Creator' },
 };
 
 /** Which CX tier a role wears: the three levels of the CX badge system. */
 export function cxTierForRole(role: VerifiedRole): CxTier {
   if (role === 'client') return 'verified';
+  if (role === 'creator') return 'creator';
   if (role === 'host') return 'host';
   return 'team';
 }
@@ -520,6 +522,7 @@ const BADGE_TIP_TEXT: Record<VerifiedRole, string> = {
   owner_assistant: 'CX Owner assistant — official account',
   assistant: 'X — the CX assistant, official account',
   cx: 'CX — official account',
+  creator: 'SIGNAL Creator',
 };
 
 /** The small icon-only badge: a tap opens a slim bar next to it saying what it means. It goes away by

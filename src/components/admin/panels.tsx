@@ -21,6 +21,7 @@ import {
   type AdminCar,
 } from '../../lib/data/admin';
 import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
+import { fetchCreatorIds, setSignalPlan } from '../../lib/data/signalPlan';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
 import { uiLocale } from '../../lib/i18n/uiLocale';
 
@@ -106,11 +107,15 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [access, setAccess] = useState<Map<string, UserAccess>>(new Map());
+  const [creators, setCreators] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void fetchUserAccess().then(setAccess);
     fetchAllUsers()
-      .then(setItems)
+      .then((rows) => {
+        setItems(rows);
+        void fetchCreatorIds(rows.map((r) => r.id)).then(setCreators);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load users.'));
   }, []);
 
@@ -137,8 +142,28 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
     toast({ title: u.isAdmin ? `${u.fullName} is no longer an admin` : `${u.fullName} is now an admin`, icon: 'checkCircle' });
   };
 
+  const toggleCreator = async (u: AdminUser) => {
+    const on = !creators.has(u.id);
+    setBusyId(u.id);
+    const { error: err } = await setSignalPlan(u.id, on ? 'creator' : 'free');
+    setBusyId(null);
+    if (err) {
+      toast({ title: 'Could not change the Creator plan', desc: `${err} — run migration 0138 in Supabase if you have not yet.`, icon: 'info' });
+      return;
+    }
+    setCreators((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(u.id); else next.delete(u.id);
+      return next;
+    });
+    toast({ title: on ? `${u.fullName} is now a Creator` : `${u.fullName} is no longer a Creator`, icon: 'checkCircle' });
+  };
+
   const menuGroups = (u: AdminUser): PostMenuItem[][] => [
     [
+      ...(!u.isHost && !u.isAdmin && !u.isOwner
+        ? [{ icon: 'sparkles', label: creators.has(u.id) ? 'Remove Creator' : 'Make Creator', onClick: () => void toggleCreator(u) } as PostMenuItem]
+        : []),
       { icon: 'verified', label: u.isVerifiedClient ? 'Remove verification' : 'Verify client', onClick: () => void toggleVerifiedClient(u) },
       ...(!u.isOwner
         ? [{ icon: 'shield', label: u.isAdmin ? 'Remove admin' : 'Make admin', onClick: () => void toggleAdmin(u), danger: u.isAdmin } as PostMenuItem]
@@ -170,6 +195,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
             })()}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {creators.has(u.id) && <span className="badge bg-panel-2 text-ink-soft"><Icon name="sparkles" size={12} /> Creator</span>}
             {u.isAdmin && <span className="badge badge-accent"><Icon name="shield" size={12} /> Admin</span>}
             {u.isHost && <span className="badge bg-panel-2 text-ink-soft"><Icon name="cars" size={12} /> Host</span>}
             {canManageRoles ? (

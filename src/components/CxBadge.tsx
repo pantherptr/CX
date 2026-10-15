@@ -5,9 +5,9 @@ import { CxBatFlag } from './CxFlag';
 /** The CX verification mark: the bat from the logo, drawn compact and faceted
  *  in satin metal, with the gold verified seal (public/owner-verified.png) on its chest.
  *  Grey for members, green for hosts, gold for the CX team. Pure SVG. */
-export type CxTier = 'verified' | 'host' | 'team';
+export type CxTier = 'verified' | 'host' | 'team' | 'creator';
 
-const TIER_ORDER: CxTier[] = ['verified', 'host', 'team'];
+const TIER_ORDER: CxTier[] = ['creator', 'verified', 'host', 'team'];
 /** Highest wins: CX Team > Verified Host > CX Verified. */
 export const topCxTier = (tiers: (CxTier | null | undefined)[]): CxTier | null =>
   tiers.reduce<CxTier | null>((best, t) => (t && (!best || TIER_ORDER.indexOf(t) > TIER_ORDER.indexOf(best)) ? t : best), null);
@@ -16,6 +16,7 @@ export const CX_TIER_LABEL: Record<CxTier, string> = {
   verified: 'CX verified profile',
   host: 'CX verified host',
   team: 'Official CX team',
+  creator: 'SIGNAL Creator',
 };
 
 // A 100 × 64 canvas, symmetric about x = 50: two ear points beside a small
@@ -32,6 +33,7 @@ const SEAL_SRC: Record<CxTier, string> = {
   verified: '/verified-seal-member.png',
   host: '/verified-seal-host.png',
   team: '/owner-verified.png',
+  creator: '/brand/signal-s.webp', // the S of SIGNAL sits where the other tiers carry their seal
 };
 
 interface Metal { top: string; bottom: string; edge: string; plate: string; plateRing: string; check: string }
@@ -41,6 +43,8 @@ const METAL: Record<CxTier, Metal> = {
   verified: { top: '#d7dbe1', bottom: '#79808a', edge: 'rgba(40,44,52,0.55)', plate: 'rgba(22,26,34,0.62)', plateRing: 'rgba(255,255,255,0.45)', check: '#ffffff' },
   // emerald
   host: { top: '#6cc88c', bottom: '#1f6b40', edge: 'rgba(6,42,22,0.55)', plate: 'rgba(4,36,18,0.62)', plateRing: 'rgba(255,255,255,0.4)', check: '#ffffff' },
+  // quiet silver, a step softer than the verified member mark
+  creator: { top: '#cfd3d8', bottom: '#8c929b', edge: 'rgba(40,44,52,0.5)', plate: 'rgba(22,26,34,0.5)', plateRing: 'rgba(255,255,255,0.4)', check: '#ffffff' },
   // gold
   team: { top: '#f3dd92', bottom: '#ae8830', edge: 'rgba(84,60,8,0.55)', plate: 'rgba(60,40,4,0.62)', plateRing: 'rgba(255,248,224,0.55)', check: '#fff9e6' },
 };
@@ -82,7 +86,11 @@ export function CxMark({ tier, size = 16, className = '', gold = false }: { tier
       <path d={PLANES_DARK} fill="#000000" fillOpacity="0.1" />
       <path d={TOP_EDGE} fill="none" stroke="#ffffff" strokeOpacity="0.5" strokeWidth="0.7" strokeLinejoin="round" strokeLinecap="round" />
       {/* the gold verified seal sits in the middle of the bat (the bat itself is unchanged) */}
-      <image href={SEAL_SRC[tier]} x="32" y="13" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
+      {tier === 'creator' ? (
+        <image href={SEAL_SRC[tier]} x="29" y="19" width="42" height="24" preserveAspectRatio="xMidYMid meet" />
+      ) : (
+        <image href={SEAL_SRC[tier]} x="32" y="13" width="36" height="36" preserveAspectRatio="xMidYMid meet" />
+      )}
     </svg>
   );
 }
