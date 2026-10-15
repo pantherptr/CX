@@ -92,12 +92,14 @@ interface ActionItem {
  */
 function buildActionItems({
   draftCars,
+  unplacedCars,
   soonPickups,
   unreadCount,
   verificationMissing,
   payoutsMissing,
 }: {
   draftCars: { id: string; make: string; model: string }[];
+  unplacedCars: { id: string; make: string; model: string }[];
   soonPickups: Booking[];
   unreadCount: number;
   verificationMissing: boolean;
@@ -112,6 +114,17 @@ function buildActionItems({
       label: `${c.make} ${c.model} is still a draft`,
       sub: 'Unpublished cars don’t earn — finish the listing from My Fleet.',
       to: '/host#cars',
+    });
+  }
+
+  // a car with no exact spot is not on the map: renters cannot see where it is
+  for (const c of unplacedCars) {
+    items.push({
+      id: `spot-${c.id}`,
+      icon: 'pin',
+      label: `${c.make} ${c.model} is not on the map yet`,
+      sub: 'Add the exact pick-up address so renters see it on the map.',
+      to: `/host/cars/${c.id}`,
     });
   }
 
@@ -740,6 +753,7 @@ export default function HostDashboard() {
     const soonCutoff = toISO(new Date(Date.now() + 2 * 86_400_000));
     return buildActionItems({
       draftCars: (hostCars ?? []).filter((c) => c.status === 'draft' && c.reviewStatus !== 'pending'),
+      unplacedCars: (hostCars ?? []).filter((c) => c.status === 'published' && (c.lat == null || c.lng == null)),
       soonPickups: classified
         .filter((c) => c.phase === 'upcoming' && c.booking.startDate <= soonCutoff)
         .map((c) => c.booking),

@@ -5,17 +5,18 @@ import type { Car } from '../../data/types';
 import { CITY_COORDS } from '../../data/cityCoords';
 import { eur } from '../../lib/format';
 import { useLocale } from '../../lib/i18n';
+import { useHasAccess } from '../../lib/useAccess';
 
-/** Where a car is drawn: its city centre nudged by a stable, car-specific offset,
- *  so pins spread over the city but never reveal an exact address. */
-function approxPosition(car: Car): [number, number] | null {
-  const c = CITY_COORDS[car.city];
-  if (!c) return null;
-  let h = 2166136261;
-  for (let i = 0; i < car.id.length; i++) h = Math.imul(h ^ car.id.charCodeAt(i), 16777619);
-  const a = ((h >>> 0) % 3600) / 3600 * Math.PI * 2;
-  const r = 0.006 + (((h >>> 12) & 1023) / 1023) * 0.026;
-  return [c[0] + Math.cos(a) * r * 1.45, c[1] + Math.sin(a) * r];
+/** Where a car is drawn: the spot its host marked (address search + pin, migration 0109).
+ *  - signed in: that exact spot, the pin's tip on the point;
+ *  - signed out: the same real place rounded to a block of ~400 m (a true neighbourhood, never an invented one),
+ *    so the exact address stays behind the sign-in the listing page already asks for.
+ *  A car whose host has not marked a spot yet is NOT drawn: no point is ever made up. */
+function positionOf(car: Car, exact: boolean): [number, number] | null {
+  if (car.lat == null || car.lng == null) return null;
+  if (exact) return [car.lng, car.lat];
+  const step = 0.004;
+  return [Math.round(car.lng / step) * step, Math.round(car.lat / step) * step];
 }
 
 /** A real map of the cars currently listed: one white price pill per car, the
@@ -36,6 +37,7 @@ export function BrowseMap({
   className?: string;
 }) {
   const { t } = useLocale();
+  const exact = useHasAccess();
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const mlRef = useRef<typeof import('maplibre-gl') | null>(null);
@@ -47,10 +49,12 @@ export function BrowseMap({
   // cities present in the results, busiest first
   const cities = useMemo(() => {
     const n = new Map<string, number>();
-    cars.forEach((c) => n.set(c.city, (n.get(c.city) ?? 0) + 1));
+    cars.forEach((c) => { if (c.lat != null && c.lng != null) n.set(c.city, (n.get(c.city) ?? 0) + 1); });
     return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c).filter((c) => CITY_COORDS[c]);
   }, [cars]);
   const city = pick && cities.includes(pick) ? pick : cities[0] ?? null;
+  // cars shown in the list whose host has not marked the exact spot yet
+  const unplaced = useMemo(() => cars.filter((c) => c.lat == null || c.lng == null).length, [cars]);
 
   useEffect(() => {
     if (!box.current) return;
@@ -90,29 +94,33 @@ export function BrowseMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // pins follow the results
+  // pins follow the results (and whether the viewer may see the exact spot)
   useEffect(() => {
     const map = mapRef.current;
     const ml = mlRef.current;
     if (!ready || !map || !ml) return;
-    const wanted = new Map(cars.map((c) => [c.id, c]));
-    markers.current.forEach(({ marker }, id) => {
-      if (!wanted.has(id)) { marker.remove(); markers.current.delete(id); }
-    });
+    markers.current.forEach(({ marker }) => marker.remove());
+    markers.current.clear();
+    // cars sharing a spot (same building, or the same block when signed out) get a small sideways step
+    const seen = new Map<string, number>();
     cars.forEach((car) => {
-      const pos = approxPosition(car);
+      const pos = positionOf(car, exact);
       if (!pos) return;
-      const existing = markers.current.get(car.id);
-      if (existing) { existing.el.textContent = eur(car.pricePerDay); return; }
+      const k = `${pos[0].toFixed(5)},${pos[1].toFixed(5)}`;
+      const n = seen.get(k) ?? 0;
+      seen.set(k, n + 1);
       const el = document.createElement('button');
       el.className = 'bm-pin';
+      if (exact) el.dataset.exact = '1';
       el.textContent = eur(car.pricePerDay);
-      el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}`);
+      el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}${exact && car.addressLabel ? ` — ${car.addressLabel}` : ''}`);
+      if (exact && car.addressLabel) el.title = car.addressLabel;
       el.addEventListener('click', (e) => { e.stopPropagation(); onSelectRef.current(car); });
-      const marker = new ml.Marker({ element: el }).setLngLat(pos).addTo(map);
+      const side = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2) * 58;
+      const marker = new ml.Marker({ element: el, anchor: exact ? 'bottom' : 'center', offset: [side, exact ? -6 : 0] }).setLngLat(pos).addTo(map);
       markers.current.set(car.id, { marker, el });
     });
-  }, [cars, ready]);
+  }, [cars, ready, exact]);
 
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -121,12 +129,12 @@ export function BrowseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !city) return;
-    const pts = cars.filter((c) => c.city === city).map(approxPosition).filter((p): p is [number, number] => !!p);
+    const pts = cars.filter((c) => c.city === city).map((c) => positionOf(c, exact)).filter((p): p is [number, number] => !!p);
     if (pts.length === 0) return;
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
-    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: 70, maxZoom: 12.8, duration: 900 });
-  }, [city, cars, ready]);
+    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: 70, maxZoom: exact ? 15.5 : 14, duration: 900 });
+  }, [city, cars, ready, exact]);
 
   // highlight
   useEffect(() => {
@@ -149,7 +157,18 @@ export function BrowseMap({
           ))}
         </div>
       )}
-      {ready && <p className="pointer-events-none absolute bottom-7 left-3 z-10 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">{t('Pins show the approximate area')}</p>}
+      {ready && (
+        <div className="pointer-events-none absolute bottom-7 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1">
+          <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
+            {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}
+          </p>
+          {unplaced > 0 && (
+            <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
+              {t('{n} listed without an exact spot yet', { n: unplaced })}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

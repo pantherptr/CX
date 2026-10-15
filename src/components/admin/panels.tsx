@@ -16,6 +16,7 @@ import {
   refundBookingAdmin,
   fetchAllCarsAdmin,
   adminSetCarStatus,
+  adminSetCarSpot,
   type AdminUser,
   type AdminBooking,
   type AdminCar,
@@ -23,6 +24,8 @@ import {
 import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
 import { fetchCreatorIds, setSignalPlan, fetchPlanConfig, savePlanConfig, fetchCreatorRequestIds } from '../../lib/data/signalPlan';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
+import { LocationPicker, type PickedLocation } from '../LocationPicker';
+import { Modal } from '../primitives';
 import { uiLocale } from '../../lib/i18n/uiLocale';
 
 /**
@@ -438,6 +441,8 @@ export function CarsPanel() {
   const [items, setItems] = useState<AdminCar[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [placing, setPlacing] = useState<AdminCar | null>(null);
+  const [spot, setSpot] = useState<PickedLocation | null>(null);
 
   const load = () => {
     setItems(null);
@@ -461,12 +466,34 @@ export function CarsPanel() {
     load();
   };
 
+  const openPlace = (c: AdminCar) => {
+    setPlacing(c);
+    setSpot(c.spot ? { lat: c.spot.lat, lng: c.spot.lng, label: c.spot.label } : null);
+  };
+  const saveSpot = async () => {
+    if (!placing || !spot) return;
+    setBusyId(placing.id);
+    const { error: err } = await adminSetCarSpot(placing.id, spot);
+    setBusyId(null);
+    if (err) { toast({ title: 'Could not save the spot', desc: err, icon: 'info' }); return; }
+    toast({ title: 'Placed on the map', desc: spot.label, icon: 'checkCircle' });
+    setPlacing(null);
+    load();
+  };
+
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
   if (!items) return <div className="card"><EmptyState size="md" icon="info" title="Loading…" className="p-10" /></div>;
   if (items.length === 0) return <div className="card"><EmptyState size="md" icon="info" title="No cars listed yet." className="p-10" /></div>;
 
+  const missing = items.filter((c) => !c.spot).length;
+
   return (
     <div className="flex flex-col gap-2">
+      <p className={`rounded-xl px-3.5 py-2.5 text-detail ${missing ? 'bg-warn/15 text-warn-ink' : 'bg-accent-050 text-accent-700'}`}>
+        {missing
+          ? `${missing} of ${items.length} cars have no exact spot on the map yet. A car without one is not drawn on the map.`
+          : 'Every car is on the map at its exact spot.'}
+      </p>
       {items.map((c) => (
         <div key={c.id} className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
@@ -475,7 +502,13 @@ export function CarsPanel() {
               <span className={`badge ${c.status === 'published' ? 'badge-accent' : 'bg-panel-2 text-ink-soft'}`}>{c.status}</span>
             </p>
             <p className="text-caption text-muted">Hosted by {c.hostName} · {eur(c.pricePerDay)}/day</p>
+            <p className={`mt-0.5 flex items-center gap-1 text-caption ${c.spot ? 'text-accent-700' : 'text-warn-ink'}`}>
+              <Icon name="pin" size={12} /> {c.spot ? (c.spot.label || 'Exact spot set') : 'No exact spot on the map'}
+            </p>
           </div>
+          <button onClick={() => openPlace(c)} className="btn btn-secondary btn-sm shrink-0">
+            {c.spot ? 'Move pin' : 'Place on map'}
+          </button>
           <button
             onClick={() => toggle(c)}
             disabled={busyId === c.id}
@@ -485,7 +518,17 @@ export function CarsPanel() {
           </button>
         </div>
       ))}
+      <Modal open={placing !== null} onClose={() => busyId === null && setPlacing(null)} labelledBy="place-car-title" className="p-5 sm:p-6">
+        <h3 id="place-car-title" className="font-display text-lead font-semibold text-ink">{placing?.label}</h3>
+        <p className="mt-1 text-detail text-muted">Search the exact address, then drag the pin onto the spot. This is what renters will see.</p>
+        <div className="mt-4">
+          {placing && <LocationPicker value={spot} city={placing.city} onChange={setSpot} />}
+        </div>
+        <div className="mt-5 flex gap-2.5">
+          <button type="button" onClick={() => setPlacing(null)} className="btn btn-block border border-line-strong bg-surface text-ink">Cancel</button>
+          <button type="button" disabled={!spot || busyId !== null} onClick={() => void saveSpot()} className="btn btn-primary btn-block disabled:opacity-50">Save spot</button>
+        </div>
+      </Modal>
     </div>
   );
 }
-

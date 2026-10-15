@@ -170,6 +170,9 @@ export interface AdminCar {
   pricePerDay: number;
   hostName: string;
   createdAt: string;
+  city: string;
+  /** the exact spot the host marked (migration 0109); null until then */
+  spot: { lat: number; lng: number; label: string } | null;
 }
 
 interface AdminCarRow {
@@ -181,11 +184,15 @@ interface AdminCarRow {
   status: AdminCar['status'];
   price_per_day: number;
   created_at: string;
+  city: string | null;
+  lat: number | null;
+  lng: number | null;
+  address_label: string | null;
   host: { full_name: string | null } | null;
 }
 
 const ADMIN_CAR_SELECT = `
-  id, slug, make, model, year, status, price_per_day, created_at,
+  id, slug, make, model, year, status, price_per_day, created_at, city, lat, lng, address_label,
   host:profiles!cars_host_id_fkey (full_name)
 `;
 
@@ -204,12 +211,23 @@ export async function fetchAllCarsAdmin(): Promise<AdminCar[]> {
     pricePerDay: Number(r.price_per_day),
     hostName: r.host?.full_name || 'Unnamed host',
     createdAt: r.created_at,
+    city: r.city ?? '',
+    spot: r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng, label: r.address_label ?? '' } : null,
   }));
 }
 
 /** Publishes or pulls a listing — the same moderation lever a host has
  *  over their own car, usable here on anyone's via the "Admins update
  *  all cars" policy. */
+/** Places a car on the map at the exact spot (the same fields a host sets in Manage car). */
+export async function adminSetCarSpot(id: string, spot: { lat: number; lng: number; label: string }): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('cars')
+    .update({ lat: spot.lat, lng: spot.lng, address_label: spot.label, location: spot.label })
+    .eq('id', id);
+  return { error: error?.message ?? null };
+}
+
 export async function adminSetCarStatus(id: string, status: 'draft' | 'published'): Promise<{ error: string | null }> {
   const { error } = await supabase.from('cars').update({ status }).eq('id', id);
   return { error: error?.message ?? null };

@@ -82,7 +82,8 @@ export function MiniMap({
         };
         map.on('load', () => {
           if (cancelled || !map) return;
-          pin(center, point?.label, 'car');
+          // no flag unless the host marked a spot: the city centre is only where the map is looking, never a pin
+          if (point) pin(center, point.label, 'car');
           if (extra) {
             pin([extra.lng, extra.lat], extra.label, 'you');
             const b = new maplibregl.LngLatBounds(center, center);
@@ -104,6 +105,9 @@ export function MiniMap({
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="img" aria-label={`Map of ${city}`} />
       {!ready && !failed && <span className="skeleton absolute inset-0" />}
       {failed && <span className="absolute inset-0 grid place-items-center text-detail text-muted">{city}</span>}
+      {ready && !point && !extra && (
+        <span className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">{city}</span>
+      )}
     </div>
   );
 }
