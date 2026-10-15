@@ -1096,15 +1096,40 @@ export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: str
  *  what lets the delete policy scope "delete your own file, or admin"
  *  instead of "any signed-in user", since this bucket is public-read
  *  with otherwise-unguessable-but-visible paths. */
-export async function uploadEmpirePostMedia(original: File): Promise<{ url: string; path: string }> {
+export async function uploadEmpirePostMedia(
+  original: File,
+  /** 0..1, called while the bytes go up (a big video can take a while) */
+  onProgress?: (fraction: number) => void,
+): Promise<{ url: string; path: string }> {
   const file = await shrinkImage(original, 4096, 0.93);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
-  if (error) throw error;
+  if (!onProgress) {
+    const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
+    if (error) throw error;
+    return { url: mediaUrlFor(path), path };
+  }
+  // With a progress callback the upload goes through XHR (fetch cannot report upload progress): the same
+  // REST call the client library makes, with the member's own token.
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  const base = import.meta.env.VITE_SUPABASE_URL as string;
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${base}/storage/v1/object/${MEDIA_BUCKET}/${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.setRequestHeader('cache-control', 'max-age=31536000');
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? (onProgress(1), resolve()) : reject(new Error(`Upload failed (${xhr.status})`)));
+    xhr.onerror = () => reject(new Error('Upload failed — check the connection and try again.'));
+    xhr.send(file);
+  });
   return { url: mediaUrlFor(path), path };
 }
 

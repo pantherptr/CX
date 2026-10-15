@@ -162,6 +162,8 @@ export function SignalCommunityComposer({
   const [existingPaths, setExistingPaths] = useState<string[]>(editing?.mediaPaths ?? []);
   const [existingUrls, setExistingUrls] = useState<string[]>(editing?.mediaUrls ?? []);
   const [pending, setPending] = useState<PendingMedia[]>([]);
+  // 0..1 per pending item while it uploads (shown as a bar on its thumbnail)
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [validatingVideo, setValidatingVideo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -374,8 +376,8 @@ export function SignalCommunityComposer({
     setError(null);
     try {
       const uploaded: string[] = [];
-      for (const media of pending) {
-        const { path } = await uploadEmpirePostMedia(media.file);
+      for (let i = 0; i < pending.length; i += 1) {
+        const { path } = await uploadEmpirePostMedia(pending[i].file, (f) => setUploadProgress((p) => ({ ...p, [i]: f })));
         uploaded.push(path);
       }
       const mediaPaths = [...existingPaths, ...uploaded];
@@ -458,6 +460,7 @@ export function SignalCommunityComposer({
       onDone(finalPost);
     } finally {
       setSubmitting(false);
+      setUploadProgress({});
     }
   };
 
@@ -583,6 +586,14 @@ export function SignalCommunityComposer({
                       {media.mediaKind === 'video' && (
                         <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/20">
                           <Icon name="play" size={14} className="text-white" />
+                        </div>
+                      )}
+                      {submitting && uploadProgress[i] !== undefined && (
+                        <div className="absolute inset-x-0 bottom-0 bg-black/55 px-1.5 pb-1.5 pt-1" role="progressbar" aria-valuenow={Math.round(uploadProgress[i] * 100)} aria-valuemin={0} aria-valuemax={100}>
+                          <div className="h-1 overflow-hidden rounded-full bg-white/30">
+                            <div className="h-full rounded-full bg-accent-bright transition-[width] duration-150" style={{ width: `${Math.round(uploadProgress[i] * 100)}%` }} />
+                          </div>
+                          <p className="mt-0.5 text-center text-[10px] font-semibold tabular-nums text-white">{Math.round(uploadProgress[i] * 100)}%</p>
                         </div>
                       )}
                       <button
