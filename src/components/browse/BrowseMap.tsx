@@ -321,7 +321,7 @@ export function BrowseMap({
   const showSheet = variant === 'main' && placed.length > 0;
 
   return (
-    <div className={`relative overflow-hidden bg-[#f2f4f7] ${className}`}>
+    <div className={`relative overflow-hidden ${variant === 'main' ? 'bg-bg' : 'bg-[#f2f4f7]'} ${className}`}>
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label={t('Map of listed cars')} />
       {!ready && !failed && <span className="skeleton absolute inset-0" />}
       {failed && <span className="absolute inset-0 grid place-items-center text-detail text-muted">{t('Map unavailable')}</span>}
