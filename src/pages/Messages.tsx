@@ -464,16 +464,47 @@ function Thread({
                     <span className={`rounded-full bg-black/[0.05] font-semibold uppercase tracking-wider text-muted ${t.day}`}>{fmtDateSeparator(m.createdAt)}</span>
                   </div>
                 )}
-                <div className="mx-auto my-3 w-full max-w-[94%] rounded-2xl bg-white p-3.5 text-left shadow-[0_6px_20px_-10px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.06]">
-                  <div className="flex items-center gap-2">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><Icon name="pin" size={14} /></span>
-                    <span className="text-label font-bold uppercase tracking-[0.14em] text-accent">Case opened</span>
-                    <span className="ml-auto text-caption text-faint">{new Date(m.createdAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}</span>
+                {/* a sheet of paper pinned to the wall of the chat: wide, slightly crooked, with a real pushpin */}
+                <div className="relative mx-auto mb-5 mt-7 w-full max-w-full -rotate-[0.8deg] px-1">
+                  <div
+                    className="relative rounded-[6px] px-5 pb-4 pt-9 text-left shadow-[0_18px_30px_-14px_rgba(0,0,0,0.55),0_2px_0_rgba(0,0,0,0.04)]"
+                    style={{
+                      background:
+                        'repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(70,110,170,0.16) 27px, rgba(70,110,170,0.16) 28px), linear-gradient(180deg,#fffef8,#fbf6e4)',
+                    }}
+                  >
+                    {/* the margin line of a notebook sheet */}
+                    <span aria-hidden className="absolute bottom-0 left-9 top-0 w-px bg-[#e0524b]/35" />
+                    {/* pushpin */}
+                    <svg aria-hidden viewBox="0 0 40 52" className="absolute -top-5 left-1/2 h-12 w-10 -translate-x-1/2 drop-shadow-[0_6px_6px_rgba(0,0,0,0.45)]">
+                      <defs>
+                        <radialGradient id="cxpin" cx="35%" cy="30%" r="75%">
+                          <stop offset="0" stopColor="#ff8a80" />
+                          <stop offset="0.45" stopColor="#e11d2e" />
+                          <stop offset="1" stopColor="#7a0710" />
+                        </radialGradient>
+                      </defs>
+                      <path d="M19 30 L21 50 L23 30 Z" fill="#9aa0a6" />
+                      <ellipse cx="20" cy="31" rx="9" ry="3" fill="#8a0b16" />
+                      <rect x="12" y="20" width="16" height="12" rx="3" fill="#b3101d" />
+                      <circle cx="20" cy="14" r="12" fill="url(#cxpin)" />
+                      <ellipse cx="15.5" cy="9.5" rx="4" ry="2.6" fill="#fff" opacity="0.55" transform="rotate(-30 15.5 9.5)" />
+                    </svg>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="inline-block -rotate-2 rounded-[4px] border-2 border-[#c1121f] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#c1121f]">
+                        Case opened
+                      </span>
+                      <span className="pt-1 text-caption font-medium text-[#6b6a60]">
+                        {new Date(m.createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })} · {new Date(m.createdAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="mt-3 whitespace-pre-wrap pl-5 font-display text-[18px] font-semibold leading-[28px] text-[#1c1b17] [overflow-wrap:anywhere]">
+                      {m.body}
+                    </p>
+                    <p className="mt-3 pl-5 text-caption font-medium text-[#6b6a60]">
+                      {mine ? 'Reported by you. The team will answer in this chat.' : 'Reported by the customer.'}
+                    </p>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-[15px] font-semibold leading-snug text-ink [overflow-wrap:anywhere]">{m.body}</p>
-                  <p className="mt-2 text-caption text-muted">
-                    {mine ? 'Reported by you. The team will answer in this chat.' : 'Reported by the customer.'}
-                  </p>
                 </div>
               </div>
             );
