@@ -15,6 +15,7 @@ import { useScramble } from '../lib/useScramble';
 import { useMediaQuery } from '../components/motion';
 import { eur } from '../lib/format';
 import { FindCarDeck } from '../components/FindCarDeck';
+import { useBottomNavVisible } from '../components/BottomNav';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 
@@ -278,6 +279,7 @@ export default function Browse() {
   const [openCar, setOpenCar] = useState<Car | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const wide = useMediaQuery('(min-width: 1280px)');
+  const dockShown = useBottomNavVisible();
   const [showMap, setShowMap] = useState(true);
   // below xl the map takes the list's place — and it is what opens first: the map is the main view
   const [mapView, setMapView] = useState(() => params.get('view') !== 'list');
@@ -537,7 +539,7 @@ export default function Browse() {
           type="button"
           onClick={() => { setMapView(true); window.scrollTo({ top: 0 }); }}
           className="fixed left-1/2 z-30 inline-flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 text-detail font-semibold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] active:scale-95"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.4rem)' }}
+          style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${dockShown ? '5.4rem' : '1.1rem'})` }}
         >
           <Icon name="pin" size={16} /> {t('Map')}
         </button>
