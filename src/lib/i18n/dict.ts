@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Resize", "Cambia altezza", "Schimbă înălțimea", "Cambiar altura"],
   ["Show all cars", "Mostra tutte le auto", "Arată toate mașinile", "Mostrar todos los coches"],
   ["Pull up for the list", "Tira su per l'elenco", "Trage în sus pentru listă", "Desliza hacia arriba para la lista"],
   ["1 car here", "1 auto qui", "1 mașină aici", "1 coche aquí"],

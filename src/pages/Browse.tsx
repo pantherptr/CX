@@ -8,13 +8,14 @@ import { PriceHistogram } from '../components/browse/PriceHistogram';
 import { BrowseMap, type AreaBounds } from '../components/browse/BrowseMap';
 import { SkeletonSwap } from '../components/SkeletonSwap';
 import { Icon } from '../components/Icon';
-import { EmptyState, Modal } from '../components/primitives';
+import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { motion, AnimatePresence, SPRING_SNAPPY } from '../components/motionKit';
 import { useScramble } from '../lib/useScramble';
 import { useMediaQuery } from '../components/motion';
 import { eur } from '../lib/format';
 import { FindCarDeck } from '../components/FindCarDeck';
+import { SnapSheet } from '../components/SnapSheet';
 import { useBottomNavVisible } from '../components/BottomNav';
 import { useLocale } from '../lib/i18n';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
@@ -573,21 +574,16 @@ export default function Browse() {
 
       <CarDrawer car={openCar} onClose={() => setOpenCar(null)} />
 
-      {/* Mobile filter sheet */}
-      <Modal open={drawer} onClose={() => setDrawer(false)} className="flex max-h-[88dvh] flex-col" labelledBy="filters-sheet-title">
-        <div className="flex shrink-0 items-center justify-between border-b border-line px-5 py-4">
-          <h2 id="filters-sheet-title" className="font-display text-lg font-semibold text-ink">{t('Filter by')}</h2>
-          <button onClick={() => setDrawer(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-panel active:bg-panel" aria-label={t('Close')}>
-            <Icon name="x" size={20} />
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">{panel}</div>
-        <div className="shrink-0 border-t border-line p-4">
-          <button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">
-            {t('Show cars')}
-          </button>
-        </div>
-      </Modal>
+      {/* Mobile filter sheet: half height first, pulled up (or tapped on its handle) to almost full */}
+      <SnapSheet
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        title={t('Filter by')}
+        labelledBy="filters-sheet-title"
+        footer={<button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">{t('Show cars')}</button>}
+      >
+        {panel}
+      </SnapSheet>
     </div>
   );
 }
