@@ -15,6 +15,7 @@ import {
   type MonitorConversation,
   type ConversationStatus,
 } from '../lib/data/monitor';
+import { AnnouncementsPanel } from '../components/admin/AnnouncementsPanel';
 import { VerificationsPanel, UsersPanel, BookingsPanel, Avatar, fmtDate, StatTile, monthBuckets } from '../components/admin/panels';
 import {
   fetchAllUsers,
@@ -79,6 +80,7 @@ export type OwnerTab =
   | 'users'
   | 'verifications'
   | 'reports'
+  | 'announcements'
   | 'contact'
   | 'monitor'
   | 'activity'
@@ -95,6 +97,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'users', label: 'Users', icon: 'user' },
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'reports', label: 'Reports', icon: 'info' },
+  { id: 'announcements', label: 'Announcements', icon: 'bell' },
   { id: 'contact', label: 'Contact guard', icon: 'lock' },
   { id: 'monitor', label: 'Chat Monitor', icon: 'headset' },
   { id: 'activity', label: 'Activity', icon: 'clock' },
@@ -1501,6 +1504,7 @@ export default function OwnerDashboard() {
         {tab === 'users' && <UsersPanel canManageRoles />}
         {tab === 'verifications' && <VerificationsPanel />}
         {tab === 'reports' && <ReportsPanel />}
+        {tab === 'announcements' && <AnnouncementsPanel />}
         {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} onOpenCount={setOpenFlags} />}
         {tab === 'monitor' && <MonitorPanel />}
         {tab === 'activity' && <ActivityPanel />}

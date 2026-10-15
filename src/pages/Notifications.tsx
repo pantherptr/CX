@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { SignalS } from '../components/SignalLogo';
@@ -6,6 +6,7 @@ import { NotificationsList } from '../components/NotificationsList';
 import { PushPrompt } from '../components/PushPrompt';
 import { NotificationStory, hasStory } from '../components/NotificationStory';
 import { Icon } from '../components/Icon';
+import { AnnouncementCard } from '../components/AnnouncementCard';
 import { useAuth } from '../lib/auth';
 import { useMyNotifications, notificationPath, type SignalNotification } from '../lib/data/notifications';
 import { useAppNotifications, KIND_STYLE, type AppNotification } from '../lib/data/appNotifications';
@@ -46,6 +47,11 @@ function groupByKind(list: AppNotification[]): AppNotification[][] {
   return out;
 }
 
+/** A row opens something only when it has a destination; otherwise it is a plain notice, not a button. */
+function RowTag({ tappable, onClick, className, children }: { tappable: boolean; onClick: () => void; className: string; children: ReactNode }) {
+  return tappable ? <button type="button" onClick={onClick} className={className}>{children}</button> : <div className={className}>{children}</div>;
+}
+
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 const bucketOf = (iso: string) => {
   const days = Math.round((dayStart(new Date()) - dayStart(new Date(iso))) / 86400000);
@@ -54,9 +60,11 @@ const bucketOf = (iso: string) => {
 
 function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[] | null; onOpen: (n: AppNotification) => void; onMark: (id: string) => void; fresh: Set<string> }) {
   const { t } = useLocale();
+  // Messages from the CX team sit on top, each as its own card; everything else is grouped by day.
+  const announcements = useMemo(() => (items ?? []).filter((n) => n.kind === 'announcement').slice(0, 5), [items]);
   const grouped = useMemo(() => {
     const out: Record<string, AppNotification[]> = {};
-    for (const n of items ?? []) (out[bucketOf(n.createdAt)] ??= []).push(n);
+    for (const n of items ?? []) if (n.kind !== 'announcement') (out[bucketOf(n.createdAt)] ??= []).push(n);
     return out;
   }, [items]);
 
@@ -66,7 +74,7 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
       <div className="flex flex-col items-center px-6 py-16 text-center">
         <span className="grid h-16 w-16 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="bell" size={26} /></span>
         <p className="mt-4 font-display text-lead font-semibold text-ink">You are all caught up</p>
-        <p className="mt-1 max-w-xs text-detail text-muted">Bookings, payments, payouts and verification updates will appear here.</p>
+        <p className="mt-1 max-w-xs text-detail text-muted">Bookings, payments, payouts, verification updates and messages from the CX team appear here.</p>
       </div>
     );
   }
@@ -74,6 +82,25 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
   let storiesLeft = 3;
   return (
     <div className="space-y-5">
+      {announcements.length > 0 && (
+        <section>
+          <h2 className="mb-2 px-1 text-caption font-semibold uppercase tracking-wide text-muted">{t('From the CX team')}</h2>
+          <ul className="space-y-2.5">
+            {announcements.map((a) => (
+              <li key={a.id}>
+                <AnnouncementCard
+                  title={a.title}
+                  body={a.body}
+                  ctaLabel={a.url ? a.ctaLabel ?? t('Open') : null}
+                  time={ago(a.createdAt)}
+                  unread={!a.readAt || fresh.has(a.id)}
+                  onCta={a.url ? () => { onMark(a.id); onOpen(a); } : undefined}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {['Today', 'Yesterday', 'This week', 'Earlier'].filter((b) => grouped[b]?.length).map((b) => (
         <section key={b}>
           <h2 className="mb-2 px-1 text-caption font-semibold uppercase tracking-wide text-muted">{b}</h2>
@@ -86,9 +113,10 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
               if (showStory) storiesLeft -= 1;
               return (
                 <li key={n.id}>
-                  <button
+                  <RowTag
+                    tappable={Boolean(n.url)}
                     onClick={() => { grp.forEach((g) => onMark(g.id)); onOpen(n); }}
-                    className={`flex w-full items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-transform active:scale-[0.99] ${
+                    className={`flex w-full items-start gap-3.5 rounded-2xl border p-3.5 text-left ${n.url ? 'transition-transform active:scale-[0.99]' : ''} ${
                       n.readAt && !fresh.has(n.id) ? 'border-line bg-surface' : 'border-accent/25 bg-surface'
                     }`}
                   >
@@ -103,7 +131,7 @@ function UpdatesList({ items, onOpen, onMark, fresh }: { items: AppNotification[
                       {more > 0 && <span className="mt-1 block text-caption font-semibold text-faint">{t('and {n} more like this', { n: more })}</span>}
                     </span>
                     {(!n.readAt || fresh.has(n.id)) && <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-accent-bright" />}
-                  </button>
+                  </RowTag>
                 </li>
               );
             })}

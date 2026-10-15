@@ -13,6 +13,8 @@ export interface AppNotification {
   title: string;
   body: string;
   url: string | null;
+  /** the label of the optional button on an announcement */
+  ctaLabel: string | null;
   createdAt: string;
   readAt: string | null;
 }
@@ -23,12 +25,13 @@ interface Row {
   title: string;
   body: string;
   url: string | null;
+  cta_label?: string | null;
   created_at: string;
   read_at: string | null;
 }
 
 const toNotification = (r: Row): AppNotification => ({
-  id: r.id, kind: r.kind, title: r.title, body: r.body, url: r.url, createdAt: r.created_at, readAt: r.read_at,
+  id: r.id, kind: r.kind, title: r.title, body: r.body, url: r.url, ctaLabel: r.cta_label ?? null, createdAt: r.created_at, readAt: r.read_at,
 });
 
 /** How each kind looks in the inbox: icon + tone. Unknown kinds fall back to a neutral bell. */
@@ -55,12 +58,13 @@ export const KIND_STYLE: Record<string, { icon: IconName; tone: 'green' | 'ink' 
   review_new: { icon: 'star', tone: 'green' },
   chat_report: { icon: 'shield', tone: 'amber' },
   handover_undone: { icon: 'key', tone: 'amber' },
+  announcement: { icon: 'bell', tone: 'green' },
 };
 
 export async function fetchAppNotifications(limit = 60): Promise<AppNotification[]> {
   const { data, error } = await supabase
     .from('app_notifications')
-    .select('id, kind, title, body, url, created_at, read_at')
+    .select('id, kind, title, body, url, cta_label, created_at, read_at')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error || !data) return [];
