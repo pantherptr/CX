@@ -41,8 +41,6 @@ import { Tap, motion } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { CxTeamCover } from '../CxTeamCover';
-import { useOfficialStats } from '../../lib/data/cxTeam';
-import { uiLocale } from '../../lib/i18n/uiLocale';
 
 // How far (px) into the scroll the header compresses — a subtle,
 // transform/opacity-only effect (never a sticky mini-header; the whole
@@ -720,8 +718,6 @@ function OfficialVoiceHeader({
   compress: number;
 }) {
   const isCx = type === 'cx';
-  const stats = useOfficialStats(type);
-  const since = stats?.since ? new Date(stats.since).toLocaleDateString(uiLocale(), { month: 'short', year: 'numeric' }) : '—';
   const avatar = (
     <Img
       src={isCx ? '/brand/avatar-cx-chrome.png?v=3' : '/brand/avatar-x.png?v=4'}
@@ -762,17 +758,6 @@ function OfficialVoiceHeader({
             ? 'The people behind CX Rent. News, updates and what is new on the platform — straight from the team.'
             : 'CX Rent’s official assistant. Ask me for a car, a how-to, or to reach someone from the team.'}
         </p>
-        <div style={{ opacity: 1 - compress }} className="mt-4 grid w-full max-w-sm grid-cols-2 gap-2">
-          {[
-            { k: 'Posts', v: stats ? String(stats.posts) : '…' },
-            { k: 'On SIGNAL since', v: stats ? since : '…' },
-          ].map((x) => (
-            <div key={x.k} className="rounded-2xl bg-panel px-2 py-3">
-              <p className="text-[16px] font-bold text-ink">{x.v}</p>
-              <p className="mt-0.5 text-label font-medium text-muted">{x.k}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );

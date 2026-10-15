@@ -17,7 +17,6 @@ export function CxTeamCover({ className = 'h-36', children }: { className?: stri
         ))}
         <line x1="0" y1="40" x2="400" y2="40" stroke="#00d447" strokeOpacity="0.25" />
       </svg>
-      <img src="/brand/cx-bat.webp" alt="" className="absolute left-1/2 top-3 h-14 -translate-x-1/2 opacity-90 drop-shadow-[0_0_18px_rgba(0,212,71,0.6)]" />
       {children}
     </div>
   );

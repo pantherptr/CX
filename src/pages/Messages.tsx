@@ -1,7 +1,6 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
 import { AskXRow } from '../components/AskX';
 import { CxTeamCover } from '../components/CxTeamCover';
-import { useOfficialStats } from '../lib/data/cxTeam';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
@@ -38,10 +37,7 @@ import { uiLocale } from '../lib/i18n/uiLocale';
 type SendAsRole = 'owner' | 'owner_assistant';
 
 /** Tap the CX team's name: an official card, not a person's profile — cover, seal, the team's numbers. */
-function CxTeamSheet({ active, messages, onClose }: { active: Conversation; messages: Message[] | null; onClose: () => void }) {
-  const stats = useOfficialStats('cx');
-  const total = messages?.length ?? 0;
-  const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(uiLocale(), { month: 'short', year: 'numeric' }) : '—');
+function CxTeamSheet({ active, onClose }: { active: Conversation; onClose: () => void }) {
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="CX team info">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-[fade-in_.2s_ease-out_both] bg-black/45 backdrop-blur-[3px]" />
@@ -71,19 +67,6 @@ function CxTeamSheet({ active, messages, onClose }: { active: Conversation; mess
           <p className="mt-3 max-w-[18rem] text-detail leading-snug text-muted">
             The people behind CX Rent. We answer here, announce what is new, and keep trips, payments and verification safe.
           </p>
-
-          <div className="mt-4 grid w-full grid-cols-3 gap-2">
-            {[
-              { k: 'Posts', v: stats ? String(stats.posts) : '…' },
-              { k: 'On SIGNAL since', v: stats ? fmt(stats.since) : '…' },
-              { k: 'Messages here', v: String(total) },
-            ].map((x) => (
-              <div key={x.k} className="rounded-2xl bg-chat px-2 py-3">
-                <p className="truncate text-[16px] font-bold text-ink">{x.v}</p>
-                <p className="mt-0.5 text-label font-medium leading-tight text-muted">{x.k}</p>
-              </div>
-            ))}
-          </div>
 
           <Link
             to="/signal"
@@ -1285,7 +1268,7 @@ export default function Messages() {
             )}
 
             {profileOpen && active.other.role === 'cx' && (
-              <CxTeamSheet active={active} messages={messages} onClose={() => setProfileOpen(false)} />
+              <CxTeamSheet active={active} onClose={() => setProfileOpen(false)} />
             )}
             {profileOpen && active.other.role !== 'cx' && (
               <ChatProfileSheet
