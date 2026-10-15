@@ -284,7 +284,16 @@ export function BottomNav() {
   const signalUnread = useEmpireUnreadCount(session?.user.id);
   const navRef = useRef<HTMLElement>(null);
   const onBrowse = BROWSE_ROUTE.test(pathname);
-  const fold = useDockFold(visible && DOCK_MORPH && (SIGNAL_ROUTE.test(pathname) || onBrowse), pathname, navRef, onBrowse);
+  const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname, navRef);
+  // Browse is a map page: no dock over the map, it appears with the list (once it has been pulled up)
+  const [listUp, setListUp] = useState(false);
+  useEffect(() => {
+    if (!onBrowse) { setListUp(false); return; }
+    const on = () => setListUp(window.scrollY > window.innerHeight * 0.3);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, [onBrowse]);
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge
   // here too the moment the pathname lands on /signal, rather than
@@ -327,7 +336,7 @@ export function BottomNav() {
     [navFlatY, capRadius, navWidth, backdropHeight],
   );
 
-  if (!visible) return null;
+  if (!visible || (onBrowse && !listUp)) return null;
 
   return (
     // iOS Safari tints the strip behind its floating toolbar from fixed

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { BrowseCard } from '../components/browse/BrowseCard';
@@ -18,6 +18,7 @@ import { FindCarDeck } from '../components/FindCarDeck';
 import { SnapSheet } from '../components/SnapSheet';
 import { useBottomNavVisible } from '../components/BottomNav';
 import { useLocale } from '../lib/i18n';
+import { uiLocale } from '../lib/i18n/uiLocale';
 import { fetchBookedRangesBulk, rangesOverlap, type BookedRange } from '../lib/data/bookings';
 
 const ALL_TYPES = ['Economy', 'Luxury', 'SUV', 'Sport', 'Electric', 'Convertible', 'Family'];
@@ -284,6 +285,8 @@ export default function Browse() {
   const [showMap, setShowMap] = useState(true);
   // below xl the page is one piece: the map on top (what you see first) and the list that rises over it as you
   // scroll — the page itself is the sheet, so it follows the finger exactly
+  const phone = useMediaQuery('(max-width: 1023px)');
+  const navigate = useNavigate();
   const mapFirst = !wide;
   const mapBeside = wide && showMap;
   const listRef = useRef<HTMLDivElement>(null);
@@ -390,6 +393,151 @@ export default function Browse() {
       setReturnDate={setReturnDate}
     />
   );
+
+
+  // ------------------------------------------------------------------ phone: the map is the page (like a map app)
+  if (phone) {
+    const chips: { id: string; label: string; on: boolean; toggle: () => void }[] = [
+      { id: 'instant', label: t('Instant book'), on: filters.instant, toggle: () => setFilters((p) => ({ ...p, instant: !p.instant })) },
+      { id: 'auto', label: t('Automatic'), on: filters.transmission === 'Automatic', toggle: () => setFilters((p) => ({ ...p, transmission: p.transmission === 'Automatic' ? 'any' : 'Automatic' })) },
+      ...['Luxury', 'SUV', 'Sport', 'Electric', 'Convertible'].map((ty) => ({
+        id: ty,
+        label: t(ty),
+        on: filters.types.includes(ty),
+        toggle: () => setFilters((p) => ({ ...p, types: toggle(p.types, ty) })),
+      })),
+    ];
+    const dates = hasDateFilter
+      ? `${new Date(pickupDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })} – ${new Date(returnDate).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })}`
+      : t('Any dates');
+    return (
+      <div className="relative bg-surface">
+        {/* the top: back, what you are looking at, filters, then the quick chips */}
+        <div className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-surface via-surface/95 to-surface/0 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
+          <div className="flex items-center gap-2 px-3">
+            <button type="button" onClick={() => navigate('/')} aria-label={t('Back')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)] active:scale-95">
+              <Icon name="chevronLeft" size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setDrawer(true)}
+              className="min-h-11 min-w-0 flex-1 rounded-full bg-surface px-4 py-1.5 text-center shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)] active:scale-[0.99]"
+            >
+              <span className="block truncate text-detail font-semibold text-ink">{area ? t('Cars in the map area') : city.trim() || t('Cars in the map area')}</span>
+              <span className="block truncate text-caption text-muted">{dates}</span>
+            </button>
+            <button type="button" onClick={() => setDrawer(true)} aria-label={t('Filters')} className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)] active:scale-95">
+              <Icon name="sliders" size={19} />
+              {activeCount > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-label font-semibold text-white">{activeCount}</span>}
+            </button>
+          </div>
+          <div className="scrollbar-none mt-2.5 flex gap-2 overflow-x-auto px-3 pb-1">
+            {chips.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={c.toggle}
+                aria-pressed={c.on}
+                className={`min-h-9 shrink-0 rounded-full px-3.5 text-caption font-semibold shadow-[0_4px_12px_-6px_rgba(0,0,0,0.45)] transition-colors ${c.on ? 'bg-ink text-white' : 'bg-surface text-ink'}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* the map: the whole screen, behind everything */}
+        <div className="sticky top-0 z-0 h-dvh">
+          {loading ? (
+            <div className="skeleton h-full w-full" />
+          ) : (
+            <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-full w-full" />
+          )}
+        </div>
+
+        {/* the list: a sheet whose top edge peeks over the map and rises with the page */}
+        <div
+          ref={listRef}
+          className="relative z-10 -mt-[3.6rem] rounded-t-[28px] bg-surface px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
+        >
+          <button type="button" onClick={goList} aria-label={t('Show all cars')} className="flex w-full flex-col items-center gap-1 pb-2 pt-2.5">
+            <span className="h-1 w-10 rounded-full bg-line-strong" />
+            <span className="text-detail font-semibold text-ink">
+              {loading ? t('Loading…') : shown.length === 1 ? t('1 car') : t('{n} cars', { n: shown.length })}
+            </span>
+          </button>
+          <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
+            <span className="text-caption text-muted">{area ? t('In the map area') : t('Sorted by')}</span>
+            <label className="relative">
+              <span className="sr-only">{t('Sort')}</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="min-h-10 max-w-[11rem] rounded-full border border-line bg-surface py-1.5 pl-3.5 pr-7 !text-[14px] font-semibold text-ink"
+              >
+                {SORTS.filter((x) => x.id !== 'rating').map((x) => <option key={x.id} value={x.id}>{t(x.label)}</option>)}
+              </select>
+            </label>
+          </div>
+          {!loading && !error && (
+            <div className="mb-5">
+              <p className="mb-3 px-1 text-label font-semibold uppercase tracking-[0.14em] text-accent-700">{t('Swipe to find your car')}</p>
+              <div className="-mx-4">
+                <FindCarDeck city={city.trim() || null} />
+              </div>
+            </div>
+          )}
+          <SkeletonSwap
+            ready={!loading}
+            skeleton={<div className="grid grid-cols-1 gap-4">{Array.from({ length: 4 }).map((_, i) => <CarCardSkeleton key={i} />)}</div>}
+          >
+            {error ? (
+              <div className="card"><EmptyState size="lg" tone="danger" icon="info" title={t("Couldn't load cars")} description={error} className="px-6 py-16" /></div>
+            ) : shown.length === 0 ? (
+              <div className="card">
+                <EmptyState
+                  size="lg"
+                  icon="search"
+                  title={t('No cars match your filters')}
+                  description={t('Move the map or clear a few filters to see more of the fleet.')}
+                  action={<button onClick={reset} className="btn btn-primary">{t('Clear all filters')}</button>}
+                  className="px-6 py-16"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {shown.map((car, i) => (
+                  <BrowseCard key={car.id} car={car} variant="grid" active={openCar?.id === car.id} priority={i < 3} available={hasDateFilter} onOpen={() => setOpenCar(car)} onHover={setHoverId} />
+                ))}
+              </div>
+            )}
+          </SkeletonSwap>
+        </div>
+
+        {listUp && (
+          <button
+            type="button"
+            onClick={goMap}
+            className="fixed left-1/2 z-30 inline-flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 text-detail font-semibold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] active:scale-95"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.4rem)' }}
+          >
+            <Icon name="pin" size={16} /> {t('Map')}
+          </button>
+        )}
+
+        <CarDrawer car={openCar} onClose={() => setOpenCar(null)} />
+        <SnapSheet
+          open={drawer}
+          onClose={() => setDrawer(false)}
+          title={t('Filter by')}
+          labelledBy="filters-sheet-title"
+          footer={<button onClick={() => setDrawer(false)} className="btn btn-primary btn-block btn-lg">{t('Show cars')}</button>}
+        >
+          {panel}
+        </SnapSheet>
+      </div>
+    );
+  }
 
   return (
     <div className="container-page !max-w-[1760px] py-6 sm:py-8">
@@ -525,7 +673,7 @@ export default function Browse() {
                     {loading ? (
                       <div className="skeleton h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px]" />
                     ) : (
-                      <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} onExpand={goList} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
+                      <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
                     )}
                   </div>
                   <div

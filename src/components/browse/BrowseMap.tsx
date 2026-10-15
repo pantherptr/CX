@@ -53,7 +53,6 @@ export function BrowseMap({
   variant = 'side',
   areaActive = false,
   onAreaChange,
-  onExpand,
 }: {
   cars: Car[];
   activeId: string | null;
@@ -67,8 +66,6 @@ export function BrowseMap({
   /** the results are limited to a map area: the map stays where the person put it */
   areaActive?: boolean;
   onAreaChange?: (b: AreaBounds | null) => void;
-  /** tapping the sheet's handle brings the list up over the map */
-  onExpand?: () => void;
 }) {
   const { t } = useLocale();
   const exact = useHasAccess();
@@ -85,6 +82,9 @@ export function BrowseMap({
   const youMarker = useRef<MapLibreMarker | null>(null);
   const [locating, setLocating] = useState(false);
   const [moved, setMoved] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const autoTimer = useRef<number | undefined>(undefined);
+  const autoRef = useRef<() => void>(() => {});
 
   // cities present in the results, busiest first
   const cities = useMemo(() => {
@@ -127,13 +127,22 @@ export function BrowseMap({
           attributionControl: { compact: true },
           fadeDuration: 0,
         });
-        map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right');
+        if (variantRef.current !== 'main') map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-right');
         mapRef.current = map;
         collapseAttribution(map);
         map.on('load', () => { if (!cancelled) setReady(true); });
         map.on('zoomend', () => drawRef.current());
         // only a move made by the person (not the map framing the results) offers "Search this area"
-        map.on('moveend', (e) => { if ((e as { originalEvent?: unknown }).originalEvent) setMoved(true); });
+        map.on('moveend', (e) => {
+          if (!(e as { originalEvent?: unknown }).originalEvent) return;
+          setMoved(true);
+          if (variantRef.current === 'main') {
+            // like a map app: the results follow the map a moment after it stops
+            setSearching(true);
+            window.clearTimeout(autoTimer.current);
+            autoTimer.current = window.setTimeout(() => { autoRef.current(); setSearching(false); }, 650);
+          }
+        });
       } catch {
         if (!cancelled) setFailed(true);
       }
@@ -307,6 +316,7 @@ export function BrowseMap({
     onAreaChange?.({ west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() });
     setMoved(false);
   };
+  autoRef.current = applyArea;
 
   const showSheet = variant === 'main' && placed.length > 0;
 
@@ -316,7 +326,7 @@ export function BrowseMap({
       {!ready && !failed && <span className="skeleton absolute inset-0" />}
       {failed && <span className="absolute inset-0 grid place-items-center text-detail text-muted">{t('Map unavailable')}</span>}
       {ready && cities.length > 1 && (
-        <div className="scrollbar-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-70px)] gap-1.5 overflow-x-auto rounded-full bg-white/95 p-1 shadow-[0_6px_18px_-6px_rgba(22,22,26,0.3)]">
+        <div className={`scrollbar-none absolute left-3 z-10 flex max-w-[calc(100%-70px)] gap-1.5 overflow-x-auto rounded-full bg-white/95 p-1 shadow-[0_6px_18px_-6px_rgba(22,22,26,0.3)] ${variant === 'main' ? 'top-[8.6rem]' : 'top-3'}`}>
           {cities.map((c) => (
             <button key={c} onClick={() => setPick(c)} className={`shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${c === city ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'}`}>
               {c}
@@ -325,7 +335,7 @@ export function BrowseMap({
         </div>
       )}
 
-      {ready && onAreaChange && (moved || areaActive) && (
+      {ready && onAreaChange && variant !== 'main' && (moved || areaActive) && (
         <div className={`absolute left-1/2 z-20 -translate-x-1/2 ${cities.length > 1 ? 'top-14' : 'top-3'}`}>
           {areaActive ? (
             <button
@@ -347,60 +357,64 @@ export function BrowseMap({
         </div>
       )}
 
+      {ready && variant === 'main' && (searching || areaActive) && (
+        <div className="absolute left-1/2 top-[8.6rem] z-20 -translate-x-1/2">
+          {searching ? (
+            <span className="flex h-10 items-center gap-1.5 rounded-full bg-white px-5 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.5)]" aria-label={t('Searching')}>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-ink" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-ink [animation-delay:150ms]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-ink [animation-delay:300ms]" />
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { onAreaChange?.(null); setMoved(false); }}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-caption font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
+            >
+              {t('Showing this area')} <Icon name="x" size={13} />
+            </button>
+          )}
+        </div>
+      )}
+
       {ready && variant === 'main' && (
         <button
           type="button"
           onClick={locate}
           aria-label={t('Show where I am')}
-          className="absolute right-3 top-[4.7rem] z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] active:scale-95"
+          className="absolute right-3 top-[8.6rem] z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] active:scale-95"
         >
           <Icon name="compass" size={19} className={locating ? 'animate-spin' : ''} />
         </button>
       )}
 
-      {ready && showSheet && (
+      {ready && showSheet && focusId && (
         <div
-          className="absolute inset-x-0 bottom-0 z-10 flex h-[9.6rem] flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur"
-          style={{ touchAction: 'pan-y' }}
+          ref={strip}
+          onScroll={onStripScroll}
+          style={{ touchAction: 'pan-x' }}
+          className="scrollbar-none absolute inset-x-0 bottom-[4.4rem] z-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-1"
         >
-          <button
-            type="button"
-            aria-label={t('Show all cars')}
-            onClick={() => onExpand?.()}
-            className="flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
-          >
-            <span className="h-1 w-10 rounded-full bg-line-strong" />
-            <span className="text-caption font-semibold text-ink-soft">
-              {placed.length === 1 ? t('1 car here') : t('{n} cars here', { n: placed.length })} · {t('Pull up for the list')}
-            </span>
-          </button>
-
-          <div
-            ref={strip}
-            onScroll={onStripScroll}
-            className="scrollbar-none flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4"
-          >
-            {placed.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
-                className={`flex h-[5.4rem] w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
-              >
-                <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
-                <span className="min-w-0 flex-1 py-0.5">
-                  <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
-                  <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
-                  <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
-                </span>
-              </button>
-            ))}
-          </div>
+          {placed.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
+              className={`flex h-[5.4rem] w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
+            >
+              <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
+              <span className="min-w-0 flex-1 py-0.5">
+                <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
+                <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
+                <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
       {ready && (
-        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${showSheet ? 'bottom-[10.2rem]' : 'bottom-7'}`}>
+        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${showSheet ? (focusId ? 'bottom-[10.6rem]' : 'bottom-[4.6rem]') : 'bottom-7'}`}>
           <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
             {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}
           </p>

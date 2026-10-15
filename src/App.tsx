@@ -13,6 +13,7 @@ import { HostRoute } from './components/HostRoute';
 import { AdminRoute } from './components/AdminRoute';
 import { OwnerRoute } from './components/OwnerRoute';
 import { BottomNav, useBottomNavVisible } from './components/BottomNav';
+import { useMediaQuery } from './components/motion';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './lib/store';
 import { useAuth } from './lib/auth';
@@ -285,8 +286,11 @@ function MarketingLayout() {
   const { session } = useAuth();
   const { country } = useLocale();
   const { pathname } = useLocation();
+  const phoneWidth = useMediaQuery('(max-width: 1023px)');
   // The gateway is a page of its own — no navbar, no footer around it.
   if (pathname === '/' && !country) return <Outlet />;
+  // Browse on a phone is a map page of its own (its own top bar, no site header or footer around it).
+  if (pathname === '/browse' && phoneWidth) return <main className="min-h-dvh"><Outlet /></main>;
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />
