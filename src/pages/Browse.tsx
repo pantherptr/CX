@@ -477,7 +477,7 @@ export default function Browse() {
         {/* the list: a sheet whose top edge peeks over the map and rises with the page */}
         <div
           ref={listRef}
-          className="relative z-10 -mt-[3.6rem] min-h-[100lvh] rounded-t-[28px] bg-surface px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
+          className="relative z-10 -mt-[3.6rem] min-h-[100lvh] rounded-t-[28px] bg-bg px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
         >
           <div className="relative">
             <button type="button" onClick={listUp ? goMap : goList} aria-label={listUp ? t('Map') : t('Show all cars')} className="flex w-full flex-col items-center gap-1 pb-2 pt-2.5">
