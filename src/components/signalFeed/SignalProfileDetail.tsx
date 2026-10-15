@@ -715,7 +715,7 @@ function OfficialVoiceHeader({
   const isCx = type === 'cx';
   const avatar = (
     <Img
-      src={isCx ? '/brand/avatar-cx-bat.webp' : '/brand/avatar-assistant.webp'}
+      src={isCx ? '/brand/avatar-cx-bat.webp' : '/brand/avatar-x.webp'}
       alt=""
       className="h-24 w-24 rounded-full object-cover shadow-[0_10px_30px_-10px_rgba(0,0,0,0.45)] ring-1 ring-line"
       fallback={
@@ -736,7 +736,7 @@ function OfficialVoiceHeader({
       )}
       <div>
         <div className="flex items-center justify-center gap-1.5">
-          <span className="font-display text-feature font-semibold text-ink">{isCx ? 'CX' : 'Assistant'}</span>
+          <span className="font-display text-feature font-semibold text-ink">{isCx ? 'CX' : 'X'}</span>
           <VerifiedBadge role={isCx ? 'cx' : 'assistant'} size={18} />
         </div>
         <p style={{ opacity: 1 - compress }} className="mt-2 max-w-xs text-detail text-muted">

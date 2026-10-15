@@ -475,7 +475,7 @@ const VERIFIED_ROLE_META: Record<VerifiedRole, { fg: string; bg: string; label: 
   admin: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Admin' },
   host: { fg: 'text-accent-600', bg: 'bg-accent-050', label: 'Host' },
   client: { fg: 'text-muted', bg: 'bg-panel-2', label: 'Verified' },
-  assistant: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'Assistant' },
+  assistant: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'X' },
   // The company's own voice — what members see when they talk to support.
   cx: { fg: 'text-accent-700', bg: 'bg-accent-050', label: 'CX' },
 };
@@ -521,7 +521,7 @@ const BADGE_TIP_TEXT: Record<VerifiedRole, string> = {
   admin: 'CX team — official account',
   owner: 'CX Owner — official account',
   owner_assistant: 'CX Owner assistant — official account',
-  assistant: 'CX Assistant — official account',
+  assistant: 'X — the CX assistant, official account',
   cx: 'CX — official account',
 };
 

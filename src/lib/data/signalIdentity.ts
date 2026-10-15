@@ -64,7 +64,7 @@ export function resolveSignalIdentity(
 ): SignalIdentity {
   switch (publisherType) {
     case 'assistant':
-      return { type: 'assistant', name: 'Assistant', subtitle: 'Official CX Rent Assistant', avatarUrl: '/brand/avatar-assistant.webp', username: null };
+      return { type: 'assistant', name: 'X', subtitle: 'The CX assistant', avatarUrl: '/brand/avatar-x.webp', username: null };
     case 'cx':
       return { type: 'cx', name: 'CX', subtitle: 'Official CX Rent', avatarUrl: '/brand/avatar-cx-bat.webp', username: null };
     case 'self': {
