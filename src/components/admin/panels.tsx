@@ -21,7 +21,7 @@ import {
   type AdminCar,
 } from '../../lib/data/admin';
 import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
-import { fetchCreatorIds, setSignalPlan, fetchPlanConfig, savePlanConfig } from '../../lib/data/signalPlan';
+import { fetchCreatorIds, setSignalPlan, fetchPlanConfig, savePlanConfig, fetchCreatorRequestIds } from '../../lib/data/signalPlan';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
 import { uiLocale } from '../../lib/i18n/uiLocale';
 
@@ -175,6 +175,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
   const [busyId, setBusyId] = useState<string | null>(null);
   const [access, setAccess] = useState<Map<string, UserAccess>>(new Map());
   const [creators, setCreators] = useState<Set<string>>(new Set());
+  const [requested, setRequested] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void fetchUserAccess().then(setAccess);
@@ -182,6 +183,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
       .then((rows) => {
         setItems(rows);
         void fetchCreatorIds(rows.map((r) => r.id)).then(setCreators);
+        void fetchCreatorRequestIds().then(setRequested);
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load users.'));
   }, []);
@@ -223,6 +225,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
       if (on) next.add(u.id); else next.delete(u.id);
       return next;
     });
+    if (on) setRequested((prev) => { const n = new Set(prev); n.delete(u.id); return n; });
     toast({ title: on ? `${u.fullName} is now a Creator` : `${u.fullName} is no longer a Creator`, icon: 'checkCircle' });
   };
 
@@ -292,7 +295,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
                     className={`badge disabled:opacity-50 ${creators.has(u.id) ? 'badge-accent' : 'bg-panel-2 text-ink-soft hover:bg-panel'}`}
                     title={creators.has(u.id) ? 'Remove the SIGNAL Creator plan' : 'Give the SIGNAL Creator plan'}
                   >
-                    <Icon name="sparkles" size={12} /> {creators.has(u.id) ? 'Creator' : 'Make Creator'}
+                    <Icon name="sparkles" size={12} /> {creators.has(u.id) ? 'Creator' : requested.has(u.id) ? 'Make Creator · asked' : 'Make Creator'}
                   </button>
                 )}
                 <button

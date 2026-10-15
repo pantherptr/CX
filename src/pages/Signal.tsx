@@ -282,6 +282,9 @@ export default function Signal() {
           ...(canManage || canPublishSelf
             ? [{ label: 'My Posts', icon: 'image' as const, onSelect: () => setMyPostsOpen(true) }]
             : []),
+          ...(canPublishSelf
+            ? [{ label: 'Creator', icon: 'sparkles' as const, onSelect: () => navigate('/signal/creator') }]
+            : []),
           // A Host/Verified Client gets one-tap Create Post/Add Story from
           // anywhere in Signal — both jump to Community first (Community
           // is the only space they can publish into) then open the same

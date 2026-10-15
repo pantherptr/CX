@@ -653,7 +653,17 @@ export function SignalCommunityComposer({
             </div>
           )}
 
-          {mediaError && <p className="mt-1.5 text-caption font-medium text-danger">{mediaError}</p>}
+          {mediaError && (
+            <p className="mt-1.5 text-caption font-medium text-danger">
+              {mediaError}
+              {/Creator/.test(mediaError) && (
+                <>
+                  {' '}
+                  <a href="/signal/creator" className="underline underline-offset-2">{t('See Creator')}</a>
+                </>
+              )}
+            </p>
+          )}
           {error && <p className="mt-1.5 text-caption font-medium text-danger">{error}</p>}
 
           <AnimatePresence initial={false}>

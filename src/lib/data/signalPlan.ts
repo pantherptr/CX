@@ -139,3 +139,23 @@ export async function savePlanConfig(c: { enforce: boolean; maxSeconds: number; 
   if (!error) limitsCache = null;
   return { error: error?.message ?? null };
 }
+
+// ---------------------------------------------------------------- asking for the Creator plan (migration 0140)
+export async function requestCreator(): Promise<{ sent: boolean; error: string | null }> {
+  const { data, error } = await supabase.rpc('request_creator');
+  if (error) return { sent: false, error: error.message };
+  return { sent: data === true, error: null };
+}
+
+/** Has the signed-in person already asked? (RLS lets them see only their own row.) */
+export async function hasRequestedCreator(userId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('creator_requests').select('user_id').eq('user_id', userId).maybeSingle();
+  return !error && Boolean(data);
+}
+
+/** Admin: who is waiting for the Creator plan. */
+export async function fetchCreatorRequestIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.from('creator_requests').select('user_id');
+  if (error || !data) return new Set();
+  return new Set(data.map((r) => r.user_id as string));
+}
