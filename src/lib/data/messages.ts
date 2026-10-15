@@ -46,6 +46,10 @@ export function roleFromFlags(flags: { is_owner: boolean; is_admin: boolean; is_
   return 'client';
 }
 
+/** A message that opens a support case: the written problem, shown as a pinned card in the thread
+ *  (not a bubble). Stored as a normal message whose body starts with this marker. */
+export const CASE_PREFIX = '[[case]]';
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -60,6 +64,8 @@ export interface Message {
   senderRole: 'owner' | 'owner_assistant' | null;
   /** A photo attached to the message (private bucket path); the body is '' for photo-only messages. */
   mediaPath: string | null;
+  /** The written problem that opened a support case (rendered as a pinned card). */
+  isCase?: boolean;
   /** The sender deleted it — only a "message deleted" tombstone is shown. */
   deleted: boolean;
 }
@@ -129,11 +135,13 @@ const conversationSelect = () => `
 `;
 
 function mapMessage(conversationId: string, row: MessageRow): Message {
+  const isCase = typeof row.body === 'string' && row.body.startsWith(CASE_PREFIX);
   return {
     id: row.id,
     conversationId,
     senderId: row.sender_id,
-    body: row.body,
+    body: isCase ? row.body.slice(CASE_PREFIX.length).trim() : row.body,
+    isCase,
     createdAt: row.created_at,
     readAt: row.read_at,
     senderRole: row.sender_role ?? null,
@@ -409,7 +417,7 @@ export async function sendMessage(
   body: string,
   senderRole?: 'owner' | 'owner_assistant',
 ): Promise<{ error: string | null; message: Message | null }> {
-  return insertMessage(conversationId, { sender_id: senderId, body, sender_role: senderRole ?? null }, body);
+  return insertMessage(conversationId, { sender_id: senderId, body, sender_role: senderRole ?? null }, body.startsWith(CASE_PREFIX) ? body.slice(CASE_PREFIX.length).trim() : body);
 }
 
 async function insertMessage(

@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { Img } from './motion';
 import { useAuth } from '../lib/auth';
 import { useCars } from '../lib/data/cars';
-import { openSupportConversation, sendMessage, useConversation } from '../lib/data/messages';
+import { CASE_PREFIX, openSupportConversation, sendMessage, useConversation } from '../lib/data/messages';
 import { supabase } from '../lib/supabase';
 import { localReply, type LocalReply } from '../lib/assistantLocal';
 import { apiUrl } from '../lib/api';
@@ -249,6 +249,8 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
   const [busy, setBusy] = useState(false);
   const [convId, setConvId] = useState<string | null>(null);
   const [handing, setHanding] = useState(false);
+  /** X has asked what the problem is: the next thing written is the case, not a question for X. */
+  const [awaitingProblem, setAwaitingProblem] = useState(false);
   const [think, setThink] = useState(true);
   const [pending, setPending] = useState<{ steps: string[]; shown: number; seconds: number; live?: boolean } | null>(null);
   const [streaming, setStreaming] = useState<{ id: string; shown: number } | null>(null);
@@ -459,34 +461,43 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     [busy, cars, lang, msgs, session, t, think],
   );
 
-  /** Move the conversation to a real CX chat, in this same panel, carrying what was said so far. */
+  /** First step of "talk to a person": X asks for the problem in a few lines, here — nothing is copied from the chat. */
   const handOff = useCallback(async () => {
     if (handing || human) return;
     if (!userId) {
       setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('Sign in to talk to a person from the team — it takes a few seconds.') }]);
       return;
     }
+    setAwaitingProblem(true);
+    setMsgs((cur) => [
+      ...cur,
+      { id: newId(), role: 'assistant', text: t('Tell me what the problem is, here, in a few lines. I will pass it to someone from the team.') },
+    ]);
+  }, [handing, human, t, userId]);
+
+  /** Second step: the written problem opens a case in the CX support chat (one pinned card, not a transcript). */
+  const sendProblem = useCallback(async (problem: string) => {
+    if (!userId) return;
     setHanding(true);
+    setMsgs((cur) => [...cur, { id: newId(), role: 'user', text: problem }]);
     let opened: { id: string; created: boolean } | null = null;
     try {
       opened = await openSupportConversation(null, userId);
     } catch {
       opened = null;
     }
-    if (!opened) {
-      setHanding(false);
+    const sent = opened ? await sendMessage(opened.id, userId, `${CASE_PREFIX}${problem.slice(0, 1000)}`) : null;
+    setHanding(false);
+    if (!opened || !sent || sent.error) {
       setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('The team is not reachable right now. Please try again in a moment.') }]);
       return;
     }
-    const id = opened.id;
-    // A new request opens with one short line (the last thing asked), not the whole chat with X.
-    if (opened.created) {
-      const lastAsk = [...msgs].reverse().find((m) => m.role === 'user')?.text.trim();
-      await sendMessage(id, userId, lastAsk ? lastAsk.slice(0, 280) : t('Hi, I need help from the team.'));
-    }
-    setConvId(id);
-    setHanding(false);
-  }, [handing, human, msgs, t, userId]);
+    setAwaitingProblem(false);
+    setMsgs((cur) => [
+      ...cur,
+      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.') },
+    ]);
+  }, [t, userId]);
 
   const toggleMic = () => {
     if (listening) { stopListenRef.current?.(); return; }
@@ -499,7 +510,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       (final) => {
         setListening(false);
         stopListenRef.current = null;
-        if (final) void ask(final);
+        if (final) { if (awaitingProblem) void sendProblem(final); else void ask(final); }
       },
     );
   };
@@ -516,6 +527,11 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
         setConvId(null);
         setMsgs((cur) => [...cur, { id: newId(), role: 'note', text: t('That conversation was closed by the team. Ask me again, or talk to a person to start a new one.') }]);
       }
+      return;
+    }
+    if (awaitingProblem) {
+      setInput('');
+      void sendProblem(text);
       return;
     }
     void ask(text);
@@ -556,7 +572,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
               }}
               rows={1}
               aria-label={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
-              placeholder={human ? t('Write to the team…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
+              placeholder={human ? t('Write to the team…') : awaitingProblem ? t('Describe the problem…') : t('Ask {name} anything…', { name: ASSISTANT_NAME })}
               maxLength={800}
               enterKeyHint="send"
               className="block max-h-[120px] min-h-[2.5rem] w-full resize-none bg-transparent py-2 pr-2 text-[16px] leading-6 text-ink placeholder:text-muted focus:outline-none"

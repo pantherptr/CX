@@ -31,6 +31,12 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Tell me what the problem is, here, in a few lines. I will pass it to someone from the team.", "Dimmi qual è il problema, qui, in poche righe. Lo passo a qualcuno del team.", "Spune-mi care este problema, aici, în câteva rânduri. O trimit cuiva din echipă.", "Cuéntame cuál es el problema, aquí, en pocas líneas. Se lo paso a alguien del equipo."],
+  ["Describe the problem…", "Descrivi il problema…", "Descrie problema…", "Describe el problema…"],
+  ["Done. Someone from the team will write to you soon — you will find the conversation in Messages.", "Fatto. Qualcuno del team ti scriverà a breve: troverai la conversazione nei Messaggi.", "Gata. Cineva din echipă îți va scrie în curând: vei găsi conversația în Mesaje.", "Listo. Alguien del equipo te escribirá pronto: encontrarás la conversación en Mensajes."],
+  ["Case opened", "Caso aperto", "Caz deschis", "Caso abierto"],
+  ["Reported by you. The team will answer in this chat.", "Segnalato da te. Il team risponderà in questa chat.", "Raportat de tine. Echipa va răspunde în acest chat.", "Informado por ti. El equipo responderá en este chat."],
+  ["Reported by the customer.", "Segnalato dal cliente.", "Raportat de client.", "Informado por el cliente."],
   ["Official CX team", "Team ufficiale CX", "Echipa oficială CX", "Equipo oficial de CX"],
   ["The people behind CX Rent. We answer here, announce what is new, and keep trips, payments and verification safe.", "Le persone dietro CX Rent. Rispondiamo qui, annunciamo le novità e teniamo al sicuro viaggi, pagamenti e verifiche.", "Oamenii din spatele CX Rent. Răspundem aici, anunțăm noutățile și păstrăm în siguranță călătoriile, plățile și verificările.", "Las personas detrás de CX Rent. Respondemos aquí, anunciamos novedades y cuidamos viajes, pagos y verificaciones."],
   ["On SIGNAL since", "Su SIGNAL dal", "Pe SIGNAL din", "En SIGNAL desde"],

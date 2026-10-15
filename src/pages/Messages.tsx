@@ -507,6 +507,28 @@ function Thread({
           const first = !prev || prev.senderId !== m.senderId || roleOf(prev) !== role;
           const last = !next || next.senderId !== m.senderId || roleOf(next) !== role;
           const showDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+          if (m.isCase && !m.deleted) {
+            return (
+              <div key={m.id}>
+                {showDay && (
+                  <div className="my-3 flex justify-center">
+                    <span className={`rounded-full bg-black/[0.05] font-semibold uppercase tracking-wider text-muted ${t.day}`}>{fmtDateSeparator(m.createdAt)}</span>
+                  </div>
+                )}
+                <div className="mx-auto my-3 w-full max-w-[94%] rounded-2xl bg-white p-3.5 text-left shadow-[0_6px_20px_-10px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.06]">
+                  <div className="flex items-center gap-2">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><Icon name="pin" size={14} /></span>
+                    <span className="text-label font-bold uppercase tracking-[0.14em] text-accent">Case opened</span>
+                    <span className="ml-auto text-caption text-faint">{new Date(m.createdAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-[15px] font-semibold leading-snug text-ink [overflow-wrap:anywhere]">{m.body}</p>
+                  <p className="mt-2 text-caption text-muted">
+                    {mine ? 'Reported by you. The team will answer in this chat.' : 'Reported by the customer.'}
+                  </p>
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={m.id}>
               {showDay && (
