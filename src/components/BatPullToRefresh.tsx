@@ -1,3 +1,4 @@
+import { RefreshBat } from './RefreshBat';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { haptics } from '../lib/native';
 
@@ -158,7 +159,7 @@ export function BatPullToRefresh({ onRefresh, enabled }: { onRefresh: () => void
     >
       {dragging && pull > 4 && <span className="absolute left-1/2 top-0 w-px -translate-x-1/2 bg-ink/25" style={{ height: y + 4 }} />}
       <span className="absolute left-1/2 block" style={{ width: BAT_W, ...batStyle }}>
-        <img src="/brand/cx-bat.webp" alt="" draggable={false} className={`block w-full select-none ${refreshing && !leaving ? 'bat-flap' : ''}`} />
+        <RefreshBat spread={progress} flapping={refreshing && !leaving} className="block w-full select-none" />
       </span>
     </div>
   );

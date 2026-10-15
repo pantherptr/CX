@@ -989,6 +989,27 @@
   }
   @media (prefers-reduced-motion: reduce) { .bat-flap { animation: none; } }
 
+  /* RefreshBat: the wings beat from the shoulders while the page reloads, the body bobs once per beat. */
+  .rbat-wing { transform-box: view-box; }
+  .rbat-wing--l { transform-origin: 530px 520px; animation: rbat-l 0.5s ease-in-out infinite; }
+  .rbat-wing--r { transform-origin: 722px 520px; animation: rbat-r 0.5s ease-in-out infinite; }
+  .rbat-beat { animation: rbat-bob 0.5s ease-in-out infinite; }
+  @keyframes rbat-l {
+    0%, 100% { transform: rotate(16deg); }
+    50% { transform: rotate(-26deg); }
+  }
+  @keyframes rbat-r {
+    0%, 100% { transform: rotate(-16deg); }
+    50% { transform: rotate(26deg); }
+  }
+  @keyframes rbat-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(5%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rbat-wing--l, .rbat-wing--r, .rbat-beat { animation: none; }
+  }
+
   /* The in-page spinner: a faint track with one green arc turning. */
   .cx-spinner {
     display: block;
