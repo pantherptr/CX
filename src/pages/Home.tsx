@@ -381,27 +381,11 @@ export default function Home() {
                 <span data-fit className="hidden whitespace-nowrap sm:inline-block"><Letters text={t('to your heart.')} from={14} breathe /></span>
               </FitHeading>
 
-              {/* A pool of green light behind the car and a faint ground line, so it stands in a place */}
+              {/* A soft pool of green light behind the car (no rings), so it stands in a place */}
               <span
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 top-[52%] h-[72%] w-[94%] -translate-x-1/2 -translate-y-1/2 rounded-[50%]"
                 style={{ background: 'radial-gradient(closest-side, rgba(0,222,84,0.30), rgba(0,222,84,0.10) 55%, rgba(0,222,84,0) 78%)', filter: 'blur(14px)' }}
-              />
-              <span
-                aria-hidden
-                className="hero-pad pointer-events-none absolute left-1/2 top-[60%] h-[28%] w-[92%] -translate-x-1/2 rounded-[50%] border-2 border-[rgba(0,206,74,0.7)] sm:top-[62%] sm:h-[32%] sm:w-[68%]"
-                style={{
-                  background: 'radial-gradient(closest-side, rgba(0,230,90,0.46), rgba(0,230,90,0.16) 58%, rgba(0,230,90,0) 80%)',
-                  boxShadow: '0 0 60px rgba(0,230,90,0.5), 0 0 120px rgba(0,230,90,0.22), inset 0 0 46px rgba(0,230,90,0.34)',
-                }}
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-[57%] h-[34%] w-[106%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,206,74,0.26)] sm:top-[58%] sm:h-[39%] sm:w-[78%]"
-              />
-              <span
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-[54%] h-[40%] w-[120%] -translate-x-1/2 rounded-[50%] border border-[rgba(0,206,74,0.12)] sm:top-[55%] sm:h-[46%] sm:w-[88%]"
               />
 
               {/* The car, in front of both: it stands still: lights switch on and the exhaust pops twice
