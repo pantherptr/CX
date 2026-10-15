@@ -15,6 +15,7 @@ import {
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
 import { toggleSignalDemoPostLike, toggleSignalDemoPostSave } from '../../lib/data/signalDemo';
 import { RespectIcon } from '../RespectIcon';
+import { RespectParticles } from '../RespectParticles';
 import { SignalPollView } from './SignalPollView';
 import { SignalCollectionsSheet } from './SignalCollectionsSheet';
 import { tapAmount } from '../../lib/teamTapMode';
@@ -1396,8 +1397,10 @@ export function SignalPostCard({
                 aria-label={post.likedByMe ? 'Rimuovi Respect' : 'Esprimi Respect'}
                 className={`${BAR_ACTION} ${post.likedByMe ? 'text-accent-700' : 'text-faint hover:text-accent-700'}`}
               >
-                <span className={BAR_ICON}>
+                <span className={`${BAR_ICON} relative`}>
                   <RespectIcon size={14} filled={post.likedByMe} playKey={respectPlay} />
+                  {/* the burst, only when a Respect has just been given */}
+                  <RespectParticles fireKey={post.likedByMe ? respectPlay : 0} className="left-1/2 top-1/2" />
                 </span>
                 <RollingCount value={post.likeCount} format={compact} className="text-[13.5px] font-normal leading-none text-muted" />
               </Tap>

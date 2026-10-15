@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
 import { RespectIcon } from '../components/RespectIcon';
+import { RespectParticles } from '../components/RespectParticles';
 import { setChromeOverride, setChromeSuspended } from '../lib/theme';
 import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
@@ -162,8 +163,9 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
 
         <div className="pointer-events-auto flex shrink-0 flex-col items-center gap-5 pb-1">
           <button type="button" onClick={() => void respect()} aria-label="Respect" className="flex flex-col items-center gap-1">
-            <span className={`grid h-12 w-12 place-items-center rounded-full backdrop-blur-md ${post.likedByMe ? 'bg-white/25' : 'bg-white/15'}`}>
+            <span className={`relative grid h-12 w-12 place-items-center rounded-full backdrop-blur-md ${post.likedByMe ? 'bg-white/25' : 'bg-white/15'}`}>
               <RespectIcon size={20} filled={post.likedByMe} playKey={fire} className={post.likedByMe ? '' : 'text-white'} />
+              <RespectParticles fireKey={post.likedByMe ? fire : 0} className="left-1/2 top-1/2" />
             </span>
             <span className="text-caption font-semibold">{post.likeCount}</span>
           </button>
