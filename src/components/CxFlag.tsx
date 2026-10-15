@@ -46,6 +46,29 @@ export function CxFlagC({ className = '', title, tone = 'green' }: { className?:
   );
 }
 
+/**
+ * Only the flag from the C-and-flag artwork (no pole, no C) with the chrome bat on it: the CX team's verified
+ * mark next to the name. Cloth follows the text colour; the bat is clean green chrome (gold for the Owner).
+ */
+export function CxBatFlag({ className = '', title, tone = 'green' }: { className?: string; title?: string; tone?: 'green' | 'gold' }) {
+  const gid = `cxbatflag-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const stops = tone === 'gold' ? ['#ffe38a', '#f5c030', '#d9a21c', '#f7cc4a'] : ['#5af59a', '#12d85a', '#0fb84a', '#2fe673'];
+  return (
+    <svg viewBox="226 130 466 336" role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true} className={className} fill="none">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={stops[0]} />
+          <stop offset="0.35" stopColor={stops[1]} />
+          <stop offset="0.65" stopColor={stops[2]} />
+          <stop offset="1" stopColor={stops[3]} />
+        </linearGradient>
+      </defs>
+      <path fill="currentColor" fillRule="evenodd" d="M684.0 137.0 L657.0 150.5 L630.5 161.5 L599.0 171.5 L562.5 179.5 L535.0 182.5 L501.0 182.5 L473.0 178.5 L421.5 163.5 L396.0 160.5 L377.5 161.0 L359.0 163.5 L334.0 170.5 L307.0 181.5 L274.0 199.0 L274.0 200.0 L304.5 207.0 L311.5 210.0 L276.5 235.5 L277.0 237.0 L297.0 243.0 L297.5 244.5 L274.0 269.5 L287.5 278.0 L277.0 288.0 L275.0 292.5 L275.5 301.5 L280.5 312.0 L264.5 330.5 L281.0 330.5 L305.5 332.5 L330.5 337.5 L331.5 339.0 L293.0 363.0 L254.0 390.5 L256.5 391.0 L288.5 385.0 L306.0 384.0 L285.0 399.5 L262.0 420.0 L245.0 439.0 L231.5 458.0 L266.5 438.0 L288.5 427.0 L324.0 412.0 L365.0 399.0 L398.5 392.0 L412.5 390.5 L437.5 390.5 L458.0 393.0 L476.5 397.0 L524.5 412.0 L552.0 416.0 L577.0 416.0 L599.5 413.0 L628.5 405.0 L654.0 394.0Z M317.5 314.5 L366.5 257.0 L401.5 218.5 L461.5 242.0 L481.0 203.0 L483.0 204.5 L491.0 227.5 L493.0 229.5 L499.0 229.0 L510.0 204.0 L511.5 203.0 L515.0 208.5 L527.5 242.0 L584.0 218.0 L597.0 233.0 L654.5 311.0 L656.5 316.0 L654.5 316.5 L624.5 301.0 L607.5 294.0 L584.0 317.0 L581.5 317.0 L549.5 286.0 L548.0 286.0 L492.5 358.0 L489.0 361.0 L432.5 286.0 L429.0 287.5 L396.0 317.0 L392.0 315.0 L369.5 293.5 L319.0 316.5Z" />
+      <path fill={`url(#${gid})`} fillRule="evenodd" d="M318.0 314.5 L319.0 316.0 L364.5 294.5 L369.5 293.0 L394.5 316.5 L396.0 316.5 L429.0 287.0 L432.5 285.5 L489.0 360.5 L492.0 358.0 L500.5 346.0 L548.0 285.5 L549.5 285.5 L581.5 316.5 L584.0 316.5 L607.5 293.5 L612.0 294.5 L622.0 300.0 L624.5 300.5 L626.0 302.0 L628.5 302.5 L654.5 316.0 L656.0 315.5 L654.0 311.0 L636.5 288.5 L596.5 233.0 L585.0 219.0 L580.5 220.0 L527.5 242.5 L522.5 231.5 L514.5 208.5 L511.5 203.5 L510.5 204.0 L504.5 216.5 L499.5 229.0 L498.0 230.0 L493.0 230.0 L491.0 228.5 L482.5 204.5 L481.0 203.5 L466.5 232.0 L463.5 240.0 L461.5 242.5 L401.5 219.0 L367.0 257.0Z" />
+    </svg>
+  );
+}
+
 /** The same flag as markup for map markers (MapLibre markers are plain DOM, not React). The tip of the spear is
  *  at 84% of the width and the bottom edge, so the marker is anchored there. */
 export const cxFlagMarkup = (dark = '#17181a', green = '#0c7a38') =>

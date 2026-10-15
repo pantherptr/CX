@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { useLocale } from '../lib/i18n';
-import { CxFlagC } from './CxFlag';
+import { CxBatFlag } from './CxFlag';
 
 /** The CX verification mark: the bat from the logo, drawn compact and faceted
  *  in satin metal, with the gold verified seal (public/owner-verified.png) on its chest.
@@ -50,11 +50,11 @@ export function CxMark({ tier, size = 16, className = '', gold = false }: { tier
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const label = t(CX_TIER_LABEL[tier]);
   const m = METAL[tier];
-  // The official CX team is marked with the C-and-flag mark (chrome bat on the flag), not a seal: small, upright, next to the name.
+  // The official CX team is marked with the chrome-bat flag (just the flag, no pole or C), not a seal: small, upright, next to the name.
   if (tier === 'team') {
     return (
-      <span role="img" aria-label={label} className={`inline-flex shrink-0 align-[-0.2em] ${className}`} style={{ height: size * 1.4, width: size * 0.92 }}>
-        <CxFlagC className="h-full w-full text-ink" tone={gold ? 'gold' : 'green'} />
+      <span role="img" aria-label={label} className={`inline-flex shrink-0 align-[-0.2em] ${className}`} style={{ height: size * 0.98, width: size * 1.36 }}>
+        <CxBatFlag className="h-full w-full text-ink" tone={gold ? 'gold' : 'green'} />
       </span>
     );
   }
