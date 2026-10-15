@@ -142,12 +142,37 @@ function NewMessageModal({ myUserId, onClose, onStarted }: { myUserId: string; o
     }
   };
 
+  // The sheet sits above the keyboard (its height goes into --kb) and the field is focused only once the
+  // sheet has finished rising, so iOS has nothing to scroll into view and the page does not jump.
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = document.documentElement;
+    let timer = 0;
+    const apply = () => {
+      timer = 0;
+      const kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+      root.style.setProperty('--kb', `${kb}px`);
+    };
+    const later = () => { if (timer) window.clearTimeout(timer); timer = window.setTimeout(apply, 90); };
+    vv?.addEventListener('resize', later);
+    vv?.addEventListener('scroll', later);
+    const focusTimer = window.setTimeout(() => searchRef.current?.focus({ preventScroll: true }), 320);
+    return () => {
+      window.clearTimeout(focusTimer);
+      if (timer) window.clearTimeout(timer);
+      vv?.removeEventListener('resize', later);
+      vv?.removeEventListener('scroll', later);
+      root.style.removeProperty('--kb');
+    };
+  }, []);
+
   return (
-    <Modal open onClose={onClose} className="max-w-sm rounded-2xl p-5" labelledBy="new-message-title">
+    <Modal open onClose={onClose} className="max-w-sm rounded-2xl p-5 transition-[margin] duration-200 ease-out max-sm:mb-[var(--kb,0px)]" labelledBy="new-message-title">
       <h2 id="new-message-title" className="font-display text-lg font-semibold text-ink">New message</h2>
       <p className="mt-1 text-detail text-muted">Message any host or client directly — you don't need to wait for them to reach out first.</p>
       <input
-        autoFocus
+        ref={searchRef}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by name…"
