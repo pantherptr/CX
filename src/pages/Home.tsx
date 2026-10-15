@@ -236,11 +236,6 @@ function SignalFan() {
   );
 }
 
-const trustRow: { icon: IconName; label: string }[] = [
-  { icon: 'shield', label: 'Verified hosts' },
-  { icon: 'calendar', label: 'Clear cancellation terms' },
-  { icon: 'headset', label: '24/7 support' },
-];
 
 /** Every claim here maps to a real, shippable feature — not aspirational
  *  copy. Booking.tsx's 5-step flow (easy booking), its editable pickup
@@ -461,11 +456,6 @@ export default function Home() {
                   {t('Wherever there’s a road, there’s a CX.')}
                 </span>
               </Reveal>
-              <Reveal delay={240} className="reveal-blur">
-                <p className="mt-3 max-w-md text-lead leading-relaxed text-ink-soft text-pretty">
-                  {t('Premium cars. Verified hosts. Ready for the road.')}
-                </p>
-              </Reveal>
             </div>
             <Reveal delay={280} className="reveal-blur">
               <div className="flex flex-wrap items-center gap-3">
@@ -475,17 +465,6 @@ export default function Home() {
               </div>
             </Reveal>
           </div>
-
-          <Reveal delay={320}>
-            <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl border border-ink/10 bg-white/70 px-4 py-2.5 shadow-hair backdrop-blur-md">
-              {trustRow.map((tr) => (
-                <span key={tr.label} className="inline-flex items-center gap-2 text-detail font-medium text-ink-soft">
-                  <Icon name={tr.icon} size={15} className="text-accent" />
-                  {t(tr.label)}
-                </span>
-              ))}
-            </div>
-          </Reveal>
 
           {/* -------- Search -------- */}
           <Reveal delay={360}>
