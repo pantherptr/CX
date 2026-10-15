@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useLocale } from '../lib/i18n';
 import { Icon, type IconName } from './Icon';
-import { CxEmblem } from './CxEmblem';
+import { CxWordmark } from './CxWordmark';
 import { CxMark, type CxTier } from './CxBadge';
 import { useAuth } from '../lib/auth';
 import { useHomePath } from '../lib/workspace';
@@ -103,9 +103,9 @@ export function Logo({
   const homePath = useHomePath();
   return (
     <Link to={session ? homePath : '/'} className={`group inline-flex min-h-11 items-center ${className}`} aria-label="CX home">
-      <CxEmblem
+      <CxWordmark
         title="CX"
-        className="h-10 w-auto shrink-0 transition-transform duration-300 group-hover:-rotate-3 sm:h-12"
+        className="h-9 w-auto shrink-0 text-ink transition-transform duration-300 group-hover:-rotate-3 sm:h-10"
       />
     </Link>
   );
