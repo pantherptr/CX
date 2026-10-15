@@ -1,5 +1,6 @@
 import { ActionLabel } from '../ui/loading-button';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../Icon';
 import { Img, useMediaQuery, vibrateTap } from '../motion';
 import {
@@ -61,29 +62,46 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — caps auto-grow; content beyond this s
  *  `editing` reuses this same component in place of a post's own card
  *  (SignalPostCard's "Edit post") — always rendered open, pre-filled,
  *  no collapse behavior (there's nothing to collapse back into there). */
-/** The visible area (top + height) while the keyboard is up, so a fixed sheet ends right above it. */
-function useVisualViewportBox(active: boolean) {
-  const read = () => {
-    const v = typeof window !== 'undefined' ? window.visualViewport : null;
-    return { top: Math.round(v?.offsetTop ?? 0), height: Math.round(v?.height ?? window.innerHeight) };
-  };
-  const [box, setBox] = useState(read);
-  useEffect(() => {
+/**
+ * Keeps the full-screen composer exactly on the part of the screen you can see. On iPhone, Safari shrinks the
+ * visual viewport (and pans the page) while the keyboard comes up; the sheet's top / height are written straight
+ * from each visualViewport event — no React state, so no frame where it is a step behind — and the page behind
+ * is pinned so it cannot slide under the sheet. The scroll position is given back on close.
+ */
+function useFullScreenSheet(active: boolean, ref: React.RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
     if (!active) return;
     const v = window.visualViewport;
-    const upd = () => setBox(read());
-    upd();
-    v?.addEventListener('resize', upd);
-    v?.addEventListener('scroll', upd);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      v?.removeEventListener('resize', upd);
-      v?.removeEventListener('scroll', upd);
-      document.body.style.overflow = prev;
+    const place = () => {
+      const el = ref.current;
+      if (!el) return;
+      el.style.top = `${Math.round(v?.offsetTop ?? 0)}px`;
+      el.style.height = `${Math.round(v?.height ?? window.innerHeight)}px`;
     };
-  }, [active]);
-  return box;
+    place();
+    v?.addEventListener('resize', place);
+    v?.addEventListener('scroll', place);
+    const lockY = window.scrollY;
+    const bs = document.body.style;
+    const prev = { overflow: bs.overflow, position: bs.position, top: bs.top, width: bs.width };
+    bs.overflow = 'hidden';
+    bs.position = 'fixed';
+    bs.top = `-${lockY}px`;
+    bs.width = '100%';
+    return () => {
+      v?.removeEventListener('resize', place);
+      v?.removeEventListener('scroll', place);
+      bs.overflow = prev.overflow;
+      bs.position = prev.position;
+      bs.top = prev.top;
+      bs.width = prev.width;
+      const root = document.documentElement;
+      const before = root.style.scrollBehavior;
+      root.style.scrollBehavior = 'auto';
+      window.scrollTo(0, lockY);
+      requestAnimationFrame(() => { window.scrollTo(0, lockY); root.style.scrollBehavior = before; });
+    };
+  }, [active, ref]);
 }
 
 export function SignalCommunityComposer({
@@ -188,7 +206,8 @@ export function SignalCommunityComposer({
   // text on top, tools and Post pinned right above the keyboard — the way every social app does it.
   const isPhone = useMediaQuery('(max-width: 639px)');
   const full = isPhone && isOpen && !editing;
-  const vv = useVisualViewportBox(full);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useFullScreenSheet(full, sheetRef);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
   useEffect(() => () => objectUrls.current.forEach((u) => URL.revokeObjectURL(u)), []);
@@ -443,14 +462,14 @@ export function SignalCommunityComposer({
     </span>
   );
 
-  return (
+  const node = (
     <motion.div
+      ref={sheetRef}
       layout={!reduceMotion && !full}
       transition={SPRING_SMOOTH}
-      style={full ? { top: vv.top, height: vv.height } : undefined}
       className={
         full
-          ? 'fixed inset-x-0 z-[260] flex animate-sheet-in flex-col overflow-y-auto overscroll-contain bg-surface px-4 pb-0 pt-[max(0.75rem,env(safe-area-inset-top))]'
+          ? 'fixed inset-x-0 top-0 z-[260] flex h-[100dvh] animate-sheet-in flex-col overflow-y-auto overscroll-contain bg-surface px-4 pb-0 pt-[max(0.75rem,env(safe-area-inset-top))]'
           : `relative mb-3 rounded-2xl border border-line bg-surface px-3.5 shadow-hair ${isOpen ? 'py-3.5' : 'py-3.5 transition-colors hover:border-line-strong'}`
       }
     >
@@ -769,4 +788,7 @@ export function SignalCommunityComposer({
       </div>
     </motion.div>
   );
+  // The full-screen sheet is drawn on <body>: `position: fixed` inside the feed's transformed wrappers is
+  // relative to them, which is what let the feed show through and the toolbar float mid-screen.
+  return full ? createPortal(node, document.body) : node;
 }
