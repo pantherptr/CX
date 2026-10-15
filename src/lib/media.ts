@@ -7,7 +7,16 @@
  * half-created Story slide or post behind.
  */
 
-export const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm'];
+/** Any video the phone can record or the person picks (MP4, MOV, WebM, 3GP…): nothing is refused for its
+ *  format, size or length. Used as the `accept` attribute of file inputs. */
+export const VIDEO_MIME_TYPES = ['video/*'];
+
+/** An image of any kind (JPEG, PNG, WebP, HEIC from an iPhone, GIF, AVIF…). */
+export const isImageFile = (file: File) =>
+  file.type.startsWith('image/') || /\.(heic|heif|avif|jpe?g|png|webp|gif|bmp|tiff?)$/i.test(file.name);
+
+export const isVideoFile = (file: File) =>
+  file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp|mkv|avi)$/i.test(file.name);
 
 export interface VideoValidation {
   ok: boolean;
@@ -49,20 +58,17 @@ export async function validateVideoFile(
   file: File,
   opts: { maxBytes: number; maxDurationSec: number },
 ): Promise<VideoValidation> {
-  if (!VIDEO_MIME_TYPES.includes(file.type)) {
-    return { ok: false, error: `"${file.name}" must be an MP4 or WebM video.` };
+  void opts; // the limits are no longer enforced: people publish what they choose
+  if (!isVideoFile(file)) {
+    return { ok: false, error: `"${file.name}" is not a video.` };
   }
-  if (file.size > opts.maxBytes) {
-    return { ok: false, error: `"${file.name}" is larger than ${Math.round(opts.maxBytes / (1024 * 1024))}MB.` };
-  }
-  let durationSec: number;
+  // The duration is only read for the poster/preview; a codec this browser cannot decode (an iPhone HEVC clip
+  // in Chrome, say) is still uploaded — whoever opens it on a device that can will see it.
+  let durationSec: number | undefined;
   try {
     durationSec = await getVideoDuration(file);
   } catch {
-    return { ok: false, error: `"${file.name}" could not be read — it may be corrupt or in an unsupported format.` };
-  }
-  if (durationSec > opts.maxDurationSec) {
-    return { ok: false, error: `"${file.name}" is longer than ${opts.maxDurationSec}s.` };
+    durationSec = undefined;
   }
   return { ok: true, durationSec };
 }

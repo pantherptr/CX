@@ -6,7 +6,7 @@ import { addVision, deleteVision, fetchVisions, updateVision, type Vision, type 
 import { fetchUserStamps, syncMyTripStamps, type TripStampData } from '../../lib/data/tripMemories';
 import { fetchHostCars } from '../../lib/data/cars';
 import { useAuth } from '../../lib/auth';
-import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
+import { validateVideoFile, VIDEO_MIME_TYPES, isImageFile } from '../../lib/media';
 import { useLocale } from '../../lib/i18n';
 import { useApp } from '../../lib/store';
 import { SignalMediaViewer } from './SignalMediaViewer';
@@ -22,11 +22,11 @@ function collabLine(c: CollabInfo | null | undefined, t: (s: string) => string):
   return c.status === 'accepted' ? `${collabHandle(c.primary)} × ${collabHandle(c.collaborator)}` : t('Collaboration pending');
 }
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const IMAGE_TYPES = ['image/*'];
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 // The storage bucket itself is capped at 50 MB per file.
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-const MAX_VIDEO_SEC = 300;
+const MAX_VIDEO_BYTES = Number.MAX_SAFE_INTEGER;
+const MAX_VIDEO_SEC = Number.MAX_SAFE_INTEGER;
 
 /** A profile's CX Visions: a personal, professional portfolio of photos and
  *  videos — its own space, separate from posts and never in the Signal feed.
@@ -296,7 +296,7 @@ export function VisionUploadSheet({ onClose, onAdded }: { onClose: () => void; o
     let firstError: string | null = null;
     for (const file of Array.from(list)) {
       if (staged.length + next.length >= 12) { firstError ??= t('Up to 12 at a time.'); break; }
-      if (IMAGE_TYPES.includes(file.type)) {
+      if (isImageFile(file)) {
         if (file.size > MAX_IMAGE_BYTES) { firstError ??= `“${file.name}” ${t('is larger than 25 MB.')}`; continue; }
         const preview = URL.createObjectURL(file);
         urls.current.push(preview);

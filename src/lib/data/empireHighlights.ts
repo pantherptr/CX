@@ -199,7 +199,7 @@ export async function deleteEmpireHighlight(highlightId: string): Promise<{ erro
 // symptom would only ever have shown up as "adding a Highlight slide
 // does nothing").
 export async function uploadEmpireHighlightMedia(original: File): Promise<{ url: string; path: string }> {
-  const file = await shrinkImage(original);
+  const file = await shrinkImage(original, 4096, 0.93);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');

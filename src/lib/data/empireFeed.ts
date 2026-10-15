@@ -214,7 +214,7 @@ function mediaUrlFor(path: string): string {
   return supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-const VIDEO_EXTENSIONS = new Set(['mp4', 'webm']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'm4v', '3gp', 'mkv']);
 
 /** A post's `media_paths` stays a plain text[] of storage paths — no
  *  schema change for video support there (unlike Stories, which needed
@@ -1097,7 +1097,7 @@ export async function fetchEmpireSavedPosts(limit = FEED_PAGE_SIZE, before?: str
  *  instead of "any signed-in user", since this bucket is public-read
  *  with otherwise-unguessable-but-visible paths. */
 export async function uploadEmpirePostMedia(original: File): Promise<{ url: string; path: string }> {
-  const file = await shrinkImage(original);
+  const file = await shrinkImage(original, 4096, 0.93);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');

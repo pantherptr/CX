@@ -6,7 +6,7 @@ import {
   createEmpirePost, updateEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpireCategory, type EmpirePost,
 } from '../../lib/data/empireFeed';
-import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
+import { validateVideoFile, VIDEO_MIME_TYPES, isImageFile } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType } from './SignalPublisherPicker';
 import { useAuth } from '../../lib/auth';
@@ -18,11 +18,11 @@ import { useApp } from '../../lib/store';
 // Shared with SignalCommunityComposer (the compact native composer used
 // for Community) — one source of truth for these limits rather than two
 // copies that could quietly drift apart.
-export const MAX_MEDIA = 4;
-export const MAX_BYTES = 5 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
-export const MAX_VIDEO_DURATION_SEC = 180;
-export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const MAX_MEDIA = 10;
+export const MAX_BYTES = Number.MAX_SAFE_INTEGER;
+export const MAX_VIDEO_BYTES = Number.MAX_SAFE_INTEGER;
+export const MAX_VIDEO_DURATION_SEC = Number.MAX_SAFE_INTEGER;
+export const ACCEPTED_TYPES = ['image/*'];
 
 export interface PendingMedia {
   file: File;
@@ -90,7 +90,7 @@ export function SignalPostComposer({
         firstError ??= `You can add up to ${MAX_MEDIA} items.`;
         break;
       }
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!isImageFile(file)) {
         firstError ??= `“${file.name}” must be a JPEG, PNG or WebP image.`;
         continue;
       }

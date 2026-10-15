@@ -10,7 +10,7 @@ import {
   useEmpireHighlights, createEmpireHighlight, deleteEmpireHighlight, saveEmpireStoryToHighlight,
   uploadEmpireHighlightMedia, addEmpireHighlightSlide, type EmpireHighlight,
 } from '../../lib/data/empireHighlights';
-import { validateVideoFile, captureVideoPosterBlob, VIDEO_MIME_TYPES } from '../../lib/media';
+import { validateVideoFile, captureVideoPosterBlob, VIDEO_MIME_TYPES, isImageFile } from '../../lib/media';
 import type { SignalPublisherType } from '../../lib/data/signalIdentity';
 import { SignalPublisherPicker, lastSignalPublisherType, useTeamOnlyPublisher } from './SignalPublisherPicker';
 import { resolveSignalIdentity } from '../../lib/data/signalIdentity';
@@ -20,10 +20,10 @@ import { useAuth } from '../../lib/auth';
 import { CONTACT_WARNING, hasContactInfo } from '../../lib/contactGuard';
 
 const MAX_SLIDES = 10;
-const MAX_BYTES = 5 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
-const MAX_VIDEO_DURATION_SEC = 60; // Stories stay short — a 10-minute clip defeats the format.
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_BYTES = Number.MAX_SAFE_INTEGER;
+const MAX_VIDEO_BYTES = Number.MAX_SAFE_INTEGER;
+const MAX_VIDEO_DURATION_SEC = Number.MAX_SAFE_INTEGER; // no limit: people publish what they choose
+const ACCEPTED_TYPES = ['image/*'];
 
 interface PendingSlide {
   /** Stable identity for React's `key` and for removeSlide/moveSlide/
@@ -109,7 +109,7 @@ export function SignalStoryComposer({
         firstError ??= `A Story can have up to ${MAX_SLIDES} slides.`;
         break;
       }
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!isImageFile(file)) {
         firstError ??= `“${file.name}” must be a JPEG, PNG or WebP image.`;
         continue;
       }
@@ -312,7 +312,7 @@ export function SignalStoryComposer({
   const handleAddHighlightSlide = async (highlight: EmpireHighlight, files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
-    if (!ACCEPTED_TYPES.includes(file.type)) return;
+    if (!isImageFile(file)) return;
     setUploadingHighlightId(highlight.id);
     try {
       const { path } = await uploadEmpireHighlightMedia(file);

@@ -84,6 +84,7 @@ Code is written to fail soft before a migration is run.
   loads are traced (no trace headers to other origins); personal data is stripped before sending.
 
 - Storage image resizing: `src/lib/img.ts` serves host-uploaded photos through Supabase Image Transformations when built with `VITE_IMG_TRANSFORM=1` (Pro plan only; off by default — on the free plan the render URL fails). This is the main lever on cached egress. Uploads are already shrunk by `shrinkImage.ts`.
+- SIGNAL media has no limits on purpose (owner's rule): any photo / video, any type, size or length, up to 10 items per post (`lib/media.ts`: `isImageFile` / `isVideoFile`; migration 0132 clears the bucket restrictions). Photos are re-encoded only to 4096 px / q0.93 (HEIC is converted where the browser can decode it). The remaining ceiling is Supabase's own global upload limit (Storage → Settings).
 - Images already in Storage: `scripts/recompress-images.mjs` (dry run by default; `--apply` backs originals up locally first).
 - Optional `VITE_GEOAPIFY_KEY` switches address search from Photon to Geoapify (`src/lib/geocode.ts`).
 

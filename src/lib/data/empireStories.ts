@@ -317,7 +317,7 @@ export async function markEmpireStoryViewed(storyId: string): Promise<boolean> {
  *  stories that have at least one slide) — this is the exact "I publish
  *  a story and nothing comes public" bug. */
 export async function uploadEmpireStoryMedia(original: File): Promise<{ url: string; path: string }> {
-  const file = await shrinkImage(original);
+  const file = await shrinkImage(original, 4096, 0.93);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) throw new Error('Not signed in');

@@ -82,7 +82,7 @@ export async function addVision(original: File, kind: 'image' | 'video', title: 
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) return { error: 'Not signed in' };
-  const file = kind === 'image' ? await shrinkImage(original, 2400, 0.86) : original;
+  const file = kind === 'image' ? await shrinkImage(original, 4096, 0.93) : original;
   const ext = file.name.split('.').pop()?.toLowerCase() || (kind === 'video' ? 'mp4' : 'jpg');
   const path = `${uid}/${crypto.randomUUID()}.${ext}`;
   const up = await supabase.storage.from(VISIONS_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });

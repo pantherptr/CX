@@ -7,7 +7,7 @@ import {
   createEmpirePost, updateEmpirePost, scheduleEmpirePost, uploadEmpirePostMedia, mediaKindFromPath,
   type EmpirePost, type EmpireVehicleRef,
 } from '../../lib/data/empireFeed';
-import { validateVideoFile, VIDEO_MIME_TYPES } from '../../lib/media';
+import { validateVideoFile, VIDEO_MIME_TYPES, isImageFile, isVideoFile } from '../../lib/media';
 import {
   MAX_MEDIA, MAX_BYTES, MAX_VIDEO_BYTES, MAX_VIDEO_DURATION_SEC, ACCEPTED_TYPES, type PendingMedia,
 } from './SignalPostComposer';
@@ -254,7 +254,7 @@ export function SignalCommunityComposer({
     let firstError: string | null = null;
     let hasVideo = false;
     for (const file of Array.from(list)) {
-      if (file.type.startsWith('video/')) hasVideo = true;
+      if (isVideoFile(file)) hasVideo = true;
     }
     if (hasVideo) setValidatingVideo(true);
     try {
@@ -263,7 +263,7 @@ export function SignalCommunityComposer({
           firstError ??= `You can add up to ${MAX_MEDIA} items.`;
           break;
         }
-        if (file.type.startsWith('video/')) {
+        if (isVideoFile(file)) {
           const result = await validateVideoFile(file, { maxBytes: MAX_VIDEO_BYTES, maxDurationSec: MAX_VIDEO_DURATION_SEC });
           if (!result.ok) {
             firstError ??= result.error ?? `"${file.name}" couldn't be added.`;
@@ -274,7 +274,7 @@ export function SignalCommunityComposer({
           accepted.push({ file, preview, mediaKind: 'video' });
           continue;
         }
-        if (!ACCEPTED_TYPES.includes(file.type)) {
+        if (!isImageFile(file)) {
           firstError ??= `“${file.name}” must be a JPEG, PNG or WebP image.`;
           continue;
         }
