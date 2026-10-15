@@ -16,6 +16,7 @@ import {
   type ConversationStatus,
 } from '../lib/data/monitor';
 import { AnnouncementsPanel } from '../components/admin/AnnouncementsPanel';
+import { MediaPanel } from '../components/admin/MediaPanel';
 import { VerificationsPanel, UsersPanel, BookingsPanel, Avatar, fmtDate, StatTile, monthBuckets } from '../components/admin/panels';
 import {
   fetchAllUsers,
@@ -81,6 +82,7 @@ export type OwnerTab =
   | 'verifications'
   | 'reports'
   | 'announcements'
+  | 'media'
   | 'contact'
   | 'monitor'
   | 'activity'
@@ -98,6 +100,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
   { id: 'reports', label: 'Reports', icon: 'info' },
   { id: 'announcements', label: 'Announcements', icon: 'bell' },
+  { id: 'media', label: 'Media', icon: 'image' },
   { id: 'contact', label: 'Contact guard', icon: 'lock' },
   { id: 'monitor', label: 'Chat Monitor', icon: 'headset' },
   { id: 'activity', label: 'Activity', icon: 'clock' },
@@ -1505,6 +1508,7 @@ export default function OwnerDashboard() {
         {tab === 'verifications' && <VerificationsPanel />}
         {tab === 'reports' && <ReportsPanel />}
         {tab === 'announcements' && <AnnouncementsPanel />}
+        {tab === 'media' && <MediaPanel />}
         {tab === 'contact' && <ContactGuardPanel onOpenMonitor={() => setTab('monitor')} onOpenCount={setOpenFlags} />}
         {tab === 'monitor' && <MonitorPanel />}
         {tab === 'activity' && <ActivityPanel />}
