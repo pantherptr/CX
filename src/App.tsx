@@ -19,6 +19,7 @@ import { useAuth } from './lib/auth';
 import { CompareTray } from './components/CompareTray';
 import { MaintenanceGate } from './components/MaintenanceGate';
 import { NotificationToaster } from './components/NotificationToaster';
+import { CommandPalette } from './components/CommandPalette';
 
 // Eager — the three routes a first-time visitor actually lands on. Keeping
 // these in the main chunk avoids a loading flash on the critical path.
@@ -376,6 +377,7 @@ export default function App() {
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} onReady={splash.onReady} />}
       <ScrollToTop />
       <NotificationToaster />
+      <CommandPalette />
       <EdgeSwipeBack />
       <WorkspaceTracker />
       <BatPullToRefresh enabled={pullEnabled && !splash.visible} onRefresh={() => { setRefreshNonce((n) => n + 1); return new Promise<void>((r) => window.setTimeout(r, 600)); }} />
