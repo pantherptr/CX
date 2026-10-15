@@ -357,10 +357,15 @@ export function BrowseMap({
         </div>
       )}
 
-      {ready && variant === 'main' && (searching || areaActive) && (
-        <div className="absolute left-1/2 top-[11.8rem] z-20 -translate-x-1/2">
+      {ready && variant === 'main' && (
+        <div
+          className={`absolute left-1/2 top-[11.8rem] z-20 -translate-x-1/2 transition-[opacity,transform] duration-200 ease-out ${
+            searching || areaActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
+          }`}
+          aria-live="polite"
+        >
           {searching ? (
-            <span className="flex h-8 items-center gap-2 rounded-full bg-white/90 px-3.5 text-caption font-semibold text-ink shadow-[0_6px_16px_-8px_rgba(0,0,0,0.4)] backdrop-blur" role="status">
+            <span className="flex h-9 items-center gap-2 rounded-full bg-white/95 px-4 text-caption font-semibold text-ink shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] backdrop-blur">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line-strong border-t-ink" />
               {t('Searching')}
             </span>
@@ -368,9 +373,10 @@ export function BrowseMap({
             <button
               type="button"
               onClick={() => { onAreaChange?.(null); setMoved(false); }}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-caption font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
+              className="flex h-9 items-center gap-2 rounded-full bg-white/95 pl-4 pr-1.5 text-caption font-semibold text-ink shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] backdrop-blur active:scale-95"
             >
-              {t('Showing this area')} <Icon name="x" size={13} />
+              {t('Showing this area')}
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-ink text-white"><Icon name="x" size={12} /></span>
             </button>
           )}
         </div>

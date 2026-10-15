@@ -5,24 +5,27 @@
       "name": "velora-dev",
       "runtimeExecutable": "/Users/feqy/.local/node/bin/node",
       "runtimeArgs": [
-        "/Users/feqy/Downloads/velora/node_modules/vite/bin/vite.js",
-        "--port",
-        "5173",
-        "--strictPort"
+        "/Users/feqy/Downloads/velora/node_modules/vite/bin/vite.js"
       ],
-      "port": 5173
+      "autoPort": true
     },
     {
       "name": "orbit",
+      "url": "https://ptrcircle.it"
+    },
+    {
+      "name": "mr-international",
       "runtimeExecutable": "/Users/feqy/.local/node/bin/node",
       "runtimeArgs": [
-        "/Users/feqy/Downloads/orbit/node_modules/vite/bin/vite.js",
-        "/Users/feqy/Downloads/orbit",
-        "--port",
-        "5180",
-        "--strictPort"
+        "/Users/feqy/Downloads/mr-international/node_modules/next/dist/bin/next",
+        "dev",
+        "/Users/feqy/Downloads/mr-international"
       ],
-      "port": 5180
+      "autoPort": true
+    },
+    {
+      "name": "fase-zero",
+      "url": "https://fase-zero.vercel.app"
     }
   ]
 }
