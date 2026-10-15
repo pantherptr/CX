@@ -171,6 +171,7 @@ function TripRow({ booking }: { booking: Booking }) {
 }
 
 export default function CustomerDashboard() {
+  const { t } = useLocale();
   const [showAllSaved, setShowAllSaved] = useState(false);
   const navigate = useNavigate();
   const { favorites, toast } = useApp();
