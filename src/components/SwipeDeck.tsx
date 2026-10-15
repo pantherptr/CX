@@ -377,12 +377,12 @@ export function SwipeDeck<T>({
           </AnimatePresence>
         </div>
       </div>
-      <div className="mt-3 grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-3 px-1">
+      <div className="mt-3 grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3">
         <button type="button" onClick={() => deck.decide('left')} inert={deck.done} className={`${control} justify-self-start ${spent(deck.done)}`}>
           {ICON_LEFT}
           <span>{leftLabel}</span>
         </button>
-        <span className="flex items-center gap-2 font-mono text-caption tabular-nums text-muted">
+        <span className="flex min-w-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap font-mono text-caption tabular-nums text-muted">
           <span aria-hidden>{remainingText(deck.remaining)}</span>
           <button
             type="button"
