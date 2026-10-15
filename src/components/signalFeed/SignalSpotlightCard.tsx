@@ -76,7 +76,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
           {!embedded && (
           <div className="flex items-center gap-2.5">
             <Img
-              src={data.publisherAvatar ?? '/brand/avatar-cx-bat.webp'}
+              src={data.publisherAvatar ?? '/brand/avatar-cx-chrome.png'}
               alt=""
               className={`rounded-full object-cover ring-1 ring-white/35 ${compact ? 'h-7 w-7' : 'h-9 w-9'}`}
               fallback={<span className="grid h-9 w-9 place-items-center rounded-full bg-white/15"><Icon name="sparkles" size={14} /></span>}
