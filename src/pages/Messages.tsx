@@ -1,4 +1,4 @@
-import { getTheme, setChromeOverride } from '../lib/theme';
+import { setChromeOverride, useTheme } from '../lib/theme';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
@@ -683,19 +683,7 @@ export default function Messages() {
     b.top = `-${y}px`;
     b.width = '100%';
     b.overflow = 'hidden';
-    // Safari tints its bottom bar / the strip behind the keyboard from the page background and the
-    // theme colour — keep both on the chat's own tone so no white band shows under the composer.
-    const root = document.documentElement;
-    const prevRootBg = root.style.backgroundColor;
-    const prevBodyBg = b.backgroundColor;
-    const chatBg = getTheme() === 'dark' ? '#1a1c1a' : '#f4f5f2';
-    root.style.backgroundColor = chatBg;
-    b.backgroundColor = chatBg;
-    setChromeOverride({ light: '#ffffff', dark: '#131513' });
     return () => {
-      setChromeOverride(null);
-      root.style.backgroundColor = prevRootBg;
-      b.backgroundColor = prevBodyBg;
       b.position = prev.position;
       b.top = prev.top;
       b.width = prev.width;
@@ -703,6 +691,28 @@ export default function Messages() {
       window.scrollTo(0, y);
     };
   }, [mobileChat]);
+
+  // Safari tints its bottom bar / the strip behind the keyboard from the page background and the theme colour —
+  // keep both on the chat's own tone so no band shows under the composer. Kept apart from the scroll lock above
+  // and tied to the live theme: arriving from SIGNAL (dark) the theme flips to the site's a moment later, and a
+  // colour picked once would stay black behind the light chat.
+  const chatTheme = useTheme();
+  useEffect(() => {
+    if (!mobileChat || window.matchMedia('(min-width: 640px)').matches) return;
+    const root = document.documentElement;
+    const b = document.body.style;
+    const prevRootBg = root.style.backgroundColor;
+    const prevBodyBg = b.backgroundColor;
+    const chatBg = chatTheme === 'dark' ? '#1a1c1a' : '#f4f5f2';
+    root.style.backgroundColor = chatBg;
+    b.backgroundColor = chatBg;
+    setChromeOverride({ light: '#ffffff', dark: '#131513' });
+    return () => {
+      setChromeOverride(null);
+      root.style.backgroundColor = prevRootBg;
+      b.backgroundColor = prevBodyBg;
+    };
+  }, [mobileChat, chatTheme]);
 
   // The URL is the source of truth for "a chat is open": the browser/iOS back gesture removes ?c=
   // and has to close the chat too, and a link carrying ?c= opens it.
