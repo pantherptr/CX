@@ -37,6 +37,8 @@ export function FindCarDeck({ city }: { city?: string | null }) {
     const rest = withPhoto.filter((c) => c.city.toLowerCase() !== wanted);
     return [...near, ...rest].slice(0, DECK_SIZE);
   }, [cars, wanted]);
+  // the cars are still coming: keep the deck's place so what is below does not jump down when they arrive
+  if (cars === null) return <div aria-hidden="true" style={{ height: 368 }}><div className="skeleton mx-4 h-[330px] rounded-[28px]" /></div>;
   if (deck.length === 0) return null;
   const extra = Math.max(0, (cars ?? []).filter((c) => c.images[0]).length - deck.length);
   const teaserTitle = extra > 0 ? t('{n} more cars are waiting inside', { n: extra }) : t('The best ones are waiting inside');
