@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
+import { Modal } from '../primitives';
 import { useApp } from '../../lib/store';
 import {
   fetchSpotlightQueue, fetchSpotlightPublishers, publishSpotlight, setSpotlightStatus, deleteSpotlight,
@@ -35,26 +36,37 @@ export function SpotlightPanel() {
     fetchSpotlightPublishers().then(setPublishers);
   }, []);
 
-  const act = async (v: SpotlightCandidate, status: 'archived' | 'removed') => {
-    const verb = status === 'archived' ? 'Archive this Spotlight?' : 'Hide this Vision from the Spotlight list?';
-    if (!window.confirm(verb)) return;
-    const { error } = await setSpotlightStatus(v.visionId, status);
-    if (error) {
-      toast({ title: 'Could not update', desc: error, icon: 'info' });
-      return;
-    }
-    void load();
+  // An in-app confirmation: window.confirm() is not available in every webview (it simply returns false there,
+  // which made the buttons look dead).
+  const [ask, setAsk] = useState<{ title: string; body: string; cta: string; danger?: boolean; run: () => Promise<void> } | null>(null);
+  const [asking, setAsking] = useState(false);
+
+  const act = (v: SpotlightCandidate, status: 'archived' | 'removed') => {
+    setAsk({
+      title: status === 'archived' ? 'Archive this Spotlight?' : 'Hide this Vision from the Spotlight list?',
+      body: status === 'archived' ? 'It leaves the Signal feed but is kept: you can publish it again later.' : 'It will not be offered again in this list. The creator’s Vision is not touched.',
+      cta: status === 'archived' ? 'Archive' : 'Hide',
+      run: async () => {
+        const { error } = await setSpotlightStatus(v.visionId, status);
+        if (error) { toast({ title: 'Could not update', desc: error, icon: 'info' }); return; }
+        void load();
+      },
+    });
   };
 
-  const destroy = async (v: SpotlightCandidate) => {
-    if (!window.confirm('Delete this Spotlight for good?\n\nIts post in the Signal feed — with its Respect, comments and saves — is removed. The creator’s Vision is not touched.')) return;
-    const { error } = await deleteSpotlight(v.visionId);
-    if (error) {
-      toast({ title: 'Could not delete', desc: error, icon: 'info' });
-      return;
-    }
-    toast({ title: 'Spotlight deleted', icon: 'check' });
-    void load();
+  const destroy = (v: SpotlightCandidate) => {
+    setAsk({
+      title: 'Delete this Spotlight for good?',
+      body: 'Its post in the Signal feed — with its Respect, comments and saves — is removed. The creator’s Vision is not touched.',
+      cta: 'Delete',
+      danger: true,
+      run: async () => {
+        const { error } = await deleteSpotlight(v.visionId);
+        if (error) { toast({ title: 'Could not delete', desc: error, icon: 'info' }); return; }
+        toast({ title: 'Spotlight deleted', icon: 'check' });
+        void load();
+      },
+    });
   };
 
   return (
@@ -112,18 +124,40 @@ export function SpotlightPanel() {
                   {v.status === 'published' ? 'Edit' : v.status === 'archived' ? 'Re-publish' : 'Select'}
                 </button>
                 {v.status === 'published' && (
-                  <button type="button" onClick={() => void act(v, 'archived')} className="btn btn-secondary btn-sm rounded-full">Archive</button>
+                  <button type="button" onClick={() => act(v, 'archived')} className="btn btn-secondary btn-sm rounded-full">Archive</button>
                 )}
                 {v.status === 'published' ? (
-                  <button type="button" onClick={() => void destroy(v)} className="btn btn-secondary btn-sm rounded-full text-danger">Delete</button>
+                  <button type="button" onClick={() => destroy(v)} className="btn btn-secondary btn-sm rounded-full text-danger">Delete</button>
                 ) : (
-                  <button type="button" onClick={() => void act(v, 'removed')} className="btn btn-secondary btn-sm rounded-full text-danger">Remove</button>
+                  <button type="button" onClick={() => act(v, 'removed')} className="btn btn-secondary btn-sm rounded-full text-danger">Remove</button>
                 )}
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      <Modal open={ask !== null} onClose={() => (asking ? undefined : setAsk(null))} className="rounded-t-[28px] sm:max-w-[420px] sm:rounded-[28px]">
+        <div className="p-5">
+          <h2 className="font-display text-lg font-semibold text-ink">{ask?.title}</h2>
+          <p className="mt-2 text-detail leading-relaxed text-muted">{ask?.body}</p>
+          <div className="mt-5 flex gap-2.5">
+            <button type="button" disabled={asking} onClick={() => setAsk(null)} className="btn btn-secondary btn-lg flex-1">Cancel</button>
+            <button
+              type="button"
+              disabled={asking}
+              onClick={async () => {
+                if (!ask) return;
+                setAsking(true);
+                try { await ask.run(); } finally { setAsking(false); setAsk(null); }
+              }}
+              className={`btn btn-lg flex-1 ${ask?.danger ? 'bg-danger text-white hover:bg-danger/90' : 'btn-primary'} disabled:opacity-60`}
+            >
+              {asking ? 'Working…' : ask?.cta}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {selected && (
         <PublishModal
