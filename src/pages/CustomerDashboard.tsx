@@ -185,7 +185,9 @@ export default function CustomerDashboard() {
   const [messaging, setMessaging] = useState(false);
 
 
-  const saved = (cars ?? []).filter((c) => favorites.has(c.id)).slice(0, 4);
+  // newest saved first: the favourites Set keeps the order they were saved in (oldest → newest)
+  const carsById = new Map((cars ?? []).map((c) => [c.id, c] as const));
+  const saved = [...favorites].reverse().flatMap((id) => { const c = carsById.get(id); return c ? [c] : []; });
   const firstName = (profile?.full_name || session?.user.email?.split('@')[0] || 'there').split(' ')[0];
 
   const classified = useMemo(
@@ -589,16 +591,16 @@ export default function CustomerDashboard() {
             <>
               {/* compact rows (a small photo, the name, the price) and only the first three; the rest on request */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {(showAllSaved ? saved : saved.slice(0, 3)).map((c) => <CarCard key={c.id} car={c} layout="horizontal" />)}
+                {(showAllSaved ? saved : saved.slice(0, 1)).map((c) => <CarCard key={c.id} car={c} layout="horizontal" />)}
               </div>
-              {saved.length > 3 && (
+              {saved.length > 1 && (
                 <button
                   type="button"
                   onClick={() => setShowAllSaved((v) => !v)}
                   aria-expanded={showAllSaved}
                   className="pressable mt-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-detail font-semibold text-ink-soft hover:text-ink"
                 >
-                  {showAllSaved ? 'Show fewer' : <><span>Show all</span> <span className="tabular-nums">({saved.length})</span></>}
+                  {showAllSaved ? t('Show fewer') : t('See {n} more', { n: saved.length - 1 })}
                   <Icon name="chevronDown" size={14} className={`transition-transform ${showAllSaved ? 'rotate-180' : ''}`} />
                 </button>
               )}

@@ -70,6 +70,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .from('favorites')
       .select('car_id')
       .eq('user_id', session.user.id)
+      // oldest first, so the Set keeps the order they were saved in (the last one is the newest)
+      .order('created_at', { ascending: true })
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) {
