@@ -175,7 +175,7 @@ function Panel({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        <div className="flex items-center gap-4 border-t border-line px-4 py-2 text-label text-muted">
+        <div className="hidden items-center gap-4 border-t border-line px-4 py-2 text-label text-muted sm:flex">
           <span><kbd className="font-mono">↑ ↓</kbd> {t('Navigate')}</span>
           <span><kbd className="font-mono">↵</kbd> {t('Select')}</span>
         </div>
@@ -184,8 +184,17 @@ function Panel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Opens the palette from anywhere (the phone has no keyboard shortcut: the search icons call this). */
+export const openCommandPalette = () => window.dispatchEvent(new Event('cx:command-palette'));
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('cx:command-palette', onOpen);
+    return () => window.removeEventListener('cx:command-palette', onOpen);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

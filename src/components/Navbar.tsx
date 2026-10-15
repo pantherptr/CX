@@ -1,3 +1,4 @@
+import { openCommandPalette } from './CommandPalette';
 import { setChromeOverride } from '../lib/theme';
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -274,13 +275,14 @@ function AppNavbar() {
             />
           </form>
           <div className="ml-auto flex items-center gap-1.5">
-            <Link
-              to="/browse"
+            <button
+              type="button"
+              onClick={openCommandPalette}
               className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel sm:hidden"
-              aria-label="Browse cars"
+              aria-label="Search"
             >
               <Icon name="search" size={19} />
-            </Link>
+            </button>
             <Link
               to="/notifications"
               className="grid h-10 w-10 place-items-center rounded-xl text-ink hover:bg-panel"

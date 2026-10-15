@@ -1,5 +1,6 @@
 import ThemeSwitch from './ThemeSwitch';
 import { CxBatIntro } from './CxBatIntro';
+import { openCommandPalette } from './CommandPalette';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -89,6 +90,16 @@ export default function PublicMobileDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto px-5 py-5">
+                {/* -------- Search: opens the command palette (pages, cars, cities) -------- */}
+                <button
+                  type="button"
+                  onClick={() => { onClose(); window.setTimeout(openCommandPalette, 180); }}
+                  className="mb-4 flex min-h-12 w-full items-center gap-3 rounded-2xl border border-line bg-panel/60 px-4 text-left text-detail text-muted"
+                >
+                  <Icon name="search" size={17} />
+                  {t('Search pages, cars, cities…')}
+                </button>
+
                 {/* -------- The one primary CTA — compact, single line -------- */}
                 <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg btn-block !justify-between mb-6" {...findDriveScramble}>
                   <span className="btn-glint__sweep" aria-hidden="true" />
