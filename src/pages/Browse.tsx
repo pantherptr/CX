@@ -279,7 +279,8 @@ export default function Browse() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const wide = useMediaQuery('(min-width: 1280px)');
   const [showMap, setShowMap] = useState(true);
-  const [mapView, setMapView] = useState(false); // below xl the map takes the list's place
+  // below xl the map takes the list's place — and it is what opens first: the map is the main view
+  const [mapView, setMapView] = useState(() => params.get('view') !== 'list');
   const mapBeside = wide && showMap;
   const mapOnly = !wide && mapView;
   const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
@@ -489,7 +490,7 @@ export default function Browse() {
                   />
                 </div>
               ) : mapOnly ? (
-                <BrowseMap cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[68dvh] rounded-[24px] border border-line" />
+                <BrowseMap variant="main" cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-14.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
               ) : (
                 <motion.div layout className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
                   <AnimatePresence mode="popLayout">

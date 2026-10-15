@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Show where I am", "Mostra dove sono", "Arată unde sunt", "Mostrar dónde estoy"],
   ["Pins mark the exact pick-up spots", "I pin indicano i punti di ritiro esatti", "Pinurile marchează punctele exacte de ridicare", "Los pines marcan los puntos de recogida exactos"],
   ["Approximate area — sign in to see the exact spots", "Zona approssimativa — accedi per vedere i punti esatti", "Zonă aproximativă — autentifică-te pentru punctele exacte", "Zona aproximada — inicia sesión para ver los puntos exactos"],
   ["{n} listed without an exact spot yet", "{n} senza un punto esatto per ora", "{n} fără un punct exact deocamdată", "{n} sin un punto exacto por ahora"],
