@@ -12,20 +12,17 @@ function ChromeBat({ className = '' }: { className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const id = (n: string) => `${n}-${uid}`;
   return (
-    <svg viewBox="140 360 970 640" aria-hidden="true" className={className} fill="none">
+    <svg viewBox="140 360 1110 500" aria-hidden="true" className={className} fill="none">
       <defs>
         <linearGradient id={id('chr')} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#f2fff6" />
-          <stop offset="0.10" stopColor="#b9ffd3" />
-          <stop offset="0.24" stopColor="#19d160" />
-          <stop offset="0.36" stopColor="#07632a" />
-          <stop offset="0.44" stopColor="#02150a" />
-          <stop offset="0.49" stopColor="#0b3a1a" />
-          <stop offset="0.55" stopColor="#b9ffd3" />
-          <stop offset="0.68" stopColor="#5dffa6" />
-          <stop offset="0.80" stopColor="#0fa84a" />
-          <stop offset="0.90" stopColor="#eafff1" />
-          <stop offset="1" stopColor="#1fbf5c" />
+          <stop offset="0.12" stopColor="#b9ffd3" />
+          <stop offset="0.30" stopColor="#3be887" />
+          <stop offset="0.46" stopColor="#14b955" />
+          <stop offset="0.54" stopColor="#c4ffdc" />
+          <stop offset="0.70" stopColor="#4af09a" />
+          <stop offset="0.86" stopColor="#16c85c" />
+          <stop offset="1" stopColor="#d8ffe6" />
         </linearGradient>
         <linearGradient id={id('wing')} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#eafff1" />
@@ -52,8 +49,8 @@ function ChromeBat({ className = '' }: { className?: string }) {
         </g>
       </g>
       <polygon points={BAT} stroke="#d8ffe6" strokeWidth="6" strokeLinejoin="miter" opacity="0.9" />
-      <circle cx="625" cy="940" r="46" stroke="currentColor" strokeWidth="14" />
-      <text x="625" y="961" textAnchor="middle" fontSize="62" fontWeight="800" fontFamily="Arial, Helvetica, sans-serif" fill="currentColor">R</text>
+      <circle cx="1180" cy="700" r="46" stroke="currentColor" strokeWidth="14" />
+      <text x="1180" y="721" textAnchor="middle" fontSize="62" fontWeight="800" fontFamily="Arial, Helvetica, sans-serif" fill="currentColor">R</text>
     </svg>
   );
 }
@@ -62,7 +59,7 @@ const BAT_MS = 3000;
 const WORD_MS = 4500;
 
 /**
- * The logo, in a loop: the green-chrome bat (with the ® circle under it) for a few seconds, then the CX wordmark,
+ * The logo, in a loop: the green-chrome bat (with the ® circle beside it) for a few seconds, then the CX wordmark,
  * then the bat again, and so on. With "reduce motion" it stays on the wordmark.
  */
 export function CxBatIntro({ className = '' }: { className?: string }) {
