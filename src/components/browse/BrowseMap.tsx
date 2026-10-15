@@ -358,12 +358,11 @@ export function BrowseMap({
       )}
 
       {ready && variant === 'main' && (searching || areaActive) && (
-        <div className="absolute left-1/2 top-[8.6rem] z-20 -translate-x-1/2">
+        <div className="absolute left-1/2 top-[11.8rem] z-20 -translate-x-1/2">
           {searching ? (
-            <span className="flex h-10 items-center gap-1.5 rounded-full bg-white px-5 shadow-[0_8px_20px_-8px_rgba(0,0,0,0.5)]" aria-label={t('Searching')}>
-              <span className="h-2 w-2 animate-pulse rounded-full bg-ink" />
-              <span className="h-2 w-2 animate-pulse rounded-full bg-ink [animation-delay:150ms]" />
-              <span className="h-2 w-2 animate-pulse rounded-full bg-ink [animation-delay:300ms]" />
+            <span className="flex h-8 items-center gap-2 rounded-full bg-white/90 px-3.5 text-caption font-semibold text-ink shadow-[0_6px_16px_-8px_rgba(0,0,0,0.4)] backdrop-blur" role="status">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line-strong border-t-ink" />
+              {t('Searching')}
             </span>
           ) : (
             <button

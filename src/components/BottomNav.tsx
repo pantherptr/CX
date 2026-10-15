@@ -289,10 +289,10 @@ export function BottomNav() {
   const [listUp, setListUp] = useState(false);
   useEffect(() => {
     if (!onBrowse) { setListUp(false); return; }
-    const on = () => setListUp(window.scrollY > window.innerHeight * 0.3);
+    const on = () => setListUp(document.documentElement.dataset.browseList === '1');
     on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
+    window.addEventListener('cx:browse-list', on);
+    return () => window.removeEventListener('cx:browse-list', on);
   }, [onBrowse]);
 
   // Signal.tsx marks the feed seen server-side on mount; clear the badge

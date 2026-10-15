@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
@@ -291,14 +291,42 @@ export default function Browse() {
   const mapBeside = wide && showMap;
   const listRef = useRef<HTMLDivElement>(null);
   const [listUp, setListUp] = useState(false);
+  // three resting places for the sheet: peek (full map), half (first view), up (the list). `half` is where the page starts.
+  const halfScroll = () => Math.max(0, window.innerHeight * 0.5 - 57.6);
   useEffect(() => {
     if (!mapFirst) return;
-    const onScroll = () => setListUp(window.scrollY > window.innerHeight * 0.35);
+    const root = document.documentElement;
+    const onScroll = () => {
+      const up = window.scrollY > halfScroll() + window.innerHeight * 0.18;
+      setListUp(up);
+      root.dataset.browseList = up ? '1' : '0';
+      window.dispatchEvent(new Event('cx:browse-list'));
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      delete root.dataset.browseList;
+    };
   }, [mapFirst]);
-  const goList = () => listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // first view: half map, half list — start the page scrolled to the "half" place
+  useLayoutEffect(() => {
+    if (!mapFirst || !phone) return;
+    const go = () => window.scrollTo(0, halfScroll());
+    go();
+    const id = window.setTimeout(go, 60);
+    return () => window.clearTimeout(id);
+  }, [mapFirst, phone]);
+  // the strip Safari draws under the page takes the colour of the sheet, so the sheet ends cleanly at the bar
+  useEffect(() => {
+    if (!phone) return;
+    const root = document.documentElement;
+    const prev = [root.style.backgroundColor, document.body.style.backgroundColor];
+    root.style.backgroundColor = 'var(--surface, #fff)';
+    document.body.style.backgroundColor = 'var(--surface, #fff)';
+    return () => { root.style.backgroundColor = prev[0]; document.body.style.backgroundColor = prev[1]; };
+  }, [phone]);
+  const goList = () => window.scrollTo({ top: window.innerHeight * 0.5 - 57.6 + window.innerHeight * 0.42, behavior: 'smooth' });
   const goMap = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
 
@@ -458,14 +486,23 @@ export default function Browse() {
         {/* the list: a sheet whose top edge peeks over the map and rises with the page */}
         <div
           ref={listRef}
-          className="relative z-10 -mt-[3.6rem] rounded-t-[28px] bg-surface px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
+          className="relative z-10 -mt-[3.6rem] min-h-dvh rounded-t-[28px] bg-surface px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
         >
-          <button type="button" onClick={goList} aria-label={t('Show all cars')} className="flex w-full flex-col items-center gap-1 pb-2 pt-2.5">
-            <span className="h-1 w-10 rounded-full bg-line-strong" />
-            <span className="text-detail font-semibold text-ink">
-              {loading ? t('Loading…') : shown.length === 1 ? t('1 car') : t('{n} cars', { n: shown.length })}
-            </span>
-          </button>
+          <div className="relative">
+            <button type="button" onClick={listUp ? goMap : goList} aria-label={listUp ? t('Map') : t('Show all cars')} className="flex w-full flex-col items-center gap-1 pb-2 pt-2.5">
+              <span className="h-1 w-10 rounded-full bg-line-strong" />
+              <span className="text-detail font-semibold text-ink">
+                {loading ? t('Loading…') : shown.length === 1 ? t('1 car') : t('{n} cars', { n: shown.length })}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={goMap}
+              className="absolute right-0 top-2 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-caption font-semibold text-white active:scale-95"
+            >
+              <Icon name="pin" size={14} /> {t('Map')}
+            </button>
+          </div>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
             <span className="text-caption text-muted">{area ? t('In the map area') : t('Sorted by')}</span>
             <label className="relative">
@@ -513,17 +550,6 @@ export default function Browse() {
             )}
           </SkeletonSwap>
         </div>
-
-        {listUp && (
-          <button
-            type="button"
-            onClick={goMap}
-            className="fixed left-1/2 z-30 inline-flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 text-detail font-semibold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] active:scale-95"
-            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.4rem)' }}
-          >
-            <Icon name="pin" size={16} /> {t('Map')}
-          </button>
-        )}
 
         <CarDrawer car={openCar} onClose={() => setOpenCar(null)} />
         <SnapSheet
