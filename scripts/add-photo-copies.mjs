@@ -16,6 +16,8 @@
  *   node scripts/add-photo-copies.mjs --bucket=car-photos        # DRY RUN, one bucket
  *   node scripts/add-photo-copies.mjs --bucket=car-photos --apply --limit=20    # does it (start small)
  *
+ *   node scripts/add-photo-copies.mjs --heavy [--apply]           # re-encode car photos whose main file is still a heavy PNG
+ *
  * Buckets: car-photos (car_images.url) and empire-post-media (posts, scheduled posts, story and highlight
  * slides). Options: --min-kb=150 (leave smaller files)  --limit=200  --backup=./image-backup
  * Originals are saved locally before an --apply. Reads VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from
@@ -178,7 +180,53 @@ async function processBucket(bucket) {
   return saved;
 }
 
+/**
+ * --heavy: photos that were already given copies but whose MAIN file is still a heavy PNG/WebP/large JPEG
+ * (a first run converted them without re-encoding): re-encode the main file to the app's 1600 px JPEG
+ * (NAME.v.jpg), repoint the references, remove the old object. Car photos only.
+ */
+async function processHeavy(bucket) {
+  console.log(`\n== ${bucket} heavy originals ${APPLY ? '(APPLY)' : '(dry run)'}`);
+  const all = await listAll(bucket);
+  const heavy = all
+    .filter((o) => /\.v\.(png|webp|jpe?g)$/i.test(o.path) && (o.size >= 1024 * 1024 || /\.v\.png$/i.test(o.path)))
+    .slice(0, LIMIT);
+  console.log(`${heavy.length} heavy main files`);
+  for (const o of heavy) {
+    const ext = o.path.split('.').pop().toLowerCase();
+    const base = o.path.slice(0, -(ext.length + 1)); // ends with ".v"
+    const newPath = `${base}.jpg`;
+    try {
+      const refs = await referencesTo(bucket, o.path);
+      if (!APPLY) { console.log(`  would re-encode ${o.path} (${mb(o.size)}, ${refs.length} reference${refs.length === 1 ? '' : 's'})`); continue; }
+      if (refs.length === 0) { console.log(`  skip ${o.path}: nothing points to it`); continue; }
+      const { data: blob, error: dl } = await supabase.storage.from(bucket).download(o.path);
+      if (dl || !blob) throw dl ?? new Error('download failed');
+      const buf = Buffer.from(await blob.arrayBuffer());
+      const backupFile = join(BACKUP, bucket, o.path);
+      mkdirSync(dirname(backupFile), { recursive: true });
+      writeFileSync(backupFile, buf);
+      const main = await sharp(buf).rotate().resize({ width: 1600, withoutEnlargement: true }).jpeg({ quality: 80, mozjpeg: true }).toBuffer();
+      const up = await supabase.storage.from(bucket).upload(newPath, main, { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' });
+      if (up.error) throw up.error;
+      if (newPath !== o.path) {
+        await repoint(bucket, o.path, newPath, refs);
+        const rm = await supabase.storage.from(bucket).remove([o.path]);
+        if (rm.error) console.log(`  note: old object not removed (${rm.error.message})`);
+      }
+      console.log(`  ok ${o.path}: ${mb(o.size)} -> ${mb(main.length)}`);
+    } catch (e) {
+      console.log(`  FAILED ${o.path}: ${e.message ?? e}`);
+    }
+  }
+}
+
 async function main() {
+  if (args.heavy) {
+    console.log(APPLY ? 'APPLY: this changes Storage and the database.' : 'DRY RUN: nothing is changed. Add --apply to do it.');
+    await processHeavy('car-photos');
+    return;
+  }
   console.log(APPLY ? 'APPLY: this changes Storage and the database.' : 'DRY RUN: nothing is changed. Add --apply to do it.');
   for (const b of BUCKETS) await processBucket(b);
 }
