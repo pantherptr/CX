@@ -53,6 +53,7 @@ export function BrowseMap({
   variant = 'side',
   areaActive = false,
   onAreaChange,
+  onExpand,
 }: {
   cars: Car[];
   activeId: string | null;
@@ -66,6 +67,8 @@ export function BrowseMap({
   /** the results are limited to a map area: the map stays where the person put it */
   areaActive?: boolean;
   onAreaChange?: (b: AreaBounds | null) => void;
+  /** pulling the sheet all the way up (or tapping its handle) opens the full Browse list page */
+  onExpand?: () => void;
 }) {
   const { t } = useLocale();
   const exact = useHasAccess();
@@ -82,7 +85,8 @@ export function BrowseMap({
   const youMarker = useRef<MapLibreMarker | null>(null);
   const [locating, setLocating] = useState(false);
   const [moved, setMoved] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [pull, setPull] = useState<number | null>(null); // px the sheet is pulled up while a finger holds it
+  const [leaving, setLeaving] = useState(false);
 
   // cities present in the results, busiest first
   const cities = useMemo(() => {
@@ -216,7 +220,7 @@ export function BrowseMap({
         const same = Math.max(...lngs) - Math.min(...lngs) < 1e-6 && Math.max(...lats) - Math.min(...lats) < 1e-6;
         if (same || map.getZoom() >= 17) {
           // the same building: open the cars one by one
-          if (variantRef.current === 'main') { setSheetOpen(true); focusRef.current(cl.items[0].car.id, true); }
+          if (variantRef.current === 'main') focusRef.current(cl.items[0].car.id, true);
           else onSelectRef.current(cl.items[0].car);
           return;
         }
@@ -306,9 +310,15 @@ export function BrowseMap({
     setMoved(false);
   };
 
-  // pulling the sheet: a tap toggles, a drag up opens, a drag down closes
+  // pulling the sheet: it follows the finger; far enough (or a tap) and the full Browse list page opens
   const dragY = useRef<number | null>(null);
+  const moved2 = useRef(false);
   const showSheet = variant === 'main' && placed.length > 0;
+  const expand = () => {
+    if (!onExpand) return;
+    setLeaving(true);
+    window.setTimeout(() => { onExpand(); setLeaving(false); setPull(null); }, 240);
+  };
 
   return (
     <div className={`relative overflow-hidden bg-[#f2f4f7] ${className}`}>
@@ -360,72 +370,64 @@ export function BrowseMap({
 
       {ready && showSheet && (
         <div
-          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur transition-[height] duration-300 ${sheetOpen ? 'h-[66%]' : 'h-[9.6rem]'}`}
+          className={`absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-3xl bg-surface/95 shadow-[0_-12px_34px_-14px_rgba(0,0,0,0.45)] backdrop-blur ${pull === null || leaving ? 'transition-[height] duration-[240ms]' : ''}`}
+          style={{ height: leaving ? '100%' : pull !== null ? `calc(9.6rem + ${Math.max(0, pull)}px)` : '9.6rem' }}
         >
           <button
             type="button"
-            aria-label={sheetOpen ? t('Show the map') : t('Show the list')}
-            aria-expanded={sheetOpen}
-            onPointerDown={(e) => { dragY.current = e.clientY; }}
-            onPointerUp={(e) => {
-              const dy = dragY.current === null ? 0 : e.clientY - dragY.current;
-              dragY.current = null;
-              if (dy < -28) setSheetOpen(true);
-              else if (dy > 28) setSheetOpen(false);
-              else setSheetOpen((o) => !o);
+            aria-label={t('Show all cars')}
+            onPointerDown={(e) => {
+              dragY.current = e.clientY;
+              moved2.current = false;
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              setPull(0);
             }}
+            onPointerMove={(e) => {
+              if (dragY.current === null) return;
+              const dy = dragY.current - e.clientY;
+              if (Math.abs(dy) > 6) moved2.current = true;
+              setPull(Math.max(0, dy));
+            }}
+            onPointerUp={(e) => {
+              const dy = dragY.current === null ? 0 : dragY.current - e.clientY;
+              dragY.current = null;
+              if (!moved2.current || dy > 90) { expand(); return; }
+              setPull(null);
+            }}
+            onPointerCancel={() => { dragY.current = null; setPull(null); }}
             className="flex w-full shrink-0 touch-none flex-col items-center gap-1.5 px-4 pb-1.5 pt-2.5"
           >
             <span className="h-1 w-10 rounded-full bg-line-strong" />
-            <span className="text-caption font-semibold text-ink-soft">{placed.length === 1 ? t('1 car here') : t('{n} cars here', { n: placed.length })}</span>
+            <span className="text-caption font-semibold text-ink-soft">
+              {placed.length === 1 ? t('1 car here') : t('{n} cars here', { n: placed.length })} · {t('Pull up for the list')}
+            </span>
           </button>
 
-          {sheetOpen ? (
-            <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-4 pb-5 pt-1">
-              {placed.map((c) => (
-                <li key={c.id} data-card={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(c)}
-                    className={`flex w-full gap-3 rounded-2xl bg-surface p-2 text-left ring-1 ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
-                  >
-                    <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-20 w-28 shrink-0 rounded-xl bg-panel object-cover" />
-                    <span className="min-w-0 flex-1 py-0.5">
-                      <span className="block truncate text-body font-semibold text-ink">{c.make} {c.model}</span>
-                      <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
-                      <span className="mt-1.5 block text-body font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div
-              ref={strip}
-              onScroll={onStripScroll}
-              className="scrollbar-none flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4"
-            >
-              {placed.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
-                  className={`flex h-[5.4rem] w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
-                >
-                  <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
-                  <span className="min-w-0 flex-1 py-0.5">
-                    <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
-                    <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
-                    <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+          <div
+            ref={strip}
+            onScroll={onStripScroll}
+            className="scrollbar-none flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4"
+          >
+            {placed.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => (focusId === c.id ? onSelect(c) : focusRef.current(c.id, true))}
+                className={`flex h-[5.4rem] w-[16.5rem] shrink-0 snap-center gap-3 rounded-2xl bg-surface p-2 text-left shadow-[0_8px_20px_-10px_rgba(0,0,0,0.5)] ring-1 transition-shadow ${focusId === c.id ? 'ring-ink' : 'ring-line'}`}
+              >
+                <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
+                <span className="min-w-0 flex-1 py-0.5">
+                  <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
+                  <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
+                  <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {ready && !(showSheet && sheetOpen) && (
+      {ready && (
         <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${showSheet ? 'bottom-[10.2rem]' : 'bottom-7'}`}>
           <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
             {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}

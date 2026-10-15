@@ -500,7 +500,7 @@ export default function Browse() {
                   />
                 </div>
               ) : mapOnly ? (
-                <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
+                <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} onExpand={() => { setMapView(false); window.scrollTo({ top: 0 }); }} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
               ) : (
                 <motion.div layout className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
                   <AnimatePresence mode="popLayout">
@@ -530,6 +530,18 @@ export default function Browse() {
           </div>
         </div>
       </div>
+
+      {/* phone list view: one tap back to the map */}
+      {!wide && !mapView && (
+        <button
+          type="button"
+          onClick={() => { setMapView(true); window.scrollTo({ top: 0 }); }}
+          className="fixed left-1/2 z-30 inline-flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-ink px-5 text-detail font-semibold text-white shadow-[0_14px_30px_-10px_rgba(0,0,0,0.6)] active:scale-95"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5.4rem)' }}
+        >
+          <Icon name="pin" size={16} /> {t('Map')}
+        </button>
+      )}
 
       <CarDrawer car={openCar} onClose={() => setOpenCar(null)} />
 
