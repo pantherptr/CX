@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from '../Icon';
 import { useApp } from '../../lib/store';
 import {
-  fetchSpotlightQueue, fetchSpotlightPublishers, publishSpotlight, setSpotlightStatus,
+  fetchSpotlightQueue, fetchSpotlightPublishers, publishSpotlight, setSpotlightStatus, deleteSpotlight,
   type SpotlightCandidate, type SpotlightPublisher,
 } from '../../lib/data/spotlight';
 import { uiLocale } from '../../lib/i18n/uiLocale';
@@ -43,6 +43,17 @@ export function SpotlightPanel() {
       toast({ title: 'Could not update', desc: error, icon: 'info' });
       return;
     }
+    void load();
+  };
+
+  const destroy = async (v: SpotlightCandidate) => {
+    if (!window.confirm('Delete this Spotlight for good?\n\nIts post in the Signal feed — with its Respect, comments and saves — is removed. The creator’s Vision is not touched.')) return;
+    const { error } = await deleteSpotlight(v.visionId);
+    if (error) {
+      toast({ title: 'Could not delete', desc: error, icon: 'info' });
+      return;
+    }
+    toast({ title: 'Spotlight deleted', icon: 'check' });
     void load();
   };
 
@@ -103,7 +114,11 @@ export function SpotlightPanel() {
                 {v.status === 'published' && (
                   <button type="button" onClick={() => void act(v, 'archived')} className="btn btn-secondary btn-sm rounded-full">Archive</button>
                 )}
-                <button type="button" onClick={() => void act(v, 'removed')} className="btn btn-secondary btn-sm rounded-full text-danger">Remove</button>
+                {v.status === 'published' ? (
+                  <button type="button" onClick={() => void destroy(v)} className="btn btn-secondary btn-sm rounded-full text-danger">Delete</button>
+                ) : (
+                  <button type="button" onClick={() => void act(v, 'removed')} className="btn btn-secondary btn-sm rounded-full text-danger">Remove</button>
+                )}
               </div>
             </div>
           </div>

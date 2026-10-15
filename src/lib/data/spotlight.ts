@@ -132,6 +132,13 @@ export async function setSpotlightStatus(visionId: string, status: 'archived' | 
   return { error: error ? error.message : null };
 }
 
+/** Deletes a published Spotlight for good: its team post (Respect, comments, saves) and its entry. The
+ *  creator's Vision is never touched. Admins only (migration 0133). */
+export async function deleteSpotlight(visionId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('delete_spotlight', { p_vision_id: visionId });
+  return { error: error ? error.message : null };
+}
+
 /** The live Spotlights for the Signal feed — one quiet fetch on mount. */
 export function useSpotlightFeed(): SpotlightCardData[] {
   const [items, setItems] = useState<SpotlightCardData[]>([]);
