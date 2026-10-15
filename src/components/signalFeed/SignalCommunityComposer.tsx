@@ -207,6 +207,11 @@ export function SignalCommunityComposer({
   const isPhone = useMediaQuery('(max-width: 639px)');
   const full = isPhone && isOpen && !editing;
   const sheetRef = useRef<HTMLDivElement>(null);
+  // the height this composer takes in the feed, so the feed does not jump up (and back) while the sheet is open
+  const feedHeight = useRef(0);
+  useLayoutEffect(() => {
+    if (!full && sheetRef.current) feedHeight.current = sheetRef.current.offsetHeight;
+  });
   useFullScreenSheet(full, sheetRef);
   const canPublish = (body.trim().length > 0 || totalMedia > 0) && pollValid && !submitting;
 
@@ -790,5 +795,10 @@ export function SignalCommunityComposer({
   );
   // The full-screen sheet is drawn on <body>: `position: fixed` inside the feed's transformed wrappers is
   // relative to them, which is what let the feed show through and the toolbar float mid-screen.
-  return full ? createPortal(node, document.body) : node;
+  return full ? (
+    <>
+      <div aria-hidden="true" className="mb-3" style={{ height: feedHeight.current }} />
+      {createPortal(node, document.body)}
+    </>
+  ) : node;
 }
