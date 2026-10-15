@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -36,14 +36,24 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
   const lastTap = useRef(0);
   const src = videoUrlOf(post);
 
-  // Plays only while it is the reel on screen; one reel at a time.
+  // Plays only while it is the reel on screen; one reel at a time. `muted` is also set on the element itself
+  // (React only sets it as a property after the element exists, and iOS decides about autoplay at that moment),
+  // and if the browser still refuses to start it the Play button is shown instead of a dead black screen.
+  const tryPlay = useCallback(() => {
+    const v = video.current;
+    if (!v) return;
+    v.muted = muted;
+    const p = v.play();
+    if (p && typeof p.catch === 'function') p.catch(() => setPaused(true));
+  }, [muted]);
   useEffect(() => {
     const v = video.current;
     if (!v) return;
-    if (active && !paused) void v.play().catch(() => {});
+    v.muted = muted;
+    if (active && !paused) tryPlay();
     else v.pause();
     if (!active) { v.currentTime = 0; setPaused(false); setProgress(0); }
-  }, [active, paused]);
+  }, [active, paused, muted, tryPlay]);
 
   const respect = useCallback(async (force?: boolean) => {
     if (force && post.likedByMe) return;
@@ -94,6 +104,7 @@ function Reel({ post, active, next, muted, onToggleMute, onChange }: {
           const v = e.currentTarget;
           if (v.videoWidth && v.videoHeight) setPortrait(v.videoWidth / v.videoHeight < 0.9);
         }}
+        onLoadedData={() => { if (active && !paused) tryPlay(); }}
         onWaiting={() => setBuffering(true)}
         onPlaying={() => setBuffering(false)}
         onCanPlay={() => setBuffering(false)}
@@ -228,17 +239,21 @@ export default function SignalReels() {
     if (s.done || s.busy) return;
     s.busy = true;
     try {
-      const found: EmpirePost[] = [];
-      for (let i = 0; i < 4 && found.length < 6 && !s.done; i++) {
+      let total = 0;
+      for (let i = 0; i < 4 && total < 6 && !s.done; i++) {
         const rows = await fetchForYouFeed({ limit: 20, offset: s.offset, seed: s.seed, since: s.since, mode: 'foryou', scope: 'community' });
         s.offset += rows.length;
         if (rows.length < 20) s.done = true;
-        found.push(...rows.filter((p) => videoUrlOf(p)));
+        const withVideo = rows.filter((p) => videoUrlOf(p));
+        total += withVideo.length;
+        // show each batch the moment it is in: the first reel no longer waits for up to four pages
+        setPosts((prev) => {
+          const have = new Set((prev ?? []).map((p) => p.id));
+          return [...(prev ?? []), ...withVideo.filter((p) => !have.has(p.id))];
+        });
+        if (i === 0 && withVideo.length === 0 && s.done) setPosts((prev) => prev ?? []);
       }
-      setPosts((prev) => {
-        const have = new Set((prev ?? []).map((p) => p.id));
-        return [...(prev ?? []), ...found.filter((p) => !have.has(p.id))];
-      });
+      setPosts((prev) => prev ?? []);
     } catch {
       loadRef.current.done = true;
       setPosts((prev) => prev ?? []);
@@ -270,7 +285,7 @@ export default function SignalReels() {
   // Full screen, the way a native reels screen is: the page itself becomes the list of reels (the
   // document scrolls, snapping one video at a time), so Safari folds its toolbar away as you swipe;
   // everything behind is black and the rest of the app steps aside while this is open.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     const app = document.getElementById('root');
     const prev = {
