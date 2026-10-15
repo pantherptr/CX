@@ -13,13 +13,10 @@ export function CxWordmark({ className = '', title = 'CX' }: { className?: strin
     <svg viewBox="334 480 588 293" role="img" aria-label={title} className={className} fill="none">
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f2fff6" />
-          <stop offset="0.18" stopColor="#b9ffd3" />
-          <stop offset="0.38" stopColor="#3be887" />
-          <stop offset="0.52" stopColor="#14b955" />
-          <stop offset="0.62" stopColor="#c4ffdc" />
-          <stop offset="0.80" stopColor="#4af09a" />
-          <stop offset="1" stopColor="#16c85c" />
+          <stop offset="0" stopColor="#5af59a" />
+          <stop offset="0.35" stopColor="#12d85a" />
+          <stop offset="0.6" stopColor="#0fb84a" />
+          <stop offset="1" stopColor="#2fe673" />
         </linearGradient>
       </defs>
       <path fill="currentColor" fillRule="evenodd" d="M917.0 559.0 L822.0 559.0 L570.3 767.7 L655.0 767.7 L734.3 702.7 L739.0 705.7 L796.0 767.7 L879.7 767.7 L785.7 666.7 L784.0 663.3Z M380.7 595.7 L360.0 619.3 L351.0 635.0 L344.7 650.7 L340.7 671.3 L341.0 689.3 L344.7 705.3 L356.3 728.7 L366.7 740.3 L377.3 749.3 L403.0 762.3 L415.3 765.7 L433.7 768.0 L536.3 768.0 L600.0 719.3 L441.3 719.3 L427.0 716.3 L419.7 713.0 L412.3 708.0 L402.7 696.3 L398.0 685.0 L397.0 669.7 L399.7 656.3 L405.0 644.7 L412.0 634.7 L425.0 622.7 L440.7 613.7 L461.3 608.3 L635.0 608.0 L578.0 559.0 L467.7 559.0 L451.0 561.0 L434.3 565.0 L416.3 572.0 L401.3 580.0Z" />
