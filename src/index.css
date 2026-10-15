@@ -2565,3 +2565,26 @@ html [data-rmiz-btn-unzoom] { display: none; }
 }
 
 /* The lit floor under the hero car breathes slowly. */
+
+/* SIGNAL wordmark (SignalBarLogo): the letters come in one by one, then the road on the L runs — a light chasing
+   along its dashes, top to bottom and out along the base. Clean: opacity + a few px of slide, nothing else. */
+@keyframes sig-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sig-road {
+  0% { opacity: 0.5; }
+  15% { opacity: 1; }
+  38% { opacity: 0.5; }
+  100% { opacity: 0.5; }
+}
+.sig-in { opacity: 0; transform-box: fill-box; animation: sig-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards; }
+.sig-road { animation-fill-mode: both; }
+.sig-in.sig-road {
+  animation: sig-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards,
+             sig-road 2.2s ease-in-out var(--r, 1s) infinite;
+}
+.sig-road:not(.sig-in) { animation: sig-road 2.2s ease-in-out var(--r, 1s) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sig-in, .sig-road, .sig-in.sig-road, .sig-road:not(.sig-in) { animation: none; opacity: 1; transform: none; }
+}
