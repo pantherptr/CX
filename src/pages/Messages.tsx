@@ -1014,39 +1014,38 @@ export default function Messages() {
               }
             }}
           >
-            <div className="relative z-10 shrink-0 bg-white/90 px-2.5 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top,0px))] shadow-[0_8px_24px_-14px_rgba(22,22,26,0.4)] backdrop-blur-xl">
+            <div className="relative z-10 shrink-0 border-b border-black/[0.06] bg-white/95 px-2 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] backdrop-blur-xl">
               <div className="flex items-center gap-2.5">
-                <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/[0.045] text-ink transition-transform active:scale-90 active:bg-black/[0.09]">
+                <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink transition-transform active:scale-90 active:bg-black/[0.06]">
                   <Icon name="chevronLeft" size={22} />
                 </button>
                 <button
                   type="button"
                   onClick={() => { haptics.tick(); setProfileOpen(true); }}
-                  className="pressable flex min-w-0 flex-1 items-center gap-2.5 rounded-2xl py-0.5 pr-1 text-left transition-transform active:scale-[0.98]"
+                  className="pressable flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-0.5 pr-2 text-left transition-transform active:scale-[0.98]"
                 >
                   {active.other.avatar ? (
                     <Img
                       src={active.other.avatar}
                       alt=""
-                      className="h-12 w-12 shrink-0 rounded-full object-cover shadow-[0_4px_12px_-3px_rgba(0,133,54,0.5)] ring-2 ring-accent/30"
-                      fallback={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
+                      className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-black/[0.08]"
+                      fallback={<span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>}
                     />
                   ) : (
-                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={18} /></span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="flex min-w-0 items-center gap-1.5 text-[17px] font-bold leading-tight tracking-tight text-accent">
+                    <span className="flex min-w-0 items-center gap-1.5 text-[16px] font-semibold leading-tight tracking-tight text-ink">
                       <span className="truncate">{active.other.name}</span>
                       <VerifiedBadge role={active.other.role} size={14} />
                     </span>
-                    <span className="mt-0.5 flex items-center gap-1 truncate text-caption font-semibold text-accent/80">
+                    <span className="mt-0.5 flex items-center gap-1.5 truncate text-caption font-medium text-muted">
                       {presence.typing ? (
-                        <span className="text-accent">typing…</span>
+                        <span className="font-semibold text-accent">typing…</span>
                       ) : (
                         <>
-                          {presence.online && <span className="h-2 w-2 shrink-0 rounded-full bg-accent-bright shadow-[0_0_0_3px_rgba(0,212,71,0.2)]" />}
+                          {presence.online && <span className="h-2 w-2 shrink-0 rounded-full bg-accent-bright" />}
                           {presence.online ? 'Online' : active.other.role === 'cx' ? 'CX support' : ROLE_SUBTITLE[active.other.role] ?? ''}
-                          <span className="text-accent/60">· Tap for info</span>
                         </>
                       )}
                     </span>
@@ -1056,11 +1055,11 @@ export default function Messages() {
               {active.car && (
                 <Link
                   to={`/cars/${active.car.slug}`}
-                  className="pressable mt-2.5 flex items-center gap-2.5 rounded-2xl bg-black/[0.035] p-1.5 pr-3 ring-1 ring-black/[0.04] transition-transform active:scale-[0.98]"
+                  className="pressable mx-1 mt-2 flex items-center gap-2.5 rounded-xl bg-panel p-1 pr-3 transition-transform active:scale-[0.98]"
                 >
                   {active.car.image && <Img src={active.car.image} alt="" className="h-9 w-12 shrink-0 rounded-xl object-cover" />}
-                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-accent">{active.car.make} {active.car.model}</span>
-                  <span className="shrink-0 text-caption font-semibold text-accent">View car</span>
+                  <span className="min-w-0 flex-1 truncate text-detail font-semibold text-ink">{active.car.make} {active.car.model}</span>
+                  <span className="shrink-0 text-caption font-semibold text-accent">View</span>
                   <Icon name="chevronRight" size={15} className="shrink-0 text-faint" />
                 </Link>
               )}
@@ -1107,7 +1106,7 @@ export default function Messages() {
             </div>
 
             {readOnlyBar ?? (
-            <div className="shrink-0 bg-gradient-to-t from-chat via-chat to-chat/0 px-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] pt-2">
+            <div className="shrink-0 border-t border-black/[0.06] bg-white px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-2">
               {profile?.is_owner && (
                 <div className="mb-2 flex items-center gap-1.5">
                   <span className="text-caption text-muted">Sending as</span>
@@ -1142,13 +1141,13 @@ export default function Messages() {
                 </div>
               )}
               <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = ''; }} />
-              <div className="flex items-end gap-1.5 rounded-[28px] bg-white p-1.5 shadow-[0_8px_28px_-10px_rgba(22,22,26,0.3)] ring-1 ring-black/[0.05] transition-shadow focus-within:shadow-[0_10px_32px_-10px_rgba(0,133,54,0.35)] focus-within:ring-accent/40">
+              <div className="flex items-end gap-1 rounded-[24px] bg-panel p-1 transition-colors focus-within:bg-black/[0.06]">
                 <button
                   type="button"
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => photoInputRef.current?.click()}
                   aria-label="Attach a photo"
-                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-accent transition-transform active:scale-90 active:bg-accent/10"
+                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full text-ink-soft transition-transform active:scale-90 active:bg-black/[0.06]"
                 >
                   <Icon name="image" size={20} />
                 </button>
@@ -1170,14 +1169,14 @@ export default function Messages() {
                   }}
                   placeholder="Write a message…"
                   enterKeyHint="send"
-                  className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-3.5 py-[10px] text-[16px] leading-[22px] text-accent outline-none placeholder:text-faint"
+                  className="max-h-[120px] min-w-0 flex-1 resize-none bg-transparent px-2 py-[9px] text-[16px] leading-[22px] text-ink outline-none placeholder:text-faint"
                 />
                 <button
                   // Do not take focus from the field: the keyboard stays up and nothing resizes.
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => send()}
                   disabled={!text.trim() && !photo}
-                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-b from-accent-bright to-accent text-white shadow-[0_6px_14px_-4px_rgba(0,133,54,0.6)] transition-[opacity,transform,background,box-shadow] duration-200 active:scale-90 disabled:bg-none disabled:bg-panel disabled:text-faint disabled:shadow-none"
+                  className="pressable grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-white transition-[opacity,transform,background] duration-200 active:scale-90 disabled:bg-transparent disabled:text-faint"
                   aria-label="Send"
                 >
                   <Icon name="send" size={18} />
