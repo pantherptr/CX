@@ -1344,6 +1344,10 @@
     50% { translate: 0 -0.55rem; }
   }
   @media (prefers-reduced-motion: reduce) { .signal-float { animation: none; } }
+  /* the sweep of light over the chrome-green bat of the logo */
+  .cx-chrome-sheen { animation: cx-chrome-sheen 2.6s ease-in-out infinite; }
+  @keyframes cx-chrome-sheen { 0% { transform: translateX(0); } 100% { transform: translateX(1250px); } }
+  @media (prefers-reduced-motion: reduce) { .cx-chrome-sheen { animation: none; opacity: 0; } }
   .hero-glyph {
     position: relative;
     display: inline-block;

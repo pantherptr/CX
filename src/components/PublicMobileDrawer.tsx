@@ -1,5 +1,5 @@
 import ThemeSwitch from './ThemeSwitch';
-import { FlyingMark } from './FlyingMark';
+import { CxBatIntro } from './CxBatIntro';
 import { useEffect } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -78,7 +78,7 @@ export default function PublicMobileDrawer({
             >
               {/* -------- Compact header: logo + close, nothing else -------- */}
               <div className="flex h-[calc(4rem+env(safe-area-inset-top,0px))] shrink-0 items-center justify-between border-b border-line px-5 pt-safe">
-                <Link to="/" onClick={() => onClose()} aria-label="CX home" className="inline-flex min-h-11 items-center"><FlyingMark src="/brand/cx-bat.webp" width={220} height={79} className="h-9" /></Link>
+                <Link to="/" onClick={() => onClose()} aria-label="CX home" className="inline-flex min-h-11 items-center"><CxBatIntro className="h-9" /></Link>
                 <button
                   onClick={() => onClose()}
                   className="grid h-10 w-10 place-items-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink"
