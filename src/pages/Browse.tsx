@@ -317,6 +317,15 @@ export default function Browse() {
     const id = window.setTimeout(go, 60);
     return () => window.clearTimeout(id);
   }, [mapFirst, phone]);
+  // when Safari's toolbar opens it no longer floats over the page: the strip it covers shows the canvas colour,
+  // which is plain white unless the root has a real colour. Give it the sheet's own, only while on this page.
+  useEffect(() => {
+    if (!phone) return;
+    const root = document.documentElement;
+    const prev = root.style.backgroundColor;
+    root.style.backgroundColor = 'var(--color-bg)';
+    return () => { root.style.backgroundColor = prev; };
+  }, [phone]);
   const goList = () => window.scrollTo({ top: window.innerHeight * 0.5 - 57.6 + window.innerHeight * 0.42, behavior: 'smooth' });
   const goMap = () => window.scrollTo({ top: 0, behavior: 'smooth' });
   const [bookedByCar, setBookedByCar] = useState<Map<string, BookedRange[]>>(new Map());
