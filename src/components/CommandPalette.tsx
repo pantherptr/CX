@@ -18,6 +18,8 @@ interface Entry {
   label: string;
   hint?: string;
   icon: IconName;
+  /** a logo image shown instead of the icon (SIGNAL's S) */
+  img?: string;
   keywords?: string;
   run: () => void;
 }
@@ -36,13 +38,16 @@ function Panel({ onClose }: { onClose: () => void }) {
 
   const entries = useMemo<Entry[]>(() => {
     const out: Entry[] = [];
-    const page = (id: string, label: string, to: string, icon: IconName, keywords = '') =>
-      out.push({ id, group: t('Go to'), label: t(label), icon, keywords, run: go(to) });
+    const page = (id: string, label: string, to: string, icon: IconName, keywords = '', img?: string) =>
+      out.push({ id, group: t('Go to'), label: t(label), icon, img, keywords, run: go(to) });
     page('browse', 'Browse cars', '/browse', 'cars', 'rent garage fleet');
     page('how', 'How it works', '/how-it-works', 'route', 'steps');
     page('list', 'List your car', '/list-your-car', 'plus', 'host earn');
-    page('signal', 'SIGNAL', '/signal', 'sparkles', 'feed community social');
-    page('reels', 'Reels', '/signal/reels', 'play', 'video');
+    const S = '/brand/signal-s.webp';
+    page('signal', 'SIGNAL', '/signal', 'sparkles', 'feed official news', S);
+    page('community', 'SIGNAL Community', '/signal/community', 'users', 'feed people social posts', S);
+    page('spotlight', 'SIGNAL Spotlight', '/signal/spotlight', 'sparkles', 'best work picked', S);
+    page('reels', 'SIGNAL Reels', '/signal/reels', 'play', 'video', S);
     page('about', 'About CX', '/about', 'info');
     page('help', 'Help centre', '/help', 'headset', 'support faq');
     if (session) {
@@ -162,8 +167,8 @@ function Panel({ onClose }: { onClose: () => void }) {
                     onClick={() => choose(e)}
                     className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${i === active ? 'bg-accent-bright/12 text-ink' : 'text-ink'}`}
                   >
-                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${i === active ? 'bg-accent-bright/20 text-accent-700' : 'bg-panel text-muted'}`}>
-                      <Icon name={e.icon} size={16} />
+                    <span className={`grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg ${e.img ? 'bg-[#050605]' : i === active ? 'bg-accent-bright/20 text-accent-700' : 'bg-panel text-muted'}`}>
+                      {e.img ? <img src={e.img} alt="" draggable={false} className="w-[1.65rem] object-contain" /> : <Icon name={e.icon} size={16} />}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-detail font-medium">{e.label}</span>
                     {e.hint && <span className="shrink-0 truncate text-label text-muted">{e.hint}</span>}

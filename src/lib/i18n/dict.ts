@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["SIGNAL Community", "SIGNAL Community", "SIGNAL Comunitate", "SIGNAL Comunidad"],
+  ["SIGNAL Spotlight", "SIGNAL Spotlight", "SIGNAL Spotlight", "SIGNAL Spotlight"],
+  ["SIGNAL Reels", "SIGNAL Reels", "SIGNAL Reels", "SIGNAL Reels"],
   ["Go to", "Vai a", "Mergi la", "Ir a"],
   ["Actions", "Azioni", "Acțiuni", "Acciones"],
   ["Cars in this city", "Auto in questa città", "Mașini în acest oraș", "Coches en esta ciudad"],

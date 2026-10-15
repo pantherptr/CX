@@ -1,3 +1,4 @@
+import { SignalS } from '../SignalLogo';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../Icon';
@@ -283,7 +284,7 @@ export function SignalSearchOverlay({ query }: { query: string }) {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-20 text-center">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="search" size={24} /></span>
+              <SignalS size={64} />
               <p className="max-w-[16rem] text-detail text-muted">Search Signal — people, news, cars, offers…</p>
             </div>
           )}
