@@ -69,20 +69,72 @@ export async function searchPlaces(query: string, near?: [number, number], signa
   }
 }
 
-export async function reversePlace(lat: number, lng: number): Promise<Place | null> {
+/** fetch with a deadline: a slow public geocoder must never keep the host waiting */
+async function fetchWithin(url: string, ms: number, signal?: AbortSignal): Promise<Response | null> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), ms);
+  const onAbort = () => ctrl.abort();
+  signal?.addEventListener('abort', onAbort);
   try {
-    const res = await fetch(
-      GEOAPIFY_KEY
-        ? `${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`
-        : `${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`,
-    );
-    if (!res.ok) return null;
-    const json = (await res.json()) as { features?: Feature[] };
-    const f = json.features?.[0];
-    return f ? { ...toPlace(f), lat, lng } : null;
+    const res = await fetch(url, { signal: ctrl.signal });
+    return res.ok ? res : null;
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
   }
+}
+
+const reverseCache = new Map<string, Place | null>();
+
+/** The address at a point. Photon first (3.5 s at most), then Nominatim as a second opinion; remembered per spot. */
+export async function reversePlace(lat: number, lng: number, signal?: AbortSignal): Promise<Place | null> {
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  if (reverseCache.has(key)) {
+    const hit = reverseCache.get(key);
+    return hit ? { ...hit, lat, lng } : null;
+  }
+  const first = await fetchWithin(
+    GEOAPIFY_KEY
+      ? `${GEOAPIFY}/reverse?lat=${lat}&lon=${lng}&lang=en&format=geojson&apiKey=${GEOAPIFY_KEY}`
+      : `${BASE}/reverse?lat=${lat}&lon=${lng}&lang=en`,
+    3500,
+    signal,
+  );
+  if (first) {
+    try {
+      const json = (await first.json()) as { features?: Feature[] };
+      const f = json.features?.[0];
+      if (f) {
+        const place = { ...toPlace(f), lat, lng };
+        reverseCache.set(key, place);
+        return place;
+      }
+    } catch { /* fall through to the second opinion */ }
+  }
+  if (signal?.aborted) return null;
+  const second = await fetchWithin(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=en&lat=${lat}&lon=${lng}`, 5000, signal);
+  if (second) {
+    try {
+      const j = (await second.json()) as {
+        display_name?: string;
+        name?: string;
+        address?: { house_number?: string; road?: string; pedestrian?: string; postcode?: string; city?: string; town?: string; village?: string; suburb?: string; country?: string };
+      };
+      const a = j.address ?? {};
+      const road = a.road || a.pedestrian || '';
+      const street = road ? `${road}${a.house_number ? ` ${a.house_number}` : ''}` : '';
+      const city = a.city || a.town || a.village || a.suburb;
+      const parts = [street || j.name || null, [a.postcode, city].filter(Boolean).join(' ') || null, a.country || null].filter(Boolean) as string[];
+      if (parts.length) {
+        const place: Place = { label: parts.join(', '), short: street || j.name || city || '', lat, lng, city };
+        reverseCache.set(key, place);
+        return place;
+      }
+    } catch { /* nothing more to try */ }
+  }
+  return null;
 }
 
 /** Straight-line distance in km. */

@@ -34,6 +34,8 @@ export function LocationPicker({
   valueRef.current = value;
   const [text, setText] = useState(value?.label ?? '');
   const [ready, setReady] = useState(false);
+  const [resolving, setResolving] = useState(false);
+  const seq = useRef(0);
   const cityCenter = CITY_COORDS[city];
 
   // Build the map once.
@@ -63,12 +65,9 @@ export function LocationPicker({
         el.style.cssText = `width:${W}px;height:${Math.round(W * 1.26)}px;cursor:grab;filter:drop-shadow(0 3px 3px rgba(0,0,0,0.35))`;
         el.innerHTML = cxFlagMarkup();
         const m = new maplibregl.Marker({ element: el, draggable: true, anchor: 'bottom', offset: [-(CX_FLAG_TIP_X - 0.5) * W, 0] }).setLngLat(lngLat).addTo(map);
-        m.on('dragend', async () => {
+        m.on('dragend', () => {
           const ll = m.getLngLat();
-          const p = await reversePlace(ll.lat, ll.lng);
-          const label = p?.label || valueRef.current?.label || `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
-          setText(label);
-          onChangeRef.current({ lat: ll.lat, lng: ll.lng, label });
+          void settle(ll.lat, ll.lng);
         });
         markerRef.current = m;
       };
@@ -79,14 +78,11 @@ export function LocationPicker({
         if (valueRef.current) makeMarker([valueRef.current.lng, valueRef.current.lat]);
         setReady(true);
       });
-      map.on('click', async (e) => {
+      map.on('click', (e) => {
         const { lng, lat } = e.lngLat;
         if (markerRef.current) markerRef.current.setLngLat([lng, lat]);
         else makeMarker([lng, lat]);
-        const p = await reversePlace(lat, lng);
-        const label = p?.label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        setText(label);
-        onChangeRef.current({ lat, lng, label });
+        void settle(lat, lng);
       });
     })();
     return () => { cancelled = true; markerRef.current = null; mapRef.current?.remove(); mapRef.current = null; };
@@ -95,6 +91,21 @@ export function LocationPicker({
 
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  /** The pin is placed at once (the position is saved the moment it lands); the address text catches up when
+   *  the geocoder answers, unless the pin has been moved again in the meantime. */
+  const settle = async (lat: number, lng: number) => {
+    const mine = ++seq.current;
+    const provisional = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    setResolving(true);
+    onChangeRef.current({ lat, lng, label: provisional });
+    const p = await reversePlace(lat, lng);
+    if (mine !== seq.current) return;
+    setResolving(false);
+    const label = p?.label || provisional;
+    setText(label);
+    onChangeRef.current({ lat, lng, label });
+  };
 
   // When the city changes and nothing is placed yet, show that city.
   useEffect(() => {
@@ -108,6 +119,8 @@ export function LocationPicker({
       if (markerRef.current) markerRef.current.setLngLat([p.lng, p.lat]);
       else (map as unknown as { __make?: (l: [number, number]) => void }).__make?.([p.lng, p.lat]);
     }
+    seq.current += 1;
+    setResolving(false);
     onChange({ lat: p.lat, lng: p.lng, label: p.label });
   };
 
@@ -129,7 +142,13 @@ export function LocationPicker({
           </p>
         )}
       </div>
-      {value && !/\d/.test(value.label.split(',')[0] ?? '') && (
+      {resolving && (
+        <p className="mt-2 flex items-center gap-2 text-caption font-medium text-muted">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-ink" />
+          Pin placed — finding the address…
+        </p>
+      )}
+      {value && !resolving && !/\d/.test(value.label.split(',')[0] ?? '') && (
         <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-warn/15 px-3 py-2 text-caption font-medium text-warn-ink">
           <Icon name="info" size={14} className="mt-0.5 shrink-0" />
           This address has no street number. Add it in the search box, or drag the pin onto the exact door so renters find the right spot.
