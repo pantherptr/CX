@@ -19,7 +19,7 @@
         if (t === 'dark') {
           document.documentElement.dataset.theme = 'dark';
           document.documentElement.style.colorScheme = 'dark';
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#050605');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000000');
           document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', 'black');
         }
       } catch (e) {}
@@ -38,7 +38,7 @@
          happened the first time this was written unlayered: the dark
          background never actually let go, and bled through as a black
          backdrop behind every page's own layout gaps site-wide. -->
-    <style>@layer base { body { background: #fbfbf9; } html[data-theme='dark'], html[data-theme='dark'] body { background: #050605; } }</style>
+    <style>@layer base { body { background: #fbfbf9; } html[data-theme='dark'], html[data-theme='dark'] body { background: #000000; } }</style>
     <link rel="preload" as="image" href="/brand/loader-car.webp" />
     <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
     <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />

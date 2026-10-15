@@ -84,7 +84,7 @@ export function FindCarDeck({ city }: { city?: string | null }) {
           <div className="flex h-full flex-col">
             <div className="relative min-h-0 flex-1 bg-panel">
               <Img src={unsplash(car.images[0], 900)} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover" />
-              <span className="absolute bottom-3 left-3 rounded-full bg-white/92 px-3 py-1.5 text-detail font-semibold text-ink shadow-hair backdrop-blur">
+              <span className="absolute bottom-3 left-3 rounded-full bg-surface/90 px-3 py-1.5 text-detail font-semibold text-ink shadow-hair backdrop-blur">
                 {eur(car.pricePerDay)}
                 <span className="font-normal text-muted"> / {t('day')}</span>
               </span>

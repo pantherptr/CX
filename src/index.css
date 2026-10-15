@@ -2195,20 +2195,22 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 html[data-theme='dark'] {
-  --color-bg: #050605;
-  --color-surface: #0b0c0b;
-  --color-panel: #131513;
-  --color-panel-2: #1a1c1a;
+  /* true black, the way X/Twitter does it: one black for the page and the cards (told apart by a hairline),
+     and a single cool grey for the raised/secondary surfaces — no near-black steps in between */
+  --color-bg: #000000;
+  --color-surface: #000000;
+  --color-panel: #16181c;
+  --color-panel-2: #202327;
   --color-chat: var(--color-bg);
   --color-chat-2: var(--color-bg);
   --color-chat-3: var(--color-bg);
   --color-warn-ink: #f0b53a;
-  --color-ink: #f4f4ef;
-  --color-ink-soft: #d6d6cf;
-  --color-muted: #a2a29a;
-  --color-faint: #74746c;
-  --color-line: #232623;
-  --color-line-strong: #343834;
+  --color-ink: #e7e9ea;
+  --color-ink-soft: #cfd3d6;
+  --color-muted: #8b9096;
+  --color-faint: #5f656b;
+  --color-line: #2f3336;
+  --color-line-strong: #3e4144;
   --color-accent: #2fe068;
   --color-accent-600: #22c957;
   --color-accent-700: #19ad49;
@@ -2217,7 +2219,7 @@ html[data-theme='dark'] {
   --color-danger: #ff7a6a;
   --color-info: #7aa2ff;
   --color-star: #f0b53a;
-  --hero-top: #101410;
+  --hero-top: #000000;
   --hero-ghost-a: rgba(200, 206, 198, 0.42);
   --hero-ghost-b: rgba(170, 176, 168, 0.2);
   --hero-ghost-c: rgba(150, 156, 148, 0);
@@ -2588,3 +2590,11 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .sig-in, .sig-road, .sig-in.sig-road, .sig-road:not(.sig-in) { animation: none; opacity: 1; transform: none; }
 }
+
+/* the S in the SIGNAL tab / quick control: it comes in once, then its green slash catches the light now and then */
+@keyframes sig-shine {
+  0%, 78%, 100% { filter: brightness(1); }
+  88% { filter: brightness(1.8); }
+}
+.sig-in.sig-slash { animation: sig-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards, sig-shine 5.5s ease-in-out 1.4s infinite; }
+@media (prefers-reduced-motion: reduce) { .sig-in.sig-slash { animation: none; opacity: 1; transform: none; filter: none; } }

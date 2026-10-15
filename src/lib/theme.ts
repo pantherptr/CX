@@ -10,7 +10,7 @@ const LEGACY_KEY = 'cx-gateway-theme';
 const SIGNAL_KEY = 'cx-signal-theme';
 
 /** Browser chrome colours (iOS status bar / Android address bar) per theme. */
-export const CHROME: Record<Theme, string> = { light: '#fbfbf9', dark: '#050605' };
+export const CHROME: Record<Theme, string> = { light: '#fbfbf9', dark: '#000000' };
 
 function read(): Theme {
   try {
@@ -183,7 +183,7 @@ if (typeof document !== 'undefined') paint();
 
 /** For a page that is dark whatever the theme (the SIGNAL gate): the page background and Safari's bars take
  *  that colour while it is on screen, so no light strip shows above or below it. */
-export function useAlwaysDarkChrome(colour = '#0a0b0a') {
+export function useAlwaysDarkChrome(colour = '#000000') {
   useEffect(() => {
     const root = document.documentElement;
     const app = document.getElementById('root');
