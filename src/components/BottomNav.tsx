@@ -177,7 +177,9 @@ const BAR_BOTTOM = IS_STANDALONE
     too, back when that game supplied its own full bottom nav — SIGNAL is
     a single feed with no nav of its own, so the site's tab bar is the
     only way back on mobile and must stay visible there. */
-const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//];
+/** The Admin and Owner dashboards are back-office pages with their own header and long tables: the member tab bar
+    would float over their content (it did, on any window narrower than a laptop), so it stays hidden there. */
+const OWNS_BOTTOM_BAR = [/^\/cars\//, /^\/book\//, /^\/admin(\/|$)/, /^\/owner(\/|$)/];
 
 /** Single source of truth for "is the bottom tab bar showing right now" —
     shared with App.tsx so it can reserve matching scroll padding. */
