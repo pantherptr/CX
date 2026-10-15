@@ -1109,6 +1109,7 @@ export async function uploadEmpirePostMedia(
   const stem = `${uid}/${crypto.randomUUID()}`;
   // photos: the smaller copies go up first, and only when all are there is the original marked as "has copies"
   let path: string;
+  let copies: string[] = []; // the smaller copies already uploaded, removed again if the main upload fails
   if (file.type.startsWith('image/')) {
     const plan = await planImageUpload(stem, file);
     const bucket = supabase.storage.from(MEDIA_BUCKET);
@@ -1121,34 +1122,40 @@ export async function uploadEmpirePostMedia(
     }
     if (!marked && stored.length) await bucket.remove(stored);
     path = marked && plan.markedPath ? plan.markedPath : plan.plainPath;
+    copies = marked ? stored : [];
   } else {
     const ext = file.name.split('.').pop()?.toLowerCase() || 'mp4';
     path = `${stem}.${ext}`;
   }
-  if (!onProgress) {
-    const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
-    if (error) throw error;
+  try {
+    if (!onProgress) {
+      const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { cacheControl: '31536000', upsert: false });
+      if (error) throw error;
+      return { url: mediaUrlFor(path), path };
+    }
+    // With a progress callback the upload goes through XHR (fetch cannot report upload progress): the same
+    // REST call the client library makes, with the member's own token.
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    const base = import.meta.env.VITE_SUPABASE_URL as string;
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${base}/storage/v1/object/${MEDIA_BUCKET}/${path}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`);
+      xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+      xhr.setRequestHeader('x-upsert', 'false');
+      xhr.setRequestHeader('cache-control', 'max-age=31536000');
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? (onProgress(1), resolve()) : reject(new Error(`Upload failed (${xhr.status})`)));
+      xhr.onerror = () => reject(new Error('Upload failed — check the connection and try again.'));
+      xhr.send(file);
+    });
     return { url: mediaUrlFor(path), path };
+  } catch (e) {
+    if (copies.length) void supabase.storage.from(MEDIA_BUCKET).remove(copies);
+    throw e;
   }
-  // With a progress callback the upload goes through XHR (fetch cannot report upload progress): the same
-  // REST call the client library makes, with the member's own token.
-  const { data: sess } = await supabase.auth.getSession();
-  const token = sess.session?.access_token;
-  const base = import.meta.env.VITE_SUPABASE_URL as string;
-  await new Promise<void>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${base}/storage/v1/object/${MEDIA_BUCKET}/${path}`);
-    xhr.setRequestHeader('Authorization', `Bearer ${token ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`);
-    xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_ANON_KEY as string);
-    xhr.setRequestHeader('x-upsert', 'false');
-    xhr.setRequestHeader('cache-control', 'max-age=31536000');
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? (onProgress(1), resolve()) : reject(new Error(`Upload failed (${xhr.status})`)));
-    xhr.onerror = () => reject(new Error('Upload failed — check the connection and try again.'));
-    xhr.send(file);
-  });
-  return { url: mediaUrlFor(path), path };
 }
 
 export async function markEmpireFeedSeen(): Promise<void> {

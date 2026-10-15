@@ -136,7 +136,6 @@ export function SignalSearchOverlay({ query }: { query: string }) {
     return () => window.clearTimeout(handle);
   }, [query]);
 
-  if (hidden) return null;
 
   const rememberPerson = (p: SignalPeopleResult) => {
     const entry: RecentPerson = { id: p.id, fullName: p.fullName, avatarUrl: p.avatarUrl, username: p.username };
@@ -185,6 +184,9 @@ export function SignalSearchOverlay({ query }: { query: string }) {
   const searchFor = (q: string) => window.dispatchEvent(new CustomEvent(SIGNAL_SEARCH_EVENT, { detail: q }));
   const peopleState = peopleSearching ? 'loading' : !people ? 'idle' : people.length === 0 ? 'empty' : 'results';
   const postsState = postsSearching ? 'loading' : !posts ? 'idle' : posts.length === 0 ? 'empty' : 'results';
+
+  // (kept below every hook: returning earlier changed the number of hooks between renders)
+  if (hidden) return null;
 
   return (
     <motion.div
