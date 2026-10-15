@@ -1,7 +1,16 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CxFlagC } from '../components/CxFlag';
 
 export default function NotFound() {
+  // the server answers 200 for every path (single-page app): tell search engines this one is not a page
+  useEffect(() => {
+    const m = document.createElement('meta');
+    m.name = 'robots';
+    m.content = 'noindex';
+    document.head.appendChild(m);
+    return () => { m.remove(); };
+  }, []);
   return (
     <div className="container-page flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
       <CxFlagC className="h-44 w-auto text-ink" />

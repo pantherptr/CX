@@ -66,7 +66,7 @@ export default function Login() {
       <AuthItem stop>
         <p className="mt-6 text-center text-body text-muted">
           New to CX?{' '}
-          <Link to="/signup" className="font-semibold text-ink underline underline-offset-2">Create an account</Link>
+          <Link to="/signup" className="hit-44 font-semibold text-ink underline underline-offset-2">Create an account</Link>
         </p>
       </AuthItem>
     </AuthCard>

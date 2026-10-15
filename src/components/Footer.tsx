@@ -34,7 +34,7 @@ export function Footer() {
           <p>{t('© {year} CX. All rights reserved.', { year: new Date().getFullYear() })}</p>
           <p className="flex items-center gap-4">
             <span>{langLabel}</span>
-            <button type="button" onClick={resetCountry} className="underline-offset-2 transition-colors hover:text-ink hover:underline">
+            <button type="button" onClick={resetCountry} className="hit-44 underline-offset-2 transition-colors hover:text-ink hover:underline">
               {t('Change country')}
             </button>
           </p>

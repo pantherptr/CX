@@ -428,6 +428,13 @@ export default function Browse() {
             </div>
           </div>
 
+          {/* While the cars load, the deck's place is kept (otherwise the filters below jump down by 400 px) */}
+          {loading && !error && !mapView && (
+            <div aria-hidden="true" className="-mx-1 md:hidden" style={{ height: 424 }}>
+              <div className="skeleton mx-1 mt-8 h-[330px] rounded-[28px]" />
+            </div>
+          )}
+
           {/* On the phone: the swipe deck first, starting from the city in the filter below */}
           {!loading && !error && !mapView && (
             <div className="-mx-1 mb-6 md:hidden">
