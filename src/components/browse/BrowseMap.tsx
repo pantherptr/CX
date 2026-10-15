@@ -155,7 +155,7 @@ export function BrowseMap({
     const car = placedRef.current.find((c) => c.id === id);
     const pos = car ? positionOf(car, exactRef.current) : null;
     const map = mapRef.current;
-    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), duration: 450 });
+    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), padding: variantRef.current === 'main' ? { bottom: 180 } : undefined, duration: 450 });
     if (!scrollCard) return;
     const idx = placedRef.current.findIndex((c) => c.id === id);
     const row = strip.current;
@@ -258,7 +258,7 @@ export function BrowseMap({
     if (id && id !== focusId) {
       setFocusId(id);
       const pos = positionOf(placed[best], exact);
-      if (pos) mapRef.current?.easeTo({ center: pos, duration: 350 });
+      if (pos) mapRef.current?.easeTo({ center: pos, padding: { bottom: 180 }, duration: 350 });
     }
   };
 
@@ -292,9 +292,11 @@ export function BrowseMap({
     if (pts.length === 0) return;
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
-    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: 70, maxZoom: exact ? 15.5 : 14, duration: 900 });
+    // on a phone the card sheet covers the bottom of the map: the pins are framed above it
+    const bottom = variant === 'main' && placed.length > 0 ? 200 : 70;
+    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: { top: 70, left: 60, right: 60, bottom }, maxZoom: exact ? 15.5 : 14, duration: 900 });
     setMoved(false);
-  }, [city, cars, ready, exact, areaActive]);
+  }, [city, cars, ready, exact, areaActive, variant, placed.length]);
 
   const applyArea = () => {
     const map = mapRef.current;
