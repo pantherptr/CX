@@ -386,7 +386,7 @@ export default function Browse() {
         {/* Results */}
         <div className="min-w-0 flex-1">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <h1 className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem]">
+            <h1 className={`font-display text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem] ${mapOnly ? 'sr-only' : ''}`}>
               {t('Browse cars')}
             </h1>
             <div className="flex items-center gap-2.5">
@@ -456,7 +456,7 @@ export default function Browse() {
                 className="h-11 w-full rounded-full border border-line bg-surface pl-11 pr-4 text-[16px] text-ink outline-none transition-colors placeholder:text-faint focus:border-ink sm:text-body"
               />
             </div>
-            <ConciergeLauncher className="group inline-flex h-11 shrink-0 items-center gap-2.5 rounded-full border border-line bg-surface pl-1.5 pr-4 text-detail font-semibold text-ink transition-colors hover:border-ink" {...findCxScramble}>
+            <ConciergeLauncher className={`group h-11 shrink-0 items-center gap-2.5 rounded-full border border-line bg-surface pl-1.5 pr-4 text-detail font-semibold text-ink transition-colors hover:border-ink ${mapOnly ? 'hidden' : 'inline-flex'}`} {...findCxScramble}>
               <ConciergeMark size={32} />
               {findCxScramble.display} <Icon name="arrowRight" size={14} className="transition-transform group-hover:translate-x-0.5" />
             </ConciergeLauncher>
@@ -490,7 +490,7 @@ export default function Browse() {
                   />
                 </div>
               ) : mapOnly ? (
-                <BrowseMap variant="main" cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-14.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
+                <BrowseMap variant="main" cars={results} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-[calc(100dvh-13.5rem)] min-h-[26rem] rounded-[24px] border border-line" />
               ) : (
                 <motion.div layout className={mapBeside ? 'space-y-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
                   <AnimatePresence mode="popLayout">
