@@ -129,6 +129,12 @@ export function LocationPicker({
           </p>
         )}
       </div>
+      {value && !/\d/.test(value.label.split(',')[0] ?? '') && (
+        <p className="mt-2 flex items-start gap-1.5 rounded-xl bg-warn/15 px-3 py-2 text-caption font-medium text-warn-ink">
+          <Icon name="info" size={14} className="mt-0.5 shrink-0" />
+          This address has no street number. Add it in the search box, or drag the pin onto the exact door so renters find the right spot.
+        </p>
+      )}
       <p className="mt-2 flex items-start gap-1.5 text-caption text-muted">
         <Icon name={value ? 'checkCircle' : 'info'} size={14} className={`mt-0.5 shrink-0 ${value ? 'text-accent' : ''}`} />
         {value
