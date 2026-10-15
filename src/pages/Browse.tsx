@@ -486,13 +486,6 @@ export default function Browse() {
                 {loading ? t('Loading…') : shown.length === 1 ? t('1 car') : t('{n} cars', { n: shown.length })}
               </span>
             </button>
-            <button
-              type="button"
-              onClick={goMap}
-              className="absolute right-0 top-2 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-caption font-semibold text-white active:scale-95"
-            >
-              <Icon name="pin" size={14} /> {t('Map')}
-            </button>
           </div>
           <div className="mb-3 flex items-center justify-between gap-3 border-b border-line pb-3">
             <span className="text-caption text-muted">{area ? t('In the map area') : t('Sorted by')}</span>
