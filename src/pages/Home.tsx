@@ -15,7 +15,7 @@ import { FindCarDeck } from '../components/FindCarDeck';
 import { ASSISTANT_NAME, ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useScramble } from '../lib/useScramble';
 import { useCars } from '../lib/data/cars';
-import { unsplash, unsplashSrcSet } from '../lib/img';
+import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
@@ -265,9 +265,6 @@ export default function Home() {
   const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
 
-  // A real car photo for the delivery story (second-best rated so it
-  // differs from the first fleet card).
-  const deliveryImage = allCars?.[1]?.images[0] ?? allCars?.[0]?.images[0];
   // The car the "Find your CX" preview suggests: a real one, from Milan if the fleet has it.
   const glimpseCar = allCars?.find((c) => c.city === 'Milan') ?? allCars?.[0];
   // The hero has a little depth: headline, car and ghost line drift by different amounts as you scroll.
@@ -302,10 +299,9 @@ export default function Home() {
     io.observe(el);
     return () => io.disconnect();
   }, [howNear]);
-  const howImages = [2, 3, 0].map((i) => {
-    const src = allCars?.[i]?.images[0] ?? allCars?.[0]?.images[0];
-    return src ? unsplash(src, 1200) : '/hero-car.webp';
-  });
+  // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
+  const howImages = ['/home/find-1200.webp', '/home/book-1024.webp', '/home/road-1024.webp'];
+  const howPositions = ['64% 50%', '50% 52%', '50% 68%'];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
           {howSteps.map((st, i) => (
@@ -502,6 +498,7 @@ export default function Home() {
                   title: t(st.title),
                   desc: t(st.desc),
                   image: howImages[i],
+                  position: howPositions[i],
                 }))}
               />
             </Suspense>
@@ -516,8 +513,10 @@ export default function Home() {
           column); the story sits under it. */}
       <section className="container-page section-tight">
         <ScrollRevealImage
-          src={deliveryImage ? unsplash(deliveryImage, 1400) : '/hero-car.webp'}
-          srcSet={deliveryImage ? unsplashSrcSet(deliveryImage, [800, 1200, 1600]) : undefined}
+          src="/home/delivery-1024.webp"
+          srcSet="/home/delivery-800.webp 800w, /home/delivery-1024.webp 1024w"
+          position="50% 62%"
+          alt={t('Your car, delivered to your door')}
           className="h-[46svh] min-h-[300px] max-h-[620px] sm:h-[60svh]"
         >
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />

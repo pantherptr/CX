@@ -10,6 +10,7 @@ import { Img } from './motion';
 export function ScrollRevealImage({
   src,
   srcSet,
+  position,
   alt = '',
   className = '',
   fromWidth = 64,
@@ -19,6 +20,8 @@ export function ScrollRevealImage({
 }: {
   src: string;
   srcSet?: string;
+  /** CSS object-position of the photo inside its window (where the cut keeps the subject) */
+  position?: string;
   alt?: string;
   /** Sets the height (the width is the column's). */
   className?: string;
@@ -57,7 +60,7 @@ export function ScrollRevealImage({
             sizes="(min-width: 1024px) 1100px, 100vw"
             alt={alt}
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover" style={position ? { objectPosition: position } : undefined}
             fallback={null}
           />
         </motion.div>
