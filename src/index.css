@@ -2740,3 +2740,14 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @keyframes ds-arm { 0%, 34% { transform: rotate(40deg); } 44%, 90% { transform: rotate(-12deg); } 100% { transform: rotate(40deg); } }
 .ds-line { animation: ds-line 3s ease-in-out infinite; }
 @keyframes ds-line { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* Road scene: the distance counts down, then the car you pick up is revealed (one 10 s loop) */
+.rs-km { opacity: 0; animation: rs-km-0 10s step-end infinite; }
+.rs-km-1 { animation-name: rs-km-1; } .rs-km-2 { animation-name: rs-km-2; } .rs-km-3 { animation-name: rs-km-3; }
+@keyframes rs-km-0 { 0% { opacity: 1; } 18% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes rs-km-1 { 0%, 17.9% { opacity: 0; } 18%, 35.9% { opacity: 1; } 36%, 100% { opacity: 0; } }
+@keyframes rs-km-2 { 0%, 35.9% { opacity: 0; } 36%, 53.9% { opacity: 1; } 54%, 100% { opacity: 0; } }
+@keyframes rs-km-3 { 0%, 53.9% { opacity: 0; } 54%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+.rs-card { opacity: 0; transform-box: fill-box; transform-origin: left center; animation: rs-card 10s cubic-bezier(0.2, 1.3, 0.4, 1) infinite; }
+@keyframes rs-card { 0%, 55% { opacity: 0; transform: scale(0.7) translateX(-20px); } 62% { opacity: 1; transform: scale(1) translateX(0); } 94% { opacity: 1; transform: scale(1) translateX(0); } 100% { opacity: 0; transform: scale(0.96) translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .rs-card { opacity: 1 !important; } .rs-km-0 { opacity: 0 !important; } .rs-km-3 { opacity: 1 !important; } }

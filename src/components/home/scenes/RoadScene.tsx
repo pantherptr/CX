@@ -1,10 +1,12 @@
 import { SceneFrame } from './SceneFrame';
+import { useLocale } from '../../../lib/i18n';
 
 /** "Hit the road": a cartoon sports car cruises into a sunset — hills, skyline and poles slide past at their own speeds,
  *  the road's dashes run, a green route glows ahead of the car and a turn-by-turn chip counts the kilometres. */
 const BLDG: [number, number, number][] = [[0, 40, 36], [24, 30, 44], [54, 50, 30], [88, 26, 54], [120, 44, 34], [150, 34, 46], [188, 54, 28], [220, 28, 50], [256, 46, 32], [290, 32, 42], [320, 52, 30], [352, 30, 48], [384, 42, 34]];
 
-export function RoadScene() {
+export function RoadScene({ car = { name: 'Porsche 911 Carrera S', image: '/home/porsche-900.webp' } }: { car?: { name: string; image: string } }) {
+  const { t } = useLocale();
   return (
     <SceneFrame>
       <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid meet" className="block h-full w-full" aria-hidden>
@@ -24,6 +26,7 @@ export function RoadScene() {
             <stop offset="0" stopColor="#1d1b25" />
             <stop offset="1" stopColor="#0d0c12" />
           </linearGradient>
+          <clipPath id="rs-photo"><rect x="24" y="54" width="86" height="66" rx="10" /></clipPath>
           <filter id="rs-glow" x="-20%" y="-50%" width="140%" height="200%">
             <feGaussianBlur stdDeviation="3" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
@@ -107,7 +110,22 @@ export function RoadScene() {
           <rect x="262" y="58" width="112" height="52" rx="14" fill="#0a1a14" stroke="#18e56b" strokeOpacity="0.7" />
           <path d="M286 92 V78 Q286 70 294 70 H304" stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M301 64 l9 6 l-9 6" stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <text className="rs-km" x="318" y="92" fontSize="16" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">2.4 km</text>
+          {['2.4 km', '1.6 km', '0.8 km'].map((km, i) => (
+            <text key={km} className={`rs-km rs-km-${i}`} x="318" y="92" fontSize="16" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">{km}</text>
+          ))}
+          <text className="rs-km rs-km-3" x="318" y="92" fontSize="14" fontWeight="800" fill="#7dffa8" fontFamily="system-ui, sans-serif">{t('Arrived')}</text>
+        </g>
+        {/* the car you are about to pick up: a real photo and its name, once the route is done */}
+        <g className="rs-card">
+          <rect x="14" y="44" width="228" height="86" rx="16" fill="#0a1a14" fillOpacity="0.9" stroke="#18e56b" strokeOpacity="0.7" />
+          <g clipPath="url(#rs-photo)">
+            <image href={car.image} x="24" y="54" width="86" height="66" preserveAspectRatio="xMidYMid slice" />
+          </g>
+          <text x="118" y="76" fontSize="9.8" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">{car.name}</text>
+          <text x="118" y="90" fontSize="8.4" fill="#9fd9b6" fontFamily="system-ui, sans-serif">Milan · {t('Verified host')}</text>
+          <circle cx="127" cy="108" r="8" fill="#18e56b" />
+          <path d="M123.2 108.2 l3 3.2 l5.2 -6" stroke="#04140c" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="140" y="111.4" fontSize="9.6" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">{t('Keys ready')}</text>
         </g>
         {/* map pin on the horizon */}
         <g className="rs-pin" transform="translate(120 226)">
