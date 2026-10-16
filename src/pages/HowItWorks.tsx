@@ -6,6 +6,7 @@ import { SectionHead } from '../components/primitives';
 import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
 import { Reveal } from '../components/motion';
 import { unsplash } from '../lib/img';
+import { HowPoster } from '../components/home/HowPoster';
 
 const steps: { n: string; title: string; desc: string; icon: IconName; points: string[] }[] = [
   { n: '01', title: 'Find your car', icon: 'search', desc: 'Browse cars from trusted local hosts and filter by everything that matters.', points: ['Search by city, dates and car type', 'Filter on price, brand, features and rating', 'Read real reviews from past trips'] },
@@ -41,6 +42,11 @@ export default function HowItWorks() {
       </PageHero>
 
       <div className="container-page">
+        <Reveal>
+          <div className="mx-auto mt-10 max-w-[34rem] overflow-hidden rounded-[1.75rem] border border-line shadow-[0_30px_60px_-34px_rgba(0,40,15,0.5)] sm:mt-14">
+            <HowPoster className="block h-auto w-full" />
+          </div>
+        </Reveal>
         {/* Timeline — a real sequence, so the numbering earns its place. */}
         <div className="relative mt-14 space-y-6 sm:mt-20 sm:space-y-8">
           <div className="pointer-events-none absolute bottom-10 left-[1.65rem] top-10 hidden w-px bg-gradient-to-b from-accent/40 via-line to-transparent sm:block lg:hidden" aria-hidden="true" />
