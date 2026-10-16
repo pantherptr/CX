@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
@@ -13,6 +14,8 @@ export interface StickyStep {
   title: string;
   desc: string;
   image: string;
+  /** an animated illustration shown instead of the photo */
+  scene?: ReactNode;
   /** CSS object-position that keeps the subject in the cut */
   position?: string;
   alt?: string;
@@ -114,7 +117,7 @@ export default function StickySteps({ steps, stepWord, cta }: { steps: StickySte
               }}
               className="absolute inset-0"
             >
-              <Img src={s.image} alt={s.alt ?? ''} className="h-full w-full object-cover" style={s.position ? { objectPosition: s.position } : undefined} />
+              {s.scene ?? <Img src={s.image} alt={s.alt ?? ''} className="h-full w-full object-cover" style={s.position ? { objectPosition: s.position } : undefined} />}
             </div>
           ))}
         </div>

@@ -10,6 +10,7 @@ import { Img } from './motion';
 export function ScrollRevealImage({
   src,
   srcSet,
+  scene,
   position,
   alt = '',
   className = '',
@@ -20,6 +21,8 @@ export function ScrollRevealImage({
 }: {
   src: string;
   srcSet?: string;
+  /** an animated illustration shown inside the window instead of the photo */
+  scene?: ReactNode;
   /** CSS object-position of the photo inside its window (where the cut keeps the subject) */
   position?: string;
   alt?: string;
@@ -54,15 +57,17 @@ export function ScrollRevealImage({
         style={reduced ? { borderRadius: toRadius } : { clipPath, WebkitClipPath: clipPath }}
       >
         <motion.div className="absolute inset-0" style={reduced ? undefined : { scale }}>
-          <Img
-            src={src}
-            srcSet={srcSet}
-            sizes="(min-width: 1024px) 1100px, 100vw"
-            alt={alt}
-            loading="lazy"
-            className="h-full w-full object-cover" style={position ? { objectPosition: position } : undefined}
-            fallback={null}
-          />
+          {scene ?? (
+            <Img
+              src={src}
+              srcSet={srcSet}
+              sizes="(min-width: 1024px) 1100px, 100vw"
+              alt={alt}
+              loading="lazy"
+              className="h-full w-full object-cover" style={position ? { objectPosition: position } : undefined}
+              fallback={null}
+            />
+          )}
         </motion.div>
         {children}
       </motion.div>

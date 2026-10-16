@@ -1,3 +1,6 @@
+import { DeliveryScene } from '../components/home/scenes/DeliveryScene';
+import { RoadScene } from '../components/home/scenes/RoadScene';
+import { FindScene } from '../components/home/scenes/FindScene';
 import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
@@ -300,8 +303,9 @@ export default function Home() {
     return () => io.disconnect();
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
-  const howImages = ['/home/find-1200.webp', '/home/book-1024.webp', '/home/road-1024.webp'];
-  const howPositions = ['84% 50%', '50% 52%', '50% 68%'];
+  // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
+  const howImages = ['', '/home/book-1024.webp', ''];
+  const howPositions = [undefined, '50% 52%', undefined];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
           {howSteps.map((st, i) => (
@@ -499,6 +503,7 @@ export default function Home() {
                   desc: t(st.desc),
                   image: howImages[i],
                   position: howPositions[i],
+                  scene: i === 0 ? <FindScene /> : i === 2 ? <RoadScene /> : undefined,
                 }))}
               />
             </Suspense>
@@ -513,9 +518,8 @@ export default function Home() {
           column); the story sits under it. */}
       <section className="container-page section-tight">
         <ScrollRevealImage
-          src="/home/delivery-1024.webp"
-          srcSet="/home/delivery-800.webp 800w, /home/delivery-1024.webp 1024w"
-          position="50% 62%"
+          src=""
+          scene={<DeliveryScene />}
           alt={t('Your car, delivered to your door')}
           className="h-[46svh] min-h-[300px] max-h-[620px] sm:h-[60svh]"
         >
