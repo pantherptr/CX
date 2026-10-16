@@ -11,6 +11,7 @@ import { Modal } from '../components/primitives';
 import { Img } from '../components/motion';
 import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
+import { PhotoGridSheet } from '../components/PhotoGrid';
 import { useSnapCarousel, motion } from '../lib/useSnapCarousel';
 import { MiniMap } from '../components/browse/MiniMap';
 import { DistanceFromYou } from '../components/browse/DistanceFromYou';
@@ -156,6 +157,7 @@ export default function CarDetails() {
   const hasAccess = useHasAccess();
   const { isComparing, toggleCompare } = useCompare();
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [gridOpen, setGridOpen] = useState(false);
   const [result, setResult] = useState<{ car: Car; host: Host } | null | undefined>(undefined);
   const [similar, setSimilar] = useState<Car[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -264,6 +266,15 @@ export default function CarDetails() {
             {/* Hero — edge to edge on a phone, a rounded card on a desktop */}
             <div className="relative overflow-hidden lg:rounded-[28px]">
               <HeroPager images={gallery} alt={alt} onOpen={setLightbox} studioFirst={car.catalogHero} />
+              {gallery.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setGridOpen(true)}
+                  className="pressable absolute bottom-9 right-3.5 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/92 px-3.5 py-2 text-caption font-semibold text-ink shadow-pop backdrop-blur active:scale-95 lg:bottom-4"
+                >
+                  <Icon name="grid" size={14} /> {t('Show all photos')}
+                </button>
+              )}
               <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-3.5 sm:p-4">
                 <button onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/browse'))} aria-label={t('Back')} className={`${roundBtn} pointer-events-auto`}>
                   <Icon name="chevronLeft" size={20} />
@@ -484,6 +495,8 @@ export default function CarDetails() {
         </div>
         <div className="p-5"><BookingCard car={car} embedded /></div>
       </Modal>
+
+      <PhotoGridSheet images={gallery} alt={alt} open={gridOpen} onClose={() => setGridOpen(false)} onPick={(i) => { setGridOpen(false); setLightbox(i); }} />
 
       {/* Full-screen photo viewer */}
       <PhotoViewer
