@@ -2669,14 +2669,28 @@ html [data-rmiz-btn-unzoom] { display: none; }
 .fs-caret { animation: fs-caret 1s steps(1) infinite; }
 @keyframes fs-caret { 50% { opacity: 0; } }
 /* pins and card: one 7.5 s loop */
-.fs-pin { animation: fs-pin 7.5s cubic-bezier(0.2, 1.4, 0.4, 1) infinite; opacity: 0; transform-box: view-box; }
-@keyframes fs-pin { 0% { opacity: 0; transform: scale(0); } 6% { opacity: 1; transform: scale(1.15); } 9% { transform: scale(1); } 92% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.8); } }
-.fs-pin-pick { animation-name: fs-pin-pick; }
-@keyframes fs-pin-pick { 0% { opacity: 0; transform: scale(0); } 6% { opacity: 1; transform: scale(1.15); } 9% { transform: scale(1); } 40% { transform: scale(1); } 46% { transform: scale(1.3); } 52% { transform: scale(1.12); } 92% { opacity: 1; transform: scale(1.12); } 100% { opacity: 0; transform: scale(0.8); } }
-.fs-ring { animation: fs-ring 7.5s ease-out infinite; opacity: 0; transform-box: view-box; transform-origin: 150px 262px; }
-@keyframes fs-ring { 0%, 44% { opacity: 0; transform: scale(0.6); } 48% { opacity: 0.9; transform: scale(1); } 62% { opacity: 0; transform: scale(2.2); } 100% { opacity: 0; } }
-.fs-card { animation: fs-card 7.5s cubic-bezier(0.2, 0.9, 0.3, 1) infinite; transform: translateY(90px); opacity: 0; transform-box: view-box; }
-@keyframes fs-card { 0%, 52% { transform: translateY(90px); opacity: 0; } 62% { transform: translateY(0); opacity: 1; } 92% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(90px); opacity: 0; } }
+/* Find scene: one 9 s loop. pins pop, a finger taps one, the card rises with the car's photo */
+.fs-pin { opacity: 0; transform-box: view-box; animation: fs-pin-a 9s cubic-bezier(0.2, 1.4, 0.4, 1) infinite; }
+.fs-pin-b { animation-name: fs-pin-b; } .fs-pin-c { animation-name: fs-pin-c; } .fs-pin-d { animation-name: fs-pin-d; }
+@keyframes fs-pin-a { 0% { opacity: 0; transform: scale(0); } 6% { opacity: 1; transform: scale(1.15); } 9% { transform: scale(1); } 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes fs-pin-b { 0%, 4% { opacity: 0; transform: scale(0); } 10% { opacity: 1; transform: scale(1.15); } 13% { transform: scale(1); } 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes fs-pin-d { 0%, 8% { opacity: 0; transform: scale(0); } 14% { opacity: 1; transform: scale(1.15); } 17% { transform: scale(1); } 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes fs-pin-c { 0%, 12% { opacity: 0; transform: scale(0); } 18% { opacity: 1; transform: scale(1.15); } 21% { transform: scale(1); } 35% { transform: scale(1); } 38% { transform: scale(0.86); } 43% { transform: scale(1.22); } 48% { transform: scale(1.12); } 88% { opacity: 1; transform: scale(1.12); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+.fs-pick-on { animation: fs-pick-on 9s step-end infinite; opacity: 0; }
+@keyframes fs-pick-on { 0%, 38% { opacity: 0; } 39%, 96% { opacity: 1; } 97%, 100% { opacity: 0; } }
+.fs-pick-off { animation: fs-pick-off 9s step-end infinite; }
+@keyframes fs-pick-off { 0%, 38% { opacity: 1; } 39%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
+.fs-ring { opacity: 0; transform-box: view-box; transform-origin: 168px 196px; animation: fs-ring 9s ease-out infinite; }
+@keyframes fs-ring { 0%, 37% { opacity: 0; transform: scale(0.5); } 40% { opacity: 0.95; transform: scale(1); } 54% { opacity: 0; transform: scale(2.3); } 100% { opacity: 0; } }
+.fs-finger { opacity: 0; animation: fs-finger 9s ease-in-out infinite; transform-box: view-box; }
+@keyframes fs-finger { 0%, 22% { opacity: 0; transform: translate(70px, 150px); } 30% { opacity: 1; transform: translate(10px, 12px); } 36% { opacity: 1; transform: translate(0, 0); } 39% { opacity: 1; transform: translate(0, 5px); } 44% { opacity: 1; transform: translate(0, 0); } 52%, 100% { opacity: 0; transform: translate(40px, 90px); } }
+.fs-card { opacity: 0; transform-box: view-box; animation: fs-card 9s cubic-bezier(0.2, 0.9, 0.3, 1) infinite; }
+@keyframes fs-card { 0%, 42% { opacity: 0; transform: translateY(170px); } 52% { opacity: 1; transform: translateY(0); } 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; transform: translateY(170px); } }
+.fs-photo { transform-box: fill-box; transform-origin: center; animation: fs-photo 9s ease-in-out infinite; }
+@keyframes fs-photo { 0%, 50% { transform: scale(1); } 90%, 100% { transform: scale(1.12); } }
+.fs-badge { animation: fs-badge 5s ease-in-out infinite; }
+.fs-badge-b { animation-delay: -2.2s; }
+@keyframes fs-badge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
 /* Road scene */
 .rs-slide-slow { animation: rs-sway-a 14s ease-in-out infinite alternate; }
