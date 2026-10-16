@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { InvestigationsMark } from './InvestigationsMark';
-import { INVESTIGATIONS, agentFor } from '../lib/investigations';
+import { INVESTIGATIONS, INVESTIGATORS, agentFor } from '../lib/investigations';
 import { useLocale } from '../lib/i18n';
 
 /**
@@ -10,7 +11,33 @@ import { useLocale } from '../lib/i18n';
  */
 export function CaseOpenedScene({ seed, className = '' }: { seed: string; className?: string }) {
   const { t } = useLocale();
-  const agent = agentFor(seed).src;
+  const agent = agentFor(seed);
+  // like a game picking your character: faces flick past, slow down, and land on the one assigned to this case
+  const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [phase, setPhase] = useState<'pick' | 'done'>(reduced ? 'done' : 'pick');
+  const [shown, setShown] = useState(reduced ? agent.index : (agent.index + 5) % INVESTIGATORS.length);
+  useEffect(() => {
+    if (phase !== 'pick') return;
+    const delays = [...Array(14).fill(70), 95, 125, 165, 220, 300, 420, 580];
+    const timers: number[] = [];
+    let at = 0;
+    let last = shown;
+    delays.forEach((d, i) => {
+      at += d;
+      const final = i === delays.length - 1;
+      timers.push(window.setTimeout(() => {
+        let next = final ? agent.index : Math.floor(Math.random() * INVESTIGATORS.length);
+        if (!final && next === last) next = (next + 1) % INVESTIGATORS.length;
+        if (final && next === last) { /* already on it */ }
+        last = next;
+        setShown(next);
+      }, at));
+    });
+    timers.push(window.setTimeout(() => setPhase('done'), at + 1100));
+    return () => timers.forEach((id) => window.clearTimeout(id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+  const face = INVESTIGATORS[shown];
   const feather: React.CSSProperties = {
     WebkitMaskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, #000 48%, transparent 100%)',
     maskImage: 'radial-gradient(ellipse 50% 50% at 50% 50%, #000 48%, transparent 100%)',
@@ -43,9 +70,25 @@ export function CaseOpenedScene({ seed, className = '' }: { seed: string; classN
         ))}
       </div>
 
+      {phase === 'pick' ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-white [text-shadow:0_0_10px_rgba(0,255,102,0.7),0_1px_3px_rgba(0,0,0,0.9)]">{t('Assigning an investigator')}</p>
+          <div className="relative grid h-[104px] w-[104px] place-items-center">
+            <span aria-hidden className="cx-pick-ring absolute inset-0 rounded-full" />
+            <img
+              src={face.src}
+              alt=""
+              className="h-[92px] w-[92px] rounded-full bg-black object-cover object-top ring-2 ring-[#00d447]/70"
+              style={{ filter: 'contrast(1.1)' }}
+            />
+          </div>
+          <p key={face.name} className="cx-pick-name mt-2 text-[17px] font-black uppercase tracking-[0.18em] text-white [text-shadow:0_0_14px_rgba(0,255,102,0.55)]">{face.name}</p>
+        </div>
+      ) : (
+        <>
       {/* the investigator: black background screened away, edges dissolved */}
       <img
-        src={agent}
+        src={agent.src}
         alt=""
         className="cx-scene-agent absolute bottom-0 left-[2%] h-[80%] w-auto max-w-[50%] object-cover object-top"
         style={{
@@ -76,9 +119,11 @@ export function CaseOpenedScene({ seed, className = '' }: { seed: string; classN
         <p className="text-[23px] font-black uppercase leading-none tracking-[0.1em] text-white [text-shadow:0_0_18px_rgba(0,255,102,0.55),0_2px_0_rgba(0,0,0,0.6)] sm:text-[28px]">
           {t('Case opened')}
         </p>
-        <p className="mt-2 text-[13px] font-medium text-white/80 [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]">{t('An investigator has your case')}</p>
+        <p className="mt-2 text-[13px] font-medium text-white/80 [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]">{t('{name} will be with you shortly', { name: agent.name })}</p>
         <InvestigationsMark tone="light" size="sm" className="mt-2.5" />
       </div>
+        </>
+      )}
     </div>
   );
 }

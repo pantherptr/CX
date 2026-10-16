@@ -44,6 +44,8 @@ interface ChatMsg {
   offerHuman?: boolean;
   /** a picture shown above the text (the investigations car when a case is opened) */
   image?: string;
+  /** the conversation of the case: the same one that picks the investigator in Messages */
+  caseSeed?: string;
   /** What X did to get there (the "think" trail) and how long it took. */
   steps?: string[];
   seconds?: number;
@@ -527,7 +529,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     setAwaitingProblem(false);
     setMsgs((cur) => [
       ...cur,
-      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.'), image: INVESTIGATIONS.car },
+      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.'), image: INVESTIGATIONS.car, caseSeed: opened.id },
     ]);
   }, [t, userId]);
 
@@ -770,7 +772,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                       </div>
                     )}
                     <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
-                      {m.image && <CaseOpenedScene seed={m.id} className="-ml-[10px] max-w-none" />}
+                      {m.image && <CaseOpenedScene seed={m.caseSeed ?? m.id} className="-ml-[10px] max-w-none" />}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}

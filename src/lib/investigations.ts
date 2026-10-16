@@ -8,9 +8,16 @@ export const INVESTIGATIONS = {
   agentF: '/brand/investigations/agent-f.webp',
 } as const;
 
-/** One of the two investigators, always the same one for the same conversation. */
-export function agentFor(conversationId: string): { src: string; name: string } {
-  let h = 0;
-  for (let i = 0; i < conversationId.length; i++) h = (h * 31 + conversationId.charCodeAt(i)) >>> 0;
-  return h % 2 === 0 ? { src: INVESTIGATIONS.agentM, name: 'Investigator' } : { src: INVESTIGATIONS.agentF, name: 'Investigator' };
+/** The fourteen investigators (art in /brand/investigations/inv-00 … inv-13). */
+export const INVESTIGATORS: { name: string; src: string }[] = [
+  'Marco', 'Giulia', 'Daniele', 'Luca', 'Sofia', 'Matteo', 'Elena',
+  'Andrea', 'Chiara', 'Nico', 'Sara', 'Enzo', 'Marta', 'Leo',
+].map((name, i) => ({ name, src: `/brand/investigations/inv-${String(i).padStart(2, '0')}.webp` }));
+
+/** The investigator of a case: picked at random once, and always the same for the same conversation. */
+export function agentFor(conversationId: string): { src: string; name: string; index: number } {
+  let h = 2166136261;
+  for (let i = 0; i < conversationId.length; i++) h = Math.imul(h ^ conversationId.charCodeAt(i), 16777619) >>> 0;
+  const index = h % INVESTIGATORS.length;
+  return { ...INVESTIGATORS[index], index };
 }

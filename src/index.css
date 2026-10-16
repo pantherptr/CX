@@ -2644,3 +2644,10 @@ html [data-rmiz-btn-unzoom] { display: none; }
     --hero-ghost-c: rgba(160, 168, 158, 0.2);
   }
 }
+
+/* picking the investigator (CaseOpenedScene.tsx) */
+.cx-pick-ring { background: conic-gradient(from 0deg, rgba(0,255,102,0), rgba(0,255,102,0.95), rgba(0,255,102,0)); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); animation: cx-pick-spin 0.9s linear infinite; }
+@keyframes cx-pick-spin { to { transform: rotate(360deg); } }
+.cx-pick-name { animation: cx-pick-name 0.16s ease-out both; }
+@keyframes cx-pick-name { from { opacity: 0.2; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cx-pick-ring, .cx-pick-name { animation: none !important; } }
