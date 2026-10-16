@@ -10,13 +10,11 @@ import { CxMark } from '../components/CxBadge';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead, VerifiedBadge } from '../components/primitives';
-import { Reveal, Img } from '../components/motion';
-import { ScrollRevealImage, ScrollRevealPanel } from '../components/ScrollRevealImage';
+import { Reveal } from '../components/motion';
+import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { FindCarDeck } from '../components/FindCarDeck';
-import { ASSISTANT_NAME, ConciergeLauncher, ConciergeMark } from '../components/Concierge';
-import { useScramble } from '../lib/useScramble';
+import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useCars } from '../lib/data/cars';
-import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { FaqItem } from '../components/FaqItem';
 import { faqs } from '../data/faqs';
@@ -263,11 +261,8 @@ const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).fil
 
 export default function Home() {
   const { t } = useLocale();
-  const startScramble = useScramble(t('Start'));
   const { cars: allCars } = useCars();
 
-  // The car the "Find your CX" preview suggests: a real one, from Milan if the fleet has it.
-  const glimpseCar = allCars?.find((c) => c.city === 'Milan') ?? allCars?.[0];
   // The hero has a little depth: headline, car and ghost line drift by different amounts as you scroll.
   const stageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -302,6 +297,14 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
+  // the cities that have cars right now (with a photo), busiest first
+  const CITY_PHOTOS: Record<string, string> = { Milan: '/home/cities/milan.webp', Florence: '/home/cities/florence.webp', Munich: '/home/cities/munich.webp', Barcelona: '/home/cities/barcelona.webp' };
+  const cityCards = Object.entries(
+    (allCars ?? []).reduce<Record<string, number>>((m, c) => { m[c.city] = (m[c.city] ?? 0) + 1; return m; }, {}),
+  )
+    .filter(([city]) => CITY_PHOTOS[city])
+    .sort((a, b) => b[1] - a[1])
+    .map(([city, count]) => ({ city, count, image: CITY_PHOTOS[city] }));
   const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp'];
   const howPositions = [undefined, '50% 50%', '50% 50%'];
   const howStatic = (
@@ -560,109 +563,57 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= SWIPE — find your car by swiping ================= */}
+      {/* ================= CITIES — where you can drive ================= */}
+      {cityCards.length > 0 && (
+        <section className="container-page section-tight">
+          <Reveal>
+            <p className="eyebrow">{t('Where to drive')}</p>
+            <h2 className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]">{t('Pick a city, hit the road.')}</h2>
+          </Reveal>
+          <div className="scrollbar-none -mx-5 mt-7 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0">
+            {cityCards.map((c) => (
+              <Link
+                key={c.city}
+                to={`/browse?city=${encodeURIComponent(c.city)}`}
+                className="group relative aspect-[4/5] w-[62%] shrink-0 snap-start overflow-hidden rounded-3xl bg-panel shadow-card sm:w-auto"
+              >
+                <img src={c.image} alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                <span className="absolute inset-x-4 bottom-4 text-white">
+                  <span className="block font-display text-[1.5rem] font-semibold leading-none">{t(c.city)}</span>
+                  <span className="mt-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-white/85">
+                    {c.count === 1 ? t('1 car') : t('{n} cars', { n: c.count })} <Icon name="arrowRight" size={13} />
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ================= SWIPE — find your car by swiping (+ a small invite to X) ================= */}
       <section className="container-page section-tight">
-        <div className="mx-auto max-w-md sm:max-w-lg">
+        <div className="mx-auto max-w-md overflow-hidden rounded-[1.75rem] border border-accent/10 bg-gradient-to-b from-[#eaf7ef] to-surface px-5 pb-6 pt-8 shadow-card sm:max-w-lg sm:px-8">
           <p className="eyebrow">{t('Swipe to find')}</p>
           <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your car by swiping.')} />
           <p className="mt-3 text-copy leading-relaxed text-muted">
             {t('Swipe right to save a car, left to skip it. Tap View to see it.')}
           </p>
-          <div className="mt-7 -mx-5">
+          <div className="mt-7 -mx-5 sm:-mx-8">
             <FindCarDeck />
           </div>
           <Link to="/browse" className="btn btn-lg mt-6 border border-line-strong bg-surface text-ink">
             {t('Browse all cars')} <Icon name="arrowRight" size={17} />
           </Link>
+          <ConciergeLauncher className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-surface p-3 text-left shadow-hair ring-1 ring-black/[0.05] transition-transform active:scale-[0.99]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel"><ConciergeMark size={32} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-ink">{t('Not sure which one? Ask X')}</span>
+              <span className="block truncate text-detail text-muted">{t('Tell it how you want to drive')}</span>
+            </span>
+            <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+          </ConciergeLauncher>
         </div>
-      </section>
-
-      {/* ================= CONCIERGE — find your CX ================= */}
-      <section className="container-page section">
-        <ScrollRevealPanel>
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-accent/10 bg-[#eaf7ef] px-6 py-12 shadow-card sm:px-12 sm:py-16">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-80"
-              style={{ background: 'radial-gradient(45% 75% at 88% 12%, rgba(0,212,71,0.17), transparent 62%)' }}
-            />
-            <div className="relative grid items-center gap-10 md:grid-cols-[1fr_auto]">
-              <div className="max-w-xl">
-                <p className="inline-flex items-center gap-3 text-caption font-semibold uppercase tracking-[0.14em] text-accent-700">
-                  <ConciergeMark size={44} live /> {t('X · CX assistant')}
-                </p>
-                <BlurText as="h2" className="mt-4 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your CX')} />
-                <p className="mt-3 text-copy leading-relaxed text-ink-soft sm:text-lead">
-                  {t("Tell us how you want to drive — we'll find the right car. You don't need to find the right car; CX finds it for you.")}
-                </p>
-                <ConciergeLauncher className="btn btn-glint btn-accent-bright btn-lg mt-7" {...startScramble}>
-                  <span className="btn-glint__sweep" aria-hidden="true" />
-                  {startScramble.display} <Icon name="arrowRight" size={17} />
-                </ConciergeLauncher>
-              </div>
-
-              {/* A glimpse of the real chat with X — a request, the steps X takes, and the car it
-                  suggests (a real one from the fleet), with the same composer the chat opens with.
-                  Decorative only; the button on the left is the way in. */}
-              <div aria-hidden="true" className="w-full max-w-[320px] md:rotate-[1.5deg]">
-                <div className="rounded-[1.5rem] border border-white/80 bg-white/70 p-4 shadow-[0_24px_50px_-24px_rgba(0,80,30,0.35)] backdrop-blur-md">
-                  <div className="flex justify-end">
-                    <span className="max-w-[88%] rounded-2xl rounded-br-sm bg-white px-3.5 py-2 text-detail text-ink shadow-hair">
-                      {t('A car for a weekend in {city}, under {price}', { city: glimpseCar?.city ?? 'Milan', price: eur(200) })}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 flex items-start gap-2.5">
-                    <ConciergeMark size={28} />
-                    <div className="min-w-0 flex-1">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white/80 px-2.5 py-1 text-caption text-muted">
-                        <Icon name="sparkles" size={12} /> {t('Thought for {n}s', { n: 2 })}
-                      </span>
-                      <ol className="relative ml-[5px] mt-1.5 border-l border-line pl-4">
-                        {[
-                          allCars && allCars.length > 0
-                            ? t('Comparing {n} cars in {c} cities…', { n: allCars.length, c: new Set(allCars.map((c) => c.city)).size })
-                            : t('Checking the cars on CX…'),
-                          t('City: {city}', { city: glimpseCar?.city ?? 'Milan' }),
-                          t('Budget: up to {price}/day', { price: eur(200) }),
-                        ].map((step) => (
-                          <li key={step} className="relative flex min-h-6 items-center py-1 text-[0.6875rem] leading-4 text-muted">
-                            <span className="absolute -left-[21px] flex size-[11px] items-center justify-center rounded-full bg-[#f3faf5] ring-4 ring-[#f3faf5]">
-                              <Icon name="check" size={11} className="text-ink" />
-                            </span>
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  </div>
-
-                  {glimpseCar && (
-                    <div className="mt-2 flex items-center gap-3 rounded-2xl border border-line bg-white p-2 pr-3 shadow-hair">
-                      <Img src={unsplash(glimpseCar.images[0], 240)} alt="" className="h-12 w-[4.25rem] shrink-0 rounded-xl bg-panel object-cover" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-caption font-semibold text-ink">{glimpseCar.make} {glimpseCar.model}</span>
-                        <span className="block truncate text-[0.625rem] text-muted">{glimpseCar.city} · {eur(glimpseCar.pricePerDay)}/{t('day')}</span>
-                      </span>
-                      <Icon name="chevronRight" size={14} className="shrink-0 text-faint" />
-                    </div>
-                  )}
-
-                  <div className="mt-3 rounded-2xl border border-line-strong bg-white p-2 pl-3">
-                    <span className="block py-1 text-detail text-muted">{t('Ask {name} anything…', { name: ASSISTANT_NAME })}</span>
-                    <span className="mt-1 flex items-center justify-between">
-                      <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-ink/15 bg-ink/5 px-2.5 text-caption font-semibold text-ink">
-                        <Icon name="sparkles" size={12} /> {t('Think')} <Icon name="check" size={11} />
-                      </span>
-                      <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white">
-                        <Icon name="arrowRight" size={15} className="-rotate-90" />
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ScrollRevealPanel>
       </section>
 
       {/* ================= SIGNAL — the community advantage ================= */}
