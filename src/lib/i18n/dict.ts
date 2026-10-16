@@ -31,6 +31,12 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Case closed", "Caso chiuso", "Caz închis", "Caso cerrado"],
+  ["CX Investigations · Case opened", "CX Investigations · Caso aperto", "CX Investigations · Caz deschis", "CX Investigations · Caso abierto"],
+  ["Cases", "Casi", "Cazuri", "Casos"],
+  ["Problems reported from X, answered by CX Investigations.", "Problemi segnalati da X, seguiti da CX Investigations.", "Probleme raportate din X, tratate de CX Investigations.", "Problemas informados desde X, atendidos por CX Investigations."],
+  ["No cases yet", "Nessun caso per ora", "Niciun caz încă", "Aún no hay casos"],
+  ["When someone describes a problem to X, it appears here.", "Quando qualcuno descrive un problema a X, compare qui.", "Când cineva descrie o problemă lui X, apare aici.", "Cuando alguien describe un problema a X, aparece aquí."],
   ["The people behind CX Rent. News, updates and what is new on the platform — straight from the team.", "Le persone dietro CX Rent. Novità e aggiornamenti della piattaforma, direttamente dal team.", "Oamenii din spatele CX Rent. Noutăți și actualizări despre platformă, direct de la echipă.", "Las personas detrás de CX Rent. Novedades y actualizaciones de la plataforma, directamente del equipo."],
   ["CX Rent’s official assistant. Ask me for a car, a how-to, or to reach someone from the team.", "L’assistente ufficiale di CX Rent. Chiedimi un’auto, una guida, o di parlare con qualcuno del team.", "Asistentul oficial CX Rent. Cere-mi o mașină, un ghid sau să vorbești cu cineva din echipă.", "El asistente oficial de CX Rent. Pídeme un coche, una guía o hablar con alguien del equipo."],
   ["Ask X", "Chiedi a X", "Întreabă X", "Pregunta a X"],

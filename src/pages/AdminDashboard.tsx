@@ -13,9 +13,10 @@ import { ReportsPanel } from '../components/admin/ReportsPanel';
 import { CatalogPanel } from '../components/admin/CatalogPanel';
 import { ReviewPanel } from '../components/admin/ReviewPanel';
 import { AnnouncementsPanel } from '../components/admin/AnnouncementsPanel';
+import { CasesPanel } from '../components/admin/CasesPanel';
 import { MediaPanel } from '../components/admin/MediaPanel';
 
-type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'announcements' | 'media' | 'catalog' | 'review' | 'signal-demo';
+type Tab = 'verifications' | 'users' | 'bookings' | 'cars' | 'spotlight' | 'ads' | 'payouts' | 'reports' | 'announcements' | 'cases' | 'media' | 'catalog' | 'review' | 'signal-demo';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'verifications', label: 'Verifications', icon: 'shield' },
@@ -28,6 +29,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'payouts', label: 'Payouts', icon: 'wallet' },
   { id: 'reports', label: 'Reports', icon: 'shield' },
   { id: 'announcements', label: 'Announcements', icon: 'bell' },
+  { id: 'cases', label: 'Cases', icon: 'pin' },
   { id: 'media', label: 'Media', icon: 'image' },
   { id: 'catalog', label: 'Catalog', icon: 'cars' },
   { id: 'signal-demo', label: 'Signal Demo', icon: 'sparkles' },
@@ -38,7 +40,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<Tab>(() => {
     // the page can be opened on a given tab with a #hash (a notification links to #reports)
     const h = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
-    const known: Tab[] = ['verifications', 'users', 'bookings', 'cars', 'spotlight', 'ads', 'payouts', 'reports', 'announcements', 'media', 'catalog', 'review', 'signal-demo'];
+    const known: Tab[] = ['verifications', 'users', 'bookings', 'cars', 'spotlight', 'ads', 'payouts', 'reports', 'announcements', 'cases', 'media', 'catalog', 'review', 'signal-demo'];
     return (known as string[]).includes(h) ? (h as Tab) : 'verifications';
   });
 
@@ -87,6 +89,7 @@ export default function AdminDashboard() {
         {tab === 'payouts' && <PayoutsPanel />}
         {tab === 'reports' && <ReportsPanel />}
         {tab === 'announcements' && <AnnouncementsPanel />}
+        {tab === 'cases' && <CasesPanel />}
         {tab === 'media' && <MediaPanel />}
         {tab === 'catalog' && <CatalogPanel />}
         {tab === 'review' && <ReviewPanel />}

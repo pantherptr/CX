@@ -1,7 +1,8 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
 import { AskXRow } from '../components/AskX';
+import { INVESTIGATIONS, agentFor } from '../lib/investigations';
 import { CxTeamCover } from '../components/CxTeamCover';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DashboardShell } from '../components/DashboardShell';
 import { PremiumPageLoader } from '../components/PremiumLoader';
@@ -494,14 +495,14 @@ function Thread({
                       <span className="inline-block -rotate-2 rounded-[4px] border-2 border-[#c1121f] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#c1121f]">
                         Case opened
                       </span>
-                      <span className="pt-1 text-caption font-medium text-[#6b6a60]">
-                        {new Date(m.createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })} · {new Date(m.createdAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <img src={INVESTIGATIONS.logo} alt="CX Investigations" className="absolute right-3 top-2 h-8 w-auto rounded-md" />
                     </div>
                     <p className="mt-3 whitespace-pre-wrap pl-5 font-display text-[18px] font-semibold leading-[28px] text-[#1c1b17] [overflow-wrap:anywhere]">
                       {m.body}
                     </p>
                     <p className="mt-3 pl-5 text-caption font-medium text-[#6b6a60]">
+                      {new Date(m.createdAt).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' })} · {new Date(m.createdAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
+                      {' · '}
                       {mine ? 'Reported by you. The team will answer in this chat.' : 'Reported by the customer.'}
                     </p>
                   </div>
@@ -641,7 +642,12 @@ export default function Messages() {
   const { session, profile } = useAuth();
   const { toast } = useApp();
   const [params, setParams] = useSearchParams();
-  const { conversations, loading: conversationsLoading, refresh } = useConversations(session?.user.id);
+  const { conversations: rawConversations, loading: conversationsLoading, refresh } = useConversations(session?.user.id);
+  // A request to the team is a case: it is answered by CX Investigations, with one of its two investigators as the face.
+  const conversations = useMemo(
+    () => rawConversations?.map((c) => (c.kind === 'support' && c.other.role === 'cx' ? { ...c, other: { ...c.other, name: INVESTIGATIONS.name, avatar: agentFor(c.id).src } } : c)) ?? rawConversations,
+    [rawConversations],
+  );
   const [activeId, setActiveId] = useState<string | null>(params.get('c'));
   const [text, setText] = useState('');
   const [pending, setPending] = useState<PendingMessage[]>([]);
@@ -679,6 +685,14 @@ export default function Messages() {
   const readOnlyBar = readOnly && active ? (
     <div className="shrink-0 bg-chat px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3">
       <div className="rounded-2xl bg-white p-3.5 text-center shadow-[0_8px_28px_-12px_rgba(22,22,26,0.25)] ring-1 ring-black/[0.05]">
+        {active.kind === 'support' && (
+          <div className="mb-3 flex items-center justify-center gap-3">
+            <img src={agentFor(active.id).src} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-black/10" />
+            <span className="inline-block -rotate-3 rounded-[4px] border-2 border-[#16794a] px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.18em] text-[#16794a]">
+              Case closed
+            </span>
+          </div>
+        )}
         <p className="text-detail font-medium text-ink">
           {active.kind === 'notice' ? 'This is a message from CX — you can’t reply here.' : 'This conversation was closed by the CX team.'}
         </p>

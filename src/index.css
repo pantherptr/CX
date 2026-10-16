@@ -2601,3 +2601,11 @@ html [data-rmiz-btn-unzoom] { display: none; }
 }
 .sig-in.sig-slash { animation: sig-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) forwards, sig-shine 5.5s ease-in-out 1.4s infinite; }
 @media (prefers-reduced-motion: reduce) { .sig-in.sig-slash { animation: none; opacity: 1; transform: none; filter: none; } }
+
+@keyframes x-car-in {
+  from { opacity: 0; transform: translateX(-60%) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*='x-car-in'] { animation: none !important; }
+}

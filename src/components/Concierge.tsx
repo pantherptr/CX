@@ -13,6 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
+import { INVESTIGATIONS } from '../lib/investigations';
 import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
@@ -40,6 +41,8 @@ interface ChatMsg {
   text: string;
   cars?: string[];
   offerHuman?: boolean;
+  /** a picture shown above the text (the investigations car when a case is opened) */
+  image?: string;
   /** What X did to get there (the "think" trail) and how long it took. */
   steps?: string[];
   seconds?: number;
@@ -522,7 +525,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     setAwaitingProblem(false);
     setMsgs((cur) => [
       ...cur,
-      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.') },
+      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.'), image: INVESTIGATIONS.car },
     ]);
   }, [t, userId]);
 
@@ -765,6 +768,13 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                       </div>
                     )}
                     <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
+                      {m.image && (
+                        <div className="relative overflow-hidden rounded-2xl bg-[#050806] px-4 pb-3 pt-4 text-center">
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_100%,rgba(0,212,71,0.35),transparent_70%)]" />
+                          <img src={m.image} alt="" className="relative mx-auto h-28 w-auto animate-[x-car-in_.7s_cubic-bezier(.2,.8,.2,1)_both]" />
+                          <p className="relative mt-2 text-label font-bold uppercase tracking-[0.2em] text-accent-bright">CX Investigations · Case opened</p>
+                        </div>
+                      )}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}
