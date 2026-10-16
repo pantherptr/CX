@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["No cars in this area", "Nessuna auto in questa zona", "Nicio mașină în această zonă", "Ningún coche en esta zona"],
   ["How far is it from me?", "Quanto è lontana da me?", "Cât de departe este de mine?", "¿A qué distancia está de mí?"],
   ["Finding you…", "Ti sto localizzando…", "Te localizez…", "Localizándote…"],
   ["About {t} by car · {km} km", "Circa {t} in auto · {km} km", "Aproximativ {t} cu mașina · {km} km", "Unos {t} en coche · {km} km"],

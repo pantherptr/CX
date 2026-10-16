@@ -6,7 +6,7 @@ import {
   Armchair, DoorOpen, Gauge, Fuel, Cog, Zap, Sun, Flame, Gem, Mountain, Leaf,
   Car, KeyRound, Wallet, LayoutGrid, Luggage, MessageSquare, Bell, Settings,
   User, LogOut, Plus, Minus, SlidersHorizontal, ArrowUpDown, Clock, Phone, Camera,
-  Upload, CreditCard, Lock, Sparkles, Headset, Compass, TrendingUp, Euro,
+  Upload, CreditCard, Lock, Sparkles, Headset, Compass, LocateFixed, TrendingUp, Euro,
   MessageSquareText, Send, Paperclip, BarChart3, CarFront, Route, Globe,
   Snowflake, Music, Apple, Info, BadgeCheck, Briefcase, Trophy, Gift, Pause,
   Play, Volume2, VolumeX, Truck, Package, Tag,
@@ -24,7 +24,7 @@ export type IconName =
   | 'leaf' | 'car' | 'key' | 'wallet' | 'grid' | 'trips' | 'message' | 'bell'
   | 'settings' | 'user' | 'logout' | 'plus' | 'sliders' | 'sort' | 'clock'
   | 'phone' | 'camera' | 'upload' | 'card' | 'lock' | 'sparkles' | 'headset'
-  | 'compass' | 'trending' | 'euro' | 'reviews' | 'send' | 'paperclip'
+  | 'compass' | 'locate' | 'trending' | 'euro' | 'reviews' | 'send' | 'paperclip'
   | 'chart' | 'cars' | 'route' | 'globe' | 'instant' | 'snowflake' | 'music'
   | 'twitter' | 'instagram' | 'linkedin' | 'apple' | 'info' | 'verified' | 'bag'
   | 'trophy' | 'gift' | 'pause' | 'play' | 'volume' | 'volumeOff'
@@ -51,7 +51,7 @@ const LUCIDE: Record<Exclude<IconName, 'twitter' | 'instagram' | 'linkedin'>, Lu
   wallet: Wallet, grid: LayoutGrid, trips: Luggage, message: MessageSquare, bell: Bell,
   settings: Settings, user: User, logout: LogOut, plus: Plus, sliders: SlidersHorizontal,
   sort: ArrowUpDown, clock: Clock, phone: Phone, camera: Camera, upload: Upload,
-  card: CreditCard, lock: Lock, sparkles: Sparkles, headset: Headset, compass: Compass,
+  card: CreditCard, lock: Lock, sparkles: Sparkles, headset: Headset, compass: Compass, locate: LocateFixed,
   trending: TrendingUp, euro: Euro, reviews: MessageSquareText, send: Send,
   paperclip: Paperclip, chart: BarChart3, cars: CarFront, route: Route, globe: Globe,
   instant: Zap, snowflake: Snowflake, music: Music, apple: Apple, info: Info,

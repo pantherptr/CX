@@ -54,6 +54,8 @@ export function BrowseMap({
   variant = 'side',
   areaActive = false,
   onAreaChange,
+  cityPick,
+  onCities,
 }: {
   cars: Car[];
   activeId: string | null;
@@ -67,6 +69,9 @@ export function BrowseMap({
   /** the results are limited to a map area: the map stays where the person put it */
   areaActive?: boolean;
   onAreaChange?: (b: AreaBounds | null) => void;
+  /** phone: the page owns the city chips (they sit in the filter row); this is the chosen one, and the map reports its cities back */
+  cityPick?: string | null;
+  onCities?: (cities: string[], current: string | null) => void;
 }) {
   const { t } = useLocale();
   const exact = useHasAccess();
@@ -84,6 +89,13 @@ export function BrowseMap({
   const [locating, setLocating] = useState(false);
   const [moved, setMoved] = useState(false);
   const [searching, setSearching] = useState(false);
+  // the small print under the bars (exact / approximate pins) is shown for a few seconds, then gets out of the way
+  const [noteOn, setNoteOn] = useState(true);
+  useEffect(() => {
+    if (variant !== 'main') return;
+    const id = window.setTimeout(() => setNoteOn(false), 6000);
+    return () => window.clearTimeout(id);
+  }, [variant]);
   const autoTimer = useRef<number | undefined>(undefined);
   const autoRef = useRef<() => void>(() => {});
 
@@ -93,7 +105,10 @@ export function BrowseMap({
     cars.forEach((c) => { if (c.lat != null && c.lng != null) n.set(c.city, (n.get(c.city) ?? 0) + 1); });
     return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c).filter((c) => CITY_COORDS[c]);
   }, [cars]);
-  const city = pick && cities.includes(pick) ? pick : cities[0] ?? null;
+  const chosen = onCities ? cityPick ?? null : pick;
+  const city = chosen && cities.includes(chosen) ? chosen : cities[0] ?? null;
+  useEffect(() => { onCities?.(cities, city); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cities.join('|'), city]);
   // cars shown in the list whose host has not marked the exact spot yet
   const unplaced = useMemo(() => cars.filter((c) => c.lat == null || c.lng == null).length, [cars]);
   // cars that have an exact spot, in the order of the list: these are the cards under the map
@@ -163,12 +178,19 @@ export function BrowseMap({
   }, []);
 
   /** Focus a car: its pin lights up, the map moves to it and (when asked) its card comes into view. */
+  /** The part of the map you can really see on a phone: below the top bars, above the half-open sheet. */
+  const insets = () => {
+    const h = box.current?.clientHeight ?? window.innerHeight;
+    const sheetTop = Math.round(window.innerHeight * 0.5);
+    const bar = document.querySelector('[data-browse-top]')?.getBoundingClientRect().bottom;
+    return { top: Math.round((bar ?? 150) + 12), bottom: Math.max(150, h - sheetTop + 16) };
+  };
   const focusCar = (id: string, scrollCard: boolean) => {
     setFocusId(id);
     const car = placedRef.current.find((c) => c.id === id);
     const pos = car ? positionOf(car, exactRef.current) : null;
     const map = mapRef.current;
-    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), padding: variantRef.current === 'main' ? { bottom: 180 } : undefined, duration: 450 });
+    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), padding: variantRef.current === 'main' ? insets() : undefined, duration: 450 });
     if (!scrollCard) return;
     const idx = placedRef.current.findIndex((c) => c.id === id);
     const row = strip.current;
@@ -271,7 +293,7 @@ export function BrowseMap({
     if (id && id !== focusId) {
       setFocusId(id);
       const pos = positionOf(placed[best], exact);
-      if (pos) mapRef.current?.easeTo({ center: pos, padding: { bottom: 180 }, duration: 350 });
+      if (pos) mapRef.current?.easeTo({ center: pos, padding: insets(), duration: 350 });
     }
   };
 
@@ -306,8 +328,8 @@ export function BrowseMap({
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
     // on a phone the card sheet covers the bottom of the map: the pins are framed above it
-    const bottom = variant === 'main' && placed.length > 0 ? 200 : 70;
-    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: { top: 70, left: 60, right: 60, bottom }, maxZoom: exact ? 15.5 : 14, duration: 900 });
+    const fit = variant === 'main' && placed.length > 0 ? insets() : { top: 70, bottom: 70 };
+    map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: { top: fit.top, left: 50, right: 50, bottom: fit.bottom }, maxZoom: exact ? 15.5 : 14, duration: 900 });
     setMoved(false);
   }, [city, cars, ready, exact, areaActive, variant, placed.length]);
 
@@ -327,7 +349,7 @@ export function BrowseMap({
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label={t('Map of listed cars')} />
       {!ready && !failed && <span className="skeleton absolute inset-0" />}
       {failed && <span className="absolute inset-0 grid place-items-center text-detail text-muted">{t('Map unavailable')}</span>}
-      {ready && cities.length > 1 && (
+      {ready && cities.length > 1 && !onCities && (
         <div className={`scrollbar-none absolute left-3 z-10 flex max-w-[calc(100%-70px)] gap-1.5 overflow-x-auto rounded-full bg-white/95 p-1 shadow-[0_6px_18px_-6px_rgba(22,22,26,0.3)] ${variant === 'main' ? 'top-[8.6rem]' : 'top-3'}`}>
           {cities.map((c) => (
             <button key={c} onClick={() => setPick(c)} className={`shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${c === city ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'}`}>
@@ -345,7 +367,7 @@ export function BrowseMap({
               onClick={() => { onAreaChange(null); setMoved(false); }}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-caption font-semibold text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,0.6)]"
             >
-              {t('Showing this area')} <Icon name="x" size={13} />
+              {cars.length === 0 ? t('No cars in this area') : t('Showing this area')} <Icon name="x" size={13} />
             </button>
           ) : (
             <button
@@ -361,7 +383,7 @@ export function BrowseMap({
 
       {ready && variant === 'main' && (
         <div
-          className={`absolute left-1/2 top-[11.8rem] z-20 -translate-x-1/2 transition-[opacity,transform] duration-200 ease-out ${
+          className={`absolute left-1/2 top-[calc(var(--browse-top,8.6rem)+0.5rem)] z-20 -translate-x-1/2 transition-[opacity,transform] duration-200 ease-out ${
             searching || areaActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
           }`}
           aria-live="polite"
@@ -377,7 +399,7 @@ export function BrowseMap({
               onClick={() => { onAreaChange?.(null); setMoved(false); }}
               className="flex h-9 items-center gap-2 rounded-full bg-white/95 pl-4 pr-1.5 text-caption font-semibold text-ink shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] backdrop-blur active:scale-95"
             >
-              {t('Showing this area')}
+              {cars.length === 0 ? t('No cars in this area') : t('Showing this area')}
               <span className="grid h-6 w-6 place-items-center rounded-full bg-ink text-white"><Icon name="x" size={12} /></span>
             </button>
           )}
@@ -389,9 +411,9 @@ export function BrowseMap({
           type="button"
           onClick={locate}
           aria-label={t('Show where I am')}
-          className="absolute right-3 top-[8.6rem] z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] active:scale-95"
+          className="absolute right-3 top-[calc(var(--browse-top,8.6rem)+0.5rem)] z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-[0_6px_18px_-6px_rgba(22,22,26,0.4)] active:scale-95"
         >
-          <Icon name="compass" size={19} className={locating ? 'animate-spin' : ''} />
+          <Icon name="locate" size={19} className={locating ? 'animate-pulse' : ''} />
         </button>
       )}
 
@@ -421,7 +443,7 @@ export function BrowseMap({
       )}
 
       {ready && (
-        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 ${showSheet ? (focusId ? 'bottom-[10.6rem]' : 'bottom-[4.6rem]') : 'bottom-7'}`}>
+        <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 transition-opacity duration-500 ${variant === 'main' ? `top-[calc(var(--browse-top,8.6rem)+3.1rem)] ${noteOn ? 'opacity-100' : 'opacity-0'}` : 'bottom-7'}`}>
           <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
             {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}
           </p>

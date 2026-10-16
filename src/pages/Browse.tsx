@@ -291,6 +291,10 @@ export default function Browse() {
   const mapBeside = wide && showMap;
   const listRef = useRef<HTMLDivElement>(null);
   const [listUp, setListUp] = useState(false);
+  // the map's cities live in the filter row on a phone; the map reports them and follows the chosen one
+  const [mapCities, setMapCities] = useState<string[]>([]);
+  const [mapCity, setMapCity] = useState<string | null>(null);
+  const [cityPick, setCityPick] = useState<string | null>(null);
   // three resting places for the sheet: peek (full map), half (first view), up (the list). `half` is where the page starts.
   const halfScroll = () => Math.max(0, window.innerHeight * 0.5 - 57.6);
   useEffect(() => {
@@ -327,6 +331,27 @@ export default function Browse() {
     els.forEach((e) => { e.style.overflowX = 'visible'; });
     document.documentElement.style.backgroundColor = 'var(--color-bg)';
     return () => els.forEach((e, i) => { e.style.overflowX = prev[i][0]; e.style.backgroundColor = prev[i][1]; });
+  }, [phone]);
+  // the sheet settles on its three places (full map, half, list) instead of stopping anywhere in between, and the
+  // map's floating buttons follow the bottom edge of the top bars
+  useEffect(() => {
+    if (!phone) return;
+    const root = document.documentElement;
+    const measure = () => {
+      const b = document.querySelector('[data-browse-top]')?.getBoundingClientRect().bottom;
+      if (b) root.style.setProperty('--browse-top', `${Math.round(b)}px`);
+    };
+    measure();
+    const id = window.setTimeout(measure, 500);
+    window.addEventListener('resize', measure);
+    const prevSnap = root.style.scrollSnapType;
+    root.style.scrollSnapType = 'y proximity';
+    return () => {
+      window.clearTimeout(id);
+      window.removeEventListener('resize', measure);
+      root.style.removeProperty('--browse-top');
+      root.style.scrollSnapType = prevSnap;
+    };
   }, [phone]);
   const goList = () => window.scrollTo({ top: window.innerHeight * 0.5 - 57.6 + window.innerHeight * 0.42, behavior: 'smooth' });
   const goMap = () => window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -442,8 +467,12 @@ export default function Browse() {
       : t('Any dates');
     return (
       <div className="relative bg-surface">
+        {/* the three places the sheet settles on (scroll-snap targets): full map, half, list */}
+        {[0, halfScroll(), Math.max(halfScroll() + 80, window.innerHeight - 188)].map((y) => (
+          <span key={y} aria-hidden className="pointer-events-none absolute left-0 h-px w-px" style={{ top: y, scrollSnapAlign: 'start' }} />
+        ))}
         {/* the top: back, what you are looking at, filters, then the quick chips */}
-        <div className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-surface via-surface/95 to-surface/0 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
+        <div data-browse-top className="fixed inset-x-0 top-0 z-40 bg-gradient-to-b from-surface via-surface/95 to-surface/0 pb-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.5rem)' }}>
           <div className="flex items-center gap-2 px-3">
             <button type="button" onClick={() => navigate('/')} aria-label={t('Back')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface shadow-[0_6px_18px_-8px_rgba(0,0,0,0.5)] active:scale-95">
               <Icon name="chevronLeft" size={20} />
@@ -462,6 +491,22 @@ export default function Browse() {
             </button>
           </div>
           <div className="scrollbar-none mt-2.5 flex gap-2 overflow-x-auto px-3 pb-1">
+            {mapCities.length > 1 && (
+              <>
+                {mapCities.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCityPick(c)}
+                    aria-pressed={c === mapCity}
+                    className={`inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-caption font-semibold shadow-[0_4px_12px_-6px_rgba(0,0,0,0.45)] transition-colors ${c === mapCity ? 'bg-accent text-white' : 'bg-surface text-ink'}`}
+                  >
+                    <Icon name="pin" size={12} /> {c}
+                  </button>
+                ))}
+                <span aria-hidden className="my-2 w-px shrink-0 bg-line-strong" />
+              </>
+            )}
             {chips.map((c) => (
               <button
                 key={c.id}
@@ -482,7 +527,7 @@ export default function Browse() {
           {loading ? (
             <div className="skeleton h-full w-full" />
           ) : (
-            <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-full w-full" />
+            <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-full w-full" cityPick={cityPick} onCities={(cs, cur) => { setMapCities((p) => (p.join("|") === cs.join("|") ? p : cs)); setMapCity(cur); }} />
           )}
         </div>
         <div aria-hidden className="pointer-events-none h-[100lvh]" />

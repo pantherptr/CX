@@ -132,4 +132,5 @@ Code is written to fail soft before a migration is run.
 - Studio-image catalogue was set aside in favour of the host's own cover pose (admin image upload is hidden
   behind `STUDIO_IMAGES = false` in `CatalogPanel.tsx`).
 - Existing cars can get / move their precise pin in Manage car (Pick-up point section); `updateCar` writes lat/lng/address_label.
+- REMIND THE OWNER (agreed 2026-10-16, "a bit later"): delivery fee by real road distance (e.g. first 5 km free, then €/km). Needs a routing service (Geoapify routing, paid beyond the free quota) + a migration for per-km fields on cars. Bring it up at the go-live checklist or when a host asks for it; until then delivery stays free / fixed. Also later: "cars within X minutes", nearby places, static map for emails (after Resend).
 - Optional: push/email on new chat reports; geocoder provider with a key instead of public Photon.
