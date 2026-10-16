@@ -1,5 +1,5 @@
 import { RoadScene } from '../components/home/scenes/RoadScene';
-import { FindScene } from '../components/home/scenes/FindScene';
+import { FindPoster } from '../components/home/scenes/FindPoster';
 import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
@@ -303,9 +303,6 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  // The first illustration is an ad: a fixed, glamorous car (Unsplash photo in /home), not a car of the fleet.
-  const findCar = { name: 'Aston Martin Vantage', image: '/home/aston-900.webp', price: eur(240), city: 'Milan' };
-  const findPrices = [eur(31), eur(189), eur(95)];
   const howImages = ['', '/home/book-1024.webp', ''];
   const howPositions = [undefined, '50% 52%', undefined];
   const howStatic = (
@@ -505,7 +502,7 @@ export default function Home() {
                   desc: t(st.desc),
                   image: howImages[i],
                   position: howPositions[i],
-                  scene: i === 0 ? <FindScene car={findCar} prices={findPrices} /> : i === 2 ? <RoadScene /> : undefined,
+                  scene: i === 0 ? <FindPoster /> : i === 2 ? <RoadScene /> : undefined,
                 }))}
               />
             </Suspense>
