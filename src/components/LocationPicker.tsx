@@ -5,6 +5,7 @@ import { AddressInput } from './AddressInput';
 import { Icon } from './Icon';
 import { CITY_COORDS } from '../data/cityCoords';
 import { collapseAttribution } from '../lib/mapAttribution';
+import { applyCxMapStyle } from '../lib/cxMapStyle';
 import { reversePlace, type Place } from '../lib/geocode';
 
 export interface PickedLocation {
@@ -56,6 +57,7 @@ export function LocationPicker({
       });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
       collapseAttribution(map);
+      applyCxMapStyle(map);
       mapRef.current = map;
 
       const makeMarker = (lngLat: [number, number]) => {

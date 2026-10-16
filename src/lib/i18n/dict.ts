@@ -31,6 +31,12 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["How far is it from me?", "Quanto è lontana da me?", "Cât de departe este de mine?", "¿A qué distancia está de mí?"],
+  ["Finding you…", "Ti sto localizzando…", "Te localizez…", "Localizándote…"],
+  ["About {t} by car · {km} km", "Circa {t} in auto · {km} km", "Aproximativ {t} cu mașina · {km} km", "Unos {t} en coche · {km} km"],
+  ["to the pick-up spot", "fino al punto di ritiro", "până la punctul de ridicare", "hasta el punto de recogida"],
+  ["to the city centre", "fino al centro città", "până în centrul orașului", "hasta el centro de la ciudad"],
+  ["Allow your location to see how far it is.", "Consenti la posizione per vedere quanto è lontana.", "Permite locația ca să vezi cât de departe este.", "Permite tu ubicación para ver a qué distancia está."],
   ["{name} will be with you shortly. You will find the conversation in Messages.", "{name} sarà con te a breve. Troverai la conversazione nei Messaggi.", "{name} va fi cu tine în scurt timp. Vei găsi conversația în Mesaje.", "{name} estará contigo en breve. Encontrarás la conversación en Mensajes."],
   ["{name} will be with you shortly", "{name} sarà con te a breve", "{name} va fi cu tine în scurt timp", "{name} estará contigo en breve"],
   ["Assigning an investigator", "Assegno un investigatore", "Se alocă un investigator", "Asignando un investigador"],

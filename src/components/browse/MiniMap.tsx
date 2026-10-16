@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { CITY_COORDS } from '../../data/cityCoords';
 import { collapseAttribution } from '../../lib/mapAttribution';
+import { applyCxMapStyle } from '../../lib/cxMapStyle';
 import { preloadMap } from '../../lib/mapPreload';
 
 export interface MapPoint {
@@ -59,6 +60,7 @@ export function MiniMap({
         });
         if (interactive) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
         collapseAttribution(map);
+      applyCxMapStyle(map);
         const pin = (lngLat: [number, number], label: string | undefined, kind: 'car' | 'you') => {
           if (kind === 'car') {
             // the car's pick-up point: the CX flag planted on the spot (its spear tip is the exact position)

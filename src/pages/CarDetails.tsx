@@ -13,6 +13,7 @@ import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
 import { useSnapCarousel, motion } from '../lib/useSnapCarousel';
 import { MiniMap } from '../components/browse/MiniMap';
+import { DistanceFromYou } from '../components/browse/DistanceFromYou';
 import { preloadMap } from '../lib/mapPreload';
 import { mapsLink } from '../lib/geocode';
 import { HostCard } from '../components/HostCard';
@@ -381,6 +382,7 @@ export default function CarDetails() {
                   </a>
                 )}
               </div>
+              <DistanceFromYou city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} />
 
               {/* Host */}
               <section className="mt-7">

@@ -5,6 +5,7 @@ import { Icon } from './Icon';
 import { supabase } from '../lib/supabase';
 import { CITY_COORDS } from '../data/cityCoords';
 import { collapseAttribution } from '../lib/mapAttribution';
+import { applyCxMapStyle } from '../lib/cxMapStyle';
 import { distanceKm, searchPlaces } from '../lib/geocode';
 import { uiLocale } from '../lib/i18n/uiLocale';
 import { useLocale } from '../lib/i18n';
@@ -119,6 +120,7 @@ export function TripMap(p: TripMapProps) {
         });
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
         collapseAttribution(map);
+      applyCxMapStyle(map);
 
         const pin = (lngLat: [number, number], kind: 'car' | 'drop', label: string) => {
           const el = document.createElement('div');
