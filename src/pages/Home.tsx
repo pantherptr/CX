@@ -1,3 +1,4 @@
+import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -532,6 +533,7 @@ export default function Home() {
               <p className="mt-3 text-copy leading-relaxed text-muted">
                 {t('Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.')}
               </p>
+              <RouteMini className="mt-6 max-w-md" />
             </div>
             <div className="mt-6 lg:mt-0 lg:self-end">
               <ul className="space-y-3">
