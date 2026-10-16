@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
 import { supabase } from '../../lib/supabase';
 import { CASE_PREFIX } from '../../lib/data/messages';
@@ -18,12 +18,29 @@ const fmt = (iso: string) => new Date(iso).toLocaleString(uiLocale(), { day: 'nu
 
 /** Cases: every request opened from X, as the written problem, open ones first. Opens the chat to answer or close it. */
 export function CasesPanel() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<CaseRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
     (async () => {
+      // Needs migration 0143 (lets an admin see every case). Without it, fall back to what the account can read.
+      const rpc = await supabase.rpc('admin_support_cases', { p_limit: 80 });
+      if (!live) return;
+      if (!rpc.error) {
+        const list: CaseRow[] = ((rpc.data ?? []) as {
+          id: string; created_at: string; closed_at: string | null; customer_name: string; problem: string;
+        }[]).map((r) => ({
+          id: r.id,
+          closed: Boolean(r.closed_at),
+          createdAt: r.created_at,
+          who: r.customer_name,
+          problem: (r.problem ?? '').trim() || 'No description',
+        }));
+        setRows(list);
+        return;
+      }
       const { data, error: err } = await supabase
         .from('conversations')
         .select('id, closed_at, created_at, participants:conversation_participants(profile:profiles(full_name, is_owner, is_admin)), messages(body, created_at)')
@@ -48,9 +65,16 @@ export function CasesPanel() {
       });
       list.sort((a, b) => Number(a.closed) - Number(b.closed) || b.createdAt.localeCompare(a.createdAt));
       setRows(list);
+      setError('Run migration 0143 so every case shows here.');
     })().catch((e) => { if (live) { setError(String(e?.message ?? e)); setRows([]); } });
     return () => { live = false; };
   }, []);
+
+  // An admin who is not yet in the conversation joins it first, then the chat opens.
+  const openCase = async (id: string) => {
+    await supabase.rpc('admin_join_case', { p_conversation: id });
+    navigate(`/messages?c=${id}`);
+  };
 
   const open = (rows ?? []).filter((r) => !r.closed).length;
 
@@ -68,6 +92,9 @@ export function CasesPanel() {
         </div>
       </div>
 
+      {error && rows && rows.length > 0 && (
+        <p className="rounded-xl bg-warn/15 px-3 py-2 text-detail text-warn-ink">{error}</p>
+      )}
       {rows === null ? (
         <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-20 rounded-2xl" />)}</div>
       ) : rows.length === 0 ? (
@@ -79,9 +106,10 @@ export function CasesPanel() {
         <ul className="space-y-2">
           {rows.map((r) => (
             <li key={r.id}>
-              <Link
-                to={`/messages?c=${r.id}`}
-                className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 transition-transform active:scale-[0.99]"
+              <button
+                type="button"
+                onClick={() => void openCase(r.id)}
+                className="flex w-full items-start gap-3 rounded-2xl border border-line bg-surface p-3.5 text-left transition-transform active:scale-[0.99]"
               >
                 <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full ${r.closed ? 'bg-panel text-faint' : 'bg-danger/10 text-danger'}`}>
                   <Icon name="pin" size={16} />
@@ -96,7 +124,7 @@ export function CasesPanel() {
                     {r.closed ? 'Closed' : 'Open'}
                   </span>
                 </span>
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
