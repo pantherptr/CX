@@ -1,4 +1,3 @@
-import { DeliveryScene } from '../components/home/scenes/DeliveryScene';
 import { RoadScene } from '../components/home/scenes/RoadScene';
 import { FindScene } from '../components/home/scenes/FindScene';
 import { RouteMini } from '../components/home/RouteMini';
@@ -518,8 +517,9 @@ export default function Home() {
           column); the story sits under it. */}
       <section className="container-page section-tight">
         <ScrollRevealImage
-          src=""
-          scene={<DeliveryScene />}
+          src="/home/delivery-1122.webp"
+          srcSet="/home/delivery-800.webp 800w, /home/delivery-1122.webp 1122w"
+          position="50% 40%"
           alt={t('Your car, delivered to your door')}
           className="h-[46svh] min-h-[300px] max-h-[620px] sm:h-[60svh]"
         >
