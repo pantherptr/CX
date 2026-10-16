@@ -16,7 +16,7 @@ export interface FindSceneCar {
 export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?: FindSceneCar; prices?: string[] }) {
   const { t } = useLocale();
   const shown: FindSceneCar = car ?? { name: 'CX', image: '/hero-car.webp', price: '€95', city: 'Milan' };
-  const title = shown.name.length > 22 ? `${shown.name.slice(0, 21)}…` : shown.name;
+  const title = shown.name.length > 20 ? `${shown.name.slice(0, 19)}…` : shown.name;
   const pins = [
     { x: 150, y: 124, p: prices[0] ?? '€31', k: 'a' },
     { x: 246, y: 152, p: prices[1] ?? '€189', k: 'b' },
@@ -24,7 +24,7 @@ export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?
   ];
   return (
     <SceneFrame>
-      <svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid meet" className="block h-full w-full" aria-hidden>
+      <svg viewBox="52 -16 296 454" preserveAspectRatio="xMidYMid meet" className="block h-full w-full" aria-hidden>
         <defs>
           <linearGradient id="fs-bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="440">
             <stop offset="0" stopColor="#06120d" /><stop offset="1" stopColor="#0e3322" />
@@ -52,18 +52,6 @@ export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?
         {[[44, 70], [356, 96], [60, 372], [346, 340], [84, 216], [330, 214]].map(([x, y], i) => (
           <circle key={i} className="fs-spark" cx={x} cy={y} r="2.2" fill="#8dffb4" style={{ animationDelay: `${i * 0.6}s` }} />
         ))}
-
-        {/* floating badges */}
-        <g className="fs-badge fs-badge-a">
-          <rect x="6" y="150" width="92" height="26" rx="13" fill="#0b1a14" stroke="#18e56b" strokeOpacity="0.7" />
-          <path d="M22 156 l-5 8 h5 l-2 7 l7 -9 h-5 z" fill="#18e56b" />
-          <text x="33" y="167.5" fontSize="9.6" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">Instant book</text>
-        </g>
-        <g className="fs-badge fs-badge-b">
-          <rect x="298" y="236" width="98" height="26" rx="13" fill="#0b1a14" stroke="#18e56b" strokeOpacity="0.7" />
-          <circle cx="313" cy="249" r="7" fill="#18e56b" /><path d="M309.6 249.2 l2.5 2.6 l4.6 -5" stroke="#04140c" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <text x="325" y="252.4" fontSize="9.6" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">Verified host</text>
-        </g>
 
         {/* the phone */}
         <ellipse cx="200" cy="420" rx="92" ry="9" fill="#000" opacity="0.5" />
@@ -123,9 +111,9 @@ export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?
               </g>
               <rect x="132" y="256" width="52" height="15" rx="7.5" fill="#fff" fillOpacity="0.92" />
               <text x="158" y="266.4" fontSize="7.8" fontWeight="800" fill="#16161a" textAnchor="middle" fontFamily="system-ui, sans-serif">Instant book</text>
-              <text x="126" y="341" fontSize="12.5" fontWeight="800" fill="#16161a" fontFamily="system-ui, sans-serif">{title}</text>
-              <text x="126" y="355.5" fontSize="8.8" fill="#6b7168" fontFamily="system-ui, sans-serif">{shown.city} · {t('Verified host')}</text>
-              <text x="274" y="356" fontSize="13" fontWeight="800" fill="#0c7a38" textAnchor="end" fontFamily="system-ui, sans-serif">{shown.price}<tspan fontSize="8.4" fontWeight="500" fill="#6b7168"> / {t('day')}</tspan></text>
+              <text x="126" y="341" fontSize="12" fontWeight="800" fill="#16161a" fontFamily="system-ui, sans-serif">{title}</text>
+              <text x="126" y="357" fontSize="9" fill="#6b7168" fontFamily="system-ui, sans-serif">{shown.city}</text>
+              <text x="274" y="357" fontSize="14" fontWeight="800" fill="#0c7a38" textAnchor="end" fontFamily="system-ui, sans-serif">{shown.price}<tspan fontSize="8" fontWeight="500" fill="#6b7168"> /{t('day')}</tspan></text>
               <rect x="126" y="364" width="148" height="24" rx="12" fill="#16161a" />
               <text x="200" y="379.4" fontSize="10.4" fontWeight="800" fill="#fff" textAnchor="middle" fontFamily="system-ui, sans-serif">{t('Reserve')}</text>
             </g>
@@ -134,11 +122,23 @@ export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?
           <rect x="178" y="52" width="44" height="8" rx="4" fill="#0b100e" />
         </g>
 
+        {/* floating badges */}
+        <g className="fs-badge fs-badge-a">
+          <rect x="56" y="150" width="84" height="24" rx="12" fill="#0b1a14" stroke="#18e56b" strokeOpacity="0.8" />
+          <path d="M70 155.5 l-5 7.5 h5 l-2 6.5 l7 -8.5 h-5 z" fill="#18e56b" />
+          <text x="80" y="166" fontSize="9" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">{t('Instant book')}</text>
+        </g>
+        <g className="fs-badge fs-badge-b">
+          <rect x="264" y="236" width="84" height="24" rx="12" fill="#0b1a14" stroke="#18e56b" strokeOpacity="0.8" />
+          <circle cx="277" cy="248" r="6.4" fill="#18e56b" /><path d="M274 248.2 l2.3 2.4 l4.2 -4.6" stroke="#04140c" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="288" y="251.2" fontSize="8.6" fontWeight="800" fill="#fff" fontFamily="system-ui, sans-serif">{t('Verified host')}</text>
+        </g>
+
         {/* the CX bat hovering over the phone */}
-        <g className="fs-bat" transform="translate(168 -6) scale(0.068) translate(-148 -376)">
+        <g transform="translate(168 -8) scale(0.068) translate(-148 -376)"><g className="fs-bat">
           <polygon points="374,383 535,483 568,376 626,465 685,376 718,483 880,383 1100,688 972,626 894,703 794,628 625,850 457,628 355,703 278,626 148,688" fill="#18e56b" stroke="#9dffbf" strokeWidth="14" strokeLinejoin="miter" />
           <polyline points="626,465 625,850" stroke="#9dffbf" strokeWidth="10" fill="none" opacity="0.8" />
-        </g>
+        </g></g>
       </svg>
     </SceneFrame>
   );
