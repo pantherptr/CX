@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { CITY_COORDS } from '../../data/cityCoords';
 import { collapseAttribution } from '../../lib/mapAttribution';
+import { preloadMap } from '../../lib/mapPreload';
 
 export interface MapPoint {
   lat: number;
@@ -18,12 +19,15 @@ export function MiniMap({
   point,
   extra,
   interactive = false,
+  delay = 0,
   className = '',
 }: {
   city: string;
   point?: MapPoint | null;
   extra?: MapPoint | null;
   interactive?: boolean;
+  /** wait this long (ms) before drawing: lets a sheet finish sliding in without the map competing for the frame */
+  delay?: number;
   className?: string;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -39,6 +43,8 @@ export function MiniMap({
     let cancelled = false;
     (async () => {
       try {
+        await preloadMap();
+        if (delay > 0) await new Promise<void>((res) => window.setTimeout(res, delay));
         const [maplibregl, worker] = await Promise.all([import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl-worker.mjs?url'), import('maplibre-gl/dist/maplibre-gl.css')]);
         if (cancelled || !box.current) return;
         maplibregl.setWorkerUrl(worker.default);

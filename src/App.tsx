@@ -6,6 +6,7 @@ import { BatPullToRefresh } from './components/BatPullToRefresh';
 import { EdgeSwipeBack } from './components/EdgeSwipeBack';
 import { WorkspaceTracker } from './lib/workspace';
 import { setInSignal } from './lib/theme';
+import { preloadMap } from './lib/mapPreload';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
@@ -91,6 +92,7 @@ function signalSpaceOf(pathname: string): 'official' | 'community' | null {
 const WARM_ORDER: Array<() => Promise<unknown>> = [
   () => import('./pages/Signal'),
   () => import('./pages/Browse'),
+  () => preloadMap(),
   () => import('./pages/CarDetails'),
   () => import('./pages/Messages'),
   () => import('./pages/Notifications'),

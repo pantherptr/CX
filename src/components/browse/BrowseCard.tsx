@@ -1,3 +1,4 @@
+import { preloadMap } from '../../lib/mapPreload';
 import { forwardRef, useState } from 'react';
 import type { Car } from '../../data/types';
 import { unsplash, unsplashSrcSet } from '../../lib/img';
@@ -71,6 +72,7 @@ export const BrowseCard = forwardRef<HTMLDivElement, { car: Car; active: boolean
         active ? 'border-ink shadow-[0_0_0_1px_#16161a,0_18px_40px_-18px_rgba(22,22,26,0.4)]' : 'border-line hover:border-ink/70 hover:shadow-[0_18px_40px_-22px_rgba(22,22,26,0.35)]'
       }`}
       onClick={onOpen}
+      onPointerDown={() => void preloadMap()}
       onMouseEnter={() => onHover?.(car.id)}
       onMouseLeave={() => onHover?.(null)}
       role="button"

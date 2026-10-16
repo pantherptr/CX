@@ -13,6 +13,7 @@ import { BookingCard } from '../components/BookingCard';
 import { PhotoViewer } from '../components/PhotoGallery';
 import { useSnapCarousel, motion } from '../lib/useSnapCarousel';
 import { MiniMap } from '../components/browse/MiniMap';
+import { preloadMap } from '../lib/mapPreload';
 import { mapsLink } from '../lib/geocode';
 import { HostCard } from '../components/HostCard';
 import { HostLocked } from '../components/HostLocked';
@@ -165,6 +166,7 @@ export default function CarDetails() {
   const navigate = useNavigate();
   const { t } = useLocale();
 
+  useEffect(() => { void preloadMap(); }, []);
   useEffect(() => {
     let cancelled = false;
     setResult(undefined);

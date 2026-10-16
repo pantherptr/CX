@@ -130,7 +130,7 @@ export function CarDrawer({ car, onClose }: { car: Car | null; onClose: () => vo
                   {tab === 'rent' && (
                     <div>
                       <div className="relative overflow-hidden rounded-[20px] border border-line">
-                        <MiniMap city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} className="h-52" />
+                        <MiniMap city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} className="h-52" delay={320} />
                         <div className="absolute inset-x-3 bottom-8 flex items-center gap-3 rounded-2xl bg-white/95 p-2.5 shadow-pop backdrop-blur">
                           <Img src={unsplash(car.images[0], 240)} alt="" className="h-11 w-16 shrink-0 rounded-xl object-cover" fallback={<span className="h-11 w-16 shrink-0 rounded-xl bg-panel" />} />
                           <div className="min-w-0 flex-1">
