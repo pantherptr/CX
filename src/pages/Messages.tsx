@@ -1269,7 +1269,7 @@ export default function Messages() {
                   <button onClick={clearPhoto} aria-label="Remove photo" className="pressable grid h-8 w-8 place-items-center rounded-full bg-black/[0.05] text-ink active:scale-90"><Icon name="x" size={16} /></button>
                 </div>
               )}
-              {!photo && !text.trim() && messages !== null && active?.other.role !== 'cx' && (
+              {!photo && !text.trim() && messages !== null && active?.other.role !== 'cx' && active?.kind !== 'support' && (
                 <div className="-mx-3 mb-2 flex gap-1.5 overflow-x-auto px-3 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {QUICK_REPLIES[profile?.is_host ? 'host' : 'client'].map((q) => (
                     <button

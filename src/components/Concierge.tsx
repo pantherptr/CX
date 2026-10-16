@@ -513,7 +513,8 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
     setMsgs((cur) => [...cur, { id: newId(), role: 'user', text: problem }]);
     let opened: { id: string; created: boolean } | null = null;
     try {
-      opened = await openSupportConversation(null, userId);
+      // every case is its own chat: a new problem never lands in an older conversation
+      opened = await openSupportConversation(null, userId, { fresh: true });
     } catch {
       opened = null;
     }

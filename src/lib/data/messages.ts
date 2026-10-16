@@ -151,11 +151,20 @@ function mapMessage(conversationId: string, row: MessageRow): Message {
 }
 
 function mapConversation(row: ConversationRow, myUserId: string): Conversation {
-  const otherParticipant = row.participants.find((p) => p.user_id !== myUserId)?.profile;
+  const isTeam = (p?: { is_owner: boolean; is_admin: boolean } | null) => Boolean(p?.is_owner || p?.is_admin);
+  const meProfile = row.participants.find((p) => p.user_id === myUserId)?.profile;
+  const meTeam = isTeam(meProfile);
+  const isSupport = row.kind === 'support';
+  // In a support case an admin may have joined next to the Owner account: the customer must always see "CX",
+  // never the name and profile of whichever admin happens to be answering; the team sees the customer.
+  let otherParticipant = row.participants.find((p) => p.user_id !== myUserId)?.profile;
+  if (isSupport) {
+    const pick = row.participants.find((p) => p.user_id !== myUserId && (meTeam ? !isTeam(p.profile) : isTeam(p.profile)));
+    if (pick) otherParticipant = pick.profile;
+  }
   // Support (the Owner account) appears to everyone else as "CX" — the
   // company — not under the Owner's own name, photo and badge.
-  const meProfile = row.participants.find((p) => p.user_id === myUserId)?.profile;
-  const otherIsCx = Boolean(otherParticipant?.is_owner) && !meProfile?.is_owner;
+  const otherIsCx = isSupport ? !meTeam && isTeam(otherParticipant) : Boolean(otherParticipant?.is_owner) && !meProfile?.is_owner;
   const heroId = row.car ? [...row.car.car_images].sort((a, b) => a.position - b.position)[0]?.url ?? '' : '';
   const messages = [...row.messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
   const last = messages[messages.length - 1];
@@ -697,6 +706,7 @@ export async function findOrCreateCxConversation(carId: string | null, myUserId:
 export async function openSupportConversation(
   carId: string | null,
   myUserId: string,
+  opts: { fresh?: boolean } = {},
 ): Promise<{ id: string; created: boolean } | null> {
   const supportId = await fetchSupportAccountId();
   if (!supportId || supportId === myUserId) return null;
@@ -704,7 +714,7 @@ export async function openSupportConversation(
   const base = supabase.from('conversation_participants').select('conversation_id, conversations!inner(car_id)').eq('user_id', myUserId);
   const { data: mine } = await (carId === null ? base.is('conversations.car_id', null) : base.eq('conversations.car_id', carId));
   const mineIds = (mine ?? []).map((r) => r.conversation_id);
-  if (mineIds.length) {
+  if (mineIds.length && !opts.fresh) {
     const { data: shared } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
