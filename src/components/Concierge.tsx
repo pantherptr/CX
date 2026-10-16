@@ -14,6 +14,7 @@ import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
 import { INVESTIGATIONS } from '../lib/investigations';
+import { InvestigationsMark } from './InvestigationsMark';
 import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
@@ -772,7 +773,8 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                         <div className="relative overflow-hidden rounded-2xl bg-[#050806] px-4 pb-3 pt-4 text-center">
                           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_100%,rgba(0,212,71,0.35),transparent_70%)]" />
                           <img src={m.image} alt="" className="relative mx-auto h-28 w-auto animate-[x-car-in_.7s_cubic-bezier(.2,.8,.2,1)_both]" />
-                          <p className="relative mt-2 text-label font-bold uppercase tracking-[0.2em] text-accent-bright">CX Investigations · Case opened</p>
+                          <InvestigationsMark tone="light" className="relative mt-3" />
+                          <p className="relative mt-2 text-label font-bold uppercase tracking-[0.2em] text-accent-bright">{t('Case opened')}</p>
                         </div>
                       )}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">

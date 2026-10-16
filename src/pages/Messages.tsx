@@ -1,5 +1,6 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
 import { AskXRow } from '../components/AskX';
+import { InvestigationsMark } from '../components/InvestigationsMark';
 import { INVESTIGATIONS, agentFor } from '../lib/investigations';
 import { CxTeamCover } from '../components/CxTeamCover';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -495,7 +496,7 @@ function Thread({
                       <span className="inline-block -rotate-2 rounded-[4px] border-2 border-[#c1121f] px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-[#c1121f]">
                         Case opened
                       </span>
-                      <img src={INVESTIGATIONS.logo} alt="CX Investigations" className="absolute right-3 top-2 h-8 w-auto rounded-md" />
+                      <InvestigationsMark className="absolute right-4 top-3" />
                     </div>
                     <p className="mt-3 whitespace-pre-wrap pl-5 font-display text-[18px] font-semibold leading-[28px] text-[#1c1b17] [overflow-wrap:anywhere]">
                       {m.body}
