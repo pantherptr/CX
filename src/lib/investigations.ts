@@ -4,14 +4,12 @@ export const INVESTIGATIONS = {
   car: '/brand/investigations/car.webp',
   agents: '/brand/investigations/agents.webp',
   logo: '/brand/investigations/logo.webp',
-  agentM: '/brand/investigations/agent-m.webp',
-  agentF: '/brand/investigations/agent-f.webp',
 } as const;
 
-/** The fourteen investigators (art in /brand/investigations/inv-00 … inv-13). */
+/** The fourteen investigators half-body portraits, /brand/investigations/inv-00 … inv-13. */
 export const INVESTIGATORS: { name: string; src: string }[] = [
-  'Marco', 'Giulia', 'Daniele', 'Luca', 'Sofia', 'Matteo', 'Elena',
-  'Andrea', 'Chiara', 'Nico', 'Sara', 'Enzo', 'Marta', 'Leo',
+  'Dante', 'Nova', 'Atlas', 'Cassian', 'Aurora', 'Maverick', 'Vittoria',
+  'Zane', 'Rocco', 'Selene', 'Draco', 'Lyra', 'Gabriel', 'Enea',
 ].map((name, i) => ({ name, src: `/brand/investigations/inv-${String(i).padStart(2, '0')}.webp` }));
 
 /** The investigator of a case: picked at random once, and always the same for the same conversation. */
