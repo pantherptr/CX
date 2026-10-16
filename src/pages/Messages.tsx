@@ -692,6 +692,26 @@ export default function Messages() {
       toast({ title: 'Could not start a conversation', desc: 'Please try again in a moment.', icon: 'info' });
     }
   };
+  // closing a case takes two taps (the second within 3 s), so it never happens by accident
+  const [confirmClose, setConfirmClose] = useState(false);
+  useEffect(() => {
+    if (!confirmClose) return;
+    const id = window.setTimeout(() => setConfirmClose(false), 3000);
+    return () => window.clearTimeout(id);
+  }, [confirmClose]);
+  useEffect(() => { setConfirmClose(false); }, [activeId]);
+  const canCloseCase = canClose && active?.kind === 'support' && !active.closedAt;
+  const closeCaseButton = canCloseCase ? (
+    <button
+      type="button"
+      onClick={() => { if (confirmClose) { setConfirmClose(false); void closeActive(); } else setConfirmClose(true); }}
+      className={`pressable shrink-0 rounded-full px-3.5 py-2 text-caption font-bold transition-colors active:scale-95 ${
+        confirmClose ? 'bg-[#16794a] text-white' : 'bg-[#16794a]/10 text-[#16794a]'
+      }`}
+    >
+      {confirmClose ? 'Tap again to close' : 'Close case'}
+    </button>
+  ) : null;
   const closeActive = async () => {
     if (!active) return;
     const { error } = await closeSupportConversation(active.id);
@@ -997,6 +1017,7 @@ export default function Messages() {
           composer={
             readOnlyBar ? readOnlyBar : active ? (
               <div className="z-10 shrink-0 bg-chat-2 p-2.5">
+                {!profile?.is_owner && closeCaseButton && <div className="mb-1.5 flex justify-end">{closeCaseButton}</div>}
                 {profile?.is_owner && (
                   <div className="mb-1.5 flex items-center gap-1.5 text-[10px]">
                     <span className="text-neutral-500">Sending as:</span>
@@ -1194,6 +1215,7 @@ export default function Messages() {
                     </span>
                   </span>
                 </button>
+                {closeCaseButton}
               </div>
               {active.car && (
                 <Link
