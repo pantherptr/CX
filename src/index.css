@@ -2609,3 +2609,24 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   [class*='x-car-in'] { animation: none !important; }
 }
+
+/* "Case opened" scene (CaseOpenedScene.tsx) */
+.cx-scene-rain {
+  background-image: repeating-linear-gradient(104deg, rgba(170, 255, 205, 0) 0 9px, rgba(170, 255, 205, 0.16) 9px 10px, rgba(170, 255, 205, 0) 10px 22px);
+  background-size: 100% 100%;
+  animation: cx-scene-rain 0.9s linear infinite;
+}
+@keyframes cx-scene-rain { from { background-position: 0 0; } to { background-position: -22px 60px; } }
+.cx-scene-fog { animation: cx-scene-fog 9s ease-in-out infinite alternate; }
+.cx-scene-fog2 { animation: cx-scene-fog 12s ease-in-out infinite alternate-reverse; }
+@keyframes cx-scene-fog { from { transform: translateX(-6%); opacity: 0.8; } to { transform: translateX(10%); opacity: 1; } }
+.cx-scene-spark { animation: cx-scene-spark 2.2s ease-out infinite; opacity: 0; }
+@keyframes cx-scene-spark { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -22px) scale(0.3); } }
+.cx-scene-car { animation: cx-scene-car 1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes cx-scene-car { from { opacity: 0; transform: translateX(40%) scale(0.92); filter: brightness(0.3); } to { opacity: 1; transform: none; filter: none; } }
+.cx-scene-agent { animation: cx-scene-agent 1.1s ease-out both; }
+@keyframes cx-scene-agent { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .cx-scene-rain, .cx-scene-fog, .cx-scene-fog2, .cx-scene-spark, .cx-scene-car, .cx-scene-agent { animation: none !important; }
+  .cx-scene-spark { display: none; }
+}

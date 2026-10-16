@@ -13,8 +13,8 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
-import { INVESTIGATIONS, agentFor } from '../lib/investigations';
-import { InvestigationsMark } from './InvestigationsMark';
+import { INVESTIGATIONS } from '../lib/investigations';
+import { CaseOpenedScene } from './CaseOpenedScene';
 import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
@@ -769,22 +769,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                       </div>
                     )}
                     <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
-                      {m.image && (
-                        <div className="relative overflow-hidden rounded-xl bg-[#07090a] ring-1 ring-black/40">
-                          {/* crime-scene tape along the top */}
-                          <div aria-hidden className="h-1.5 w-full" style={{ backgroundImage: 'repeating-linear-gradient(-45deg,#f4c400 0 10px,#111 10px 20px)' }} />
-                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_120%_at_100%_100%,rgba(0,212,71,0.28),transparent_65%)]" />
-                          <div className="relative flex items-center gap-3 px-3 py-2.5">
-                            <img src={agentFor(m.id).src} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-white/15" />
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#ff4d4d]">{t('Case opened')}</p>
-                              <p className="mt-0.5 truncate text-detail font-semibold text-white">{t('An investigator has your case')}</p>
-                              <InvestigationsMark tone="light" size="sm" className="mt-1 items-start" />
-                            </div>
-                            <img src={m.image} alt="" className="h-12 w-auto shrink-0 animate-[x-car-in_.7s_cubic-bezier(.2,.8,.2,1)_both]" />
-                          </div>
-                        </div>
-                      )}
+                      {m.image && <CaseOpenedScene seed={m.id} className="-ml-[10px] max-w-none" />}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}
