@@ -427,6 +427,15 @@ function Thread({
   // Messages that arrive after the thread is on screen (a reply coming in) land with a small
   // animation; the history that was already there, and your own sent bubble (swapped in place from
   // the pending one), never animate, so nothing blinks.
+  const hasCase = !!messages?.some((m) => m.isCase);
+  useEffect(() => {
+    if (!hasCase || document.getElementById('cx-hand-font')) return;
+    const link = document.createElement('link');
+    link.id = 'cx-hand-font';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap&subset=latin,latin-ext';
+    document.head.appendChild(link);
+  }, [hasCase]);
   const knownIds = useRef<Set<string> | null>(null);
   const threadKey = useRef(active.id);
   if (threadKey.current !== active.id) { threadKey.current = active.id; knownIds.current = null; }
@@ -470,10 +479,7 @@ function Thread({
                 <div className="relative mx-auto mb-5 mt-7 w-full max-w-full -rotate-[0.8deg] px-1">
                   <div
                     className="relative rounded-[6px] px-5 pb-4 pt-9 text-left shadow-[0_18px_30px_-14px_rgba(0,0,0,0.55),0_2px_0_rgba(0,0,0,0.04)]"
-                    style={{
-                      background:
-                        'repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(70,110,170,0.16) 27px, rgba(70,110,170,0.16) 28px), linear-gradient(180deg,#fffef8,#fbf6e4)',
-                    }}
+                    style={{ background: 'linear-gradient(180deg,#fffef8,#fbf6e4)' }}
                   >
                     {/* the margin line of a notebook sheet */}
                     <span aria-hidden className="absolute bottom-0 left-9 top-0 w-px bg-[#e0524b]/35" />
@@ -498,7 +504,16 @@ function Thread({
                       </span>
                       <InvestigationsMark className="absolute right-4 top-3" />
                     </div>
-                    <p className="mt-3 whitespace-pre-wrap pl-5 font-display text-[18px] font-semibold leading-[28px] text-[#1c1b17] [overflow-wrap:anywhere]">
+                    {/* written in pen on ruled lines: the lines belong to the text block, so each line of writing sits on one */}
+                    <p
+                      className="mt-3 min-h-[84px] whitespace-pre-wrap pl-5 text-[25px] font-semibold leading-[28px] text-[#1b2a52] [overflow-wrap:anywhere]"
+                      style={{
+                        fontFamily: "'Caveat', 'Segoe Print', 'Bradley Hand', cursive",
+                        backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgba(70,110,170,0.28) 27px, rgba(70,110,170,0.28) 28px)',
+                        backgroundSize: '100% 28px',
+                        transform: 'rotate(-0.4deg)',
+                      }}
+                    >
                       {m.body}
                     </p>
                     <p className="mt-3 pl-5 text-caption font-medium text-[#6b6a60]">
