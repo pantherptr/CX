@@ -13,8 +13,8 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
-import { INVESTIGATIONS } from '../lib/investigations';
-import { CaseOpenedScene } from './CaseOpenedScene';
+import { INVESTIGATIONS, agentFor } from '../lib/investigations';
+import { CaseOpenedStamp } from './CaseOpenedStamp';
 import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
 // The glow around the composer (21st "border beam") is fetched only when the chat opens.
@@ -502,11 +502,12 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       return;
     }
     setAwaitingProblem(true);
-    setMsgs((cur) => [
-      ...cur,
-      { id: newId(), role: 'assistant', text: t('Tell me what the problem is, here, in a few lines. I will pass it to someone from the team.') },
-    ]);
-  }, [handing, human, t, userId]);
+    // X says it out loud, the way it does with its answers (unless the person silenced it)
+    const askId = newId();
+    const askText = t('Tell me what the problem is, here, in a few lines. I will pass it to someone from the team.');
+    setMsgs((cur) => [...cur, { id: askId, role: 'assistant', text: askText }]);
+    if (VOICE_ENABLED && autoVoiceAllowed()) speakFor(askId, askText);
+  }, [handing, human, speakFor, t, userId]);
 
   /** Second step: the written problem opens a case in the CX support chat (one pinned card, not a transcript). */
   const sendProblem = useCallback(async (problem: string) => {
@@ -527,11 +528,13 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
       return;
     }
     setAwaitingProblem(false);
-    setMsgs((cur) => [
-      ...cur,
-      { id: newId(), role: 'assistant', text: t('Done. Someone from the team will write to you soon — you will find the conversation in Messages.'), image: INVESTIGATIONS.car, caseSeed: opened.id },
-    ]);
-  }, [t, userId]);
+    const who = agentFor(opened.id).name;
+    const doneId = newId();
+    const doneText = t('{name} will be with you shortly. You will find the conversation in Messages.', { name: who });
+    setMsgs((cur) => [...cur, { id: doneId, role: 'assistant', text: doneText, image: INVESTIGATIONS.car, caseSeed: opened.id }]);
+    // spoken when the pick lands on the name (the on-screen draw takes about three seconds)
+    if (VOICE_ENABLED && autoVoiceAllowed()) window.setTimeout(() => speakFor(doneId, doneText), 3000);
+  }, [speakFor, t, userId]);
 
   const toggleMic = () => {
     if (listening) { stopListenRef.current?.(); return; }
@@ -772,7 +775,7 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                       </div>
                     )}
                     <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
-                      {m.image && <CaseOpenedScene seed={m.caseSeed ?? m.id} className="-ml-[10px] max-w-none" />}
+                      {m.image && <CaseOpenedStamp seed={m.caseSeed ?? m.id} className="py-1" />}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
                         {streaming?.id === m.id ? m.text.slice(0, streaming.shown) : m.text}
                         {streaming?.id === m.id && <span aria-hidden="true" className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-accent-700" />}

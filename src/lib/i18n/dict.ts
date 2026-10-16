@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["{name} will be with you shortly. You will find the conversation in Messages.", "{name} sarà con te a breve. Troverai la conversazione nei Messaggi.", "{name} va fi cu tine în scurt timp. Vei găsi conversația în Mesaje.", "{name} estará contigo en breve. Encontrarás la conversación en Mensajes."],
   ["{name} will be with you shortly", "{name} sarà con te a breve", "{name} va fi cu tine în scurt timp", "{name} estará contigo en breve"],
   ["Assigning an investigator", "Assegno un investigatore", "Se alocă un investigator", "Asignando un investigador"],
   ["This case is closed.", "Questo caso è chiuso.", "Acest caz este închis.", "Este caso está cerrado."],

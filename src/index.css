@@ -2651,3 +2651,7 @@ html [data-rmiz-btn-unzoom] { display: none; }
 .cx-pick-name { animation: cx-pick-name 0.16s ease-out both; }
 @keyframes cx-pick-name { from { opacity: 0.2; transform: translateY(5px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cx-pick-ring, .cx-pick-name { animation: none !important; } }
+
+.cx-stamp-in { animation: cx-stamp-in 0.38s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes cx-stamp-in { from { opacity: 0; transform: rotate(-4deg) scale(1.6); } to { opacity: 0.9; transform: rotate(-4deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cx-stamp-in { animation: none !important; } }
