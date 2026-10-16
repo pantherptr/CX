@@ -2630,3 +2630,17 @@ html [data-rmiz-btn-unzoom] { display: none; }
   .cx-scene-rain, .cx-scene-fog, .cx-scene-fog2, .cx-scene-spark, .cx-scene-car, .cx-scene-agent { animation: none !important; }
   .cx-scene-spark { display: none; }
 }
+
+/* Home hero on a phone: the ghost words ("to your heart.") sit behind the car, so they need more body to be read. */
+@media (max-width: 639px) {
+  :root {
+    --hero-ghost-a: rgba(110, 118, 108, 0.72);
+    --hero-ghost-b: rgba(130, 138, 128, 0.5);
+    --hero-ghost-c: rgba(150, 158, 148, 0.24);
+  }
+  html[data-theme='dark'] {
+    --hero-ghost-a: rgba(205, 212, 202, 0.62);
+    --hero-ghost-b: rgba(180, 188, 178, 0.42);
+    --hero-ghost-c: rgba(160, 168, 158, 0.2);
+  }
+}
