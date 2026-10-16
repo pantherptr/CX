@@ -305,10 +305,11 @@ export default function CarDetails() {
               {/* Four facts, like widgets */}
               <div className="mt-5 grid grid-cols-4 gap-2">
                 {facts.map((f) => (
-                  <div key={f.l} className="rounded-[18px] bg-surface p-3 text-center ring-1 ring-line">
+                  <div key={f.l} className="min-w-0 rounded-[18px] bg-surface px-1.5 py-3 text-center ring-1 ring-line">
                     <Icon name={f.icon} size={18} className="mx-auto text-muted" />
-                    <p className="mt-1.5 truncate text-detail font-semibold text-ink">{t(f.v)}</p>
-                    <p className="truncate text-[9.5px] font-medium uppercase tracking-wide text-faint">{t(f.l)}</p>
+                    {/* a long value ("Automatic") steps down a size instead of being cut with dots */}
+                    <p className={`mt-1.5 font-semibold leading-tight text-ink ${f.v.length > 6 ? 'text-[12.5px]' : 'text-detail'}`}>{t(f.v)}</p>
+                    <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-faint">{t(f.l)}</p>
                   </div>
                 ))}
               </div>
