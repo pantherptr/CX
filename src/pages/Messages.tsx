@@ -24,7 +24,6 @@ import {
   chatMediaUrl,
   markConversationRead,
   findOrCreateConversation,
-  openSupportConversation,
   closeSupportConversation,
   searchUsersForMessaging,
   type Conversation,
@@ -683,15 +682,6 @@ export default function Messages() {
   // A closed request, or a notice from CX: it can be read, not answered.
   const readOnly = !!active && (active.closedAt !== null || active.kind === 'notice');
   const canClose = !!active && !readOnly && active.kind !== 'notice' && (profile?.is_owner || profile?.is_admin) && active.other.role !== 'cx';
-  const startNewSupport = async () => {
-    if (!session) return;
-    try {
-      const r = await openSupportConversation(null, session.user.id);
-      if (r) { refresh(); openConvo(r.id); }
-    } catch {
-      toast({ title: 'Could not start a conversation', desc: 'Please try again in a moment.', icon: 'info' });
-    }
-  };
   // closing a case takes two taps (the second within 3 s), so it never happens by accident
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => {
@@ -730,16 +720,16 @@ export default function Messages() {
           </div>
         )}
         <p className="text-detail font-medium text-ink">
-          {active.kind === 'notice' ? 'This is a message from CX — you can’t reply here.' : 'This conversation was closed by the CX team.'}
+          {active.kind === 'notice' ? 'This is a message from CX — you can’t reply here.' : 'This case is closed.'}
         </p>
         <p className="mt-0.5 text-caption text-muted">
-          {active.kind === 'notice' ? 'Need to talk to someone? Start a conversation with the team.' : 'You can’t write in it any more. Start a new one whenever you need.'}
+          {active.kind === 'notice'
+            ? 'Need to talk to someone? Ask X: it opens a case with the team.'
+            : profile?.is_owner || profile?.is_admin
+              ? 'Nobody can write in a closed case. If the customer has another problem, they open a new case from X.'
+              : 'It can’t be reopened. If you have another problem, open a new case from X.'}
         </p>
-        {!profile?.is_owner && (
-          <button type="button" onClick={() => void startNewSupport()} className="btn btn-primary btn-sm mt-3">
-            {active.kind === 'notice' ? 'Talk to a person' : 'Start a new conversation'}
-          </button>
-        )}
+        {active.kind === 'notice' && !profile?.is_owner && <AskXRow className="mt-3" />}
       </div>
     </div>
   ) : null;

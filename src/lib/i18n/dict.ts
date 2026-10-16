@@ -31,6 +31,10 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["This case is closed.", "Questo caso è chiuso.", "Acest caz este închis.", "Este caso está cerrado."],
+  ["It can’t be reopened. If you have another problem, open a new case from X.", "Non si può riaprire. Se hai un altro problema, apri un nuovo caso da X.", "Nu poate fi redeschis. Dacă ai altă problemă, deschide un caz nou din X.", "No se puede reabrir. Si tienes otro problema, abre un caso nuevo desde X."],
+  ["Nobody can write in a closed case. If the customer has another problem, they open a new case from X.", "Nessuno può scrivere in un caso chiuso. Se il cliente ha un altro problema, apre un nuovo caso da X.", "Nimeni nu poate scrie într-un caz închis. Dacă clientul are altă problemă, deschide un caz nou din X.", "Nadie puede escribir en un caso cerrado. Si el cliente tiene otro problema, abre un caso nuevo desde X."],
+  ["Need to talk to someone? Ask X: it opens a case with the team.", "Devi parlare con qualcuno? Chiedi a X: apre un caso con il team.", "Vrei să vorbești cu cineva? Întreabă X: deschide un caz cu echipa.", "¿Necesitas hablar con alguien? Pregunta a X: abre un caso con el equipo."],
   ["An investigator has your case", "Un investigatore ha preso il tuo caso", "Un investigator se ocupă de cazul tău", "Un investigador tiene tu caso"],
   ["Case closed", "Caso chiuso", "Caz închis", "Caso cerrado"],
   ["CX Investigations · Case opened", "CX Investigations · Caso aperto", "CX Investigations · Caz deschis", "CX Investigations · Caso abierto"],
