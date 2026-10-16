@@ -107,9 +107,10 @@ export function FindScene({ car, prices = ['€31', '€189', '€64'] }: { car?
             </g>
             <circle className="fs-ring" cx="168" cy="196" r="18" fill="none" stroke="#0c9a45" strokeWidth="2.4" />
 
-            {/* the finger */}
-            <g className="fs-finger">
-              <path d="M0 0 C-3 -2 -4 -6 -3 -14 C-2.5 -17 2.5 -17 3 -14 L3.6 -3 C5 -3 6 -2 6.6 -0.4 L9 6 C11 11 9 20 3 28 L-12 28 C-14 22 -12 15 -8 10 L-4 5 Z" fill="#f4d3b8" stroke="#c89a78" strokeWidth="1" transform="translate(168 200) rotate(-18)" />
+            {/* the touch: a soft dot that glides to the price and presses it (the way phone ads show a tap) */}
+            <g className="fs-touch">
+              <circle cx="168" cy="196" r="15" fill="#16161a" fillOpacity="0.16" />
+              <circle cx="168" cy="196" r="9" fill="#ffffff" fillOpacity="0.92" stroke="#16161a" strokeOpacity="0.28" strokeWidth="1.4" />
             </g>
 
             {/* the card with the real photo and the car's name */}

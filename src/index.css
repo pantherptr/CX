@@ -2682,8 +2682,8 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @keyframes fs-pick-off { 0%, 38% { opacity: 1; } 39%, 96% { opacity: 0; } 97%, 100% { opacity: 1; } }
 .fs-ring { opacity: 0; transform-box: view-box; transform-origin: 168px 196px; animation: fs-ring 9s ease-out infinite; }
 @keyframes fs-ring { 0%, 37% { opacity: 0; transform: scale(0.5); } 40% { opacity: 0.95; transform: scale(1); } 54% { opacity: 0; transform: scale(2.3); } 100% { opacity: 0; } }
-.fs-finger { opacity: 0; animation: fs-finger 9s ease-in-out infinite; transform-box: view-box; }
-@keyframes fs-finger { 0%, 22% { opacity: 0; transform: translate(70px, 150px); } 30% { opacity: 1; transform: translate(10px, 12px); } 36% { opacity: 1; transform: translate(0, 0); } 39% { opacity: 1; transform: translate(0, 5px); } 44% { opacity: 1; transform: translate(0, 0); } 52%, 100% { opacity: 0; transform: translate(40px, 90px); } }
+.fs-touch { opacity: 0; transform-box: view-box; transform-origin: 168px 196px; animation: fs-touch 9s ease-in-out infinite; }
+@keyframes fs-touch { 0%, 22% { opacity: 0; transform: translate(84px, 120px) scale(1); } 30% { opacity: 1; transform: translate(14px, 14px) scale(1); } 35% { opacity: 1; transform: translate(0, 0) scale(1); } 38% { opacity: 1; transform: translate(0, 0) scale(0.7); } 42% { opacity: 1; transform: translate(0, 0) scale(1.05); } 50%, 100% { opacity: 0; transform: translate(0, 0) scale(1.4); } }
 .fs-card { opacity: 0; transform-box: view-box; animation: fs-card 9s cubic-bezier(0.2, 0.9, 0.3, 1) infinite; }
 @keyframes fs-card { 0%, 42% { opacity: 0; transform: translateY(170px); } 52% { opacity: 1; transform: translateY(0); } 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; transform: translateY(170px); } }
 .fs-photo { transform-box: fill-box; transform-origin: center; animation: fs-photo 9s ease-in-out infinite; }

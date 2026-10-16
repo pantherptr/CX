@@ -303,10 +303,9 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  // the car the first illustration shows on its card: a real one from the fleet (photo, name, price)
-  const findPick = allCars?.find((c) => c.city === 'Milan' && c.images[0]) ?? allCars?.find((c) => c.images[0]);
-  const findCar = findPick ? { name: `${findPick.make} ${findPick.model}`, image: unsplash(findPick.images[0], 600), price: eur(findPick.pricePerDay), city: findPick.city } : undefined;
-  const findPrices = [...new Set((allCars ?? []).filter((c) => c.id !== findPick?.id && c.pricePerDay !== findPick?.pricePerDay).map((c) => eur(c.pricePerDay)))].slice(0, 3);
+  // The first illustration is an ad: a fixed, glamorous car (Unsplash photo in /home), not a car of the fleet.
+  const findCar = { name: 'Aston Martin Vantage', image: '/home/aston-900.webp', price: eur(240), city: 'Milan' };
+  const findPrices = [eur(31), eur(189), eur(95)];
   const howImages = ['', '/home/book-1024.webp', ''];
   const howPositions = [undefined, '50% 52%', undefined];
   const howStatic = (
