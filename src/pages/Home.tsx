@@ -301,7 +301,7 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   const howImages = ['/home/find-1200.webp', '/home/book-1024.webp', '/home/road-1024.webp'];
-  const howPositions = ['64% 50%', '50% 52%', '50% 68%'];
+  const howPositions = ['84% 50%', '50% 52%', '50% 68%'];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
           {howSteps.map((st, i) => (
