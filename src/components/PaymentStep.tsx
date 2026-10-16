@@ -1,6 +1,6 @@
 import { ActionLabel } from './ui/loading-button';
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js/pure';
 import { Elements, ExpressCheckoutElement, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { Link } from 'react-router-dom';
 import { Icon } from './Icon';
@@ -14,9 +14,12 @@ import { eur } from '../lib/format';
  * renders the rest of the booking flow, it just can't take a real
  * payment.
  */
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null;
+const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+const hasStripe = Boolean(STRIPE_KEY);
+let stripeLoad: ReturnType<typeof loadStripe> | null = null;
+/** Stripe.js is only fetched when a payment form is really shown — never when the page's code is merely warmed
+ *  (its device checks also make Safari's fingerprinting protection show a banner on unrelated pages). */
+const getStripe = () => (stripeLoad ??= loadStripe(STRIPE_KEY as string));
 
 interface PaymentFormProps {
   amount: number | null;
@@ -145,20 +148,20 @@ export function PaymentStep({ clientSecret, amount, deposit, loading, error, sub
         <Icon name="lock" size={15} className="text-accent" /> Encrypted &amp; secure, powered by Stripe.
       </p>
 
-      {!stripePromise && (
+      {!hasStripe && (
         <p className="mt-6 flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
           <Icon name="info" size={16} /> Payments aren't set up on this deployment yet — VITE_STRIPE_PUBLISHABLE_KEY is
           missing. See .env.example.
         </p>
       )}
 
-      {stripePromise && loading && (
+      {hasStripe && loading && (
         <div className="mt-6 card flex items-center justify-center p-10">
           <p className="text-body text-muted">Preparing your payment…</p>
         </div>
       )}
 
-      {stripePromise && !loading && !clientSecret && error && (
+      {hasStripe && !loading && !clientSecret && error && (
         <div className="mt-6 card p-6">
           <p className="flex items-center gap-2 rounded-xl bg-danger/10 px-3.5 py-2.5 text-detail text-danger">
             <Icon name="info" size={16} /> {error}
@@ -171,9 +174,9 @@ export function PaymentStep({ clientSecret, amount, deposit, loading, error, sub
         </div>
       )}
 
-      {stripePromise && clientSecret && (
+      {hasStripe && clientSecret && (
         <Elements
-          stripe={stripePromise}
+          stripe={getStripe()}
           options={{
             clientSecret,
             appearance: {

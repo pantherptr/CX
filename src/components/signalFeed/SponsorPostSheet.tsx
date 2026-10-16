@@ -1,13 +1,17 @@
 import { ActionLabel } from '../ui/loading-button';
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js/pure';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { Icon } from '../Icon';
 import { useAuth } from '../../lib/auth';
 import { useLocale } from '../../lib/i18n';
 import { AD_DAY_OPTIONS, money, MAX_DAILY_CENTS, MIN_DAILY_CENTS, createAdPayment, type AdCheckout } from '../../lib/data/ads';
 
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) : null;
+const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+const hasStripe = Boolean(STRIPE_KEY);
+let stripeLoad: ReturnType<typeof loadStripe> | null = null;
+/** fetched only when a payment form is shown (see PaymentStep) */
+const getStripe = () => (stripeLoad ??= loadStripe(STRIPE_KEY as string));
 
 const BUDGETS = [199, 499, 999, 1999];
 
@@ -67,10 +71,10 @@ export function SponsorPostSheet({ postId, onClose }: { postId: string; onClose:
             <button type="button" onClick={onClose} className="btn btn-primary mt-5 min-h-12 w-full justify-center rounded-full text-[15px]">{t('Done')}</button>
           </div>
         ) : checkout ? (
-          !stripePromise ? (
+          !hasStripe ? (
             <p className="mt-4 text-detail text-danger">{t('Payments are not set up on this deployment yet.')}</p>
           ) : (
-            <Elements stripe={stripePromise} options={{ clientSecret: checkout.clientSecret, appearance: { theme: 'stripe' } }}>
+            <Elements stripe={getStripe()} options={{ clientSecret: checkout.clientSecret, appearance: { theme: 'stripe' } }}>
               <PayForm amount={checkout.amount} onPaid={() => setPaid(true)} onBack={() => setCheckout(null)} />
             </Elements>
           )
