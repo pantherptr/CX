@@ -13,7 +13,7 @@ import { unsplash } from '../lib/img';
 import { eur } from '../lib/format';
 import { useLocale } from '../lib/i18n';
 import { XCar } from './XCar';
-import { INVESTIGATIONS } from '../lib/investigations';
+import { INVESTIGATIONS, agentFor } from '../lib/investigations';
 import { InvestigationsMark } from './InvestigationsMark';
 import { VOICE_ENABLED, autoVoiceAllowed, canListen, listen, prepareSpeech, primeVoice, setAutoVoice, speak, stopSpeaking, type PreparedVoice } from '../lib/voice';
 
@@ -770,11 +770,19 @@ function AssistantChat({ onClose, origin }: { onClose: () => void; origin: { x: 
                     )}
                     <div className="min-w-0 max-w-full space-y-2" style={{ paddingLeft: CAR + 10 }}>
                       {m.image && (
-                        <div className="relative overflow-hidden rounded-2xl bg-[#050806] px-4 pb-3 pt-4 text-center">
-                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_50%_100%,rgba(0,212,71,0.35),transparent_70%)]" />
-                          <img src={m.image} alt="" className="relative mx-auto h-28 w-auto animate-[x-car-in_.7s_cubic-bezier(.2,.8,.2,1)_both]" />
-                          <InvestigationsMark tone="light" className="relative mt-3" />
-                          <p className="relative mt-2 text-label font-bold uppercase tracking-[0.2em] text-accent-bright">{t('Case opened')}</p>
+                        <div className="relative overflow-hidden rounded-xl bg-[#07090a] ring-1 ring-black/40">
+                          {/* crime-scene tape along the top */}
+                          <div aria-hidden className="h-1.5 w-full" style={{ backgroundImage: 'repeating-linear-gradient(-45deg,#f4c400 0 10px,#111 10px 20px)' }} />
+                          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_120%_at_100%_100%,rgba(0,212,71,0.28),transparent_65%)]" />
+                          <div className="relative flex items-center gap-3 px-3 py-2.5">
+                            <img src={agentFor(m.id).src} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-white/15" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#ff4d4d]">{t('Case opened')}</p>
+                              <p className="mt-0.5 truncate text-detail font-semibold text-white">{t('An investigator has your case')}</p>
+                              <InvestigationsMark tone="light" size="sm" className="mt-1 items-start" />
+                            </div>
+                            <img src={m.image} alt="" className="h-12 w-auto shrink-0 animate-[x-car-in_.7s_cubic-bezier(.2,.8,.2,1)_both]" />
+                          </div>
                         </div>
                       )}
                       <p className="whitespace-pre-wrap px-0.5 pt-1 text-body leading-6 text-ink">
