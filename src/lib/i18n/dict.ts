@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ['Sign in to see the cars', 'Accedi per vedere le auto', 'Autentifică-te ca să vezi mașinile', 'Inicia sesión para ver los coches'],
+  ['The map shows where cars are and what they cost. Create a free account to open them, see the photos and book.', 'La mappa mostra dove sono le auto e quanto costano. Crea un account gratuito per aprirle, vedere le foto e prenotare.', 'Harta arată unde sunt mașinile și cât costă. Creează un cont gratuit ca să le deschizi, să vezi pozele și să rezervi.', 'El mapa muestra dónde están los coches y cuánto cuestan. Crea una cuenta gratis para abrirlos, ver las fotos y reservar.'],
+
   ['Or have it brought to you', 'Oppure fattela portare', 'Sau cere-o la ușă', 'O haz que te la lleven'],
   ['Prefer not to collect? Choose delivery and the car arrives right at your door.', 'Non vuoi ritirarla? Scegli la consegna e l’auto arriva fino alla tua porta.', 'Nu vrei să o ridici? Alege livrarea și mașina ajunge chiar la ușa ta.', '¿Prefieres no recogerlo? Elige la entrega y el coche llega hasta tu puerta.'],
 
