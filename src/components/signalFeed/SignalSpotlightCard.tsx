@@ -1,3 +1,4 @@
+import { QuietVideo } from '../QuietVideo';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../Icon';
@@ -55,7 +56,7 @@ export function SignalSpotlightCard({ data, all, inRail = false, compact = false
         className={`group relative ${compact ? 'aspect-[4/3]' : 'aspect-[4/5]'} w-full animate-fade-up cursor-pointer overflow-hidden rounded-[28px] ${inRail || embedded ? '' : compact ? 'mb-3' : 'mb-5'} ${embedded ? 'rounded-3xl' : ''} bg-noir text-white shadow-[0_28px_60px_-30px_rgba(0,0,0,0.65)] outline-none ring-1 ring-black/10 transition-transform duration-300 ease-out active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-accent-bright sm:aspect-[16/10]`}
       >
         {data.mediaKind === 'video' ? (
-          <video src={data.mediaUrl} muted playsInline loop autoPlay preload="metadata" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
+          <QuietVideo src={data.mediaUrl} className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1600ms] ease-out group-hover:scale-[1.04]" />
         ) : (
           <SharedAvatar as="div" id={`post-media-spotlight-${data.entryId}-${data.mediaUrl}`} active={!open} className="absolute inset-0">
             <Img
