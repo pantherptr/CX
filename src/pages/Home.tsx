@@ -1,3 +1,4 @@
+import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { PostMarquee } from '../components/home/PostMarquee';
 import { SignalDeck } from '../components/home/SignalDeck';
 import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
@@ -29,6 +30,18 @@ const StickySteps = lazy(() => import('../components/StickySteps'));
  *  a slow, small wave passes through them now and then. Each letter paints its own copy of the heading's
  *  gradient (a parent's clipped gradient would vanish behind transformed children). Purely visual — the
  *  full phrase is kept for screen readers by the caller. */
+/** Step 4 of How it works: a pin dropping on a soft green map, no photo (the photo sits on its own below). */
+function DeliveryScene() {
+  return (
+    <div className="relative grid h-full w-full place-items-center overflow-hidden bg-gradient-to-br from-[#eafaf0] via-white to-[#d6f5e1]">
+      <span aria-hidden className="absolute h-[70%] w-[70%] rounded-full bg-[radial-gradient(closest-side,rgba(0,222,84,0.28),rgba(0,222,84,0))]" />
+      <span aria-hidden className="absolute h-[44%] w-[44%] rounded-full border border-accent-bright/30" />
+      <span aria-hidden className="absolute h-[64%] w-[64%] rounded-full border border-accent-bright/15" />
+      <div className="relative scale-[2.6]"><ProtectionIcon kind="pin" size="md" tone="soft" /></div>
+    </div>
+  );
+}
+
 function Letters({ text, from = 0, light = false, breathe = false }: { text: string; from?: number; light?: boolean; breathe?: boolean }) {
   return (
     <>
@@ -143,8 +156,8 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp', '/home/delivery-1122.webp'];
-  const howPositions = [undefined, '50% 50%', '50% 50%', '50% 40%'];
+  const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp', ''];
+  const howPositions = [undefined, '50% 50%', '50% 50%', undefined];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {howSteps.map((st, i) => (
@@ -367,7 +380,7 @@ export default function Home() {
                   desc: t(st.desc),
                   image: howImages[i],
                   position: howPositions[i],
-                  scene: i === 0 ? <FindPoster /> : undefined,
+                  scene: i === 0 ? <FindPoster /> : i === 3 ? <DeliveryScene /> : undefined,
                 }))}
               />
             </Suspense>
@@ -375,7 +388,19 @@ export default function Home() {
             howStatic
           )}
         </div>
-        {/* CX Delivery, folded into the steps: the route, and how it works at checkout */}
+        {/* CX Delivery: the photo on its own, then how it works at checkout */}
+        <ScrollRevealImage
+          src="/home/delivery-1122.webp"
+          srcSet="/home/delivery-800.webp 800w, /home/delivery-1122.webp 1122w"
+          position="50% 40%"
+          alt={t('Your car, delivered to your door')}
+          className="mt-10 h-[30rem] sm:h-[36rem]"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
+          <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+            <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
+          </span>
+        </ScrollRevealImage>
         <Reveal>
           <div className="mt-8 rounded-[1.75rem] border border-line bg-surface px-5 py-7 sm:px-10 sm:py-10 lg:grid lg:grid-cols-2 lg:items-center lg:gap-14">
             <div>
