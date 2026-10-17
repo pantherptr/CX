@@ -287,7 +287,7 @@ const fmtTime = (iso: string) => {
 // would just be visual noise on anything older than today.
 const fmtBubbleTime = (iso: string) => new Date(iso).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' });
 
-function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active: boolean; onClick: () => void; myId?: string }) {
+function ConversationRow({ c, active, onClick, myId, menuSpace = false }: { c: Conversation; active: boolean; onClick: () => void; myId?: string; menuSpace?: boolean }) {
   const unread = c.unreadCount > 0;
   const mine = !!c.lastMessage && c.lastMessage.senderId === myId;
   return (
@@ -320,7 +320,7 @@ function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active
             <VerifiedBadge role={c.other.role} size={13} />
           </span>
           {c.lastMessage && (
-            <span className={`shrink-0 text-label ${unread ? 'font-semibold text-accent' : 'text-faint'}`}>{fmtTime(c.lastMessage.createdAt)}</span>
+            <span className={`shrink-0 text-label ${unread ? 'font-semibold text-accent' : 'text-faint'} ${menuSpace ? 'mr-7' : ''}`}>{fmtTime(c.lastMessage.createdAt)}</span>
           )}
         </div>
         {c.car && <p className="mt-0.5 truncate text-caption font-semibold text-accent">{c.car.make} {c.car.model}</p>}
@@ -336,6 +336,113 @@ function ConversationRow({ c, active, onClick, myId }: { c: Conversation; active
         </div>
       </div>
     </button>
+  );
+}
+
+/** A chat in the list that can be deleted three ways: the dots (always there), a long press, or a swipe to the left
+ *  (a short swipe uncovers "Delete", a long one asks straight away). Always asks before deleting. Normal chats only. */
+function DeletableRow({ c, active, onClick, myId, onDelete }: { c: Conversation; active: boolean; onClick: () => void; myId?: string; onDelete: (id: string) => void }) {
+  const canDelete = c.kind === 'chat';
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const st = useRef<{ x: number; y: number; dir: 'h' | 'v' | null; base: number } | null>(null);
+  const press = useRef<number | null>(null);
+  const swallow = useRef(false);
+  const REVEAL = 92;
+
+  if (!canDelete) return <ConversationRow c={c} active={active} onClick={onClick} myId={myId} />;
+
+  const clearPress = () => { if (press.current) { window.clearTimeout(press.current); press.current = null; } };
+  const hold = () => { swallow.current = true; window.setTimeout(() => { swallow.current = false; }, 350); };
+
+  const down = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse') return;
+    st.current = { x: e.clientX, y: e.clientY, dir: null, base: dx };
+    clearPress();
+    press.current = window.setTimeout(() => {
+      press.current = null;
+      if (st.current && st.current.dir === null) { haptics.tick(); hold(); setMenu(true); }
+    }, 520);
+  };
+  const move = (e: React.PointerEvent) => {
+    const s = st.current;
+    if (!s) return;
+    const mx = e.clientX - s.x;
+    const my = e.clientY - s.y;
+    if (s.dir === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) {
+      s.dir = Math.abs(mx) > Math.abs(my) ? 'h' : 'v';
+      clearPress();
+      if (s.dir === 'h') { setDragging(true); (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); }
+    }
+    if (s.dir === 'h') setDx(Math.max(-190, Math.min(0, s.base + mx)));
+  };
+  const up = () => {
+    clearPress();
+    const s = st.current;
+    st.current = null;
+    if (!s || s.dir !== 'h') return;
+    setDragging(false);
+    hold();
+    if (dx < -165) { setDx(0); onDelete(c.id); }
+    else if (dx < -46) { haptics.tick(); setDx(-REVEAL); }
+    else setDx(0);
+  };
+
+  return (
+    <div className={`relative ${dx !== 0 ? 'overflow-hidden rounded-[22px]' : ''}`}>
+      <button
+        type="button"
+        tabIndex={dx < 0 ? 0 : -1}
+        aria-label="Delete chat"
+        onClick={() => { setDx(0); onDelete(c.id); }}
+        className="absolute inset-y-0 right-0 flex w-[92px] flex-col items-center justify-center gap-1 rounded-r-[22px] bg-danger text-[12px] font-semibold text-white"
+        style={{ visibility: dx === 0 ? 'hidden' : 'visible' }}
+      >
+        <Icon name="trash" size={18} /> Delete
+      </button>
+      <div
+        data-no-edge-back
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={up}
+        onClickCapture={(e) => {
+          if (swallow.current) { e.preventDefault(); e.stopPropagation(); return; }
+          if (dx < 0) { e.preventDefault(); e.stopPropagation(); setDx(0); }
+        }}
+        onContextMenu={(e) => { if (st.current || swallow.current) e.preventDefault(); }}
+        className="relative bg-bg"
+        style={{ transform: `translateX(${dx}px)`, transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.2,0.8,0.2,1)', touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
+      >
+        <ConversationRow c={c} active={active} onClick={onClick} myId={myId} menuSpace />
+      </div>
+      <button
+        type="button"
+        aria-label="Chat options"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={() => setMenu((v) => !v)}
+        className="absolute right-2 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full text-faint transition-colors hover:bg-panel hover:text-ink active:bg-panel"
+        style={{ transform: `translateX(${dx}px)`, transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.2,0.8,0.2,1)' }}
+      >
+        <Icon name="moreHorizontal" size={18} />
+      </button>
+      {menu && (
+        <>
+          <div aria-hidden className="fixed inset-0 z-20" onClick={() => setMenu(false)} />
+          <div role="menu" className="absolute right-2 top-11 z-30 w-44 animate-scale-in overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-pop">
+            <button
+              role="menuitem"
+              onClick={() => { setMenu(false); onDelete(c.id); }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-body font-medium text-danger transition-colors hover:bg-danger/10 active:bg-danger/10"
+            >
+              <Icon name="trash" size={16} /> Delete chat
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -970,17 +1077,18 @@ export default function Messages() {
     else refresh();
   };
 
-  const deleteConversation = async () => {
-    if (!activeId) return;
+  const deleteConversation = async (convId: string | null = activeId) => {
+    if (!convId) return;
     if (!window.confirm('Delete this chat? It disappears for you only; the other person keeps their copy.')) return;
-    const id = activeId;
-    const { error } = await deleteChat(id);
+    const { error } = await deleteChat(convId);
     if (error) {
       toast({ title: 'Could not delete the chat', desc: error, icon: 'trash' });
       return;
     }
-    setActiveId(null);
-    closeConvo();
+    if (convId === activeId) {
+      setActiveId(null);
+      closeConvo();
+    }
     refresh();
     toast({ title: 'Chat deleted', desc: 'It is gone from your list.', icon: 'trash' });
   };
@@ -1150,7 +1258,7 @@ export default function Messages() {
             ) : conversations && conversations.length > 0 ? (
               visibleConversations.length > 0 ? (
                 visibleConversations.map((c) => (
-                  <ConversationRow key={c.id} c={c} active={false} myId={session?.user.id} onClick={() => openConvo(c.id)} />
+                  <DeletableRow key={c.id} c={c} active={false} myId={session?.user.id} onClick={() => openConvo(c.id)} onDelete={(id) => void deleteConversation(id)} />
                 ))
               ) : (
                 <p className="px-6 py-16 text-center text-detail text-muted">No conversations match “{search.trim()}”.</p>
