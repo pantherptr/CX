@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useAuth } from '../lib/auth';
+import { useMyBookings } from '../lib/data/bookings';
+import { BoardingPassCard } from './BoardingPassCard';
 import { Icon } from './Icon';
 import { Modal } from './primitives';
 import { CxMark } from './CxBadge';
@@ -111,6 +114,10 @@ export function TripStamp({ stamp, tilted = true }: { stamp: TripStampData; tilt
 /** The full record of one trip, opened from its stamp. */
 function TravelRecord({ stamp, onClose, onToggle }: { stamp: TripStampData; onClose: () => void; onToggle?: (s: TripStampData) => void }) {
   const { t, lang } = useLocale();
+  const { session } = useAuth();
+  // only the owner of the stamp sees the booking behind it (reference, name): the pass, torn and confirmed
+  const { bookings } = useMyBookings(onToggle ? session?.user.id : undefined);
+  const booking = onToggle ? (bookings ?? []).find((b) => b.car.id === stamp.car.id && b.startDate === stamp.startDate && b.endDate === stamp.endDate) : undefined;
   const place = stampPlace(stamp.city, lang);
   const loc = lang === 'en' ? uiLocale() : lang;
   const long = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
@@ -125,6 +132,26 @@ function TravelRecord({ stamp, onClose, onToggle }: { stamp: TripStampData; onCl
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-3 pt-7">
         <p className="mb-5 text-center text-[11px] font-semibold text-faint">{t('Travel record')}</p>
         <div className="mx-auto max-w-[22rem]"><TripStamp stamp={stamp} tilted={false} /></div>
+        {booking && (
+          <div className="mx-auto mt-9 max-w-[26rem]">
+            <p className="mb-3 text-center text-[11px] font-semibold text-faint">{t('Your boarding pass')}</p>
+            <BoardingPassCard
+              done
+              b={{
+                reference: booking.reference,
+                startDate: booking.startDate,
+                endDate: booking.endDate,
+                fulfillmentType: booking.fulfillmentType,
+                deliveryAddress: booking.deliveryAddress,
+                pickupLocation: booking.pickupLocation,
+                totalPrice: booking.totalPrice,
+                passengerName: booking.renter.name,
+                hostName: booking.host.name,
+                car: { year: booking.car.year, make: booking.car.make, model: booking.car.model, city: booking.car.city, location: booking.car.location },
+              }}
+            />
+          </div>
+        )}
         <dl className="mx-auto mt-8 max-w-[22rem]">
           <Row k={t('Destination')} v={place.country ? `${place.city} · ${place.country}` : place.city} />
           <Row k={t('Car')} v={`${stamp.car.make} ${stamp.car.model}`} />

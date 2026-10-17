@@ -30,7 +30,7 @@ export interface BoardingPassData {
 }
 
 /** The ticket shown the moment a booking is complete — and again on the trip page. */
-export function BoardingPassCard({ b }: { b: BoardingPassData }) {
+export function BoardingPassCard({ b, done = false }: { b: BoardingPassData; /** a finished trip: shown from the back, stub already torn, stamped Confirmed */ done?: boolean }) {
   const { t } = useLocale();
   const days = Math.max(1, Math.round((new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / 86_400_000));
   const place = (b.fulfillmentType === 'delivery' ? b.deliveryAddress : b.pickupLocation || b.car.location) || b.car.city;
@@ -60,6 +60,8 @@ export function BoardingPassCard({ b }: { b: BoardingPassData }) {
       host={b.hostName ? t('Hosted by {name}', { name: b.hostName }) : undefined}
       headline={t('I own the keys')}
       stamp={t('Confirmed')}
+      defaultSide={done ? 'back' : 'front'}
+      defaultTorn={done}
       labels={{
         boardingPass: t('Boarding pass'),
         passenger: t('Passenger'),

@@ -108,6 +108,8 @@ export interface BookingPassProps {
   /** The medal shown in the stub. */
   medalImage?: string;
   defaultSide?: Side;
+  /** Start with the stub already torn off (the "confirmed" look, for a trip that is over). */
+  defaultTorn?: boolean;
   onTear?: (torn: boolean) => void;
   tilt?: number;
   maxWidth?: number | string;
@@ -259,6 +261,7 @@ export default function BookingPass({
   carImage = '/hero-car.webp?v=3',
   medalImage = '/brand/app-icon-1024.png',
   defaultSide = 'front',
+  defaultTorn = false,
   onTear,
   tilt = 6,
   maxWidth = 960,
@@ -268,7 +271,7 @@ export default function BookingPass({
   const [turns, setTurns] = React.useState(defaultSide === 'back' ? 1 : 0);
   const side: Side = turns % 2 ? 'back' : 'front';
   const [printed, setPrinted] = React.useState(defaultSide === 'back');
-  const [torn, setTorn] = React.useState(false);
+  const [torn, setTorn] = React.useState(defaultTorn);
   const [reduced, setReduced] = React.useState(false);
 
   const stageRef = React.useRef<HTMLDivElement>(null);

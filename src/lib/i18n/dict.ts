@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Your boarding pass", "Il tuo boarding pass", "Cartea ta de îmbarcare", "Tu tarjeta de embarque"],
   ["Get the app", "Scarica l’app", "Descarcă aplicația", "Obtén la app"],
   ["CX on your Home Screen", "CX sulla tua schermata Home", "CX pe ecranul tău principal", "CX en tu pantalla de inicio"],
   ["Opens like an app, full screen, with notifications for your messages and trips. No store, no download.", "Si apre come un’app, a schermo intero, con le notifiche per messaggi e viaggi. Niente store, niente download.", "Se deschide ca o aplicație, pe tot ecranul, cu notificări pentru mesaje și călătorii. Fără magazin, fără descărcare.", "Se abre como una app, a pantalla completa, con avisos de mensajes y viajes. Sin tienda, sin descarga."],
