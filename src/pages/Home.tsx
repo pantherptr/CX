@@ -30,33 +30,6 @@ const StickySteps = lazy(() => import('../components/StickySteps'));
  *  a slow, small wave passes through them now and then. Each letter paints its own copy of the heading's
  *  gradient (a parent's clipped gradient would vanish behind transformed children). Purely visual — the
  *  full phrase is kept for screen readers by the caller. */
-/** Step 4 of How it works: a pin dropping on a soft green map, no photo (the photo sits on its own below). */
-function DeliveryScene() {
-  return (
-    <div className="relative grid h-full w-full place-items-center overflow-hidden bg-gradient-to-br from-[#eafaf0] via-white to-[#d6f5e1]">
-      <span aria-hidden className="absolute h-[70%] w-[70%] rounded-full bg-[radial-gradient(closest-side,rgba(0,222,84,0.28),rgba(0,222,84,0))]" />
-      <span aria-hidden className="absolute h-[44%] w-[44%] rounded-full border border-accent-bright/30" />
-      <span aria-hidden className="absolute h-[64%] w-[64%] rounded-full border border-accent-bright/15" />
-      <svg viewBox="0 0 240 240" className="relative mt-[6%] h-[64%] w-[64%]" fill="none" role="img" aria-label="">
-        <ellipse cx="120" cy="206" rx="86" ry="9" fill="#0a3d22" opacity="0.1" />
-        {/* house */}
-        <path d="M44 112 120 52l76 60v86H44z" fill="#fff" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
-        <path d="M32 116 120 46l88 70" stroke="#0a3d22" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="104" y="146" width="32" height="52" rx="5" fill="#00c853" stroke="#0a3d22" strokeWidth="5" />
-        <circle cx="129" cy="173" r="2.6" fill="#0a3d22" />
-        <rect x="58" y="128" width="30" height="26" rx="4" fill="#d8f7e3" stroke="#0a3d22" strokeWidth="4" />
-        <rect x="152" y="128" width="30" height="26" rx="4" fill="#d8f7e3" stroke="#0a3d22" strokeWidth="4" />
-        <path d="M168 78V58h14v34" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
-        {/* pin on the house */}
-        <g className="pi-bob">
-          <path d="M120 6c-15 0-27 11.5-27 26 0 19 27 40 27 40s27-21 27-40c0-14.500-12-26-27-26z" fill="#00de54" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
-          <circle cx="120" cy="32" r="9" fill="#fff" stroke="#0a3d22" strokeWidth="4" />
-        </g>
-      </svg>
-    </div>
-  );
-}
-
 function Letters({ text, from = 0, light = false, breathe = false }: { text: string; from?: number; light?: boolean; breathe?: boolean }) {
   return (
     <>
@@ -171,8 +144,8 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  const howImages = ['', '/home/book-1100.webp', '/home/road-cx-1100.webp', ''];
-  const howPositions = [undefined, '50% 50%', '50% 30%', undefined];
+  const howImages = ['', '/home/book-1100.webp', '/home/road-cx-1100.webp', '/home/faster-1100.webp'];
+  const howPositions = [undefined, '50% 50%', '50% 30%', '78% 55%'];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {howSteps.map((st, i) => (
@@ -394,7 +367,7 @@ export default function Home() {
                   desc: t(st.desc),
                   image: howImages[i],
                   position: howPositions[i],
-                  scene: i === 0 ? <FindPoster /> : i === 3 ? <DeliveryScene /> : undefined,
+                  scene: i === 0 ? <FindPoster /> : undefined,
                 }))}
               />
             </Suspense>
