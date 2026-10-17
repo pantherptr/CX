@@ -19,6 +19,15 @@ import { touchDevice } from './data/devices';
 
 const PROFILE_CACHE = 'cx.profile.v1';
 
+/** What a person reads when the service is unreachable or restricted (network down, quota block, 5xx): never the raw
+ *  provider text. Wrong passwords and the like keep their own message. */
+const UNAVAILABLE_ERROR = 'CX is briefly unavailable while we get things ready. Please try again in a little while: your account and data are safe.';
+function friendlyAuthError(err: { message: string; status?: number; name?: string }): string {
+  const m = err.message ?? '';
+  const down = !err.status || err.status === 0 || err.status >= 500 || err.status === 429 || /failed to fetch|network|load failed|quota|restricted|fetch/i.test(m) || err.name === 'AuthRetryableFetchError';
+  return down ? UNAVAILABLE_ERROR : m;
+}
+
 const NOT_CONFIGURED_ERROR =
   'Sign-in is not set up yet — Supabase keys are missing from .env.local.';
 
@@ -292,7 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { full_name: fullName } },
     });
-    if (error) return { error: error.message, needsEmailConfirmation: false };
+    if (error) return { error: friendlyAuthError(error), needsEmailConfirmation: false };
     // If email confirmation is required, Supabase returns a user but no
     // session — the account exists but can't sign in yet.
     return { error: null, needsEmailConfirmation: !data.session };
@@ -301,7 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error ? error.message : null };
+    return { error: error ? friendlyAuthError(error) : null };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {

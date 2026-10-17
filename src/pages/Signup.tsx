@@ -1,3 +1,4 @@
+import { useLocale } from '../lib/i18n';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
@@ -7,6 +8,7 @@ import { useAuth } from '../lib/auth';
 import { useScramble } from '../lib/useScramble';
 
 export default function Signup() {
+  const { t } = useLocale();
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -82,7 +84,7 @@ export default function Signup() {
             <Icon name={showPassword ? 'eyeOff' : 'eye'} size={17} />
           </button>
         </AuthItem>
-        {error && <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{error}</p>}
+        {error && <p className="rounded-xl bg-danger/10 px-3 py-2.5 text-detail text-danger">{t(error)}</p>}
         <AuthItem stop>
           <button type="submit" disabled={submitting} className="btn btn-glint btn-primary btn-block btn-lg" {...(submitting ? {} : createAccountScramble)}>
             <span className="btn-glint__sweep" aria-hidden="true" />

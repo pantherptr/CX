@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["CX is briefly unavailable while we get things ready. Please try again in a little while: your account and data are safe.", "CX è temporaneamente non disponibile mentre prepariamo tutto. Riprova tra poco: il tuo account e i tuoi dati sono al sicuro.", "CX este temporar indisponibil cât pregătim totul. Încearcă din nou în scurt timp: contul și datele tale sunt în siguranță.", "CX no está disponible por un momento mientras lo preparamos. Vuelve a intentarlo en un rato: tu cuenta y tus datos están a salvo."],
   ["See all the questions", "Vedi tutte le domande", "Vezi toate întrebările", "Ver todas las preguntas"],
   ["Hide the questions", "Nascondi le domande", "Ascunde întrebările", "Ocultar las preguntas"],
   ["{n} questions", "{n} domande", "{n} întrebări", "{n} preguntas"],
