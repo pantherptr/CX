@@ -31,6 +31,16 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ['Search the help centre', 'Cerca nel centro assistenza', 'Caută în centrul de ajutor', 'Busca en el centro de ayuda'],
+  ['Browse by topic', 'Sfoglia per argomento', 'Răsfoiește pe subiecte', 'Explora por tema'],
+  ['1 answer', '1 risposta', '1 răspuns', '1 respuesta'],
+  ['{n} answers', '{n} risposte', '{n} răspunsuri', '{n} respuestas'],
+  ['Clear', 'Cancella', 'Șterge', 'Borrar'],
+  ['No answers found', 'Nessuna risposta trovata', 'Nu am găsit răspunsuri', 'No hay respuestas'],
+  ['Try other words, or ask us directly.', 'Prova con altre parole, oppure chiedi a noi.', 'Încearcă alte cuvinte sau întreabă-ne direct.', 'Prueba con otras palabras o pregúntanos directamente.'],
+  ['Ask X', 'Chiedi a X', 'Întreabă-l pe X', 'Pregunta a X'],
+  ['Ask X for a quick answer, or write to the team: every case is read by a real person.', 'Chiedi a X per una risposta veloce, oppure scrivi al team: ogni caso è letto da una persona vera.', 'Întreabă-l pe X pentru un răspuns rapid sau scrie echipei: fiecare caz este citit de o persoană reală.', 'Pregunta a X para una respuesta rápida o escribe al equipo: cada caso lo lee una persona real.'],
+
   ['Delete chat', 'Elimina chat', 'Șterge conversația', 'Eliminar chat'],
   ['Delete this chat? It disappears for you only; the other person keeps their copy.', 'Eliminare questa chat? Sparisce solo per te; l’altra persona conserva la sua copia.', 'Ștergi această conversație? Dispare doar pentru tine; cealaltă persoană își păstrează copia.', '¿Eliminar este chat? Desaparece solo para ti; la otra persona conserva su copia.'],
   ['Could not delete the chat', 'Impossibile eliminare la chat', 'Nu am putut șterge conversația', 'No se pudo eliminar el chat'],
