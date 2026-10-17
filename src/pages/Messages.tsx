@@ -718,14 +718,18 @@ function Thread({
                     </p>
                   </div>
                 </div>
-                {/* the investigator who took the case says so, right under the sheet */}
-                {active.kind === 'support' && (
+                {/* the investigator says so only once the team has really opened the case: the case message turns "read" (read_at) when a team member opens the chat */}
+                {active.kind === 'support' && m.readAt && (
                   <div className="mb-3 flex items-center justify-center gap-2 px-2 text-center">
                     <InvestigatorBadge caseId={active.id} size={30} className="mx-0.5" />
                     <p className="text-caption leading-snug text-ink-soft">
                       <span className="font-semibold text-ink">{agentFor(active.id).name}</span> · CX Investigative <span>is now in this chat</span>
+                      <span className="text-faint"> · {new Date(m.readAt).toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}</span>
                     </p>
                   </div>
+                )}
+                {active.kind === 'support' && !m.readAt && mine && (
+                  <p className="mb-3 px-4 text-center text-caption text-faint">Your case is in the queue. You will see here who takes it.</p>
                 )}
               </div>
             );
