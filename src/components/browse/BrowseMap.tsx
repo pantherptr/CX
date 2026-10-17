@@ -27,11 +27,12 @@ export interface AreaBounds { west: number; south: number; east: number; north: 
 type Pin = { car: Car; pos: [number, number] };
 
 /** Greedy clustering in screen pixels: pins closer than `radius` px become one bubble with a count. */
-function clusterPins(pins: Pin[], project: (p: [number, number]) => { x: number; y: number }, radius = 44) {
+function clusterPins(pins: Pin[], project: (p: [number, number]) => { x: number; y: number }, rx = 64, ry = 38) {
   const out: { x: number; y: number; items: Pin[] }[] = [];
   for (const it of pins) {
     const p = project(it.pos);
-    const hit = out.find((c) => Math.hypot(c.x - p.x, c.y - p.y) < radius);
+    // price pills are wide and short: two of them overlap when they are closer than about a pill's size, not a circle's
+    const hit = out.find((c) => ((c.x - p.x) / rx) ** 2 + ((c.y - p.y) / ry) ** 2 < 1);
     if (hit) {
       hit.x = (hit.x * hit.items.length + p.x) / (hit.items.length + 1);
       hit.y = (hit.y * hit.items.length + p.y) / (hit.items.length + 1);
@@ -87,6 +88,24 @@ export function BrowseMap({
   const [pick, setPick] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const strip = useRef<HTMLDivElement>(null);
+  // where the list sheet's top edge is (viewport px): the car cards sit right above it, never hidden behind it
+  const [sheetTop, setSheetTop] = useState<number | null>(null);
+  const sheetTopRef = useRef<number | null>(null);
+  sheetTopRef.current = sheetTop;
+  useEffect(() => {
+    if (variant !== 'main') return;
+    let raf = 0;
+    const read = () => {
+      raf = 0;
+      const el = document.querySelector('[data-browse-sheet]');
+      setSheetTop(el ? Math.round(el.getBoundingClientRect().top) : null);
+    };
+    const queue = () => { if (!raf) raf = requestAnimationFrame(read); };
+    read();
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    return () => { window.removeEventListener('scroll', queue); window.removeEventListener('resize', queue); if (raf) cancelAnimationFrame(raf); };
+  }, [variant, focusId]);
   const programmatic = useRef(false);
   const youMarker = useRef<MapLibreMarker | null>(null);
   const [locating, setLocating] = useState(false);
@@ -184,9 +203,9 @@ export function BrowseMap({
   /** The part of the map you can really see on a phone: below the top bars, above the half-open sheet. */
   const insets = () => {
     const h = box.current?.clientHeight ?? window.innerHeight;
-    const sheetTop = Math.round(window.innerHeight * 0.5);
+    const sheetTop = sheetTopRef.current ?? Math.round(window.innerHeight * 0.5);
     const bar = document.querySelector('[data-browse-top]')?.getBoundingClientRect().bottom;
-    return { top: Math.round((bar ?? 150) + 12), bottom: Math.max(150, h - sheetTop + 16) };
+    return { top: Math.round((bar ?? 150) + 12), bottom: Math.max(150, h - sheetTop + 124) }; // 124 = the car card row above the sheet
   };
   const focusCar = (id: string, scrollCard: boolean) => {
     setFocusId(id);
@@ -346,6 +365,10 @@ export function BrowseMap({
   autoRef.current = applyArea;
 
   const showSheet = variant === 'main' && placed.length > 0;
+  // the row of cards rides just above the list sheet's top edge; with the list pulled right up there is no map to show
+  const boxH = box.current?.clientHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const stripHidden = sheetTop !== null && sheetTop < 230;
+  const stripBottom = sheetTop !== null ? Math.max(64, boxH - sheetTop + 8) : '4.4rem';
 
   return (
     <div className={`relative overflow-hidden ${variant === 'main' ? 'bg-bg' : 'bg-[#f2f4f7]'} ${className}`}>
@@ -424,8 +447,8 @@ export function BrowseMap({
         <div
           ref={strip}
           onScroll={onStripScroll}
-          style={{ touchAction: 'pan-x' }}
-          className="scrollbar-none absolute inset-x-0 bottom-[4.4rem] z-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-1"
+          className="scrollbar-none absolute inset-x-0 z-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-1"
+          style={{ touchAction: 'pan-x', bottom: stripBottom, visibility: stripHidden ? 'hidden' : 'visible' }}
         >
           {placed.map((c) => (
             <button

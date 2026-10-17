@@ -569,6 +569,7 @@ export default function Browse() {
         {/* the list: a sheet whose top edge peeks over the map and rises with the page */}
         <div
           ref={listRef}
+          data-browse-sheet
           className="relative z-10 -mt-[3.6rem] min-h-[100lvh] rounded-t-[28px] bg-bg px-4 pb-28 shadow-[0_-16px_36px_-18px_rgba(0,0,0,0.5)]"
         >
           <div className="relative">

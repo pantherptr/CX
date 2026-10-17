@@ -408,8 +408,8 @@ function DeletableRow({ c, active, onClick, myId, onDelete, onArchive, leaving =
       className="grid"
       style={{ gridTemplateRows: leaving ? '0fr' : '1fr', opacity: leaving ? 0 : 1, marginBottom: leaving ? -4 : 0, transition: 'grid-template-rows 0.3s cubic-bezier(0.3,0.7,0.2,1), opacity 0.22s ease, margin 0.3s ease' }}
     >
-    <div className="min-h-0 overflow-hidden">
-    <div className={`relative ${dx !== 0 ? 'overflow-hidden rounded-[22px]' : ''}`}>
+    <div className={`min-h-0 ${leaving ? 'overflow-hidden' : ''}`}>
+    <div className={`relative ${dx !== 0 ? 'overflow-hidden rounded-[22px]' : ''} ${menu ? 'z-30' : ''}`}>
       {canArchive && (
         <button
           type="button"
