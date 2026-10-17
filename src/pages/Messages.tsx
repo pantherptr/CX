@@ -434,8 +434,8 @@ function DeletableRow({ c, active, onClick, myId, onDelete, onArchive }: { c: Co
           if (swallow.current) { e.preventDefault(); e.stopPropagation(); return; }
           if (dx !== 0) { e.preventDefault(); e.stopPropagation(); setDx(0); }
         }}
-        onContextMenu={(e) => { if (st.current || swallow.current) e.preventDefault(); }}
-        className="relative bg-bg"
+        onContextMenu={(e) => e.preventDefault()}
+        className="no-callout relative bg-bg"
         style={{ ...anim, touchAction: 'pan-y', WebkitTouchCallout: 'none' }}
       >
         <ConversationRow c={c} active={active} onClick={onClick} myId={myId} menuSpace />
