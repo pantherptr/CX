@@ -39,7 +39,8 @@ interface FeedRow {
 export async function fetchSpotlightFeed(limit = 6): Promise<SpotlightCardData[]> {
   const { data, error } = await supabase.rpc('fetch_spotlight_feed', { p_limit: limit });
   if (error || !data) return [];
-  return (data as FeedRow[]).map((r) => ({
+  // Spotlight shows photos only: its videos are not played (they were the heaviest files in the feed)
+  return (data as FeedRow[]).filter((r) => r.media_kind !== 'video').map((r) => ({
     entryId: r.entry_id, visionId: r.vision_id, publishedAt: r.published_at, postId: r.post_id,
     publisherLabel: r.publisher_label ?? 'CX Team', publisherAvatar: r.publisher_avatar,
     curatedBy: r.curated_by, city: r.city, title: r.editorial_title,
