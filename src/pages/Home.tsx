@@ -514,14 +514,30 @@ export default function Home() {
       <section className="container-page mt-20 mb-6 sm:mt-24">
         <div className="mx-auto max-w-[36rem] text-center">
           <h2 className="sr-only">{t('Ready for your next journey?')}</h2>
-          <ScrollRevealImage
-            src="/home/moment-1254.webp"
-            srcSet="/home/moment-800.webp 800w, /home/moment-1254.webp 1254w"
-            alt={t('Your moment. Your car.')}
-            className="aspect-square"
-            fromWidth={72}
-            fromScale={1.2}
-          />
+          {/* light theme: only the writing and the car, no background */}
+          <Reveal className="dark:hidden">
+            <img
+              src="/home/moment-cut-1254.webp"
+              srcSet="/home/moment-cut-800.webp 800w, /home/moment-cut-1254.webp 1254w"
+              sizes="(min-width: 640px) 36rem, 92vw"
+              width={1254}
+              height={1098}
+              alt={t('Your moment. Your car.')}
+              draggable={false}
+              className="mx-auto block h-auto w-full select-none"
+            />
+          </Reveal>
+          {/* dark theme: the same artwork on its paper (the black car and the ink would vanish on a dark page) */}
+          <div className="hidden dark:block">
+            <ScrollRevealImage
+              src="/home/moment-1254.webp"
+              srcSet="/home/moment-800.webp 800w, /home/moment-1254.webp 1254w"
+              alt={t('Your moment. Your car.')}
+              className="aspect-square"
+              fromWidth={72}
+              fromScale={1.2}
+            />
+          </div>
           <Reveal>
             <div className="mt-7 flex flex-col items-center gap-5">
               <p className="max-w-md text-copy leading-relaxed text-muted">
