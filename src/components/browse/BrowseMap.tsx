@@ -331,7 +331,7 @@ export function BrowseMap({
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
     // on a phone the card sheet covers the bottom of the map: the pins are framed above it
-    const fit = locked ? { top: 50, bottom: window.innerWidth < 640 ? 330 : 240 } : variant === 'main' && placed.length > 0 ? insets() : { top: 70, bottom: 70 };
+    const fit = locked ? { top: 50, bottom: window.innerWidth < 640 ? (window.innerWidth < 370 ? 370 : 330) : 240 } : variant === 'main' && placed.length > 0 ? insets() : { top: 70, bottom: 70 };
     map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: { top: fit.top, left: 50, right: 50, bottom: fit.bottom }, maxZoom: exact ? 15.5 : 14, duration: 900 });
     setMoved(false);
   }, [city, cars, ready, exact, areaActive, variant, placed.length]);

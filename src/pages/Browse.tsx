@@ -474,7 +474,7 @@ export default function Browse() {
               <Icon name="lock" size={17} className="text-accent-700" /> {t('Sign in to see the cars')}
             </h1>
             <p className="mt-1.5 text-detail text-ink-soft">{t('The map shows where cars are and what they cost. Create a free account to open them, see the photos and book.')}</p>
-            <div className="mt-4 grid w-full grid-cols-2 gap-2.5">
+            <div className="mt-4 grid w-full grid-cols-1 gap-2.5 min-[370px]:grid-cols-2">
               <Link to="/signup" className="btn btn-accent-bright btn-lg !px-3">{t('Create account')}</Link>
               <Link to="/login" state={{ from: { pathname: '/browse' } }} className="btn btn-secondary btn-lg !px-3">{t('Sign in')}</Link>
             </div>
