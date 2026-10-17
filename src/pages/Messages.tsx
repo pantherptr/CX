@@ -41,7 +41,7 @@ import { uiLocale } from '../lib/i18n/uiLocale';
 type SendAsRole = 'owner' | 'owner_assistant';
 
 /** Tap the CX team's name: an official card, not a person's profile — cover, seal, the team's numbers. */
-function CxTeamSheet({ active, onClose }: { active: Conversation; onClose: () => void }) {
+function CxTeamSheet({ active, onClose, onDelete }: { active: Conversation; onClose: () => void; onDelete?: () => void }) {
   return (
     <div className="absolute inset-0 z-30 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="CX team info">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 animate-[fade-in_.2s_ease-out_both] bg-black/45 backdrop-blur-[3px]" />
@@ -78,7 +78,12 @@ function CxTeamSheet({ active, onClose }: { active: Conversation; onClose: () =>
           >
             See the team on SIGNAL
           </Link>
-          <p className="mt-3 flex items-center gap-1.5 text-caption text-faint">
+          {onDelete && (
+            <button onClick={() => { onClose(); onDelete(); }} className="pressable mt-2 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-caption font-semibold text-muted active:bg-panel">
+              <Icon name="trash" size={14} /> Delete chat
+            </button>
+          )}
+          <p className="mt-1 flex items-center gap-1.5 text-caption text-faint">
             <Icon name="lock" size={13} /> We never ask for passwords or card details in chat.
           </p>
         </div>
@@ -162,7 +167,7 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport, onDelete 
               Report {other.name}
             </button>
           )}
-          {onDelete && active.kind === 'chat' && (
+          {onDelete && (
             <button onClick={() => { onClose(); onDelete(); }} className="pressable mt-1 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-caption font-semibold text-muted active:bg-panel">
               <Icon name="trash" size={14} /> Delete chat
             </button>
@@ -344,8 +349,8 @@ function ConversationRow({ c, active, onClick, myId, menuSpace = false }: { c: C
  *  delete (a short swipe uncovers "Delete", a long one asks straight away), right archives it (or restores it from the
  *  Archive). Deleting always asks first. Normal chats can be deleted; normal chats and closed cases can be archived. */
 function DeletableRow({ c, active, onClick, myId, onDelete, onArchive }: { c: Conversation; active: boolean; onClick: () => void; myId?: string; onDelete: (id: string) => void; onArchive: (id: string, archived: boolean) => void }) {
-  const canDelete = c.kind === 'chat';
-  const canArchive = c.kind === 'chat' || (c.kind === 'support' && !!c.closedAt);
+  const canDelete = true;
+  const canArchive = true;
   const archived = !!c.archived;
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -1195,8 +1200,8 @@ export default function Messages() {
             const c = (conversations ?? []).find((x) => x.id === id);
             if (!c) return [];
             const items: { label: string; danger?: boolean; onSelect: () => void }[] = [];
-            if (c.kind === 'chat' || (c.kind === 'support' && c.closedAt)) items.push({ label: c.archived ? 'Restore' : 'Archive', onSelect: () => void archiveConversation(id, !c.archived) });
-            if (c.kind === 'chat') items.push({ label: 'Delete chat', danger: true, onSelect: () => void deleteConversation(id) });
+            items.push({ label: c.archived ? 'Restore' : 'Archive', onSelect: () => void archiveConversation(id, !c.archived) });
+            items.push({ label: 'Delete chat', danger: true, onSelect: () => void deleteConversation(id) });
             return items;
           }}
           onNewChat={profile?.is_owner ? () => setNewMessageOpen(true) : undefined}
@@ -1548,7 +1553,7 @@ export default function Messages() {
             )}
 
             {profileOpen && active.other.role === 'cx' && (
-              <CxTeamSheet active={active} onClose={() => setProfileOpen(false)} />
+              <CxTeamSheet active={active} onClose={() => setProfileOpen(false)} onDelete={() => void deleteConversation()} />
             )}
             {profileOpen && active.other.role !== 'cx' && (
               <ChatProfileSheet
