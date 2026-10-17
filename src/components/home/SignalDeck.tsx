@@ -6,7 +6,7 @@ import { useLocale } from '../../lib/i18n';
 
 interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string; respected?: boolean; video?: string }
 const POSTS: Post[] = [
-  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Golden hour, windows down, nobody in front of me. This is the feeling. 🌅', image: '/signal/luca-drive.webp', video: '/signal/luca-drive.mp4', pos: '50% 50%' },
+  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁', image: '/signal/luca-drive.webp', video: '/signal/luca-drive.mp4', pos: '50% 50%' },
   { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤', image: '/signal/luca3.webp', pos: '50% 62%' },
   { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%', respected: true },
 ];
