@@ -1,5 +1,6 @@
 import { ProtectionIcon, type ProtectionKind } from './ProtectionIcon';
 import { Reveal } from '../motion';
+import { PointerSpotlight } from './PointerSpotlight';
 import { InvestigationsMark } from '../InvestigationsMark';
 import { useLocale } from '../../lib/i18n';
 
@@ -18,7 +19,7 @@ export function ProtectionTeam() {
       <Reveal>
         <div className="grid items-center gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10">
           <p className="eyebrow order-1 md:hidden">{t('How we protect you')}</p>
-          <div className="relative order-2 mx-auto w-[46%] max-w-[12.5rem] md:order-1 md:w-full md:max-w-[26rem]">
+          <PointerSpotlight className="order-2 mx-auto w-[58%] max-w-[15.5rem] px-[9%] md:order-1 md:w-full md:max-w-[30rem] md:px-8">
             <span aria-hidden className="absolute inset-x-[8%] bottom-0 h-6 rounded-[50%] bg-black/25 blur-xl" />
             <img
               src="/home/duo-cut-820.webp"
@@ -28,7 +29,7 @@ export function ProtectionTeam() {
               className="relative block w-full drop-shadow-[0_18px_22px_rgba(0,0,0,0.18)]"
             />
             <div className="relative mt-3 flex justify-center"><InvestigationsMark size="md" className="scale-90 md:scale-100" /></div>
-          </div>
+          </PointerSpotlight>
 
           <div className="order-3 md:order-2">
             <p className="eyebrow hidden md:block">{t('How we protect you')}</p>
