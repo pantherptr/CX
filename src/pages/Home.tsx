@@ -442,9 +442,6 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= PROTECTION — the team, and four promises ================= */}
-      <ProtectionTeam />
-
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
@@ -479,6 +476,9 @@ export default function Home() {
           <div className="mt-12"><PostMarquee /></div>
         </Reveal>
       </section>
+
+      {/* ================= PROTECTION — the team, and four promises ================= */}
+      <ProtectionTeam />
 
       {/* ================= HOSTS — turn a parked car into income ================= */}
       <section className="container-page section-tight">
