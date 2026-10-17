@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["When the sun goes down, the city is yours. Red lights, open road. 🔴", "Quando il sole tramonta, la città è tua. Luci rosse, strada libera. 🔴", "Când apune soarele, orașul e al tău. Lumini roșii, drum liber. 🔴", "Cuando se pone el sol, la ciudad es tuya. Luces rojas, carretera libre. 🔴"],
+  ["Open road, golden hour, zero worries. Booked in two minutes. 🌄", "Strada aperta, ora d’oro, zero pensieri. Prenotata in due minuti. 🌄", "Drum deschis, ora de aur, zero griji. Rezervat în două minute. 🌄", "Carretera abierta, hora dorada, cero preocupaciones. Reservado en dos minutos. 🌄"],
+  ["Pure white, pure class. Some cars do not just drive — they arrive. 🤍", "Bianco puro, pura classe. Alcune auto non guidano e basta: arrivano. 🤍", "Alb pur, clasă pură. Unele mașini nu doar conduc — ele sosesc. 🤍", "Blanco puro, pura clase. Algunos coches no solo conducen: llegan. 🤍"],
   ["New week, new car on the road. Good cars, better people.", "Nuova settimana, nuova auto in strada. Belle auto, belle persone.", "Săptămână nouă, mașină nouă pe drum. Mașini bune, oameni mai buni.", "Semana nueva, coche nuevo en la carretera. Buenos coches, mejores personas."],
   ["Your car on SIGNAL", "La tua auto su SIGNAL", "Mașina ta pe SIGNAL", "Tu coche en SIGNAL"],
   ["From the community", "Dalla community", "Din comunitate", "De la comunidad"],

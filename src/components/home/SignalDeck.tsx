@@ -6,9 +6,9 @@ import { useLocale } from '../../lib/i18n';
 
 interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; pos?: string }
 const POSTS: Post[] = [
-  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤', image: '/signal/giulia.webp' },
-  { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'What a car! 😍 Rented it through CX for a weekend — easy to book, super host, car in perfect shape.', image: '/signal/luca.webp' },
-  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'New week, new car on the road. Good cars, better people.', image: '/signal/adam.webp', pos: '50% 18%' },
+  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴', image: '/signal/giulia2.webp', pos: '50% 40%' },
+  { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Open road, golden hour, zero worries. Booked in two minutes. 🌄', image: '/signal/luca2.webp', pos: '50% 55%' },
+  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Pure white, pure class. Some cars do not just drive — they arrive. 🤍', image: '/signal/adam2.webp', pos: '50% 50%' },
 ];
 
 /**

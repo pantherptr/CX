@@ -2,9 +2,9 @@ import { useLocale } from '../../lib/i18n';
 
 export interface MarqueeQuote { name: string; place: string; avatar: string; text: string }
 const QUOTES: MarqueeQuote[] = [
-  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤' },
-  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'What a car! 😍 Easy to book, super host, car in perfect shape.' },
-  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'New week, new car on the road. Good cars, better people.' },
+  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴' },
+  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Open road, golden hour, zero worries. Booked in two minutes. 🌄' },
+  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Pure white, pure class. Some cars do not just drive — they arrive. 🤍' },
   { name: 'Marco', place: 'Firenze', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'The host replied in minutes and the handover was a breeze.' },
   { name: 'Luca', place: 'Roma', avatar: '/signal/av-luca.webp', text: 'Weekend sorted. I will be back for the next one.' },
