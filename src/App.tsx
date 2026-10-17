@@ -289,10 +289,11 @@ function MarketingLayout() {
   const { country } = useLocale();
   const { pathname } = useLocation();
   const phoneWidth = useMediaQuery('(max-width: 1023px)');
+  const { session: layoutSession } = useAuth();
   // The gateway is a page of its own — no navbar, no footer around it.
   if (pathname === '/' && !country) return <Outlet />;
   // Browse on a phone is a map page of its own (its own top bar, no site header or footer around it).
-  if (pathname === '/browse' && phoneWidth) return <main className="min-h-dvh"><Outlet /></main>;
+  if (pathname === '/browse' && phoneWidth && layoutSession) return <main className="min-h-dvh"><Outlet /></main>;
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />

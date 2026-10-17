@@ -1,5 +1,6 @@
+import { useAuth } from '../lib/auth';
 import { useMemo, useState, useEffect, useRef, useLayoutEffect, type ReactNode } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useCars } from '../lib/data/cars';
 import type { Car } from '../data/types';
 import { BrowseCard } from '../components/browse/BrowseCard';
@@ -287,8 +288,11 @@ export default function Browse() {
   // scroll — the page itself is the sheet, so it follows the finger exactly
   const phone = useMediaQuery('(max-width: 1023px)');
   const navigate = useNavigate();
-  const mapFirst = !wide;
-  const mapBeside = wide && showMap;
+  // The map is a members' feature: signed out, Browse is the list only (with an invitation to sign in)
+  const { session: browseSession } = useAuth();
+  const canMap = browseSession != null;
+  const mapFirst = !wide && canMap;
+  const mapBeside = wide && showMap && canMap;
   const listRef = useRef<HTMLDivElement>(null);
   const [listUp, setListUp] = useState(false);
   // the map's cities live in the filter row on a phone; the map reports them and follows the chosen one
@@ -451,7 +455,7 @@ export default function Browse() {
 
 
   // ------------------------------------------------------------------ phone: the map is the page (like a map app)
-  if (phone) {
+  if (phone && canMap) {
     const chips: { id: string; label: string; on: boolean; toggle: () => void }[] = [
       { id: 'instant', label: t('Instant book'), on: filters.instant, toggle: () => setFilters((p) => ({ ...p, instant: !p.instant })) },
       { id: 'auto', label: t('Automatic'), on: filters.transmission === 'Automatic', toggle: () => setFilters((p) => ({ ...p, transmission: p.transmission === 'Automatic' ? 'any' : 'Automatic' })) },
@@ -630,14 +634,14 @@ export default function Browse() {
               {t('Browse cars')}
             </h1>
             <div className="flex items-center gap-2.5">
-              <button
+              {canMap && <button
                 onClick={() => (wide ? setShowMap((v) => !v) : listUp ? goMap() : goList())}
                 className="btn btn-secondary"
                 aria-pressed={wide ? showMap : listUp}
               >
                 <Icon name={wide ? 'pin' : listUp ? 'pin' : 'grid'} size={16} />
                 {wide ? (showMap ? t('Hide map') : t('Show map')) : listUp ? t('Map') : t('List')}
-              </button>
+              </button>}
               <button onClick={() => setDrawer(true)} className="btn btn-secondary relative lg:hidden">
                 <Icon name="sliders" size={17} /> {t('Filters')}
                 {activeCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ink px-1 text-label font-semibold text-white">{activeCount}</span>}
@@ -668,6 +672,14 @@ export default function Browse() {
               </div>
             </div>
           </div>
+
+          {!canMap && (
+            <div className="mb-5 flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700"><Icon name="pin" size={18} /></span>
+              <p className="min-w-0 flex-1 text-detail text-ink-soft">{t('The map with exact pick-up spots is for members.')}</p>
+              <Link to="/signup" className="btn btn-primary btn-sm shrink-0">{t('Create account')}</Link>
+            </div>
+          )}
 
           <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
             <div className="relative flex-1">

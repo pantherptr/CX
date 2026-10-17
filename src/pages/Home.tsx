@@ -297,14 +297,6 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  // the cities that have cars right now (with a photo), busiest first
-  const CITY_PHOTOS: Record<string, string> = { Milan: '/home/cities/milan.webp', Florence: '/home/cities/florence.webp', Munich: '/home/cities/munich.webp', Barcelona: '/home/cities/barcelona.webp' };
-  const cityCards = Object.entries(
-    (allCars ?? []).reduce<Record<string, number>>((m, c) => { m[c.city] = (m[c.city] ?? 0) + 1; return m; }, {}),
-  )
-    .filter(([city]) => CITY_PHOTOS[city])
-    .sort((a, b) => b[1] - a[1])
-    .map(([city, count]) => ({ city, count, image: CITY_PHOTOS[city] }));
   const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp'];
   const howPositions = [undefined, '50% 50%', '50% 50%'];
   const howStatic = (
@@ -563,43 +555,15 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* ================= CITIES — where you can drive ================= */}
-      {cityCards.length > 0 && (
-        <section className="container-page section-tight">
-          <Reveal>
-            <p className="eyebrow">{t('Where to drive')}</p>
-            <h2 className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]">{t('Pick a city, hit the road.')}</h2>
-          </Reveal>
-          <div className="scrollbar-none -mx-5 mt-7 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0">
-            {cityCards.map((c) => (
-              <Link
-                key={c.city}
-                to={`/browse?city=${encodeURIComponent(c.city)}`}
-                className="group relative aspect-[4/5] w-[62%] shrink-0 snap-start overflow-hidden rounded-3xl bg-panel shadow-card sm:w-auto"
-              >
-                <img src={c.image} alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <span className="absolute inset-x-4 bottom-4 text-white">
-                  <span className="block font-display text-[1.5rem] font-semibold leading-none">{t(c.city)}</span>
-                  <span className="mt-1.5 inline-flex items-center gap-1.5 text-caption font-semibold text-white/85">
-                    {c.count === 1 ? t('1 car') : t('{n} cars', { n: c.count })} <Icon name="arrowRight" size={13} />
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* ================= SWIPE — find your car by swiping (+ a small invite to X) ================= */}
       <section className="container-page section-tight">
-        <div className="mx-auto max-w-md overflow-hidden rounded-[1.75rem] border border-accent/10 bg-gradient-to-b from-[#eaf7ef] to-surface px-5 pb-6 pt-8 shadow-card sm:max-w-lg sm:px-8">
+        <div className="mx-auto max-w-md sm:max-w-lg">
           <p className="eyebrow">{t('Swipe to find')}</p>
           <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your car by swiping.')} />
           <p className="mt-3 text-copy leading-relaxed text-muted">
             {t('Swipe right to save a car, left to skip it. Tap View to see it.')}
           </p>
-          <div className="mt-7 -mx-5 sm:-mx-8">
+          <div className="mt-7 -mx-5">
             <FindCarDeck />
           </div>
           <Link to="/browse" className="btn btn-lg mt-6 border border-line-strong bg-surface text-ink">

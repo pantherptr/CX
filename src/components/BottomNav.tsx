@@ -283,7 +283,7 @@ export function BottomNav() {
   const unreadCount = useUnreadMessageCount(session?.user.id);
   const signalUnread = useEmpireUnreadCount(session?.user.id);
   const navRef = useRef<HTMLElement>(null);
-  const onBrowse = BROWSE_ROUTE.test(pathname);
+  const onBrowse = BROWSE_ROUTE.test(pathname) && Boolean(session);
   const fold = useDockFold(visible && DOCK_MORPH && SIGNAL_ROUTE.test(pathname), pathname, navRef);
   // Browse is a map page: no dock over the map, it appears with the list (once it has been pulled up)
   const [listUp, setListUp] = useState(false);
