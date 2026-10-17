@@ -31,6 +31,10 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Blocked people", "Persone bloccate", "Persoane blocate", "Personas bloqueadas"],
+  ["Could not unblock", "Impossibile sbloccare", "Nu am putut debloca", "No se pudo desbloquear"],
+  ["{name} is unblocked", "{name} è stato sbloccato", "{name} a fost deblocat", "{name} está desbloqueado"],
+  ["You blocked {name}.", "Hai bloccato {name}.", "Ai blocat-o pe {name}.", "Has bloqueado a {name}."],
   ["From garage to listed in minutes.", "Dal garage all’annuncio in pochi minuti.", "De la garaj la anunț în câteva minute.", "Del garaje al anuncio en minutos."],
   ["Help & Support", "Aiuto e assistenza", "Ajutor și asistență", "Ayuda y soporte"],
   ["Cancellation policy", "Politica di cancellazione", "Politica de anulare", "Política de cancelación"],

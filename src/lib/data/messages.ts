@@ -837,6 +837,28 @@ export async function openSupportConversation(
   return { id, created: true };
 }
 
+export interface BlockedUser { id: string; name: string; avatar: string; blockedAt: string }
+
+/** Blocks a person (needs migration 0148): their chats leave my list and nobody can message across the block. */
+export async function blockUser(userId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('block_user', { p_user: userId });
+  return { error: error?.message ?? null };
+}
+
+export async function unblockUser(userId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('unblock_user', { p_user: userId });
+  return { error: error?.message ?? null };
+}
+
+/** The people I blocked (an empty list before migration 0148). */
+export async function fetchBlockedUsers(): Promise<BlockedUser[]> {
+  const { data, error } = await supabase.rpc('my_blocked_users');
+  if (error) return [];
+  return ((data ?? []) as { id: string; full_name: string | null; avatar_url: string | null; blocked_at: string }[]).map((r) => ({
+    id: r.id, name: r.full_name ?? 'CX user', avatar: r.avatar_url ?? '', blockedAt: r.blocked_at,
+  }));
+}
+
 /** Deletes a normal chat for me only: it leaves my list and its history is cleared on my side (needs migration 0145). */
 export async function deleteChat(conversationId: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('hide_conversation', { p_conversation: conversationId });

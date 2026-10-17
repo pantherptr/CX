@@ -22,6 +22,9 @@ import {
   deleteMyMessage,
   deleteChat,
   setChatArchived,
+  blockUser,
+  unblockUser,
+  fetchBlockedUsers,
   reportChatUser,
   chatMediaUrl,
   markConversationRead,
@@ -93,7 +96,7 @@ function CxTeamSheet({ active, onClose, onDelete }: { active: Conversation; onCl
 }
 
 /** Tap the name in a phone chat: who you are talking to, at a glance, with the shortcuts that matter. */
-function ChatProfileSheet({ active, myId, messages, onClose, onReport, onDelete }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void; onDelete?: () => void }) {
+function ChatProfileSheet({ active, myId, messages, onClose, onReport, onDelete, blocked = false, onBlock, onUnblock }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void; onDelete?: () => void; blocked?: boolean; onBlock?: () => void; onUnblock?: () => void }) {
   const other = active.other;
   const isCx = other.role === 'cx';
   const sent = (messages ?? []).filter((m) => m.senderId === myId).length;
@@ -165,6 +168,11 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport, onDelete 
           {!isCx && (
             <button onClick={() => { onClose(); onReport(); }} className="pressable mt-2 rounded-full px-4 py-2 text-caption font-semibold text-danger active:bg-danger/10">
               Report {other.name}
+            </button>
+          )}
+          {!isCx && active.kind === 'chat' && (blocked ? onUnblock : onBlock) && (
+            <button onClick={() => { onClose(); (blocked ? onUnblock : onBlock)?.(); }} className="pressable mt-1 rounded-full px-4 py-2 text-caption font-semibold text-ink-soft active:bg-panel">
+              {blocked ? `Unblock ${other.name}` : `Block ${other.name}`}
             </button>
           )}
           {onDelete && (
@@ -914,6 +922,21 @@ export default function Messages() {
       </div>
     </div>
   ) : null;
+  // people I blocked: their chat stays out of my list and I cannot write to them until I unblock
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const loadBlocked = () => { void fetchBlockedUsers().then((l) => setBlockedIds(new Set(l.map((b) => b.id)))); };
+  useEffect(() => { if (session) loadBlocked(); }, [session?.user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const blockedBar = active && active.kind === 'chat' && blockedIds.has(active.other.id) ? (
+    <div className="shrink-0 bg-chat px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3">
+      <div className="rounded-2xl bg-white p-3.5 text-center shadow-[0_8px_28px_-12px_rgba(22,22,26,0.25)] ring-1 ring-black/[0.05]">
+        <p className="text-detail font-medium text-ink">You blocked {active.other.name}.</p>
+        <p className="mt-0.5 text-caption text-muted">They cannot write to you and you cannot write to them.</p>
+        <button onClick={() => void unblockPerson(active.other.id, active.other.name)} className="btn btn-secondary btn-sm mt-3">Unblock</button>
+      </div>
+    </div>
+  ) : null;
+  const lockedBar = readOnlyBar ?? blockedBar;
   const presence = useChatPresence(activeId, session?.user.id, active?.other.id);
   const myRole: VerifiedRole = profile?.is_owner ? 'owner' : profile?.is_admin ? 'admin' : profile?.is_host ? 'host' : 'client';
 
@@ -1203,6 +1226,22 @@ export default function Messages() {
     });
   };
 
+  const blockPerson = async (id: string, name: string) => {
+    if (!window.confirm(`Block ${name}? You will not get their messages and they cannot write to you. You can unblock them in Settings → Security.`)) return;
+    const { error } = await blockUser(id);
+    if (error) { toast({ title: 'Could not block', desc: error, icon: 'shield' }); return; }
+    loadBlocked();
+    if (activeId) { setActiveId(null); closeConvo(); }
+    refresh();
+    toast({ title: `${name} is blocked`, desc: 'Their chat is gone from your list.', icon: 'shield' });
+  };
+  const unblockPerson = async (id: string, name: string) => {
+    const { error } = await unblockUser(id);
+    if (error) { toast({ title: 'Could not unblock', desc: error, icon: 'shield' }); return; }
+    loadBlocked();
+    toast({ title: `${name} is unblocked`, icon: 'check' });
+  };
+
   const reportMessage = async (id: string | null) => {
     if (!activeId) return;
     if (!window.confirm('Report this to CX? Our team will review the conversation.')) return;
@@ -1254,7 +1293,7 @@ export default function Messages() {
             ) : null
           }
           composer={
-            readOnlyBar ? readOnlyBar : active ? (
+            lockedBar ? lockedBar : active ? (
               <div className="z-10 shrink-0 bg-chat-2 p-2.5">
                 {!profile?.is_owner && closeCaseButton && <div className="mb-1.5 flex justify-end">{closeCaseButton}</div>}
                 {profile?.is_owner && (
@@ -1523,7 +1562,7 @@ export default function Messages() {
             </button>
             </div>
 
-            {readOnlyBar ?? (
+            {lockedBar ?? (
             <div className="shrink-0 border-t border-black/[0.06] bg-white px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-2">
               {profile?.is_owner && (
                 <div className="mb-2 flex items-center gap-1.5">
@@ -1613,6 +1652,9 @@ export default function Messages() {
                 messages={messages}
                 onReport={() => void reportMessage(null)}
                 onDelete={() => void deleteConversation()}
+                blocked={blockedIds.has(active.other.id)}
+                onBlock={() => void blockPerson(active.other.id, active.other.name)}
+                onUnblock={() => void unblockPerson(active.other.id, active.other.name)}
                 onClose={() => setProfileOpen(false)}
               />
             )}
