@@ -17,7 +17,7 @@ export function ProtectionTeam() {
     <section className="container-page section-tight">
       <Reveal>
         <div className="grid items-center gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10">
-          <div className="relative mx-auto w-[70%] max-w-[22rem] md:w-full md:max-w-[26rem]">
+          <div className="relative order-2 mx-auto w-[70%] max-w-[22rem] md:order-1 md:w-full md:max-w-[26rem]">
             <span aria-hidden className="absolute inset-x-[8%] bottom-0 h-6 rounded-[50%] bg-black/25 blur-xl" />
             <img
               src="/home/duo-cut-820.webp"
@@ -29,7 +29,7 @@ export function ProtectionTeam() {
             <div className="relative mt-4 flex justify-center"><InvestigationsMark size="md" /></div>
           </div>
 
-          <div>
+          <div className="order-1 md:order-2">
             <p className="eyebrow">{t('How we protect you')}</p>
             <h2 className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]">{t('Real people behind every trip.')}</h2>
             <p className="mt-3 text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX Investigations</p>
