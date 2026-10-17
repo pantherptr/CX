@@ -842,12 +842,23 @@ export interface BlockedUser { id: string; name: string; avatar: string; blocked
 /** Blocks a person (needs migration 0148): their chats leave my list and nobody can message across the block. */
 export async function blockUser(userId: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('block_user', { p_user: userId });
+  blockedCache = null;
   return { error: error?.message ?? null };
 }
 
 export async function unblockUser(userId: string): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc('unblock_user', { p_user: userId });
+  blockedCache = null;
   return { error: error?.message ?? null };
+}
+
+let blockedCache: { at: number; ids: Set<string> } | null = null;
+/** The ids I blocked, kept for a minute: the SIGNAL feeds drop their posts and comments. Empty for signed-out visitors. */
+export async function blockedIdSet(): Promise<Set<string>> {
+  if (blockedCache && Date.now() - blockedCache.at < 60_000) return blockedCache.ids;
+  const ids = new Set((await fetchBlockedUsers()).map((b) => b.id));
+  blockedCache = { at: Date.now(), ids };
+  return ids;
 }
 
 /** The people I blocked (an empty list before migration 0148). */

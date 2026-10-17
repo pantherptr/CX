@@ -2,7 +2,7 @@ import { rememberPosts } from './seedCache';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../auth';
-import { roleFromFlags, type ParticipantRole } from './messages';
+import { roleFromFlags, blockedIdSet, type ParticipantRole } from './messages';
 import type { SignalPublisherType } from './signalIdentity';
 import { fetchSignalDemoPosts } from './signalDemo';
 import { withoutHidden } from './privacy';
@@ -53,7 +53,12 @@ export const SPOTLIGHT_POST_MARKER = '[[signal-spotlight]]';
 export const withoutSpotlightPosts = <T extends { body: string }>(rows: T[]): T[] => rows.filter((r) => r.body !== SPOTLIGHT_POST_MARKER);
 
 /** What a normal feed list shows: no Spotlight marker posts, nothing the viewer may not see. */
-const viewablePosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withCollabs('post', await withoutHidden('post', withoutSpotlightPosts(rows)));
+/** Posts by people I blocked never show up in my feeds. */
+const withoutBlocked = async <T extends { authorId: string }>(rows: T[]): Promise<T[]> => {
+  const blocked = await blockedIdSet().catch(() => new Set<string>());
+  return blocked.size ? rows.filter((r) => !blocked.has(r.authorId)) : rows;
+};
+const viewablePosts = async (rows: EmpirePost[]): Promise<EmpirePost[]> => withCollabs('post', await withoutHidden('post', await withoutBlocked(withoutSpotlightPosts(rows))));
 
 
 /** `create_empire_post` rejects an empty body, but a post may be just a photo or
@@ -1035,7 +1040,8 @@ export async function fetchEmpirePostComments(postId: string): Promise<EmpireCom
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data as unknown as EmpireCommentRow[]).map(mapEmpireComment);
+  const blocked = await blockedIdSet().catch(() => new Set<string>());
+  return (data as unknown as EmpireCommentRow[]).map(mapEmpireComment).filter((c) => !blocked.has(c.userId));
 }
 
 /** `publisherType` — Owner's choice of which of the three official
