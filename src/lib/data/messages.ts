@@ -80,6 +80,8 @@ export interface Conversation {
   other: ConversationParticipant;
   lastMessage: Message | null;
   unreadCount: number;
+  /** in my Archive (migration 0146) */
+  archived?: boolean;
 }
 
 interface ConversationRow {
@@ -191,27 +193,38 @@ function mapConversation(row: ConversationRow, myUserId: string): Conversation {
 // Migration 0145 adds conversation_participants.hidden_at ("delete chat" for me). The chats I deleted, and
 // the moment I did, so their old messages stay out of the list, the thread and the unread badge.
 let hideColumn: boolean | null = null;
+let archiveColumn: boolean | null = null;
 const hiddenAtByConv = new Map<string, string>();
+const archivedIds = new Set<string>();
 
-async function myParticipations(userId: string): Promise<{ conversation_id: string; hidden_at: string | null }[]> {
-  if (hideColumn !== false) {
-    const { data, error } = await supabase.from('conversation_participants').select('conversation_id, hidden_at').eq('user_id', userId);
+type Participation = { conversation_id: string; hidden_at: string | null; archived_at: string | null };
+
+async function myParticipations(userId: string): Promise<Participation[]> {
+  // newest columns first, falling back one migration at a time
+  const attempts: { cols: string; ok: () => void; bad: () => void }[] = [];
+  if (archiveColumn !== false) attempts.push({ cols: 'conversation_id, hidden_at, archived_at', ok: () => { archiveColumn = true; hideColumn = true; }, bad: () => { archiveColumn = false; } });
+  if (hideColumn !== false) attempts.push({ cols: 'conversation_id, hidden_at', ok: () => { hideColumn = true; }, bad: () => { hideColumn = false; } });
+  attempts.push({ cols: 'conversation_id', ok: () => {}, bad: () => {} });
+  for (const a of attempts) {
+    const { data, error } = await supabase.from('conversation_participants').select(a.cols).eq('user_id', userId);
     if (!error) {
-      hideColumn = true;
-      return (data ?? []) as { conversation_id: string; hidden_at: string | null }[];
+      a.ok();
+      return ((data ?? []) as unknown as Partial<Participation>[]).map((r) => ({ conversation_id: r.conversation_id as string, hidden_at: r.hidden_at ?? null, archived_at: r.archived_at ?? null }));
     }
-    if (error.code === '42703' || /hidden_at/.test(error.message ?? '')) hideColumn = false;
-    else throw error;
+    if (error.code === '42703' || /hidden_at|archived_at/.test(error.message ?? '')) { a.bad(); continue; }
+    throw error;
   }
-  const { data, error } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', userId);
-  if (error) throw error;
-  return (data ?? []).map((r) => ({ conversation_id: r.conversation_id, hidden_at: null }));
+  return [];
 }
 
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
   const myRows = await myParticipations(userId);
   hiddenAtByConv.clear();
-  for (const r of myRows) if (r.hidden_at) hiddenAtByConv.set(r.conversation_id, r.hidden_at);
+  archivedIds.clear();
+  for (const r of myRows) {
+    if (r.hidden_at) hiddenAtByConv.set(r.conversation_id, r.hidden_at);
+    if (r.archived_at) archivedIds.add(r.conversation_id);
+  }
   const ids = myRows.map((r) => r.conversation_id);
   if (!ids.length) return [];
 
@@ -234,7 +247,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
       return { ...row, messages: row.messages.filter((m) => m.created_at > hidden), __hidden: true };
     })
     .filter((row) => !(row as { __hidden?: boolean }).__hidden || row.messages.length > 0)
-    .map((row) => mapConversation(row, userId));
+    .map((row) => ({ ...mapConversation(row, userId), archived: archivedIds.has(row.id) }));
   return mapped.sort((a, b) => {
     const at = a.lastMessage?.createdAt ?? '';
     const bt = b.lastMessage?.createdAt ?? '';
@@ -788,6 +801,14 @@ export async function deleteChat(conversationId: string): Promise<{ error: strin
   if (error) return { error: error.message };
   hiddenAtByConv.set(conversationId, new Date().toISOString());
   threadCache.delete(conversationId);
+  return { error: null };
+}
+
+/** Moves a chat into my Archive, or back (needs migration 0146). */
+export async function setChatArchived(conversationId: string, archived: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('set_conversation_archived', { p_conversation: conversationId, p_archived: archived });
+  if (error) return { error: error.message };
+  if (archived) archivedIds.add(conversationId); else archivedIds.delete(conversationId);
   return { error: null };
 }
 

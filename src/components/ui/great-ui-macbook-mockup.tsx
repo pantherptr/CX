@@ -1,4 +1,4 @@
-import { type ReactNode, type Ref } from 'react';
+import { useState, type ReactNode, type Ref } from 'react';
 import { motion } from '../motionKit';
 
 /** The Great UI MacBook messaging mock-up — look and layout kept exactly as
@@ -79,6 +79,10 @@ export interface MacbookMockupProps {
   /** The bottom bar — defaults to the static "Write a message…" bar. */
   composer?: ReactNode;
   headerAction?: ReactNode;
+  /** Under the search box (the Chats / Archive tabs). */
+  sidebarExtra?: ReactNode;
+  /** Per-chat actions behind a ⋯ button (Archive, Delete…). Return nothing for chats with no actions. */
+  onChatMenu?: (id: string) => { label: string; danger?: boolean; onSelect: () => void }[];
   className?: string;
 }
 
@@ -103,8 +107,11 @@ export function MacbookMockup({
   scrollRef,
   composer,
   headerAction,
+  sidebarExtra,
+  onChatMenu,
   className,
 }: MacbookMockupProps) {
+  const [menuId, setMenuId] = useState<string | null>(null);
   return (
     <div
       className={cx(
@@ -152,6 +159,8 @@ export function MacbookMockup({
               </div>
             </div>
 
+            {sidebarExtra}
+
             <div className="flex-1 [scrollbar-width:none] overflow-y-auto [&::-webkit-scrollbar]:hidden">
               {chats.map((chat) => (
                 <div
@@ -161,7 +170,7 @@ export function MacbookMockup({
                   onClick={() => onSelectChat?.(chat.id)}
                   onKeyDown={(e) => (e.key === 'Enter' ? onSelectChat?.(chat.id) : undefined)}
                   className={cx(
-                    'relative flex cursor-pointer items-center gap-2.5 px-3 py-2.5 transition-colors',
+                    'group relative flex cursor-pointer items-center gap-2.5 px-3 py-2.5 transition-colors',
                     chat.isActive ? 'bg-accent-050' : 'hover:bg-neutral-200/40',
                   )}
                 >
@@ -179,6 +188,41 @@ export function MacbookMockup({
                       {chat.unreadCount > 9 ? '9+' : chat.unreadCount}
                     </span>
                   )}
+                  {(() => {
+                    const items = onChatMenu?.(chat.id) ?? [];
+                    if (!items.length) return null;
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Chat options"
+                          aria-haspopup="menu"
+                          aria-expanded={menuId === chat.id}
+                          onClick={(e) => { e.stopPropagation(); setMenuId((cur) => (cur === chat.id ? null : chat.id)); }}
+                          className={cx('grid h-6 w-6 shrink-0 place-items-center rounded-full text-neutral-400 transition-opacity hover:bg-black/[0.06] hover:text-neutral-800', menuId === chat.id ? 'opacity-100' : 'opacity-0 focus:opacity-100 group-hover:opacity-100')}
+                        >
+                          <MoreVerticalIcon className="h-3.5 w-3.5" />
+                        </button>
+                        {menuId === chat.id && (
+                          <>
+                            <div aria-hidden className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setMenuId(null); }} />
+                            <div role="menu" className="absolute right-2 top-9 z-30 w-40 overflow-hidden rounded-xl border border-black/10 bg-white p-1 shadow-lg">
+                              {items.map((it) => (
+                                <button
+                                  key={it.label}
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); setMenuId(null); it.onSelect(); }}
+                                  className={cx('flex w-full rounded-lg px-2.5 py-2 text-left text-[12.5px] font-medium hover:bg-black/[0.05]', it.danger ? 'text-danger' : 'text-neutral-800')}
+                                >
+                                  {it.label}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
