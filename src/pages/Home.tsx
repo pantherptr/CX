@@ -1,5 +1,6 @@
 import { PostMarquee } from '../components/home/PostMarquee';
 import { SignalDeck } from '../components/home/SignalDeck';
+import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
 import { ProtectionTeam } from '../components/home/ProtectionTeam';
 import { OwnersBento } from '../components/home/OwnersBento';
 import { FindPoster } from '../components/home/scenes/FindPoster';
@@ -430,22 +431,22 @@ export default function Home() {
                 <p className="text-label font-semibold uppercase tracking-[0.2em] text-accent-700">{t('CX SIGNAL')}</p>
               </div>
               <BlurText as="h2" className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-ink text-balance sm:text-5xl" text={t('Great drives deserve to be shared.')} />
-              <p className="mt-4 max-w-lg text-copy leading-relaxed text-muted sm:text-lead">
-                {t('SIGNAL is where the CX world lives — official news, new cars, and the people who make every trip worth remembering.')}
+              <p className="mt-3 max-w-md text-copy leading-snug text-muted">
+                {t('News, new cars and real stories from the CX world.')}
               </p>
-              <ul className="mt-7 space-y-2.5">
-                {[
-                  { icon: 'sparkles' as IconName, title: 'Straight from CX' },
-                  { icon: 'heart' as IconName, title: 'Real stories' },
-                  { icon: 'trending' as IconName, title: 'A stage for your car' },
-                ].map((f) => (
-                  <li key={f.title} className="flex items-center gap-3.5">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700"><Icon name={f.icon} size={19} /></span>
-                    <span className="font-display text-copy font-semibold text-ink">{t(f.title)}</span>
+              <ul className="mt-5 grid grid-cols-3 gap-2">
+                {([
+                  { kind: 'broadcast', title: 'Straight from CX' },
+                  { kind: 'heart', title: 'Real stories' },
+                  { kind: 'growth', title: 'A stage for your car' },
+                ] as { kind: ProtectionKind; title: string }[]).map((f) => (
+                  <li key={f.title} className="flex flex-col items-start gap-2 rounded-2xl border border-line bg-surface p-3">
+                    <ProtectionIcon kind={f.kind} size="sm" />
+                    <span className="text-detail font-semibold leading-tight text-ink">{t(f.title)}</span>
                   </li>
                 ))}
               </ul>
-              <Link to="/signal" className="btn btn-primary btn-lg mt-8">
+              <Link to="/signal" className="btn btn-primary btn-lg mt-6">
                 {t('Open Signal')} <Icon name="arrowRight" size={17} />
               </Link>
             </div>

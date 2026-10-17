@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["News, new cars and real stories from the CX world.", "Novità, nuove auto e storie vere dal mondo CX.", "Noutăți, mașini noi și povești adevărate din lumea CX.", "Novedades, coches nuevos e historias reales del mundo CX."],
   ["Grey sky, clean ride, zero stress. Booked in two minutes, mate. 🖤", "Cielo grigio, auto pulita, zero stress. Prenotata in due minuti, amico. 🖤", "Cer gri, mașină curată, zero stres. Rezervat în două minute, prietene. 🖤", "Cielo gris, coche limpio, cero estrés. Reservado en dos minutos, colega. 🖤"],
   ["Yalla, habibi — keys in hand and the road is ours. 🌙", "Yalla, habibi: chiavi in mano e la strada è nostra. 🌙", "Yalla, habibi — cheile în mână și drumul e al nostru. 🌙", "Yalla, habibi: llaves en mano y la carretera es nuestra. 🌙"],
   ["Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁", "Fast & Furious, edizione Milano. Finestrini giù, la famiglia prima di tutto, niente freni. 🏁", "Fast & Furious, ediția Milano. Geamurile jos, familia pe primul loc, fără frâne. 🏁", "Fast & Furious, edición Milano. Ventanillas abajo, la familia primero, sin frenos. 🏁"],

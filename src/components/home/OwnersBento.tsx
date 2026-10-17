@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, type IconName } from '../Icon';
+import { ProtectionIcon, type ProtectionKind } from './ProtectionIcon';
+import { Icon } from '../Icon';
 import { SignalS } from '../SignalLogo';
 import { Reveal } from '../motion';
 import { CxWordmark } from '../CxWordmark';
@@ -16,10 +17,10 @@ function Tile({ children, className = '', delay = 0 }: { children: ReactNode; cl
   );
 }
 
-function Point({ icon, text }: { icon: IconName; text: string }) {
+function Point({ icon, text }: { icon: ProtectionKind; text: string }) {
   return (
     <div className="flex h-full flex-col justify-between gap-4 md:p-6 p-4 md:p-6">
-      <span className="grid h-10 w-10 md:h-11 md:w-11 place-items-center rounded-2xl bg-accent-050 text-accent-700"><Icon name={icon} size={21} /></span>
+      <ProtectionIcon kind={icon} size="sm" />
       <p className="font-display text-[1.02rem] md:text-[1.2rem] font-semibold leading-snug text-ink">{text}</p>
     </div>
   );
@@ -42,21 +43,21 @@ export function OwnersBento() {
       </Tile>
 
       <Tile className="md:col-start-1 md:row-start-2" delay={140}>
-        <Point icon="euro" text={t('You set the daily rate — and receive it in full')} />
+        <Point icon="coin" text={t('You set the daily rate — and receive it in full')} />
       </Tile>
 
       <Tile className="col-span-2 md:col-span-1 md:col-start-3 md:row-span-2 md:row-start-1 min-h-[14rem] md:min-h-[18rem]" delay={100}>
         <img src="/home/delivery-800.webp" alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover object-[50%_38%]" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 text-white">
-          <span className="grid h-10 w-10 md:h-11 md:w-11 place-items-center rounded-2xl bg-white/15 backdrop-blur"><Icon name="car" size={21} /></span>
+          <ProtectionIcon kind="car" size="sm" tone="glass" />
           <p className="mt-4 font-display text-[1.3rem] font-semibold leading-snug">{t('Offer pickup, delivery, or both')}</p>
         </div>
       </Tile>
 
       <Tile className="md:col-start-2 md:row-start-3" delay={220}>
         <div className="flex h-full flex-col justify-between bg-[#eaf7ef] p-4 md:p-6">
-          <span className="grid h-10 w-10 md:h-11 md:w-11 place-items-center rounded-2xl bg-accent/15 text-accent-700"><Icon name="shield" size={21} /></span>
+          <ProtectionIcon kind="shield" size="sm" />
           <p className="font-display text-[1.02rem] md:text-[1.2rem] font-semibold leading-snug text-ink">{t('Verified renters, protection on every trip')}</p>
         </div>
       </Tile>

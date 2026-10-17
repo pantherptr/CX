@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from './Icon';
+import { ProtectionIcon, type ProtectionKind } from './home/ProtectionIcon';
 import { SignalS } from './SignalLogo';
 import { Reveal } from './motion';
 import { HowPoster } from './home/HowPoster';
@@ -17,11 +17,11 @@ function Tile({ children, className = '', delay = 0 }: { children: ReactNode; cl
   );
 }
 
-function Text({ icon, title, desc, tone = 'ink' }: { icon: IconName; title: string; desc: string; tone?: 'ink' | 'light' }) {
+function Text({ icon, title, desc, tone = 'ink' }: { icon: ProtectionKind; title: string; desc: string; tone?: 'ink' | 'light' }) {
   const light = tone === 'light';
   return (
     <div className="flex h-full flex-col p-6">
-      <span className={`grid h-11 w-11 place-items-center rounded-2xl ${light ? 'bg-white/15 text-white' : 'bg-accent-050 text-accent-700'}`}><Icon name={icon} size={21} /></span>
+      <ProtectionIcon kind={icon} size="sm" tone={light ? 'glass' : 'soft'} className="self-start" />
       <h3 className={`mt-5 font-display text-[1.25rem] font-semibold leading-tight ${light ? 'text-white' : 'text-ink'}`}>{title}</h3>
       <p className={`mt-1.5 text-detail leading-relaxed ${light ? 'text-white/80' : 'text-muted'}`}>{desc}</p>
     </div>
@@ -34,7 +34,7 @@ export function HostBento() {
     <div className="grid auto-rows-[minmax(11.5rem,auto)] grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-3 md:gap-5">
       {/* 1 · rate */}
       <Tile className="md:col-span-1 md:row-span-1">
-        <Text icon="euro" title={t('You set the rate')} desc={t('Choose your daily price. Renters pay the service fee on top — you receive the rate you set.')} />
+        <Text icon="coin" title={t('You set the rate')} desc={t('Choose your daily price. Renters pay the service fee on top — you receive the rate you set.')} />
       </Tile>
 
       {/* 2 · the tall photo: protected trips */}
@@ -42,7 +42,7 @@ export function HostBento() {
         <HowPoster className="absolute inset-0 h-full w-full" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15 backdrop-blur"><Icon name="shield" size={21} /></span>
+          <ProtectionIcon kind="shield" size="sm" tone="glass" />
           <h3 className="mt-4 font-display text-[1.6rem] font-semibold leading-tight">{t('Protected trips')}</h3>
           <p className="mt-1.5 text-detail leading-relaxed text-white/85">{t('Protection is included on every trip, and support is there when you need it.')}</p>
         </div>
@@ -67,7 +67,7 @@ export function HostBento() {
       {/* 5 · tall stat: four steps */}
       <Tile className="min-h-[14rem] md:col-span-1 md:row-span-2" delay={160}>
         <div className="flex h-full flex-col justify-between bg-[#eaf7ef] p-6">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent/15 text-accent-700"><Icon name="checkCircle" size={21} /></span>
+          <ProtectionIcon kind="check" size="sm" />
           <div>
             <p className="font-display text-[5.5rem] font-semibold leading-[0.9] tracking-tight text-accent-700">4</p>
             <p className="mt-3 text-body font-semibold text-ink">{t('short steps to list your car')}</p>
@@ -78,7 +78,7 @@ export function HostBento() {
 
       {/* 6 · verified renters */}
       <Tile className="md:col-span-1 md:row-span-1" delay={200}>
-        <Text icon="verified" title={t('Verified renters')} desc={t('Drivers show their ID and licence before they can book your car.')} />
+        <Text icon="seal" title={t('Verified renters')} desc={t('Drivers show their ID and licence before they can book your car.')} />
       </Tile>
     </div>
   );
