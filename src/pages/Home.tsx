@@ -82,9 +82,9 @@ function FitHeading({ as: Tag, className, style, max, ariaHidden, children }: {
  *  support channel (24/7 support), and profiles.verified host identity
  *  checks (verified hosts) are all live in the product today. */
 const howSteps: { icon: IconName; title: string; desc: string }[] = [
-  { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type, and read real reviews from past trips.' },
+  { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type. Every host is verified.' },
   { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.' },
-  { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
+  { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then hand the keys back.' },
   { icon: 'pin', title: 'Delivered to your door', desc: 'Land in a new city and your car is already waiting: no queues, no counters.' },
 ];
 

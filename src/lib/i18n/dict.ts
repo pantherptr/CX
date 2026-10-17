@@ -683,11 +683,11 @@ const ROWS: Row[] = [
   ['Learn more', 'Scopri di più', 'Află mai multe', 'Saber más'],
   ['Step {n}', 'Passo {n}', 'Pasul {n}', 'Paso {n}'],
   ['Find your car', 'Trova la tua auto', 'Găsește-ți mașina', 'Encuentra tu coche'],
-  ['Search by city, dates and car type, and read real reviews from past trips.', 'Cerca per città, date e tipo di auto e leggi le recensioni reali di chi ha già viaggiato.', 'Caută după oraș, date și tip de mașină și citește recenzii reale de la alte călătorii.', 'Busca por ciudad, fechas y tipo de coche, y lee reseñas reales de otros viajes.'],
+  ['Search by city, dates and car type. Every host is verified.', 'Cerca per città, date e tipo di auto. Ogni host è verificato.', 'Caută după oraș, date și tip de mașină. Fiecare gazdă este verificată.', 'Busca por ciudad, fechas y tipo de coche. Todos los anfitriones están verificados.'],
   ['Book in minutes', 'Prenota in pochi minuti', 'Rezervă în câteva minute', 'Reserva en minutos'],
   ['Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.', 'Prenota subito le auto idonee e paga in sicurezza. Vedi la politica di cancellazione prima di pagare.', 'Rezervă instant mașinile eligibile și plătește în siguranță. Vezi politica de anulare înainte să plătești.', 'Reserva al instante en los coches elegibles y paga con seguridad. Consulta la política de cancelación antes de pagar.'],
   ['Hit the road', 'Mettiti in strada', 'Pornește la drum', 'Ponte en marcha'],
-  ['Meet your host, enjoy the drive, then rate your experience.', 'Incontra il tuo host, goditi il viaggio e poi valuta la tua esperienza.', 'Întâlnește-ți gazda, bucură-te de drum, apoi evaluează experiența.', 'Conoce a tu anfitrión, disfruta del viaje y valora tu experiencia.'],
+  ['Meet your host, enjoy the drive, then hand the keys back.', 'Incontra il tuo host, goditi il viaggio e poi riconsegna le chiavi.', 'Întâlnește-ți gazda, bucură-te de drum, apoi predă cheile.', 'Conoce a tu anfitrión, disfruta del viaje y devuelve las llaves.'],
 
   // ---- Home: delivery ----
   ['Delivered to your door', 'Consegnata a casa tua', 'Livrată la ușa ta', 'Entregado en tu puerta'],
