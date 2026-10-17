@@ -196,6 +196,8 @@ let hideColumn: boolean | null = null;
 let archiveColumn: boolean | null = null;
 const hiddenAtByConv = new Map<string, string>();
 const archivedIds = new Set<string>();
+// chats I deleted but opened again on purpose ("Message host"): they stay in the list even while empty
+const reopenedIds = new Set<string>();
 
 type Participation = { conversation_id: string; hidden_at: string | null; archived_at: string | null };
 
@@ -246,7 +248,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
       // a deleted chat keeps only what arrived after the deletion (nothing: it stays out of the list)
       return { ...row, messages: row.messages.filter((m) => m.created_at > hidden), __hidden: true };
     })
-    .filter((row) => !(row as { __hidden?: boolean }).__hidden || row.messages.length > 0)
+    .filter((row) => !(row as { __hidden?: boolean }).__hidden || row.messages.length > 0 || reopenedIds.has(row.id))
     .map((row) => ({ ...mapConversation(row, userId), archived: archivedIds.has(row.id) }));
   return mapped.sort((a, b) => {
     const at = a.lastMessage?.createdAt ?? '';
@@ -572,6 +574,33 @@ export async function markConversationRead(conversationId: string, userId: strin
     .is('read_at', null);
 }
 
+/** If I had deleted or archived this chat, opening it on purpose brings it back (deleted: only the new messages show). */
+async function reopenIfHidden(conversationId: string, myUserId: string): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('conversation_participants')
+      .select('hidden_at, archived_at')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', myUserId)
+      .maybeSingle();
+    if (error || !data) return; // before migrations 0145 / 0146 there is nothing to bring back
+    if (data.hidden_at) {
+      hiddenAtByConv.set(conversationId, data.hidden_at);
+      reopenedIds.add(conversationId);
+    }
+    if (data.archived_at) await supabase.rpc('set_conversation_archived', { p_conversation: conversationId, p_archived: false });
+  } catch {
+    /* fail soft */
+  }
+}
+
+/** "Message host": the direct chat between a renter and the host of a car (one per car and pair, before and after the
+ *  booking). `null` when the caller is the host himself. CX is not in it: for a problem there is "Ask CX". */
+export async function openHostConversation(carId: string, hostId: string, myUserId: string): Promise<string | null> {
+  if (!hostId || hostId === myUserId) return null;
+  return findOrCreateConversation(carId, myUserId, hostId);
+}
+
 /** Finds an existing conversation about this car shared by both users, or
  *  creates one. This is what every "Message host"/"Contact host" action
  *  calls — never a fake toast claiming a message was sent.
@@ -598,7 +627,10 @@ export async function findOrCreateConversation(carId: string | null, myUserId: s
       .eq('user_id', otherUserId)
       .in('conversation_id', myConversationIds);
     if (sharedErr) throw sharedErr;
-    if (shared && shared.length) return shared[0].conversation_id;
+    if (shared && shared.length) {
+      await reopenIfHidden(shared[0].conversation_id, myUserId);
+      return shared[0].conversation_id;
+    }
   }
 
   // The conversation's id is generated client-side and the insert asks for

@@ -6,7 +6,8 @@ import { Img } from './motion';
 import { VerifiedBadge } from './primitives';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
-import { findOrCreateCxConversation } from '../lib/data/messages';
+import { openHostConversation } from '../lib/data/messages';
+import { ConciergeLauncher, ConciergeMark } from './Concierge';
 import { useLocale } from '../lib/i18n';
 import { Ugc } from '../lib/i18n/ugc';
 
@@ -24,10 +25,9 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
     }
     setMessaging(true);
     try {
-      // Before a booking, questions about a car go to CX — not straight to the host.
-      const conversationId = await findOrCreateCxConversation(carId, session.user.id);
+      const conversationId = await openHostConversation(carId, host.id, session.user.id);
       if (!conversationId) {
-        toast({ title: 'Support is not available right now', icon: 'info' });
+        toast({ title: 'This is your own car', icon: 'info' });
         return;
       }
       navigate(`/messages?c=${conversationId}`);
@@ -89,13 +89,20 @@ export function HostCard({ host, carId }: { host: Host; carId: string }) {
       </p>
       <p className="mt-3 text-body leading-relaxed text-ink-soft text-pretty"><Ugc text={host.bio} /></p>
 
-      <button
-        onClick={contactHost}
-        disabled={messaging}
-        className="btn btn-secondary btn-block mt-5 disabled:opacity-60"
-      >
-        <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Contact CX')}
-      </button>
+      {session?.user.id !== host.id && (
+        <>
+          <button
+            onClick={contactHost}
+            disabled={messaging}
+            className="btn btn-secondary btn-block mt-5 disabled:opacity-60"
+          >
+            <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Message host')}
+          </button>
+          <ConciergeLauncher className="mx-auto mt-3 flex items-center gap-2 text-detail font-medium text-muted transition-colors hover:text-ink">
+            <ConciergeMark size={22} /> {t('Need help? Ask CX')}
+          </ConciergeLauncher>
+        </>
+      )}
     </div>
   );
 }

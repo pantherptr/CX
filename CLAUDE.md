@@ -39,6 +39,7 @@ Code is written to fail soft before a migration is run.
 - **Chat** (`src/pages/Messages.tsx`, `src/lib/data/messages.ts`): realtime, typing/online presence,
   photos (private bucket), delete own message, report, quick replies, thread cache. Phone layout follows
   the visual viewport through CSS vars (`--vv-top`, `--vv-h`); do not reintroduce transform/rAF chasing.
+- **Message host** (car page host card + booking card, checkout, trip page, SIGNAL profile) all open the DIRECT renter↔host chat (`openHostConversation`, one per car + pair, before and after booking; a deleted/archived one is brought back). CX Investigative is only for problems: "Need help? Ask CX" (X → person) and cases. Deleting / archiving a chat is per person (migrations 0145–0147).
 - **Auth** (`src/lib/auth.tsx`, `src/lib/sessionStorage.ts`): session manager re-verifies before signing
   out; storage mirrored to IndexedDB; devices list in Settings → Security.
 - **Verification v2** (`src/components/VerificationFlow.tsx`, `src/components/admin/VerificationsPanel.tsx`):

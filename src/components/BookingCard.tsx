@@ -6,7 +6,7 @@ import { DateRangeSheet } from './DateRangeSheet';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
-import { findOrCreateCxConversation } from '../lib/data/messages';
+import { openHostConversation } from '../lib/data/messages';
 import { useHasAccess } from '../lib/useAccess';
 import { useLocale } from '../lib/i18n';
 import { uiLocale } from '../lib/i18n/uiLocale';
@@ -74,10 +74,9 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
     }
     setMessaging(true);
     try {
-      // Before a booking, questions go to CX — not straight to the host.
-      const conversationId = await findOrCreateCxConversation(car.id, session.user.id);
+      const conversationId = await openHostConversation(car.id, car.hostId, session.user.id);
       if (!conversationId) {
-        toast({ title: 'Support is not available right now', icon: 'info' });
+        toast({ title: 'This is your own car', icon: 'info' });
         return;
       }
       navigate(`/messages?c=${conversationId}`);
@@ -149,13 +148,15 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
         {car.instantBook ? 'Reserve car' : 'Request to book'}
         <Icon name="arrowRight" size={17} />
       </button>
-      <button
-        onClick={contactHost}
-        disabled={messaging}
-        className="btn btn-ghost btn-block mt-1.5 text-muted hover:text-ink disabled:opacity-60"
-      >
-        <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Contact CX')}
-      </button>
+      {session?.user.id !== car.hostId && (
+        <button
+          onClick={contactHost}
+          disabled={messaging}
+          className="btn btn-ghost btn-block mt-1.5 text-muted hover:text-ink disabled:opacity-60"
+        >
+          <Icon name="message" size={16} /> {messaging ? t('Opening…') : t('Message host')}
+        </button>
+      )}
 
       <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-caption text-muted">
         <Icon name="lock" size={13} /> You won’t be charged yet

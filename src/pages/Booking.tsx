@@ -23,7 +23,7 @@ import {
   type FareTier,
 } from '../lib/data/bookings';
 import { createPaymentIntent, waitForBookingByPaymentIntent } from '../lib/data/payments';
-import { findOrCreateCxConversation } from '../lib/data/messages';
+import { openHostConversation } from '../lib/data/messages';
 import { useAvailableReward } from '../lib/data/rewards';
 import { haptics } from '../lib/native';
 import { PaymentStep } from '../components/PaymentStep';
@@ -405,10 +405,9 @@ export default function Booking() {
     if (!session) return;
     setMessaging(true);
     try {
-      // Until the trip is booked, questions go to CX — not straight to the host.
-      const conversationId = await findOrCreateCxConversation(car.id, session.user.id);
+      const conversationId = await openHostConversation(car.id, car.hostId, session.user.id);
       if (!conversationId) {
-        toast({ title: 'Support is not available right now', icon: 'info' });
+        toast({ title: 'This is your own car', icon: 'info' });
         setMessaging(false);
         return;
       }
@@ -604,7 +603,7 @@ export default function Booking() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Link to="/dashboard#trips" className="btn btn-primary btn-lg sm:col-span-2">View my trip <Icon name="arrowRight" size={17} /></Link>
           <button onClick={downloadIcs} className="btn btn-secondary btn-lg"><Icon name="calendar" size={17} /> Add to calendar</button>
-          <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-lg disabled:opacity-60"><Icon name="message" size={17} /> {messaging ? 'Opening…' : 'Message CX'}</button>
+          <button onClick={handleMessageHost} disabled={messaging} className="btn btn-secondary btn-lg disabled:opacity-60"><Icon name="message" size={17} /> {messaging ? 'Opening…' : 'Message host'}</button>
         </div>
         <Link to="/browse" className="mt-4 block text-center text-detail font-medium text-muted transition-colors hover:text-ink">Explore more cars</Link>
       </div>
