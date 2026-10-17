@@ -1,14 +1,15 @@
 import { useLocale } from '../../lib/i18n';
 
-export interface MarqueeQuote { name: string; place: string; avatar?: string; text: string; respected?: boolean }
-// Six members from different places. The two rows are the first and the last three, so each row mixes them.
+export interface MarqueeQuote { name: string; place: string; avatar?: string; text: string; respected?: boolean; rtl?: boolean }
+// Six members from different places. Each post stays in its own language (Italian, English, Arabic) whatever language the site is in.
+// The two rows are the first and the last three, so each row mixes them.
 const QUOTES: MarqueeQuote[] = [
-  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁' },
+  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, edizione Milano. Finestrini giù, la famiglia prima di tutto, niente freni. 🏁' },
   { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
-  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
+  { name: 'Adam', place: 'San Pietroburgo', avatar: '/signal/av-adam.webp', text: 'Cattedrale di Kazan, San Pietroburgo. Volto coperto, nome conosciuto: il rispetto viene prima. 🖤', respected: true },
   { name: 'Daniel', place: 'Manchester', text: 'Grey sky, clean ride, zero stress. Booked in two minutes, mate. 🖤' },
-  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
-  { name: 'Yusuf', place: 'Dubai', text: 'Yalla, habibi — keys in hand and the road is ours. 🌙' },
+  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Pioggia sul vetro, lealtà sul sedile. Niente finto, niente show: solo quelli veri. 🖤' },
+  { name: 'Yusuf', place: 'Dubai', rtl: true, text: 'يلا حبيبي، المفاتيح في يدي والطريق لنا 🌙' },
 ];
 
 function Card({ q }: { q: MarqueeQuote }) {
@@ -23,7 +24,7 @@ function Card({ q }: { q: MarqueeQuote }) {
         )}
         <figcaption className="min-w-0 text-detail font-semibold leading-tight text-ink">{q.name}<span className="block text-caption font-normal text-muted">{q.place}</span></figcaption>
       </div>
-      <blockquote className="line-clamp-3 text-detail leading-relaxed text-ink-soft">{t(q.text)}</blockquote>
+      <blockquote dir={q.rtl ? 'rtl' : undefined} lang={q.rtl ? 'ar' : undefined} className={`line-clamp-3 text-ink-soft ${q.rtl ? 'text-[15px] leading-loose' : 'text-detail leading-relaxed'}`}>{q.text}</blockquote>
       {q.respected && (
         <span className="cx-marquee-stamp absolute bottom-2.5 right-3 -rotate-[8deg] rounded-md border-2 border-double border-accent-700/80 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-accent-700">{t('Respected')}</span>
       )}

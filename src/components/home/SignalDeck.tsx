@@ -6,9 +6,9 @@ import { useLocale } from '../../lib/i18n';
 
 interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string; respected?: boolean; video?: string }
 const POSTS: Post[] = [
-  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁', image: '/signal/luca-drive.webp', video: '/signal/luca-drive.mp4', pos: '50% 50%' },
-  { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤', image: '/signal/luca3.webp', pos: '50% 62%' },
-  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%', respected: true },
+  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, edizione Milano. Finestrini giù, la famiglia prima di tutto, niente freni. 🏁', image: '/signal/luca-drive.webp', video: '/signal/luca-drive.mp4', pos: '50% 50%' },
+  { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Pioggia sul vetro, lealtà sul sedile. Niente finto, niente show: solo quelli veri. 🖤', image: '/signal/luca3.webp', pos: '50% 62%' },
+  { name: 'Adam', role: 'host', place: 'San Pietroburgo', avatar: '/signal/av-adam.webp', text: 'Cattedrale di Kazan, San Pietroburgo. Volto coperto, nome conosciuto: il rispetto viene prima. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%', respected: true },
 ];
 
 /** A post's video: starts by itself (muted, as phones require), loops, and only runs while its card is on top and on screen. */
@@ -124,7 +124,7 @@ export function SignalDeck() {
                 </span>
                 <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
               </div>
-              <p className="line-clamp-2 shrink-0 px-3.5 pb-3 text-detail leading-relaxed text-ink">{t(p.text)}</p>
+              <p className="line-clamp-2 shrink-0 px-3.5 pb-3 text-detail leading-relaxed text-ink">{p.text}</p>
               <div className="relative flex min-h-0 w-full flex-1 gap-0.5">
                 {p.video ? (
                   <PostVideo src={p.video} poster={p.image} active={isTop} />
