@@ -1,13 +1,14 @@
 import { useLocale } from '../../lib/i18n';
 
-export interface MarqueeQuote { name: string; place: string; avatar: string; text: string; respected?: boolean }
+export interface MarqueeQuote { name: string; place: string; avatar?: string; text: string; respected?: boolean }
+// Six members from different places. The two rows are the first and the last three, so each row mixes them.
 const QUOTES: MarqueeQuote[] = [
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁' },
-  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
-  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
   { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
-  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'The host replied in minutes and the handover was a breeze.' },
-  { name: 'Luca', place: 'Roma', avatar: '/signal/av-luca.webp', text: 'Weekend sorted. I will be back for the next one.' },
+  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
+  { name: 'Daniel', place: 'Manchester', text: 'Grey sky, clean ride, zero stress. Booked in two minutes, mate. 🖤' },
+  { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
+  { name: 'Yusuf', place: 'Dubai', text: 'Yalla, habibi — keys in hand and the road is ours. 🌙' },
 ];
 
 function Card({ q }: { q: MarqueeQuote }) {
@@ -15,7 +16,11 @@ function Card({ q }: { q: MarqueeQuote }) {
   return (
     <figure className="relative flex w-[17rem] shrink-0 flex-col gap-2.5 rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-center gap-2.5">
-        <img src={q.avatar} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-accent-bright/30" />
+        {q.avatar ? (
+          <img src={q.avatar} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-accent-bright/30" />
+        ) : (
+          <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#0e3322] to-[#06120d] text-detail font-bold text-[#7dffa8] ring-1 ring-accent-bright/30">{q.name[0]}</span>
+        )}
         <figcaption className="min-w-0 text-detail font-semibold leading-tight text-ink">{q.name}<span className="block text-caption font-normal text-muted">{q.place}</span></figcaption>
       </div>
       <blockquote className="line-clamp-3 text-detail leading-relaxed text-ink-soft">{t(q.text)}</blockquote>
