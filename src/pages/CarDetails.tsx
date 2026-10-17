@@ -26,6 +26,7 @@ import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { useCompare } from '../lib/compareStore';
 import { useLocale } from '../lib/i18n';
+import { applyPageMeta } from '../lib/pageMeta';
 import { shareLink, haptics } from '../lib/native';
 import { createReport } from '../lib/data/reports';
 import NotFound from './NotFound';
@@ -198,6 +199,16 @@ export default function CarDetails() {
       cancelled = true;
     };
   }, [slug]);
+
+  // a car page names the car and the city, and shares its first photo's description
+  useEffect(() => {
+    if (!result) return;
+    const c = result.car;
+    applyPageMeta(window.location.pathname, {
+      title: `${c.year} ${c.make} ${c.model} · ${c.city}`,
+      desc: `${c.make} ${c.model} ${c.year} in ${c.city}, from ${c.pricePerDay} € a day. Verified host, protection included.`,
+    });
+  }, [result]);
 
   if (loadError) {
     return (

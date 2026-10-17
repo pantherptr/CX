@@ -6,6 +6,7 @@ import { BatPullToRefresh } from './components/BatPullToRefresh';
 import { EdgeSwipeBack } from './components/EdgeSwipeBack';
 import { WorkspaceTracker } from './lib/workspace';
 import { setInSignal } from './lib/theme';
+import { applyPageMeta, staticMeta } from './lib/pageMeta';
 import { preloadMap } from './lib/mapPreload';
 import { PremiumInitialLoader, PremiumPageLoader } from './components/PremiumLoader';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -377,6 +378,12 @@ export default function App() {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const pageNavType = useNavigationType();
   useEffect(() => { setInSignal(SIGNAL_ROUTE.test(location.pathname)); }, [location.pathname]);
+  // Title, description, canonical and noindex follow the route (a car page then sets its own, see CarDetails)
+  const { t: tMeta, lang: metaLang } = useLocale();
+  useEffect(() => {
+    if (location.pathname.startsWith('/cars/')) { applyPageMeta(location.pathname, null); return; }
+    applyPageMeta(location.pathname, staticMeta(location.pathname, tMeta));
+  }, [location.pathname, tMeta, metaLang]);
   useWarmRoutes();
   const pullEnabled =
     !SIGNAL_ROUTE.test(location.pathname) &&
