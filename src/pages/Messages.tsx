@@ -929,7 +929,6 @@ export default function Messages() {
   const archivedList = (conversations ?? []).filter((c) => c.archived);
   const archivedCount = archivedList.length;
   const archiveDot = archivedList.some((c) => c.unreadCount > 0);
-  useEffect(() => { if (tab === 'archive' && archivedCount === 0) setTab('main'); }, [tab, archivedCount]);
   const visibleConversations = (conversations ?? []).filter((c) => {
     if (Boolean(c.archived) !== (tab === 'archive')) return false;
     const q = search.trim().toLowerCase();
@@ -957,34 +956,47 @@ export default function Messages() {
   // new messages when you are already at the bottom (or the message is yours), and it does so
   // without an animation: a smooth scroll fighting the keyboard and the layout was the "scatto".
   const lastScroll = useRef<{ id: string | null; len: number; chat: boolean }>({ id: null, len: 0, chat: false });
+  const atBottom = useRef(true);
   useEffect(() => {
     const len = (messages?.length ?? 0) + pendingForActive.length;
     const prev = lastScroll.current;
     const sameThread = prev.id === activeId && prev.chat === mobileChat && prev.len > 0;
     lastScroll.current = { id: activeId, len, chat: mobileChat };
+    if (!sameThread) atBottom.current = true; // a freshly opened thread always starts at the latest message
     const scroll = (el: HTMLDivElement | null) => {
       if (!el) return;
       const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
       if (sameThread && !nearBottom && !pendingForActive.length) return;
       el.scrollTop = el.scrollHeight;
     };
-    scroll(scrollRef.current);
-    scroll(mockScrollRef.current);
+    const run = () => { scroll(scrollRef.current); scroll(mockScrollRef.current); };
+    run();
+    // the layout settles a frame later (the sheet slides in, bubbles and photos get their size): stay glued to the bottom
+    const r1 = requestAnimationFrame(() => { if (atBottom.current) run(); });
+    const r2 = window.setTimeout(() => { if (atBottom.current) run(); }, 280);
+    return () => { cancelAnimationFrame(r1); window.clearTimeout(r2); };
   }, [messages?.length, pendingForActive.length, activeId, mobileChat]);
 
-  // When the keyboard opens or closes the chat box changes height; if you were at the bottom of the
-  // thread you stay at the bottom (otherwise the last messages slide behind the composer).
-  const atBottom = useRef(true);
+  // While you are at the bottom you stay there when the box or its content changes height: the keyboard opening, a photo
+  // finishing loading, an avatar popping in. Scrolling up by hand lets go.
   const [showJump, setShowJump] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   useEffect(() => { setProfileOpen(false); }, [activeId, mobileChat]);
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => { if (atBottom.current) el.scrollTop = el.scrollHeight; });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [mobileChat, activeId]);
+    const els = [scrollRef.current, mockScrollRef.current].filter((e): e is HTMLDivElement => !!e);
+    if (!els.length || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { if (atBottom.current) els.forEach((el) => { el.scrollTop = el.scrollHeight; }); });
+    const onScroll = (e: Event) => {
+      const el = e.currentTarget as HTMLElement;
+      atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    els.forEach((el) => {
+      ro.observe(el);
+      if (el.firstElementChild) ro.observe(el.firstElementChild);
+      el.addEventListener('scroll', onScroll, { passive: true });
+    });
+    return () => { ro.disconnect(); els.forEach((el) => el.removeEventListener('scroll', onScroll)); };
+  }, [mobileChat, activeId, messages === null]);
 
   // iOS-style edge swipe: drag from the left edge to the right to go back.
   const edgeSwipe = useRef<{ x: number; y: number } | null>(null);
@@ -1223,7 +1235,7 @@ export default function Messages() {
           onSelectChat={openConvo}
           search={search}
           onSearch={setSearch}
-          sidebarExtra={archivedCount > 0 || tab === 'archive' ? <ChatTabs compact tab={tab} onTab={setTab} archivedCount={archivedCount} archiveDot={archiveDot} /> : undefined}
+          sidebarExtra={<ChatTabs compact tab={tab} onTab={setTab} archivedCount={archivedCount} archiveDot={archiveDot} />}
           onChatMenu={(id) => {
             const c = (conversations ?? []).find((x) => x.id === id);
             if (!c) return [];
@@ -1362,10 +1374,10 @@ export default function Messages() {
             )}
           </div>
           <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
-            {(archivedCount > 0 || tab === 'archive') && <ChatTabs tab={tab} onTab={setTab} archivedCount={archivedCount} archiveDot={archiveDot} />}
+            {!conversationsLoading && <ChatTabs tab={tab} onTab={setTab} archivedCount={archivedCount} archiveDot={archiveDot} />}
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
-            ) : conversations && conversations.length > 0 ? (
+            ) : (conversations && conversations.length > 0) || tab === 'archive' ? (
               visibleConversations.length > 0 ? (
                 <div key={tab} className={tab === 'archive' ? 'tab-in-from-right space-y-1' : 'tab-in-from-left space-y-1'}>
                   {visibleConversations.map((c) => (
@@ -1419,8 +1431,8 @@ export default function Messages() {
               }
             }}
           >
-            <div className="relative z-10 shrink-0 border-b border-black/[0.06] bg-white/95 px-2 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] backdrop-blur-xl">
-              <div className="flex items-center gap-2.5">
+            <div className="relative z-10 shrink-0 px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))]">
+              <div className="flex items-center gap-1.5 rounded-[30px] bg-white py-1.5 pl-1.5 pr-3 shadow-[0_10px_28px_-14px_rgba(22,22,26,0.4)] ring-1 ring-black/[0.05]">
                 <button onClick={closeConvo} aria-label="Back to conversations" className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink transition-transform active:scale-90 active:bg-black/[0.06]">
                   <Icon name="chevronLeft" size={22} />
                 </button>
@@ -1461,9 +1473,9 @@ export default function Messages() {
               {active.car && (
                 <Link
                   to={`/cars/${active.car.slug}`}
-                  className="pressable mx-1 mt-2 flex items-center gap-2.5 rounded-xl bg-panel p-1 pr-3 transition-transform active:scale-[0.98]"
+                  className="pressable mt-2 flex items-center gap-2.5 rounded-full bg-white p-1 pr-4 shadow-[0_8px_22px_-14px_rgba(22,22,26,0.35)] ring-1 ring-black/[0.05] transition-transform active:scale-[0.98]"
                 >
-                  {active.car.image && <Img src={active.car.image} alt="" className="h-9 w-12 shrink-0 rounded-xl object-cover" />}
+                  {active.car.image && <Img src={active.car.image} alt="" className="h-9 w-12 shrink-0 rounded-full object-cover" />}
                   <span className="min-w-0 flex-1 truncate text-detail font-semibold text-ink">{active.car.make} {active.car.model}</span>
                   <span className="shrink-0 text-caption font-semibold text-accent">View</span>
                   <Icon name="chevronRight" size={15} className="shrink-0 text-faint" />
