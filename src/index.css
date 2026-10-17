@@ -2844,3 +2844,9 @@ html.home-white:not([data-theme='dark']) .hero-bg { background: #ffffff !importa
 .tab-in-from-right { animation: tab-in-r 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .tab-in-from-left { animation: tab-in-l 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @media (prefers-reduced-motion: reduce) { .tab-in-from-right, .tab-in-from-left { animation: none; } }
+
+/* Keychain stamps: one printed ink, lighter on the dark theme */
+.stamp-ink-g { color: #0c7a38; }
+.stamp-ink-k { color: #22262a; }
+html[data-theme='dark'] .stamp-ink-g { color: #3ddc84; }
+html[data-theme='dark'] .stamp-ink-k { color: #ebe9e2; }
