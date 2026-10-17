@@ -18,7 +18,7 @@ export function ProtectionTeam() {
       <Reveal>
         <div className="grid items-center gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10">
           <p className="eyebrow order-1 md:hidden">{t('How we protect you')}</p>
-          <div className="relative order-2 mx-auto w-[70%] max-w-[22rem] md:order-1 md:w-full md:max-w-[26rem]">
+          <div className="relative order-2 mx-auto w-[46%] max-w-[12.5rem] md:order-1 md:w-full md:max-w-[26rem]">
             <span aria-hidden className="absolute inset-x-[8%] bottom-0 h-6 rounded-[50%] bg-black/25 blur-xl" />
             <img
               src="/home/duo-cut-820.webp"
@@ -27,7 +27,7 @@ export function ProtectionTeam() {
               draggable={false}
               className="relative block w-full drop-shadow-[0_18px_22px_rgba(0,0,0,0.18)]"
             />
-            <div className="relative mt-4 flex justify-center"><InvestigationsMark size="md" /></div>
+            <div className="relative mt-3 flex justify-center"><InvestigationsMark size="md" className="scale-90 md:scale-100" /></div>
           </div>
 
           <div className="order-3 md:order-2">
