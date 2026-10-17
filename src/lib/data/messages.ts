@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { shrinkImage } from '../shrinkImage';
 import { unsplash } from '../img';
 import { apiUrl } from '../api';
+import { INVESTIGATIONS, agentFor } from '../investigations';
 
 /**
  * Real messaging data-access layer. The conversations/
@@ -265,6 +266,14 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
  *  not inside that thread — still updates the preview, timestamp, order
  *  and unread badge without a manual reload. Debounced so a burst of
  *  messages across several conversations collapses into one refetch. */
+/** A support case with the team is always shown the same way, everywhere: the investigator who has it ("Aurora · CX
+ *  Investigative") with their portrait — never the bare CX logo. */
+export function presentConversation(c: Conversation): Conversation {
+  if (c.kind !== 'support' || c.other.role !== 'cx') return c;
+  const agent = agentFor(c.id);
+  return { ...c, other: { ...c.other, name: `${agent.name} · ${INVESTIGATIONS.name}`, avatar: agent.src } };
+}
+
 export function useConversations(userId: string | undefined) {
   const instanceId = useId();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
@@ -319,7 +328,8 @@ export function useConversations(userId: string | undefined) {
     };
   }, [userId, instanceId]);
 
-  return { conversations, error, loading: conversations === null && !error, refresh: () => setRefreshKey((k) => k + 1) };
+  const presented = useMemo(() => conversations?.map(presentConversation) ?? conversations, [conversations]);
+  return { conversations: presented, error, loading: conversations === null && !error, refresh: () => setRefreshKey((k) => k + 1) };
 }
 
 /** Latest messages of a thread, oldest first. Capped so a very long thread does not pull its
