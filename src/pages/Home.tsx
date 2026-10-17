@@ -451,7 +451,7 @@ export default function Home() {
             </div>
             <SignalDeck />
           </div>
-          <PostMarquee />
+          <div className="mt-12"><PostMarquee /></div>
         </Reveal>
       </section>
 

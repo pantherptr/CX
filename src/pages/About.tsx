@@ -1,6 +1,8 @@
 import { Icon, type IconName } from '../components/Icon';
 import { Img } from '../components/motion';
 import { SectionHead } from '../components/primitives';
+import { PostMarquee, type MarqueeQuote } from '../components/home/PostMarquee';
+import { INVESTIGATORS } from '../lib/investigations';
 import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
 import { Reveal } from '../components/motion';
 import { unsplash, avatar } from '../lib/img';
@@ -20,6 +22,16 @@ const team = [
   { name: 'Giulia Bianchi', role: 'Head of Trust', n: 45 },
   { name: 'Lukas Weber', role: 'Head of Operations', n: 33 },
 ];
+
+const TEAM_LINES = [
+  'Every case is read by a real person.',
+  'You describe the problem once, we take it from there.',
+  'Payments and contact details stay inside CX, always.',
+  'We follow your case until it is closed.',
+  'A name and a face behind every answer.',
+  'Writing to us is the safest way to sort anything out.',
+];
+const TEAM_QUOTES: MarqueeQuote[] = TEAM_LINES.map((text, i) => ({ name: INVESTIGATORS[i % INVESTIGATORS.length].name, place: 'CX Investigations', avatar: INVESTIGATORS[i % INVESTIGATORS.length].src, text }));
 
 export default function About() {
   return (
@@ -123,6 +135,11 @@ export default function About() {
       </section>
 
       {/* CTA */}
+      <section className="mt-24 overflow-hidden">
+        <div className="container-page"><SectionHead center eyebrow="CX Investigations" title="The people who answer you." /></div>
+        <div className="mt-8"><PostMarquee quotes={TEAM_QUOTES} /></div>
+      </section>
+
       <section className="container-page mb-24 mt-24">
         <CtaBand
           title="Join the journey."

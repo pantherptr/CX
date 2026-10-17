@@ -37,7 +37,7 @@ export function CarFan() {
 
   return (
     <div ref={box} className="mx-auto w-full max-w-3xl" onPointerDown={() => setPaused(true)} onPointerLeave={() => setPaused(false)}>
-      <div className="relative h-[19rem] overflow-hidden sm:h-[22rem]" role="group" aria-label={t('Cars like yours on CX')}>
+      <div className="relative h-[22.5rem] overflow-hidden sm:h-[25rem]" role="group" aria-label={t('Cars like yours on CX')}>
         {list.map((c, i) => {
           const o = off(i);
           const a = Math.abs(o);

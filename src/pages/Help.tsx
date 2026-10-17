@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { SectionHead } from '../components/primitives';
+import { SignalDeck } from '../components/home/SignalDeck';
 import { FaqItem } from '../components/FaqItem';
 import { CATEGORIES, faqs, type Category } from '../data/faqs';
 
@@ -45,6 +46,11 @@ export default function Help() {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="container-page mt-16">
+        <SectionHead eyebrow="From the community" title="What people say" />
+        <div className="mt-8"><SignalDeck /></div>
       </section>
 
       <section className="container-page mt-16 mb-24">
