@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤", "Verde sul grigio, volto coperto, nome conosciuto. Due angoli, una regola: prima il rispetto. 🖤", "Verde pe gri, fața acoperită, numele cunoscut. Două unghiuri, o regulă: respectul înainte de toate. 🖤", "Verde sobre gris, cara tapada, nombre conocido. Dos ángulos, una regla: el respeto primero. 🖤"],
   ["Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤", "Pioggia sul vetro, lealtà sul sedile. Niente finto, niente show: solo quelli veri. 🖤", "Ploaie pe geam, loialitate pe scaun. Fără fals, fără fală: doar cei adevărați. 🖤", "Lluvia en el cristal, lealtad en el asiento. Nada de postureo, solo los de verdad. 🖤"],
   ["When the sun goes down, the city is yours. Red lights, open road. 🔴", "Quando il sole tramonta, la città è tua. Luci rosse, strada libera. 🔴", "Când apune soarele, orașul e al tău. Lumini roșii, drum liber. 🔴", "Cuando se pone el sol, la ciudad es tuya. Luces rojas, carretera libre. 🔴"],
   ["Open road, golden hour, zero worries. Booked in two minutes. 🌄", "Strada aperta, ora d’oro, zero pensieri. Prenotata in due minuti. 🌄", "Drum deschis, ora de aur, zero griji. Rezervat în două minute. 🌄", "Carretera abierta, hora dorada, cero preocupaciones. Reservado en dos minutos. 🌄"],
