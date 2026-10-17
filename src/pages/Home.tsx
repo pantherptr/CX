@@ -1,4 +1,4 @@
-import { HostEarnings } from '../components/home/HostEarnings';
+import { OwnersBento } from '../components/home/OwnersBento';
 import { FindPoster } from '../components/home/scenes/FindPoster';
 import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
@@ -658,41 +658,13 @@ export default function Home() {
       {/* ================= HOSTS — turn a parked car into income ================= */}
       <section className="container-page section-tight">
         <Reveal>
-          <div className="grid items-center gap-8 rounded-[1.75rem] border border-line bg-surface px-6 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.2fr_1fr]">
-            <div>
-              <p className="eyebrow">{t('For car owners')}</p>
-              <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Your car is parked. It could be earning.')} />
-              <p className="mt-3 max-w-lg text-copy leading-relaxed text-muted">
-                {t('Share the car you love with drivers who will treat it right. Set your own price, decide how it is handed over, and stay in control of every trip.')}
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/list-your-car" className="btn btn-primary btn-lg">
-                  {t('List your car')} <Icon name="arrowRight" size={17} />
-                </Link>
-                <Link to="/how-it-works" className="btn btn-secondary btn-lg">
-                  {t('How hosting works')}
-                </Link>
-              </div>
-            </div>
-            <div className="space-y-3">
-            <HostEarnings />
-            <ul className="space-y-3">
-              {[
-                { icon: 'euro' as IconName, t: 'You set the daily rate — and receive it in full' },
-                { icon: 'car' as IconName, t: 'Offer pickup, delivery, or both' },
-                { icon: 'shield' as IconName, t: 'Verified renters, protection on every trip' },
-              ].map((r) => (
-                <li key={r.t} className="flex items-center gap-4 rounded-2xl border border-line bg-panel/60 p-4">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
-                    <Icon name={r.icon} size={19} />
-                  </span>
-                  <span className="text-body font-medium text-ink-soft">{t(r.t)}</span>
-                </li>
-              ))}
-            </ul>
-            </div>
-          </div>
+          <p className="eyebrow">{t('For car owners')}</p>
+          <BlurText as="h2" className="mt-3 max-w-2xl font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Your car is parked. It could be earning.')} />
+          <p className="mt-3 max-w-lg text-copy leading-relaxed text-muted">
+            {t('Share the car you love with drivers who will treat it right. Set your own price, decide how it is handed over, and stay in control of every trip.')}
+          </p>
         </Reveal>
+        <div className="mt-8"><OwnersBento /></div>
       </section>
 
       {/* ================= FAQ — the real answers from the Help Center ================= */}
