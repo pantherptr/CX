@@ -8,6 +8,7 @@ import { FindPoster } from '../components/home/scenes/FindPoster';
 import { BlurText } from '../components/ui/blur-text';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../lib/theme';
 import { SignalS } from '../components/SignalLogo';
 import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
@@ -99,6 +100,14 @@ const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).fil
 
 export default function Home() {
   const { t } = useLocale();
+  // The Home is pure white in the light theme (no cream tint, no grey band between sections); the dark theme keeps its own look.
+  const theme = useTheme();
+  useEffect(() => {
+    if (theme === 'dark') return;
+    const root = document.documentElement;
+    root.classList.add('home-white');
+    return () => root.classList.remove('home-white');
+  }, [theme]);
   const { cars: allCars } = useCars();
 
   // The hero has a little depth: headline, car and ghost line drift by different amounts as you scroll.
@@ -179,7 +188,7 @@ export default function Home() {
           style={{ background: 'linear-gradient(180deg, var(--hero-top) 0%, var(--color-bg) 100%)' }}
         />
 
-        <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-6 pt-24 sm:px-8 sm:pt-28 lg:px-10">
+        <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-16 pt-24 sm:px-8 sm:pt-28 lg:px-10">
           {/* -------- The stage: word / car / word -------- */}
           <Reveal className="reveal-blur">
             <div ref={stageRef} className="relative mx-auto aspect-[1/1.04] w-full select-none sm:aspect-[16/8]">

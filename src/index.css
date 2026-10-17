@@ -2821,3 +2821,7 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @media (prefers-reduced-motion: reduce) { .pi-beat { animation: none !important; } }
 
 
+
+/* Home, light theme: pure white page */
+html.home-white:not([data-theme='dark']) { --color-bg: #ffffff; --hero-top: #ffffff; }
+html.home-white:not([data-theme='dark']) .hero-bg { background: #ffffff !important; }
