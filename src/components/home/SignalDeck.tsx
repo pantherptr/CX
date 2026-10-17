@@ -4,12 +4,51 @@ import { Icon } from '../Icon';
 import { VerifiedBadge } from '../primitives';
 import { useLocale } from '../../lib/i18n';
 
-interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string; respected?: boolean }
+interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string; respected?: boolean; video?: string }
 const POSTS: Post[] = [
-  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴', image: '/signal/giulia2.webp', pos: '50% 40%' },
+  { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Golden hour, windows down, nobody in front of me. This is the feeling. 🌅', image: '/signal/luca-drive.webp', video: '/signal/luca-drive.mp4', pos: '50% 50%' },
   { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤', image: '/signal/luca3.webp', pos: '50% 62%' },
   { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%', respected: true },
 ];
+
+/** A post's video: starts by itself (muted, as phones require), loops, and only runs while its card is on top and on screen. */
+function PostVideo({ src, poster, active }: { src: string; poster: string; active: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.2 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  const playing = active && visible;
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (!playing) { v.pause(); return; }
+    const go = () => { void v.play().catch(() => {}); };
+    go();
+    // the file may still be loading when the card comes up: start the moment it can
+    v.addEventListener('loadeddata', go);
+    v.addEventListener('canplay', go);
+    return () => { v.removeEventListener('loadeddata', go); v.removeEventListener('canplay', go); };
+  }, [playing]);
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      preload="auto"
+      disablePictureInPicture
+      aria-hidden
+      className="min-h-0 min-w-0 flex-1 object-cover"
+    />
+  );
+}
 
 /**
  * Home → SIGNAL, on the light page: a row of stories on top and a stack of posts you flick through with a finger (or that
@@ -32,9 +71,10 @@ export function SignalDeck() {
   }, []);
   useEffect(() => {
     if (reduced || paused || !onScreen) return;
-    const id = window.setInterval(() => setTop((n) => (n + 1) % POSTS.length), 4200);
-    return () => window.clearInterval(id);
-  }, [reduced, paused, onScreen]);
+    // a post with a video stays up for one full run of it; the others for a few seconds
+    const id = window.setTimeout(() => setTop((n) => (n + 1) % POSTS.length), POSTS[top].video ? 12500 : 4200);
+    return () => window.clearTimeout(id);
+  }, [reduced, paused, onScreen, top]);
 
   const stories = [
     { n: 'CX', src: '/brand/avatar-cx-chrome.png?v=3', seen: false },
@@ -86,7 +126,11 @@ export function SignalDeck() {
               </div>
               <p className="line-clamp-2 shrink-0 px-3.5 pb-3 text-detail leading-relaxed text-ink">{t(p.text)}</p>
               <div className="relative flex min-h-0 w-full flex-1 gap-0.5">
-                <img src={p.image} alt="" draggable={false} loading="lazy" className="min-h-0 min-w-0 flex-1 object-cover" style={{ objectPosition: p.pos ?? '50% 35%' }} />
+                {p.video ? (
+                  <PostVideo src={p.video} poster={p.image} active={isTop} />
+                ) : (
+                  <img src={p.image} alt="" draggable={false} loading="lazy" className="min-h-0 min-w-0 flex-1 object-cover" style={{ objectPosition: p.pos ?? '50% 35%' }} />
+                )}
                 {p.respected && isTop && (
                   <span key={`stamp-${top}`} aria-hidden className="cx-stamp-8 pointer-events-none absolute bottom-3 right-3 -rotate-[8deg] rounded-md border-[3px] border-double border-white/90 bg-[#0c7a38]/55 px-3 py-1.5 text-[15px] font-black uppercase tracking-[0.2em] text-white shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] backdrop-blur-[2px]">
                     {t('Respected')}

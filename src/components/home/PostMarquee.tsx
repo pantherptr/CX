@@ -2,7 +2,7 @@ import { useLocale } from '../../lib/i18n';
 
 export interface MarqueeQuote { name: string; place: string; avatar: string; text: string; respected?: boolean }
 const QUOTES: MarqueeQuote[] = [
-  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴' },
+  { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Golden hour, windows down, nobody in front of me. This is the feeling. 🌅' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
   { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
   { name: 'Marco', place: 'Firenze', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
