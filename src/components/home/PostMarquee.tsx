@@ -4,7 +4,7 @@ export interface MarqueeQuote { name: string; place: string; avatar: string; tex
 const QUOTES: MarqueeQuote[] = [
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'What a car! 😍 Easy to book, super host, car in perfect shape.' },
-  { name: 'Adam', place: 'Amalfi Coast', avatar: '/signal/av-adam.webp', text: 'Golden hour on the Amalfi Coast. Good cars, better people.' },
+  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'New week, new car on the road. Good cars, better people.' },
   { name: 'Marco', place: 'Firenze', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'The host replied in minutes and the handover was a breeze.' },
   { name: 'Luca', place: 'Roma', avatar: '/signal/av-luca.webp', text: 'Weekend sorted. I will be back for the next one.' },

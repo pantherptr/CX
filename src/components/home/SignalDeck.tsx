@@ -4,11 +4,11 @@ import { Icon } from '../Icon';
 import { VerifiedBadge } from '../primitives';
 import { useLocale } from '../../lib/i18n';
 
-interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string }
+interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; pos?: string }
 const POSTS: Post[] = [
   { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'Night out, no stress. Booked in two minutes, keys in my hand in ten. Thank you CX 🖤', image: '/signal/giulia.webp' },
   { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'What a car! 😍 Rented it through CX for a weekend — easy to book, super host, car in perfect shape.', image: '/signal/luca.webp' },
-  { name: 'Adam', role: 'host', place: 'Amalfi Coast', avatar: '/signal/av-adam.webp', text: 'Golden hour on the Amalfi Coast. Good cars, better people.', image: '/signal/story.webp' },
+  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'New week, new car on the road. Good cars, better people.', image: '/signal/adam.webp', pos: '50% 18%' },
 ];
 
 /**
@@ -85,7 +85,7 @@ export function SignalDeck() {
                 <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
               </div>
               <p className="line-clamp-2 shrink-0 px-3.5 pb-3 text-detail leading-relaxed text-ink">{t(p.text)}</p>
-              <img src={p.image} alt="" draggable={false} loading="lazy" className="min-h-0 w-full flex-1 object-cover object-[50%_35%]" />
+              <img src={p.image} alt="" draggable={false} loading="lazy" className="min-h-0 w-full flex-1 object-cover" style={{ objectPosition: p.pos ?? '50% 35%' }} />
               <div className="flex shrink-0 items-center gap-5 px-4 py-3 text-detail font-semibold text-ink-soft">
                 <span className="inline-flex items-center gap-1.5"><Icon name="like" size={18} /> {t('Respect')}</span>
                 <span className="inline-flex items-center gap-1.5"><Icon name="bookmark" size={17} /> {t('Save')}</span>
