@@ -1,4 +1,4 @@
-import { Icon, type IconName } from '../Icon';
+import { ProtectionIcon, type ProtectionKind } from './ProtectionIcon';
 import { Reveal } from '../motion';
 import { InvestigationsMark } from '../InvestigationsMark';
 import { useLocale } from '../../lib/i18n';
@@ -7,10 +7,10 @@ import { useLocale } from '../../lib/i18n';
  *  on a soft shadow, with the title and the four promises beside them (under them on a phone). */
 export function ProtectionTeam() {
   const { t } = useLocale();
-  const items: { icon: IconName; t: string }[] = [
+  const items: { icon: ProtectionKind; t: string }[] = [
     { icon: 'shield', t: 'Damage protection included' },
     { icon: 'headset', t: '24/7 roadside help' },
-    { icon: 'verified', t: 'Verified hosts' },
+    { icon: 'seal', t: 'Verified hosts' },
     { icon: 'lock', t: 'Payments stay inside CX' },
   ];
   return (
@@ -37,7 +37,7 @@ export function ProtectionTeam() {
             <ul className="mt-6 grid grid-cols-2 gap-3">
               {items.map((r) => (
                 <li key={r.t} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-050 text-accent-700"><Icon name={r.icon} size={19} /></span>
+                  <ProtectionIcon kind={r.icon} />
                   <span className="text-body font-semibold leading-snug text-ink">{t(r.t)}</span>
                 </li>
               ))}
