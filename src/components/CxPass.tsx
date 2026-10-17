@@ -1,3 +1,4 @@
+import { CxLogo } from './CxLogo';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
@@ -54,12 +55,7 @@ export function CxPass({ pass, height = '580px', tone = 'dark' }: { pass: PassDa
       <Ornament className="absolute" style={{ width: 300, right: -140, top: 120, maxWidth: 'none', opacity: 0.35 }} />
       <Ornament className="absolute" style={{ width: 200, left: -60, bottom: -80, maxWidth: 'none', opacity: 0.3 }} />
       <div className="absolute inset-x-0 top-[44px] flex flex-col items-center text-center">
-        <img
-          src="/cx-logo-main.webp"
-          alt="CX"
-          draggable={false}
-          style={{ height: 22, filter: 'invert(1) hue-rotate(180deg) brightness(1.05)' }}
-        />
+        <span data-theme="dark" className="block"><CxLogo className="h-[30px] w-auto text-white" title="CX" /></span>
         <span
           className="mt-5 block overflow-hidden rounded-full"
           style={{ width: 96, height: 96, boxShadow: `0 0 0 2px ${tier.card}, 0 0 0 4px ${tier.ring}`, background: '#1a1c1a' }}

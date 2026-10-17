@@ -9,14 +9,8 @@ import { CITY_COORDS } from '../data/cityCoords';
 import { formatTripPeriod, type TripStampData } from '../lib/data/tripMemories';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
-// Printed inks: warm black and three muted tones — never bright.
-const INKS = ['#1b1a18', '#1d4a45', '#2a3f5c', '#6e2c37'];
-const PAPER = '#f6f1e6';
-const CHAMPAGNE = '#b7a06a';
-
-// A whisper of paper grain, as an inline vector so nothing is downloaded.
-const GRAIN =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .35 0 0 0 0 .22 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+// Two plain inks: the CX green and graphite. Nothing shiny, nothing gold.
+const INKS = ['#0c7a38', '#23272a'];
 
 function hashOf(id: string): number {
   let h = 0;
@@ -51,55 +45,63 @@ export function StampInkFilter() {
   );
 }
 
-/** One travel document: a small printed record of a single trip. */
+/** The round postmark: a ring with the words running around it, the CX mark in the middle. Pressed slightly crooked. */
+function Postmark({ ink, label, rotate }: { ink: string; label: string; rotate: number }) {
+  return (
+    <svg viewBox="0 0 80 80" width={74} height={74} aria-hidden="true" style={{ transform: `rotate(${rotate}deg)`, filter: 'url(#cx-stamp-ink)', color: ink }}>
+      <defs><path id="pm-ring" d="M40 40 m-29 0 a29 29 0 1 1 58 0 a29 29 0 1 1 -58 0" /></defs>
+      <circle cx="40" cy="40" r="37" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="40" cy="40" r="21" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.7" />
+      <text fontSize="7.4" fontWeight="700" letterSpacing="2.1" fill="currentColor" fontFamily="inherit">
+        <textPath href="#pm-ring" startOffset="0">{label}</textPath>
+      </text>
+      <text x="40" y="44.5" textAnchor="middle" fontSize="13" fontWeight="800" fill="currentColor" fontFamily="inherit" letterSpacing="0.5">CX</text>
+    </svg>
+  );
+}
+
+/** One trip, as a small clean card with a postmark pressed in the corner. */
 export function TripStamp({ stamp, tilted = true }: { stamp: TripStampData; tilted?: boolean }) {
   const { t, lang } = useLocale();
   const h = hashOf(stamp.id);
   const ink = INKS[h % INKS.length];
-  const tilt = tilted ? ((h >> 3) % 5 - 2) * 0.35 : 0;
+  const tilt = tilted ? ((h >> 3) % 3 - 1) * 0.5 : 0;
+  const mark = -14 + ((h >> 5) % 9);
   const place = stampPlace(stamp.city, lang);
   const coords = cityCoords(stamp.city);
   return (
     <div
-      className="relative w-full select-none overflow-hidden rounded-[5px]"
-      style={{ background: PAPER, color: ink, transform: `rotate(${tilt}deg)`, boxShadow: '0 1px 0 rgba(0,0,0,0.04), 0 10px 22px -18px rgba(40,30,10,0.5)' }}
+      className="relative w-full select-none overflow-hidden rounded-3xl border border-line bg-surface"
+      style={{ transform: `rotate(${tilt}deg)`, boxShadow: '0 14px 30px -22px rgba(20,30,24,0.5)' }}
     >
-      <span aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.09] mix-blend-multiply" style={{ backgroundImage: GRAIN }} />
-      <div className="relative m-[7px]" style={{ filter: 'url(#cx-stamp-ink)' }}>
-        <div className="absolute inset-0 rounded-[3px]" style={{ border: `1px solid ${ink}`, opacity: 0.85 }} />
-        <div className="absolute inset-[3px] rounded-[2px]" style={{ border: `0.5px solid ${ink}`, opacity: 0.45 }} />
-        <div className="relative flex flex-col px-5 pb-4 pt-4 sm:px-5">
-          <div className="flex items-center justify-between gap-3 text-[8.5px] font-bold uppercase tracking-[0.26em]">
-            <span className="flex items-center gap-1.5"><Icon name="key" size={11} strokeWidth={2.2} /> CX Keychain</span>
-            {coords && <span className="font-medium tracking-[0.14em] opacity-60">{coords}</span>}
+      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5" style={{ background: ink }} />
+      <div className="relative px-6 pb-5 pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted"><Icon name="key" size={13} strokeWidth={2} /> {t('CX Keychain')}</p>
+            {coords && <p className="mt-0.5 text-[10px] font-medium tracking-[0.08em] text-faint">{coords}</p>}
           </div>
-          <span aria-hidden="true" className="mt-2.5 block h-px w-full" style={{ background: CHAMPAGNE }} />
+          <span className="-mr-1 -mt-1 shrink-0 opacity-[0.78]">
+            <Postmark ink={ink} label={`${t('Verified trip').toUpperCase()} · CX KEYCHAIN · `} rotate={mark} />
+          </span>
+        </div>
 
-          <p className="mt-5 font-display text-[1.7rem] font-bold uppercase leading-[0.95] tracking-[0.05em] text-balance sm:text-[1.55rem]">
-            {place.city}
-          </p>
-          {place.country && <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-[0.32em] opacity-70">{place.country}</p>}
+        <p className="mt-3 font-display text-[2rem] font-semibold leading-[1] tracking-[-0.025em] text-ink text-balance">{place.city}</p>
+        {place.country && <p className="mt-1 text-detail text-muted">{place.country}</p>}
 
-          <div className="mt-5 flex items-end justify-between gap-3">
-            <p className="min-w-0 font-display text-[1.02rem] font-medium leading-tight tracking-tight">
-              {stamp.car.make} {stamp.car.model}
-            </p>
-            <span className="shrink-0 rounded-[2px] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.18em]" style={{ border: `1px solid ${ink}` }}>
-              {stamp.car.year}
-            </span>
-          </div>
-
-          <span aria-hidden="true" className="mt-4 block h-px w-full opacity-30" style={{ background: ink }} />
-          <div className="mt-2.5 flex items-center justify-between gap-3 whitespace-nowrap text-[8.5px] font-bold uppercase tracking-[0.14em]">
-            <span>{formatTripPeriod(stamp.startDate, stamp.endDate, lang)}</span>
-            <span className="flex items-center gap-1 opacity-75">
-              <CxMark tier="verified" size={9} /> {t('Verified trip')}
-            </span>
-          </div>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate font-display text-[1.05rem] font-medium text-ink">{stamp.car.make} {stamp.car.model}</p>
+          <span className="shrink-0 rounded-full bg-panel px-2.5 py-1 text-[11px] font-semibold text-ink-soft">{stamp.car.year}</span>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3 text-[11.5px] font-medium text-muted">
+          <span>{formatTripPeriod(stamp.startDate, stamp.endDate, lang)}</span>
+          <span className="flex items-center gap-1 font-semibold" style={{ color: ink }}>
+            <CxMark tier="verified" size={11} /> {t('Verified trip')}
+          </span>
         </div>
       </div>
       {stamp.visibility === 'private' && (
-        <span className="absolute right-2 top-2 opacity-40" title={t('Private')}><Icon name="eyeOff" size={10} /></span>
+        <span className="absolute bottom-3.5 left-5 text-faint" title={t('Private')}><Icon name="eyeOff" size={11} /></span>
       )}
     </div>
   );
@@ -113,14 +115,14 @@ function TravelRecord({ stamp, onClose, onToggle }: { stamp: TripStampData; onCl
   const long = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
   const Row = ({ k, v }: { k: string; v: string }) => (
     <div className="flex items-baseline justify-between gap-6 border-b border-line py-3">
-      <dt className="text-[10px] font-bold uppercase tracking-[0.22em] text-faint">{k}</dt>
+      <dt className="text-[11px] font-semibold text-faint">{k}</dt>
       <dd className="text-right text-detail font-medium text-ink">{v}</dd>
     </div>
   );
   return (
     <Modal open onClose={onClose} className="flex max-h-[92dvh] flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-3 pt-7">
-        <p className="mb-5 text-center text-[10px] font-bold uppercase tracking-[0.34em] text-faint">{t('Travel record')}</p>
+        <p className="mb-5 text-center text-[11px] font-semibold text-faint">{t('Travel record')}</p>
         <div className="mx-auto max-w-[22rem]"><TripStamp stamp={stamp} tilted={false} /></div>
         <dl className="mx-auto mt-8 max-w-[22rem]">
           <Row k={t('Destination')} v={place.country ? `${place.city} · ${place.country}` : place.city} />
@@ -136,7 +138,7 @@ function TravelRecord({ stamp, onClose, onToggle }: { stamp: TripStampData; onCl
           <button
             type="button"
             onClick={() => onToggle(stamp)}
-            className="pressable inline-flex min-h-11 items-center justify-center gap-2 rounded-[6px] border border-ink/80 px-5 text-detail font-semibold text-ink"
+            className="pressable btn btn-secondary btn-lg"
           >
             <Icon name={stamp.visibility === 'public' ? 'eyeOff' : 'globe'} size={15} />
             {stamp.visibility === 'public' ? t('Make private') : t('Make public')}

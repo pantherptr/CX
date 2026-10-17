@@ -55,38 +55,37 @@ export function SignalKeychainTab({ userId, isMe, pass }: { userId: string; isMe
   };
 
   const Masthead = () => (
-    <header className="mb-9 text-center">
-      <p className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.34em] text-ink">
-        <Icon name="key" size={12} strokeWidth={2.2} /> CX Keychain
+    <header className="mb-7 text-center">
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-[12px] font-semibold text-ink-soft">
+        <Icon name="key" size={13} strokeWidth={2} /> CX Keychain
       </p>
-      <h2 className="mt-3 font-display text-[1.65rem] font-medium leading-tight tracking-tight text-ink">{t('The keys to your journeys.')}</h2>
-      <span aria-hidden="true" className="mx-auto mt-4 block h-px w-12" style={{ background: '#b7a06a' }} />
+      <h2 className="mt-3 font-display text-[1.6rem] font-semibold leading-tight tracking-[-0.02em] text-ink">{t('The keys to your journeys.')}</h2>
     </header>
   );
 
   const passBlock = pass ? (
     <section className="mx-auto mb-10 w-full max-w-[26rem]">
-      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.34em] text-ink">{isMe ? t('My CX Pass') : t('CX Pass')}</p>
+      <p className="mb-3 text-center text-[12px] font-semibold text-ink-soft">{isMe ? t('My CX Pass') : t('CX Pass')}</p>
       <CxPass pass={pass} height="580px" />
     </section>
   ) : null;
 
-  if (stamps === null) return <div>{passBlock}<div className="mx-auto aspect-[1.55] w-full max-w-[24rem] animate-pulse rounded-[5px] bg-panel" /></div>;
+  if (stamps === null) return <div>{passBlock}<div className="mx-auto aspect-[1.55] w-full max-w-[24rem] animate-pulse rounded-3xl bg-panel" /></div>;
 
   if (stamps.length === 0) {
     return (
       <div className="px-2 pb-10 pt-6">
         {passBlock}
         <Masthead />
-        <div className="mx-auto flex max-w-[24rem] flex-col items-center rounded-[5px] px-6 py-12 text-center" style={{ border: '1px dashed #b7a06a' }}>
-          <span className="grid h-14 w-14 place-items-center rounded-full text-ink" style={{ border: '1px solid #b7a06a' }}>
-            <Icon name="key" size={22} strokeWidth={1.6} />
+        <div className="mx-auto flex max-w-[24rem] flex-col items-center rounded-3xl border border-dashed border-line-strong px-6 py-11 text-center">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft">
+            <Icon name="key" size={22} strokeWidth={1.8} />
           </span>
-          <p className="mt-6 max-w-[15rem] font-display text-[1.2rem] font-medium leading-snug text-ink">
+          <p className="mt-5 max-w-[15rem] font-display text-[1.15rem] font-medium leading-snug text-ink">
             {isMe ? t('Your first key is waiting on the road.') : t('Verified trips will appear here.')}
           </p>
           {isMe && (
-            <Link to="/browse" className="pressable mt-7 inline-flex min-h-11 items-center gap-2 rounded-[6px] border border-ink/80 px-6 text-detail font-semibold tracking-wide text-ink">
+            <Link to="/browse" className="btn btn-secondary btn-lg mt-6">
               {t('Browse cars')} <Icon name="arrowRight" size={15} />
             </Link>
           )}
@@ -99,7 +98,7 @@ export function SignalKeychainTab({ userId, isMe, pass }: { userId: string; isMe
     <div className="px-2 pb-12 pt-6">
       {passBlock}
       <Masthead />
-      <p className="mb-9 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">{summary}</p>
+      <p className="mb-7 text-center text-detail font-medium text-muted">{summary}</p>
       <TripStampGrid stamps={stamps} onToggle={isMe ? (s) => void toggle(s) : undefined} />
     </div>
   );
