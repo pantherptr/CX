@@ -31,7 +31,7 @@ const TEAM_LINES = [
   'A name and a face behind every answer.',
   'Writing to us is the safest way to sort anything out.',
 ];
-const TEAM_QUOTES: MarqueeQuote[] = TEAM_LINES.map((text, i) => ({ name: INVESTIGATORS[i % INVESTIGATORS.length].name, place: 'CX Investigations', avatar: INVESTIGATORS[i % INVESTIGATORS.length].src, text }));
+const TEAM_QUOTES: MarqueeQuote[] = TEAM_LINES.map((text, i) => ({ name: INVESTIGATORS[i % INVESTIGATORS.length].name, place: 'CX Investigative', avatar: INVESTIGATORS[i % INVESTIGATORS.length].src, text }));
 
 export default function About() {
   return (
@@ -136,7 +136,7 @@ export default function About() {
 
       {/* CTA */}
       <section className="mt-24 overflow-hidden">
-        <div className="container-page"><SectionHead center eyebrow="CX Investigations" title="The people who answer you." /></div>
+        <div className="container-page"><SectionHead center eyebrow="CX Investigative" title="The people who answer you." /></div>
         <div className="mt-8"><PostMarquee quotes={TEAM_QUOTES} /></div>
       </section>
 

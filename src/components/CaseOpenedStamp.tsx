@@ -60,7 +60,7 @@ export function CaseOpenedStamp({ seed, onPicked, className = '' }: { seed: stri
         style={{ WebkitMaskImage: 'radial-gradient(circle at 20% 30%, #000 60%, rgba(0,0,0,0.82) 100%)', maskImage: 'radial-gradient(circle at 20% 30%, #000 60%, rgba(0,0,0,0.82) 100%)' }}
       >
         <p className="text-[19px] font-black uppercase leading-none tracking-[0.16em]">{t('Case opened')}</p>
-        <p className="mt-1 text-[8.5px] font-bold uppercase leading-none tracking-[0.34em]">CX Investigations</p>
+        <p className="mt-1 text-[8.5px] font-bold uppercase leading-none tracking-[0.34em]">CX Investigative</p>
       </div>
     </div>
   );

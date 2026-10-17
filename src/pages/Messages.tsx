@@ -658,7 +658,7 @@ export default function Messages() {
   const { toast } = useApp();
   const [params, setParams] = useSearchParams();
   const { conversations: rawConversations, loading: conversationsLoading, refresh } = useConversations(session?.user.id);
-  // A request to the team is a case: it is answered by CX Investigations, with one of its two investigators as the face.
+  // A request to the team is a case: it is answered by CX Investigative, with one of its two investigators as the face.
   const conversations = useMemo(
     () => rawConversations?.map((c) => (c.kind === 'support' && c.other.role === 'cx' ? { ...c, other: { ...c.other, name: `${agentFor(c.id).name} · ${INVESTIGATIONS.name}`, avatar: agentFor(c.id).src } } : c)) ?? rawConversations,
     [rawConversations],

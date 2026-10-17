@@ -3,7 +3,7 @@ import { Reveal } from '../motion';
 import { InvestigationsMark } from '../InvestigationsMark';
 import { useLocale } from '../../lib/i18n';
 
-/** Home → "How we protect you", on the page's own light background: two CX Investigations agents, cut out and standing
+/** Home → "How we protect you", on the page's own light background: two CX Investigative agents, cut out and standing
  *  on a soft shadow, with the title and the four promises beside them (under them on a phone). */
 export function ProtectionTeam() {
   const { t } = useLocale();
@@ -22,7 +22,7 @@ export function ProtectionTeam() {
             <span aria-hidden className="absolute inset-x-[8%] bottom-0 h-6 rounded-[50%] bg-black/25 blur-xl" />
             <img
               src="/home/duo-cut-820.webp"
-              alt={t('Two CX Investigations agents, back to back')}
+              alt={t('Two CX Investigative agents, back to back')}
               loading="lazy"
               draggable={false}
               className="relative block w-full drop-shadow-[0_18px_22px_rgba(0,0,0,0.18)]"
@@ -33,7 +33,7 @@ export function ProtectionTeam() {
           <div className="order-3 md:order-2">
             <p className="eyebrow hidden md:block">{t('How we protect you')}</p>
             <h2 className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]">{t('Real people behind every trip.')}</h2>
-            <p className="mt-3 text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX Investigations</p>
+            <p className="mt-3 text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX Investigative</p>
             <ul className="mt-6 grid grid-cols-2 gap-3">
               {items.map((r) => (
                 <li key={r.t} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">

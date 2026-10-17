@@ -1,6 +1,6 @@
-/** CX Investigations: the desk that handles cases opened from X. Its art lives in /brand/investigations. */
+/** CX Investigative: the desk that handles cases opened from X. Its art lives in /brand/investigations. */
 export const INVESTIGATIONS = {
-  name: 'CX Investigations',
+  name: 'CX Investigative',
   car: '/brand/investigations/car.webp',
   agents: '/brand/investigations/agents.webp',
   logo: '/brand/investigations/logo.webp',

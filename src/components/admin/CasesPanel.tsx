@@ -86,7 +86,7 @@ export function CasesPanel() {
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
           <div>
             <p className="font-display text-xl font-bold text-white">Cases</p>
-            <p className="text-detail text-white/70">Problems reported from X, answered by CX Investigations.</p>
+            <p className="text-detail text-white/70">Problems reported from X, answered by CX Investigative.</p>
           </div>
           <span className="rounded-full bg-accent-bright px-3 py-1 text-caption font-bold text-black">{open} open</span>
         </div>
