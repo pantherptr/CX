@@ -2,6 +2,7 @@ import { setChromeOverride, useTheme } from '../lib/theme';
 import { AskXIcon, AskXRow } from '../components/AskX';
 import { InvestigationsMark } from '../components/InvestigationsMark';
 import { agentFor } from '../lib/investigations';
+import { InvestigatorBadge } from '../components/InvestigatorBadge';
 import { CxTeamCover } from '../components/CxTeamCover';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -56,14 +57,18 @@ function CxTeamSheet({ active, onClose, onDelete }: { active: Conversation; onCl
           </button>
         </CxTeamCover>
         <div className="-mt-12 flex flex-col items-center px-5 text-center">
-          <span className="rounded-full bg-gradient-to-b from-[#f6e3a1] via-[#d9b24c] to-[#8a6a1c] p-[3px] shadow-[0_12px_30px_-10px_rgba(217,178,76,0.7)]">
-            <Img
-              src={active.other.avatar ?? '/brand/avatar-cx-chrome.png?v=3'}
-              alt=""
-              className="h-[92px] w-[92px] rounded-full bg-black object-cover ring-4 ring-white"
-              fallback={<span className="grid h-[92px] w-[92px] place-items-center rounded-full bg-black text-white ring-4 ring-white"><Icon name="user" size={30} /></span>}
-            />
-          </span>
+          {active.kind === 'support' ? (
+            <span className="rounded-full bg-white p-1 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.5)]"><InvestigatorBadge caseId={active.id} size={92} /></span>
+          ) : (
+            <span className="rounded-full bg-gradient-to-b from-[#f6e3a1] via-[#d9b24c] to-[#8a6a1c] p-[3px] shadow-[0_12px_30px_-10px_rgba(217,178,76,0.7)]">
+              <Img
+                src={active.other.avatar ?? '/brand/avatar-cx-chrome.png?v=3'}
+                alt=""
+                className="h-[92px] w-[92px] rounded-full bg-black object-cover ring-4 ring-white"
+                fallback={<span className="grid h-[92px] w-[92px] place-items-center rounded-full bg-black text-white ring-4 ring-white"><Icon name="user" size={30} /></span>}
+              />
+            </span>
+          )}
           <p className="mt-3 flex items-center gap-1.5 font-display text-[1.45rem] font-bold leading-tight tracking-tight text-ink">
             CX
             <VerifiedBadge role="cx" size={19} />
@@ -716,7 +721,7 @@ function Thread({
                 {/* the investigator who took the case says so, right under the sheet */}
                 {active.kind === 'support' && (
                   <div className="mb-3 flex items-center justify-center gap-2 px-2 text-center">
-                    <img src={agentFor(active.id).src} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-black/10" />
+                    <InvestigatorBadge caseId={active.id} size={30} className="mx-0.5" />
                     <p className="text-caption leading-snug text-ink-soft">
                       <span className="font-semibold text-ink">{agentFor(active.id).name}</span> · CX Investigative <span>is now in this chat</span>
                     </p>
@@ -911,7 +916,7 @@ export default function Messages() {
       <div className="rounded-2xl bg-white p-3.5 text-center shadow-[0_8px_28px_-12px_rgba(22,22,26,0.25)] ring-1 ring-black/[0.05]">
         {active.kind === 'support' && (
           <div className="mb-3 flex items-center justify-center gap-3">
-            <img src={agentFor(active.id).src} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-black/10" />
+            <InvestigatorBadge caseId={active.id} size={48} />
             <span className="inline-block -rotate-3 rounded-[4px] border-2 border-[#16794a] px-2.5 py-1 text-[12px] font-black uppercase tracking-[0.18em] text-[#16794a]">
               Case closed
             </span>
@@ -1489,7 +1494,9 @@ export default function Messages() {
                   onClick={() => { haptics.tick(); setProfileOpen(true); }}
                   className="pressable flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-0.5 pr-2 text-left transition-transform active:scale-[0.98]"
                 >
-                  {active.other.avatar ? (
+                  {active.kind === 'support' && active.other.role === 'cx' ? (
+                    <InvestigatorBadge caseId={active.id} size={38} className="mx-0.5" />
+                  ) : active.other.avatar ? (
                     <Img
                       src={active.other.avatar}
                       alt=""
