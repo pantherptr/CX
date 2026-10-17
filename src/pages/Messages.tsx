@@ -1,5 +1,5 @@
 import { setChromeOverride, useTheme } from '../lib/theme';
-import { AskXRow } from '../components/AskX';
+import { AskXIcon, AskXRow } from '../components/AskX';
 import { InvestigationsMark } from '../components/InvestigationsMark';
 import { INVESTIGATIONS, agentFor } from '../lib/investigations';
 import { CxTeamCover } from '../components/CxTeamCover';
@@ -1303,15 +1303,18 @@ export default function Messages() {
                       : 'Talk with hosts and clients'}
                 </p>
               </div>
-              {profile?.is_owner && (
-                <button
-                  onClick={() => setNewMessageOpen(true)}
-                  className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#2a2a30] to-ink text-white shadow-[0_6px_16px_-6px_rgba(22,22,26,0.6)] active:scale-90"
-                  aria-label="New message"
-                >
-                  <Icon name="plus" size={19} />
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-2.5">
+                <AskXIcon className="!h-11 !w-11 !rounded-full bg-white shadow-[0_6px_16px_-8px_rgba(22,22,26,0.4)] ring-1 ring-black/[0.06]" />
+                {profile?.is_owner && (
+                  <button
+                    onClick={() => setNewMessageOpen(true)}
+                    className="pressable grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#2a2a30] to-ink text-white shadow-[0_6px_16px_-6px_rgba(22,22,26,0.6)] active:scale-90"
+                    aria-label="New message"
+                  >
+                    <Icon name="plus" size={19} />
+                  </button>
+                )}
+              </div>
             </div>
             {conversations && conversations.length > 0 && (
               <div className="relative mt-4">
@@ -1327,7 +1330,6 @@ export default function Messages() {
           </div>
           <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
             {(archivedCount > 0 || tab === 'archive') && <ChatTabs tab={tab} onTab={setTab} archivedCount={archivedCount} archiveDot={archiveDot} />}
-            {tab === 'main' && <div className="px-3 pb-2 pt-1"><AskXRow /></div>}
             {conversationsLoading ? (
               <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
             ) : conversations && conversations.length > 0 ? (
