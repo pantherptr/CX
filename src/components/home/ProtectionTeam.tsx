@@ -30,11 +30,11 @@ export function ProtectionTeam() {
             <div className="relative mt-3 flex justify-center"><InvestigationsMark size="md" className="scale-90 md:scale-100" /></div>
           </div>
 
-          <div className="order-3 md:order-2">
+          <div className="order-3 text-center md:order-2 md:text-left">
             <p className="eyebrow hidden md:block">{t('How we protect you')}</p>
             <h2 className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]">{t('Real people behind every trip.')}</h2>
             <p className="mt-3 text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX Investigative</p>
-            <ul className="mt-6 grid grid-cols-2 gap-3">
+            <ul className="mt-6 grid grid-cols-2 gap-3 text-left">
               {items.map((r) => (
                 <li key={r.t} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
                   <ProtectionIcon kind={r.icon} />
