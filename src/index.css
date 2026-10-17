@@ -2825,3 +2825,8 @@ html [data-rmiz-btn-unzoom] { display: none; }
 /* Home, light theme: pure white page */
 html.home-white:not([data-theme='dark']) { --color-bg: #ffffff; --hero-top: #ffffff; }
 html.home-white:not([data-theme='dark']) .hero-bg { background: #ffffff !important; }
+
+/* Step 4 scene: the pin hovers over the house */
+@keyframes pi-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.pi-bob { animation: pi-bob 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pi-bob { animation: none; } }

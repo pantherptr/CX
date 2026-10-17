@@ -37,7 +37,22 @@ function DeliveryScene() {
       <span aria-hidden className="absolute h-[70%] w-[70%] rounded-full bg-[radial-gradient(closest-side,rgba(0,222,84,0.28),rgba(0,222,84,0))]" />
       <span aria-hidden className="absolute h-[44%] w-[44%] rounded-full border border-accent-bright/30" />
       <span aria-hidden className="absolute h-[64%] w-[64%] rounded-full border border-accent-bright/15" />
-      <div className="relative scale-[2.6]"><ProtectionIcon kind="pin" size="md" tone="soft" /></div>
+      <svg viewBox="0 0 240 240" className="relative mt-[6%] h-[64%] w-[64%]" fill="none" role="img" aria-label="">
+        <ellipse cx="120" cy="206" rx="86" ry="9" fill="#0a3d22" opacity="0.1" />
+        {/* house */}
+        <path d="M44 112 120 52l76 60v86H44z" fill="#fff" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
+        <path d="M32 116 120 46l88 70" stroke="#0a3d22" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="104" y="146" width="32" height="52" rx="5" fill="#00c853" stroke="#0a3d22" strokeWidth="5" />
+        <circle cx="129" cy="173" r="2.6" fill="#0a3d22" />
+        <rect x="58" y="128" width="30" height="26" rx="4" fill="#d8f7e3" stroke="#0a3d22" strokeWidth="4" />
+        <rect x="152" y="128" width="30" height="26" rx="4" fill="#d8f7e3" stroke="#0a3d22" strokeWidth="4" />
+        <path d="M168 78V58h14v34" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
+        {/* pin on the house */}
+        <g className="pi-bob">
+          <path d="M120 6c-15 0-27 11.5-27 26 0 19 27 40 27 40s27-21 27-40c0-14.500-12-26-27-26z" fill="#00de54" stroke="#0a3d22" strokeWidth="5" strokeLinejoin="round" />
+          <circle cx="120" cy="32" r="9" fill="#fff" stroke="#0a3d22" strokeWidth="4" />
+        </g>
+      </svg>
     </div>
   );
 }
