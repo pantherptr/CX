@@ -41,6 +41,10 @@ export function OwnersBento() {
         </div>
       </Tile>
 
+      <Tile className="md:col-start-1 md:row-start-2" delay={140}>
+        <Point icon="euro" text={t('You set the daily rate — and receive it in full')} />
+      </Tile>
+
       <Tile className="md:col-start-3 md:row-span-2 md:row-start-1 min-h-[18rem]" delay={100}>
         <img src="/home/delivery-800.webp" alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover object-[50%_38%]" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
@@ -50,21 +54,17 @@ export function OwnersBento() {
         </div>
       </Tile>
 
-      <Tile className="md:col-start-1 md:row-start-2" delay={140}>
-        <Point icon="euro" text={t('You set the daily rate — and receive it in full')} />
+      <Tile className="md:col-start-2 md:row-start-3" delay={220}>
+        <div className="flex h-full flex-col justify-between bg-[#eaf7ef] p-6">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent/15 text-accent-700"><Icon name="shield" size={21} /></span>
+          <p className="font-display text-[1.2rem] font-semibold leading-snug text-ink">{t('Verified renters, protection on every trip')}</p>
+        </div>
       </Tile>
 
       <Tile className="md:col-start-1 md:row-start-3" delay={180}>
         <div className="flex h-full flex-col justify-between bg-gradient-to-br from-[#06120d] to-[#0e3322] p-6 text-white">
           <SignalS size={34} animated />
           <p className="font-display text-[1.2rem] font-semibold leading-snug">{t('Show your car to the CX community on SIGNAL')}</p>
-        </div>
-      </Tile>
-
-      <Tile className="md:col-start-2 md:row-start-3" delay={220}>
-        <div className="flex h-full flex-col justify-between bg-gradient-to-b from-accent to-[#0a6b2c] p-6 text-white">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15"><Icon name="shield" size={21} /></span>
-          <p className="font-display text-[1.2rem] font-semibold leading-snug">{t('Verified renters, protection on every trip')}</p>
         </div>
       </Tile>
 

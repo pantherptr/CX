@@ -55,23 +55,23 @@ export function HostBento() {
 
       {/* 4 · SIGNAL */}
       <Tile className="md:col-span-1 md:row-span-1" delay={120}>
-        <div className="flex h-full flex-col justify-between bg-gradient-to-br from-[#06120d] to-[#0e3322] p-6 text-white">
+        <div className="flex h-full flex-col justify-between p-6">
           <SignalS size={34} animated />
           <div>
-            <h3 className="font-display text-[1.25rem] font-semibold leading-tight">{t('A stage on SIGNAL')}</h3>
-            <p className="mt-1.5 text-detail leading-relaxed text-white/75">{t('Verified hosts can show their car to the CX community and reach renters who care.')}</p>
+            <h3 className="font-display text-[1.25rem] font-semibold leading-tight text-ink">{t('A stage on SIGNAL')}</h3>
+            <p className="mt-1.5 text-detail leading-relaxed text-muted">{t('Verified hosts can show their car to the CX community and reach renters who care.')}</p>
           </div>
         </div>
       </Tile>
 
       {/* 5 · tall stat: four steps */}
       <Tile className="min-h-[14rem] md:col-span-1 md:row-span-2" delay={160}>
-        <div className="flex h-full flex-col justify-between bg-gradient-to-b from-accent to-[#0a6b2c] p-6 text-white">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/15"><Icon name="checkCircle" size={21} /></span>
+        <div className="flex h-full flex-col justify-between bg-[#eaf7ef] p-6">
+          <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent/15 text-accent-700"><Icon name="checkCircle" size={21} /></span>
           <div>
-            <p className="font-display text-[5.5rem] font-semibold leading-[0.9] tracking-tight">4</p>
-            <p className="mt-3 text-body font-semibold">{t('short steps to list your car')}</p>
-            <p className="mt-1 text-detail text-white/80">{t('Car, photos, price, review. Publish when you are ready.')}</p>
+            <p className="font-display text-[5.5rem] font-semibold leading-[0.9] tracking-tight text-accent-700">4</p>
+            <p className="mt-3 text-body font-semibold text-ink">{t('short steps to list your car')}</p>
+            <p className="mt-1 text-detail text-muted">{t('Car, photos, price, review. Publish when you are ready.')}</p>
           </div>
         </div>
       </Tile>
