@@ -312,32 +312,31 @@ export default function Home() {
             </div>
           </Reveal>
 
-          {/* -------- Headline row (the same words as before) -------- */}
-          <div className="mt-8 grid items-end gap-6 sm:mt-12 lg:grid-cols-[1fr_auto]">
-            <div className="max-w-2xl">
-              <Reveal delay={160} className="reveal-blur">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
-                    <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
-                  </span>
-                  {t('Wherever there’s a road, there’s a CX.')}
+          {/* -------- The line, then search, then the host button centred under the dates -------- */}
+          <Reveal delay={160} className="reveal-blur">
+            <div className="mt-8 flex justify-center sm:mt-12">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-ink/10 bg-white/65 px-3 py-1.5 text-label font-semibold uppercase tracking-[0.12em] text-ink-soft shadow-hair backdrop-blur-md">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-accent-bright/50" />
+                  <span className="relative h-1.5 w-1.5 rounded-full bg-accent-bright" />
                 </span>
-              </Reveal>
+                {t('Wherever there’s a road, there’s a CX.')}
+              </span>
             </div>
-            <Reveal delay={280} className="reveal-blur">
-              <div className="flex flex-wrap items-center gap-3">
-                <Link to="/list-your-car" className="btn btn-accent-bright btn-lg">
-                  {t('List Your Car')} <Icon name="arrowRight" size={17} />
-                </Link>
-              </div>
-            </Reveal>
-          </div>
+          </Reveal>
 
           {/* -------- Search -------- */}
-          <Reveal delay={360}>
-            <div className="mx-auto mt-8 w-full max-w-4xl">
+          <Reveal delay={260}>
+            <div className="mx-auto mt-6 w-full max-w-4xl">
               <SearchBar />
+            </div>
+          </Reveal>
+
+          <Reveal delay={360} className="reveal-blur">
+            <div className="mt-6 flex justify-center">
+              <Link to="/list-your-car" className="btn btn-accent-bright btn-lg">
+                {t('List Your Car')} <Icon name="arrowRight" size={17} />
+              </Link>
             </div>
           </Reveal>
         </div>
