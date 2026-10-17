@@ -2820,6 +2820,4 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @keyframes pi-ping { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .pi-beat { animation: none !important; } }
 
-.cx-spot-breathe { animation: cx-spot-breathe 4.2s ease-in-out infinite; }
-@keyframes cx-spot-breathe { 0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(0.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } }
-@media (prefers-reduced-motion: reduce) { .cx-spot-breathe { animation: none; } }
+
