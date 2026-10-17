@@ -14,6 +14,7 @@ import { useAuth } from '../lib/auth';
 import { useLocale } from '../lib/i18n';
 import { COUNTRIES } from '../lib/i18n/countries';
 import { supabase } from '../lib/supabase';
+import { RenterTierBadge } from '../components/RenterTierBadge';
 import { useMyBookings, classifyBooking, renterTier } from '../lib/data/bookings';
 import { useVerification } from '../lib/data/verification';
 import { VerificationFlow } from '../components/VerificationFlow';
@@ -234,7 +235,7 @@ export default function Settings() {
                 <p className="mt-0.5 text-body text-muted">{session?.user.email}</p>
                 {(tier || roleChips.length > 0) && (
                   <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                    {tier && <span className="rounded-full bg-ink px-3 py-1 text-caption font-semibold text-white">{tier}</span>}
+                    <RenterTierBadge completed={completed.length} className="inline-flex items-center rounded-full bg-ink px-3 py-1 text-caption font-semibold text-white" />
                     {roleChips.map((r) => <span key={r} className="rounded-full bg-surface px-3 py-1 text-caption font-semibold text-ink ring-1 ring-line">{r}</span>)}
                   </div>
                 )}

@@ -11,7 +11,8 @@ import { EmptyState } from '../components/primitives';
 import { Img, Reveal } from '../components/motion';
 import { ActivePill } from '../components/motionKit';
 import { useCars } from '../lib/data/cars';
-import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
+import { RenterTierBadge } from '../components/RenterTierBadge';
+import { useMyBookings, classifyBooking, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
@@ -184,7 +185,6 @@ export default function CustomerDashboard() {
   }, [classified]);
   const upcomingCount = classified.filter((c) => c.phase === 'upcoming' || c.phase === 'active').length;
   const completedCount = classified.filter((c) => c.phase === 'completed').length;
-  const tier = renterTier(completedCount);
   // Only phases where the charge is real and was actually kept — a
   // refund (see supabase/migrations/0026_booking_reservations.sql) gives
   // the money back, so it must not still count as "spent", and a
@@ -253,7 +253,7 @@ export default function CustomerDashboard() {
             <p className="text-body text-muted">{greeting()},</p>
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">{firstName}</h1>
-              {tier && <span className="badge badge-accent">{tier}</span>}
+              <RenterTierBadge completed={completedCount} className="badge badge-accent inline-flex items-center" />
             </div>
           </div>
           <div className="flex items-center gap-2">
