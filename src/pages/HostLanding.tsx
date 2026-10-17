@@ -49,23 +49,26 @@ export default function HostLanding() {
         </section>
 
         <section className="mt-20 sm:mt-28">
-          <SectionHead center eyebrow="Simple by design" title="List in four short steps." />
-          <ol className="mx-auto mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 sm:gap-5">
-            {steps.map((s, i) => (
-              <Reveal key={s.title} delay={i * 70}>
-                <li className="flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:p-6">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-050 text-accent-700">
+          <SectionHead center eyebrow="Simple by design" title="From garage to listed in minutes." />
+          <Reveal>
+            <ol className="relative mx-auto mt-10 max-w-md sm:grid sm:max-w-5xl sm:grid-cols-4 sm:gap-6">
+              {steps.map((s, i) => (
+                <li key={s.title} className="relative flex gap-4 pb-9 last:pb-0 sm:block sm:pb-0 sm:text-center">
+                  {i < steps.length - 1 && (
+                    <span aria-hidden="true" className="absolute left-[21px] top-12 h-[calc(100%-2.75rem)] w-px bg-line-strong sm:left-[calc(50%+34px)] sm:top-[21px] sm:h-px sm:w-[calc(100%-68px)]" />
+                  )}
+                  <span className="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700 ring-4 ring-bg sm:mx-auto">
                     <Icon name={s.icon} size={20} />
                   </span>
-                  <div>
-                    <p className="text-label font-semibold uppercase tracking-[0.14em] text-faint">Step {i + 1}</p>
-                    <h3 className="mt-1 font-display text-lg font-semibold text-ink">{s.title}</h3>
+                  <div className="min-w-0 pt-0.5 sm:mt-4">
+                    <p className="text-label font-semibold tracking-[0.14em] text-faint">0{i + 1}</p>
+                    <h3 className="mt-0.5 font-display text-[1.2rem] font-semibold text-ink">{s.title}</h3>
                     <p className="mt-1 text-detail leading-relaxed text-muted">{s.desc}</p>
                   </div>
                 </li>
-              </Reveal>
-            ))}
-          </ol>
+              ))}
+            </ol>
+          </Reveal>
         </section>
 
         <section className="mb-24 mt-20 sm:mt-28">

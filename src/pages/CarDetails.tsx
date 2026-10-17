@@ -166,7 +166,6 @@ export default function CarDetails() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreText, setMoreText] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
-  const [allReviews, setAllReviews] = useState(false);
   const navigate = useNavigate();
   const { t } = useLocale();
 
@@ -258,7 +257,7 @@ export default function CarDetails() {
     haptics.light();
     if (r === 'copied') toast({ title: 'Link copied to clipboard', icon: 'check' });
   };
-  const rated = car.trips > 0 && car.reviews.length > 0;
+  const rated = car.trips > 0;
   const policy = POLICY_INFO[car.cancellationPolicy ?? 'flexible'];
   const alt = `${car.year} ${car.make} ${car.model}`;
   const facts: { icon: IconName; v: string; l: string }[] = [
@@ -267,7 +266,6 @@ export default function CarDetails() {
     { icon: 'gear', v: car.transmission, l: 'Gearbox' },
     { icon: 'gas', v: car.fuel, l: 'Fuel' },
   ];
-  const shownReviews = allReviews ? car.reviews : car.reviews.slice(0, 4);
 
   return (
     <div className="pb-28 lg:pb-12">
@@ -320,7 +318,6 @@ export default function CarDetails() {
                 {rated ? (
                   <>
                     <span className="inline-flex items-center gap-1 font-semibold text-ink"><Icon name="route" size={14} className="text-accent-700" /> {t('{n} trips', { n: car.trips })}</span>
-                    <span className="text-muted">· {car.reviews.length} {t('Reviews').toLowerCase()}</span>
                   </>
                 ) : (
                   <span className="text-muted">{t('New on CX')}</span>
@@ -411,36 +408,6 @@ export default function CarDetails() {
                 <h2 className="mb-2.5 px-1 font-display text-lg font-semibold text-ink">{t('Meet your host')}</h2>
                 {hasAccess ? <HostCard host={host} carId={car.id} /> : <HostLocked />}
               </section>
-
-              {/* Reviews — a swipeable row */}
-              {car.reviews.length > 0 && (
-                <section className="mt-7">
-                  <div className="mb-2.5 flex items-center justify-between px-1">
-                    <h2 className="font-display text-lg font-semibold text-ink">{t('Reviews')}</h2>
-                    {car.reviews.length > 4 && (
-                      <button onClick={() => setAllReviews((v) => !v)} className="text-detail font-semibold text-ink underline underline-offset-4">{allReviews ? t('Less') : t('See all')}</button>
-                    )}
-                  </div>
-                  <div className={allReviews ? 'grid gap-3 sm:grid-cols-2' : 'scrollbar-none -mx-5 flex snap-x gap-3 overflow-x-auto px-5 lg:mx-0 lg:px-0'}>
-                    {shownReviews.map((r) => (
-                      <div key={r.id} className={`rounded-[22px] border border-line bg-surface p-4 ${allReviews ? '' : 'w-[80%] shrink-0 snap-start sm:w-[46%]'}`}>
-                        <div className="flex items-center gap-3">
-                          {hasAccess ? (
-                            <Img src={r.avatar} alt="" className="h-10 w-10 rounded-full object-cover" fallback={<span className="grid h-10 w-10 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>} />
-                          ) : (
-                            <span className="grid h-10 w-10 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="user" size={17} /></span>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-detail font-semibold text-ink">{hasAccess ? r.author : r.author.split(' ')[0]}</p>
-                            <p className="text-caption text-muted">{r.date}</p>
-                          </div>
-                        </div>
-                        <p className={`mt-3 text-detail leading-relaxed text-ink-soft ${allReviews ? '' : 'line-clamp-4'}`}><Ugc text={r.body} /></p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
 
               {/* Similar — a swipeable row */}
               {similar.length > 0 && (

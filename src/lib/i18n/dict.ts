@@ -31,6 +31,7 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["From garage to listed in minutes.", "Dal garage all’annuncio in pochi minuti.", "De la garaj la anunț în câteva minute.", "Del garaje al anuncio en minutos."],
   ["Help & Support", "Aiuto e assistenza", "Ajutor și asistență", "Ayuda y soporte"],
   ["Cancellation policy", "Politica di cancellazione", "Politica de anulare", "Política de cancelación"],
   ["Rent exceptional cars from local owners, wherever the road takes you.", "Noleggia auto eccezionali da proprietari locali, ovunque ti porti la strada.", "Închiriază mașini excepționale de la proprietari locali, oriunde te duce drumul.", "Alquila coches excepcionales a propietarios locales, vaya donde vaya la carretera."],
