@@ -56,6 +56,7 @@ export function BrowseMap({
   onAreaChange,
   cityPick,
   onCities,
+  locked = false,
 }: {
   cars: Car[];
   activeId: string | null;
@@ -72,6 +73,8 @@ export function BrowseMap({
   /** phone: the page owns the city chips (they sit in the filter row); this is the chosen one, and the map reports its cities back */
   cityPick?: string | null;
   onCities?: (cities: string[], current: string | null) => void;
+  /** signed out: the map is only to look at: no controls, the pins framed above the sign-in card */
+  locked?: boolean;
 }) {
   const { t } = useLocale();
   const exact = useHasAccess();
@@ -328,7 +331,7 @@ export function BrowseMap({
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
     // on a phone the card sheet covers the bottom of the map: the pins are framed above it
-    const fit = variant === 'main' && placed.length > 0 ? insets() : { top: 70, bottom: 70 };
+    const fit = locked ? { top: 50, bottom: window.innerWidth < 640 ? 330 : 240 } : variant === 'main' && placed.length > 0 ? insets() : { top: 70, bottom: 70 };
     map.fitBounds([[Math.min(...lng), Math.min(...lat)], [Math.max(...lng), Math.max(...lat)]], { padding: { top: fit.top, left: 50, right: 50, bottom: fit.bottom }, maxZoom: exact ? 15.5 : 14, duration: 900 });
     setMoved(false);
   }, [city, cars, ready, exact, areaActive, variant, placed.length]);
@@ -349,7 +352,7 @@ export function BrowseMap({
       <div ref={box} style={{ position: 'absolute', inset: 0 }} role="region" aria-label={t('Map of listed cars')} />
       {!ready && !failed && <span className="skeleton absolute inset-0" />}
       {failed && <span className="absolute inset-0 grid place-items-center text-detail text-muted">{t('Map unavailable')}</span>}
-      {ready && cities.length > 1 && !onCities && (
+      {ready && !locked && cities.length > 1 && !onCities && (
         <div className={`scrollbar-none absolute left-3 z-10 flex max-w-[calc(100%-70px)] gap-1.5 overflow-x-auto rounded-full bg-white/95 p-1 shadow-[0_6px_18px_-6px_rgba(22,22,26,0.3)] ${variant === 'main' ? 'top-[8.6rem]' : 'top-3'}`}>
           {cities.map((c) => (
             <button key={c} onClick={() => setPick(c)} className={`shrink-0 rounded-full px-3 py-1.5 text-caption font-semibold transition-colors ${c === city ? 'bg-ink text-white' : 'text-ink-soft hover:bg-panel'}`}>
@@ -381,7 +384,7 @@ export function BrowseMap({
         </div>
       )}
 
-      {ready && variant === 'main' && (
+      {ready && !locked && variant === 'main' && (
         <div
           className={`absolute left-1/2 top-[calc(var(--browse-top,8.6rem)+0.5rem)] z-20 -translate-x-1/2 transition-[opacity,transform] duration-200 ease-out ${
             searching || areaActive ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
@@ -406,7 +409,7 @@ export function BrowseMap({
         </div>
       )}
 
-      {ready && variant === 'main' && (
+      {ready && !locked && variant === 'main' && (
         <button
           type="button"
           onClick={locate}

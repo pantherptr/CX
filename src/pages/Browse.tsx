@@ -458,24 +458,25 @@ export default function Browse() {
   if (!canMap) {
     if (authLoading) return <div className="skeleton h-[calc(100svh-4rem)] w-full" />;
     return (
-      <div className="relative h-[calc(100svh-4rem)] min-h-[30rem] w-full overflow-hidden bg-panel">
+      <div className="relative h-[calc(100lvh-4rem)] min-h-[30rem] w-full overflow-hidden bg-panel">
         {/* the map is only to look at: no pan, no zoom, no tap, nothing to focus */}
         <div className="pointer-events-none absolute inset-0 select-none" aria-hidden inert>
           {loading ? (
             <div className="skeleton h-full w-full" />
           ) : (
-            <BrowseMap variant="main" cars={shown} areaActive={false} onAreaChange={() => {}} activeId={null} hoverId={null} onSelect={() => {}} className="h-full w-full" />
+            <BrowseMap variant="main" locked cars={shown} areaActive={false} onAreaChange={() => {}} activeId={null} hoverId={null} onSelect={() => {}} className="h-full w-full" />
           )}
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-10">
-          <div className="mx-auto max-w-md rounded-3xl border border-line bg-surface/95 p-6 text-center shadow-pop backdrop-blur">
-            <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-accent-050 text-accent-700"><Icon name="lock" size={20} /></span>
-            <h1 className="mt-3 font-display text-[1.35rem] font-semibold leading-tight tracking-[-0.01em] text-ink">{t('Sign in to see the cars')}</h1>
-            <p className="mt-2 text-detail text-ink-soft">{t('The map shows where cars are and what they cost. Create a free account to open them, see the photos and book.')}</p>
-            <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
-              <Link to="/signup" className="btn btn-accent-bright btn-lg flex-1">{t('Create account')}</Link>
-              <Link to="/login" state={{ from: { pathname: '/browse' } }} className="btn btn-secondary btn-lg flex-1">{t('Sign in')}</Link>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-bg/90 via-bg/40 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4.25rem)] sm:pb-10">
+          <div className="mx-auto flex max-w-md flex-col items-center rounded-3xl border border-line bg-surface/95 px-5 py-5 text-center shadow-pop backdrop-blur">
+            <h1 className="flex items-center gap-2 font-display text-[1.2rem] font-semibold leading-tight tracking-[-0.01em] text-ink">
+              <Icon name="lock" size={17} className="text-accent-700" /> {t('Sign in to see the cars')}
+            </h1>
+            <p className="mt-1.5 text-detail text-ink-soft">{t('The map shows where cars are and what they cost. Create a free account to open them, see the photos and book.')}</p>
+            <div className="mt-4 grid w-full grid-cols-2 gap-2.5">
+              <Link to="/signup" className="btn btn-accent-bright btn-lg !px-3">{t('Create account')}</Link>
+              <Link to="/login" state={{ from: { pathname: '/browse' } }} className="btn btn-secondary btn-lg !px-3">{t('Sign in')}</Link>
             </div>
           </div>
         </div>
