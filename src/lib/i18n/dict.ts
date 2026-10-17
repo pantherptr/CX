@@ -31,6 +31,12 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ['Delete chat', 'Elimina chat', 'Șterge conversația', 'Eliminar chat'],
+  ['Delete this chat? It disappears for you only; the other person keeps their copy.', 'Eliminare questa chat? Sparisce solo per te; l’altra persona conserva la sua copia.', 'Ștergi această conversație? Dispare doar pentru tine; cealaltă persoană își păstrează copia.', '¿Eliminar este chat? Desaparece solo para ti; la otra persona conserva su copia.'],
+  ['Could not delete the chat', 'Impossibile eliminare la chat', 'Nu am putut șterge conversația', 'No se pudo eliminar el chat'],
+  ['Chat deleted', 'Chat eliminata', 'Conversație ștearsă', 'Chat eliminado'],
+  ['It is gone from your list.', 'È sparita dalla tua lista.', 'A dispărut din lista ta.', 'Ha desaparecido de tu lista.'],
+
   ['Sign in to see the cars', 'Accedi per vedere le auto', 'Autentifică-te ca să vezi mașinile', 'Inicia sesión para ver los coches'],
   ['The map shows where cars are and what they cost. Create a free account to open them, see the photos and book.', 'La mappa mostra dove sono le auto e quanto costano. Crea un account gratuito per aprirle, vedere le foto e prenotare.', 'Harta arată unde sunt mașinile și cât costă. Creează un cont gratuit ca să le deschizi, să vezi pozele și să rezervi.', 'El mapa muestra dónde están los coches y cuánto cuestan. Crea una cuenta gratis para abrirlos, ver las fotos y reservar.'],
 

@@ -188,13 +188,31 @@ function mapConversation(row: ConversationRow, myUserId: string): Conversation {
   };
 }
 
+// Migration 0145 adds conversation_participants.hidden_at ("delete chat" for me). The chats I deleted, and
+// the moment I did, so their old messages stay out of the list, the thread and the unread badge.
+let hideColumn: boolean | null = null;
+const hiddenAtByConv = new Map<string, string>();
+
+async function myParticipations(userId: string): Promise<{ conversation_id: string; hidden_at: string | null }[]> {
+  if (hideColumn !== false) {
+    const { data, error } = await supabase.from('conversation_participants').select('conversation_id, hidden_at').eq('user_id', userId);
+    if (!error) {
+      hideColumn = true;
+      return (data ?? []) as { conversation_id: string; hidden_at: string | null }[];
+    }
+    if (error.code === '42703' || /hidden_at/.test(error.message ?? '')) hideColumn = false;
+    else throw error;
+  }
+  const { data, error } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', userId);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ conversation_id: r.conversation_id, hidden_at: null }));
+}
+
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
-  const { data: myRows, error: myErr } = await supabase
-    .from('conversation_participants')
-    .select('conversation_id')
-    .eq('user_id', userId);
-  if (myErr) throw myErr;
-  const ids = (myRows ?? []).map((r) => r.conversation_id);
+  const myRows = await myParticipations(userId);
+  hiddenAtByConv.clear();
+  for (const r of myRows) if (r.hidden_at) hiddenAtByConv.set(r.conversation_id, r.hidden_at);
+  const ids = myRows.map((r) => r.conversation_id);
   if (!ids.length) return [];
 
   let { data, error } = await supabase.from('conversations').select(conversationSelect()).in('id', ids);
@@ -208,7 +226,15 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   if (extendedColumns === null) extendedColumns = true;
   if (supportColumns === null) supportColumns = true;
 
-  const mapped = (data as unknown as ConversationRow[]).map((row) => mapConversation(row, userId));
+  const mapped = (data as unknown as ConversationRow[])
+    .map((row) => {
+      const hidden = hiddenAtByConv.get(row.id);
+      if (!hidden) return row;
+      // a deleted chat keeps only what arrived after the deletion (nothing: it stays out of the list)
+      return { ...row, messages: row.messages.filter((m) => m.created_at > hidden), __hidden: true };
+    })
+    .filter((row) => !(row as { __hidden?: boolean }).__hidden || row.messages.length > 0)
+    .map((row) => mapConversation(row, userId));
   return mapped.sort((a, b) => {
     const at = a.lastMessage?.createdAt ?? '';
     const bt = b.lastMessage?.createdAt ?? '';
@@ -284,12 +310,15 @@ export function useConversations(userId: string | undefined) {
 /** Latest messages of a thread, oldest first. Capped so a very long thread does not pull its
  *  whole history on every open (and every refresh) — the newest 300 are what anyone reads. */
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
-  const run = () => supabase
-    .from('messages')
-    .select(msgCols())
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: false })
-    .limit(300);
+  const run = () => {
+    let q = supabase
+      .from('messages')
+      .select(msgCols())
+      .eq('conversation_id', conversationId);
+    const hidden = hiddenAtByConv.get(conversationId);
+    if (hidden) q = q.gt('created_at', hidden);
+    return q.order('created_at', { ascending: false }).limit(300);
+  };
   let { data, error } = await run();
   if (error && extendedColumns !== false && isMissingColumn(error)) {
     extendedColumns = false;
@@ -578,16 +607,25 @@ export async function findOrCreateConversation(carId: string | null, myUserId: s
 }
 
 export async function fetchUnreadCount(userId: string): Promise<number> {
-  const { data: myRows } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', userId);
-  const ids = (myRows ?? []).map((r) => r.conversation_id);
-  if (!ids.length) return 0;
-  const { count } = await supabase
-    .from('messages')
-    .select('id', { count: 'exact', head: true })
-    .in('conversation_id', ids)
-    .neq('sender_id', userId)
-    .is('read_at', null);
-  return count ?? 0;
+  const myRows = await myParticipations(userId).catch(() => []);
+  if (!myRows.length) return 0;
+  const live = myRows.filter((r) => !r.hidden_at).map((r) => r.conversation_id);
+  const hidden = myRows.filter((r) => r.hidden_at);
+  const unread = (ids: string[], since?: string) => {
+    let q = supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .in('conversation_id', ids)
+      .neq('sender_id', userId)
+      .is('read_at', null);
+    if (since) q = q.gt('created_at', since);
+    return q;
+  };
+  let total = 0;
+  if (live.length) total += (await unread(live)).count ?? 0;
+  // chats I deleted only count what arrived after the deletion
+  for (const r of hidden) total += (await unread([r.conversation_id], r.hidden_at ?? undefined)).count ?? 0;
+  return total;
 }
 
 // One shared count per signed-in person. The badge is read by several shells at once (BottomNav,
@@ -742,6 +780,15 @@ export async function openSupportConversation(
   ]);
   if (partErr) throw partErr;
   return { id, created: true };
+}
+
+/** Deletes a normal chat for me only: it leaves my list and its history is cleared on my side (needs migration 0145). */
+export async function deleteChat(conversationId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc('hide_conversation', { p_conversation: conversationId });
+  if (error) return { error: error.message };
+  hiddenAtByConv.set(conversationId, new Date().toISOString());
+  threadCache.delete(conversationId);
+  return { error: null };
 }
 
 /** The team closes a support conversation (needs migration 0131). */

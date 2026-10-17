@@ -2830,3 +2830,11 @@ html.home-white:not([data-theme='dark']) .hero-bg { background: #ffffff !importa
 @keyframes pi-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 .pi-bob { animation: pi-bob 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .pi-bob { animation: none; } }
+
+/* Read receipt: the bat is an outline until the message is read, then it fills green (with a tiny pop) */
+.rbat-read { color: currentColor; overflow: visible; }
+.rbat-read-shape { fill: transparent; stroke: currentColor; transition: fill 0.45s ease, stroke 0.45s ease; }
+.rbat-read--on { animation: rbat-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+.rbat-read--on .rbat-read-shape { fill: #12d85a; stroke: #0fb84a; }
+@keyframes rbat-pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .rbat-read--on { animation: none; } .rbat-read-shape { transition: none; } }

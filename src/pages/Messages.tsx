@@ -20,6 +20,7 @@ import {
   sendMessage,
   sendPhotoMessage,
   deleteMyMessage,
+  deleteChat,
   reportChatUser,
   chatMediaUrl,
   markConversationRead,
@@ -31,7 +32,8 @@ import {
 } from '../lib/data/messages';
 import { CONTACT_WARNING, hasContactInfo } from '../lib/contactGuard';
 import { useApp } from '../lib/store';
-import { MacbookMockup, LockIcon, DoubleCheckIcon } from '../components/ui/great-ui-macbook-mockup';
+import { MacbookMockup, LockIcon } from '../components/ui/great-ui-macbook-mockup';
+import { ReadBat } from '../components/ReadBat';
 import type { Message } from '../lib/data/messages';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
@@ -85,7 +87,7 @@ function CxTeamSheet({ active, onClose }: { active: Conversation; onClose: () =>
 }
 
 /** Tap the name in a phone chat: who you are talking to, at a glance, with the shortcuts that matter. */
-function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void }) {
+function ChatProfileSheet({ active, myId, messages, onClose, onReport, onDelete }: { active: Conversation; myId?: string; messages: Message[] | null; onClose: () => void; onReport: () => void; onDelete?: () => void }) {
   const other = active.other;
   const isCx = other.role === 'cx';
   const sent = (messages ?? []).filter((m) => m.senderId === myId).length;
@@ -157,6 +159,11 @@ function ChatProfileSheet({ active, myId, messages, onClose, onReport }: { activ
           {!isCx && (
             <button onClick={() => { onClose(); onReport(); }} className="pressable mt-2 rounded-full px-4 py-2 text-caption font-semibold text-danger active:bg-danger/10">
               Report {other.name}
+            </button>
+          )}
+          {onDelete && active.kind === 'chat' && (
+            <button onClick={() => { onClose(); onDelete(); }} className="pressable mt-1 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-caption font-semibold text-muted active:bg-panel">
+              <Icon name="trash" size={14} /> Delete chat
             </button>
           )}
           <p className="mt-1 text-caption text-faint">Payments and contact details stay inside CX.</p>
@@ -568,7 +575,7 @@ function Thread({
                 {last && (
                   <p className={`mt-1 flex items-center gap-1 px-1 text-faint ${t.time}`}>
                     {fmtBubbleTime(m.createdAt)}
-                    {mine && <DoubleCheckIcon className={`${t.tick} ${m.readAt ? 'text-accent-bright' : 'text-faint'}`} />}
+                    {mine && <ReadBat read={Boolean(m.readAt)} className={`h-[14px] w-[27px] ${m.readAt ? '' : 'text-faint'}`} />}
                   </p>
                 )}
               </div>
@@ -963,6 +970,21 @@ export default function Messages() {
     else refresh();
   };
 
+  const deleteConversation = async () => {
+    if (!activeId) return;
+    if (!window.confirm('Delete this chat? It disappears for you only; the other person keeps their copy.')) return;
+    const id = activeId;
+    const { error } = await deleteChat(id);
+    if (error) {
+      toast({ title: 'Could not delete the chat', desc: error, icon: 'trash' });
+      return;
+    }
+    setActiveId(null);
+    closeConvo();
+    refresh();
+    toast({ title: 'Chat deleted', desc: 'It is gone from your list.', icon: 'trash' });
+  };
+
   const reportMessage = async (id: string | null) => {
     if (!activeId) return;
     if (!window.confirm('Report this to CX? Our team will review the conversation.')) return;
@@ -1349,6 +1371,7 @@ export default function Messages() {
                 myId={session?.user.id}
                 messages={messages}
                 onReport={() => void reportMessage(null)}
+                onDelete={() => void deleteConversation()}
                 onClose={() => setProfileOpen(false)}
               />
             )}
