@@ -13,7 +13,6 @@ import { ActivePill } from '../components/motionKit';
 import { useCars } from '../lib/data/cars';
 import { useMyBookings, classifyBooking, renterTier, type Booking, type TripPhase } from '../lib/data/bookings';
 import { useConversations, findOrCreateConversation } from '../lib/data/messages';
-import { useMyRewards, rewardStatus, type Reward, type RewardStatus } from '../lib/data/rewards';
 import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useLocale } from '../lib/i18n';
@@ -52,41 +51,6 @@ const phaseLabel: Record<TripPhase, string> = {
 
 const fmtDate = (s: string) => new Date(s).toLocaleDateString(uiLocale(), { day: 'numeric', month: 'short' });
 
-const REWARD_TABS: { id: RewardStatus; label: string }[] = [
-  { id: 'available', label: 'Available' },
-  { id: 'used', label: 'Used' },
-  { id: 'expired', label: 'Expired' },
-];
-
-const rewardBadge: Record<RewardStatus, string> = {
-  available: 'badge-accent',
-  used: 'bg-panel-2 text-ink-soft',
-  expired: 'bg-danger/10 text-danger',
-};
-
-function RewardRow({ reward }: { reward: Reward }) {
-  const status = rewardStatus(reward);
-  return (
-    <div className="flex items-center gap-4 p-4">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-050 text-accent">
-        <Icon name="gift" size={19} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-ink">{reward.discountPercentage}% OFF your next booking</p>
-        <p className="font-mono text-detail text-muted">{reward.couponCode}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-caption text-muted">
-          {status === 'used' && reward.usedAt
-            ? `Used ${fmtDate(reward.usedAt)}`
-            : `Expires ${fmtDate(reward.expiresAt)}`}
-        </p>
-        <span className={`badge mt-1 ${rewardBadge[status]}`}>{status[0].toUpperCase() + status.slice(1)}</span>
-      </div>
-    </div>
-  );
-}
-
 interface ActivityItem {
   id: string;
   icon: IconName;
@@ -104,7 +68,7 @@ interface ActivityItem {
  *  "Concierge request" (the Concierge is a stateless matching flow with
  *  no persisted request record). Showing either would be inventing an
  *  event that never truthfully happened. */
-function buildActivity(bookings: Booking[], rewards: Reward[]): ActivityItem[] {
+function buildActivity(bookings: Booking[]): ActivityItem[] {
   const items: ActivityItem[] = [];
 
   for (const b of bookings) {
@@ -116,13 +80,6 @@ function buildActivity(bookings: Booking[], rewards: Reward[]): ActivityItem[] {
       if (phase === 'completed') {
         items.push({ id: `${b.id}-completed`, icon: 'trips', label: 'Rental completed', sub: `${b.car.make} ${b.car.model} · ${b.reference}`, at: `${b.endDate}T00:00:00` });
       }
-    }
-  }
-
-  for (const r of rewards) {
-    items.push({ id: `${r.id}-earned`, icon: 'gift', label: 'Reward earned', sub: `${r.discountPercentage}% off · ${r.couponCode}`, at: r.createdAt });
-    if (r.usedAt) {
-      items.push({ id: `${r.id}-used`, icon: 'gift', label: 'Reward used', sub: `${r.discountPercentage}% off · ${r.couponCode}`, at: r.usedAt });
     }
   }
 
@@ -181,9 +138,7 @@ export default function CustomerDashboard() {
   const { cars } = useCars();
   const { bookings, loading: bookingsLoading } = useMyBookings(session?.user.id);
   const { conversations, loading: conversationsLoading } = useConversations(session?.user.id);
-  const { rewards, loading: rewardsLoading } = useMyRewards(session?.user.id);
   const [tab, setTab] = useState<TripPhase>('upcoming');
-  const [rewardTab, setRewardTab] = useState<RewardStatus>('available');
   const [messaging, setMessaging] = useState(false);
 
 
@@ -275,7 +230,7 @@ export default function CustomerDashboard() {
   // (self-cancel within minutes if abandoned) not to need their own tab.
   const tabBookings = classified.filter((c) => c.phase === tab || (tab === 'cancelled' && c.phase === 'refunded')).map((c) => c.booking);
 
-  const activity = useMemo(() => buildActivity(bookings ?? [], rewards ?? []), [bookings, rewards]);
+  const activity = useMemo(() => buildActivity(bookings ?? []), [bookings]);
 
   const handleMessageHost = async () => {
     if (!session || !nextTrip) return;
@@ -628,7 +583,7 @@ export default function CustomerDashboard() {
           <section>
             <h2 className="mb-4 font-display text-lg font-semibold text-ink">Recent Activity</h2>
             <div className="card min-h-[120px] divide-y divide-line">
-              {bookingsLoading || rewardsLoading ? (
+              {bookingsLoading ? (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
                   <PremiumPageLoader size={60} />
                 </div>
@@ -649,61 +604,12 @@ export default function CustomerDashboard() {
                 <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted"><Icon name="clock" size={20} /></span>
                   <p className="mt-1 font-medium text-ink">Nothing yet</p>
-                  <p className="max-w-xs text-detail text-muted">Your bookings and rewards will show up here as they happen.</p>
+                  <p className="max-w-xs text-detail text-muted">Your bookings will show up here as they happen.</p>
                 </div>
               )}
             </div>
           </section>
         </div>
-
-        {/* Rewards */}
-        <section className="mt-8 scroll-mt-20" id="rewards">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-display text-lg font-semibold text-ink">Rewards</h2>
-          </div>
-          <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
-            {REWARD_TABS.map((t) => {
-              const count = (rewards ?? []).filter((r) => rewardStatus(r) === t.id).length;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setRewardTab(t.id)}
-                  className={`chip shrink-0 ${rewardTab === t.id ? '!bg-ink !text-white !border-ink' : ''}`}
-                >
-                  {t.label}
-                  {count > 0 && <span className="text-faint">· {count}</span>}
-                </button>
-              );
-            })}
-          </div>
-          <div key={rewardTab} className="card min-h-[120px] divide-y divide-line animate-fade-in">
-            {rewardsLoading ? (
-              <div className="flex flex-col items-center gap-2 py-10 text-center">
-                <PremiumPageLoader size={70} />
-              </div>
-            ) : (rewards ?? []).filter((r) => rewardStatus(r) === rewardTab).length > 0 ? (
-              (rewards ?? [])
-                .filter((r) => rewardStatus(r) === rewardTab)
-                .map((r) => <RewardRow key={r.id} reward={r} />)
-            ) : (
-              <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-panel text-muted">
-                  <Icon name="gift" size={20} />
-                </span>
-                <p className="mt-1 font-medium text-ink">
-                  {rewardTab === 'available' && 'No rewards yet'}
-                  {rewardTab === 'used' && 'No used rewards'}
-                  {rewardTab === 'expired' && 'No expired rewards'}
-                </p>
-                <p className="max-w-xs text-detail text-muted">
-                  {rewardTab === 'available'
-                    ? 'Book a car and grow your CX Score to unlock real booking discounts.'
-                    : 'Nothing to show in this tab yet.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
       </div>
     </DashboardShell>
   );

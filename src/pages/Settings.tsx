@@ -266,7 +266,6 @@ export default function Settings() {
               <Group title={t('Shortcuts')}>
                 <Row icon="trips" title={t('My trips')} onClick={() => navigate('/dashboard#trips')} />
                 <Row icon="heart" title={t('Saved cars')} onClick={() => navigate('/dashboard#saved')} />
-                <Row icon="gift" title={t('Rewards')} onClick={() => navigate('/dashboard#rewards')} />
                 <Row icon="message" title={t('Messages')} onClick={() => navigate('/messages')} />
               </Group>
 
