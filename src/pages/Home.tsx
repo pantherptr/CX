@@ -1,10 +1,10 @@
+import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { PostMarquee } from '../components/home/PostMarquee';
 import { SignalDeck } from '../components/home/SignalDeck';
 import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
 import { ProtectionTeam } from '../components/home/ProtectionTeam';
 import { OwnersBento } from '../components/home/OwnersBento';
 import { FindPoster } from '../components/home/scenes/FindPoster';
-import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -373,7 +373,18 @@ export default function Home() {
             <div>
               <p className="eyebrow">{t('CX Delivery')}</p>
               <h3 className="mt-2 font-display text-[1.7rem] font-semibold leading-[1.08] tracking-[-0.02em] text-ink text-balance sm:text-[2.2rem]">{t('Your journey starts at your door.')}</h3>
-              <RouteMini className="mt-5 max-w-md" />
+              <ScrollRevealImage
+                src="/home/delivery-1122.webp"
+                srcSet="/home/delivery-800.webp 800w, /home/delivery-1122.webp 1122w"
+                position="50% 40%"
+                alt={t('Your car, delivered to your door')}
+                className="mt-5 h-[26rem] sm:h-[30rem]"
+              >
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
+                <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
+                  <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
+                </span>
+              </ScrollRevealImage>
             </div>
             <div className="mt-6 lg:mt-0">
               <ul className="space-y-3">
