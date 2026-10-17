@@ -2760,3 +2760,8 @@ html [data-rmiz-btn-unzoom] { display: none; }
 @keyframes fp-parcel { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 .fp-pulse { opacity: 0; transform-box: fill-box; transform-origin: center; animation: fp-pulse 2.6s ease-out infinite; }
 @keyframes fp-pulse { 0% { opacity: 0.55; transform: scale(0.3); } 100% { opacity: 0; transform: scale(1.6); } }
+
+/* range sliders (Home owner calculator) */
+.cx-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px; outline: none; }
+.cx-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid var(--color-accent); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.35); cursor: pointer; }
+.cx-range::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 2px solid var(--color-accent); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.35); cursor: pointer; }

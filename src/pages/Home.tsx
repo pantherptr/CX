@@ -1,3 +1,4 @@
+import { HostEarnings } from '../components/home/HostEarnings';
 import { FindPoster } from '../components/home/scenes/FindPoster';
 import { RouteMini } from '../components/home/RouteMini';
 import { BlurText } from '../components/ui/blur-text';
@@ -580,6 +581,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ================= PROTECTION — in a few words ================= */}
+      <section className="container-page section-tight">
+        <Reveal>
+          <p className="eyebrow">{t('How we protect you')}</p>
+          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {([
+              { icon: 'shield', t: 'Damage protection included' },
+              { icon: 'headset', t: '24/7 roadside help' },
+              { icon: 'verified', t: 'Verified hosts' },
+              { icon: 'lock', t: 'Payments stay inside CX' },
+            ] as { icon: IconName; t: string }[]).map((r) => (
+              <li key={r.t} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-050 text-accent-700"><Icon name={r.icon} size={19} /></span>
+                <span className="text-body font-semibold leading-snug text-ink">{t(r.t)}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      </section>
+
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
         <Reveal>
@@ -653,6 +674,8 @@ export default function Home() {
                 </Link>
               </div>
             </div>
+            <div className="space-y-3">
+            <HostEarnings />
             <ul className="space-y-3">
               {[
                 { icon: 'euro' as IconName, t: 'You set the daily rate — and receive it in full' },
@@ -667,6 +690,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            </div>
           </div>
         </Reveal>
       </section>
