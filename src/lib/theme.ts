@@ -69,9 +69,7 @@ function paint() {
     if (old) old.replaceWith(meta);
     else document.head.appendChild(meta);
   }
-  document
-    .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
-    ?.setAttribute('content', current === 'dark' ? 'black' : 'default');
+  // (the iOS status-bar style is fixed at 'black-translucent' in index.html: it cannot change while the app runs)
   if (Capacitor.isNativePlatform()) {
     import('@capacitor/status-bar')
       .then(({ StatusBar, Style }) => StatusBar.setStyle({ style: current === 'dark' ? Style.Dark : Style.Light }))
