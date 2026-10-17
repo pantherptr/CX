@@ -1,5 +1,6 @@
 import { Icon, type IconName } from '../Icon';
 import { Reveal } from '../motion';
+import { InvestigationsMark } from '../InvestigationsMark';
 import { useLocale } from '../../lib/i18n';
 
 /** Home → "How we protect you", on the page's own light background: two CX Investigations agents, cut out and standing
@@ -25,6 +26,7 @@ export function ProtectionTeam() {
               draggable={false}
               className="relative block w-full drop-shadow-[0_18px_22px_rgba(0,0,0,0.18)]"
             />
+            <div className="relative mt-4 flex justify-center"><InvestigationsMark size="md" /></div>
           </div>
 
           <div>
