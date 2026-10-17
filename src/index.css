@@ -2769,3 +2769,10 @@ html [data-rmiz-btn-unzoom] { display: none; }
 .cx-story-pulse { animation: cx-story-pulse 2.6s ease-in-out infinite; }
 @keyframes cx-story-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 71, 0.45); } 60% { box-shadow: 0 0 0 9px rgba(0, 212, 71, 0); } }
 @media (prefers-reduced-motion: reduce) { .cx-story-pulse { animation: none; } }
+
+/* Home → SIGNAL post marquee */
+.cx-marquee-track { animation: cx-marquee 38s linear infinite; }
+.cx-marquee-rev { animation-direction: reverse; animation-duration: 44s; }
+.cx-marquee:hover .cx-marquee-track, .cx-marquee:active .cx-marquee-track { animation-play-state: paused; }
+@keyframes cx-marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce) { .cx-marquee-track { animation: none; } .cx-marquee { overflow-x: auto; } }

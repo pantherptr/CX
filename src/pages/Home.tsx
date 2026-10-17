@@ -1,3 +1,4 @@
+import { PostMarquee } from '../components/home/PostMarquee';
 import { SignalDeck } from '../components/home/SignalDeck';
 import { ProtectionTeam } from '../components/home/ProtectionTeam';
 import { OwnersBento } from '../components/home/OwnersBento';
@@ -450,6 +451,7 @@ export default function Home() {
             </div>
             <SignalDeck />
           </div>
+          <PostMarquee />
         </Reveal>
       </section>
 

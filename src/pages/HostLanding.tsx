@@ -4,6 +4,7 @@ import { SectionHead } from '../components/primitives';
 import { PageHero, CtaBand } from '../components/marketing';
 import { Reveal } from '../components/motion';
 import { HostBento } from '../components/HostBento';
+import { CarFan } from '../components/home/CarFan';
 
 /** What a signed-out visitor sees at /list-your-car — the listing form
  *  itself needs an account, so instead of bouncing them straight to a
@@ -40,6 +41,11 @@ export default function HostLanding() {
           <div className="mt-9">
             <HostBento />
           </div>
+        </section>
+
+        <section className="mt-20 sm:mt-28">
+          <SectionHead center eyebrow="Already on CX" title="Cars like yours, already earning." />
+          <div className="mt-8"><CarFan /></div>
         </section>
 
         <section className="mt-20 sm:mt-28">
