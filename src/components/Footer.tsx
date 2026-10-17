@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Logo } from './primitives';
 import { useLocale } from '../lib/i18n';
+import { openInstallSheet, useInstall } from '../lib/installApp';
 
 /** Short, quiet footer: the brand and its few useful links on one line, the small print under it.
  *  Every link resolves to a real route (see App.tsx). */
@@ -16,6 +17,7 @@ const links: { label: string; to: string }[] = [
 
 export function Footer() {
   const { t, lang, resetCountry } = useLocale();
+  const { installed } = useInstall();
   const langLabel = { en: 'English', it: 'Italiano', ro: 'Română', es: 'Español' }[lang];
   return (
     <footer className="mt-20 border-t border-line">
@@ -28,6 +30,11 @@ export function Footer() {
                 {t(l.label)}
               </Link>
             ))}
+            {!installed && (
+              <button type="button" onClick={openInstallSheet} className="inline-flex min-h-11 items-center text-left text-detail font-medium text-accent-700 transition-colors hover:text-ink sm:min-h-0 sm:py-1.5">
+                {t('Get the app')}
+              </button>
+            )}
           </nav>
         </div>
         <div className="mt-5 flex flex-col gap-2 border-t border-line pt-5 text-detail text-muted sm:flex-row sm:items-center sm:justify-between">

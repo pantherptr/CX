@@ -1,3 +1,4 @@
+import { openInstallSheet, useInstall } from '../lib/installApp';
 import { ActionLabel } from '../components/ui/loading-button';
 import ThemeSwitch from '../components/ThemeSwitch';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -63,6 +64,7 @@ export default function Settings() {
 
   const completed = (bookings ?? []).filter((b) => classifyBooking(b) === 'completed');
   const tier = renterTier(completed.length);
+  const { installed } = useInstall();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -268,6 +270,7 @@ export default function Settings() {
                 <Row icon="trips" title={t('My trips')} onClick={() => navigate('/dashboard#trips')} />
                 <Row icon="heart" title={t('Saved cars')} onClick={() => navigate('/dashboard#saved')} />
                 <Row icon="message" title={t('Messages')} onClick={() => navigate('/messages')} />
+                {!installed && <Row icon="phone" title={t('Get the app')} onClick={openInstallSheet} />}
               </Group>
 
               <button

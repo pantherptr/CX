@@ -1,3 +1,4 @@
+import { openInstallSheet, useInstall } from '../lib/installApp';
 import ThemeSwitch from './ThemeSwitch';
 import { CxBatIntro } from './CxBatIntro';
 import { openCommandPalette } from './CommandPalette';
@@ -33,6 +34,7 @@ export default function PublicMobileDrawer({
   const reduceMotion = !!useReducedMotion();
   const gap = useViewportBottomGap();
   const { t } = useLocale();
+  const { installed } = useInstall();
   const findDriveScramble = useScramble(t('Find your next drive'));
   const signInScramble = useScramble(t('Sign in'));
   const createAccountScramble = useScramble(t('Create an account'));
@@ -130,6 +132,13 @@ export default function PublicMobileDrawer({
                       </NavLink>
                     );
                   })}
+                  {!installed && (
+                    <button type="button" onClick={() => { onClose(); window.setTimeout(openInstallSheet, 200); }} className={navRowClass(false)}>
+                      <NavIconTile icon="phone" />
+                      <span className="flex-1 text-left">{t('Get the app')}</span>
+                      <Icon name="chevronRight" size={16} className="text-faint" />
+                    </button>
+                  )}
                 </nav>
               </div>
 

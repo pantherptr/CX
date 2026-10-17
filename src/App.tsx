@@ -21,6 +21,7 @@ import { useAuth } from './lib/auth';
 import { CompareTray } from './components/CompareTray';
 import { MaintenanceGate } from './components/MaintenanceGate';
 import { NotificationToaster } from './components/NotificationToaster';
+import { InstallSheet, InstallBanner } from './components/InstallApp';
 import { CommandPalette } from './components/CommandPalette';
 
 // Eager — the three routes a first-time visitor actually lands on. Keeping
@@ -385,6 +386,8 @@ export default function App() {
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} onReady={splash.onReady} />}
       <ScrollToTop />
       <NotificationToaster />
+      <InstallSheet />
+      <InstallBanner />
       <CommandPalette />
       <EdgeSwipeBack />
       <WorkspaceTracker />
