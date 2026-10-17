@@ -489,17 +489,27 @@ export default function Home() {
 
       {/* ================= FINAL CTA — light, quiet, no glow ================= */}
       <section className="container-page mt-20 mb-6 sm:mt-24">
-        <Reveal>
-          <div className="flex flex-col items-center gap-6 text-center">
-            <BlurText as="h2" className="font-display text-3xl font-semibold text-ink text-balance sm:text-5xl" text={t('Ready for your next journey?')} />
-            <p className="max-w-md text-copy leading-relaxed text-muted">
-              {t('Premium cars from verified hosts, around the world.')}
-            </p>
-            <Link to="/browse" className="btn btn-accent-bright btn-lg">
-              {t('Explore Cars')} <Icon name="arrowRight" size={17} />
-            </Link>
-          </div>
-        </Reveal>
+        <div className="mx-auto max-w-[36rem] text-center">
+          <h2 className="sr-only">{t('Ready for your next journey?')}</h2>
+          <ScrollRevealImage
+            src="/home/moment-1254.webp"
+            srcSet="/home/moment-800.webp 800w, /home/moment-1254.webp 1254w"
+            alt={t('Your moment. Your car.')}
+            className="aspect-square"
+            fromWidth={72}
+            fromScale={1.2}
+          />
+          <Reveal>
+            <div className="mt-7 flex flex-col items-center gap-5">
+              <p className="max-w-md text-copy leading-relaxed text-muted">
+                {t('Premium cars from verified hosts, around the world.')}
+              </p>
+              <Link to="/browse" className="btn btn-accent-bright btn-lg">
+                {t('Explore Cars')} <Icon name="arrowRight" size={17} />
+              </Link>
+            </div>
+          </Reveal>
+        </div>
       </section>
     </div>
   );
