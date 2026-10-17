@@ -171,8 +171,8 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp', ''];
-  const howPositions = [undefined, '50% 50%', '50% 50%', undefined];
+  const howImages = ['', '/home/book-1100.webp', '/home/road-cx-1100.webp', ''];
+  const howPositions = [undefined, '50% 50%', '50% 30%', undefined];
   const howStatic = (
         <div role="list" className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {howSteps.map((st, i) => (
