@@ -36,8 +36,9 @@ export function SignalNavCard({ onClick, subtitle = 'Community & news' }: { onCl
         className="pointer-events-none absolute -left-6 top-1/2 h-24 w-24 -translate-y-1/2 rounded-full opacity-90 blur-2xl"
         style={{ background: 'radial-gradient(closest-side, rgba(0,212,71,0.55), transparent)' }}
       />
-      <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/[0.06] ring-1 ring-white/10">
-        <SignalS size={26} className="transition-transform duration-300 group-hover:scale-110" />
+      {/* the card is always dark, so the S is always the silver one (data-theme=dark switches its dark: variants) */}
+      <span data-theme="dark" className="relative grid h-11 w-[3.25rem] shrink-0 place-items-center rounded-xl bg-white/[0.07] ring-1 ring-white/15">
+        <SignalS size={21} className="transition-transform duration-300 group-hover:scale-110" />
       </span>
       <span className="relative min-w-0 flex-1">
         <span className="block text-[15px] font-bold leading-tight tracking-[0.12em]">SIGNAL</span>
