@@ -23,10 +23,10 @@ export function ProtectionIcon({ kind, size = 'md', tone = 'soft', className = '
     <span
       ref={ref}
       onPointerEnter={replay}
-      className={`pi relative grid shrink-0 place-items-center rounded-2xl ${size === 'sm' ? 'h-11 w-11' : 'h-14 w-14'} ${tone === 'glass' ? 'bg-white/15 text-white backdrop-blur' : 'bg-gradient-to-br from-accent-050 to-[#d9f3e2] text-accent-700 shadow-[inset_0_0_0_1px_rgba(0,133,54,0.12)]'} ${className}`}
+      className={`pi relative grid shrink-0 place-items-center rounded-2xl ${size === 'sm' ? 'h-11 w-11' : 'h-14 w-14'} ${tone === 'glass' ? 'bg-white/15 text-white backdrop-blur' : 'text-accent-700'} ${className}`}
     >
-      <span aria-hidden className={`pi-halo absolute inset-0 rounded-2xl ${on ? 'pi-on' : ''}`} key={`h${run}`} />
-      <svg key={run} viewBox="0 0 48 48" className={`relative ${size === 'sm' ? 'h-6 w-6' : 'h-8 w-8'} ${on ? 'pi-on' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {tone === 'glass' && <span aria-hidden className={`pi-halo absolute inset-0 rounded-2xl ${on ? 'pi-on' : ''}`} key={`h${run}`} />}
+      <svg key={run} viewBox="0 0 48 48" className={`relative ${size === 'sm' ? 'h-7 w-7' : 'h-9 w-9'} ${on ? 'pi-on' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         {kind === 'shield' && (
           <>
             <path className="pi-draw" pathLength={1} d="M24 5 L39 10.5 V22 C39 32 32.5 39.5 24 43 C15.5 39.5 9 32 9 22 V10.5 Z" style={{ ['--d' as string]: '0s' }} />
