@@ -1,13 +1,8 @@
 import { Icon, type IconName } from '../Icon';
 import { Reveal } from '../motion';
-import { INVESTIGATORS } from '../../lib/investigations';
 import { useLocale } from '../../lib/i18n';
 
 /** Home → "How we protect you": the CX Investigations team in one picture, and the four promises under it. */
-const TEAM = INVESTIGATORS.filter((a) => a.name !== 'Orion');
-// each agent stands a little higher or lower, so the row reads as a group and not as a strip of passport photos
-const LIFT = [14, 0, 22, 6, 18, 2];
-
 export function ProtectionTeam() {
   const { t } = useLocale();
   const items: { icon: IconName; t: string }[] = [
@@ -24,30 +19,12 @@ export function ProtectionTeam() {
           <p className="text-caption font-semibold uppercase tracking-[0.14em] text-[#7dffa8]">{t('How we protect you')}</p>
           <h2 className="mt-2 max-w-xl font-display text-[1.9rem] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[2.6rem]">{t('Real people behind every trip.')}</h2>
 
-          {/* the team */}
-          <div className="mt-7 flex items-end justify-center pl-4 sm:pl-8" role="img" aria-label="CX Investigations">
-            {TEAM.map((a, i) => (
-              <div
-                key={a.name}
-                className="relative -ml-4 w-[19.5%] max-w-[9.5rem] shrink-0 sm:-ml-8"
-                style={{ marginBottom: LIFT[i % LIFT.length], zIndex: i === 2 || i === 3 ? 2 : 1 }}
-              >
-                <img
-                  src={a.src}
-                  alt=""
-                  loading="lazy"
-                  draggable={false}
-                  className="block w-full object-cover"
-                  style={{
-                    WebkitMaskImage: 'radial-gradient(ellipse 62% 66% at 50% 38%, #000 56%, transparent 100%)',
-                    maskImage: 'radial-gradient(ellipse 62% 66% at 50% 38%, #000 56%, transparent 100%)',
-                    filter: 'contrast(1.08)',
-                  }}
-                />
-              </div>
-            ))}
+          {/* the team: one photo, fading into the stage at the bottom */}
+          <div className="relative -mx-5 mt-6 sm:-mx-10">
+            <img src="/home/team-1400.webp" alt={t('The CX Investigations team')} loading="lazy" draggable={false} className="block w-full" />
+            <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#06120d] to-transparent" />
+            <p className="absolute inset-x-0 bottom-2 text-center text-caption font-semibold uppercase tracking-[0.22em] text-white/70">CX Investigations</p>
           </div>
-          <p className="mt-1 text-center text-caption font-semibold uppercase tracking-[0.22em] text-white/60">CX Investigations</p>
 
           {/* the four promises */}
           <ul className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
