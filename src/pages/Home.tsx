@@ -13,7 +13,6 @@ import { Icon, type IconName } from '../components/Icon';
 import { SearchBar } from '../components/SearchBar';
 import { SectionHead } from '../components/primitives';
 import { Reveal } from '../components/motion';
-import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { FindCarDeck } from '../components/FindCarDeck';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
 import { useCars } from '../lib/data/cars';
@@ -85,6 +84,7 @@ const howSteps: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type, and read real reviews from past trips.' },
   { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.' },
   { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then rate your experience.' },
+  { icon: 'pin', title: 'Delivered to your door', desc: 'Land in a new city and your car is already waiting: no queues, no counters.' },
 ];
 
 const HOME_FAQ_QUESTIONS = [
@@ -135,10 +135,10 @@ export default function Home() {
   }, [howNear]);
   // The three step photos and the delivery photo are CX's own pictures, served from /home (not photos of random fleet cars).
   // Step 2 keeps CX's photo; steps 1 and 3 and the delivery are animated illustrations (components/home/scenes).
-  const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp'];
-  const howPositions = [undefined, '50% 50%', '50% 50%'];
+  const howImages = ['', '/home/book-1100.webp', '/home/road-1100.webp', '/home/delivery-1122.webp'];
+  const howPositions = [undefined, '50% 50%', '50% 50%', '50% 40%'];
   const howStatic = (
-        <div role="list" className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-5">
+        <div role="list" className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
           {howSteps.map((st, i) => (
             <Reveal key={st.title} delay={i * 80}>
               <div role="listitem" className="relative flex h-full items-start gap-4 rounded-2xl border border-line bg-surface p-5 sm:flex-col sm:gap-5 sm:p-6">
@@ -307,11 +307,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= HOW IT WORKS — three real steps, one glance ================= */}
+      {/* ================= SWIPE — find your car by swiping (+ a small invite to X) ================= */}
+      <section className="container-page section-tight">
+        <div className="mx-auto max-w-md sm:max-w-lg">
+          <p className="eyebrow">{t('Swipe to find')}</p>
+          <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your car by swiping.')} />
+          <p className="mt-3 text-copy leading-relaxed text-muted">
+            {t('Swipe right to save a car, left to skip it. Tap View to see it.')}
+          </p>
+          <div className="mt-7 -mx-5">
+            <FindCarDeck />
+          </div>
+          <Link to="/browse" className="btn btn-lg mt-6 border border-line-strong bg-surface text-ink">
+            {t('Browse all cars')} <Icon name="arrowRight" size={17} />
+          </Link>
+          <ConciergeLauncher className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-surface p-3 text-left shadow-hair ring-1 ring-black/[0.05] transition-transform active:scale-[0.99]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel"><ConciergeMark size={32} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-ink">{t('Not sure which one? Ask X')}</span>
+              <span className="block truncate text-detail text-muted">{t('Tell it how you want to drive')}</span>
+            </span>
+            <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
+          </ConciergeLauncher>
+        </div>
+      </section>
+
+      {/* ================= HOW IT WORKS — four real steps (the last one is the delivery), one glance ================= */}
       <section className="container-page section-tight">
         <SectionHead
           eyebrow={t('How it works')}
-          title={t('From search to road in three steps.')}
+          title={t('From search to your door in four steps.')}
           action={
             <Link
               to="/how-it-works"
@@ -342,35 +367,15 @@ export default function Home() {
             howStatic
           )}
         </div>
-      </section>
-
-      {/* ================= DELIVERY — the emotional promise =================
-          The photo opens up as you scroll to it (a narrower, zoomed window that widens to the full
-          column); the story sits under it. */}
-      <section className="container-page section-tight">
-        <ScrollRevealImage
-          src="/home/delivery-1122.webp"
-          srcSet="/home/delivery-800.webp 800w, /home/delivery-1122.webp 1122w"
-          position="50% 40%"
-          alt={t('Your car, delivered to your door')}
-          className="h-[46svh] min-h-[300px] max-h-[620px] sm:h-[60svh]"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-noir/45 via-transparent to-transparent" />
-          <span className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-2 text-caption font-semibold text-ink shadow-hair backdrop-blur">
-            <Icon name="pin" size={14} className="text-accent" /> {t('Delivered to your door')}
-          </span>
-        </ScrollRevealImage>
+        {/* CX Delivery, folded into the steps: the route, and how it works at checkout */}
         <Reveal>
-          <div className="mt-4 rounded-[1.75rem] border border-line bg-surface px-6 py-9 sm:px-10 sm:py-12 lg:grid lg:grid-cols-2 lg:gap-14">
+          <div className="mt-8 rounded-[1.75rem] border border-line bg-surface px-5 py-7 sm:px-10 sm:py-10 lg:grid lg:grid-cols-2 lg:items-center lg:gap-14">
             <div>
               <p className="eyebrow">{t('CX Delivery')}</p>
-              <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Your journey starts at your door.')} />
-              <p className="mt-3 text-copy leading-relaxed text-muted">
-                {t('Land in a new city and your car is already waiting. No queues, no counters, no detours — just the first mile of your trip, without the hassle.')}
-              </p>
-              <RouteMini className="mt-6 max-w-md" />
+              <h3 className="mt-2 font-display text-[1.7rem] font-semibold leading-[1.08] tracking-[-0.02em] text-ink text-balance sm:text-[2.2rem]">{t('Your journey starts at your door.')}</h3>
+              <RouteMini className="mt-5 max-w-md" />
             </div>
-            <div className="mt-6 lg:mt-0 lg:self-end">
+            <div className="mt-6 lg:mt-0">
               <ul className="space-y-3">
                 {[
                   'Choose delivery at checkout, to the address you pick',
@@ -385,37 +390,12 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link to="/browse" className="btn btn-accent-bright btn-lg mt-8">
+              <Link to="/browse" className="btn btn-accent-bright btn-lg mt-6">
                 {t('Find a car near you')} <Icon name="arrowRight" size={17} />
               </Link>
             </div>
           </div>
         </Reveal>
-      </section>
-
-      {/* ================= SWIPE — find your car by swiping (+ a small invite to X) ================= */}
-      <section className="container-page section-tight">
-        <div className="mx-auto max-w-md sm:max-w-lg">
-          <p className="eyebrow">{t('Swipe to find')}</p>
-          <BlurText as="h2" className="mt-3 font-display text-[2.15rem] font-semibold leading-[1.04] tracking-[-0.028em] text-ink text-balance sm:text-[3rem]" text={t('Find your car by swiping.')} />
-          <p className="mt-3 text-copy leading-relaxed text-muted">
-            {t('Swipe right to save a car, left to skip it. Tap View to see it.')}
-          </p>
-          <div className="mt-7 -mx-5">
-            <FindCarDeck />
-          </div>
-          <Link to="/browse" className="btn btn-lg mt-6 border border-line-strong bg-surface text-ink">
-            {t('Browse all cars')} <Icon name="arrowRight" size={17} />
-          </Link>
-          <ConciergeLauncher className="mt-4 flex w-full items-center gap-3 rounded-2xl bg-surface p-3 text-left shadow-hair ring-1 ring-black/[0.05] transition-transform active:scale-[0.99]">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-panel"><ConciergeMark size={32} /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold text-ink">{t('Not sure which one? Ask X')}</span>
-              <span className="block truncate text-detail text-muted">{t('Tell it how you want to drive')}</span>
-            </span>
-            <Icon name="chevronRight" size={16} className="shrink-0 text-faint" />
-          </ConciergeLauncher>
-        </div>
       </section>
 
       {/* ================= PROTECTION — the team, and four promises ================= */}
