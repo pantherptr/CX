@@ -5,9 +5,9 @@ export interface MarqueeQuote { name: string; place: string; avatar?: string; te
 // The two rows are the first and the last three, so each row mixes them.
 const QUOTES: MarqueeQuote[] = [
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, edizione Milano. Finestrini giù, la famiglia prima di tutto, niente freni. 🏁' },
-  { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
-  { name: 'Adam', place: 'San Pietroburgo', avatar: '/signal/av-adam.webp', text: 'Cattedrale di Kazan, San Pietroburgo. Volto coperto, nome conosciuto: il rispetto viene prima. 🖤', respected: true },
   { name: 'Daniel', place: 'Manchester', text: 'Grey sky, clean ride, zero stress. Booked in two minutes, mate. 🖤' },
+  { name: 'Adam', place: 'San Pietroburgo', avatar: '/signal/av-adam.webp', text: 'Cattedrale di Kazan, San Pietroburgo. Volto coperto, nome conosciuto: il rispetto viene prima. 🖤', respected: true },
+  { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Pioggia sul vetro, lealtà sul sedile. Niente finto, niente show: solo quelli veri. 🖤' },
   { name: 'Yusuf', place: 'Dubai', rtl: true, text: 'يلا يا حبيبي، المفاتيح في إيدي والطريق طريقنا 🏎️🔝' },
 ];
