@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["Nothing archived", "Niente in archivio", "Nimic în arhivă", "Nada archivado"],
+  ["Chats you archive wait here, out of the way. A dot shows when something new arrives.", "Le chat che archivi aspettano qui, fuori dai piedi. Un puntino ti avvisa quando arriva qualcosa di nuovo.", "Conversațiile arhivate așteaptă aici, la o parte. Un punct apare când vine ceva nou.", "Los chats que archivas esperan aquí, apartados. Un punto avisa cuando llega algo nuevo."],
+  ["Back to chats", "Torna alle chat", "Înapoi la conversații", "Volver a los chats"],
   ["Archive", "Archivio", "Arhivă", "Archivo"],
   ["Chats", "Chat", "Conversații", "Chats"],
   ["Restore", "Ripristina", "Restaurează", "Restaurar"],

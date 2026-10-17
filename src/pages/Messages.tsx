@@ -348,7 +348,7 @@ function ConversationRow({ c, active, onClick, myId, menuSpace = false }: { c: C
 /** A chat in the list with three ways to act on it: the dots (always there), a long press, and a swipe — left asks to
  *  delete (a short swipe uncovers "Delete", a long one asks straight away), right archives it (or restores it from the
  *  Archive). Deleting always asks first. Normal chats can be deleted; normal chats and closed cases can be archived. */
-function DeletableRow({ c, active, onClick, myId, onDelete, onArchive }: { c: Conversation; active: boolean; onClick: () => void; myId?: string; onDelete: (id: string) => void; onArchive: (id: string, archived: boolean) => void }) {
+function DeletableRow({ c, active, onClick, myId, onDelete, onArchive, leaving = false }: { c: Conversation; active: boolean; onClick: () => void; myId?: string; onDelete: (id: string) => void; onArchive: (id: string, archived: boolean) => void; leaving?: boolean }) {
   const canDelete = true;
   const canArchive = true;
   const archived = !!c.archived;
@@ -404,6 +404,11 @@ function DeletableRow({ c, active, onClick, myId, onDelete, onArchive }: { c: Co
 
   const anim = { transform: `translateX(${dx}px)`, transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.2,0.8,0.2,1)' };
   return (
+    <div
+      className="grid"
+      style={{ gridTemplateRows: leaving ? '0fr' : '1fr', opacity: leaving ? 0 : 1, marginBottom: leaving ? -4 : 0, transition: 'grid-template-rows 0.3s cubic-bezier(0.3,0.7,0.2,1), opacity 0.22s ease, margin 0.3s ease' }}
+    >
+    <div className="min-h-0 overflow-hidden">
     <div className={`relative ${dx !== 0 ? 'overflow-hidden rounded-[22px]' : ''}`}>
       {canArchive && (
         <button
@@ -482,20 +487,30 @@ function DeletableRow({ c, active, onClick, myId, onDelete, onArchive }: { c: Co
         </>
       )}
     </div>
+    </div>
+    </div>
   );
 }
 
-/** Chats / Archive. The Archive tab carries a dot when something in it has unread messages. */
+/** Chats / Archive as one segmented control: the pill slides between the two. The Archive side carries a dot when
+ *  something in it has unread messages. */
 function ChatTabs({ tab, onTab, archivedCount, archiveDot, compact = false }: { tab: 'main' | 'archive'; onTab: (t: 'main' | 'archive') => void; archivedCount: number; archiveDot: boolean; compact?: boolean }) {
-  const base = compact ? 'px-3 py-1 text-[12px]' : 'px-4 py-1.5 text-[14px]';
-  const pill = (on: boolean) => `relative inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors ${base} ${on ? 'bg-ink text-white' : 'bg-panel text-ink-soft active:bg-panel-2'}`;
+  const txt = compact ? 'py-1 text-[12px]' : 'py-2 text-[14px]';
+  const side = (on: boolean) => `relative z-10 flex items-center justify-center gap-1.5 rounded-full font-semibold transition-colors duration-200 ${txt} ${on ? 'text-ink' : 'text-muted'}`;
   return (
-    <div role="tablist" className={`flex items-center gap-2 ${compact ? 'px-2 pb-1' : 'px-3 pb-2 pt-1'}`}>
-      <button role="tab" aria-selected={tab === 'main'} onClick={() => onTab('main')} className={pill(tab === 'main')}>Chats</button>
-      <button role="tab" aria-selected={tab === 'archive'} onClick={() => onTab('archive')} className={pill(tab === 'archive')}>
-        Archive{archivedCount > 0 && <span className={tab === 'archive' ? 'text-white/70' : 'text-faint'}>· {archivedCount}</span>}
-        {archiveDot && tab !== 'archive' && <span aria-label="New messages" className="h-2 w-2 rounded-full bg-accent-bright ring-2 ring-bg" />}
-      </button>
+    <div className={`animate-[fade-in_.3s_ease-out_both] ${compact ? 'px-2 pb-1.5' : 'px-3 pb-2 pt-1'}`}>
+      <div role="tablist" className="relative grid grid-cols-2 rounded-full bg-panel p-1">
+        <span
+          aria-hidden
+          className="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-white shadow-[0_2px_8px_-2px_rgba(22,22,26,0.25)] transition-transform duration-300 ease-[cubic-bezier(0.3,0.9,0.3,1)]"
+          style={{ transform: tab === 'archive' ? 'translateX(100%)' : 'translateX(0)' }}
+        />
+        <button role="tab" aria-selected={tab === 'main'} onClick={() => onTab('main')} className={side(tab === 'main')}>Chats</button>
+        <button role="tab" aria-selected={tab === 'archive'} onClick={() => onTab('archive')} className={side(tab === 'archive')}>
+          Archive{archivedCount > 0 && <span className="text-faint">· {archivedCount}</span>}
+          {archiveDot && tab !== 'archive' && <span aria-label="New messages" className="h-2 w-2 animate-[scale-in_.3s_ease-out_both] rounded-full bg-accent-bright ring-2 ring-panel" />}
+        </button>
+      </div>
     </div>
   );
 }
@@ -909,6 +924,10 @@ export default function Messages() {
   // avoids standing up server-side text search for what's fundamentally
   // "find the thread I already have" rather than open-ended search.
   const [tab, setTab] = useState<'main' | 'archive'>('main');
+  // rows that are on their way out (archived / deleted): they fold away at once, the list catches up behind them
+  const [leaving, setLeaving] = useState<Set<string>>(new Set());
+  useEffect(() => { setLeaving((s) => (s.size ? new Set() : s)); }, [conversations]);
+  const markLeaving = (id: string, on: boolean) => setLeaving((s) => { const n = new Set(s); if (on) n.add(id); else n.delete(id); return n; });
   const archivedList = (conversations ?? []).filter((c) => c.archived);
   const archivedCount = archivedList.length;
   const archiveDot = archivedList.some((c) => c.unreadCount > 0);
@@ -1140,8 +1159,10 @@ export default function Messages() {
   const deleteConversation = async (convId: string | null = activeId) => {
     if (!convId) return;
     if (!window.confirm('Delete this chat? It disappears for you only; the other person keeps their copy.')) return;
+    markLeaving(convId, true);
     const { error } = await deleteChat(convId);
     if (error) {
+      markLeaving(convId, false);
       toast({ title: 'Could not delete the chat', desc: error, icon: 'trash' });
       return;
     }
@@ -1153,14 +1174,23 @@ export default function Messages() {
     toast({ title: 'Chat deleted', desc: 'It is gone from your list.', icon: 'trash' });
   };
 
-  const archiveConversation = async (convId: string, archived: boolean) => {
+  const archiveConversation = async (convId: string, archived: boolean, quiet = false) => {
+    if (!quiet) markLeaving(convId, true);
     const { error } = await setChatArchived(convId, archived);
     if (error) {
+      markLeaving(convId, false);
       toast({ title: archived ? 'Could not archive the chat' : 'Could not restore the chat', desc: error, icon: 'archive' });
       return;
     }
+    haptics.tick();
     refresh();
-    toast({ title: archived ? 'Chat archived' : 'Chat restored', desc: archived ? 'You will find it in Archive.' : 'It is back in your chats.', icon: 'archive' });
+    if (quiet) return;
+    toast({
+      title: archived ? 'Chat archived' : 'Chat restored',
+      desc: archived ? 'You will find it in Archive.' : 'It is back in your chats.',
+      icon: 'archive',
+      action: { label: 'Undo', onClick: () => void archiveConversation(convId, !archived, true) },
+    });
   };
 
   const reportMessage = async (id: string | null) => {
@@ -1339,11 +1369,22 @@ export default function Messages() {
               <div className="flex flex-col items-center gap-2 py-16 text-center"><PremiumPageLoader size={70} /></div>
             ) : conversations && conversations.length > 0 ? (
               visibleConversations.length > 0 ? (
-                visibleConversations.map((c) => (
-                  <DeletableRow key={c.id} c={c} active={false} myId={session?.user.id} onClick={() => openConvo(c.id)} onDelete={(id) => void deleteConversation(id)} onArchive={(id, a) => void archiveConversation(id, a)} />
-                ))
+                <div key={tab} className={tab === 'archive' ? 'tab-in-from-right space-y-1' : 'tab-in-from-left space-y-1'}>
+                  {visibleConversations.map((c) => (
+                    <DeletableRow key={c.id} c={c} active={false} myId={session?.user.id} onClick={() => openConvo(c.id)} onDelete={(id) => void deleteConversation(id)} onArchive={(id, a) => void archiveConversation(id, a)} leaving={leaving.has(c.id)} />
+                  ))}
+                </div>
+              ) : search.trim() ? (
+                <p className="px-6 py-16 text-center text-detail text-muted">No conversations match “{search.trim()}”.</p>
+              ) : tab === 'archive' ? (
+                <div key="empty-archive" className="tab-in-from-right flex flex-col items-center px-8 py-14 text-center">
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-panel text-ink-soft"><Icon name="archive" size={22} /></span>
+                  <p className="mt-4 font-display text-[1.15rem] font-semibold text-ink">Nothing archived</p>
+                  <p className="mt-1 max-w-[16rem] text-detail text-muted">Chats you archive wait here, out of the way. A dot shows when something new arrives.</p>
+                  <button onClick={() => setTab('main')} className="btn btn-secondary btn-sm mt-5">Back to chats</button>
+                </div>
               ) : (
-                <p className="px-6 py-16 text-center text-detail text-muted">{search.trim() ? <>No conversations match “{search.trim()}”.</> : tab === 'archive' ? 'Nothing archived.' : 'No conversations.'}</p>
+                <p className="px-6 py-16 text-center text-detail text-muted">No conversations.</p>
               )
             ) : (
               <EmptyState

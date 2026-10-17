@@ -2841,3 +2841,10 @@ html.home-white:not([data-theme='dark']) .hero-bg { background: #ffffff !importa
 
 /* Long-pressable rows: no text selection / copy bubble when the finger rests on them */
 .no-callout, .no-callout * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Chats / Archive: the list slides in from the side the tab sits on */
+@keyframes tab-in-r { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes tab-in-l { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.tab-in-from-right { animation: tab-in-r 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.tab-in-from-left { animation: tab-in-l 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .tab-in-from-right, .tab-in-from-left { animation: none; } }
