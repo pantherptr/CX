@@ -1,3 +1,4 @@
+import { ProtectionTeam } from '../components/home/ProtectionTeam';
 import { OwnersBento } from '../components/home/OwnersBento';
 import { FindPoster } from '../components/home/scenes/FindPoster';
 import { RouteMini } from '../components/home/RouteMini';
@@ -581,25 +582,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= PROTECTION — in a few words ================= */}
-      <section className="container-page section-tight">
-        <Reveal>
-          <p className="eyebrow">{t('How we protect you')}</p>
-          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {([
-              { icon: 'shield', t: 'Damage protection included' },
-              { icon: 'headset', t: '24/7 roadside help' },
-              { icon: 'verified', t: 'Verified hosts' },
-              { icon: 'lock', t: 'Payments stay inside CX' },
-            ] as { icon: IconName; t: string }[]).map((r) => (
-              <li key={r.t} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-050 text-accent-700"><Icon name={r.icon} size={19} /></span>
-                <span className="text-body font-semibold leading-snug text-ink">{t(r.t)}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      </section>
+      {/* ================= PROTECTION — the team, and four promises ================= */}
+      <ProtectionTeam />
 
       {/* ================= SIGNAL — the community advantage ================= */}
       <section className="container-page section">
