@@ -18,7 +18,7 @@ export function ProtectionTeam() {
     <section className="container-page section-tight">
       <Reveal>
         <div className="grid items-center gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-10">
-          <p className="eyebrow order-1 md:hidden">{t('How we protect you')}</p>
+          <p className="eyebrow order-1 text-center md:hidden">{t('How we protect you')}</p>
           <PointerSpotlight className="order-2 mx-auto w-[58%] max-w-[15.5rem] px-[9%] md:order-1 md:w-full md:max-w-[30rem] md:px-8">
             <span aria-hidden className="absolute inset-x-[8%] bottom-0 h-6 rounded-[50%] bg-black/25 blur-xl" />
             <img
