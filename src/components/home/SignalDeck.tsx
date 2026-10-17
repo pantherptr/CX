@@ -4,11 +4,11 @@ import { Icon } from '../Icon';
 import { VerifiedBadge } from '../primitives';
 import { useLocale } from '../../lib/i18n';
 
-interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string }
+interface Post { name: string; role: 'host' | 'client'; place: string; avatar: string; text: string; image: string; image2?: string; pos?: string; respected?: boolean }
 const POSTS: Post[] = [
   { name: 'Giulia', role: 'client', place: 'Milano · 2h', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴', image: '/signal/giulia2.webp', pos: '50% 40%' },
   { name: 'Luca', role: 'client', place: 'Milano · 1d', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤', image: '/signal/luca3.webp', pos: '50% 62%' },
-  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%' },
+  { name: 'Adam', role: 'host', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', image: '/signal/adam-a.webp', image2: '/signal/adam-b.webp', pos: '50% 55%', respected: true },
 ];
 
 /**
@@ -85,12 +85,19 @@ export function SignalDeck() {
                 <Icon name="moreHorizontal" size={18} className="text-ink-soft" />
               </div>
               <p className="line-clamp-2 shrink-0 px-3.5 pb-3 text-detail leading-relaxed text-ink">{t(p.text)}</p>
-              <div className="flex min-h-0 w-full flex-1 gap-0.5">
+              <div className="relative flex min-h-0 w-full flex-1 gap-0.5">
                 <img src={p.image} alt="" draggable={false} loading="lazy" className="min-h-0 min-w-0 flex-1 object-cover" style={{ objectPosition: p.pos ?? '50% 35%' }} />
+                {p.respected && isTop && (
+                  <span key={`stamp-${top}`} aria-hidden className="cx-stamp-8 pointer-events-none absolute bottom-3 right-3 -rotate-[8deg] rounded-md border-[3px] border-double border-white/90 bg-[#0c7a38]/55 px-3 py-1.5 text-[15px] font-black uppercase tracking-[0.2em] text-white shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] backdrop-blur-[2px]">
+                    {t('Respected')}
+                  </span>
+                )}
                 {p.image2 && <img src={p.image2} alt="" draggable={false} loading="lazy" className="min-h-0 min-w-0 flex-1 object-cover" style={{ objectPosition: p.pos ?? '50% 35%' }} />}
               </div>
               <div className="flex shrink-0 items-center gap-5 px-4 py-3 text-detail font-semibold text-ink-soft">
-                <span className="inline-flex items-center gap-1.5"><Icon name="like" size={18} /> {t('Respect')}</span>
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors ${p.respected ? 'bg-accent-050 text-accent-700' : ''}`}>
+                  <Icon name="like" size={18} fill={p.respected} /> {p.respected ? t('Respected') : t('Respect')}
+                </span>
                 <span className="inline-flex items-center gap-1.5"><Icon name="bookmark" size={17} /> {t('Save')}</span>
                 <span className="ml-auto inline-flex items-center gap-1.5"><Icon name="share" size={17} /> {t('Share')}</span>
               </div>

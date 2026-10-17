@@ -1,10 +1,10 @@
 import { useLocale } from '../../lib/i18n';
 
-export interface MarqueeQuote { name: string; place: string; avatar: string; text: string }
+export interface MarqueeQuote { name: string; place: string; avatar: string; text: string; respected?: boolean }
 const QUOTES: MarqueeQuote[] = [
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'When the sun goes down, the city is yours. Red lights, open road. 🔴' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
-  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤' },
+  { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
   { name: 'Marco', place: 'Firenze', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'The host replied in minutes and the handover was a breeze.' },
   { name: 'Luca', place: 'Roma', avatar: '/signal/av-luca.webp', text: 'Weekend sorted. I will be back for the next one.' },
@@ -13,12 +13,15 @@ const QUOTES: MarqueeQuote[] = [
 function Card({ q }: { q: MarqueeQuote }) {
   const { t } = useLocale();
   return (
-    <figure className="flex w-[17rem] shrink-0 flex-col gap-2.5 rounded-2xl border border-line bg-surface p-4">
+    <figure className="relative flex w-[17rem] shrink-0 flex-col gap-2.5 rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-center gap-2.5">
         <img src={q.avatar} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-1 ring-accent-bright/30" />
         <figcaption className="min-w-0 text-detail font-semibold leading-tight text-ink">{q.name}<span className="block text-caption font-normal text-muted">{q.place}</span></figcaption>
       </div>
       <blockquote className="line-clamp-3 text-detail leading-relaxed text-ink-soft">{t(q.text)}</blockquote>
+      {q.respected && (
+        <span className="cx-marquee-stamp absolute bottom-2.5 right-3 -rotate-[8deg] rounded-md border-2 border-double border-accent-700/80 px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.18em] text-accent-700">{t('Respected')}</span>
+      )}
     </figure>
   );
 }
