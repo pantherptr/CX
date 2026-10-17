@@ -5,7 +5,7 @@ const QUOTES: MarqueeQuote[] = [
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'Fast & Furious, Milano edition. Windows down, family first, no brakes. 🏁' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Rain on the glass, loyalty in the seat. No fake, no flex — just the real ones. 🖤' },
   { name: 'Adam', place: 'Milano', avatar: '/signal/av-adam.webp', text: 'Green on grey, face covered, name known. Two angles, one rule: respect first. 🖤', respected: true },
-  { name: 'Marco', place: 'Firenze', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
+  { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Giulia', place: 'Milano', avatar: '/signal/av-giulia.webp', text: 'The host replied in minutes and the handover was a breeze.' },
   { name: 'Luca', place: 'Roma', avatar: '/signal/av-luca.webp', text: 'Weekend sorted. I will be back for the next one.' },
 ];

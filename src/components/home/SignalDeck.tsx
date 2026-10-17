@@ -81,7 +81,7 @@ export function SignalDeck() {
     { n: 'Adam', src: '/signal/av-adam.webp', seen: false },
     { n: 'Giulia', src: '/signal/av-giulia.webp', seen: false },
     { n: 'Luca', src: '/signal/av-luca.webp', seen: true },
-    { n: 'Marco', src: '/signal/av-marco.webp', seen: true },
+    { n: 'Sophie', src: '/signal/av-marco.webp', seen: true },
   ];
 
   return (
