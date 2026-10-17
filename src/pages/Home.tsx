@@ -99,6 +99,7 @@ const HOME_FAQ_QUESTIONS = [
 const HOME_FAQS = HOME_FAQ_QUESTIONS.map((q) => faqs.find((f) => f.q === q)).filter((f): f is (typeof faqs)[number] => !!f);
 
 export default function Home() {
+  const [faqOpen, setFaqOpen] = useState(false);
   const { t } = useLocale();
   // The Home is pure white in the light theme (no cream tint, no grey band between sections); the dark theme keeps its own look.
   const theme = useTheme();
@@ -478,10 +479,32 @@ export default function Home() {
                 {t('Visit the Help Center')} <Icon name="arrowRight" size={16} />
               </Link>
             </div>
-            <div className="rounded-3xl border border-line bg-white px-5 py-2 shadow-hair sm:px-8">
-              {HOME_FAQS.map((f) => (
-                <FaqItem key={f.q} q={t(f.q)} a={t(f.a)} />
-              ))}
+            {/* all the questions behind one tap; open, each one opens on its own as always */}
+            <div className="rounded-3xl border border-line bg-white shadow-hair lg:self-start">
+              <button
+                type="button"
+                onClick={() => setFaqOpen((o) => !o)}
+                aria-expanded={faqOpen}
+                aria-controls="home-faq-list"
+                className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-8"
+              >
+                <span>
+                  <span className="block font-display text-[1.15rem] font-semibold leading-tight text-ink">{faqOpen ? t('Hide the questions') : t('See all the questions')}</span>
+                  <span className="mt-0.5 block text-detail text-muted">{t('{n} questions', { n: HOME_FAQS.length })}</span>
+                </span>
+                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full bg-panel text-ink transition-transform duration-300 ${faqOpen ? 'rotate-180' : ''}`}>
+                  <Icon name="chevronDown" size={18} />
+                </span>
+              </button>
+              <div id="home-faq-list" className="grid transition-[grid-template-rows] duration-300 ease-out" style={{ gridTemplateRows: faqOpen ? '1fr' : '0fr' }}>
+                <div className="min-h-0 overflow-hidden" {...(faqOpen ? {} : { inert: true })}>
+                  <div className="border-t border-line px-5 pb-2 sm:px-8">
+                    {HOME_FAQS.map((f) => (
+                      <FaqItem key={f.q} q={t(f.q)} a={t(f.a)} />
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>

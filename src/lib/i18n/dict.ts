@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["See all the questions", "Vedi tutte le domande", "Vezi toate întrebările", "Ver todas las preguntas"],
+  ["Hide the questions", "Nascondi le domande", "Ascunde întrebările", "Ocultar las preguntas"],
+  ["{n} questions", "{n} domande", "{n} întrebări", "{n} preguntas"],
   ["Your moment. Your car.", "Il tuo momento. La tua auto.", "Momentul tău. Mașina ta.", "Tu momento. Tu coche."],
   ["Your case is in the queue. You will see here who takes it.", "Il tuo caso è in coda. Qui vedrai chi lo prende in carico.", "Cazul tău este în coadă. Aici vei vedea cine îl preia.", "Tu caso está en cola. Aquí verás quién lo atiende."],
   ["is now in this chat", "ora è in questa chat", "este acum în această conversație", "ya está en este chat"],

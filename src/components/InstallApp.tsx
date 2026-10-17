@@ -135,7 +135,7 @@ export function InstallBanner() {
       className="fixed inset-x-3 z-40 animate-[sheet-in_.35s_cubic-bezier(.2,.8,.2,1)_both] sm:hidden"
       style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${session ? '5.4rem' : '0.75rem'})` }}
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface/95 p-3 pr-2 shadow-pop backdrop-blur">
+      <div className="cx-install-card flex items-center gap-3 rounded-[22px] bg-surface/90 p-3 pr-2 ring-1 ring-black/[0.06] backdrop-blur-xl backdrop-saturate-150">
         <img src="/icons/icon-192.png" alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold leading-tight text-ink">{t('Get the CX app')}</p>
