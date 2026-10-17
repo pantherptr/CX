@@ -31,6 +31,9 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ['Or have it brought to you', 'Oppure fattela portare', 'Sau cere-o la ușă', 'O haz que te la lleven'],
+  ['Prefer not to collect? Choose delivery and the car arrives right at your door.', 'Non vuoi ritirarla? Scegli la consegna e l’auto arriva fino alla tua porta.', 'Nu vrei să o ridici? Alege livrarea și mașina ajunge chiar la ușa ta.', '¿Prefieres no recogerlo? Elige la entrega y el coche llega hasta tu puerta.'],
+
   ["From search to your door in four steps.", "Dalla ricerca alla tua porta in quattro passi.", "De la căutare la ușa ta în patru pași.", "De la la búsqueda a tu puerta en cuatro pasos."],
   ["Land in a new city and your car is already waiting: no queues, no counters.", "Atterri in una nuova città e la tua auto ti sta già aspettando: niente code, niente sportelli.", "Aterizezi într-un oraș nou și mașina te așteaptă deja: fără cozi, fără ghișee.", "Aterrizas en una ciudad nueva y tu coche ya te espera: sin colas, sin mostradores."],
   ["News, new cars and real stories from the CX world.", "Novità, nuove auto e storie vere dal mondo CX.", "Noutăți, mașini noi și povești adevărate din lumea CX.", "Novedades, coches nuevos e historias reales del mundo CX."],

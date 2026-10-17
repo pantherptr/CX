@@ -97,7 +97,7 @@ const howSteps: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'search', title: 'Find your car', desc: 'Search by city, dates and car type. Every host is verified.' },
   { icon: 'calendar', title: 'Book in minutes', desc: 'Reserve instantly on eligible cars and pay securely. See the cancellation policy before you pay.' },
   { icon: 'key', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then hand the keys back.' },
-  { icon: 'pin', title: 'Delivered to your door', desc: 'Land in a new city and your car is already waiting: no queues, no counters.' },
+  { icon: 'pin', title: 'Or have it brought to you', desc: 'Prefer not to collect? Choose delivery and the car arrives right at your door.' },
 ];
 
 const HOME_FAQ_QUESTIONS = [
