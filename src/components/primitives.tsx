@@ -79,15 +79,7 @@ export function AuthDivider() {
 }
 
 /* ------------------------------- Logo -------------------------------
- * The site's logo is the CX wordmark (`wordmark`/`full`, dark letters + green
- * key, for light surfaces). `symbol` is the old square badge, kept only as a
- * square avatar image for the official CX identity in SIGNAL. */
-export const LOGO_SRC = {
-  full: '/cx-logo-main.webp',
-  symbol: '/cx-logo-symbol.png',
-  wordmark: '/cx-logo-main.webp',
-} as const;
-
+ * The site's logo is the CX wordmark and the green chrome bat (CxBatIntro). There are no other logo files. */
 export function Logo({
   className = '',
 }: {

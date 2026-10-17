@@ -76,7 +76,7 @@ Code is written to fail soft before a migration is run.
   once and refreshes behind; `prefetch.ts` starts a profile load on touch; `useWarmRoutes` (App.tsx) warms page chunks on idle;
   `scrollMemory.ts` + `ScrollToTop` restore scroll; the feed paints a device snapshot on cold start.
 
-- Logo: `src/components/CxLogo.tsx` (inline SVG, C = currentColor so it follows the theme, X = down stroke + key with a carved gap); `Logo` in primitives renders it. The old raster `/cx-logo-main.webp` stays for places that need an image file (favicon/app icon unchanged).
+- Logo: there are exactly two, both vector: `CxWordmark` (the C and X with the green bat; letters follow `currentColor`) and the green chrome bat with the ® circle (`CxBatIntro`, what the header shows). `Logo` in primitives renders `CxBatIntro`. All the old raster logo files and `CxLogo.tsx` were deleted on purpose: do not add another logo version. Favicon / PWA / app icons live in `public/icons` + `public/favicon.png` and are unchanged.
 
 - Theme: the site theme is `cx-theme`; SIGNAL wears its own (`cx-signal-theme`, dark the first time) via
   `setInSignal` in `src/lib/theme.ts` (called from App.tsx on route change). Toggling inside SIGNAL only changes SIGNAL's.

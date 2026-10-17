@@ -37,10 +37,6 @@ export function PremiumPageLoader({ size = 90, label = 'Loading' }: { size?: num
  *  behind it, and underneath a little road scene: a white car shoots
  *  across the road once, the dashes streaking past, and the site opens. No card, no
  *  numbers, no text. `hiding` fades and eases it out into the real app.
- *
- *  The mark is two aligned layers cut from `cx-logo-main.png` (same canvas,
- *  so they stack pixel-perfectly): `cx-logo-letters.png` and
- *  `cx-logo-key.png`.
  */
 export function PremiumInitialLoader({ hiding, onReady }: { hiding: boolean; onReady?: () => void }) {
   // The animation only starts once the artwork has actually loaded (or after a short
