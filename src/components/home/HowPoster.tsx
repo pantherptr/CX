@@ -4,7 +4,7 @@ const CX_BAT = 'M783.3 545.3 L741.0 488.3 L703.3 509.7 L696.3 486.3 L683.7 505.0
 /** The portrait CX poster for the "How it works" page: the logo on the phone is the site's current wordmark. */
 export function HowPoster({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 1122 1402" className={className} role="img" aria-label="CX">
+    <svg viewBox="0 0 1122 1402" preserveAspectRatio="xMidYMid slice" className={className} role="img" aria-label="CX">
       <image href="/home/poster-1122.webp" x="0" y="0" width="1122" height="1402" />
       <rect x="424" y="114" width="114" height="62" rx="12" fill="#0a0d0c" />
       <svg x="428" y="118" width="106" height="54" viewBox="334 480 588 293" color="#ffffff">

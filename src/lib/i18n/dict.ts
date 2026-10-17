@@ -31,6 +31,10 @@ const ROWS: Row[] = [
     ["Keep discovering", "Continua a scoprire", "Continuă să descoperi", "Sigue descubriendo"],
   ["Back to the feed", "Torna al feed", "Înapoi la feed", "Volver al feed"],
   // ---- Keychain + Roadbook ----
+  ["short steps to list your car", "passi brevi per mettere la tua auto", "pași scurți ca să-ți listezi mașina", "pasos cortos para publicar tu coche"],
+  ["Car, photos, price, review. Publish when you are ready.", "Auto, foto, prezzo, controllo. Pubblichi quando sei pronto.", "Mașină, poze, preț, verificare. Publici când ești gata.", "Coche, fotos, precio, revisión. Publicas cuando quieras."],
+  ["Verified renters", "Clienti verificati", "Clienți verificați", "Clientes verificados"],
+  ["Drivers show their ID and licence before they can book your car.", "I guidatori mostrano documento e patente prima di poter prenotare la tua auto.", "Șoferii arată actul și permisul înainte să-ți poată rezerva mașina.", "Los conductores muestran su documento y carné antes de poder reservar tu coche."],
   ["What could you earn?", "Quanto potresti guadagnare?", "Cât ai putea câștiga?", "¿Cuánto podrías ganar?"],
   ["month", "mese", "lună", "mes"],
   ["Daily rate", "Tariffa giornaliera", "Tarif zilnic", "Tarifa diaria"],

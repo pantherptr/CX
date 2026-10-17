@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 import { SectionHead } from '../components/primitives';
-import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
+import { PageHero, CtaBand } from '../components/marketing';
 import { Reveal } from '../components/motion';
+import { HostBento } from '../components/HostBento';
 
 /** What a signed-out visitor sees at /list-your-car — the listing form
  *  itself needs an account, so instead of bouncing them straight to a
@@ -37,15 +38,7 @@ export default function HostLanding() {
         <section className="mt-16 sm:mt-24">
           <SectionHead center eyebrow="Why host with CX" title="Made for owners who care about their car." />
           <div className="mt-9">
-            <FeatureGrid
-              cols={4}
-              items={[
-                { icon: 'euro', title: 'You set the rate', desc: 'Choose your daily price. Renters pay the service fee on top — you receive the rate you set.' },
-                { icon: 'pin', title: 'Pickup or delivery', desc: 'Offer pickup, delivery with your own fee, or both. You decide how it works for you.' },
-                { icon: 'shield', title: 'Protected trips', desc: 'Protection is included on every trip, and support is there when you need it.' },
-                { icon: 'sparkles', title: 'A stage on SIGNAL', desc: 'Verified hosts can show their car to the CX community and reach renters who care.' },
-              ]}
-            />
+            <HostBento />
           </div>
         </section>
 
