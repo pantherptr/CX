@@ -713,6 +713,15 @@ function Thread({
                     </p>
                   </div>
                 </div>
+                {/* the investigator who took the case says so, right under the sheet */}
+                {active.kind === 'support' && (
+                  <div className="mb-3 flex items-center justify-center gap-2 px-2 text-center">
+                    <img src={agentFor(active.id).src} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover ring-1 ring-black/10" />
+                    <p className="text-caption leading-snug text-ink-soft">
+                      <span className="font-semibold text-ink">{agentFor(active.id).name}</span> · CX Investigative <span>is now in this chat</span>
+                    </p>
+                  </div>
+                )}
               </div>
             );
           }
