@@ -517,8 +517,8 @@ export default function Home() {
           {/* light theme: only the writing and the car, no background */}
           <Reveal className="dark:hidden">
             <img
-              src="/home/moment-cut-1254.webp"
-              srcSet="/home/moment-cut-800.webp 800w, /home/moment-cut-1254.webp 1254w"
+              src="/home/moment-cut2-1254.webp"
+              srcSet="/home/moment-cut2-800.webp 800w, /home/moment-cut2-1254.webp 1254w"
               sizes="(min-width: 640px) 36rem, 92vw"
               width={1254}
               height={1098}
