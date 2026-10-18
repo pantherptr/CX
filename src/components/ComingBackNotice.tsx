@@ -55,3 +55,22 @@ export function useSlowLoading(loading: boolean, ms = 6000): boolean {
   }, [loading, ms]);
   return slow;
 }
+
+/** The countdown on its own: one row of rolling digits (22:13:31:58) with a small caption, for use on a photo or video. */
+export function LaunchCountdown({ light = false, className = '' }: { light?: boolean; className?: string }) {
+  const { t } = useLocale();
+  const { days, hours, minutes, seconds, over } = useCountdown();
+  if (over) return null;
+  const f = { minimumIntegerDigits: 2, useGrouping: false } as const;
+  return (
+    <div className={`text-center ${className}`}>
+      <div className={`flex items-baseline justify-center font-display text-[1.7rem] font-semibold leading-none tabular-nums ${light ? 'text-white' : 'text-ink'}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <NumberFlow format={f} trend={-1} value={days} />
+        <NumberFlow format={f} prefix=":" trend={-1} value={hours} />
+        <NumberFlow format={f} prefix=":" trend={-1} value={minutes} />
+        <NumberFlow format={f} prefix=":" trend={-1} value={seconds} />
+      </div>
+      <p className={`mt-1.5 text-[10px] uppercase tracking-[0.18em] ${light ? 'text-white/75' : 'text-muted'}`}>{t('days')} · {t('hours')} · {t('min')} · {t('sec')}</p>
+    </div>
+  );
+}

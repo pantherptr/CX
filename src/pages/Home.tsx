@@ -1,3 +1,6 @@
+import { PhoneScrollHero } from '../components/PhoneScrollHero';
+import { LaunchCountdown } from '../components/ComingBackNotice';
+import { LAUNCH_HOLD } from '../lib/launch';
 import { MomentReveal } from '../components/MomentReveal';
 import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { PostMarquee } from '../components/home/PostMarquee';
@@ -318,6 +321,37 @@ export default function Home() {
       </section>
 
       {/* ================= SWIPE — find your car by swiping (+ a small invite to X) ================= */}
+      {LAUNCH_HOLD ? (
+        <PhoneScrollHero
+          titleComponent={
+            <>
+              <p className="eyebrow">{t('Opening 10 November')}</p>
+              <h2 className="mt-3 font-display text-[2.4rem] font-semibold leading-[1.02] tracking-[-0.03em] text-ink text-balance sm:text-[3.4rem] md:text-[4.5rem]">
+                {t('Your moment.')}
+                <br />
+                {t('Your car.')}
+              </h2>
+            </>
+          }
+        >
+          {/* the woman on the phone screen, with the countdown over her */}
+          <video
+            src="https://cdn.21st.dev/assets/mirror/08/087016656d54314ba07a3fd493f37c05a648544cd7b22137373ad7dd104a4340.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+            className="h-full w-full object-cover"
+          />
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-6">
+            <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">{t('Work in progress')}</p>
+            <LaunchCountdown light />
+          </div>
+        </PhoneScrollHero>
+      ) : (
       <section className="container-page section-tight">
         <div className="mx-auto max-w-md sm:max-w-lg">
           <p className="eyebrow">{t('Swipe to find')}</p>
@@ -341,6 +375,7 @@ export default function Home() {
           </ConciergeLauncher>
         </div>
       </section>
+      )}
 
       {/* ================= HOW IT WORKS — four real steps (the last one is the delivery), one glance ================= */}
       <section className="container-page section-tight">
