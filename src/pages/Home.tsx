@@ -1,3 +1,4 @@
+import { MomentReveal } from '../components/MomentReveal';
 import { ScrollRevealImage } from '../components/ScrollRevealImage';
 import { PostMarquee } from '../components/home/PostMarquee';
 import { SignalDeck } from '../components/home/SignalDeck';
@@ -515,18 +516,7 @@ export default function Home() {
         <div className="mx-auto max-w-[36rem] text-center">
           <h2 className="sr-only">{t('Ready for your next journey?')}</h2>
           {/* light theme: only the writing and the car, no background */}
-          <Reveal className="dark:hidden">
-            <img
-              src="/home/moment-cut2-1254.webp"
-              srcSet="/home/moment-cut2-800.webp 800w, /home/moment-cut2-1254.webp 1254w"
-              sizes="(min-width: 640px) 36rem, 92vw"
-              width={1254}
-              height={1098}
-              alt={t('Your moment. Your car.')}
-              draggable={false}
-              className="mx-auto block h-auto w-full select-none"
-            />
-          </Reveal>
+          <div className="dark:hidden"><MomentReveal alt={t('Your moment. Your car.')} /></div>
           {/* dark theme: the same artwork on its paper (the black car and the ink would vanish on a dark page) */}
           <div className="hidden dark:block">
             <ScrollRevealImage
