@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocale } from '../lib/i18n';
 import { CxWordmark } from './CxWordmark';
+import { NumberFlow } from './NumberFlow';
 
 /** The date the service is expected back (Supabase billing-cycle reset). Change it here when it moves. */
 const BACK_ON = new Date('2026-11-10T12:00:00Z').getTime();
@@ -31,7 +32,7 @@ export function ComingBackNotice({ onRetry, className = '' }: { onRetry?: () => 
         <div className="mx-auto mt-4 flex w-fit items-stretch gap-2">
           {[[days, t('days')], [hours, t('hours')], [minutes, t('min')], [seconds, t('sec')]].map(([v, l]) => (
             <div key={String(l)} className="min-w-[3.6rem] rounded-2xl bg-white px-2.5 py-2 shadow-hair">
-              <p className="font-display text-[1.6rem] font-semibold leading-none tabular-nums text-ink">{String(v).padStart(2, '0')}</p>
+              <NumberFlow className="font-display text-[1.6rem] font-semibold leading-none text-ink" format={{ minimumIntegerDigits: 2, useGrouping: false }} trend={-1} value={Number(v)} />
               <p className="mt-1 text-caption text-muted">{l}</p>
             </div>
           ))}
