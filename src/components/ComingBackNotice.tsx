@@ -29,13 +29,15 @@ export function ComingBackNotice({ onRetry, className = '' }: { onRetry?: () => 
         {over ? t('The cars are on their way. Try again in a moment.') : t('We are getting the cars ready. They will be here on 10 November.')}
       </p>
       {!over && (
-        <div className="mx-auto mt-4 flex w-fit items-stretch gap-2">
-          {[[days, t('days')], [hours, t('hours')], [minutes, t('min')], [seconds, t('sec')]].map(([v, l]) => (
-            <div key={String(l)} className="min-w-[3.6rem] rounded-2xl bg-white px-2.5 py-2 shadow-hair">
-              <NumberFlow className="font-display text-[1.6rem] font-semibold leading-none text-ink" format={{ minimumIntegerDigits: 2, useGrouping: false }} trend={-1} value={Number(v)} />
-              <p className="mt-1 text-caption text-muted">{l}</p>
-            </div>
-          ))}
+        <div className="mt-5">
+          {/* the same row as the Number Flow demo: one line, digits rolling downward, ":" between the groups */}
+          <div className="flex items-baseline justify-center text-[2.1rem] font-semibold leading-none text-ink tabular-nums sm:text-4xl" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <NumberFlow format={{ minimumIntegerDigits: 2, useGrouping: false }} trend={-1} value={days} />
+            <NumberFlow format={{ minimumIntegerDigits: 2, useGrouping: false }} prefix=":" trend={-1} value={hours} />
+            <NumberFlow format={{ minimumIntegerDigits: 2, useGrouping: false }} prefix=":" trend={-1} value={minutes} />
+            <NumberFlow format={{ minimumIntegerDigits: 2, useGrouping: false }} prefix=":" trend={-1} value={seconds} />
+          </div>
+          <p className="mt-2 text-caption text-muted">{t('days')} · {t('hours')} · {t('min')} · {t('sec')}</p>
         </div>
       )}
       {onRetry && <button onClick={onRetry} className="btn btn-secondary btn-sm mt-5">{t('Try again')}</button>}
