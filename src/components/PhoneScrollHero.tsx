@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'motion/react';
 
 /** Phone Scroll Hero (21st.dev, @ruixen.ui), adapted: `motion/react` instead of framer-motion, local `cn`, the
  *  site's own colours instead of shadcn tokens. The phone starts tilted back, straightens and climbs over the title. */
@@ -44,7 +44,9 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
     mq.addEventListener('change', set);
     return () => mq.removeEventListener('change', set);
   }, []);
-  const progress = useMotionValue(0);
+  const raw = useMotionValue(0);
+  // a soft spring after the raw scroll value: iOS delivers scroll events in bursts, the spring turns them into one slow glide
+  const progress = useSpring(raw, { stiffness: 38, damping: 22, mass: 1.1, restDelta: 0.0005 });
 
   useIsoLayoutEffect(() => {
     if (prefersReducedMotion) return;
@@ -57,9 +59,9 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
       const rect = el.getBoundingClientRect();
       // 0 when the section's top enters at the bottom of the screen, 1 when it is centred: the whole motion happens
       // while the section is on screen (a short section used to snap from 0 to 1 at once)
-      const start = win.innerHeight * 0.95;
-      const end = win.innerHeight * 0.5 - rect.height * 0.15;
-      progress.set(Math.min(1, Math.max(0, (start - rect.top) / Math.max(1, start - end))));
+      const start = win.innerHeight * 1.0;
+      const end = win.innerHeight * 0.5 - rect.height * 0.35;
+      raw.set(Math.min(1, Math.max(0, (start - rect.top) / Math.max(1, start - end))));
     };
     const onScroll = () => { if (!raf) raf = win.requestAnimationFrame(update); };
     update();
@@ -70,7 +72,7 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
       win.removeEventListener('resize', onScroll);
       if (raf) win.cancelAnimationFrame(raf);
     };
-  }, [prefersReducedMotion, progress]);
+  }, [prefersReducedMotion, raw]);
 
   const rotateX = useTransform(progress, [0, 1], [tilt, 0]);
   const scale = useTransform(progress, [0, 1], [0.94, 1]);
@@ -89,7 +91,7 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
         <motion.div style={{ y: still ? 0 : titleY }} className="relative z-0 mx-auto max-w-5xl px-4 text-center">
           {titleComponent}
         </motion.div>
-        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 mt-10 md:-mt-12">
+        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 mt-10 will-change-transform md:-mt-12">
           <PhoneFrame>{children}</PhoneFrame>
         </motion.div>
       </div>
