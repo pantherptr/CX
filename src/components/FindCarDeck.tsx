@@ -1,3 +1,4 @@
+import { ComingBackNotice, useSlowLoading } from './ComingBackNotice';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -24,6 +25,7 @@ export function FindCarDeck({ city }: { city?: string | null }) {
   const { t } = useLocale();
   const { session } = useAuth();
   const { cars } = useCars();
+  const slowCars = useSlowLoading(cars === null);
   const { toggleFavorite, isFavorite } = useApp();
   const remembered = usePreferredCity();
   const reduced = useReducedMotion() === true;
@@ -38,6 +40,7 @@ export function FindCarDeck({ city }: { city?: string | null }) {
     return [...near, ...rest].slice(0, DECK_SIZE);
   }, [cars, wanted]);
   // the cars are still coming: keep the deck's place so what is below does not jump down when they arrive
+  if (cars === null && slowCars) return <div className="mx-4"><ComingBackNotice onRetry={() => window.location.reload()} /></div>;
   if (cars === null) return <div aria-hidden="true" style={{ height: 368 }}><div className="skeleton mx-4 h-[330px] rounded-[28px]" /></div>;
   if (deck.length === 0) return null;
   const extra = Math.max(0, (cars ?? []).filter((c) => c.images[0]).length - deck.length);

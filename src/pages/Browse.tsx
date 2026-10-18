@@ -8,6 +8,7 @@ import { CarDrawer } from '../components/browse/CarDrawer';
 import { PriceHistogram } from '../components/browse/PriceHistogram';
 import { BrowseMap, type AreaBounds } from '../components/browse/BrowseMap';
 import { SkeletonSwap } from '../components/SkeletonSwap';
+import { ComingBackNotice, useSlowLoading } from '../components/ComingBackNotice';
 import { Icon } from '../components/Icon';
 import { EmptyState } from '../components/primitives';
 import { ConciergeLauncher, ConciergeMark } from '../components/Concierge';
@@ -269,6 +270,7 @@ export default function Browse() {
   const findCxScramble = useScramble(t('Find Your CX'));
   const [params, setParams] = useSearchParams();
   const { cars, loading, error } = useCars();
+  const slowLoad = useSlowLoading(loading);
   const [filters, setFilters] = useState<Filters>(() => ({
     ...emptyFilters,
     types: params.get('type') && ALL_TYPES.includes(params.get('type')!) ? [params.get('type')!] : [],
@@ -462,7 +464,7 @@ export default function Browse() {
         {/* the map is only to look at: no pan, no zoom, no tap, nothing to focus */}
         <div className="pointer-events-none absolute inset-0 select-none" aria-hidden inert>
           {loading ? (
-            <div className="skeleton h-full w-full" />
+            slowLoad ? <div className="grid h-full w-full place-items-center bg-bg px-4"><ComingBackNotice onRetry={() => window.location.reload()} className="pointer-events-auto w-full max-w-sm" /></div> : <div className="skeleton h-full w-full" />
           ) : (
             <BrowseMap variant="main" locked cars={shown} areaActive={false} onAreaChange={() => {}} activeId={null} hoverId={null} onSelect={() => {}} className="h-full w-full" />
           )}
@@ -559,7 +561,7 @@ export default function Browse() {
             under its toolbar); the spacer below gives the page the height the map used to take */}
         <div className="fixed inset-x-0 top-0 z-0 h-[calc(100lvh-3.4rem)]">
           {loading ? (
-            <div className="skeleton h-full w-full" />
+            slowLoad ? <div className="grid h-full w-full place-items-center bg-bg px-4"><ComingBackNotice onRetry={() => window.location.reload()} className="pointer-events-auto w-full max-w-sm" /></div> : <div className="skeleton h-full w-full" />
           ) : (
             <BrowseMap variant="main" cars={shown} areaActive={area !== null} onAreaChange={setArea} activeId={openCar?.id ?? null} hoverId={hoverId} onSelect={setOpenCar} className="h-full w-full" cityPick={cityPick} onCities={(cs, cur) => { setMapCities((p) => (p.join("|") === cs.join("|") ? p : cs)); setMapCity(cur); }} />
           )}
