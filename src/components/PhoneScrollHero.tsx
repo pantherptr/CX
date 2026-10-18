@@ -33,7 +33,7 @@ function PhoneFrame({ children }: { children?: React.ReactNode }) {
   );
 }
 
-export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt = 22, className }: PhoneScrollHeroProps) {
+export function PhoneScrollHero({ titleComponent, children, overlap = 4, tilt = 22, className }: PhoneScrollHeroProps) {
   const prefersReducedMotion = useReducedMotion();
   const sectionRef = React.useRef<HTMLElement>(null);
   const raw = useMotionValue(0);
@@ -68,7 +68,7 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
 
   const rotateX = useTransform(progress, [0, 1], [tilt, 0]);
   const scale = useTransform(progress, [0, 1], [0.94, 1]);
-  const titleY = useTransform(progress, [0, 1], [0, -24]);
+  const titleY = useTransform(progress, [0, 1], [0, -10]);
   const phoneY = useTransform(progress, [0, 1], ['0%', `-${overlap}%`]);
   const still = Boolean(prefersReducedMotion);
 
