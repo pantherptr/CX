@@ -420,10 +420,10 @@ export default function Home() {
         <Reveal>
           <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             <div>
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-noir shadow-[0_8px_20px_-8px_rgba(0,212,71,0.55)]"><SignalS size={26} /></span>
-                <p className="text-label font-semibold uppercase tracking-[0.2em] text-accent-700">{t('CX SIGNAL')}</p>
-              </div>
+              <p className="inline-flex items-center gap-2.5 rounded-full border border-accent-bright/30 bg-accent-050 py-1.5 pl-3.5 pr-4 text-label font-semibold uppercase tracking-[0.2em] text-accent-700 shadow-hair">
+                <SignalS size={17} animated />
+                {t('CX SIGNAL')}
+              </p>
               <BlurText as="h2" className="mt-5 max-w-xl font-display text-3xl font-semibold leading-[1.05] text-ink text-balance sm:text-5xl" text={t('Great drives deserve to be shared.')} />
               <p className="mt-3 max-w-md text-copy leading-snug text-muted">
                 {t('News, new cars and real stories from the CX world.')}
