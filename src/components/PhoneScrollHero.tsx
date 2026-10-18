@@ -36,14 +36,6 @@ function PhoneFrame({ children }: { children?: React.ReactNode }) {
 export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt = 22, className }: PhoneScrollHeroProps) {
   const prefersReducedMotion = useReducedMotion();
   const sectionRef = React.useRef<HTMLElement>(null);
-  const [narrow, setNarrow] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const set = () => setNarrow(mq.matches);
-    set();
-    mq.addEventListener('change', set);
-    return () => mq.removeEventListener('change', set);
-  }, []);
   const raw = useMotionValue(0);
   // a soft spring after the raw scroll value: iOS delivers scroll events in bursts, the spring turns them into one slow glide
   const progress = useSpring(raw, { stiffness: 38, damping: 22, mass: 1.1, restDelta: 0.0005 });
@@ -76,9 +68,8 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
 
   const rotateX = useTransform(progress, [0, 1], [tilt, 0]);
   const scale = useTransform(progress, [0, 1], [0.94, 1]);
-  const titleY = useTransform(progress, [0, 1], [0, narrow ? 0 : -24]);
-  // on a phone the phone only closes the gap under the title: it never covers the words
-  const phoneY = useTransform(progress, [0, 1], ['0%', `-${narrow ? 4 : overlap}%`]);
+  const titleY = useTransform(progress, [0, 1], [0, -24]);
+  const phoneY = useTransform(progress, [0, 1], ['0%', `-${overlap}%`]);
   const still = Boolean(prefersReducedMotion);
 
   return (
@@ -91,7 +82,7 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
         <motion.div style={{ y: still ? 0 : titleY }} className="relative z-0 mx-auto max-w-5xl px-4 text-center">
           {titleComponent}
         </motion.div>
-        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 mt-10 will-change-transform md:-mt-12">
+        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 -mt-6 will-change-transform md:-mt-12">
           <PhoneFrame>{children}</PhoneFrame>
         </motion.div>
       </div>
