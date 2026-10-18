@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, type IconName } from '../components/Icon';
-import { Img } from '../components/motion';
+import { Icon } from '../components/Icon';
+import { useLocale } from '../lib/i18n';
+import { HowRoute, type RouteStep } from '../components/home/HowRoute';
+import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
+import { FindPoster } from '../components/home/scenes/FindPoster';
 import { SectionHead } from '../components/primitives';
-import { PageHero, FeatureGrid, CtaBand } from '../components/marketing';
-import { Reveal } from '../components/motion';
-import { unsplash } from '../lib/img';
-import { HowPoster } from '../components/home/HowPoster';
+import { PageHero, CtaBand } from '../components/marketing';
 
-const steps: { n: string; title: string; desc: string; icon: IconName; points: string[] }[] = [
-  { n: '01', title: 'Find your car', icon: 'search', desc: 'Browse cars from trusted local hosts and filter by everything that matters.', points: ['Search by city, dates and car type', 'Filter on price, brand, features and rating', 'Read real reviews from past trips'] },
-  { n: '02', title: 'Book your trip', icon: 'calendar', desc: 'Reserve instantly or send a request, then pay securely in a few taps.', points: ['Instant book on eligible cars', 'Clear cancellation policy, shown before you pay', 'Protection included on every trip'] },
-  { n: '03', title: 'Hit the road', icon: 'key', desc: 'Meet your host or unlock remotely, enjoy the drive, then rate your experience.', points: ['Pick up from your host, or have the car delivered where offered', '24/7 roadside assistance', 'Rate your host after the trip'] },
+const steps: RouteStep[] = [
+  { icon: 'check', title: 'Find your car', desc: 'Browse cars from trusted local hosts and filter by everything that matters.', points: ['Search by city, dates and car type', 'Filter by price, brand and features', 'See where each car is parked on the map'], scene: <FindPoster /> },
+  { icon: 'seal', title: 'Book your trip', desc: 'Reserve instantly or send a request, then pay securely in a few taps.', points: ['Instant book on eligible cars', 'Clear cancellation policy, shown before you pay', 'Protection included on every trip'], image: '/home/book-1100.webp', position: '50% 50%' },
+  { icon: 'car', title: 'Hit the road', desc: 'Meet your host, enjoy the drive, then hand the keys back.', points: ['Both scan the CX Pass: that starts the trip', '24/7 roadside assistance', 'Scan again on return: the deposit is released'], image: '/home/road-cx-1100.webp', position: '50% 30%' },
+  { icon: 'pin', title: 'Or have it brought to you', desc: 'Prefer not to collect? Choose delivery and the car arrives right at your door.', points: ['Choose delivery at checkout, to the address you pick', 'Hosts set their own delivery fee — you see it before you pay', 'Prefer to collect? Pick up from your host instead'], image: '/home/faster-1100.webp', position: '78% 55%' },
 ];
 
 const faqs = [
@@ -21,14 +22,15 @@ const faqs = [
   { q: 'How does pick-up work?', a: 'You’ll arrange handover with your host — many offer delivery to your hotel or the airport. Details appear in your trip once booked.' },
 ];
 
-const included: { icon: IconName; title: string; desc: string }[] = [
+const included: { icon: ProtectionKind; title: string; desc: string }[] = [
   { icon: 'shield', title: 'Damage protection', desc: 'Every trip includes protection as standard, with upgrades if you want more.' },
   { icon: 'headset', title: '24/7 roadside help', desc: 'Support before, during and after your trip, whenever you need it.' },
-  { icon: 'calendar', title: 'Clear cancellation terms', desc: 'Every car shows its cancellation policy before you pay. If a host cancels, you are fully refunded.' },
-  { icon: 'verified', title: 'Verified hosts', desc: 'Connect with verified hosts and transparent rental information.' },
+  { icon: 'seal', title: 'Clear cancellation terms', desc: 'Every car shows its cancellation policy before you pay. If a host cancels, you are fully refunded.' },
+  { icon: 'check', title: 'Verified hosts', desc: 'Connect with verified hosts and transparent rental information.' },
 ];
 
 export default function HowItWorks() {
+  const { t } = useLocale();
   const [open, setOpen] = useState(0);
   return (
     <div>
@@ -42,52 +44,24 @@ export default function HowItWorks() {
       </PageHero>
 
       <div className="container-page">
-        <Reveal>
-          <div className="mx-auto mt-10 max-w-[34rem] overflow-hidden rounded-[1.75rem] border border-line shadow-[0_30px_60px_-34px_rgba(0,40,15,0.5)] sm:mt-14">
-            <HowPoster className="block h-auto w-full" />
-          </div>
-        </Reveal>
-        {/* Timeline — a real sequence, so the numbering earns its place. */}
-        <div className="relative mt-14 space-y-6 sm:mt-20 sm:space-y-8">
-          <div className="pointer-events-none absolute bottom-10 left-[1.65rem] top-10 hidden w-px bg-gradient-to-b from-accent/40 via-line to-transparent sm:block lg:hidden" aria-hidden="true" />
-          {steps.map((s, i) => (
-            <Reveal key={s.n}>
-              <div className="grid items-center gap-6 overflow-hidden rounded-[1.75rem] border border-line bg-surface p-5 sm:gap-10 sm:p-8 lg:grid-cols-2 lg:p-10">
-                <div className={i % 2 ? 'lg:order-2' : ''}>
-                  <div className="flex items-center gap-4">
-                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-050 text-accent-700">
-                      <Icon name={s.icon} size={22} />
-                    </span>
-                    <span aria-hidden="true" className="font-display text-5xl font-semibold leading-none text-[#8a8a82]">{s.n}</span>
-                  </div>
-                  <h2 className="mt-5 font-display text-2xl font-semibold text-ink sm:text-3xl">{s.title}</h2>
-                  <p className="mt-2 text-copy leading-relaxed text-muted">{s.desc}</p>
-                  <ul className="mt-5 space-y-3">
-                    {s.points.map((p) => (
-                      <li key={p} className="flex items-start gap-3 text-body text-ink-soft">
-                        <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent-050 text-accent-700"><Icon name="check" size={12} strokeWidth={3} /></span>{p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className={`overflow-hidden rounded-2xl ${i % 2 ? 'lg:order-1' : ''}`}>
-                  <Img
-                    src={unsplash(['photo-1552519507-da3b142c6e3d', 'photo-1503736334956-4c8f8e92946d', 'photo-1494976388531-d1058494cdd8'][i], 900)}
-                    alt=""
-                    className="aspect-[16/10] w-full object-cover"
-                    fallback={<div className="aspect-[16/10] w-full bg-panel" />}
-                  />
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        {/* the route: scroll draws the line, the number rolls, each step lifts in */}
+        <section className="mt-16 sm:mt-24">
+          <HowRoute steps={steps} />
+        </section>
 
         {/* Included on every trip */}
         <section className="mt-20 sm:mt-28">
           <SectionHead center eyebrow="Peace of mind" title="Included on every trip" />
-          <div className="mt-9">
-            <FeatureGrid items={included} cols={4} />
+          <div className="mt-9 grid gap-x-12 gap-y-7 sm:grid-cols-2">
+            {included.map((it) => (
+              <div key={it.title} className="flex items-start gap-4 border-t border-line pt-6">
+                <ProtectionIcon kind={it.icon} size="sm" />
+                <div className="min-w-0">
+                  <h3 className="font-display text-[1.1rem] font-semibold text-ink">{t(it.title)}</h3>
+                  <p className="mt-1 text-body leading-relaxed text-ink-soft">{t(it.desc)}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
