@@ -295,11 +295,11 @@ function MarketingLayout() {
   // The gateway is a page of its own — no navbar, no footer around it.
   if (pathname === '/' && !country) return <Outlet />;
   // Browse on a phone is a map page of its own (its own top bar, no site header or footer around it).
-  if (pathname === '/browse' && phoneWidth && layoutSession) return <main className="min-h-dvh"><Outlet /></main>;
+  if (pathname === '/browse' && phoneWidth && layoutSession) return <main id="main" tabIndex={-1} className="min-h-dvh outline-none"><Outlet /></main>;
   return (
     <div className="flex min-h-dvh flex-col">
       <Navbar />
-      <main className="flex-1">
+      <main id="main" tabIndex={-1} className="flex-1 outline-none">
         <Outlet />
       </main>
       {!session && !IS_APP && <Footer />}
@@ -392,6 +392,7 @@ export default function App() {
     <>
       {splash.visible && <PremiumInitialLoader hiding={splash.hiding} onReady={splash.onReady} />}
       <ScrollToTop />
+      <a href="#main" className="skip-link">{tMeta('Skip to content')}</a>
       <NotificationToaster />
       <InstallSheet />
       <InstallBanner />

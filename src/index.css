@@ -37,7 +37,7 @@
   --color-ink: #16161a;
   --color-ink-soft: #33332f;
   --color-muted: #6c6c66;
-  --color-faint: #9a9a92;
+  --color-faint: #737369; /* 4.6:1 on the page: small grey text (times, hints) passes AA */
   --color-line: #e8e7e1;
   --color-line-strong: #dcdbd3;
 
@@ -2211,7 +2211,7 @@ html[data-theme='dark'] {
   --color-ink: #e7e9ea;
   --color-ink-soft: #cfd3d6;
   --color-muted: #8b9096;
-  --color-faint: #5f656b;
+  --color-faint: #7d838a; /* ≥4.5:1 on black */
   --color-line: #2f3336;
   --color-line-strong: #3e4144;
   --color-accent: #2fe068;
@@ -2866,3 +2866,7 @@ html[data-theme='dark'] .cx-install-card {
     0 0 0 1px rgba(255, 255, 255, 0.07),
     0 18px 40px -26px rgba(0, 220, 90, 0.35);
 }
+
+/* Skip link: first thing a keyboard / screen-reader user reaches */
+.skip-link { position: fixed; left: 12px; top: -64px; z-index: 300; padding: 10px 16px; border-radius: 12px; background: #0a0d0b; color: #fff; font-weight: 600; transition: top 0.15s ease; }
+.skip-link:focus { top: calc(env(safe-area-inset-top, 0px) + 10px); }
