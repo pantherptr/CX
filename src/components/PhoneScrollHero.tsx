@@ -19,7 +19,7 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect
 
 function PhoneFrame({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="relative mx-auto w-[13.5rem] sm:w-[15rem] md:w-[17rem]">
+    <div className="relative mx-auto w-[15.5rem] sm:w-[16rem] md:w-[17rem]">
       <span aria-hidden className="absolute -left-[2px] top-[16%] h-7 w-[3px] rounded-l-sm bg-ink/25" />
       <span aria-hidden className="absolute -left-[2px] top-[24%] h-11 w-[3px] rounded-l-sm bg-ink/25" />
       <span aria-hidden className="absolute -right-[2px] top-[22%] h-14 w-[3px] rounded-r-sm bg-ink/25" />
@@ -36,6 +36,14 @@ function PhoneFrame({ children }: { children?: React.ReactNode }) {
 export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt = 22, className }: PhoneScrollHeroProps) {
   const prefersReducedMotion = useReducedMotion();
   const sectionRef = React.useRef<HTMLElement>(null);
+  const [narrow, setNarrow] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const set = () => setNarrow(mq.matches);
+    set();
+    mq.addEventListener('change', set);
+    return () => mq.removeEventListener('change', set);
+  }, []);
   const progress = useMotionValue(0);
 
   useIsoLayoutEffect(() => {
@@ -47,8 +55,11 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
     const update = () => {
       raf = 0;
       const rect = el.getBoundingClientRect();
-      const travel = Math.max(1, rect.height - win.innerHeight);
-      progress.set(Math.min(1, Math.max(0, -rect.top / travel)));
+      // 0 when the section's top enters at the bottom of the screen, 1 when it is centred: the whole motion happens
+      // while the section is on screen (a short section used to snap from 0 to 1 at once)
+      const start = win.innerHeight * 0.95;
+      const end = win.innerHeight * 0.5 - rect.height * 0.15;
+      progress.set(Math.min(1, Math.max(0, (start - rect.top) / Math.max(1, start - end))));
     };
     const onScroll = () => { if (!raf) raf = win.requestAnimationFrame(update); };
     update();
@@ -63,8 +74,9 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
 
   const rotateX = useTransform(progress, [0, 1], [tilt, 0]);
   const scale = useTransform(progress, [0, 1], [0.94, 1]);
-  const titleY = useTransform(progress, [0, 1], [0, -24]);
-  const phoneY = useTransform(progress, [0, 1], ['0%', `-${overlap}%`]);
+  const titleY = useTransform(progress, [0, 1], [0, narrow ? 0 : -24]);
+  // on a phone the phone only closes the gap under the title: it never covers the words
+  const phoneY = useTransform(progress, [0, 1], ['0%', `-${narrow ? 4 : overlap}%`]);
   const still = Boolean(prefersReducedMotion);
 
   return (
@@ -77,7 +89,7 @@ export function PhoneScrollHero({ titleComponent, children, overlap = 20, tilt =
         <motion.div style={{ y: still ? 0 : titleY }} className="relative z-0 mx-auto max-w-5xl px-4 text-center">
           {titleComponent}
         </motion.div>
-        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 -mt-6 md:-mt-12">
+        <motion.div style={{ y: still ? 0 : phoneY, rotateX: still ? 0 : rotateX, scale: still ? 1 : scale }} className="relative z-10 mt-10 md:-mt-12">
           <PhoneFrame>{children}</PhoneFrame>
         </motion.div>
       </div>
