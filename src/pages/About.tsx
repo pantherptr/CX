@@ -1,4 +1,6 @@
-import { Img } from '../components/motion';
+import { NumberFlow } from '../components/NumberFlow';
+import { ScrollWords } from '../components/ScrollWords';
+import { StackCards } from '../components/StackCards';
 import { SectionHead } from '../components/primitives';
 import { PostMarquee, type MarqueeQuote } from '../components/home/PostMarquee';
 import { INVESTIGATORS } from '../lib/investigations';
@@ -8,11 +10,12 @@ import { useLocale } from '../lib/i18n';
 import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
 import { catalogue } from '../lib/catalogue';
 import { CxFlagC } from '../components/CxFlag';
+import { HowRoute, type RouteStep } from '../components/home/HowRoute';
 
-const difference: { icon: ProtectionKind; title: string; desc: string }[] = [
-  { icon: 'check', title: 'Curated, not crowded', desc: 'Every listing is reviewed before it goes live, so the fleet stays worth driving.' },
-  { icon: 'pin', title: 'Delivered to your door', desc: 'Hosts can bring the car to you, so your trip starts the moment you land.' },
-  { icon: 'broadcast', title: 'A community, not a counter', desc: 'Real hosts, real drivers, and SIGNAL to share the moments in between.' },
+const difference: RouteStep[] = [
+  { icon: 'check', title: 'Curated, not crowded', desc: 'Every listing is reviewed before it goes live, so the fleet stays worth driving.', points: ['Our team looks at every car first', 'Verified hosts, verified drivers'], image: '/home/road-vanquish-1000.webp', position: '50% 66%' },
+  { icon: 'pin', title: 'Delivered to your door', desc: 'Hosts can bring the car to you, so your trip starts the moment you land.', points: ['Choose delivery at checkout', 'Or pick it up from your host'], image: '/home/delivery-1122.webp', position: '50% 40%' },
+  { icon: 'broadcast', title: 'A community, not a counter', desc: 'Real hosts, real drivers, and SIGNAL to share the moments in between.', points: ['Share your trip on SIGNAL', 'Real stories from real drivers'], image: '/home/faster-1100.webp', position: '78% 55%' },
 ];
 
 const values: { icon: ProtectionKind; title: string; desc: string }[] = [
@@ -34,11 +37,11 @@ const TEAM_QUOTES: MarqueeQuote[] = TEAM_LINES.map((text, i) => ({ name: INVESTI
 
 export default function About() {
   const { t } = useLocale();
-  const stats = [
+  const stats: { v: number | string; l: string; suffix?: string }[] = [
     { v: '24/7', l: 'Support' },
-    { v: String(catalogue.vehicles), l: 'Cars listed' },
-    { v: String(catalogue.hosts), l: 'Verified hosts' },
-    { v: String(catalogue.cities), l: 'Cities and growing' },
+    { v: catalogue.vehicles, l: 'Cars listed' },
+    { v: catalogue.hosts, l: 'Verified hosts' },
+    { v: catalogue.cities, l: 'Cities and growing' },
   ];
   return (
     <div>
@@ -47,22 +50,18 @@ export default function About() {
         title="The premium way to move around the world."
         lead="CX began in Milan with a simple idea: renting a car should feel as premium as the cars themselves. Today we connect drivers with trusted local hosts all over the world — and we’re just getting started."
       />
-      <section className="container-page -mt-8 sm:-mt-12">
-        <Reveal>
-          <div className="overflow-hidden rounded-[1.75rem] border border-line shadow-card">
-            <Img
-              src="/home/faster-1100.webp"
-              alt=""
-              className="aspect-[4/3] w-full object-cover sm:aspect-[21/9]"
-              style={{ objectPosition: '70% 62%' }}
-              fallback={<div className="aspect-[21/9] w-full bg-panel" />}
-            />
-          </div>
-        </Reveal>
+
+      {/* The manifesto: the words light up as you scroll */}
+      <section className="container-page mt-20 sm:mt-28">
+        <p className="eyebrow text-center">{t('What we believe')}</p>
+        <ScrollWords
+          className="mx-auto mt-6 max-w-3xl text-center font-display text-[1.9rem] font-semibold leading-[1.18] tracking-[-0.02em] text-ink text-balance sm:text-[3rem]"
+          text={t('A car is only worth something when it is on the road. We connect the people who own great cars with the people who want to drive them, with trust built in at every step.')}
+        />
       </section>
 
-      {/* The line, and the numbers */}
-      <section className="container-page mt-16">
+      {/* The line, and the numbers (they count up when they come into view) */}
+      <section className="container-page mt-20 sm:mt-28">
         <Reveal>
           <figure className="mx-auto flex max-w-xl flex-col items-center text-center">
             <CxFlagC className="h-44 w-auto text-ink sm:h-60" title="CX" />
@@ -75,7 +74,9 @@ export default function About() {
           <dl className="mx-auto mt-12 grid max-w-4xl grid-cols-2 overflow-hidden rounded-3xl border border-line bg-surface lg:grid-cols-4">
             {stats.map((s, i) => (
               <div key={s.l} className={`px-5 py-7 text-center sm:py-9 ${i % 2 === 1 ? 'border-l border-line' : ''} ${i > 1 ? 'border-t border-line lg:border-t-0' : ''} ${i > 0 ? 'lg:border-l' : ''}`}>
-                <dd className="font-display text-[2.6rem] font-semibold leading-none tracking-[-0.03em] text-accent-700 tabular-nums sm:text-[3.2rem]">{s.v}</dd>
+                <dd className="font-display text-[2.6rem] font-semibold leading-none tracking-[-0.03em] text-accent-700 tabular-nums sm:text-[3.2rem]">
+                  {typeof s.v === 'number' ? <NumberFlow scrollTrigger value={s.v} format={{ useGrouping: false }} /> : s.v}
+                </dd>
                 <dt className="mt-2 text-detail text-ink-soft">{t(s.l)}</dt>
               </div>
             ))}
@@ -83,47 +84,32 @@ export default function About() {
         </Reveal>
       </section>
 
-      {/* What makes CX different: the heading on the left, three plain rows on the right */}
-      <section className="container-page mt-24">
-        <div className="grid gap-9 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <p className="eyebrow mb-3">{t('The CX difference')}</p>
-            <h2 className="font-display text-[2.05rem] font-semibold leading-[1.05] tracking-[-0.028em] text-ink text-balance sm:text-[2.9rem]">
-              {t('A rental that feels like it was made for you.')}
-            </h2>
-          </div>
-          <ul className="divide-y divide-line border-y border-line">
-            {difference.map((d) => (
-              <li key={d.title} className="flex items-start gap-4 py-6 sm:gap-5 sm:py-7">
-                <ProtectionIcon kind={d.icon} />
-                <div className="min-w-0 pt-1">
-                  <h3 className="font-display text-[1.2rem] font-semibold leading-tight text-ink">{t(d.title)}</h3>
-                  <p className="mt-1.5 text-body leading-relaxed text-ink-soft">{t(d.desc)}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+      {/* What makes CX different: the same route you scroll as in How it works */}
+      <section className="container-page mt-24 sm:mt-32">
+        <SectionHead center eyebrow="The CX difference" title="A rental that feels like it was made for you." />
+        <div className="mt-10">
+          <HowRoute steps={difference} />
         </div>
       </section>
 
-      {/* Values: four short lines, no boxes */}
-      <section className="container-page mt-24">
+      {/* Principles: cards that pile up */}
+      <section className="container-page mt-24 sm:mt-32">
         <SectionHead eyebrow="What we stand for" title="Principles that guide us" />
-        <div className="mt-9 grid gap-x-12 gap-y-9 sm:grid-cols-2">
-          {values.map((v) => (
-            <div key={v.title} className="flex items-start gap-4 border-t border-line pt-6">
-              <ProtectionIcon kind={v.icon} size="sm" />
-              <div className="min-w-0">
-                <h3 className="font-display text-[1.1rem] font-semibold text-ink">{t(v.title)}</h3>
-                <p className="mt-1 text-body leading-relaxed text-ink-soft">{t(v.desc)}</p>
-              </div>
-            </div>
-          ))}
+        <div className="mx-auto mt-10 max-w-2xl">
+          <StackCards
+            cards={values.map((v, i) => ({
+              key: v.title,
+              n: `0${i + 1}`,
+              title: t(v.title),
+              desc: t(v.desc),
+              icon: <ProtectionIcon kind={v.icon} />,
+            }))}
+          />
         </div>
       </section>
 
       {/* The people who answer */}
-      <section className="mt-24 overflow-hidden">
+      <section className="mt-24 overflow-hidden sm:mt-32">
         <div className="container-page"><SectionHead center eyebrow="CX Investigative" title="The people who answer you." /></div>
         <div className="mt-8"><PostMarquee quotes={TEAM_QUOTES} /></div>
       </section>
