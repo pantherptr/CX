@@ -31,14 +31,14 @@ function Text({ icon, title, desc, tone = 'ink' }: { icon: ProtectionKind; title
 export function HostBento() {
   const { t } = useLocale();
   return (
-    <div className="grid auto-rows-[minmax(11.5rem,auto)] grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-3 md:gap-5">
+    <div className="grid auto-rows-[minmax(11.5rem,auto)] grid-cols-1 gap-4 md:grid-cols-3 md:grid-rows-2 md:gap-5">
       {/* 1 · rate */}
       <Tile className="md:col-span-1 md:row-span-1">
         <Text icon="coin" title={t('You set the rate')} desc={t('Choose your daily price. Renters pay the service fee on top — you receive the rate you set.')} />
       </Tile>
 
       {/* 2 · the tall photo: protected trips */}
-      <Tile className="min-h-[24rem] md:col-span-1 md:row-span-3" delay={80}>
+      <Tile className="min-h-[24rem] md:col-span-1 md:row-span-2" delay={80}>
         <HowPoster className="absolute inset-0 h-full w-full" />
         <span className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6 text-white">
@@ -60,18 +60,6 @@ export function HostBento() {
           <div>
             <h3 className="font-display text-[1.25rem] font-semibold leading-tight text-ink">{t('A stage on SIGNAL')}</h3>
             <p className="mt-1.5 text-detail leading-relaxed text-muted">{t('Verified hosts can show their car to the CX community and reach renters who care.')}</p>
-          </div>
-        </div>
-      </Tile>
-
-      {/* 5 · tall stat: four steps */}
-      <Tile className="min-h-[14rem] md:col-span-1 md:row-span-2" delay={160}>
-        <div className="flex h-full flex-col justify-between bg-[#eaf7ef] p-6">
-          <ProtectionIcon kind="check" size="sm" />
-          <div>
-            <p className="font-display text-[5.5rem] font-semibold leading-[0.9] tracking-tight text-accent-700">4</p>
-            <p className="mt-3 text-body font-semibold text-ink">{t('short steps to list your car')}</p>
-            <p className="mt-1 text-detail text-muted">{t('Car, photos, price, review. Publish when you are ready.')}</p>
           </div>
         </div>
       </Tile>
