@@ -7,6 +7,7 @@ import { useCars } from '../lib/data/cars';
 import { useLocale } from '../lib/i18n';
 import { toggleTheme } from '../lib/theme';
 import { eur } from '../lib/format';
+import { REELS_FEED } from '../lib/launch';
 
 /**
  * Command palette (⌘K / Ctrl+K), after 21st.dev's "Command": one place to jump to a page, a car, a city
@@ -47,7 +48,7 @@ function Panel({ onClose }: { onClose: () => void }) {
     page('signal', 'SIGNAL', '/signal', 'sparkles', 'feed official news', S);
     page('community', 'SIGNAL Community', '/signal/community', 'users', 'feed people social posts', S);
     page('spotlight', 'SIGNAL Spotlight', '/signal/spotlight', 'sparkles', 'best work picked', S);
-    page('reels', 'SIGNAL Reels', '/signal/reels', 'play', 'video', S);
+    if (REELS_FEED) page('reels', 'SIGNAL Reels', '/signal/reels', 'play', 'video', S);
     page('creator', 'SIGNAL Creator', '/signal/creator', 'sparkles', 'plan upgrade videos', S);
     page('about', 'About CX', '/about', 'info');
     page('help', 'Help centre', '/help', 'headset', 'support faq');

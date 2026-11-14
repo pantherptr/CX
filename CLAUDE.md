@@ -61,7 +61,7 @@ Code is written to fail soft before a migration is run.
 - Search: Trending hashtags / cities + Top this week when empty; 0114 lets it match car city/make/model.
 - Creator tools: drafts (localStorage), scheduled posts (0115; published by whoever opens SIGNAL + the daily sweep),
   per-post insights sheet (`SignalPostInsights.tsx`).
-- Reels: `/signal/reels` (`SignalReels.tsx`) = vertical feed of posts that contain a video.
+- Reels: `/signal/reels` (`SignalReels.tsx`) = vertical feed of posts that contain a video. **Hidden for launch** (`REELS_FEED = false` in `src/lib/launch.ts`: no header button, no palette entry, no profile tab, plain `/signal/reels` redirects to `/signal`). The same page is still the full-screen video player when a video is tapped in a post (`?post=` / `?author=`). Turn the flag on once there is enough video and the plan (Pro) can carry the traffic.
 - Admins who are not the Owner publish only as CX/Assistant (UI + trigger 0113).
 - Installed app (PWA/native) opens on the normal home, country picked from the phone language (`src/lib/appMode.ts`).
 

@@ -41,6 +41,7 @@ import { Tap, motion } from '../motionKit';
 import { useAuth } from '../../lib/auth';
 import { useApp } from '../../lib/store';
 import { CxTeamCover } from '../CxTeamCover';
+import { REELS_FEED } from '../../lib/launch';
 
 // How far (px) into the scroll the header compresses — a subtle,
 // transform/opacity-only effect (never a sticky mini-header; the whole
@@ -202,7 +203,7 @@ export function SignalProfileDetail({
   const [tab, setTab] = useState<ProfileTab>(deepLinkVision ? 'visions' : 'posts');
   // Reels appears only once this person has published a video.
   const videoPosts = (posts ?? []).filter((p) => !p.isArchived && p.mediaPaths.some((m) => mediaKindFromPath(m) === 'video'));
-  const tabs = (['posts', ...(realProfile && videoPosts.length > 0 ? ['reels'] : []), ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
+  const tabs = (['posts', ...(REELS_FEED && realProfile && videoPosts.length > 0 ? ['reels'] : []), ...(realProfile && visionsEnabled ? ['visions'] : []), ...(hasVehicles ? ['vehicles'] : []), ...(realProfile ? ['keychain'] : []), ...(isMe ? ['saved'] : [])]) as ProfileTab[];
   const activeTab = tabs.includes(tab) ? tab : 'posts';
   const [savedPosts, setSavedPosts] = useState<EmpirePost[] | null>(null);
   useEffect(() => {

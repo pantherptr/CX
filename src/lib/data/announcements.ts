@@ -21,7 +21,6 @@ export const CTA_TARGETS: { label: string; path: string }[] = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Host dashboard', path: '/host' },
   { label: 'SIGNAL', path: '/signal' },
-  { label: 'SIGNAL Reels', path: '/signal/reels' },
   { label: 'Messages', path: '/messages' },
   { label: 'Settings', path: '/settings' },
   { label: 'Help centre', path: '/help' },

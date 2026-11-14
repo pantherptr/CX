@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { REELS_FEED } from '../lib/launch';
 import { Icon } from '../components/Icon';
 import { Img } from '../components/motion';
 import { RespectIcon } from '../components/RespectIcon';
@@ -302,6 +303,7 @@ export default function SignalReels() {
   const [params] = useSearchParams();
   const authorId = params.get('author');
   const startPost = params.get('post');
+  const feedClosed = !REELS_FEED && !startPost && !authorId;
   const [posts, setPosts] = useState<EmpirePost[] | null>(null);
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem(MUTE_KEY) !== '0'; } catch { return true; }
@@ -316,7 +318,7 @@ export default function SignalReels() {
   // Pages of the ranked Community feed until there are enough videos in them.
   const loadMore = useCallback(async () => {
     const s = loadRef.current;
-    if (s.done || s.busy) return;
+    if (s.done || s.busy || feedClosed) return;
     s.busy = true;
     const gen = s.gen;
     try {
@@ -344,7 +346,7 @@ export default function SignalReels() {
     } finally {
       if (gen === loadRef.current.gen) s.busy = false;
     }
-  }, []);
+  }, [feedClosed]);
 
   const switchMode = (m: 'foryou' | 'following') => {
     if (m === modeRef.current) return;
@@ -450,7 +452,7 @@ export default function SignalReels() {
   };
 
   if (loading) return null;
-  if (!session) return <Navigate to="/signal" replace />;
+  if (!session || feedClosed) return <Navigate to="/signal" replace />;
 
   return createPortal(
     <div className="relative bg-black text-white">
