@@ -149,6 +149,17 @@ export async function setUserAdmin(userId: string, value: boolean): Promise<{ er
   return { error: error?.message ?? null };
 }
 
+/** Owner only (migration 0149): deletes the account and everything of that person; the e-mail is free again, so the same
+ *  address signs up as a brand-new member. Returns the e-mail that was freed. */
+export async function deleteUserProfile(userId: string): Promise<{ email: string | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('owner_delete_user', { p_user_id: userId });
+  if (error) {
+    const missing = /could not find the function|schema cache/i.test(error.message);
+    return { email: null, error: missing ? 'Run migration 0149 in Supabase first.' : error.message };
+  }
+  return { email: typeof data === 'string' ? data : null, error: null };
+}
+
 export async function setHostSuspended(hostId: string, suspended: boolean, hostName: string): Promise<{ error: string | null }> {
   const { error } = await supabase.from('profiles').update({ suspended }).eq('id', hostId);
   if (!error) void logOwnerAction(suspended ? 'suspend_host' : 'unsuspend_host', 'host', hostId, { hostName });

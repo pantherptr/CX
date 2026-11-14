@@ -21,7 +21,8 @@ import {
   type AdminBooking,
   type AdminCar,
 } from '../../lib/data/admin';
-import { setVerifiedClient, setUserAdmin } from '../../lib/data/owner';
+import { setVerifiedClient, setUserAdmin, deleteUserProfile } from '../../lib/data/owner';
+import { ConfirmModal } from '../ConfirmModal';
 import { fetchCreatorIds, setSignalPlan, fetchPlanConfig, savePlanConfig, fetchCreatorRequestIds } from '../../lib/data/signalPlan';
 import { PostActionMenu, type PostMenuItem } from '../signalFeed/PostActionMenu';
 import { LocationPicker, type PickedLocation } from '../LocationPicker';
@@ -232,6 +233,19 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
     toast({ title: on ? `${u.fullName} is now a Creator` : `${u.fullName} is no longer a Creator`, icon: 'checkCircle' });
   };
 
+  const [toDelete, setToDelete] = useState<AdminUser | null>(null);
+  const removeUser = async (u: AdminUser) => {
+    setBusyId(u.id);
+    const { email, error: err } = await deleteUserProfile(u.id);
+    setBusyId(null);
+    if (err) {
+      toast({ title: 'Could not delete the profile', desc: err, icon: 'info' });
+      return;
+    }
+    setItems((prev) => (prev ?? []).filter((x) => x.id !== u.id));
+    toast({ title: `${u.fullName} deleted`, desc: email ? `${email} can sign up again as a new member.` : undefined, icon: 'checkCircle' });
+  };
+
   const menuGroups = (u: AdminUser): PostMenuItem[][] => [
     [
       ...(!u.isHost && !u.isAdmin && !u.isOwner
@@ -242,6 +256,7 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
         ? [{ icon: 'shield', label: u.isAdmin ? 'Remove admin' : 'Make admin', onClick: () => void toggleAdmin(u), danger: u.isAdmin } as PostMenuItem]
         : []),
     ],
+    [{ icon: 'trash', label: 'Delete profile', onClick: () => setToDelete(u), danger: true }],
   ];
 
   if (error) return <div className="card"><EmptyState size="md" icon="info" title={error} className="p-10" /></div>;
@@ -316,6 +331,15 @@ export function UsersPanel({ canManageRoles = false }: { canManageRoles?: boolea
         </div>
       ))}
       {menu && <PostActionMenu anchor={menu.anchor} groups={menuGroups(menu.user)} onClose={() => setMenu(null)} />}
+      <ConfirmModal
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title={toDelete ? `Delete ${toDelete.fullName}?` : 'Delete profile'}
+        description="Their account and everything of theirs (cars, bookings, messages, posts) is erased and cannot be undone. The same e-mail can then sign up again as a brand-new member."
+        confirmWord="DELETE"
+        confirmLabel="Delete profile"
+        onConfirm={async () => { if (toDelete) await removeUser(toDelete); }}
+      />
     </div>
   );
 }
