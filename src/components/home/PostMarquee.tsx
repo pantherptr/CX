@@ -9,7 +9,7 @@ const QUOTES: MarqueeQuote[] = [
   { name: 'Adam', place: 'San Pietroburgo', avatar: '/signal/av-adam.webp', text: 'Cattedrale di Kazan, San Pietroburgo. Volto coperto, nome conosciuto: il rispetto viene prima. 🖤', respected: true },
   { name: 'Sophie', place: 'London', avatar: '/signal/av-marco.webp', text: 'Delivered to my door, right on time. This is how renting should feel.' },
   { name: 'Luca', place: 'Milano', avatar: '/signal/av-luca.webp', text: 'Pioggia sul vetro, lealtà sul sedile. Niente finto, niente show: solo quelli veri. 🖤' },
-  { name: 'Yusuf', place: 'Dubai', rtl: true, text: 'يلا بينا يا باشا، المفاتيح في إيدي والطريق كله بتاعنا 🏎️🔝' },
+  { name: 'Yusuf', place: 'Cairo', rtl: true, text: 'يلا بينا يا باشا، المفاتيح في إيدي والطريق كله بتاعنا 🏎️🔝' },
 ];
 
 function Card({ q }: { q: MarqueeQuote }) {
