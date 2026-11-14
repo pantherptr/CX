@@ -134,9 +134,10 @@ test('installed-app mode (?app=1): dragging from the left edge goes back one pag
   await expect(page).toHaveURL(/\/about/, { timeout: 5000 });
 });
 
-test('the assistant opens from Browse with its greeting and a way to reach a person', async ({ page }) => {
-  await open(page, '/browse', 'light');
-  await page.getByRole('button', { name: /find your cx/i }).first().click();
+test('the assistant opens from the home with its greeting and a way to reach a person', async ({ page }) => {
+  // (signed out, Browse is a locked map with no assistant: the invitation lives on the home page)
+  await open(page, '/', 'light');
+  await page.getByRole('button', { name: /ask x/i }).first().click();
   const dialog = page.getByRole('dialog', { name: 'X', exact: true });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText(/I'm X\b/).first()).toBeVisible();

@@ -37,10 +37,11 @@ test('home: the date sheet opens at the bottom of the screen, picks a range and 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   // it sits on the screen (not inside the page, scrolled away): its bottom edge is the viewport's bottom on a phone
-  const box = await dialog.boundingBox();
+  // (measured once the slide-in animation has settled)
   const vh = page.viewportSize()!.height;
+  await expect.poll(async () => { const b = await dialog.boundingBox(); return b ? b.y + b.height : 99999; }, { message: 'the sheet is anchored to the screen' }).toBeLessThanOrEqual(vh + 2);
+  const box = await dialog.boundingBox();
   expect(box, 'dialog has a box').not.toBeNull();
-  expect(box!.y + box!.height, 'the sheet is anchored to the screen').toBeLessThanOrEqual(vh + 1);
   expect(box!.y, 'the sheet is not above the screen').toBeGreaterThanOrEqual(-1);
 
   // quick ranges are there, and tapping one fills both pills

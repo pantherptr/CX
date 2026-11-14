@@ -856,6 +856,9 @@ let blockedCache: { at: number; ids: Set<string> } | null = null;
 /** The ids I blocked, kept for a minute: the SIGNAL feeds drop their posts and comments. Empty for signed-out visitors. */
 export async function blockedIdSet(): Promise<Set<string>> {
   if (blockedCache && Date.now() - blockedCache.at < 60_000) return blockedCache.ids;
+  // Signed out there is nobody to have blocked: skip the call (it would only answer 401).
+  const { data: sess } = await supabase.auth.getSession();
+  if (!sess.session) return new Set<string>();
   const ids = new Set((await fetchBlockedUsers()).map((b) => b.id));
   blockedCache = { at: Date.now(), ids };
   return ids;
