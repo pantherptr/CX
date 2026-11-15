@@ -10,6 +10,7 @@ import { useLocale } from '../lib/i18n';
 import { ProtectionIcon, type ProtectionKind } from '../components/home/ProtectionIcon';
 import { catalogue } from '../lib/catalogue';
 import { CxFlagC } from '../components/CxFlag';
+import { CxMark } from '../components/CxBadge';
 import { HowRoute, type RouteStep } from '../components/home/HowRoute';
 
 const difference: RouteStep[] = [
@@ -108,8 +109,23 @@ export default function About() {
         </div>
       </section>
 
-      {/* The people who answer */}
-      <section className="mt-24 overflow-hidden sm:mt-32">
+      {/* The face behind CX, then the people who answer */}
+      <section className="container-page mt-24 sm:mt-32">
+        <Reveal>
+          <figure className="mx-auto flex max-w-md flex-col items-center text-center">
+            <img src="/brand/owner.webp" alt={t('The Owner of CX')} width={320} height={320} loading="lazy" draggable={false} className="h-40 w-40 rounded-full object-cover shadow-[0_18px_40px_-18px_rgba(10,20,15,0.45)] ring-4 ring-surface sm:h-48 sm:w-48" />
+            <figcaption className="mt-5">
+              <span className="inline-flex items-center gap-2 font-display text-[1.6rem] font-semibold leading-none tracking-[-0.02em] text-ink">
+                {t('Owner')} <CxMark tier="team" gold size={22} />
+              </span>
+              <span className="mt-1.5 block text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX</span>
+              <span className="mt-4 block text-body text-ink-soft text-balance">{t('Every car, every host, every trip: I put my face on it.')}</span>
+            </figcaption>
+          </figure>
+        </Reveal>
+      </section>
+
+      <section className="mt-20 overflow-hidden sm:mt-28">
         <div className="container-page"><SectionHead center eyebrow="CX Investigative" title="The people who answer you." /></div>
         <div className="mt-8"><PostMarquee quotes={TEAM_QUOTES} /></div>
       </section>
