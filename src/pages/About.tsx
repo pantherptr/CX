@@ -119,7 +119,7 @@ export default function About() {
               <span className="inline-flex items-center gap-2 font-display text-[1.6rem] font-semibold leading-none tracking-[-0.02em] text-ink">
                 {t('Owner')} <CxMark tier="team" gold size={22} />
               </span>
-              <CxWordmark className="mx-auto mt-2.5 h-6 w-auto text-ink" title="CX" />
+              <CxWordmark className="mx-auto mt-2 h-4 w-auto text-ink" title="CX" />
               <span className="mt-4 block text-body text-ink-soft text-balance">{t('Every car, every host, every trip: I put my face on it.')}</span>
             </figcaption>
           </figure>
