@@ -126,7 +126,7 @@ export default function About() {
         </Reveal>
       </section>
 
-      <section className="mt-20 overflow-hidden sm:mt-28">
+      <section className="mt-14 overflow-hidden sm:mt-20">
         <div className="container-page"><SectionHead center eyebrow="CX Investigative" title="The people who answer you." /></div>
         <div className="mt-8"><PostMarquee quotes={TEAM_QUOTES} /></div>
       </section>
