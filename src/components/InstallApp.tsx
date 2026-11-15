@@ -129,10 +129,14 @@ export function InstallBanner() {
     openInstallSheet();
   };
   return (
+    // Same as the dock (BottomNav): iOS Safari tints the strip behind its toolbar from coloured fixed elements at the
+    // bottom edge and read this card's white glass there (a white bar under the site). The only fixed element is this
+    // transparent zero-height wrapper; the card is absolutely positioned inside it, so there is nothing to sample.
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 h-0 sm:hidden">
     <div
       role="dialog"
       aria-label={t('Get the app')}
-      className="fixed inset-x-3 z-40 animate-[sheet-in_.35s_cubic-bezier(.2,.8,.2,1)_both] sm:hidden"
+      className="pointer-events-auto absolute inset-x-3 animate-[sheet-in_.35s_cubic-bezier(.2,.8,.2,1)_both]"
       style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${session ? '5.4rem' : '0.75rem'})` }}
     >
       <div className="cx-install-card flex items-center gap-3 rounded-[22px] bg-surface/90 p-3 pr-2 ring-1 ring-black/[0.06] backdrop-blur-xl backdrop-saturate-150">
@@ -144,6 +148,7 @@ export function InstallBanner() {
         <button onClick={() => void go()} className="btn btn-accent-bright btn-sm shrink-0">{platform === 'android' && nativePrompt ? t('Install') : t('How')}</button>
         <button onClick={close} aria-label={t('Close')} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-faint active:bg-panel"><Icon name="x" size={16} /></button>
       </div>
+    </div>
     </div>
   );
 }
