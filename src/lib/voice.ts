@@ -1,12 +1,13 @@
 import { apiUrl } from './api';
 import { supabase } from './supabase';
+import { VOICE_FEATURE } from './launch';
 
 /**
  * X's voice. Listening (the microphone) uses the browser's own speech recognition — free. Speaking uses
  * ElevenLabs through /api/notify-message (type "voice") and only runs when the speaker button is tapped, and
  * only if the site was built with VITE_VOICE=1. Each sentence is fetched once and kept for the session.
  */
-export const VOICE_ENABLED = import.meta.env.VITE_VOICE === '1';
+export const VOICE_ENABLED = VOICE_FEATURE && import.meta.env.VITE_VOICE === '1';
 
 const cache = new Map<string, string>();
 // One audio element for the whole session: it is "unlocked" by the tap that opens X (see primeVoice), which is

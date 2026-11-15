@@ -6,3 +6,7 @@ export const LAUNCH_HOLD = false;
  *  with a handful of videos feels empty. The full-screen video player (a tapped video in a post: /signal/reels?post=…)
  *  stays on either way. Turn this on once there is enough video and the plan can carry it. */
 export const REELS_FEED = false;
+
+/** ElevenLabs speaker buttons (X answers, SIGNAL "Listen"). OFF while the ElevenLabs account is on the free plan
+ *  (library voices need a paid plan). Set to true once the plan is paid; VITE_VOICE=1 must also be set. */
+export const VOICE_FEATURE = false;
