@@ -11,6 +11,7 @@ import { ProtectionIcon, type ProtectionKind } from '../components/home/Protecti
 import { catalogue } from '../lib/catalogue';
 import { CxFlagC } from '../components/CxFlag';
 import { CxMark } from '../components/CxBadge';
+import { CxWordmark } from '../components/CxWordmark';
 import { HowRoute, type RouteStep } from '../components/home/HowRoute';
 
 const difference: RouteStep[] = [
@@ -118,7 +119,7 @@ export default function About() {
               <span className="inline-flex items-center gap-2 font-display text-[1.6rem] font-semibold leading-none tracking-[-0.02em] text-ink">
                 {t('Owner')} <CxMark tier="team" gold size={22} />
               </span>
-              <span className="mt-1.5 block text-detail font-semibold uppercase tracking-[0.2em] text-muted">CX</span>
+              <CxWordmark className="mx-auto mt-2.5 h-6 w-auto text-ink" title="CX" />
               <span className="mt-4 block text-body text-ink-soft text-balance">{t('Every car, every host, every trip: I put my face on it.')}</span>
             </figcaption>
           </figure>
