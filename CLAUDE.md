@@ -25,6 +25,9 @@ The owner of the project writes in **Italian** — answer in Italian. UI copy is
 - **Vercel Hobby: max 12 serverless functions in `api/`** (currently 12). Add behaviour to an existing
   endpoint instead of creating a new file. `api/notify-message.ts` already serves: chat push,
   verification decisions (push + email), and "new listing to review" pushes.
+- **Security headers live in `vercel.json`** (CSP, HSTS, Permissions-Policy, COOP). The CSP allows NO inline
+  scripts (the pre-paint theme script is `public/theme-boot.js`) and scripts only from the site + js.stripe.com:
+  a new external script / font / frame origin must be added to the CSP there, or it is blocked in production.
 - Supabase quota is tight (free plan): avoid unbounded selects, keep images resized
   (`src/lib/shrinkImage.ts`).
 - **Privacy (migration 0150): `profiles` and `cars` use column privileges.** anon/authenticated can SELECT only
