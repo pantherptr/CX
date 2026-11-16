@@ -66,6 +66,8 @@ export interface Car {
   lat?: number;
   lng?: number;
   addressLabel?: string;
+  /** True when lat/lng are the exact pick-up spot (host, team, booked renter); false = rounded to ~1 km. */
+  exactSpot?: boolean;
   /** True when images[0] is CX's own studio image of the model (not a host photo). */
   catalogHero?: boolean;
   /** Listing review window (migration 0108): 'pending' = held for the team's look, goes live at publishAt. */

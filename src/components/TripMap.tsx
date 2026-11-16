@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { Icon } from './Icon';
-import { supabase } from '../lib/supabase';
+import { fetchCarSpots } from '../lib/data/cars';
 import { CITY_COORDS } from '../data/cityCoords';
 import { collapseAttribution } from '../lib/mapAttribution';
 import { applyCxMapStyle } from '../lib/cxMapStyle';
@@ -33,12 +33,13 @@ interface Pt { lat: number; lng: number; label?: string }
 
 const pointCache = new Map<string, Pt | null>();
 
-/** The car's exact spot (migration 0109) — fail soft (null) when it is not set or not readable. */
+/** The car's exact spot (migration 0109; private since 0150, read through car_private by the host, the team
+ *  and a renter with a confirmed booking) — fail soft (null) when it is not set or not readable. */
 async function loadCarPoint(carId: string): Promise<Pt | null> {
   if (pointCache.has(carId)) return pointCache.get(carId) ?? null;
   try {
-    const { data, error } = await supabase.from('cars').select('lat, lng, address_label').eq('id', carId).maybeSingle();
-    if (error || !data || data.lat == null || data.lng == null) { pointCache.set(carId, null); return null; }
+    const data = (await fetchCarSpots([carId], true)).get(carId);
+    if (!data || data.lat == null || data.lng == null) { pointCache.set(carId, null); return null; }
     const p = { lat: Number(data.lat), lng: Number(data.lng), label: (data.address_label as string | null) ?? undefined };
     pointCache.set(carId, p);
     return p;

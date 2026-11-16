@@ -7,7 +7,6 @@ import { eur } from '../lib/format';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
 import { openHostConversation } from '../lib/data/messages';
-import { useHasAccess } from '../lib/useAccess';
 import { useLocale } from '../lib/i18n';
 import { uiLocale } from '../lib/i18n/uiLocale';
 
@@ -43,12 +42,11 @@ export function BookingCard({ car, embedded = false }: { car: Car; embedded?: bo
   const { toast } = useApp();
   const { session } = useAuth();
   const { t } = useLocale();
-  const hasAccess = useHasAccess();
   const [pickup, setPickup] = useState(todayISO(3));
   const [ret, setRet] = useState(todayISO(6));
-  // Visitors without an account only get the city; the neighbourhood comes with sign-in.
+  // The street address only reaches people allowed to see it (car.exactSpot, migration 0150); others get the city.
   const [locEdit, setLocEdit] = useState<string | null>(null);
-  const loc = locEdit ?? (hasAccess ? car.location : car.city);
+  const loc = locEdit ?? (car.exactSpot ? car.location : car.city);
   const setLoc = (v: string) => setLocEdit(v);
   const [messaging, setMessaging] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);

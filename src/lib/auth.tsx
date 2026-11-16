@@ -119,7 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback((userId: string): Promise<void> => {
     if (profileInflight.current?.userId === userId) return profileInflight.current.run;
     const run = (async () => {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // Your own full profile comes through get_my_profile (migration 0150: phone, Stripe ids… are private
+      // columns, so `select('*')` is refused). Before that migration the old direct read still works.
+      let { data, error } = await supabase.rpc('get_my_profile');
+      if (error) ({ data, error } = await supabase.from('profiles').select('*').eq('id', userId).single());
       // A failed request (network just woke up) must not wipe a profile we already have.
       if (error && !data) return;
       const next = (data as Profile | null) ?? null;

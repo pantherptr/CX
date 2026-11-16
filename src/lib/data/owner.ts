@@ -1,7 +1,7 @@
 import { withVariantPaths } from '../imageVariants';
 import { supabase } from '../supabase';
 import type { Car } from '../../data/types';
-import { uploadCarPhoto } from './cars';
+import { fetchCarSpots, uploadCarPhoto } from './cars';
 import { apiUrl } from '../api';
 
 /**
@@ -98,12 +98,23 @@ interface OwnerHostRow {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  phone: string | null;
   location: string | null;
   bio: string | null;
-  suspended: boolean;
   created_at: string;
   cars: { count: number }[];
+}
+
+/** Phone + suspended of these people, for the team only (`owner_profile_private`, migration 0150: both
+ *  columns are private). Before that migration the old direct read still works. */
+async function fetchProfilePrivate(ids: string[]): Promise<Map<string, { phone: string | null; suspended: boolean }>> {
+  const out = new Map<string, { phone: string | null; suspended: boolean }>();
+  if (!ids.length) return out;
+  const { data, error } = await supabase.rpc('owner_profile_private', { p_ids: ids.slice(0, 500) });
+  const rows = !error && Array.isArray(data)
+    ? (data as { id: string; phone: string | null; suspended: boolean }[])
+    : (((await supabase.from('profiles').select('id, phone, suspended').in('id', ids.slice(0, 500))).data ?? []) as { id: string; phone: string | null; suspended: boolean }[]);
+  for (const r of rows) out.set(r.id, { phone: r.phone, suspended: Boolean(r.suspended) });
+  return out;
 }
 
 export async function fetchAllHosts(): Promise<OwnerHost[]> {
@@ -113,18 +124,20 @@ export async function fetchAllHosts(): Promise<OwnerHost[]> {
   // explicitly here (cars!cars_host_id_fkey), not just `cars(count)`.
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, phone, location, bio, suspended, created_at, cars!cars_host_id_fkey(count)')
+    .select('id, full_name, avatar_url, location, bio, created_at, cars!cars_host_id_fkey(count)')
     .eq('is_host', true)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data as unknown as OwnerHostRow[]).map((r) => ({
+  const rows = data as unknown as OwnerHostRow[];
+  const priv = await fetchProfilePrivate(rows.map((r) => r.id));
+  return rows.map((r) => ({
     id: r.id,
     fullName: r.full_name || 'Unnamed host',
     avatarUrl: r.avatar_url,
-    phone: r.phone,
+    phone: priv.get(r.id)?.phone ?? null,
     location: r.location,
     bio: r.bio,
-    suspended: r.suspended,
+    suspended: priv.get(r.id)?.suspended ?? false,
     carCount: r.cars?.[0]?.count ?? 0,
     createdAt: r.created_at,
   }));
@@ -235,7 +248,7 @@ export interface OwnerCarDetail {
 }
 
 const OWNER_CAR_DETAIL_SELECT = `
-  id, slug, host_id, make, model, trim, year, category, city, location, price_per_day,
+  id, slug, host_id, make, model, trim, year, category, city, price_per_day,
   transmission, fuel, seats, doors, mileage, drive, description, features, instant_book, status,
   pickup_enabled, delivery_enabled, delivery_fee_type, delivery_fee_amount, delivery_radius_km,
   delivery_instructions, delivery_hours_start, delivery_hours_end,
@@ -245,6 +258,8 @@ const OWNER_CAR_DETAIL_SELECT = `
 export async function fetchCarDetail(carId: string): Promise<OwnerCarDetail | null> {
   const { data, error } = await supabase.from('cars').select(OWNER_CAR_DETAIL_SELECT).eq('id', carId).single();
   if (error) throw error;
+  // The street address is private (migration 0150): the team reads it through car_private.
+  const spot = (await fetchCarSpots([carId], true)).get(carId);
   const r = data as unknown as OwnerCarDetail & {
     price_per_day: number;
     instant_book: boolean;
@@ -270,7 +285,7 @@ export async function fetchCarDetail(carId: string): Promise<OwnerCarDetail | nu
     year: r.year,
     category: r.category,
     city: r.city,
-    location: r.location,
+    location: spot?.location || spot?.address_label || r.city,
     pricePerDay: Number(r.price_per_day),
     transmission: r.transmission,
     fuel: r.fuel,
@@ -457,12 +472,20 @@ export interface AttentionItem {
   tab: 'verifications' | 'bookings' | 'hosts' | 'reports';
 }
 
+/** `suspended` is private (migration 0150): counted by a team-only function, the old direct count as fallback. */
+async function countSuspendedHosts(): Promise<{ count: number | null }> {
+  const { data, error } = await supabase.rpc('owner_suspended_host_count');
+  if (!error && typeof data === 'number') return { count: data };
+  const old = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_host', true).eq('suspended', true);
+  return { count: old.count ?? 0 };
+}
+
 export async function fetchNeedsAttention(): Promise<AttentionItem[]> {
   const today = new Date().toISOString().slice(0, 10);
   const [pendingVerifications, failedDeposits, suspendedHosts, pickupsToday, openReports] = await Promise.all([
     supabase.from('verifications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('deposit_status', 'failed'),
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_host', true).eq('suspended', true),
+    countSuspendedHosts(),
     supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'confirmed').eq('start_date', today),
     supabase.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'open'),
   ]);

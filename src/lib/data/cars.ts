@@ -53,7 +53,8 @@ interface CarRow {
   year: number;
   category: Car['category'];
   city: string;
-  location: string;
+  /** Private since 0150 (it holds the exact address): absent in the public read. */
+  location?: string | null;
   price_per_day: number;
   transmission: Car['transmission'];
   fuel: Car['fuel'];
@@ -81,15 +82,95 @@ interface CarRow {
   reviews: ReviewRow[];
   catalog_id?: string | null;
   color_key?: string | null;
+  /** Exact spot: only in the pre-0150 `*` read (afterwards it comes from car_private). */
   lat?: number | null;
   lng?: number | null;
+  /** The same spot rounded to ~1 km (migration 0150), readable by everyone. */
+  lat_approx?: number | null;
+  lng_approx?: number | null;
   address_label?: string | null;
   review_status?: 'pending' | 'approved' | 'rejected' | null;
   publish_at?: string | null;
   review_note?: string | null;
 }
 
-const CAR_SELECT = '*, car_images(url, position), reviews(*)';
+/** The public columns of a car (migration 0150 hides lat/lng/address_label/location and the review notes:
+ *  `*` is refused once it has run). Keep in sync with `CarRow` / `mapCar`. */
+const CAR_COLUMNS =
+  'id, slug, host_id, make, model, trim, year, category, city, price_per_day, transmission, fuel, seats, doors, luggage, ' +
+  'mileage, drive, description, features, instant_book, rating, trips, status, cancellation_policy, pickup_enabled, ' +
+  'delivery_enabled, delivery_fee_type, delivery_fee_amount, delivery_radius_km, delivery_instructions, ' +
+  'delivery_hours_start, delivery_hours_end, catalog_id, color_key, review_status, publish_at, lat_approx, lng_approx';
+const CAR_SELECT_PUBLIC = `${CAR_COLUMNS}, car_images(url, position), reviews(*)`;
+/** Before migration 0150 there is no lat_approx: fall back to the old read so nothing breaks in between. */
+const CAR_SELECT_LEGACY = '*, car_images(url, position), reviews(*)';
+let CAR_SELECT = CAR_SELECT_PUBLIC;
+
+const isMissingColumn = (e: { code?: string } | null | undefined) => e?.code === '42703' || e?.code === 'PGRST204';
+
+type Res = { data: unknown; error: { code?: string; message: string } | null };
+async function withCarSelect(run: (select: string) => PromiseLike<Res>): Promise<Res> {
+  const used = CAR_SELECT; // reads run in parallel: retry based on what THIS read used
+  const r = await run(used);
+  if (isMissingColumn(r.error) && used !== CAR_SELECT_LEGACY) {
+    CAR_SELECT = CAR_SELECT_LEGACY;
+    return run(CAR_SELECT_LEGACY);
+  }
+  return r;
+}
+
+export interface CarPrivateRow {
+  id: string;
+  lat: number | null;
+  lng: number | null;
+  address_label: string | null;
+  location: string | null;
+  review_note: string | null;
+}
+
+/** The exact pick-up spot (+ review note for the host/team) of these cars, for the ones this person may
+ *  see it for: their own, a car they have a confirmed booking for, everything for the team (`car_private`,
+ *  migration 0150). With `legacyFallback`, a database without that function is read the old direct way.
+ *  Fails soft to an empty map. */
+export async function fetchCarSpots(ids: string[], legacyFallback = false): Promise<Map<string, CarPrivateRow>> {
+  const out = new Map<string, CarPrivateRow>();
+  if (!ids.length) return out;
+  try {
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session) return out;
+    const { data, error } = await supabase.rpc('car_private', { p_ids: ids.slice(0, 300) });
+    if (!error && Array.isArray(data)) {
+      for (const r of data as CarPrivateRow[]) out.set(r.id, r);
+      return out;
+    }
+    if (!legacyFallback) return out;
+    const old = await supabase.from('cars').select('id, lat, lng, address_label, location').in('id', ids.slice(0, 300));
+    for (const r of (old.data ?? []) as Omit<CarPrivateRow, 'review_note'>[]) out.set(r.id, { ...r, review_note: null });
+  } catch {
+    /* offline or not allowed: no exact spots */
+  }
+  return out;
+}
+
+/** Puts the exact spot on the cars this person may see it for; everyone else keeps the ~1 km position. */
+export async function withPrivateSpots(cars: Car[]): Promise<Car[]> {
+  const byId = await fetchCarSpots(cars.map((c) => c.id));
+  if (!byId.size) return cars;
+  return cars.map((c) => {
+    const p = byId.get(c.id);
+    if (!p) return c;
+    const exact = p.lat != null && p.lng != null;
+    return {
+      ...c,
+      lat: exact ? Number(p.lat) : c.lat,
+      lng: exact ? Number(p.lng) : c.lng,
+      exactSpot: exact || c.exactSpot,
+      addressLabel: p.address_label ?? c.addressLabel,
+      location: p.location || c.location,
+      reviewNote: p.review_note ?? c.reviewNote,
+    };
+  });
+}
 
 // Listings waiting in the review window go live on their own once the time is up (migration 0108).
 // Every read that lists cars asks first; it is one cheap call, at most every 15 seconds per tab.
@@ -130,7 +211,8 @@ function mapCar(row: CarRow): Car {
     trim: row.trim ?? undefined,
     year: row.year,
     category: row.category,
-    location: row.location,
+    // The exact address only reaches people allowed to see it (withPrivateSpots); the rest see the city.
+    location: row.location || row.city,
     city: row.city,
     pricePerDay: Number(row.price_per_day),
     rating: Number(row.rating),
@@ -147,8 +229,10 @@ function mapCar(row: CarRow): Car {
     catalogId: row.catalog_id ?? undefined,
     colorKey: row.color_key ?? undefined,
     catalogHero: Boolean(hero),
-    lat: row.lat ?? undefined,
-    lng: row.lng ?? undefined,
+    lat: row.lat ?? row.lat_approx ?? undefined,
+    lng: row.lng ?? row.lng_approx ?? undefined,
+    // Only withPrivateSpots (car_private) says a position is exact; a plain read is treated as approximate.
+    exactSpot: false,
     addressLabel: row.address_label ?? undefined,
     reviewStatus: row.review_status ?? undefined,
     publishAt: row.publish_at ?? undefined,
@@ -188,14 +272,12 @@ function mapHost(row: HostRow): Host {
 
 export async function fetchCars(): Promise<Car[]> {
   await promoteDueListings();
-  const { data, error } = await supabase
-    .from('cars')
-    .select(CAR_SELECT)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false });
+  const { data, error } = await withCarSelect((sel) =>
+    supabase.from('cars').select(sel).eq('status', 'published').order('created_at', { ascending: false }),
+  );
   if (error) throw error;
   await loadCatalog();
-  return (data as unknown as CarRow[]).map(mapCar);
+  return withPrivateSpots((data as unknown as CarRow[]).map(mapCar));
 }
 
 /** A host's own cars — includes drafts, not just published listings. RLS
@@ -204,14 +286,12 @@ export async function fetchCars(): Promise<Car[]> {
  *  filter itself. */
 export async function fetchHostCars(hostId: string): Promise<Car[]> {
   await promoteDueListings();
-  const { data, error } = await supabase
-    .from('cars')
-    .select(CAR_SELECT)
-    .eq('host_id', hostId)
-    .order('created_at', { ascending: false });
+  const { data, error } = await withCarSelect((sel) =>
+    supabase.from('cars').select(sel).eq('host_id', hostId).order('created_at', { ascending: false }),
+  );
   if (error) throw error;
   await loadCatalog();
-  return (data as unknown as CarRow[]).map(mapCar);
+  return withPrivateSpots((data as unknown as CarRow[]).map(mapCar));
 }
 
 export function useHostCars(hostId: string | undefined) {
@@ -253,12 +333,9 @@ export function useHostCars(hostId: string | undefined) {
 
 export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
   await promoteDueListings();
-  const { data, error } = await supabase
-    .from('cars')
-    .select(CAR_SELECT)
-    .eq('status', 'published')
-    .order('rating', { ascending: false })
-    .limit(limit);
+  const { data, error } = await withCarSelect((sel) =>
+    supabase.from('cars').select(sel).eq('status', 'published').order('rating', { ascending: false }).limit(limit),
+  );
   if (error) throw error;
   await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
@@ -266,21 +343,21 @@ export async function fetchFeaturedCars(limit = 8): Promise<Car[]> {
 
 export async function fetchCarWithHost(slug: string): Promise<{ car: Car; host: Host } | null> {
   await promoteDueListings();
-  const { data, error } = await supabase
-    .from('cars')
-    // Explicit column list, not `(*)`: this is a public, unauthenticated
-    // fetch (anyone viewing a car listing), and `profiles` also carries
-    // `phone`/`location`/`is_admin` — none of which `mapHost` reads or
-    // any visitor should receive. Keep this in sync with `HostRow` below.
-    .select(`${CAR_SELECT}, host:profiles!cars_host_id_fkey(id, full_name, avatar_url, bio, joined, rating, trips, response_time, response_rate, verified, is_superhost)`)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle();
+  const { data, error } = await withCarSelect((sel) =>
+    supabase
+      .from('cars')
+      // Explicit host columns, not `(*)`: anyone can open a listing. Keep this in sync with `HostRow` below.
+      .select(`${sel}, host:profiles!cars_host_id_fkey(id, full_name, avatar_url, bio, joined, rating, trips, response_time, response_rate, verified, is_superhost)`)
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle(),
+  );
   if (error) throw error;
   if (!data) return null;
   await loadCatalog();
   const row = data as unknown as CarRow & { host: HostRow };
-  return { car: mapCar(row), host: mapHost(row.host) };
+  const [car] = await withPrivateSpots([mapCar(row)]);
+  return { car, host: mapHost(row.host) };
 }
 
 export async function fetchSimilarCars(
@@ -289,13 +366,9 @@ export async function fetchSimilarCars(
   limit = 3,
 ): Promise<Car[]> {
   await promoteDueListings();
-  const { data, error } = await supabase
-    .from('cars')
-    .select(CAR_SELECT)
-    .eq('status', 'published')
-    .eq('category', category)
-    .neq('id', excludeId)
-    .limit(limit);
+  const { data, error } = await withCarSelect((sel) =>
+    supabase.from('cars').select(sel).eq('status', 'published').eq('category', category).neq('id', excludeId).limit(limit),
+  );
   if (error) throw error;
   await loadCatalog();
   return (data as unknown as CarRow[]).map(mapCar);
@@ -432,6 +505,7 @@ export async function createCar(
 
   for (let attempt = 0; attempt < 3 && !carRow; attempt++) {
     const slug = attempt === 0 ? base : `${base}-${randomSuffix()}`;
+    const selectUsed = CAR_SELECT;
     const { data, error } = await supabase
       .from('cars')
       .insert({
@@ -468,8 +542,14 @@ export async function createCar(
         delivery_hours_start: input.deliveryHoursStart || null,
         delivery_hours_end: input.deliveryHoursEnd || null,
       })
-      .select(CAR_SELECT)
+      .select(selectUsed)
       .single();
+    // Pre-0150 database: lat_approx does not exist yet and the insert is rolled back, so try once more.
+    if (isMissingColumn(error) && selectUsed !== CAR_SELECT_LEGACY) {
+      CAR_SELECT = CAR_SELECT_LEGACY;
+      attempt--;
+      continue;
+    }
 
     if (!error) {
       carRow = data as unknown as CarRow;
@@ -501,10 +581,16 @@ export async function createCar(
     .update({ is_host: true })
     .eq('id', input.hostId);
 
-  const car = mapCar({
-    ...carRow,
-    car_images: uploaded.map((u, position) => ({ url: u.url, position })),
-  });
+  // The host just typed the spot: show it exactly, whatever the public read returned.
+  const car: Car = {
+    ...mapCar({
+      ...carRow,
+      ...(input.lat != null && input.lng != null ? { lat: input.lat, lng: input.lng, address_label: input.addressLabel ?? null } : {}),
+      location: input.location,
+      car_images: uploaded.map((u, position) => ({ url: u.url, position })),
+    }),
+    exactSpot: input.lat != null && input.lng != null,
+  };
 
   return {
     car,

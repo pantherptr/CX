@@ -32,11 +32,12 @@ export function useConnectStatus(userId: string | undefined) {
     }
     let cancelled = false;
     setError(null);
-    supabase
-      .from('profiles')
-      .select('stripe_connect_account_id, stripe_connect_payouts_enabled')
-      .eq('id', userId)
-      .maybeSingle()
+    // Stripe ids are private columns (migration 0150): read through get_my_profile, the old read as fallback.
+    void (async () => {
+      const mine = await supabase.rpc('get_my_profile');
+      if (!mine.error && mine.data) return { data: mine.data as Record<string, unknown>, error: null };
+      return supabase.from('profiles').select('stripe_connect_account_id, stripe_connect_payouts_enabled').eq('id', userId).maybeSingle();
+    })()
       .then(({ data, error: err }) => {
         if (cancelled) return;
         if (err) {
@@ -44,8 +45,8 @@ export function useConnectStatus(userId: string | undefined) {
           return;
         }
         setStatus({
-          accountId: data?.stripe_connect_account_id ?? null,
-          payoutsEnabled: data?.stripe_connect_payouts_enabled ?? false,
+          accountId: (data?.stripe_connect_account_id as string | null | undefined) ?? null,
+          payoutsEnabled: Boolean(data?.stripe_connect_payouts_enabled),
         });
       });
     return () => {

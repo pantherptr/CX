@@ -11,9 +11,8 @@ import { useLocale } from '../../lib/i18n';
 import { useHasAccess } from '../../lib/useAccess';
 
 /** Where a car is drawn: the spot its host marked (address search + pin, migration 0109).
- *  - signed in: that exact spot, the pin's tip on the point;
- *  - signed out: the same real place rounded to a block of ~400 m (a true neighbourhood, never an invented one),
- *    so the exact address stays behind the sign-in the listing page already asks for.
+ *  - exact (car.exactSpot: own car, confirmed booking, team — migration 0150): the pin's tip on the point;
+ *  - everyone else: the ~1 km position the database gives out, snapped to a block of ~400 m.
  *  A car whose host has not marked a spot yet is NOT drawn: no point is ever made up. */
 function positionOf(car: Car, exact: boolean): [number, number] | null {
   if (car.lat == null || car.lng == null) return null;
@@ -78,7 +77,7 @@ export function BrowseMap({
   locked?: boolean;
 }) {
   const { t } = useLocale();
-  const exact = useHasAccess();
+  const signedIn = useHasAccess();
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const mlRef = useRef<typeof import('maplibre-gl') | null>(null);
@@ -135,6 +134,8 @@ export function BrowseMap({
   const unplaced = useMemo(() => cars.filter((c) => c.lat == null || c.lng == null).length, [cars]);
   // cars that have an exact spot, in the order of the list: these are the cards under the map
   const placed = useMemo(() => cars.filter((c) => c.lat != null && c.lng != null), [cars]);
+  // exact only where car_private gave the spot (own car, confirmed booking, team); everyone else ~1 km
+  const exact = placed.length > 0 && placed.every((c) => c.exactSpot);
 
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -142,8 +143,6 @@ export function BrowseMap({
   variantRef.current = variant;
   const placedRef = useRef(placed);
   placedRef.current = placed;
-  const exactRef = useRef(exact);
-  exactRef.current = exact;
   const drawRef = useRef<() => void>(() => {});
   const highlightRef = useRef<() => void>(() => {});
 
@@ -210,9 +209,9 @@ export function BrowseMap({
   const focusCar = (id: string, scrollCard: boolean) => {
     setFocusId(id);
     const car = placedRef.current.find((c) => c.id === id);
-    const pos = car ? positionOf(car, exactRef.current) : null;
+    const pos = car ? positionOf(car, Boolean(car.exactSpot)) : null;
     const map = mapRef.current;
-    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), exactRef.current ? 14.5 : 13.5), padding: variantRef.current === 'main' ? insets() : undefined, duration: 450 });
+    if (pos && map) map.easeTo({ center: pos, zoom: Math.max(map.getZoom(), car?.exactSpot ? 14.5 : 13.5), padding: variantRef.current === 'main' ? insets() : undefined, duration: 450 });
     if (!scrollCard) return;
     const idx = placedRef.current.findIndex((c) => c.id === id);
     const row = strip.current;
@@ -237,25 +236,24 @@ export function BrowseMap({
     markers.current = [];
     const pins: Pin[] = [];
     placedRef.current.forEach((car) => {
-      const pos = positionOf(car, exactRef.current);
+      const pos = positionOf(car, Boolean(car.exactSpot));
       if (pos) pins.push({ car, pos });
     });
-    const ex = exactRef.current;
     clusterPins(pins, (p) => map.project(p)).forEach((cl) => {
       if (cl.items.length === 1) {
         const { car, pos } = cl.items[0];
         const el = document.createElement('button');
         el.className = 'bm-pin';
-        if (ex) el.dataset.exact = '1';
+        if (car.exactSpot) el.dataset.exact = '1';
         el.textContent = eur(car.pricePerDay);
-        el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}${ex && car.addressLabel ? ` — ${car.addressLabel}` : ''}`);
-        if (ex && car.addressLabel) el.title = car.addressLabel;
+        el.setAttribute('aria-label', `${car.make} ${car.model} ${eur(car.pricePerDay)}${car.exactSpot && car.addressLabel ? ` — ${car.addressLabel}` : ''}`);
+        if (car.exactSpot && car.addressLabel) el.title = car.addressLabel;
         el.addEventListener('click', (e) => {
           e.stopPropagation();
           if (variantRef.current === 'main') focusRef.current(car.id, true);
           else onSelectRef.current(car);
         });
-        const marker = new ml.Marker({ element: el, anchor: ex ? 'bottom' : 'center', offset: [0, ex ? -6 : 0] }).setLngLat(pos).addTo(map);
+        const marker = new ml.Marker({ element: el, anchor: car.exactSpot ? 'bottom' : 'center', offset: [0, car.exactSpot ? -6 : 0] }).setLngLat(pos).addTo(map);
         markers.current.push({ marker, el, ids: [car.id] });
         return;
       }
@@ -314,7 +312,7 @@ export function BrowseMap({
     const id = placed[best]?.id;
     if (id && id !== focusId) {
       setFocusId(id);
-      const pos = positionOf(placed[best], exact);
+      const pos = positionOf(placed[best], Boolean(placed[best].exactSpot));
       if (pos) mapRef.current?.easeTo({ center: pos, padding: insets(), duration: 350 });
     }
   };
@@ -345,7 +343,7 @@ export function BrowseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !city || areaActive) return;
-    const pts = cars.filter((c) => c.city === city).map((c) => positionOf(c, exact)).filter((p): p is [number, number] => !!p);
+    const pts = cars.filter((c) => c.city === city).map((c) => positionOf(c, Boolean(c.exactSpot))).filter((p): p is [number, number] => !!p);
     if (pts.length === 0) return;
     const lng = pts.map((p) => p[0]);
     const lat = pts.map((p) => p[1]);
@@ -460,7 +458,7 @@ export function BrowseMap({
               <img src={unsplash(c.images[0], 320)} alt="" loading="lazy" draggable={false} className="h-full w-24 shrink-0 rounded-xl bg-panel object-cover" />
               <span className="min-w-0 flex-1 py-0.5">
                 <span className="block truncate text-detail font-semibold text-ink">{c.make} {c.model}</span>
-                <span className="mt-0.5 block truncate text-caption text-muted">{exact && c.addressLabel ? c.addressLabel : c.city}</span>
+                <span className="mt-0.5 block truncate text-caption text-muted">{c.exactSpot && c.addressLabel ? c.addressLabel : c.city}</span>
                 <span className="mt-1 block text-detail font-bold text-ink">{eur(c.pricePerDay)} <span className="text-caption font-normal text-muted">/ {t('day')}</span></span>
               </span>
             </button>
@@ -471,7 +469,7 @@ export function BrowseMap({
       {ready && (
         <div className={`pointer-events-none absolute left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-1 transition-opacity duration-500 ${variant === 'main' ? `top-[calc(var(--browse-top,8.6rem)+3.1rem)] ${noteOn ? 'opacity-100' : 'opacity-0'}` : 'bottom-7'}`}>
           <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">
-            {exact ? t('Pins mark the exact pick-up spots') : t('Approximate area — sign in to see the exact spots')}
+            {exact ? t('Pins mark the exact pick-up spots') : signedIn ? t('Approximate area — the exact spot is shared once you book') : t('Approximate area — sign in to see the exact spots')}
           </p>
           {unplaced > 0 && (
             <p className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-muted shadow-hair">

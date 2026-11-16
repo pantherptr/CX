@@ -1420,6 +1420,8 @@ const ROWS: Row[] = [
   ["Added, but the invitation could not be sent", "Aggiunto, ma l'invito non è stato inviato", "Adăugat, dar invitația nu a putut fi trimisă", "Añadido, pero no se pudo enviar la invitación"],
   ["Could not remove your votes", "Impossibile rimuovere i tuoi voti", "Nu am putut elimina voturile tale", "No se pudieron quitar tus votos"],
   ["The pin is the exact pick-up spot.", "Il segnaposto è il punto di ritiro esatto.", "Pinul este punctul exact de ridicare.", "El marcador es el punto de recogida exacto."],
+  ["The exact pick-up spot is shared once your booking is confirmed.", "Il punto di ritiro esatto appare quando la prenotazione è confermata.", "Punctul exact de ridicare apare după confirmarea rezervării.", "El punto de recogida exacto aparece cuando la reserva está confirmada."],
+  ["Approximate area — the exact spot is shared once you book", "Zona approssimativa — il punto esatto appare dopo la prenotazione", "Zonă aproximativă — punctul exact apare după rezervare", "Zona aproximada — el punto exacto aparece al reservar"],
   ["Sign in to see the exact pick-up spot.", "Accedi per vedere il punto di ritiro esatto.", "Autentifică-te pentru a vedea punctul exact de ridicare.", "Inicia sesión para ver el punto de recogida exacto."],
   ["Verification", "Verifica", "Verificare", "Verificación"],
   ["Use at least 8 characters", "Usa almeno 8 caratteri", "Folosește cel puțin 8 caractere", "Usa al menos 8 caracteres"],

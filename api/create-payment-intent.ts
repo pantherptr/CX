@@ -163,7 +163,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // One Stripe Customer per renter, reused across bookings — required
     // for setup_future_usage (a PaymentIntent can only save a payment
     // method against a Customer, not anonymously) and cheap to cache.
-    const { data: profileRow } = await supabase.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
+    // stripe_customer_id is a private column (migration 0150): a signed-in person can neither read nor
+    // change it, so it is read and cached with the server key. Without that key it falls back to the
+    // person's own client, which then simply creates a fresh Customer each time.
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const profiles = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } }) : supabase;
+    const { data: profileRow } = await profiles.from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle();
     let customerId = profileRow?.stripe_customer_id ?? undefined;
 
     const createFreshCustomer = async () => {
@@ -174,7 +179,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Best-effort cache — if this write fails, the next payment just
       // creates (and this time successfully saves) another Customer
       // rather than breaking the current one.
-      await supabase.from('profiles').update({ stripe_customer_id: customer.id }).eq('id', user.id);
+      await profiles.from('profiles').update({ stripe_customer_id: customer.id }).eq('id', user.id);
       return customer.id;
     };
 

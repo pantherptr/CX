@@ -171,7 +171,7 @@ interface BookingRow {
     model: string;
     trim: string | null;
     year: number;
-    location: string;
+    location?: string;
     city: string;
     price_per_day: number;
     car_images: { url: string; position: number }[];
@@ -191,7 +191,7 @@ interface BookingRow {
 
 const BOOKING_SELECT = `
   id, reference, start_date, end_date, status, total_price, discount_amount, reward_id, protection_addon, pickup_location, fare_tier, fulfillment_type, delivery_address, delivery_fee, agreement_accepted_at, created_at,
-  car:cars!bookings_car_id_fkey (id, slug, make, model, trim, year, location, city, price_per_day, car_images(url, position)),
+  car:cars!bookings_car_id_fkey (id, slug, make, model, trim, year, city, price_per_day, car_images(url, position)),
   host:profiles!bookings_host_id_fkey (id, full_name, avatar_url, response_time),
   renter:profiles!bookings_renter_id_fkey (id, full_name, avatar_url),
   booking_extras (quantity, unit_price, extra:extras_catalog (id, code, name, icon))
@@ -235,7 +235,8 @@ function mapBooking(row: BookingRow): Booking {
       trim: row.car.trim ?? undefined,
       year: row.car.year,
       image: heroImage,
-      location: row.car.location,
+      // cars.location is private (migration 0150); the booking keeps its own pick-up place.
+      location: row.pickup_location || row.car.city,
       city: row.car.city,
       pricePerDay: Number(row.car.price_per_day),
     },

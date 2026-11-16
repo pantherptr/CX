@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import type { DocStatus, IdDocType } from './verification';
 import type { BookingStatus } from './bookings';
 import { apiUrl } from '../api';
+import { fetchCarSpots } from './cars';
 
 /**
  * Data access for the admin dashboard (see src/pages/AdminDashboard.tsx
@@ -185,14 +186,11 @@ interface AdminCarRow {
   price_per_day: number;
   created_at: string;
   city: string | null;
-  lat: number | null;
-  lng: number | null;
-  address_label: string | null;
   host: { full_name: string | null } | null;
 }
 
 const ADMIN_CAR_SELECT = `
-  id, slug, make, model, year, status, price_per_day, created_at, city, lat, lng, address_label,
+  id, slug, make, model, year, status, price_per_day, created_at, city,
   host:profiles!cars_host_id_fkey (full_name)
 `;
 
@@ -203,7 +201,10 @@ export async function fetchAllCarsAdmin(): Promise<AdminCar[]> {
     .order('created_at', { ascending: false })
     .limit(200);
   if (error) throw error;
-  return (data as unknown as AdminCarRow[]).map((r) => ({
+  const rows = data as unknown as AdminCarRow[];
+  // The exact spot is private (migration 0150): the team reads it through car_private.
+  const spots = await fetchCarSpots(rows.map((r) => r.id), true);
+  return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
     label: `${r.year} ${r.make} ${r.model}`,
@@ -212,7 +213,10 @@ export async function fetchAllCarsAdmin(): Promise<AdminCar[]> {
     hostName: r.host?.full_name || 'Unnamed host',
     createdAt: r.created_at,
     city: r.city ?? '',
-    spot: r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng, label: r.address_label ?? '' } : null,
+    spot: (() => {
+      const p = spots.get(r.id);
+      return p && p.lat != null && p.lng != null ? { lat: Number(p.lat), lng: Number(p.lng), label: p.address_label ?? '' } : null;
+    })(),
   }));
 }
 

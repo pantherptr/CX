@@ -14,7 +14,7 @@ import { Group, Row } from '../components/IosList';
 import { PremiumPageLoader } from '../components/PremiumLoader';
 import { useApp } from '../lib/store';
 import { useAuth } from '../lib/auth';
-import { fetchCarWithHost } from '../lib/data/cars';
+import { fetchCarWithHost, withPrivateSpots } from '../lib/data/cars';
 import {
   checkAvailability,
   useExtrasCatalog,
@@ -124,6 +124,15 @@ export default function Booking() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<BookingRecord | null>(null);
+  // Once the booking is confirmed the exact pick-up spot may be shown (car_private, migration 0150): fetch it.
+  useEffect(() => {
+    if (!confirmed || !result || result.car.exactSpot) return;
+    let off = false;
+    void withPrivateSpots([result.car]).then(([car]) => {
+      if (!off && car.exactSpot) setResult((r) => (r ? { ...r, car } : r));
+    });
+    return () => { off = true; };
+  }, [confirmed, result]);
   const [messaging, setMessaging] = useState(false);
   const reduceMotion = useReducedMotion();
   const [dir, setDir] = useState(1);
@@ -510,7 +519,7 @@ export default function Booking() {
               hostName: host.name,
               car: {
                 year: car.year, make: car.make, model: car.model, seats: car.seats, transmission: car.transmission,
-                city: car.city, location: car.location, lat: car.lat, lng: car.lng,
+                city: car.city, location: car.location, lat: car.exactSpot ? car.lat : undefined, lng: car.exactSpot ? car.lng : undefined,
               },
             }}
           />
@@ -718,8 +727,9 @@ export default function Booking() {
                 )}
               </Group>
 
-              {/* Where the car is — the exact spot the host marked; with delivery, your address as a second pin. */}
-              {car.lat != null && car.lng != null && (
+              {/* Where the car is — the exact spot the host marked (only once it may be shown: car.exactSpot, migration
+                  0150); with delivery, your address as a second pin next to the car's ~1 km position. */}
+              {car.lat != null && car.lng != null && (car.exactSpot || fulfillmentType === 'delivery') && (
                 <div className="mt-3 overflow-hidden rounded-[22px] border border-line">
                   <div className="relative">
                     <MiniMap
@@ -729,14 +739,14 @@ export default function Booking() {
                       interactive
                       className="h-52 sm:h-60"
                     />
-                    <a
+                    {car.exactSpot && <a
                       href={mapsLink(car.lat, car.lng)}
                       target="_blank"
                       rel="noreferrer"
                       className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3.5 py-2 text-caption font-semibold text-ink shadow-pop backdrop-blur"
                     >
                       <Icon name="arrowUpRight" size={13} /> Open in Maps
-                    </a>
+                    </a>}
                   </div>
                   {fulfillmentType === 'delivery' && deliveryPoint && (() => {
                     const km = distanceKm({ lat: car.lat!, lng: car.lng! }, deliveryPoint);

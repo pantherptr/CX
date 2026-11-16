@@ -306,7 +306,7 @@ export default function CarDetails() {
                   <h1 className="font-display text-[1.7rem] font-bold leading-[1.1] tracking-tight text-ink sm:text-[2rem]">
                     {car.make} {car.model}
                   </h1>
-                  <p className="mt-1 text-body text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year} · {hasAccess ? car.location : car.city}</p>
+                  <p className="mt-1 text-body text-muted">{car.trim ? `${car.trim} · ` : ''}{car.year} · {car.exactSpot ? car.location : car.city}</p>
                 </div>
               </div>
               <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-detail text-ink-soft">
@@ -385,12 +385,12 @@ export default function CarDetails() {
                 <Row
                   icon="pin"
                   title={t('Pick-up')}
-                  sub={<>{hasAccess ? car.addressLabel || car.location : car.city}{hasAccess ? '' : `. ${t('Sign in to see the exact pick-up spot.')}`}</>}
+                  sub={<>{car.exactSpot ? car.addressLabel || car.location : car.city}{car.exactSpot ? '' : `. ${hasAccess ? t('The exact pick-up spot is shared once your booking is confirmed.') : t('Sign in to see the exact pick-up spot.')}`}</>}
                 />
               </Group>
               <div className="relative mt-3 overflow-hidden rounded-[22px] border border-line">
-                <MiniMap city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} interactive={hasAccess && car.lat != null} className="h-56 sm:h-64" />
-                {hasAccess && car.lat != null && car.lng != null && (
+                <MiniMap city={car.city} point={car.exactSpot && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} interactive={Boolean(car.exactSpot) && car.lat != null} className="h-56 sm:h-64" />
+                {car.exactSpot && car.lat != null && car.lng != null && (
                   <a
                     href={mapsLink(car.lat, car.lng)}
                     target="_blank"
@@ -401,7 +401,7 @@ export default function CarDetails() {
                   </a>
                 )}
               </div>
-              <DistanceFromYou city={car.city} point={hasAccess && car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} />
+              <DistanceFromYou city={car.city} point={car.lat != null && car.lng != null ? { lat: car.lat, lng: car.lng } : null} />
 
               {/* Host */}
               <section className="mt-7">
